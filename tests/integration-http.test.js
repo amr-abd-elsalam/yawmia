@@ -3,7 +3,7 @@
 // HTTP Integration Tests (~30 tests)
 // ═══════════════════════════════════════════════════════════════
 
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, rm, mkdtemp, readFile } from 'node:fs/promises';
@@ -14,6 +14,8 @@ let baseUrl;
 let server;
 let tmpDir;
 let closeServer;
+let _resetRateLimit;
+let _db;
 
 before(async () => {
   // Create temp data directory
@@ -29,7 +31,11 @@ before(async () => {
   const { corsMiddleware } = await import('../server/middleware/cors.js');
   const { requestIdMiddleware } = await import('../server/middleware/requestId.js');
   const { bodyParserMiddleware } = await import('../server/middleware/bodyParser.js');
+  const { rateLimitMiddleware, resetRateLimit } = await import('../server/middleware/rateLimit.js');
   const { createRouter } = await import('../server/router.js');
+
+  _resetRateLimit = resetRateLimit;
+  _db = await import('../server/services/database.js');
 
   const router = createRouter();
 
@@ -40,8 +46,10 @@ before(async () => {
 
     corsMiddleware(req, res, () => {
       requestIdMiddleware(req, res, () => {
-        bodyParserMiddleware(req, res, () => {
-          router(req, res);
+        rateLimitMiddleware(req, res, () => {
+          bodyParserMiddleware(req, res, () => {
+            router(req, res);
+          });
         });
       });
     });
@@ -80,9 +88,13 @@ async function api(method, path, body, headers = {}) {
 }
 
 async function getOtpForPhone(phone) {
-  const otpPath = join(tmpDir, 'otp', `${phone}.json`);
-  const raw = await readFile(otpPath, 'utf-8');
-  return JSON.parse(raw).otp;
+  // Read via the database module so we use the same BASE_PATH it resolved
+  const otpPath = _db.getRecordPath('otp', phone);
+  const data = await _db.readJSON(otpPath);
+  if (!data) {
+    throw new Error(`OTP file not found for ${phone} at ${otpPath}`);
+  }
+  return data.otp;
 }
 
 async function registerAndLogin(phone, role) {
@@ -243,6 +255,11 @@ describe('HTTP Integration Tests', () => {
 
   // ── Jobs: CRUD ──────────────────────────────────────────
   describe('Jobs: CRUD', () => {
+    before(() => {
+      // Reset rate limit counter before Jobs suite
+      if (_resetRateLimit) _resetRateLimit();
+    });
+
     it('H-17: POST /api/jobs creates job (employer)', async () => {
       const login = await registerAndLogin('01012340017', 'employer');
       const res = await api('POST', '/api/jobs', {
@@ -342,6 +359,11 @@ describe('HTTP Integration Tests', () => {
 
   // ── Applications ────────────────────────────────────────
   describe('Applications', () => {
+    before(() => {
+      // Reset rate limit counter before Applications suite
+      if (_resetRateLimit) _resetRateLimit();
+    });
+
     it('H-24: POST /api/jobs/:id/apply creates application (worker)', async () => {
       const employer = await registerAndLogin('01012340024', 'employer');
       const jobRes = await api('POST', '/api/jobs', {
@@ -439,6 +461,11 @@ describe('HTTP Integration Tests', () => {
 
   // ── Admin ───────────────────────────────────────────────
   describe('Admin', () => {
+    before(() => {
+      // Reset rate limit counter before Admin suite
+      if (_resetRateLimit) _resetRateLimit();
+    });
+
     it('H-28: GET /api/admin/stats returns 401 without admin token', async () => {
       const res = await api('GET', '/api/admin/stats');
       assert.strictEqual(res.status, 401);
@@ -477,6 +504,7 @@ describe('HTTP Integration Tests', () => {
   // ── Rate Limiting ──────────────────────────────────────
   describe('Rate Limiting', () => {
     it('H-32: rate limit headers present', async () => {
+      if (_resetRateLimit) _resetRateLimit();
       const res = await api('GET', '/api/health');
       assert.ok(res.headers.get('x-ratelimit-limit'));
       assert.ok(res.headers.get('x-ratelimit-remaining'));
