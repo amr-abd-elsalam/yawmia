@@ -226,6 +226,51 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 15. قاعدة البيانات (DATABASE)
+  // ═══════════════════════════════════════════════════════════
+  DATABASE: {
+    basePath: './data',
+    dirs: {
+      users: 'users',
+      sessions: 'sessions',
+      jobs: 'jobs',
+      applications: 'applications',
+      otp: 'otp',
+    },
+    indexFiles: {
+      phoneIndex: 'users/phone-index.json',
+      jobsIndex: 'jobs/index.json',
+    },
+    encoding: 'utf-8',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 16. قواعد التحقق (VALIDATION)
+  // ═══════════════════════════════════════════════════════════
+  VALIDATION: {
+    phoneRegex: '^01[0125]\\d{8}$',      // Egyptian mobile format
+    nameMinLength: 2,
+    nameMaxLength: 50,
+    descriptionMaxLength: 500,
+    titleMinLength: 5,
+    titleMaxLength: 100,
+    minDurationDays: 1,
+    maxDurationDays: 30,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 17. تحديد المعدل (RATE_LIMIT)
+  // ═══════════════════════════════════════════════════════════
+  RATE_LIMIT: {
+    enabled: true,
+    windowMs: 60000,                     // نافذة زمنية (1 دقيقة)
+    maxRequests: 60,                     // أقصى طلبات في النافذة
+    otpMaxRequests: 5,                   // أقصى طلبات OTP في النافذة
+    otpWindowMs: 300000,                 // نافذة OTP (5 دقائق)
+    message: 'تم تجاوز الحد المسموح من الطلبات. حاول بعد قليل.',
+  },
+
 };
 
 export default deepFreeze(config);

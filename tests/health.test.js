@@ -84,9 +84,32 @@ describe('Config — Basic Structure', () => {
     assert.ok(config.FINANCIALS.maxCompensationDays > 0);
   });
 
-  it('T-12: config has 14 sections', () => {
+  it('T-12: config has 17 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 14, `expected 14 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 17, `expected 17 config sections, got ${keys.length}: ${keys.join(', ')}`);
+  });
+
+  it('T-13: config has DATABASE section', () => {
+    assert.ok(config.DATABASE, 'DATABASE section should exist');
+    assert.strictEqual(typeof config.DATABASE.basePath, 'string');
+    assert.ok(config.DATABASE.dirs);
+    assert.ok(config.DATABASE.dirs.users);
+    assert.ok(config.DATABASE.dirs.sessions);
+    assert.ok(config.DATABASE.dirs.jobs);
+  });
+
+  it('T-14: config has VALIDATION section', () => {
+    assert.ok(config.VALIDATION, 'VALIDATION section should exist');
+    assert.strictEqual(typeof config.VALIDATION.phoneRegex, 'string');
+    assert.ok(config.VALIDATION.nameMinLength >= 1);
+    assert.ok(config.VALIDATION.nameMaxLength >= 10);
+  });
+
+  it('T-15: config has RATE_LIMIT section', () => {
+    assert.ok(config.RATE_LIMIT, 'RATE_LIMIT section should exist');
+    assert.strictEqual(typeof config.RATE_LIMIT.enabled, 'boolean');
+    assert.ok(config.RATE_LIMIT.windowMs > 0);
+    assert.ok(config.RATE_LIMIT.maxRequests > 0);
   });
 
 });

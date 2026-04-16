@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — لوحة التحكم</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <div class="header__right">
+          <h1 class="header__brand">🏗️ يوميّة</h1>
+        </div>
+        <div class="header__left">
+          <span class="header__user" id="headerUserName"></span>
+          <span class="badge" id="headerUserRole"></span>
+          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Welcome Card -->
+        <section class="card welcome-card" id="welcomeCard">
+          <h2 id="welcomeTitle">أهلاً بيك!</h2>
+          <p id="welcomeDesc"></p>
+        </section>
+
+        <!-- Employer Section: Create Job -->
+        <section class="card hidden" id="createJobSection">
+          <h2 class="card__title">نشر فرصة عمل جديدة</h2>
+
+          <div class="form-group">
+            <label class="form-label" for="jobTitle">عنوان الفرصة</label>
+            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobCategory">التخصص</label>
+            <select id="jobCategory" class="form-input">
+              <option value="">اختار التخصص</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobGovernorate">المحافظة</label>
+            <select id="jobGovernorate" class="form-input">
+              <option value="">اختار المحافظة</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="jobWorkers">عدد العمال</label>
+              <input type="number" id="jobWorkers" class="form-input" min="1" max="100" placeholder="20">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jobWage">اليومية (جنيه)</label>
+              <input type="number" id="jobWage" class="form-input" min="150" max="1000" placeholder="250">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="jobStartDate">تاريخ البدء</label>
+              <input type="date" id="jobStartDate" class="form-input" dir="ltr">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jobDuration">المدة (أيام)</label>
+              <input type="number" id="jobDuration" class="form-input" min="1" max="30" placeholder="3">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobDescription">وصف الفرصة</label>
+            <textarea id="jobDescription" class="form-input form-textarea" rows="3" maxlength="500" placeholder="تفاصيل عن الشغل..."></textarea>
+          </div>
+
+          <!-- Cost Preview -->
+          <div class="cost-preview hidden" id="costPreview">
+            <div class="cost-row">
+              <span>إجمالي التكلفة:</span>
+              <span id="costTotal">0 جنيه</span>
+            </div>
+            <div class="cost-row cost-row--fee">
+              <span>عمولة المنصة (15%):</span>
+              <span id="costFee">0 جنيه</span>
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--full" id="btnCreateJob">نشر الفرصة</button>
+          <div class="message" id="createJobError"></div>
+        </section>
+
+        <!-- Job Listings -->
+        <section class="card" id="jobsSection">
+          <div class="section-header">
+            <h2 class="card__title">الفرص المتاحة</h2>
+            <div class="filters">
+              <select id="filterGov" class="form-input form-input--sm">
+                <option value="">كل المحافظات</option>
+              </select>
+              <select id="filterCat" class="form-input form-input--sm">
+                <option value="">كل التخصصات</option>
+              </select>
+              <button class="btn btn--sm btn--primary" id="btnFilterJobs">بحث</button>
+            </div>
+          </div>
+          <div id="jobsList" class="jobs-list">
+            <p class="empty-state">جاري تحميل الفرص...</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/jobs.js"></script>
+</body>
+</html>

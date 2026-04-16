@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — شغلك قريب منّك</title>
+  <meta name="description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <h1 class="header__brand">🏗️ يوميّة</h1>
+        <p class="header__tagline">شغلك قريب منّك</p>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Auth Section -->
+        <section class="auth-section" id="authSection">
+          <!-- Step 1: Phone Input -->
+          <div class="card auth-card" id="stepPhone">
+            <h2 class="card__title">تسجيل الدخول</h2>
+            <p class="card__desc">أدخل رقم موبايلك للبدء</p>
+
+            <div class="form-group">
+              <label class="form-label" for="phoneInput">رقم الموبايل</label>
+              <input
+                type="tel"
+                id="phoneInput"
+                class="form-input"
+                placeholder="01XXXXXXXXX"
+                maxlength="11"
+                autocomplete="tel"
+                dir="ltr"
+                inputmode="numeric"
+              >
+              <span class="form-hint">مثال: 01012345678</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">أنا:</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="role" value="worker" checked>
+                  <span>عامل — بدور على شغل</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="role" value="employer">
+                  <span>صاحب عمل — محتاج عمال</span>
+                </label>
+              </div>
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnSendOtp">
+              إرسال كود التحقق
+            </button>
+
+            <div class="message" id="phoneError"></div>
+          </div>
+
+          <!-- Step 2: OTP Verification -->
+          <div class="card auth-card hidden" id="stepOtp">
+            <h2 class="card__title">أدخل كود التحقق</h2>
+            <p class="card__desc">تم إرسال كود مكوّن من 4 أرقام على رقم <span id="otpPhone"></span></p>
+
+            <div class="form-group">
+              <label class="form-label" for="otpInput">كود التحقق</label>
+              <input
+                type="text"
+                id="otpInput"
+                class="form-input form-input--otp"
+                placeholder="0000"
+                maxlength="4"
+                autocomplete="one-time-code"
+                dir="ltr"
+                inputmode="numeric"
+              >
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnVerifyOtp">
+              تأكيد الكود
+            </button>
+
+            <button class="btn btn--ghost btn--full" id="btnResendOtp">
+              إعادة إرسال الكود
+            </button>
+
+            <div class="message" id="otpError"></div>
+          </div>
+
+          <!-- Step 3: Profile Completion -->
+          <div class="card auth-card hidden" id="stepProfile">
+            <h2 class="card__title">أكمل بياناتك</h2>
+            <p class="card__desc">محتاجين بيانات بسيطة عشان نوصّلك بالفرص المناسبة</p>
+
+            <div class="form-group">
+              <label class="form-label" for="nameInput">الاسم</label>
+              <input
+                type="text"
+                id="nameInput"
+                class="form-input"
+                placeholder="اسمك بالكامل"
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="govSelect">المحافظة</label>
+              <select id="govSelect" class="form-input">
+                <option value="">اختار المحافظة</option>
+              </select>
+            </div>
+
+            <div class="form-group hidden" id="categoriesGroup">
+              <label class="form-label">التخصصات (للعمّال)</label>
+              <div class="checkbox-grid" id="categoriesGrid"></div>
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnSaveProfile">
+              حفظ البيانات
+            </button>
+
+            <div class="message" id="profileError"></div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/auth.js"></script>
+</body>
+</html>

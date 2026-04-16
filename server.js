@@ -3,7 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 // Load env
 try {
@@ -14,87 +15,81 @@ try {
 }
 
 import config from './config.js';
+import { createRouter } from './server/router.js';
+import { corsMiddleware } from './server/middleware/cors.js';
+import { requestIdMiddleware } from './server/middleware/requestId.js';
+import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
+import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
+import { logger } from './server/services/logger.js';
+import { initDatabase } from './server/services/database.js';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
-// ── Simple Router ─────────────────────────────────────────────
-const routes = {
-  'GET /api/health': (_req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      brand: config.BRAND.name,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    }));
-  },
+// ── Initialize Database Directories ──────────────────────────
+await initDatabase();
 
-  'GET /api/config': (_req, res) => {
-    // Public config — no sensitive data
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      BRAND: config.BRAND,
-      META: config.META,
-      LABOR_CATEGORIES: config.LABOR_CATEGORIES,
-      REGIONS: config.REGIONS,
-      RATINGS: config.RATINGS,
-      FINANCIALS: {
-        platformFeePercent: config.FINANCIALS.platformFeePercent,
-        minDailyWage: config.FINANCIALS.minDailyWage,
-        maxDailyWage: config.FINANCIALS.maxDailyWage,
-        compensationEnabled: config.FINANCIALS.compensationEnabled,
-        paymentMethods: config.FINANCIALS.paymentMethods,
-      },
-    }));
-  },
-};
+// ── Create Router ─────────────────────────────────────────────
+const router = createRouter();
+
+// ── Middleware Chain ───────────────────────────────────────────
+function runMiddleware(middlewares, req, res, done) {
+  let idx = 0;
+  function next(err) {
+    if (err) {
+      logger.error('Middleware error', { error: err.message });
+      if (!res.writableEnded) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' }));
+      }
+      return;
+    }
+    const mw = middlewares[idx++];
+    if (!mw) return done();
+    try {
+      mw(req, res, next);
+    } catch (e) {
+      next(e);
+    }
+  }
+  next();
+}
+
+const globalMiddleware = [
+  corsMiddleware,
+  requestIdMiddleware,
+  rateLimitMiddleware,
+  bodyParserMiddleware,
+];
 
 // ── HTTP Server ───────────────────────────────────────────────
 const server = createServer((req, res) => {
-  const method = req.method;
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
+  req.pathname = url.pathname;
+  req.query = Object.fromEntries(url.searchParams);
 
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
-  // Route matching
-  const routeKey = `${method} ${pathname}`;
-  const handler = routes[routeKey];
-
-  if (handler) {
-    handler(req, res);
-    return;
-  }
-
-  // 404
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not Found', code: 'NOT_FOUND' }));
+  runMiddleware(globalMiddleware, req, res, () => {
+    router(req, res);
+  });
 });
 
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
-  console.log(`\n🟢 يوميّة — ${config.BRAND.tagline}`);
-  console.log(`   Server: http://${HOST}:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health`);
-  console.log(`   Config: http://localhost:${PORT}/api/config\n`);
+  logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);
+  logger.info(`   Server: http://${HOST}:${PORT}`);
+  logger.info(`   Health: http://localhost:${PORT}/api/health`);
+  logger.info(`   Config: http://localhost:${PORT}/api/config`);
 });
 
-// Graceful shutdown
+// ── Graceful shutdown ─────────────────────────────────────────
 process.on('SIGINT', () => {
-  console.log('\n🔴 Shutting down...');
+  logger.info('🔴 Shutting down...');
   server.close(() => process.exit(0));
 });
 
 process.on('SIGTERM', () => {
   server.close(() => process.exit(0));
 });
+
+// ── Export for testing ────────────────────────────────────────
+export { server, PORT, HOST };
