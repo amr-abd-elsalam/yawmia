@@ -7,7 +7,7 @@
 
   // If not logged in, redirect
   if (!Yawmia.isLoggedIn()) {
-    window.location.href = '/frontend/index.html';
+    window.location.href = '/';
     return;
   }
 
@@ -54,12 +54,97 @@
   Yawmia.populateGovernorates('filterGov');
   Yawmia.populateCategories('filterCat');
 
+  // ── Notifications ─────────────────────────────────────────
+  loadNotifications();
+
+  var notificationBell = Yawmia.$id('notificationBell');
+  var notificationPanel = Yawmia.$id('notificationPanel');
+  if (notificationBell && notificationPanel) {
+    notificationBell.addEventListener('click', function () {
+      notificationPanel.classList.toggle('hidden');
+      if (!notificationPanel.classList.contains('hidden')) {
+        loadNotifications();
+      }
+    });
+  }
+
+  var btnMarkAllRead = Yawmia.$id('btnMarkAllRead');
+  if (btnMarkAllRead) {
+    btnMarkAllRead.addEventListener('click', async function () {
+      try {
+        await Yawmia.api('POST', '/api/notifications/read-all');
+        loadNotifications();
+      } catch (err) { /* ignore */ }
+    });
+  }
+
+  async function loadNotifications() {
+    try {
+      var res = await Yawmia.api('GET', '/api/notifications?limit=20&offset=0');
+      if (res.data.ok) {
+        var countBadge = Yawmia.$id('notificationCount');
+        if (countBadge) {
+          if (res.data.unread > 0) {
+            countBadge.textContent = res.data.unread;
+            countBadge.classList.remove('hidden');
+          } else {
+            countBadge.classList.add('hidden');
+          }
+        }
+        var ntfList = Yawmia.$id('notificationList');
+        if (ntfList && res.data.items.length > 0) {
+          ntfList.innerHTML = '';
+          res.data.items.forEach(function (ntf) {
+            var item = document.createElement('div');
+            item.className = 'notification-item' + (ntf.read ? '' : ' notification-item--unread');
+            item.innerHTML = '<p class="notification-item__msg">' + escapeHtml(ntf.message) + '</p>' +
+              '<span class="notification-item__time">' + new Date(ntf.createdAt).toLocaleString('ar-EG') + '</span>';
+            if (!ntf.read) {
+              item.addEventListener('click', async function () {
+                try {
+                  await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read');
+                  item.classList.remove('notification-item--unread');
+                  loadNotifications();
+                } catch (e) { /* ignore */ }
+              });
+            }
+            ntfList.appendChild(item);
+          });
+        } else if (ntfList) {
+          ntfList.innerHTML = '<p class="empty-state">لا توجد إشعارات</p>';
+        }
+      }
+    } catch (err) { /* ignore */ }
+  }
+
+  // ── Pagination State ──────────────────────────────────────
+  var currentPage = 1;
+  var pageLimit = 20;
+
   // ── Load Jobs ─────────────────────────────────────────────
   loadJobs();
 
   var btnFilterJobs = Yawmia.$id('btnFilterJobs');
   if (btnFilterJobs) {
     btnFilterJobs.addEventListener('click', function () {
+      currentPage = 1;
+      loadJobs();
+    });
+  }
+
+  var btnPrevPage = Yawmia.$id('btnPrevPage');
+  var btnNextPage = Yawmia.$id('btnNextPage');
+  if (btnPrevPage) {
+    btnPrevPage.addEventListener('click', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        loadJobs();
+      }
+    });
+  }
+  if (btnNextPage) {
+    btnNextPage.addEventListener('click', function () {
+      currentPage++;
       loadJobs();
     });
   }
@@ -72,7 +157,7 @@
     var gov = Yawmia.$id('filterGov') ? Yawmia.$id('filterGov').value : '';
     var cat = Yawmia.$id('filterCat') ? Yawmia.$id('filterCat').value : '';
 
-    var query = '/api/jobs?';
+    var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
     if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
 
@@ -83,21 +168,69 @@
         res.data.jobs.forEach(function (job) {
           jobsList.appendChild(createJobCard(job));
         });
+        updatePagination(res.data);
       } else {
         jobsList.innerHTML = '<p class="empty-state">لا توجد فرص متاحة حالياً</p>';
+        Yawmia.hide('paginationControls');
       }
     } catch (err) {
       jobsList.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      Yawmia.hide('paginationControls');
     }
+  }
+
+  function updatePagination(data) {
+    var controls = Yawmia.$id('paginationControls');
+    var info = Yawmia.$id('paginationInfo');
+    if (!controls) return;
+
+    if (data.totalPages > 1) {
+      Yawmia.show('paginationControls');
+      if (info) info.textContent = 'صفحة ' + data.page + ' من ' + data.totalPages + ' (' + data.total + ' فرصة)';
+      if (btnPrevPage) btnPrevPage.disabled = (data.page <= 1);
+      if (btnNextPage) btnNextPage.disabled = (data.page >= data.totalPages);
+    } else {
+      Yawmia.hide('paginationControls');
+    }
+  }
+
+  function getStatusLabel(status) {
+    var labels = {
+      open: 'متاحة',
+      filled: 'مكتملة',
+      in_progress: 'جاري التنفيذ',
+      completed: 'مكتملة ✓',
+      expired: 'منتهية',
+      cancelled: 'ملغية'
+    };
+    return labels[status] || status;
   }
 
   function createJobCard(job) {
     var card = document.createElement('div');
     card.className = 'job-card';
+
+    var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
+
+    var footerButtons = '';
+    if (user.role === 'worker' && job.status === 'open') {
+      footerButtons = '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
+    }
+    if (user.role === 'employer' && job.employerId === user.id) {
+      if (job.status === 'filled') {
+        footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
+      } else if (job.status === 'in_progress') {
+        footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+      }
+    }
+
     card.innerHTML =
       '<div class="job-card__header">' +
         '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
-        '<span class="job-card__wage">' + job.dailyWage + ' جنيه/يوم</span>' +
+        '<div class="job-card__header-right">' +
+          statusBadge +
+          '<span class="job-card__wage">' + job.dailyWage + ' جنيه/يوم</span>' +
+        '</div>' +
       '</div>' +
       '<div class="job-card__meta">' +
         '<span>📍 ' + escapeHtml(job.governorate) + '</span>' +
@@ -107,7 +240,7 @@
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
-        (user.role === 'worker' ? '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>' : '') +
+        footerButtons +
       '</div>';
 
     // Apply button handler
@@ -128,6 +261,46 @@
           alert('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(applyBtn, false);
+        }
+      });
+    }
+
+    // Start button handler (employer)
+    var startBtn = card.querySelector('.btn-start');
+    if (startBtn) {
+      startBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(startBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/start');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في بدء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(startBtn, false);
+        }
+      });
+    }
+
+    // Complete button handler (employer)
+    var completeBtn = card.querySelector('.btn-complete');
+    if (completeBtn) {
+      completeBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(completeBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/complete');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في إنهاء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(completeBtn, false);
         }
       });
     }

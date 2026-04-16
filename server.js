@@ -22,6 +22,9 @@ import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
+import { staticMiddleware } from './server/middleware/static.js';
+import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
+import { enforceExpiredJobs } from './server/services/jobs.js';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -68,10 +71,35 @@ const server = createServer((req, res) => {
   req.pathname = url.pathname;
   req.query = Object.fromEntries(url.searchParams);
 
-  runMiddleware(globalMiddleware, req, res, () => {
-    router(req, res);
+  // Static file serving runs BEFORE the API middleware chain
+  staticMiddleware(req, res, () => {
+    runMiddleware(globalMiddleware, req, res, () => {
+      router(req, res);
+    });
   });
 });
+
+// ── Startup Cleanup ───────────────────────────────────────────
+try {
+  const expiredSessions = await cleanExpiredSessions();
+  if (expiredSessions > 0) logger.info(`Startup: cleaned ${expiredSessions} expired sessions`);
+  const expiredJobs = await enforceExpiredJobs();
+  if (expiredJobs > 0) logger.info(`Startup: enforced ${expiredJobs} expired jobs`);
+} catch (err) {
+  logger.warn('Startup cleanup error', { error: err.message });
+}
+
+// ── Periodic Cleanup (every 30 minutes) ───────────────────────
+const CLEANUP_INTERVAL = 30 * 60 * 1000;
+const cleanupTimer = setInterval(async () => {
+  try {
+    await cleanExpiredSessions();
+    await enforceExpiredJobs();
+  } catch (err) {
+    logger.warn('Periodic cleanup error', { error: err.message });
+  }
+}, CLEANUP_INTERVAL);
+if (cleanupTimer.unref) cleanupTimer.unref();
 
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {

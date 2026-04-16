@@ -50,7 +50,7 @@ var Yawmia = (function () {
     state.user = null;
     localStorage.removeItem('yawmia_token');
     localStorage.removeItem('yawmia_user');
-    window.location.href = '/frontend/index.html';
+    window.location.href = '/';
   }
 
   function isLoggedIn() {

@@ -63,6 +63,30 @@ export function rateLimitMiddleware(req, res, next) {
     return;
   }
 
+  // OTP-specific rate limiting
+  if (req.pathname === '/api/auth/send-otp' && req.method === 'POST') {
+    const otpKey = `otp:${ip}`;
+    const otpWindowMs = config.RATE_LIMIT.otpWindowMs;
+    const otpMaxRequests = config.RATE_LIMIT.otpMaxRequests;
+
+    let otpEntry = store.get(otpKey);
+    if (!otpEntry || now > otpEntry.resetAt) {
+      otpEntry = { count: 0, resetAt: now + otpWindowMs };
+      store.set(otpKey, otpEntry);
+    }
+
+    otpEntry.count++;
+
+    if (otpEntry.count > otpMaxRequests) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'تم تجاوز الحد المسموح من طلبات OTP. حاول بعد قليل.',
+        code: 'OTP_RATE_LIMITED',
+      }));
+      return;
+    }
+  }
+
   next();
 }
 

@@ -5,9 +5,11 @@
 import config from '../config.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout } from './handlers/authHandler.js';
-import { handleCreateJob, handleListJobs, handleGetJob } from './handlers/jobsHandler.js';
+import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs } from './handlers/adminHandler.js';
+import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
+import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 
 function sendJSON(res, statusCode, data) {
@@ -70,6 +72,13 @@ const routes = [
   { method: 'POST', path: '/api/jobs/:id/apply', middlewares: [requireAuth, requireRole('worker')], handler: handleApplyToJob },
   { method: 'POST', path: '/api/jobs/:id/accept', middlewares: [requireAuth, requireRole('employer')], handler: handleAcceptWorker },
   { method: 'POST', path: '/api/jobs/:id/reject', middlewares: [requireAuth, requireRole('employer')], handler: handleRejectWorker },
+  { method: 'POST', path: '/api/jobs/:id/start', middlewares: [requireAuth, requireRole('employer')], handler: handleStartJob },
+  { method: 'POST', path: '/api/jobs/:id/complete', middlewares: [requireAuth, requireRole('employer')], handler: handleCompleteJob },
+
+  // ── Notification Routes ──
+  { method: 'GET', path: '/api/notifications', middlewares: [requireAuth], handler: handleListNotifications },
+  { method: 'POST', path: '/api/notifications/read-all', middlewares: [requireAuth], handler: handleMarkAllAsRead },
+  { method: 'POST', path: '/api/notifications/:id/read', middlewares: [requireAuth], handler: handleMarkAsRead },
 
   // ── Admin Routes ──
   { method: 'GET', path: '/api/admin/stats', middlewares: [requireAdmin], handler: handleAdminStats },
@@ -121,6 +130,9 @@ function runMiddlewares(middlewares, req, res, done) {
   }
   next();
 }
+
+// Setup notification event listeners
+setupNotificationListeners();
 
 /**
  * Creates the router function

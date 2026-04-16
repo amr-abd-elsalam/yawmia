@@ -67,11 +67,13 @@ export async function create(employerId, fields) {
 }
 
 /**
- * Find job by ID
+ * Find job by ID (with lazy expiry enforcement)
  */
 export async function findById(jobId) {
   const jobPath = getRecordPath('jobs', jobId);
-  return await readJSON(jobPath);
+  const job = await readJSON(jobPath);
+  if (!job) return null;
+  return await checkExpiry(job);
 }
 
 /**
@@ -168,9 +170,122 @@ export async function listAll() {
  */
 export async function countByStatus() {
   const jobs = await listAll();
-  const counts = { open: 0, filled: 0, expired: 0, cancelled: 0, total: jobs.length };
+  const counts = { open: 0, filled: 0, expired: 0, cancelled: 0, in_progress: 0, completed: 0, total: jobs.length };
   for (const job of jobs) {
     if (counts[job.status] !== undefined) counts[job.status]++;
   }
   return counts;
+}
+
+/**
+ * Check if a job is expired and update its status if needed (lazy enforcement)
+ */
+export async function checkExpiry(job) {
+  if (!job) return null;
+  if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < new Date()) {
+    job.status = 'expired';
+    const jobPath = getRecordPath('jobs', job.id);
+    await atomicWrite(jobPath, job);
+
+    // Update index
+    const jobsIndex = await readIndex('jobsIndex');
+    if (jobsIndex[job.id]) {
+      jobsIndex[job.id].status = 'expired';
+      await writeIndex('jobsIndex', jobsIndex);
+    }
+  }
+  return job;
+}
+
+/**
+ * Enforce expiry on all open jobs (startup + periodic)
+ * @returns {number} count of jobs that were expired
+ */
+export async function enforceExpiredJobs() {
+  const jobs = await listAll();
+  let count = 0;
+  const now = new Date();
+  for (const job of jobs) {
+    if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
+      job.status = 'expired';
+      const jobPath = getRecordPath('jobs', job.id);
+      await atomicWrite(jobPath, job);
+
+      const jobsIndex = await readIndex('jobsIndex');
+      if (jobsIndex[job.id]) {
+        jobsIndex[job.id].status = 'expired';
+        await writeIndex('jobsIndex', jobsIndex);
+      }
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Start a job (employer marks job as in_progress)
+ * Requires: status === 'filled' && employer owns job
+ */
+export async function startJob(jobId, employerId) {
+  const job = await findById(jobId);
+  if (!job) {
+    return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  }
+  if (job.employerId !== employerId) {
+    return { ok: false, error: 'مش مسموحلك تبدأ هذه الفرصة', code: 'NOT_JOB_OWNER' };
+  }
+  if (job.status !== 'filled') {
+    return { ok: false, error: 'الفرصة لازم تكون مكتملة العدد قبل البدء', code: 'INVALID_STATUS' };
+  }
+
+  job.status = 'in_progress';
+  job.startedAt = new Date().toISOString();
+
+  const jobPath = getRecordPath('jobs', jobId);
+  await atomicWrite(jobPath, job);
+
+  // Update index
+  const jobsIndex = await readIndex('jobsIndex');
+  if (jobsIndex[jobId]) {
+    jobsIndex[jobId].status = 'in_progress';
+    await writeIndex('jobsIndex', jobsIndex);
+  }
+
+  eventBus.emit('job:started', { jobId, employerId });
+
+  return { ok: true, job };
+}
+
+/**
+ * Complete a job (employer marks job as completed)
+ * Requires: status === 'in_progress' && employer owns job
+ */
+export async function completeJob(jobId, employerId) {
+  const job = await findById(jobId);
+  if (!job) {
+    return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  }
+  if (job.employerId !== employerId) {
+    return { ok: false, error: 'مش مسموحلك تنهي هذه الفرصة', code: 'NOT_JOB_OWNER' };
+  }
+  if (job.status !== 'in_progress') {
+    return { ok: false, error: 'الفرصة لازم تكون جاري تنفيذها', code: 'INVALID_STATUS' };
+  }
+
+  job.status = 'completed';
+  job.completedAt = new Date().toISOString();
+
+  const jobPath = getRecordPath('jobs', jobId);
+  await atomicWrite(jobPath, job);
+
+  // Update index
+  const jobsIndex = await readIndex('jobsIndex');
+  if (jobsIndex[jobId]) {
+    jobsIndex[jobId].status = 'completed';
+    await writeIndex('jobsIndex', jobsIndex);
+  }
+
+  eventBus.emit('job:completed', { jobId, employerId });
+
+  return { ok: true, job };
 }

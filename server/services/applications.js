@@ -41,7 +41,7 @@ export async function apply(jobId, workerId) {
   const appPath = getRecordPath('applications', id);
   await atomicWrite(appPath, application);
 
-  eventBus.emit('application:submitted', { applicationId: id, jobId, workerId });
+  eventBus.emit('application:submitted', { applicationId: id, jobId, workerId, employerId: job.employerId });
 
   return { ok: true, application };
 }
@@ -78,7 +78,25 @@ export async function accept(applicationId, employerId) {
   await atomicWrite(appPath, application);
 
   // Increment accepted count
-  await incrementAccepted(application.jobId);
+  const updatedJob = await incrementAccepted(application.jobId);
+
+  // Emit rich event for notifications
+  eventBus.emit('application:accepted', {
+    applicationId,
+    jobId: application.jobId,
+    workerId: application.workerId,
+    employerId,
+    jobTitle: job.title,
+  });
+
+  // Check if job is now filled
+  if (updatedJob && updatedJob.status === 'filled') {
+    eventBus.emit('job:filled', {
+      jobId: application.jobId,
+      employerId,
+      jobTitle: job.title,
+    });
+  }
 
   return { ok: true, application };
 }
@@ -107,6 +125,15 @@ export async function reject(applicationId, employerId) {
 
   const appPath = getRecordPath('applications', applicationId);
   await atomicWrite(appPath, application);
+
+  // Emit rich event for notifications
+  eventBus.emit('application:rejected', {
+    applicationId,
+    jobId: application.jobId,
+    workerId: application.workerId,
+    employerId,
+    jobTitle: job.title,
+  });
 
   return { ok: true, application };
 }

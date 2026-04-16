@@ -237,6 +237,7 @@ const config = {
       jobs: 'jobs',
       applications: 'applications',
       otp: 'otp',
+      notifications: 'notifications',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -269,6 +270,31 @@ const config = {
     otpMaxRequests: 5,                   // أقصى طلبات OTP في النافذة
     otpWindowMs: 300000,                 // نافذة OTP (5 دقائق)
     message: 'تم تجاوز الحد المسموح من الطلبات. حاول بعد قليل.',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 18. الملفات الثابتة (STATIC)
+  // ═══════════════════════════════════════════════════════════
+  STATIC: {
+    root: './frontend',
+    maxAge: 86400,                       // Cache-Control max-age (ثانية) — يوم واحد
+    indexFile: 'index.html',
+    mimeTypes: {
+      '.html': 'text/html; charset=utf-8',
+      '.css':  'text/css; charset=utf-8',
+      '.js':   'application/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.png':  'image/png',
+      '.jpg':  'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif':  'image/gif',
+      '.svg':  'image/svg+xml',
+      '.ico':  'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf':  'font/ttf',
+      '.webp': 'image/webp',
+    },
   },
 
 };

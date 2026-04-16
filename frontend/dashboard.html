@@ -15,6 +15,10 @@
           <h1 class="header__brand">🏗️ يوميّة</h1>
         </div>
         <div class="header__left">
+          <button class="notification-bell" id="notificationBell" title="الإشعارات">
+            🔔
+            <span class="notification-bell__badge hidden" id="notificationCount">0</span>
+          </button>
           <span class="header__user" id="headerUserName"></span>
           <span class="badge" id="headerUserRole"></span>
           <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
@@ -117,8 +121,26 @@
           </div>
         </section>
 
+        <!-- Pagination -->
+        <div class="pagination hidden" id="paginationControls">
+          <button class="btn btn--ghost btn--sm" id="btnPrevPage" disabled>السابق</button>
+          <span class="pagination__info" id="paginationInfo"></span>
+          <button class="btn btn--ghost btn--sm" id="btnNextPage">التالي</button>
+        </div>
+
       </div>
     </main>
+
+    <!-- Notifications Panel -->
+    <div class="notification-panel hidden" id="notificationPanel">
+      <div class="notification-panel__header">
+        <h3>الإشعارات</h3>
+        <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+      </div>
+      <div class="notification-panel__list" id="notificationList">
+        <p class="empty-state">لا توجد إشعارات</p>
+      </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
