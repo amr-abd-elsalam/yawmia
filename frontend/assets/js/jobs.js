@@ -229,6 +229,11 @@
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
+    var completedLabel = '';
+    if (job.status === 'completed' && !footerButtons) {
+      completedLabel = '<span class="badge badge--status badge--completed">✓ مكتملة</span>';
+    }
+
     card.innerHTML =
       '<div class="job-card__header">' +
         '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
@@ -245,6 +250,7 @@
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
+        completedLabel +
         footerButtons +
       '</div>';
 

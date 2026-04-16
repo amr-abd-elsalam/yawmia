@@ -2,7 +2,7 @@
 // server/handlers/jobsHandler.js — Job Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { create, findById, list, startJob, completeJob } from '../services/jobs.js';
+import { create, findById, list, listAll, startJob, completeJob } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
 
 function sendJSON(res, statusCode, data) {
@@ -119,5 +119,43 @@ export async function handleCompleteJob(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إنهاء الفرصة', code: 'COMPLETE_JOB_ERROR' });
+  }
+}
+
+/**
+ * GET /api/jobs/mine
+ * Requires: auth (employer)
+ * Returns: all jobs by the employer (all statuses, paginated)
+ */
+export async function handleListMyJobs(req, res) {
+  try {
+    const allJobs = await listAll();
+
+    // Filter: employer's jobs only
+    let myJobs = allJobs.filter(j => j.employerId === req.user.id);
+
+    // Sort: newest first
+    myJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const total = myJobs.length;
+
+    // Pagination (same pattern as handleListJobs)
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const totalPages = Math.ceil(total / limit) || 1;
+    const offset = (page - 1) * limit;
+    const jobs = myJobs.slice(offset, offset + limit);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      jobs,
+      count: jobs.length,
+      total,
+      page,
+      totalPages,
+      limit,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب فرصك', code: 'LIST_MY_JOBS_ERROR' });
   }
 }

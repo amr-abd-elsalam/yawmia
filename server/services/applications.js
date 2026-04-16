@@ -191,3 +191,42 @@ export async function countByStatus() {
   }
   return counts;
 }
+
+/**
+ * Withdraw a pending application (worker action)
+ * @param {string} applicationId
+ * @param {string} workerId - the requesting worker's ID (ownership check)
+ * @returns {Promise<{ ok: boolean, application?: object, error?: string, code?: string }>}
+ */
+export async function withdraw(applicationId, workerId) {
+  // Rule 1: APPLICATION_EXISTS
+  const application = await findById(applicationId);
+  if (!application) {
+    return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+  }
+
+  // Rule 2: OWNERSHIP_CHECK
+  if (application.workerId !== workerId) {
+    return { ok: false, error: 'مش مسموحلك تسحب هذا الطلب', code: 'NOT_APPLICATION_OWNER' };
+  }
+
+  // Rule 3: STATUS_CHECK — can only withdraw pending
+  if (application.status !== 'pending') {
+    return { ok: false, error: 'لا يمكن سحب هذا الطلب', code: 'CANNOT_WITHDRAW' };
+  }
+
+  // Rule 4: UPDATE
+  application.status = 'withdrawn';
+  application.respondedAt = new Date().toISOString();
+
+  const appPath = getRecordPath('applications', applicationId);
+  await atomicWrite(appPath, application);
+
+  eventBus.emit('application:withdrawn', {
+    applicationId,
+    jobId: application.jobId,
+    workerId,
+  });
+
+  return { ok: true, application };
+}

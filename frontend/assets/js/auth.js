@@ -7,7 +7,7 @@
 
   // If already logged in, redirect to dashboard
   if (Yawmia.isLoggedIn()) {
-    window.location.href = '/frontend/dashboard.html';
+    window.location.href = '/dashboard.html';
     return;
   }
 
@@ -74,7 +74,7 @@
             Yawmia.show('stepProfile');
             setupProfileStep();
           } else {
-            window.location.href = '/frontend/dashboard.html';
+            window.location.href = '/dashboard.html';
           }
         } else {
           var msg = res.data.error || 'كود التحقق غير صحيح';
@@ -158,7 +158,7 @@
         if (res.data.ok) {
           // Update stored user
           Yawmia.setAuth(Yawmia.getToken(), res.data.user);
-          window.location.href = '/frontend/dashboard.html';
+          window.location.href = '/dashboard.html';
         } else {
           Yawmia.showMessage('profileError', res.data.error || 'خطأ في حفظ البيانات', 'error');
         }
