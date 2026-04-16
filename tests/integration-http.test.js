@@ -180,6 +180,10 @@ describe('HTTP Integration Tests', () => {
 
   // ── Auth: Verify OTP ────────────────────────────────────
   describe('Auth: Verify OTP', () => {
+    before(() => {
+      if (_resetRateLimit) _resetRateLimit();
+    });
+
     it('H-10: verifies OTP and returns token', async () => {
       await api('POST', '/api/auth/send-otp', { phone: '01012340010', role: 'worker' });
       const otp = await getOtpForPhone('01012340010');
@@ -207,6 +211,10 @@ describe('HTTP Integration Tests', () => {
 
   // ── Auth: Protected Routes ──────────────────────────────
   describe('Auth: Protected Routes', () => {
+    before(() => {
+      if (_resetRateLimit) _resetRateLimit();
+    });
+
     it('H-13: GET /api/auth/me returns 401 without token', async () => {
       const res = await api('GET', '/api/auth/me');
       assert.strictEqual(res.status, 401);
@@ -359,8 +367,8 @@ describe('HTTP Integration Tests', () => {
 
   // ── Applications ────────────────────────────────────────
   describe('Applications', () => {
-    before(() => {
-      // Reset rate limit counter before Applications suite
+    beforeEach(() => {
+      // Reset rate limit counter before each application test (OTP heavy)
       if (_resetRateLimit) _resetRateLimit();
     });
 
