@@ -217,12 +217,16 @@ const config = {
       applicationAccepted: true,    // تم قبولك في الفرصة
       applicationRejected: true,    // لم يتم قبولك
       paymentReceived: true,        // تم استلام المبلغ
+      ratingReceived: true,         // تم تقييمك
+      ratePrompt: true,             // قيّم تجربتك
     },
     // إشعارات لصاحب العمل
     employerNotifications: {
       newApplication: true,         // عامل جديد تقدّم
       jobFilled: true,              // الفرصة اكتملت
       workerNoShow: true,           // العامل لم يحضر
+      ratingReceived: true,         // تم تقييمك
+      ratePrompt: true,             // قيّم تجربتك
     },
   },
 
@@ -238,6 +242,7 @@ const config = {
       applications: 'applications',
       otp: 'otp',
       notifications: 'notifications',
+      ratings: 'ratings',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',

@@ -221,7 +221,12 @@
         footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
       } else if (job.status === 'in_progress') {
         footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+      } else if (job.status === 'completed') {
+        footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
       }
+    }
+    if (user.role === 'worker' && job.status === 'completed') {
+      footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
     card.innerHTML =
@@ -302,6 +307,15 @@
         } finally {
           Yawmia.setLoading(completeBtn, false);
         }
+      });
+    }
+
+    // Rate button handler
+    var rateBtn = card.querySelector('.btn-rate');
+    if (rateBtn) {
+      rateBtn.addEventListener('click', function () {
+        var targetUserId = rateBtn.getAttribute('data-target') || '';
+        showRatingModal(job, targetUserId);
       });
     }
 
@@ -391,6 +405,120 @@
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // ── Rating Modal ──────────────────────────────────────────
+  function showRatingModal(job, prefilledTargetId) {
+    // Remove existing modal if any
+    var existingModal = document.querySelector('.rating-modal');
+    if (existingModal) existingModal.remove();
+
+    var selectedStars = 0;
+
+    var modal = document.createElement('div');
+    modal.className = 'rating-modal';
+
+    var isEmployer = user.role === 'employer' && job.employerId === user.id;
+
+    var targetField = '';
+    if (isEmployer) {
+      targetField =
+        '<div class="form-group">' +
+          '<label class="form-label">معرّف العامل (User ID)</label>' +
+          '<input type="text" class="form-input form-input--sm" id="ratingTargetId" placeholder="usr_xxx" value="' + escapeHtml(prefilledTargetId) + '">' +
+        '</div>';
+    }
+
+    modal.innerHTML =
+      '<div class="rating-modal__card">' +
+        '<h3 class="rating-modal__title">⭐ قيّم تجربتك في: ' + escapeHtml(job.title) + '</h3>' +
+        '<div class="rating-stars-input" id="ratingStarsInput">' +
+          '<button class="star-btn" data-star="1">★</button>' +
+          '<button class="star-btn" data-star="2">★</button>' +
+          '<button class="star-btn" data-star="3">★</button>' +
+          '<button class="star-btn" data-star="4">★</button>' +
+          '<button class="star-btn" data-star="5">★</button>' +
+        '</div>' +
+        targetField +
+        '<textarea class="rating-comment-input" id="ratingComment" placeholder="تعليق (اختياري)..." maxlength="500"></textarea>' +
+        '<div class="rating-modal__error" id="ratingError"></div>' +
+        '<div class="rating-modal__actions">' +
+          '<button class="btn btn--primary btn--sm" id="btnSubmitRating">إرسال التقييم</button>' +
+          '<button class="btn btn--ghost btn--sm" id="btnCancelRating">إلغاء</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    // Star selection
+    var starBtns = modal.querySelectorAll('.star-btn');
+    starBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        selectedStars = parseInt(btn.getAttribute('data-star'));
+        starBtns.forEach(function (b) {
+          var s = parseInt(b.getAttribute('data-star'));
+          if (s <= selectedStars) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+      });
+    });
+
+    // Cancel
+    modal.querySelector('#btnCancelRating').addEventListener('click', function () {
+      modal.remove();
+    });
+
+    // Click outside card to close
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) modal.remove();
+    });
+
+    // Submit
+    modal.querySelector('#btnSubmitRating').addEventListener('click', async function () {
+      var errorEl = modal.querySelector('#ratingError');
+      errorEl.textContent = '';
+
+      if (selectedStars < 1) {
+        errorEl.textContent = 'اختار عدد النجوم';
+        return;
+      }
+
+      var toUserId = prefilledTargetId;
+      if (isEmployer) {
+        toUserId = (modal.querySelector('#ratingTargetId') || {}).value || '';
+        if (!toUserId.trim()) {
+          errorEl.textContent = 'أدخل معرّف العامل';
+          return;
+        }
+        toUserId = toUserId.trim();
+      }
+
+      var comment = (modal.querySelector('#ratingComment') || {}).value || '';
+
+      var submitBtn = modal.querySelector('#btnSubmitRating');
+      Yawmia.setLoading(submitBtn, true);
+
+      try {
+        var body = { toUserId: toUserId, stars: selectedStars };
+        if (comment.trim()) body.comment = comment.trim();
+
+        var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/rate', body);
+        if (res.data.ok) {
+          modal.remove();
+          alert('تم إرسال التقييم بنجاح ⭐');
+          loadJobs();
+        } else {
+          errorEl.textContent = res.data.error || 'خطأ في إرسال التقييم';
+        }
+      } catch (err) {
+        errorEl.textContent = 'خطأ في الاتصال بالسيرفر';
+      } finally {
+        Yawmia.setLoading(submitBtn, false);
+      }
+    });
   }
 
 })();

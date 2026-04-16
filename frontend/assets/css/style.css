@@ -639,6 +639,131 @@ select.form-input {
   background: #16a34a;
 }
 
+/* ── Rating Display ────────────────────────────────────────── */
+.rating-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rating-display__stars {
+  color: var(--color-warning);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.rating-display__count {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* ── Rating Modal ──────────────────────────────────────────── */
+.rating-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1rem;
+}
+
+.rating-modal__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-md);
+}
+
+.rating-modal__title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-block-end: 1.25rem;
+  color: var(--color-text);
+}
+
+.rating-stars-input {
+  display: flex;
+  direction: ltr;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  transition: transform var(--transition), color var(--transition);
+  color: var(--color-border);
+  line-height: 1;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+  color: var(--color-warning);
+}
+
+.star-btn.active {
+  color: var(--color-warning);
+  transform: scale(1.15);
+}
+
+.rating-comment-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 70px;
+  margin-block-end: 1rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.rating-comment-input:focus {
+  border-color: var(--color-primary);
+}
+
+.rating-comment-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.rating-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.rating-modal__error {
+  text-align: center;
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-block-end: 0.75rem;
+  min-height: 1.2em;
+}
+
+.btn--warning {
+  background: var(--color-warning);
+  color: #000;
+}
+
+.btn--warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .form-row {

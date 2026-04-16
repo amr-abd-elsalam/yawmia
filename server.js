@@ -26,7 +26,7 @@ import { staticMiddleware } from './server/middleware/static.js';
 import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
 import { enforceExpiredJobs } from './server/services/jobs.js';
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.PORT || '3002', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────

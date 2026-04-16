@@ -165,4 +165,15 @@ export function setupNotificationListeners() {
       ).catch(() => {});
     });
   }
+
+  // User gets notification when they receive a rating
+  eventBus.on('rating:submitted', (data) => {
+    const starText = '⭐'.repeat(Math.min(data.stars, 5));
+    createNotification(
+      data.toUserId,
+      'rating_received',
+      `تم تقييمك ${starText} (${data.stars}/5) في الفرصة: ${data.jobTitle}`,
+      { jobId: data.jobId, ratingId: data.ratingId, stars: data.stars }
+    ).catch(() => {});
+  });
 }
