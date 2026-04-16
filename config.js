@@ -302,6 +302,20 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 19. الأمان (SECURITY)
+  // ═══════════════════════════════════════════════════════════
+  SECURITY: {
+    allowedOrigins: ['*'],             // في production غيّرها: ['https://yawmia.com']
+    sanitizeInput: true,               // تنظيف المدخلات من HTML tags
+    headers: {
+      xContentTypeOptions: 'nosniff',
+      xFrameOptions: 'DENY',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+    },
+  },
+
 };
 
 export default deepFreeze(config);

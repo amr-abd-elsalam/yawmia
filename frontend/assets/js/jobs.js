@@ -54,6 +54,31 @@
   Yawmia.populateGovernorates('filterGov');
   Yawmia.populateCategories('filterCat');
 
+  // ── Inject Search + Sort Controls ─────────────────────────
+  (function injectFilterControls() {
+    var filtersDiv = document.querySelector('.filters');
+    if (!filtersDiv) return;
+    var btnFilter = Yawmia.$id('btnFilterJobs');
+
+    // Search input
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.id = 'filterSearch';
+    searchInput.className = 'form-input form-input--sm';
+    searchInput.placeholder = 'بحث بالكلمة...';
+    filtersDiv.insertBefore(searchInput, btnFilter);
+
+    // Sort dropdown
+    var sortSelect = document.createElement('select');
+    sortSelect.id = 'filterSort';
+    sortSelect.className = 'form-input form-input--sm';
+    sortSelect.innerHTML =
+      '<option value="">ترتيب: الأحدث</option>' +
+      '<option value="wage_high">الأجر الأعلى</option>' +
+      '<option value="wage_low">الأجر الأقل</option>';
+    filtersDiv.insertBefore(sortSelect, btnFilter);
+  })();
+
   // ── Notifications ─────────────────────────────────────────
   loadNotifications();
 
@@ -157,9 +182,14 @@
     var gov = Yawmia.$id('filterGov') ? Yawmia.$id('filterGov').value : '';
     var cat = Yawmia.$id('filterCat') ? Yawmia.$id('filterCat').value : '';
 
+    var search = Yawmia.$id('filterSearch') ? Yawmia.$id('filterSearch').value.trim() : '';
+    var sort = Yawmia.$id('filterSort') ? Yawmia.$id('filterSort').value : '';
+
     var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
     if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
+    if (search) query += 'search=' + encodeURIComponent(search) + '&';
+    if (sort) query += 'sort=' + encodeURIComponent(sort) + '&';
 
     try {
       var res = await Yawmia.api('GET', query);
@@ -217,7 +247,9 @@
       footerButtons = '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
     }
     if (user.role === 'employer' && job.employerId === user.id) {
-      if (job.status === 'filled') {
+      if (job.status === 'open') {
+        footerButtons = '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
+      } else if (job.status === 'filled') {
         footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
       } else if (job.status === 'in_progress') {
         footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
@@ -312,6 +344,27 @@
           alert('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(completeBtn, false);
+        }
+      });
+    }
+
+    // Cancel button handler (employer)
+    var cancelBtn = card.querySelector('.btn-cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async function () {
+        if (!confirm('متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.')) return;
+        Yawmia.setLoading(cancelBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/cancel');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في إلغاء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(cancelBtn, false);
         }
       });
     }

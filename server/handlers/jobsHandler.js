@@ -2,8 +2,9 @@
 // server/handlers/jobsHandler.js — Job Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { create, findById, list, listAll, startJob, completeJob } from '../services/jobs.js';
+import { create, findById, list, listAll, startJob, completeJob, cancelJob } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
+import { sanitizeFields } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -23,7 +24,8 @@ export async function handleCreateJob(req, res) {
   }
 
   try {
-    const job = await create(req.user.id, body);
+    const sanitized = sanitizeFields(body, ['title', 'description']);
+    const job = await create(req.user.id, sanitized);
     return sendJSON(res, 201, { ok: true, job });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إنشاء الفرصة', code: 'CREATE_JOB_ERROR' });
@@ -40,6 +42,8 @@ export async function handleListJobs(req, res) {
   if (req.query.governorate) filters.governorate = req.query.governorate;
   if (req.query.category) filters.category = req.query.category;
   if (req.query.status) filters.status = req.query.status;
+  if (req.query.search) filters.search = req.query.search;
+  if (req.query.sort) filters.sort = req.query.sort;
 
   try {
     const allJobs = await list(filters);
@@ -119,6 +123,25 @@ export async function handleCompleteJob(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إنهاء الفرصة', code: 'COMPLETE_JOB_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/cancel
+ * Requires: auth (employer, owns job, status=open)
+ */
+export async function handleCancelJob(req, res) {
+  const jobId = req.params.id;
+
+  try {
+    const result = await cancelJob(jobId, req.user.id);
+    if (!result.ok) {
+      const status = result.code === 'JOB_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 200, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إلغاء الفرصة', code: 'CANCEL_JOB_ERROR' });
   }
 }
 

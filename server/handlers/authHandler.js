@@ -6,6 +6,7 @@ import { sendOtp, verifyOtp } from '../services/auth.js';
 import { update as updateUser, findById } from '../services/users.js';
 import { destroySession } from '../services/sessions.js';
 import { validatePhone, validateOtp, validateRole, validateProfileFields } from '../services/validators.js';
+import { sanitizeFields } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -106,9 +107,10 @@ export async function handleUpdateProfile(req, res) {
     return sendJSON(res, 400, { error: result.errors.join('. '), code: 'INVALID_PROFILE' });
   }
 
-  // Build update fields
+  // Sanitize + build update fields
+  const sanitized = sanitizeFields(body, ['name']);
   const updateFields = {};
-  if (body.name !== undefined) updateFields.name = body.name.trim();
+  if (sanitized.name !== undefined) updateFields.name = sanitized.name.trim();
   if (body.governorate !== undefined) updateFields.governorate = body.governorate;
   if (body.categories !== undefined) updateFields.categories = body.categories;
 

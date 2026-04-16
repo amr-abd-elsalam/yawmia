@@ -17,6 +17,7 @@ try {
 import config from './config.js';
 import { createRouter } from './server/router.js';
 import { corsMiddleware } from './server/middleware/cors.js';
+import { securityMiddleware } from './server/middleware/security.js';
 import { requestIdMiddleware } from './server/middleware/requestId.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
@@ -60,6 +61,7 @@ function runMiddleware(middlewares, req, res, done) {
 
 const globalMiddleware = [
   corsMiddleware,
+  securityMiddleware,
   requestIdMiddleware,
   rateLimitMiddleware,
   bodyParserMiddleware,

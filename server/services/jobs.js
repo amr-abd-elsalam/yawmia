@@ -100,8 +100,26 @@ export async function list(filters = {}) {
     jobs = jobs.filter(j => j.status === 'open');
   }
 
-  // Sort by newest first
-  jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Text search on title + description (case-insensitive)
+  if (filters.search) {
+    const term = filters.search.toLowerCase();
+    jobs = jobs.filter(j => {
+      const title = (j.title || '').toLowerCase();
+      const desc = (j.description || '').toLowerCase();
+      return title.includes(term) || desc.includes(term);
+    });
+  }
+
+  // Sort
+  const sort = filters.sort || 'newest';
+  if (sort === 'wage_high') {
+    jobs.sort((a, b) => (b.dailyWage || 0) - (a.dailyWage || 0));
+  } else if (sort === 'wage_low') {
+    jobs.sort((a, b) => (a.dailyWage || 0) - (b.dailyWage || 0));
+  } else {
+    // Default: newest first
+    jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
 
   return jobs;
 }
@@ -286,6 +304,40 @@ export async function completeJob(jobId, employerId) {
   }
 
   eventBus.emit('job:completed', { jobId, employerId });
+
+  return { ok: true, job };
+}
+
+/**
+ * Cancel an open job (employer action)
+ * Requires: status === 'open' && employer owns job
+ */
+export async function cancelJob(jobId, employerId) {
+  const job = await findById(jobId);
+  if (!job) {
+    return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  }
+  if (job.employerId !== employerId) {
+    return { ok: false, error: 'مش مسموحلك تلغي هذه الفرصة', code: 'NOT_JOB_OWNER' };
+  }
+  if (job.status !== 'open') {
+    return { ok: false, error: 'لا يمكن إلغاء هذه الفرصة — الحالة الحالية: ' + job.status, code: 'INVALID_STATUS' };
+  }
+
+  job.status = 'cancelled';
+  job.cancelledAt = new Date().toISOString();
+
+  const jobPath = getRecordPath('jobs', jobId);
+  await atomicWrite(jobPath, job);
+
+  // Update index
+  const jobsIndex = await readIndex('jobsIndex');
+  if (jobsIndex[jobId]) {
+    jobsIndex[jobId].status = 'cancelled';
+    await writeIndex('jobsIndex', jobsIndex);
+  }
+
+  eventBus.emit('job:cancelled', { jobId, employerId, jobTitle: job.title });
 
   return { ok: true, job };
 }

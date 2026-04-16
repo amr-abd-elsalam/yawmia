@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { submitRating, listByJob, listByUser, getUserRatingSummary } from '../services/ratings.js';
+import { sanitizeText } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -26,7 +27,7 @@ export async function handleSubmitRating(req, res) {
     const result = await submitRating(jobId, fromUserId, {
       toUserId: body.toUserId,
       stars: body.stars,
-      comment: body.comment,
+      comment: sanitizeText(body.comment),
     });
 
     if (!result.ok) {

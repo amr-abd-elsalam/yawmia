@@ -166,6 +166,45 @@ export function setupNotificationListeners() {
     });
   }
 
+  // Workers get notified when a job they applied to is cancelled
+  eventBus.on('job:cancelled', async (data) => {
+    try {
+      // Dynamic imports to avoid circular dependencies
+      const { listByJob } = await import('./applications.js');
+      const { atomicWrite: write, getRecordPath: recPath } = await import('./database.js');
+
+      const apps = await listByJob(data.jobId);
+      const now = new Date().toISOString();
+      const affectedWorkerIds = new Set();
+
+      for (const app of apps) {
+        // Track workers who were pending or accepted
+        if (app.status === 'pending' || app.status === 'accepted') {
+          affectedWorkerIds.add(app.workerId);
+        }
+        // Auto-reject pending applications
+        if (app.status === 'pending') {
+          app.status = 'rejected';
+          app.respondedAt = now;
+          const appPath = recPath('applications', app.id);
+          await write(appPath, app);
+        }
+      }
+
+      // Notify all affected workers
+      for (const workerId of affectedWorkerIds) {
+        await createNotification(
+          workerId,
+          'job_cancelled',
+          `تم إلغاء الفرصة: ${data.jobTitle}`,
+          { jobId: data.jobId }
+        );
+      }
+    } catch (err) {
+      // Fire-and-forget — errors don't break the cancel flow
+    }
+  });
+
   // User gets notification when they receive a rating
   eventBus.on('rating:submitted', (data) => {
     const starText = '⭐'.repeat(Math.min(data.stars, 5));

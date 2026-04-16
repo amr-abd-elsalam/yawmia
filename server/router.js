@@ -5,7 +5,7 @@
 import config from '../config.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout } from './handlers/authHandler.js';
-import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleListMyJobs } from './handlers/jobsHandler.js';
+import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -77,6 +77,7 @@ const routes = [
   { method: 'POST', path: '/api/jobs/:id/reject', middlewares: [requireAuth, requireRole('employer')], handler: handleRejectWorker },
   { method: 'POST', path: '/api/jobs/:id/start', middlewares: [requireAuth, requireRole('employer')], handler: handleStartJob },
   { method: 'POST', path: '/api/jobs/:id/complete', middlewares: [requireAuth, requireRole('employer')], handler: handleCompleteJob },
+  { method: 'POST', path: '/api/jobs/:id/cancel', middlewares: [requireAuth, requireRole('employer')], handler: handleCancelJob },
 
   // ── Rating Routes ──
   { method: 'POST', path: '/api/jobs/:id/rate', middlewares: [requireAuth], handler: handleSubmitRating },
