@@ -5,41 +5,71 @@
 
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { mkdtemp, rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 let server;
 let BASE;
+let tmpDir;
+let _db;
 
 describe('Security Headers & CORS', () => {
 
   before(async () => {
     // Create temp data directory
-    const tmpDir = await mkdtemp(join(tmpdir(), 'yawmia-sec-'));
+    tmpDir = await mkdtemp(join(tmpdir(), 'yawmia-sec-'));
+    const dirs = ['users', 'sessions', 'jobs', 'applications', 'otp', 'notifications', 'ratings'];
+    for (const d of dirs) {
+      await mkdir(join(tmpDir, d), { recursive: true });
+    }
     process.env.YAWMIA_DATA_PATH = tmpDir;
-    process.env.PORT = '0';  // random port
 
-    // Import server fresh
-    const mod = await import('../server.js');
-    server = mod.server;
+    // Import middleware and router (build our own server like integration-http)
+    const { corsMiddleware } = await import('../server/middleware/cors.js');
+    const { securityMiddleware } = await import('../server/middleware/security.js');
+    const { requestIdMiddleware } = await import('../server/middleware/requestId.js');
+    const { bodyParserMiddleware } = await import('../server/middleware/bodyParser.js');
+    const { rateLimitMiddleware } = await import('../server/middleware/rateLimit.js');
+    const { createRouter } = await import('../server/router.js');
 
-    // Wait for server to be listening
-    await new Promise((resolve) => {
-      if (server.listening) return resolve();
-      server.on('listening', resolve);
+    _db = await import('../server/services/database.js');
+    const router = createRouter();
+
+    server = createServer((req, res) => {
+      const url = new URL(req.url, 'http://localhost');
+      req.pathname = url.pathname;
+      req.query = Object.fromEntries(url.searchParams);
+
+      corsMiddleware(req, res, () => {
+        securityMiddleware(req, res, () => {
+          requestIdMiddleware(req, res, () => {
+            rateLimitMiddleware(req, res, () => {
+              bodyParserMiddleware(req, res, () => {
+                router(req, res);
+              });
+            });
+          });
+        });
+      });
     });
 
-    const addr = server.address();
-    BASE = `http://127.0.0.1:${addr.port}`;
+    await new Promise((resolve) => {
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        BASE = `http://127.0.0.1:${port}`;
+        resolve();
+      });
+    });
   });
 
   after(async () => {
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
-    if (process.env.YAWMIA_DATA_PATH) {
-      await rm(process.env.YAWMIA_DATA_PATH, { recursive: true, force: true });
+    if (tmpDir) {
+      await rm(tmpDir, { recursive: true, force: true });
     }
   });
 
@@ -87,18 +117,22 @@ describe('Security Headers & CORS', () => {
   });
 
   it('SEC-08: POST /api/jobs with XSS in title — sanitized before storage', async () => {
-    // First register an employer
-    const otpRes = await fetch(`${BASE}/api/auth/send-otp`, {
+    // Register an employer — send OTP then read it from file
+    await fetch(`${BASE}/api/auth/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '01012345678', role: 'employer' }),
     });
-    const otpData = await otpRes.json();
+
+    // Read OTP from file (same approach as integration-http.test.js)
+    const otpPath = _db.getRecordPath('otp', '01012345678');
+    const otpFile = await _db.readJSON(otpPath);
+    const otp = otpFile.otp;
 
     const verifyRes = await fetch(`${BASE}/api/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: '01012345678', otp: otpData.otp }),
+      body: JSON.stringify({ phone: '01012345678', otp }),
     });
     const verifyData = await verifyRes.json();
     const token = verifyData.token;

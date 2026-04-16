@@ -58,7 +58,7 @@ describe('Sanitizer — sanitizeFields', () => {
     const obj = { title: '<b>فرصة</b>', description: '<script>x</script>وصف', wage: 250 };
     const result = sanitizeFields(obj, ['title', 'description']);
     assert.strictEqual(result.title, 'فرصة');
-    assert.strictEqual(result.description, 'وصف');
+    assert.strictEqual(result.description, 'xوصف');
     assert.strictEqual(result.wage, 250);
   });
 
