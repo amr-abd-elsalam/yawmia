@@ -42,6 +42,7 @@ after(() => {
 
 /**
  * Helper: create a completed job with one accepted worker
+ * Waits for fire-and-forget auto-create to settle
  * Returns { employer, worker, job }
  */
 let helperCounter = 0;
@@ -74,8 +75,11 @@ async function setupCompletedJob() {
   // Start job
   await jobService.startJob(job.id, employer.id);
 
-  // Complete job (fire-and-forget auto-create might run, but we test manual create)
+  // Complete job (fire-and-forget auto-create will run)
   await jobService.completeJob(job.id, employer.id);
+
+  // Wait for fire-and-forget auto-create payment to settle
+  await new Promise(r => setTimeout(r, 150));
 
   // Re-fetch
   const completedJob = await jobService.findById(job.id);
@@ -83,53 +87,63 @@ async function setupCompletedJob() {
   return { employer, worker, job: completedJob };
 }
 
+/**
+ * Helper: get or create payment for a job
+ * Handles the auto-create scenario gracefully
+ */
+async function ensurePayment(jobId, employerId, options) {
+  const existing = await paymentService.listByJob(jobId);
+  if (existing.length > 0) return existing[0];
+  const result = await paymentService.createPayment(jobId, employerId, options);
+  if (result.ok) return result.payment;
+  // If PAYMENT_EXISTS, fetch it
+  if (result.code === 'PAYMENT_EXISTS') {
+    const retry = await paymentService.listByJob(jobId);
+    return retry[0] || null;
+  }
+  return null;
+}
+
 describe('Payment Service — Creation', () => {
 
   it('PH9-01: createPayment on completed job succeeds', async () => {
     const { employer, job } = await setupCompletedJob();
-    // Auto-create may have happened; list first
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      // Already auto-created, verify it
-      assert.ok(existing[0].id.startsWith('pay_'));
-      assert.strictEqual(existing[0].status, 'pending');
-      assert.strictEqual(existing[0].method, 'cash');
-      return;
+    // Auto-create should have happened via completeJob fire-and-forget
+    const payments = await paymentService.listByJob(job.id);
+    if (payments.length > 0) {
+      // Verify the auto-created payment
+      const pay = payments[0];
+      assert.ok(pay.id.startsWith('pay_'));
+      assert.strictEqual(pay.status, 'pending');
+      assert.strictEqual(pay.method, 'cash');
+      assert.strictEqual(pay.jobId, job.id);
+      assert.strictEqual(pay.employerId, employer.id);
+    } else {
+      // Auto-create didn't happen — create manually
+      const result = await paymentService.createPayment(job.id, employer.id);
+      assert.strictEqual(result.ok, true);
+      assert.ok(result.payment.id.startsWith('pay_'));
+      assert.strictEqual(result.payment.status, 'pending');
+      assert.strictEqual(result.payment.method, 'cash');
+      assert.strictEqual(result.payment.jobId, job.id);
+      assert.strictEqual(result.payment.employerId, employer.id);
     }
-    const result = await paymentService.createPayment(job.id, employer.id);
-    assert.strictEqual(result.ok, true);
-    assert.ok(result.payment.id.startsWith('pay_'));
-    assert.strictEqual(result.payment.status, 'pending');
-    assert.strictEqual(result.payment.method, 'cash');
-    assert.strictEqual(result.payment.jobId, job.id);
-    assert.strictEqual(result.payment.employerId, employer.id);
   });
 
   it('PH9-02: createPayment calculates amounts correctly', async () => {
     const { employer, job } = await setupCompletedJob();
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      const pay = existing[0];
-      // 1 worker * 200/day * 3 days = 600
-      assert.strictEqual(pay.amount, 600);
-      assert.strictEqual(pay.platformFee, 90); // 15% of 600
-      assert.strictEqual(pay.workerPayout, 510); // 600 - 90
-      return;
-    }
-    const result = await paymentService.createPayment(job.id, employer.id);
-    assert.strictEqual(result.ok, true);
-    assert.strictEqual(result.payment.amount, 600);
-    assert.strictEqual(result.payment.platformFee, 90);
-    assert.strictEqual(result.payment.workerPayout, 510);
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
+    // 1 worker * 200/day * 3 days = 600
+    assert.strictEqual(pay.amount, 600);
+    assert.strictEqual(pay.platformFee, 90); // 15% of 600
+    assert.strictEqual(pay.workerPayout, 510); // 600 - 90
   });
 
   it('PH9-03: createPayment rejects duplicate for same job', async () => {
     const { employer, job } = await setupCompletedJob();
     // Ensure first payment exists
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-    }
+    await ensurePayment(job.id, employer.id);
     // Try duplicate
     const result = await paymentService.createPayment(job.id, employer.id);
     assert.strictEqual(result.ok, false);
@@ -153,61 +167,134 @@ describe('Payment Service — Creation', () => {
   });
 
   it('PH9-05: createPayment rejects non-owner', async () => {
-    const { job } = await setupCompletedJob();
+    const { employer, job } = await setupCompletedJob();
     const other = await userService.create('01011050001', 'employer');
-    // Clear any auto-created payment first (for clean test)
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      // Payment already exists — just test with the same job will give PAYMENT_EXISTS
-      // Instead, test ownership check on a fresh job
-      const { job: job2 } = await setupCompletedJob();
-      const existing2 = await paymentService.listByJob(job2.id);
-      if (existing2.length === 0) {
-        const result = await paymentService.createPayment(job2.id, other.id);
-        assert.strictEqual(result.ok, false);
-        assert.strictEqual(result.code, 'NOT_JOB_OWNER');
-        return;
-      }
-    }
+    // Payment may already exist from auto-create — that gives PAYMENT_EXISTS
+    // We need to test ownership separately: try with a different employer
     const result = await paymentService.createPayment(job.id, other.id);
     assert.strictEqual(result.ok, false);
-    // Either NOT_JOB_OWNER or PAYMENT_EXISTS (if auto-created)
-    assert.ok(result.code === 'NOT_JOB_OWNER' || result.code === 'PAYMENT_EXISTS');
+    // If payment already auto-created → PAYMENT_EXISTS (duplicate check runs before owner check)
+    // If no auto-create → NOT_JOB_OWNER
+    assert.ok(result.code === 'NOT_JOB_OWNER' || result.code === 'PAYMENT_EXISTS',
+      'expected NOT_JOB_OWNER or PAYMENT_EXISTS, got: ' + result.code);
   });
 
   it('PH9-06: createPayment rejects invalid method', async () => {
-    const { employer, job } = await setupCompletedJob();
+    // Create a completed job without auto-create: we'll create employer+job manually
+    // and call createPayment directly with invalid method
+    helperCounter++;
+    const emp = await userService.create('0101106' + String(helperCounter).padStart(5, '0'), 'employer');
+    const wrk = await userService.create('0102106' + String(helperCounter).padStart(5, '0'), 'worker');
+    const job = await jobService.create(emp.id, {
+      title: 'فرصة method test ' + helperCounter,
+      category: 'cleaning',
+      governorate: 'giza',
+      workersNeeded: 1,
+      dailyWage: 200,
+      startDate: '2026-05-01',
+      durationDays: 1,
+    });
+    await appService.apply(job.id, wrk.id);
+    const apps = await appService.listByJob(job.id);
+    await appService.accept(apps[0].id, emp.id);
+    await jobService.startJob(job.id, emp.id);
+    await jobService.completeJob(job.id, emp.id);
+    await new Promise(r => setTimeout(r, 150));
+
+    // Check if auto-created
     const existing = await paymentService.listByJob(job.id);
     if (existing.length > 0) {
-      // Skip — already has payment
-      assert.ok(true);
-      return;
+      // auto-created — can't test invalid method on this job (already has payment)
+      // Create another fresh scenario
+      helperCounter++;
+      const emp2 = await userService.create('0101107' + String(helperCounter).padStart(5, '0'), 'employer');
+      const wrk2 = await userService.create('0102107' + String(helperCounter).padStart(5, '0'), 'worker');
+      const job2 = await jobService.create(emp2.id, {
+        title: 'فرصة method test2 ' + helperCounter,
+        category: 'cleaning',
+        governorate: 'giza',
+        workersNeeded: 1,
+        dailyWage: 200,
+        startDate: '2026-05-01',
+        durationDays: 1,
+      });
+      await appService.apply(job2.id, wrk2.id);
+      const apps2 = await appService.listByJob(job2.id);
+      await appService.accept(apps2[0].id, emp2.id);
+      await jobService.startJob(job2.id, emp2.id);
+
+      // Complete WITHOUT triggering auto-create by completing job directly (bypass)
+      const jobData = await jobService.findById(job2.id);
+      jobData.status = 'completed';
+      jobData.completedAt = new Date().toISOString();
+      await db.atomicWrite(db.getRecordPath('jobs', job2.id), jobData);
+
+      const result = await paymentService.createPayment(job2.id, emp2.id, { method: 'bitcoin' });
+      assert.strictEqual(result.ok, false);
+      assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
+    } else {
+      const result = await paymentService.createPayment(job.id, emp.id, { method: 'bitcoin' });
+      assert.strictEqual(result.ok, false);
+      assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
     }
-    const result = await paymentService.createPayment(job.id, employer.id, { method: 'bitcoin' });
-    assert.strictEqual(result.ok, false);
-    assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
   });
 
   it('PH9-07: createPayment accepts wallet method', async () => {
-    const { employer, job } = await setupCompletedJob();
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      assert.ok(true);
-      return;
-    }
-    const result = await paymentService.createPayment(job.id, employer.id, { method: 'wallet' });
+    // Create a completed job manually (bypass auto-create)
+    helperCounter++;
+    const emp = await userService.create('0101108' + String(helperCounter).padStart(5, '0'), 'employer');
+    const wrk = await userService.create('0102108' + String(helperCounter).padStart(5, '0'), 'worker');
+    const job = await jobService.create(emp.id, {
+      title: 'فرصة wallet ' + helperCounter,
+      category: 'painting',
+      governorate: 'cairo',
+      workersNeeded: 1,
+      dailyWage: 300,
+      startDate: '2026-05-01',
+      durationDays: 2,
+    });
+    await appService.apply(job.id, wrk.id);
+    const apps = await appService.listByJob(job.id);
+    await appService.accept(apps[0].id, emp.id);
+    await jobService.startJob(job.id, emp.id);
+
+    // Set job to completed directly (bypass completeJob to avoid auto-create)
+    const jobData = await jobService.findById(job.id);
+    jobData.status = 'completed';
+    jobData.completedAt = new Date().toISOString();
+    await db.atomicWrite(db.getRecordPath('jobs', job.id), jobData);
+
+    const result = await paymentService.createPayment(job.id, emp.id, { method: 'wallet' });
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.payment.method, 'wallet');
   });
 
   it('PH9-08: createPayment accepts instapay method', async () => {
-    const { employer, job } = await setupCompletedJob();
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      assert.ok(true);
-      return;
-    }
-    const result = await paymentService.createPayment(job.id, employer.id, { method: 'instapay' });
+    // Create a completed job manually (bypass auto-create)
+    helperCounter++;
+    const emp = await userService.create('0101109' + String(helperCounter).padStart(5, '0'), 'employer');
+    const wrk = await userService.create('0102109' + String(helperCounter).padStart(5, '0'), 'worker');
+    const job = await jobService.create(emp.id, {
+      title: 'فرصة instapay ' + helperCounter,
+      category: 'plumbing',
+      governorate: 'alex',
+      workersNeeded: 1,
+      dailyWage: 250,
+      startDate: '2026-05-01',
+      durationDays: 1,
+    });
+    await appService.apply(job.id, wrk.id);
+    const apps = await appService.listByJob(job.id);
+    await appService.accept(apps[0].id, emp.id);
+    await jobService.startJob(job.id, emp.id);
+
+    // Set job to completed directly (bypass auto-create)
+    const jobData = await jobService.findById(job.id);
+    jobData.status = 'completed';
+    jobData.completedAt = new Date().toISOString();
+    await db.atomicWrite(db.getRecordPath('jobs', job.id), jobData);
+
+    const result = await paymentService.createPayment(job.id, emp.id, { method: 'instapay' });
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.payment.method, 'instapay');
   });
@@ -217,15 +304,10 @@ describe('Payment Service — Confirmation', () => {
 
   it('PH9-09: confirmPayment by employer succeeds', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
-    // Only confirm if still pending
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status !== 'pending') {
-      assert.ok(true);
+      assert.ok(true, 'payment already past pending — skip');
       return;
     }
     const result = await paymentService.confirmPayment(pay.id, employer.id);
@@ -236,30 +318,23 @@ describe('Payment Service — Confirmation', () => {
 
   it('PH9-10: confirmPayment rejects non-owner', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     const other = await userService.create('01011100001', 'employer');
-    const result = await paymentService.confirmPayment(payments[0].id, other.id);
+    const result = await paymentService.confirmPayment(pay.id, other.id);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.code, 'NOT_PAYMENT_OWNER');
   });
 
   it('PH9-11: confirmPayment rejects on non-pending status', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     // Confirm first time
     if (pay.status === 'pending') {
       await paymentService.confirmPayment(pay.id, employer.id);
     }
-    // Try confirm again
+    // Try confirm again — should fail
     const result = await paymentService.confirmPayment(pay.id, employer.id);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.code, 'INVALID_PAYMENT_STATUS');
@@ -270,17 +345,15 @@ describe('Payment Service — Admin Completion', () => {
 
   it('PH9-12: completePayment on confirmed payment succeeds', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
+    // Ensure confirmed
     if (pay.status === 'pending') {
       await paymentService.confirmPayment(pay.id, employer.id);
     }
-    if (pay.status === 'completed') {
-      assert.ok(true);
+    const refreshed = await paymentService.findById(pay.id);
+    if (refreshed.status === 'completed') {
+      assert.ok(true, 'already completed — skip');
       return;
     }
     const result = await paymentService.completePayment(pay.id);
@@ -291,15 +364,10 @@ describe('Payment Service — Admin Completion', () => {
 
   it('PH9-13: completePayment rejects on pending payment (not confirmed)', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status !== 'pending') {
-      // Already confirmed/completed/disputed — skip
-      assert.ok(true);
+      assert.ok(true, 'not pending — skip');
       return;
     }
     const result = await paymentService.completePayment(pay.id);
@@ -308,21 +376,16 @@ describe('Payment Service — Admin Completion', () => {
   });
 
   it('PH9-14: completePayment on disputed payment succeeds (resolve)', async () => {
-    const { employer, worker, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const { employer, job } = await setupCompletedJob();
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     // Dispute it if still pending
     if (pay.status === 'pending') {
       await paymentService.disputePayment(pay.id, employer.id, 'سبب النزاع التجريبي');
     }
-    // Now re-read
     const updated = await paymentService.findById(pay.id);
     if (updated.status !== 'disputed') {
-      assert.ok(true);
+      assert.ok(true, 'not disputed — skip');
       return;
     }
     const result = await paymentService.completePayment(pay.id);
@@ -335,14 +398,10 @@ describe('Payment Service — Disputes', () => {
 
   it('PH9-15: disputePayment on pending payment succeeds', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status !== 'pending') {
-      assert.ok(true);
+      assert.ok(true, 'not pending — skip');
       return;
     }
     const result = await paymentService.disputePayment(pay.id, employer.id, 'العامل لم يحضر اليوم الأخير');
@@ -355,12 +414,8 @@ describe('Payment Service — Disputes', () => {
 
   it('PH9-16: disputePayment on completed payment fails', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     // Fast-forward to completed
     if (pay.status === 'pending') {
       await paymentService.confirmPayment(pay.id, employer.id);
@@ -376,18 +431,14 @@ describe('Payment Service — Disputes', () => {
 
   it('PH9-17: disputePayment on already-disputed payment fails', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status === 'pending') {
       await paymentService.disputePayment(pay.id, employer.id, 'نزاع أول تجريبي');
     }
     const updated = await paymentService.findById(pay.id);
     if (updated.status !== 'disputed') {
-      assert.ok(true);
+      assert.ok(true, 'not disputed — skip');
       return;
     }
     const result = await paymentService.disputePayment(pay.id, employer.id, 'نزاع ثاني');
@@ -400,14 +451,11 @@ describe('Payment Service — Queries', () => {
 
   it('PH9-18: findById returns payment', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const found = await paymentService.findById(payments[0].id);
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
+    const found = await paymentService.findById(pay.id);
     assert.ok(found);
-    assert.strictEqual(found.id, payments[0].id);
+    assert.strictEqual(found.id, pay.id);
     assert.strictEqual(found.jobId, job.id);
   });
 
@@ -418,11 +466,8 @@ describe('Payment Service — Queries', () => {
 
   it('PH9-20: listByJob returns payments for job', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
+    await ensurePayment(job.id, employer.id);
+    const payments = await paymentService.listByJob(job.id);
     assert.ok(payments.length >= 1);
     assert.strictEqual(payments[0].jobId, job.id);
   });
@@ -464,37 +509,50 @@ describe('Payment Service — Queries', () => {
 describe('Payment Service — Events', () => {
 
   it('PH9-24: payment:created event emitted on create', async () => {
-    const { employer, job } = await setupCompletedJob();
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      assert.ok(true, 'Auto-created — event already fired');
-      return;
-    }
+    // Create a completed job manually (bypass auto-create for clean event capture)
+    helperCounter++;
+    const emp = await userService.create('0101124' + String(helperCounter).padStart(5, '0'), 'employer');
+    const wrk = await userService.create('0102124' + String(helperCounter).padStart(5, '0'), 'worker');
+    const job = await jobService.create(emp.id, {
+      title: 'فرصة event test ' + helperCounter,
+      category: 'carpentry',
+      governorate: 'cairo',
+      workersNeeded: 1,
+      dailyWage: 200,
+      startDate: '2026-05-01',
+      durationDays: 1,
+    });
+    await appService.apply(job.id, wrk.id);
+    const apps = await appService.listByJob(job.id);
+    await appService.accept(apps[0].id, emp.id);
+    await jobService.startJob(job.id, emp.id);
+
+    // Set completed directly (no auto-create)
+    const jobData = await jobService.findById(job.id);
+    jobData.status = 'completed';
+    jobData.completedAt = new Date().toISOString();
+    await db.atomicWrite(db.getRecordPath('jobs', job.id), jobData);
 
     let eventData = null;
     const unsub = eventBus.on('payment:created', (data) => { eventData = data; });
 
-    await paymentService.createPayment(job.id, employer.id);
+    await paymentService.createPayment(job.id, emp.id);
     unsub();
 
     assert.ok(eventData, 'payment:created event should fire');
     assert.ok(eventData.paymentId);
     assert.strictEqual(eventData.jobId, job.id);
-    assert.strictEqual(eventData.employerId, employer.id);
+    assert.strictEqual(eventData.employerId, emp.id);
     assert.strictEqual(typeof eventData.amount, 'number');
     assert.strictEqual(typeof eventData.platformFee, 'number');
   });
 
   it('PH9-25: payment:confirmed event emitted on confirm', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status !== 'pending') {
-      assert.ok(true);
+      assert.ok(true, 'not pending — skip');
       return;
     }
 
@@ -510,18 +568,14 @@ describe('Payment Service — Events', () => {
 
   it('PH9-26: payment:completed event emitted on complete', async () => {
     const { employer, job } = await setupCompletedJob();
-    let payments = await paymentService.listByJob(job.id);
-    if (payments.length === 0) {
-      await paymentService.createPayment(job.id, employer.id);
-      payments = await paymentService.listByJob(job.id);
-    }
-    const pay = payments[0];
+    const pay = await ensurePayment(job.id, employer.id);
+    assert.ok(pay, 'payment should exist');
     if (pay.status === 'pending') {
       await paymentService.confirmPayment(pay.id, employer.id);
     }
     const refreshed = await paymentService.findById(pay.id);
     if (refreshed.status !== 'employer_confirmed') {
-      assert.ok(true);
+      assert.ok(true, 'not employer_confirmed — skip');
       return;
     }
 
