@@ -107,27 +107,36 @@ async function ensurePayment(jobId, employerId, options) {
 describe('Payment Service — Creation', () => {
 
   it('PH9-01: createPayment on completed job succeeds', async () => {
-    const { employer, job } = await setupCompletedJob();
-    // Auto-create should have happened via completeJob fire-and-forget
-    const payments = await paymentService.listByJob(job.id);
-    if (payments.length > 0) {
-      // Verify the auto-created payment
-      const pay = payments[0];
-      assert.ok(pay.id.startsWith('pay_'));
-      assert.strictEqual(pay.status, 'pending');
-      assert.strictEqual(pay.method, 'cash');
-      assert.strictEqual(pay.jobId, job.id);
-      assert.strictEqual(pay.employerId, employer.id);
-    } else {
-      // Auto-create didn't happen — create manually
-      const result = await paymentService.createPayment(job.id, employer.id);
-      assert.strictEqual(result.ok, true);
-      assert.ok(result.payment.id.startsWith('pay_'));
-      assert.strictEqual(result.payment.status, 'pending');
-      assert.strictEqual(result.payment.method, 'cash');
-      assert.strictEqual(result.payment.jobId, job.id);
-      assert.strictEqual(result.payment.employerId, employer.id);
-    }
+    // Bypass auto-create: set job completed directly
+    helperCounter++;
+    const emp = await userService.create('0101101' + String(helperCounter).padStart(5, '0'), 'employer');
+    const wrk = await userService.create('0102101' + String(helperCounter).padStart(5, '0'), 'worker');
+    const job = await jobService.create(emp.id, {
+      title: 'فرصة PH9-01 ' + helperCounter,
+      category: 'construction',
+      governorate: 'cairo',
+      workersNeeded: 1,
+      dailyWage: 200,
+      startDate: '2026-05-01',
+      durationDays: 3,
+    });
+    await appService.apply(job.id, wrk.id);
+    const apps = await appService.listByJob(job.id);
+    await appService.accept(apps[0].id, emp.id);
+    await jobService.startJob(job.id, emp.id);
+    // Set completed directly (bypass completeJob to avoid auto-create)
+    const jobData = await jobService.findById(job.id);
+    jobData.status = 'completed';
+    jobData.completedAt = new Date().toISOString();
+    await db.atomicWrite(db.getRecordPath('jobs', job.id), jobData);
+
+    const result = await paymentService.createPayment(job.id, emp.id);
+    assert.strictEqual(result.ok, true);
+    assert.ok(result.payment.id.startsWith('pay_'));
+    assert.strictEqual(result.payment.status, 'pending');
+    assert.strictEqual(result.payment.method, 'cash');
+    assert.strictEqual(result.payment.jobId, job.id);
+    assert.strictEqual(result.payment.employerId, emp.id);
   });
 
   it('PH9-02: createPayment calculates amounts correctly', async () => {
@@ -180,8 +189,7 @@ describe('Payment Service — Creation', () => {
   });
 
   it('PH9-06: createPayment rejects invalid method', async () => {
-    // Create a completed job without auto-create: we'll create employer+job manually
-    // and call createPayment directly with invalid method
+    // Bypass auto-create: set job completed directly
     helperCounter++;
     const emp = await userService.create('0101106' + String(helperCounter).padStart(5, '0'), 'employer');
     const wrk = await userService.create('0102106' + String(helperCounter).padStart(5, '0'), 'worker');
@@ -198,45 +206,15 @@ describe('Payment Service — Creation', () => {
     const apps = await appService.listByJob(job.id);
     await appService.accept(apps[0].id, emp.id);
     await jobService.startJob(job.id, emp.id);
-    await jobService.completeJob(job.id, emp.id);
-    await new Promise(r => setTimeout(r, 150));
+    // Set completed directly (bypass completeJob to avoid auto-create)
+    const jobData = await jobService.findById(job.id);
+    jobData.status = 'completed';
+    jobData.completedAt = new Date().toISOString();
+    await db.atomicWrite(db.getRecordPath('jobs', job.id), jobData);
 
-    // Check if auto-created
-    const existing = await paymentService.listByJob(job.id);
-    if (existing.length > 0) {
-      // auto-created — can't test invalid method on this job (already has payment)
-      // Create another fresh scenario
-      helperCounter++;
-      const emp2 = await userService.create('0101107' + String(helperCounter).padStart(5, '0'), 'employer');
-      const wrk2 = await userService.create('0102107' + String(helperCounter).padStart(5, '0'), 'worker');
-      const job2 = await jobService.create(emp2.id, {
-        title: 'فرصة method test2 ' + helperCounter,
-        category: 'cleaning',
-        governorate: 'giza',
-        workersNeeded: 1,
-        dailyWage: 200,
-        startDate: '2026-05-01',
-        durationDays: 1,
-      });
-      await appService.apply(job2.id, wrk2.id);
-      const apps2 = await appService.listByJob(job2.id);
-      await appService.accept(apps2[0].id, emp2.id);
-      await jobService.startJob(job2.id, emp2.id);
-
-      // Complete WITHOUT triggering auto-create by completing job directly (bypass)
-      const jobData = await jobService.findById(job2.id);
-      jobData.status = 'completed';
-      jobData.completedAt = new Date().toISOString();
-      await db.atomicWrite(db.getRecordPath('jobs', job2.id), jobData);
-
-      const result = await paymentService.createPayment(job2.id, emp2.id, { method: 'bitcoin' });
-      assert.strictEqual(result.ok, false);
-      assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
-    } else {
-      const result = await paymentService.createPayment(job.id, emp.id, { method: 'bitcoin' });
-      assert.strictEqual(result.ok, false);
-      assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
-    }
+    const result = await paymentService.createPayment(job.id, emp.id, { method: 'bitcoin' });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.code, 'INVALID_PAYMENT_METHOD');
   });
 
   it('PH9-07: createPayment accepts wallet method', async () => {
