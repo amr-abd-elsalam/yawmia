@@ -1,0 +1,19 @@
+{
+  "id": "job_34ef206c9b81",
+  "employerId": "usr_emp101",
+  "title": "فرصة عمل تجريبية",
+  "category": "farming",
+  "governorate": "cairo",
+  "location": null,
+  "workersNeeded": 5,
+  "workersAccepted": 0,
+  "dailyWage": 200,
+  "startDate": "2026-04-25",
+  "durationDays": 2,
+  "description": "",
+  "totalCost": 2000,
+  "platformFee": 300,
+  "status": "open",
+  "createdAt": "2026-04-17T11:07:56.395Z",
+  "expiresAt": "2026-04-20T11:07:56.395Z"
+}

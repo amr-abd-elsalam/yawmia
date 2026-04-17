@@ -1,0 +1,15 @@
+{
+  "id": "usr_32ba58c79397",
+  "phone": "01020000011",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 5,
+    "count": 1
+  },
+  "status": "active",
+  "createdAt": "2026-04-17T11:08:45.307Z",
+  "updatedAt": "2026-04-17T11:08:46.691Z"
+}

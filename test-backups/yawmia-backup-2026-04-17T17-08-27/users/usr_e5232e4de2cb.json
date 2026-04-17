@@ -1,0 +1,15 @@
+{
+  "id": "usr_e5232e4de2cb",
+  "phone": "01067890123",
+  "role": "employer",
+  "name": "محمد",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-17T11:08:58.857Z",
+  "updatedAt": "2026-04-17T11:08:58.899Z"
+}

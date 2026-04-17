@@ -1,0 +1,19 @@
+{
+  "id": "job_8320b5b41b80",
+  "employerId": "usr_51d2bb3a615d",
+  "title": "فرصة مفتوحة",
+  "category": "farming",
+  "governorate": "fayoum",
+  "location": null,
+  "workersNeeded": 5,
+  "workersAccepted": 0,
+  "dailyWage": 200,
+  "startDate": "2026-04-20",
+  "durationDays": 2,
+  "description": "",
+  "totalCost": 2000,
+  "platformFee": 300,
+  "status": "open",
+  "createdAt": "2026-04-16T21:14:13.783Z",
+  "expiresAt": "2026-04-19T21:14:13.783Z"
+}

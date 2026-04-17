@@ -1,0 +1,488 @@
+{
+  "usr_emp100": [
+    "job_3fd7bc7c5f17",
+    "job_72347d689c92",
+    "job_aa86dbf5dbf1",
+    "job_eb620bb2d659"
+  ],
+  "usr_emp101": [
+    "job_34ef206c9b81",
+    "job_f502b336e8fe",
+    "job_86c27f28fb1d",
+    "job_c2e3d70c56b5"
+  ],
+  "usr_emp102": [
+    "job_dc44cd701640",
+    "job_be9d3ebaafa5",
+    "job_0ec54ff767d4",
+    "job_60cbbdeae74c"
+  ],
+  "usr_emp103": [
+    "job_e9d97e0fc0f4",
+    "job_b565b7363b2c",
+    "job_19423f719bb7",
+    "job_3dfdc0d31b42"
+  ],
+  "usr_emp104": [
+    "job_0b13f68fa484",
+    "job_4d6aeb37b5a2",
+    "job_27112c258495",
+    "job_046239542eef"
+  ],
+  "usr_emp105": [
+    "job_5d3226166464",
+    "job_94dad31cab45",
+    "job_864d62c4cf9a",
+    "job_32e350364b7f"
+  ],
+  "usr_emp106": [
+    "job_5ab1ca99ff31",
+    "job_7d314a9ff98e",
+    "job_5ed961b2bba6",
+    "job_da5da22d5b4c"
+  ],
+  "usr_emp107": [
+    "job_46049d78625f",
+    "job_de6203e90644",
+    "job_d3e57832d662",
+    "job_cff150c08619"
+  ],
+  "usr_emp108": [
+    "job_9d7ce0c63c53",
+    "job_fa0adc8005fb",
+    "job_fb75d030fd64",
+    "job_7d7375ff382d"
+  ],
+  "usr_emp109": [
+    "job_135ad35f8613",
+    "job_c5769ce73365",
+    "job_d8d4934a664a",
+    "job_39ba5205b0c8"
+  ],
+  "usr_emp110": [
+    "job_8546bd5f8e48",
+    "job_d1648570ca4c",
+    "job_6281b2fa2d00",
+    "job_75c1dd1646bc"
+  ],
+  "usr_emp_lc1": [
+    "job_5a7b54661adb",
+    "job_f6d8f2ca1712",
+    "job_42f6a13ee29c",
+    "job_3b74c3f16b39"
+  ],
+  "usr_emp_lc2": [
+    "job_23ff578dd642",
+    "job_4c81568ab1a2",
+    "job_8b18ad498460",
+    "job_b1436033d269"
+  ],
+  "usr_emp_lc3": [
+    "job_bafb8a83dc82",
+    "job_a6d2bb185bb2",
+    "job_3cdb3cc82d20",
+    "job_a435d10ce840"
+  ],
+  "usr_emp_lc5": [
+    "job_4457c507dd0e",
+    "job_933c1427186d",
+    "job_6bcf6c850086",
+    "job_486e86525246"
+  ],
+  "usr_emp_lc6": [
+    "job_607e7af82d07",
+    "job_d1b541859728",
+    "job_0547b2821185",
+    "job_1c4d71cee8bf"
+  ],
+  "usr_emp_lc7": [
+    "job_a16d59262539",
+    "job_0f8e53606001",
+    "job_c329eb69e44e",
+    "job_4be38744637e"
+  ],
+  "usr_emp_lc8": [
+    "job_3a4872d66ec1",
+    "job_7db2ed469b68",
+    "job_340266727aba",
+    "job_28aa9a4f76ba"
+  ],
+  "usr_emp_lc9": [
+    "job_279030192f8b",
+    "job_1b0e618a451a",
+    "job_da9ea033dfaa",
+    "job_9017cc2fdf28"
+  ],
+  "usr_emp_lc10": [
+    "job_e99d563616ba",
+    "job_3d40bc391bab",
+    "job_d7d7299ddd92",
+    "job_9a9cfcc4c7ac"
+  ],
+  "usr_emp_lc10b": [
+    "job_9bf3fc0a6b7c",
+    "job_f2cfc3c185f6",
+    "job_687dcbcf791b",
+    "job_9e11913f26bd"
+  ],
+  "usr_emp001": [
+    "job_ced67759fb16",
+    "job_12c657c99d6d",
+    "job_a80e11f46e7a",
+    "job_004161612082"
+  ],
+  "usr_emp002": [
+    "job_fb46da75a570",
+    "job_d080ff7396c0",
+    "job_30ea10681952",
+    "job_3d68830f1871"
+  ],
+  "usr_emp003": [
+    "job_8f2a4d981db0",
+    "job_9aad429d1ee2",
+    "job_ba549b9f0f72",
+    "job_8656a097efc5"
+  ],
+  "usr_emp004": [
+    "job_0e823a7333ac",
+    "job_5c62fd561e30",
+    "job_cb4b052422bc",
+    "job_6c4907d30bf4"
+  ],
+  "usr_emp005": [
+    "job_e2f03d64a01e",
+    "job_9c64340de38b",
+    "job_5661e8abe33a",
+    "job_769f6f2350f7"
+  ],
+  "usr_emp006": [
+    "job_5d18896e704d",
+    "job_be2fbf31ba16",
+    "job_f809717926e2",
+    "job_00c6a6277557"
+  ],
+  "usr_emp007": [
+    "job_03f7579d593f",
+    "job_862dcdd7d795",
+    "job_6c73028053a2",
+    "job_e71f1815f521"
+  ],
+  "usr_emp008": [
+    "job_d0314ad699da",
+    "job_8b05127197a9",
+    "job_98fa2cee4db4",
+    "job_a82067b22ccc"
+  ],
+  "usr_emp009": [
+    "job_d9dd2ec8979f",
+    "job_510917242700",
+    "job_cca257113a3f",
+    "job_006a35790fa8"
+  ],
+  "usr_emp_p401": [
+    "job_1ee1b327a1d8",
+    "job_8e4b185655e1",
+    "job_94c4ed83594e",
+    "job_ac4e8c5c99d1"
+  ],
+  "usr_emp_p402": [
+    "job_2dc60165c558",
+    "job_b3ba116cd691",
+    "job_edb5dfbe144f",
+    "job_406ec10221bf"
+  ],
+  "usr_emp_p403": [
+    "job_5de656db2126",
+    "job_8853afa619b4",
+    "job_d5c415485541",
+    "job_ebdd01f7dc78"
+  ],
+  "usr_emp_p405": [
+    "job_abbe3da48267",
+    "job_e8a1070f4f8f",
+    "job_9f26448efe10",
+    "job_6e712d7cae22"
+  ],
+  "usr_emp_p406a": [
+    "job_fadf25736c9c",
+    "job_e02df18ef696",
+    "job_aa5ff34e59df",
+    "job_7b7cf25733a6"
+  ],
+  "usr_emp_p406b": [
+    "job_8bc69410e831",
+    "job_b8de2937a4c8",
+    "job_5e68b02aac19",
+    "job_fa3e7f336e98"
+  ],
+  "usr_emp_p408": [
+    "job_66a022895c0c",
+    "job_11d377afcc04",
+    "job_2dfa461ebf0b",
+    "job_be46f2af9229"
+  ],
+  "usr_emp_p410": [
+    "job_7cef7178a139",
+    "job_5a5b55fad3d6",
+    "job_b420c1735b7e",
+    "job_adf490f926b5"
+  ],
+  "usr_emp_p411": [
+    "job_dc2de477951d",
+    "job_f3916d59d370",
+    "job_0b86f3d459c0",
+    "job_83468825a0e7"
+  ],
+  "usr_emp_p412": [
+    "job_2bcc820df101",
+    "job_76a02750754b",
+    "job_b3b3b3ddf7e5",
+    "job_d845d604e13e"
+  ],
+  "usr_emp_p413": [
+    "job_493141f04fe5",
+    "job_523a5aec17fd",
+    "job_45900c35d927",
+    "job_c5cbd169bed7"
+  ],
+  "usr_emp_p414": [
+    "job_43a94118f98d",
+    "job_93c425ce89b5",
+    "job_e8a1e8314dd3",
+    "job_21d66c7dd284"
+  ],
+  "usr_emp_p415": [
+    "job_cda7478c5c61",
+    "job_748fbd97494b",
+    "job_e90c0746bbcf",
+    "job_23bd0c30984f"
+  ],
+  "usr_emp_p416": [
+    "job_96150c4dc8f3",
+    "job_29f044f6668f",
+    "job_d9bf3be1d014",
+    "job_bec6e5c1955a"
+  ],
+  "usr_emp_p417": [
+    "job_5ede651d7838",
+    "job_68a5da8c3198",
+    "job_6170f774e109",
+    "job_59f519186966"
+  ],
+  "usr_40332501fb0b": [
+    "job_c71792812965"
+  ],
+  "usr_010d7fafe204": [
+    "job_1009e4354747"
+  ],
+  "usr_451b79f2b234": [
+    "job_13f7f7cdf10a"
+  ],
+  "usr_eb3b64d80390": [
+    "job_7624060dc2f0"
+  ],
+  "usr_4a1ab3ffade6": [
+    "job_bb1cdb01601a"
+  ],
+  "usr_adb330c33c8f": [
+    "job_bc9a03d794a8"
+  ],
+  "usr_e9cb7d582ce0": [
+    "job_eab3979930c0"
+  ],
+  "usr_357d213e19fc": [
+    "job_90736b8ce79c"
+  ],
+  "usr_6af074e9bfa2": [
+    "job_069a81ec9197"
+  ],
+  "usr_58f1780675cd": [
+    "job_ac47567bab49"
+  ],
+  "usr_5357a5e5ec9d": [
+    "job_01e42ce79f72"
+  ],
+  "usr_e0796a617801": [
+    "job_144679c03a6c"
+  ],
+  "usr_01a3f9b77473": [
+    "job_37cf4e9b6f34"
+  ],
+  "usr_031e380e6e0f": [
+    "job_b47377aa0c30"
+  ],
+  "usr_6c744238773a": [
+    "job_ec3147f00649"
+  ],
+  "usr_b139316a2ee0": [
+    "job_38e4e0063081"
+  ],
+  "usr_2bce66e536c0": [
+    "job_6dd5307d627c"
+  ],
+  "usr_4c165cd3b4e0": [
+    "job_279a8d2e16e4"
+  ],
+  "usr_b99bd662667c": [
+    "job_d8247bbf4dc6"
+  ],
+  "usr_14c9c879762f": [
+    "job_a9c6a170fd6e"
+  ],
+  "usr_c6455a3982ad": [
+    "job_91678104d6ec"
+  ],
+  "usr_aad00eb35001": [
+    "job_1a85d6916003"
+  ],
+  "usr_40edb976a7a5": [
+    "job_06471a36250f"
+  ],
+  "usr_2732ad978af1": [
+    "job_d1a21cb3e3f8"
+  ],
+  "usr_6ef4e4193e9f": [
+    "job_e265f494a003"
+  ],
+  "usr_11efea1c6b5f": [
+    "job_2416d716b269"
+  ],
+  "usr_45a39eaef52d": [
+    "job_636cc21ab1de"
+  ],
+  "usr_569a9be861fb": [
+    "job_a130b61a6431"
+  ],
+  "usr_46e4d3aec95f": [
+    "job_8d062bb720c3"
+  ],
+  "usr_a55cf7156600": [
+    "job_c69db9017627"
+  ],
+  "usr_e84154dcf825": [
+    "job_a25ea645bed6"
+  ],
+  "usr_16084a0d8ac7": [
+    "job_632e822e0695"
+  ],
+  "usr_1500b736e0e6": [
+    "job_f0ebdf45ab97"
+  ],
+  "usr_5ba494b222b6": [
+    "job_725f9346333e"
+  ],
+  "usr_0317ca323184": [
+    "job_8fa24b873287"
+  ],
+  "usr_3c4ad48c3dd9": [
+    "job_7e7012125ddf"
+  ],
+  "usr_324d20814cd0": [
+    "job_6a3c17f34f09"
+  ],
+  "usr_c1a04672a0da": [
+    "job_9d0c53b13972"
+  ],
+  "usr_f7aba3af4280": [
+    "job_a4f3665fb568"
+  ],
+  "usr_719eb28ade84": [
+    "job_0168cca2bab3"
+  ],
+  "usr_6c72d66cae63": [
+    "job_3536a2097890"
+  ],
+  "usr_46fda2261015": [
+    "job_52432afb0529"
+  ],
+  "usr_e670a3ae30f1": [
+    "job_bbeee1c513f1"
+  ],
+  "usr_01a4dda8d58e": [
+    "job_537bf926cdd1"
+  ],
+  "usr_32464ffdb2e8": [
+    "job_fe87df585c41"
+  ],
+  "usr_638ef9bcddce": [
+    "job_dba754bb0a64"
+  ],
+  "usr_ef82312c0ddc": [
+    "job_304a8b29de27"
+  ],
+  "usr_82bdbccabd0f": [
+    "job_94b8e2732616"
+  ],
+  "usr_876f3e0f5b63": [
+    "job_b81110565bed"
+  ],
+  "usr_8300ddc564e9": [
+    "job_4f62065724be"
+  ],
+  "usr_c79040bb1ca9": [
+    "job_32a82f5e558e"
+  ],
+  "usr_ef732cdfcdc3": [
+    "job_e575717f3e78"
+  ],
+  "usr_03fa106d8fd7": [
+    "job_c9215fff8782"
+  ],
+  "usr_d8a67fe977fc": [
+    "job_573497d4eee3"
+  ],
+  "usr_498152274647": [
+    "job_278d7ce306a1"
+  ],
+  "usr_54ed389e22c6": [
+    "job_79b1b809da64"
+  ],
+  "usr_64f6d0079fc4": [
+    "job_ad1ad23dff27"
+  ],
+  "usr_b0ac0abfc6dc": [
+    "job_141c37262a63"
+  ],
+  "usr_80c59d96f1cc": [
+    "job_eeb57a24fb1f"
+  ],
+  "usr_23d19182505a": [
+    "job_994840960df4"
+  ],
+  "usr_9cc69fdaa699": [
+    "job_562a8c011780"
+  ],
+  "usr_47e9eabaafd9": [
+    "job_051a01fd7ea9"
+  ],
+  "usr_1bb862f1c37b": [
+    "job_56c2ffb8c5a8"
+  ],
+  "usr_5562f0e0e908": [
+    "job_1f5320e64ea5"
+  ],
+  "usr_3896b53459ee": [
+    "job_678dc24b53b0"
+  ],
+  "usr_b1d1c2a73619": [
+    "job_8d442f44a9cc"
+  ],
+  "usr_ec90d4d6c4cc": [
+    "job_0ad33ee76bb7"
+  ],
+  "usr_b3186775f614": [
+    "job_6e8c6f1248dc"
+  ],
+  "usr_e5f5515126b8": [
+    "job_c4bd6541f9d8"
+  ],
+  "usr_534a181b8778": [
+    "job_27785f2c00a0"
+  ],
+  "usr_693a7db4719d": [
+    "job_a63d7c29d1e9"
+  ],
+  "usr_2f4f09e92a30": [
+    "job_8cc5faf830f6"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "usr_99d10bc978d8",
+  "phone": "01045678901",
+  "role": "worker",
+  "name": "أحمد محمد",
+  "governorate": "cairo",
+  "categories": [
+    "farming",
+    "loading"
+  ],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T12:55:25.147Z",
+  "updatedAt": "2026-04-16T12:55:25.177Z"
+}

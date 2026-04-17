@@ -1,0 +1,19 @@
+{
+  "id": "job_dc2de477951d",
+  "employerId": "usr_emp_p411",
+  "title": "فرصة عمل تجريبية Phase 4",
+  "category": "farming",
+  "governorate": "cairo",
+  "location": null,
+  "workersNeeded": 5,
+  "workersAccepted": 1,
+  "dailyWage": 200,
+  "startDate": "2026-06-01",
+  "durationDays": 3,
+  "description": "",
+  "totalCost": 3000,
+  "platformFee": 450,
+  "status": "open",
+  "createdAt": "2026-04-17T11:08:24.443Z",
+  "expiresAt": "2026-04-20T11:08:24.443Z"
+}

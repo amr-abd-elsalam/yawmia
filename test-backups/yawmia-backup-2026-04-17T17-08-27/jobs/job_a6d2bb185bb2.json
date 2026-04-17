@@ -1,0 +1,19 @@
+{
+  "id": "job_a6d2bb185bb2",
+  "employerId": "usr_emp_lc3",
+  "title": "فرصة لاختبار الدورة الكاملة",
+  "category": "farming",
+  "governorate": "fayoum",
+  "location": null,
+  "workersNeeded": 1,
+  "workersAccepted": 1,
+  "dailyWage": 250,
+  "startDate": "2026-04-20",
+  "durationDays": 3,
+  "description": "",
+  "totalCost": 750,
+  "platformFee": 113,
+  "status": "filled",
+  "createdAt": "2026-04-17T11:15:50.399Z",
+  "expiresAt": "2026-04-20T11:15:50.399Z"
+}

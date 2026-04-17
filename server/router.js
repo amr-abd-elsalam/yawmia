@@ -4,7 +4,7 @@
 
 import config from '../config.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
-import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout } from './handlers/authHandler.js';
+import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs } from './handlers/adminHandler.js';
@@ -33,7 +33,7 @@ const routes = [
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.7.0',
+        version: '0.8.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {
@@ -73,6 +73,7 @@ const routes = [
   { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
+  { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
 
   // ── Job Routes ──
   { method: 'POST', path: '/api/jobs', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateJob },

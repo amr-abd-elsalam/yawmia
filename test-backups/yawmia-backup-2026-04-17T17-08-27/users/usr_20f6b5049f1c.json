@@ -1,0 +1,15 @@
+{
+  "id": "usr_20f6b5049f1c",
+  "phone": "01020000002",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T15:35:14.815Z",
+  "updatedAt": "2026-04-16T15:35:14.815Z"
+}

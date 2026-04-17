@@ -1,0 +1,15 @@
+{
+  "id": "usr_073e5adfa84c",
+  "phone": "01023456789",
+  "role": "employer",
+  "name": "vvvv",
+  "governorate": "qena",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-17T13:42:13.328Z",
+  "updatedAt": "2026-04-17T13:54:04.263Z"
+}

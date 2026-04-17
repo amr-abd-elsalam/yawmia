@@ -26,6 +26,8 @@ import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
 import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
 import { enforceExpiredJobs } from './server/services/jobs.js';
+import { cleanExpiredOtps } from './server/services/auth.js';
+import { cleanOldNotifications } from './server/services/notifications.js';
 
 const PORT = parseInt(process.env.PORT || '3002', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -92,6 +94,10 @@ try {
   if (expiredSessions > 0) logger.info(`Startup: cleaned ${expiredSessions} expired sessions`);
   const expiredJobs = await enforceExpiredJobs();
   if (expiredJobs > 0) logger.info(`Startup: enforced ${expiredJobs} expired jobs`);
+  const expiredOtps = await cleanExpiredOtps();
+  if (expiredOtps > 0) logger.info(`Startup: cleaned ${expiredOtps} expired OTPs`);
+  const oldNotifs = await cleanOldNotifications();
+  if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
 } catch (err) {
   logger.warn('Startup cleanup error', { error: err.message });
 }
@@ -102,6 +108,8 @@ const cleanupTimer = setInterval(async () => {
   try {
     await cleanExpiredSessions();
     await enforceExpiredJobs();
+    await cleanExpiredOtps();
+    await cleanOldNotifications();
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
   }

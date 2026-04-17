@@ -1,0 +1,15 @@
+{
+  "id": "usr_ee179232dd86",
+  "phone": "01034567890",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T15:36:41.177Z",
+  "updatedAt": "2026-04-16T15:36:41.177Z"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "usr_65fc654f526c",
+  "phone": "01034567890",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-17T11:16:49.383Z",
+  "updatedAt": "2026-04-17T11:16:49.383Z"
+}

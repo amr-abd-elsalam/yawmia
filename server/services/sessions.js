@@ -75,3 +75,24 @@ export async function cleanExpired() {
 
   return cleaned;
 }
+
+/**
+ * Destroy all sessions for a specific user
+ * @param {string} userId
+ * @returns {Promise<number>} count of destroyed sessions
+ */
+export async function destroyAllByUser(userId) {
+  const sessionsDir = getCollectionPath('sessions');
+  const sessions = await listJSON(sessionsDir);
+  let destroyed = 0;
+
+  for (const session of sessions) {
+    if (session.userId === userId) {
+      const sessionPath = getRecordPath('sessions', session.token);
+      await deleteJSON(sessionPath);
+      destroyed++;
+    }
+  }
+
+  return destroyed;
+}

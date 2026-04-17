@@ -1,0 +1,12 @@
+{
+  "id": "ntf_657678e7cc1e",
+  "userId": "usr_w01",
+  "type": "application_accepted",
+  "message": "تم قبولك في الفرصة",
+  "meta": {
+    "jobId": "job_001"
+  },
+  "read": false,
+  "createdAt": "2026-04-16T14:43:40.627Z",
+  "readAt": null
+}

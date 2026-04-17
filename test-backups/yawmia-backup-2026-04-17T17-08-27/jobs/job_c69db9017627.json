@@ -1,0 +1,21 @@
+{
+  "id": "job_c69db9017627",
+  "employerId": "usr_a55cf7156600",
+  "title": "فرصة تقييم رقم 11",
+  "category": "farming",
+  "governorate": "fayoum",
+  "location": null,
+  "workersNeeded": 1,
+  "workersAccepted": 1,
+  "dailyWage": 250,
+  "startDate": "2026-04-20",
+  "durationDays": 3,
+  "description": "",
+  "totalCost": 750,
+  "platformFee": 113,
+  "status": "completed",
+  "createdAt": "2026-04-17T11:16:34.445Z",
+  "expiresAt": "2026-04-20T11:16:34.445Z",
+  "startedAt": "2026-04-17T11:16:35.541Z",
+  "completedAt": "2026-04-17T11:16:35.567Z"
+}

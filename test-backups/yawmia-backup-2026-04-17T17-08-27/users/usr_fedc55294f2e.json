@@ -1,0 +1,15 @@
+{
+  "id": "usr_fedc55294f2e",
+  "phone": "01010000002",
+  "role": "employer",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 4,
+    "count": 1
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T15:36:18.829Z",
+  "updatedAt": "2026-04-16T15:36:20.102Z"
+}

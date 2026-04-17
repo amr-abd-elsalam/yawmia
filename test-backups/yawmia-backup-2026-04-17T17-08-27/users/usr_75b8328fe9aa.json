@@ -1,0 +1,15 @@
+{
+  "id": "usr_75b8328fe9aa",
+  "phone": "01055555555",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T12:50:16.851Z",
+  "updatedAt": "2026-04-16T12:50:16.851Z"
+}

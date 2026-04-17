@@ -118,17 +118,32 @@ export async function markAsRead(notificationId, userId) {
 }
 
 /**
- * Mark all notifications as read for a user
+ * Mark all notifications as read for a user (index-accelerated)
  */
 export async function markAllAsRead(userId) {
-  const ntfDir = getCollectionPath('notifications');
-  const allNotifications = await listJSON(ntfDir);
+  let userNotifications;
+
+  // Try index-accelerated lookup first (same pattern as listByUser/countUnread)
+  const indexedIds = await getFromSetIndex(USER_NTF_INDEX, userId);
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const ntfId of indexedIds) {
+      const ntf = await readJSON(getRecordPath('notifications', ntfId));
+      if (ntf) results.push(ntf);
+    }
+    userNotifications = results;
+  } else {
+    // Fallback: full scan (backward compatibility for pre-index data)
+    const ntfDir = getCollectionPath('notifications');
+    const allNotifications = await listJSON(ntfDir);
+    userNotifications = allNotifications.filter(n => n.userId === userId);
+  }
 
   let count = 0;
   const now = new Date().toISOString();
 
-  for (const notification of allNotifications) {
-    if (notification.userId === userId && !notification.read) {
+  for (const notification of userNotifications) {
+    if (!notification.read) {
       notification.read = true;
       notification.readAt = now;
       const ntfPath = getRecordPath('notifications', notification.id);
@@ -138,6 +153,49 @@ export async function markAllAsRead(userId) {
   }
 
   return { ok: true, count };
+}
+
+/**
+ * Clean old notifications beyond TTL (startup + periodic)
+ * Only deletes READ notifications — unread always survive regardless of age
+ * @returns {Promise<number>} count of cleaned notifications
+ */
+export async function cleanOldNotifications() {
+  const ttlDays = config.CLEANUP?.notificationTtlDays;
+  if (!ttlDays || ttlDays <= 0) return 0;
+
+  const cutoff = new Date(Date.now() - ttlDays * 24 * 60 * 60 * 1000);
+  const ntfDir = getCollectionPath('notifications');
+  const allNotifications = await listJSON(ntfDir);
+  let cleaned = 0;
+  const affectedUsers = new Set();
+  const cleanedIds = new Set();
+
+  for (const ntf of allNotifications) {
+    if (ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
+      const ntfPath = getRecordPath('notifications', ntf.id);
+      await deleteJSON(ntfPath);
+      if (ntf.userId) affectedUsers.add(ntf.userId);
+      cleanedIds.add(ntf.id);
+      cleaned++;
+    }
+  }
+
+  // Update user notification indexes — remove cleaned notification IDs (batch)
+  if (cleaned > 0 && affectedUsers.size > 0) {
+    const indexPath = config.DATABASE.indexFiles.userNotificationsIndex;
+    const index = await readSetIndex(indexPath);
+
+    for (const userId of affectedUsers) {
+      if (index[userId]) {
+        index[userId] = index[userId].filter(id => !cleanedIds.has(id));
+        if (index[userId].length === 0) delete index[userId];
+      }
+    }
+    await writeSetIndex(indexPath, index);
+  }
+
+  return cleaned;
 }
 
 /**

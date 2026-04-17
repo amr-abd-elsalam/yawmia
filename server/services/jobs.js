@@ -105,6 +105,20 @@ export async function list(filters = {}) {
     jobs = jobs.filter(j => j.status === 'open');
   }
 
+  // Filter out jobs that should be expired but haven't been updated yet
+  // Prevents showing stale open jobs between periodic enforcement runs
+  if (!filters.status || filters.status === 'open') {
+    const now = new Date();
+    jobs = jobs.filter(j => {
+      if (j.status === 'open' && j.expiresAt && new Date(j.expiresAt) < now) {
+        // Trigger lazy expiry in background (fire-and-forget)
+        checkExpiry(j).catch(() => {});
+        return false;
+      }
+      return true;
+    });
+  }
+
   // Text search on title + description (case-insensitive)
   if (filters.search) {
     const term = filters.search.toLowerCase();
@@ -230,6 +244,7 @@ export async function countTodayByEmployer(employerId) {
 
 /**
  * Check if a job is expired and update its status if needed (lazy enforcement)
+ * Also auto-rejects pending applications on the expired job
  */
 export async function checkExpiry(job) {
   if (!job) return null;
@@ -244,8 +259,45 @@ export async function checkExpiry(job) {
       jobsIndex[job.id].status = 'expired';
       await writeIndex('jobsIndex', jobsIndex);
     }
+
+    // Auto-reject pending applications (fire-and-forget)
+    rejectPendingApplications(job.id, job.title).catch(() => {});
   }
   return job;
+}
+
+/**
+ * Auto-reject all pending applications for a job (used on expiry)
+ * Fire-and-forget — errors don't break the parent flow
+ * @param {string} jobId
+ * @param {string} jobTitle
+ */
+async function rejectPendingApplications(jobId, jobTitle) {
+  try {
+    const { listByJob: listAppsByJob } = await import('./applications.js');
+    const { createNotification } = await import('./notifications.js');
+    const apps = await listAppsByJob(jobId);
+    const now = new Date().toISOString();
+
+    for (const app of apps) {
+      if (app.status === 'pending') {
+        app.status = 'rejected';
+        app.respondedAt = now;
+        const appPath = getRecordPath('applications', app.id);
+        await atomicWrite(appPath, app);
+
+        // Notify worker
+        await createNotification(
+          app.workerId,
+          'application_rejected',
+          `الفرصة "${jobTitle}" انتهت صلاحيتها — تم رفض طلبك تلقائياً`,
+          { jobId, applicationId: app.id, reason: 'job_expired' }
+        ).catch(() => {});
+      }
+    }
+  } catch (_) {
+    // Fire-and-forget — don't break expiry flow
+  }
 }
 
 /**

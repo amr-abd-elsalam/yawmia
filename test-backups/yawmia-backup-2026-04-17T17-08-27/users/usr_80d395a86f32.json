@@ -1,0 +1,15 @@
+{
+  "id": "usr_80d395a86f32",
+  "phone": "01022222222",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T12:50:16.653Z",
+  "updatedAt": "2026-04-16T12:50:16.653Z"
+}

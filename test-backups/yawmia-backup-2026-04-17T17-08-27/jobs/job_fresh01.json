@@ -1,0 +1,14 @@
+{
+  "id": "job_fresh01",
+  "employerId": "usr_emp_fresh",
+  "title": "فرصة جديدة",
+  "category": "painting",
+  "governorate": "giza",
+  "workersNeeded": 2,
+  "workersAccepted": 0,
+  "dailyWage": 350,
+  "durationDays": 3,
+  "status": "open",
+  "createdAt": "2026-04-17T17:06:49.082Z",
+  "expiresAt": "2026-04-20T17:06:49.082Z"
+}

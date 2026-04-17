@@ -1,0 +1,13 @@
+{
+  "id": "ntf_1c38d1d6a7bf",
+  "userId": "usr_emp105",
+  "type": "new_application",
+  "message": "عامل جديد تقدّم على فرصتك",
+  "meta": {
+    "jobId": "job_0014327db7e1",
+    "applicationId": "app_e6cbea3e8afd"
+  },
+  "read": false,
+  "createdAt": "2026-04-17T01:41:01.968Z",
+  "readAt": null
+}

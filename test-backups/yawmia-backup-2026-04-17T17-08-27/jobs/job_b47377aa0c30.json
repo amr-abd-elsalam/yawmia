@@ -1,0 +1,21 @@
+{
+  "id": "job_b47377aa0c30",
+  "employerId": "usr_031e380e6e0f",
+  "title": "فرصة للتقييم المتعدد 13",
+  "category": "construction",
+  "governorate": "cairo",
+  "location": null,
+  "workersNeeded": 1,
+  "workersAccepted": 1,
+  "dailyWage": 300,
+  "startDate": "2026-04-25",
+  "durationDays": 1,
+  "description": "",
+  "totalCost": 300,
+  "platformFee": 45,
+  "status": "completed",
+  "createdAt": "2026-04-17T11:08:48.980Z",
+  "expiresAt": "2026-04-20T11:08:48.980Z",
+  "startedAt": "2026-04-17T11:08:49.885Z",
+  "completedAt": "2026-04-17T11:08:49.905Z"
+}

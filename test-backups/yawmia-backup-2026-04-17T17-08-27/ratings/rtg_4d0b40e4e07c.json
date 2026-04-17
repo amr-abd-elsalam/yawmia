@@ -1,0 +1,11 @@
+{
+  "id": "rtg_4d0b40e4e07c",
+  "jobId": "job_0c0a2ef1afb1",
+  "fromUserId": "usr_0bd8a629dc29",
+  "toUserId": "usr_eed9087491cb",
+  "fromRole": "employer",
+  "toRole": "worker",
+  "stars": 5,
+  "comment": null,
+  "createdAt": "2026-04-16T21:22:14.244Z"
+}

@@ -4,12 +4,49 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, deleteJSON, getRecordPath } from './database.js';
+import { atomicWrite, readJSON, deleteJSON, getRecordPath, listJSON, getCollectionPath } from './database.js';
 import { createSession } from './sessions.js';
 import { findByPhone, create as createUser } from './users.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { sendOtpMessage } from './messaging.js';
+
+// ── Per-phone OTP rate limiting (in-memory) ──────────────────
+const phoneOtpTracker = new Map();
+const PHONE_OTP_WINDOW_MS = config.RATE_LIMIT.otpWindowMs;  // 5 minutes
+const PHONE_OTP_MAX = config.RATE_LIMIT.otpMaxRequests;     // 5 per window
+
+function isPhoneOtpRateLimited(phone) {
+  const now = Date.now();
+  const tracker = phoneOtpTracker.get(phone);
+  if (!tracker) return false;
+  // Clean old entries
+  const recent = tracker.filter(ts => now - ts < PHONE_OTP_WINDOW_MS);
+  phoneOtpTracker.set(phone, recent);
+  return recent.length >= PHONE_OTP_MAX;
+}
+
+function recordPhoneOtp(phone) {
+  const now = Date.now();
+  if (!phoneOtpTracker.has(phone)) {
+    phoneOtpTracker.set(phone, []);
+  }
+  phoneOtpTracker.get(phone).push(now);
+}
+
+// Cleanup stale entries periodically (every 10 minutes)
+const phoneOtpCleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [phone, timestamps] of phoneOtpTracker) {
+    const recent = timestamps.filter(ts => now - ts < PHONE_OTP_WINDOW_MS);
+    if (recent.length === 0) {
+      phoneOtpTracker.delete(phone);
+    } else {
+      phoneOtpTracker.set(phone, recent);
+    }
+  }
+}, 10 * 60 * 1000);
+if (phoneOtpCleanupTimer.unref) phoneOtpCleanupTimer.unref();
 
 /**
  * Generate a random OTP
@@ -27,6 +64,16 @@ export function generateOtp() {
  * Send OTP to phone (mock in Phase 1)
  */
 export async function sendOtp(phone, role) {
+  // Per-phone rate limiting
+  if (isPhoneOtpRateLimited(phone)) {
+    return {
+      ok: false,
+      error: 'تم تجاوز الحد المسموح من طلبات كود التحقق لهذا الرقم. حاول بعد قليل.',
+      code: 'PHONE_OTP_RATE_LIMITED',
+    };
+  }
+  recordPhoneOtp(phone);
+
   const otp = generateOtp();
   const now = new Date();
 
@@ -124,4 +171,25 @@ export async function verifyOtp(phone, otp) {
       governorate: user.governorate,
     },
   };
+}
+
+/**
+ * Clean expired OTP files (startup + periodic)
+ * @returns {Promise<number>} count of cleaned OTP files
+ */
+export async function cleanExpiredOtps() {
+  const otpDir = getCollectionPath('otp');
+  const allOtps = await listJSON(otpDir);
+  const now = new Date();
+  let cleaned = 0;
+
+  for (const otpData of allOtps) {
+    if (otpData.expiresAt && new Date(otpData.expiresAt) < now) {
+      const otpPath = getRecordPath('otp', otpData.phone);
+      await deleteJSON(otpPath);
+      cleaned++;
+    }
+  }
+
+  return cleaned;
 }

@@ -1,0 +1,14 @@
+{
+  "id": "job_stale01",
+  "employerId": "usr_emp_stale",
+  "title": "فرصة قديمة",
+  "category": "cleaning",
+  "governorate": "cairo",
+  "workersNeeded": 1,
+  "workersAccepted": 0,
+  "dailyWage": 200,
+  "durationDays": 1,
+  "status": "expired",
+  "createdAt": "2026-04-13T13:06:47.069Z",
+  "expiresAt": "2026-04-17T17:06:46.069Z"
+}

@@ -153,3 +153,21 @@ export async function handleLogout(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في تسجيل الخروج', code: 'LOGOUT_ERROR' });
   }
 }
+
+/**
+ * POST /api/auth/logout-all — Destroy all sessions for the current user
+ */
+export async function handleLogoutAll(req, res) {
+  try {
+    const { destroyAllByUser } = await import('../services/sessions.js');
+    const destroyed = await destroyAllByUser(req.user.id);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      message: 'تم تسجيل الخروج من كل الأجهزة',
+      sessionsDestroyed: destroyed,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}

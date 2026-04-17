@@ -1,0 +1,15 @@
+{
+  "id": "usr_2b7ce2d7472a",
+  "phone": "01012345678",
+  "role": "worker",
+  "name": "vvvv",
+  "governorate": "sohag",
+  "categories": [],
+  "rating": {
+    "avg": 0,
+    "count": 0
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T21:23:01.810Z",
+  "updatedAt": "2026-04-17T08:26:57.375Z"
+}

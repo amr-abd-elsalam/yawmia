@@ -1,0 +1,15 @@
+{
+  "id": "usr_ad9861157013",
+  "phone": "01020000001",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 5,
+    "count": 1
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T15:36:17.501Z",
+  "updatedAt": "2026-04-16T15:36:18.821Z"
+}

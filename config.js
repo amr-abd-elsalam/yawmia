@@ -341,6 +341,15 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 21. التنظيف الدوري (CLEANUP)
+  // ═══════════════════════════════════════════════════════════
+  CLEANUP: {
+    notificationTtlDays: 90,         // حذف الإشعارات المقروءة بعد 90 يوم
+    maxNotificationsPerUser: 500,    // أقصى عدد إشعارات لكل مستخدم (مرجع مستقبلي)
+    otpCleanupEnabled: true,         // تنظيف OTP files المنتهية
+  },
+
 };
 
 export default deepFreeze(config);

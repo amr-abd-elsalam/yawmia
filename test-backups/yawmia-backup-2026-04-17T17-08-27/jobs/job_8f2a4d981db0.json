@@ -1,0 +1,19 @@
+{
+  "id": "job_8f2a4d981db0",
+  "employerId": "usr_emp003",
+  "title": "جمع محصول قمح",
+  "category": "farming",
+  "governorate": "fayoum",
+  "location": null,
+  "workersNeeded": 20,
+  "workersAccepted": 0,
+  "dailyWage": 250,
+  "startDate": "2026-04-20",
+  "durationDays": 3,
+  "description": "محتاج 20 شخص لجمع قمح في الفيوم",
+  "totalCost": 15000,
+  "platformFee": 2250,
+  "status": "open",
+  "createdAt": "2026-04-17T11:08:09.305Z",
+  "expiresAt": "2026-04-20T11:08:09.305Z"
+}

@@ -1,0 +1,5242 @@
+{
+  "job_be5cd02a51c7": {
+    "id": "job_be5cd02a51c7",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.135Z"
+  },
+  "job_b2baa554baec": {
+    "id": "job_b2baa554baec",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.173Z"
+  },
+  "job_d28bfa548b36": {
+    "id": "job_d28bfa548b36",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.211Z"
+  },
+  "job_37f5a9852e69": {
+    "id": "job_37f5a9852e69",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.245Z"
+  },
+  "job_be0fd03383c4": {
+    "id": "job_be0fd03383c4",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.309Z"
+  },
+  "job_230bdd34cce0": {
+    "id": "job_230bdd34cce0",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.368Z"
+  },
+  "job_66988329664e": {
+    "id": "job_66988329664e",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T12:52:31.463Z"
+  },
+  "job_d4d2c4708caf": {
+    "id": "job_d4d2c4708caf",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:31.521Z"
+  },
+  "job_0f9662c29f6e": {
+    "id": "job_0f9662c29f6e",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T12:52:31.561Z"
+  },
+  "job_6e5f9bf0acad": {
+    "id": "job_6e5f9bf0acad",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:56.830Z"
+  },
+  "job_acdb69ee2e47": {
+    "id": "job_acdb69ee2e47",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:56.867Z"
+  },
+  "job_9ee3eaa0e6f4": {
+    "id": "job_9ee3eaa0e6f4",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T12:52:56.937Z"
+  },
+  "job_524f83c77888": {
+    "id": "job_524f83c77888",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:56.992Z"
+  },
+  "job_3f8c738ff086": {
+    "id": "job_3f8c738ff086",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.063Z"
+  },
+  "job_a3e67b15a884": {
+    "id": "job_a3e67b15a884",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.157Z"
+  },
+  "job_4753c8e1c92f": {
+    "id": "job_4753c8e1c92f",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.240Z"
+  },
+  "job_27bb1eb5304b": {
+    "id": "job_27bb1eb5304b",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.314Z"
+  },
+  "job_8032982b2d6c": {
+    "id": "job_8032982b2d6c",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.413Z"
+  },
+  "job_9019cc6e25d2": {
+    "id": "job_9019cc6e25d2",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.548Z"
+  },
+  "job_a3d498e56c3d": {
+    "id": "job_a3d498e56c3d",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:52:57.575Z"
+  },
+  "job_1aa59cae3cf3": {
+    "id": "job_1aa59cae3cf3",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.280Z"
+  },
+  "job_22ab2c4c8602": {
+    "id": "job_22ab2c4c8602",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.354Z"
+  },
+  "job_fdf3eed503c9": {
+    "id": "job_fdf3eed503c9",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T12:55:20.478Z"
+  },
+  "job_45a30ba5638d": {
+    "id": "job_45a30ba5638d",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.528Z"
+  },
+  "job_16b5844cba31": {
+    "id": "job_16b5844cba31",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.641Z"
+  },
+  "job_8120f9f51e4d": {
+    "id": "job_8120f9f51e4d",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.756Z"
+  },
+  "job_54721649af44": {
+    "id": "job_54721649af44",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.850Z"
+  },
+  "job_d0d1af1a9519": {
+    "id": "job_d0d1af1a9519",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:20.935Z"
+  },
+  "job_b015b40f5961": {
+    "id": "job_b015b40f5961",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:21.052Z"
+  },
+  "job_0def2fdebc77": {
+    "id": "job_0def2fdebc77",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:21.276Z"
+  },
+  "job_89818903e280": {
+    "id": "job_89818903e280",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:21.306Z"
+  },
+  "job_155d4d4984ca": {
+    "id": "job_155d4d4984ca",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:23.380Z"
+  },
+  "job_9004cd6d27ba": {
+    "id": "job_9004cd6d27ba",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:23.454Z"
+  },
+  "job_7cf06f9664b1": {
+    "id": "job_7cf06f9664b1",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:23.554Z"
+  },
+  "job_c7822542aa0c": {
+    "id": "job_c7822542aa0c",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:23.672Z"
+  },
+  "job_b14327bde45b": {
+    "id": "job_b14327bde45b",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:24.034Z"
+  },
+  "job_afbdd6462544": {
+    "id": "job_afbdd6462544",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:24.189Z"
+  },
+  "job_9e6743a1e9ec": {
+    "id": "job_9e6743a1e9ec",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T12:55:24.442Z"
+  },
+  "job_8f64d7dd99aa": {
+    "id": "job_8f64d7dd99aa",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T12:55:24.493Z"
+  },
+  "job_323a1e8a67fe": {
+    "id": "job_323a1e8a67fe",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T12:55:24.526Z"
+  },
+  "job_f9d1f10df53e": {
+    "id": "job_f9d1f10df53e",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:23.864Z"
+  },
+  "job_aaacde8a18d3": {
+    "id": "job_aaacde8a18d3",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.040Z"
+  },
+  "job_6eee44a3b56e": {
+    "id": "job_6eee44a3b56e",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T13:09:24.275Z"
+  },
+  "job_9f411eadb4d2": {
+    "id": "job_9f411eadb4d2",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.331Z"
+  },
+  "job_ebd179236c48": {
+    "id": "job_ebd179236c48",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.499Z"
+  },
+  "job_d53eb6a66090": {
+    "id": "job_d53eb6a66090",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.645Z"
+  },
+  "job_e4c790a8ce1c": {
+    "id": "job_e4c790a8ce1c",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.770Z"
+  },
+  "job_c9cef571e219": {
+    "id": "job_c9cef571e219",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:24.909Z"
+  },
+  "job_f38b2c57913f": {
+    "id": "job_f38b2c57913f",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:25.059Z"
+  },
+  "job_b29e2f75e4dd": {
+    "id": "job_b29e2f75e4dd",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:25.370Z"
+  },
+  "job_0eed918710aa": {
+    "id": "job_0eed918710aa",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:25.405Z"
+  },
+  "job_55908b52ace8": {
+    "id": "job_55908b52ace8",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:27.632Z"
+  },
+  "job_efe9f79b905d": {
+    "id": "job_efe9f79b905d",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:27.664Z"
+  },
+  "job_ab2fb2216cec": {
+    "id": "job_ab2fb2216cec",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:27.687Z"
+  },
+  "job_6f2abc6f30e9": {
+    "id": "job_6f2abc6f30e9",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:27.714Z"
+  },
+  "job_f73fd987fe38": {
+    "id": "job_f73fd987fe38",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:27.976Z"
+  },
+  "job_fdbe43b55f79": {
+    "id": "job_fdbe43b55f79",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:28.223Z"
+  },
+  "job_e64183605243": {
+    "id": "job_e64183605243",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T13:09:28.576Z"
+  },
+  "job_5424228510d0": {
+    "id": "job_5424228510d0",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T13:09:28.627Z"
+  },
+  "job_5fc34e73111d": {
+    "id": "job_5fc34e73111d",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T13:09:28.662Z"
+  },
+  "job_19611c1ca681": {
+    "id": "job_19611c1ca681",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:27:37.599Z"
+  },
+  "job_129d72b28f82": {
+    "id": "job_129d72b28f82",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:27:37.716Z"
+  },
+  "job_7c155f9470c8": {
+    "id": "job_7c155f9470c8",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:27:37.758Z"
+  },
+  "job_94726ab99e18": {
+    "id": "job_94726ab99e18",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T14:27:37.815Z"
+  },
+  "job_53ff3f660826": {
+    "id": "job_53ff3f660826",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:27:37.902Z"
+  },
+  "job_fe8dd8e8ac94": {
+    "id": "job_fe8dd8e8ac94",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:27:37.929Z"
+  },
+  "job_d0be83fd4945": {
+    "id": "job_d0be83fd4945",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:27:38.011Z"
+  },
+  "job_43fa52700895": {
+    "id": "job_43fa52700895",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:27:38.073Z"
+  },
+  "job_51c4940deba4": {
+    "id": "job_51c4940deba4",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:27:38.134Z"
+  },
+  "job_fd581fa858aa": {
+    "id": "job_fd581fa858aa",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:27:38.153Z"
+  },
+  "job_777f23f28700": {
+    "id": "job_777f23f28700",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.236Z"
+  },
+  "job_1aa9d3b49769": {
+    "id": "job_1aa9d3b49769",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.369Z"
+  },
+  "job_578f1b814e29": {
+    "id": "job_578f1b814e29",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T14:28:57.624Z"
+  },
+  "job_183be244e140": {
+    "id": "job_183be244e140",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.689Z"
+  },
+  "job_a449f1bd9cd9": {
+    "id": "job_a449f1bd9cd9",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.860Z"
+  },
+  "job_1e273cdf5928": {
+    "id": "job_1e273cdf5928",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:58.019Z"
+  },
+  "job_a5469bad9c01": {
+    "id": "job_a5469bad9c01",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:58.170Z"
+  },
+  "job_85b8f1c1b121": {
+    "id": "job_85b8f1c1b121",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:58.318Z"
+  },
+  "job_3deb51a4ac6b": {
+    "id": "job_3deb51a4ac6b",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.163Z"
+  },
+  "job_801bae2c4390": {
+    "id": "job_801bae2c4390",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.561Z"
+  },
+  "job_d1863842d4fa": {
+    "id": "job_d1863842d4fa",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:57.592Z"
+  },
+  "job_2d5cd6af7bee": {
+    "id": "job_2d5cd6af7bee",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:28:59.709Z"
+  },
+  "job_f09ecfe42010": {
+    "id": "job_f09ecfe42010",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:59.791Z"
+  },
+  "job_cf107943eb04": {
+    "id": "job_cf107943eb04",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:28:59.834Z"
+  },
+  "job_adfe1ae20f0f": {
+    "id": "job_adfe1ae20f0f",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T14:28:59.901Z"
+  },
+  "job_993dc3c41973": {
+    "id": "job_993dc3c41973",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:28:59.988Z"
+  },
+  "job_f5abc39e298b": {
+    "id": "job_f5abc39e298b",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:29:00.013Z"
+  },
+  "job_aaf09c4c989d": {
+    "id": "job_aaf09c4c989d",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:29:00.106Z"
+  },
+  "job_f37679649a64": {
+    "id": "job_f37679649a64",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:29:00.163Z"
+  },
+  "job_b0fea6493ed1": {
+    "id": "job_b0fea6493ed1",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:29:00.224Z"
+  },
+  "job_d6ecfbdb0676": {
+    "id": "job_d6ecfbdb0676",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:29:00.246Z"
+  },
+  "job_05995954490b": {
+    "id": "job_05995954490b",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:00.958Z"
+  },
+  "job_63b59a2aba00": {
+    "id": "job_63b59a2aba00",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:00.990Z"
+  },
+  "job_e8231f863d28": {
+    "id": "job_e8231f863d28",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:01.009Z"
+  },
+  "job_daa17c924fe4": {
+    "id": "job_daa17c924fe4",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:01.038Z"
+  },
+  "job_8703de664af0": {
+    "id": "job_8703de664af0",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:01.393Z"
+  },
+  "job_961f4f050cb4": {
+    "id": "job_961f4f050cb4",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:01.672Z"
+  },
+  "job_6c5b0da059bc": {
+    "id": "job_6c5b0da059bc",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T14:29:02.215Z"
+  },
+  "job_b9f40c8c5fab": {
+    "id": "job_b9f40c8c5fab",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:29:02.261Z"
+  },
+  "job_75cc9712a57d": {
+    "id": "job_75cc9712a57d",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:29:02.295Z"
+  },
+  "job_d77c07680f50": {
+    "id": "job_d77c07680f50",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:32.483Z"
+  },
+  "job_734632e8d735": {
+    "id": "job_734632e8d735",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:32.663Z"
+  },
+  "job_c6cf32f12f28": {
+    "id": "job_c6cf32f12f28",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T14:43:32.988Z"
+  },
+  "job_cdb4bfa6a44f": {
+    "id": "job_cdb4bfa6a44f",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.038Z"
+  },
+  "job_96d08cabc7f7": {
+    "id": "job_96d08cabc7f7",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.213Z"
+  },
+  "job_ea22fc7af24b": {
+    "id": "job_ea22fc7af24b",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.417Z"
+  },
+  "job_8df2f36e2745": {
+    "id": "job_8df2f36e2745",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.596Z"
+  },
+  "job_00f6ba0dc488": {
+    "id": "job_00f6ba0dc488",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.771Z"
+  },
+  "job_e77c54447555": {
+    "id": "job_e77c54447555",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:33.993Z"
+  },
+  "job_06681e996b56": {
+    "id": "job_06681e996b56",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:34.482Z"
+  },
+  "job_976983290aa7": {
+    "id": "job_976983290aa7",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:34.507Z"
+  },
+  "job_97cb05129032": {
+    "id": "job_97cb05129032",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:43:37.212Z"
+  },
+  "job_6281c608df9b": {
+    "id": "job_6281c608df9b",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:37.286Z"
+  },
+  "job_15e4d0ace719": {
+    "id": "job_15e4d0ace719",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:43:37.322Z"
+  },
+  "job_6bc743e93392": {
+    "id": "job_6bc743e93392",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T14:43:37.388Z"
+  },
+  "job_fa30db6ae489": {
+    "id": "job_fa30db6ae489",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:37.502Z"
+  },
+  "job_36c9ec3e1588": {
+    "id": "job_36c9ec3e1588",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T14:43:37.527Z"
+  },
+  "job_2aad382e7631": {
+    "id": "job_2aad382e7631",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:43:37.609Z"
+  },
+  "job_4315b9a1efaf": {
+    "id": "job_4315b9a1efaf",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:43:37.667Z"
+  },
+  "job_99511af4d8dc": {
+    "id": "job_99511af4d8dc",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:43:37.734Z"
+  },
+  "job_33bf1ccaf473": {
+    "id": "job_33bf1ccaf473",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T14:43:37.756Z"
+  },
+  "job_8b5c73e03a58": {
+    "id": "job_8b5c73e03a58",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:38.639Z"
+  },
+  "job_343376cde92b": {
+    "id": "job_343376cde92b",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:38.676Z"
+  },
+  "job_58534f5ba9b8": {
+    "id": "job_58534f5ba9b8",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:38.703Z"
+  },
+  "job_2e4e41ba0417": {
+    "id": "job_2e4e41ba0417",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:38.730Z"
+  },
+  "job_6cefd0200eec": {
+    "id": "job_6cefd0200eec",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:39.195Z"
+  },
+  "job_9eb7785d6d24": {
+    "id": "job_9eb7785d6d24",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:39.632Z"
+  },
+  "job_2c1c72b7545f": {
+    "id": "job_2c1c72b7545f",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T14:43:40.362Z"
+  },
+  "job_e7f1dfe6fa3d": {
+    "id": "job_e7f1dfe6fa3d",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T14:43:40.414Z"
+  },
+  "job_3ae9eb6867ca": {
+    "id": "job_3ae9eb6867ca",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T14:43:40.451Z"
+  },
+  "job_a7b160dbe23b": {
+    "id": "job_a7b160dbe23b",
+    "employerId": "usr_58e54e66ce89",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:13.933Z"
+  },
+  "job_bd705fdc69d4": {
+    "id": "job_bd705fdc69d4",
+    "employerId": "usr_5d820034b362",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:14.836Z"
+  },
+  "job_0f317e748ba7": {
+    "id": "job_0f317e748ba7",
+    "employerId": "usr_4b90946d5edb",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:35:15.683Z"
+  },
+  "job_1cdb6c24bf62": {
+    "id": "job_1cdb6c24bf62",
+    "employerId": "usr_79390a648446",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:15.747Z"
+  },
+  "job_c0af1140274f": {
+    "id": "job_c0af1140274f",
+    "employerId": "usr_6be72f304452",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:16.981Z"
+  },
+  "job_9470930b6ea5": {
+    "id": "job_9470930b6ea5",
+    "employerId": "usr_aae442506a22",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:17.447Z"
+  },
+  "job_18560eaa4dcf": {
+    "id": "job_18560eaa4dcf",
+    "employerId": "usr_77282d657a1f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:17.949Z"
+  },
+  "job_b76040a0149e": {
+    "id": "job_b76040a0149e",
+    "employerId": "usr_90d9a0a0470c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:18.654Z"
+  },
+  "job_f479de12043f": {
+    "id": "job_f479de12043f",
+    "employerId": "usr_9ca203802c2f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:19.673Z"
+  },
+  "job_7ffdf6b603f5": {
+    "id": "job_7ffdf6b603f5",
+    "employerId": "usr_b7dc5d969172",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:20.637Z"
+  },
+  "job_5bc059d9efce": {
+    "id": "job_5bc059d9efce",
+    "employerId": "usr_72f3ed85434e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:21.169Z"
+  },
+  "job_b99b89f42dff": {
+    "id": "job_b99b89f42dff",
+    "employerId": "usr_71f7f440bc0c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:22.651Z"
+  },
+  "job_9489cee09ff5": {
+    "id": "job_9489cee09ff5",
+    "employerId": "usr_86e93c40b4a2",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:23.607Z"
+  },
+  "job_ee6eab60efd2": {
+    "id": "job_ee6eab60efd2",
+    "employerId": "usr_a13ca2337053",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:24.596Z"
+  },
+  "job_a785ff29f110": {
+    "id": "job_a785ff29f110",
+    "employerId": "usr_04cf1719e10a",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:25.679Z"
+  },
+  "job_4eea0cfec48d": {
+    "id": "job_4eea0cfec48d",
+    "employerId": "usr_008c57d2feb4",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:26.905Z"
+  },
+  "job_0cc8df4dc1a6": {
+    "id": "job_0cc8df4dc1a6",
+    "employerId": "usr_a2eb8d7bbf63",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:27.913Z"
+  },
+  "job_0f8f593555e4": {
+    "id": "job_0f8f593555e4",
+    "employerId": "usr_4d52eaec8d8c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:35:29.015Z"
+  },
+  "job_b2c9ee927eb3": {
+    "id": "job_b2c9ee927eb3",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:06.708Z"
+  },
+  "job_743934ba5360": {
+    "id": "job_743934ba5360",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:06.985Z"
+  },
+  "job_1f0b9a98f81a": {
+    "id": "job_1f0b9a98f81a",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T15:36:07.457Z"
+  },
+  "job_b51bd51c77b7": {
+    "id": "job_b51bd51c77b7",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:07.507Z"
+  },
+  "job_12f2b75c3d77": {
+    "id": "job_12f2b75c3d77",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:07.779Z"
+  },
+  "job_51934f2c0d84": {
+    "id": "job_51934f2c0d84",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:08.070Z"
+  },
+  "job_266570f2f9e2": {
+    "id": "job_266570f2f9e2",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:08.339Z"
+  },
+  "job_4bf2304773dc": {
+    "id": "job_4bf2304773dc",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:08.637Z"
+  },
+  "job_02aa52f330f4": {
+    "id": "job_02aa52f330f4",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:08.958Z"
+  },
+  "job_21189736c9d0": {
+    "id": "job_21189736c9d0",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:09.653Z"
+  },
+  "job_1342098a848d": {
+    "id": "job_1342098a848d",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:09.677Z"
+  },
+  "job_b8d79a93bd61": {
+    "id": "job_b8d79a93bd61",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T15:36:11.180Z"
+  },
+  "job_c4c9d43977d2": {
+    "id": "job_c4c9d43977d2",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:11.255Z"
+  },
+  "job_58ed9eca5478": {
+    "id": "job_58ed9eca5478",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T15:36:11.282Z"
+  },
+  "job_4c8c1e47bd07": {
+    "id": "job_4c8c1e47bd07",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:11.337Z"
+  },
+  "job_80d81a6e3bd9": {
+    "id": "job_80d81a6e3bd9",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:11.447Z"
+  },
+  "job_2474a7ef0f1b": {
+    "id": "job_2474a7ef0f1b",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T15:36:11.477Z"
+  },
+  "job_29fbeafbf9d7": {
+    "id": "job_29fbeafbf9d7",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T15:36:11.565Z"
+  },
+  "job_6271cd99daf2": {
+    "id": "job_6271cd99daf2",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T15:36:11.629Z"
+  },
+  "job_40c2a2682a2f": {
+    "id": "job_40c2a2682a2f",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T15:36:11.715Z"
+  },
+  "job_c2e0f7453ed7": {
+    "id": "job_c2e0f7453ed7",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T15:36:11.740Z"
+  },
+  "job_1ae5bb1185a3": {
+    "id": "job_1ae5bb1185a3",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:12.971Z"
+  },
+  "job_1a566ba351dc": {
+    "id": "job_1a566ba351dc",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:13.003Z"
+  },
+  "job_c433aafc5b8a": {
+    "id": "job_c433aafc5b8a",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:13.027Z"
+  },
+  "job_12d1424aa009": {
+    "id": "job_12d1424aa009",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:13.056Z"
+  },
+  "job_469a1b27101f": {
+    "id": "job_469a1b27101f",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:13.676Z"
+  },
+  "job_05ee6df3e920": {
+    "id": "job_05ee6df3e920",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:14.285Z"
+  },
+  "job_16cc0ff0cb98": {
+    "id": "job_16cc0ff0cb98",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T15:36:15.279Z"
+  },
+  "job_2771f25e3282": {
+    "id": "job_2771f25e3282",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:15.345Z"
+  },
+  "job_c34b36549dcb": {
+    "id": "job_c34b36549dcb",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T15:36:15.392Z"
+  },
+  "job_1961f0a947ac": {
+    "id": "job_1961f0a947ac",
+    "employerId": "usr_861c6da97785",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:17.523Z"
+  },
+  "job_2635fcd3168b": {
+    "id": "job_2635fcd3168b",
+    "employerId": "usr_fedc55294f2e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:18.871Z"
+  },
+  "job_2d83c15f79d1": {
+    "id": "job_2d83c15f79d1",
+    "employerId": "usr_0c02b4380150",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T15:36:20.151Z"
+  },
+  "job_3aedfcd5a32a": {
+    "id": "job_3aedfcd5a32a",
+    "employerId": "usr_f1397b27428d",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:20.216Z"
+  },
+  "job_8d1d84a70cad": {
+    "id": "job_8d1d84a70cad",
+    "employerId": "usr_df2c1473df19",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:22.023Z"
+  },
+  "job_3fa5b7e8db7d": {
+    "id": "job_3fa5b7e8db7d",
+    "employerId": "usr_adc48f33528d",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:22.680Z"
+  },
+  "job_8c54aed7c1d9": {
+    "id": "job_8c54aed7c1d9",
+    "employerId": "usr_e113c6d5d299",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:23.331Z"
+  },
+  "job_36ddc871ee46": {
+    "id": "job_36ddc871ee46",
+    "employerId": "usr_8aaa9faf1cba",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:24.351Z"
+  },
+  "job_db3cd0c28e09": {
+    "id": "job_db3cd0c28e09",
+    "employerId": "usr_f0adea04d928",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:25.708Z"
+  },
+  "job_c87806d347b6": {
+    "id": "job_c87806d347b6",
+    "employerId": "usr_a876c331371c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:27.094Z"
+  },
+  "job_b36b5f4020a6": {
+    "id": "job_b36b5f4020a6",
+    "employerId": "usr_e1ca283bbc7e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:27.793Z"
+  },
+  "job_1fc9a549f9c0": {
+    "id": "job_1fc9a549f9c0",
+    "employerId": "usr_66c6bd61da0c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:29.886Z"
+  },
+  "job_ff3b5f4d90ed": {
+    "id": "job_ff3b5f4d90ed",
+    "employerId": "usr_dd795fcf9820",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:31.360Z"
+  },
+  "job_135f811626f9": {
+    "id": "job_135f811626f9",
+    "employerId": "usr_71f786c9910c",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:32.745Z"
+  },
+  "job_9c1219055012": {
+    "id": "job_9c1219055012",
+    "employerId": "usr_031c70c04ff1",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:34.080Z"
+  },
+  "job_57015f991d10": {
+    "id": "job_57015f991d10",
+    "employerId": "usr_6059446005d6",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:35.438Z"
+  },
+  "job_389a2364b891": {
+    "id": "job_389a2364b891",
+    "employerId": "usr_13132217cd48",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:36.810Z"
+  },
+  "job_8778dd708a10": {
+    "id": "job_8778dd708a10",
+    "employerId": "usr_bbebed3b56dd",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T15:36:38.416Z"
+  },
+  "job_ab98c00f6605": {
+    "id": "job_ab98c00f6605",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:44.788Z"
+  },
+  "job_e4cf57b79375": {
+    "id": "job_e4cf57b79375",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:45.189Z"
+  },
+  "job_722cfb5204d7": {
+    "id": "job_722cfb5204d7",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:45.559Z"
+  },
+  "job_d66fd11b3e73": {
+    "id": "job_d66fd11b3e73",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:45.939Z"
+  },
+  "job_1ff91c3967bc": {
+    "id": "job_1ff91c3967bc",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:46.433Z"
+  },
+  "job_06295e31d12f": {
+    "id": "job_06295e31d12f",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:46.453Z"
+  },
+  "job_213c7fd52d3d": {
+    "id": "job_213c7fd52d3d",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:48.028Z"
+  },
+  "job_ec0810f52486": {
+    "id": "job_ec0810f52486",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:49.654Z"
+  },
+  "job_5023e30e20bf": {
+    "id": "job_5023e30e20bf",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:50.307Z"
+  },
+  "job_803058e26f4d": {
+    "id": "job_803058e26f4d",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:51.355Z"
+  },
+  "job_d6aef5976a30": {
+    "id": "job_d6aef5976a30",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:51.710Z"
+  },
+  "job_0f448b7e92f6": {
+    "id": "job_0f448b7e92f6",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:50.855Z"
+  },
+  "job_5364b0bf83b5": {
+    "id": "job_5364b0bf83b5",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:51.591Z"
+  },
+  "job_ad823f613a23": {
+    "id": "job_ad823f613a23",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:52.322Z"
+  },
+  "job_149e39c01e0c": {
+    "id": "job_149e39c01e0c",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:38:53.102Z"
+  },
+  "job_3d16b17d1cff": {
+    "id": "job_3d16b17d1cff",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:46.571Z"
+  },
+  "job_996473521516": {
+    "id": "job_996473521516",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:47.021Z"
+  },
+  "job_7774b391ac6b": {
+    "id": "job_7774b391ac6b",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T16:39:47.783Z"
+  },
+  "job_1a283209b525": {
+    "id": "job_1a283209b525",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:47.858Z"
+  },
+  "job_d0c987d6a3b8": {
+    "id": "job_d0c987d6a3b8",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:48.334Z"
+  },
+  "job_ff4bcbda2a69": {
+    "id": "job_ff4bcbda2a69",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:48.759Z"
+  },
+  "job_922aad75eb40": {
+    "id": "job_922aad75eb40",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:49.194Z"
+  },
+  "job_8a23f64f2a37": {
+    "id": "job_8a23f64f2a37",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:49.592Z"
+  },
+  "job_bfaffba051ca": {
+    "id": "job_bfaffba051ca",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:50.040Z"
+  },
+  "job_b3c159c5bd8b": {
+    "id": "job_b3c159c5bd8b",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:51.220Z"
+  },
+  "job_b8336d72352e": {
+    "id": "job_b8336d72352e",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:51.241Z"
+  },
+  "job_714faa2ff06f": {
+    "id": "job_714faa2ff06f",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T16:39:53.048Z"
+  },
+  "job_b227a746b6b5": {
+    "id": "job_b227a746b6b5",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:53.119Z"
+  },
+  "job_154991dcdd71": {
+    "id": "job_154991dcdd71",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T16:39:53.151Z"
+  },
+  "job_67e8ef8b23b5": {
+    "id": "job_67e8ef8b23b5",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:39:53.201Z"
+  },
+  "job_b7b004418362": {
+    "id": "job_b7b004418362",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:53.325Z"
+  },
+  "job_eccfc9e0c4f3": {
+    "id": "job_eccfc9e0c4f3",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T16:39:53.360Z"
+  },
+  "job_e4269198454a": {
+    "id": "job_e4269198454a",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T16:39:53.449Z"
+  },
+  "job_ecfacb0e7d71": {
+    "id": "job_ecfacb0e7d71",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T16:39:53.512Z"
+  },
+  "job_c3abcb8135f5": {
+    "id": "job_c3abcb8135f5",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T16:39:53.573Z"
+  },
+  "job_7181f22965f9": {
+    "id": "job_7181f22965f9",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T16:39:53.600Z"
+  },
+  "job_268c2fe6eb9a": {
+    "id": "job_268c2fe6eb9a",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:55.150Z"
+  },
+  "job_71744728f100": {
+    "id": "job_71744728f100",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:55.183Z"
+  },
+  "job_c11788030bec": {
+    "id": "job_c11788030bec",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:55.206Z"
+  },
+  "job_260b7a8833e9": {
+    "id": "job_260b7a8833e9",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:55.233Z"
+  },
+  "job_ca24e0231ed2": {
+    "id": "job_ca24e0231ed2",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:55.982Z"
+  },
+  "job_5fe314ba8652": {
+    "id": "job_5fe314ba8652",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:56.706Z"
+  },
+  "job_8e4c77e8da73": {
+    "id": "job_8e4c77e8da73",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T16:39:58.092Z"
+  },
+  "job_6b78b8c8cd05": {
+    "id": "job_6b78b8c8cd05",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:39:58.147Z"
+  },
+  "job_e2c786a640b0": {
+    "id": "job_e2c786a640b0",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T16:39:58.180Z"
+  },
+  "job_21e69f20277f": {
+    "id": "job_21e69f20277f",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:00.471Z"
+  },
+  "job_2cc17e2bae23": {
+    "id": "job_2cc17e2bae23",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:00.951Z"
+  },
+  "job_c76995077d40": {
+    "id": "job_c76995077d40",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:01.359Z"
+  },
+  "job_9612adbc9635": {
+    "id": "job_9612adbc9635",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:01.904Z"
+  },
+  "job_7b34622e419b": {
+    "id": "job_7b34622e419b",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:02.406Z"
+  },
+  "job_a7e95fe79ddf": {
+    "id": "job_a7e95fe79ddf",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:02.434Z"
+  },
+  "job_5da10c94e70a": {
+    "id": "job_5da10c94e70a",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:04.521Z"
+  },
+  "job_53c3eab1cfbe": {
+    "id": "job_53c3eab1cfbe",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:06.561Z"
+  },
+  "job_27b8d429a887": {
+    "id": "job_27b8d429a887",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:07.444Z"
+  },
+  "job_56c31a34365c": {
+    "id": "job_56c31a34365c",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:08.798Z"
+  },
+  "job_15f50fdbd028": {
+    "id": "job_15f50fdbd028",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:09.252Z"
+  },
+  "job_75449bc094b0": {
+    "id": "job_75449bc094b0",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:09.712Z"
+  },
+  "job_e72b1bdc48a8": {
+    "id": "job_e72b1bdc48a8",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:10.615Z"
+  },
+  "job_76c60c9e4fd6": {
+    "id": "job_76c60c9e4fd6",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:11.559Z"
+  },
+  "job_cac02b9e5ae8": {
+    "id": "job_cac02b9e5ae8",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:12.417Z"
+  },
+  "job_5b0c09144b62": {
+    "id": "job_5b0c09144b62",
+    "employerId": "usr_34794a601ad0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:15.003Z"
+  },
+  "job_7423514a8020": {
+    "id": "job_7423514a8020",
+    "employerId": "usr_62fd3fd7a8ae",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:17.179Z"
+  },
+  "job_1b5d835c9ca2": {
+    "id": "job_1b5d835c9ca2",
+    "employerId": "usr_4320a6141bef",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T16:40:19.311Z"
+  },
+  "job_47bdcde3fc21": {
+    "id": "job_47bdcde3fc21",
+    "employerId": "usr_0ccdb58b79cd",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:19.380Z"
+  },
+  "job_d8dbd4f3c09e": {
+    "id": "job_d8dbd4f3c09e",
+    "employerId": "usr_ffa039ac35aa",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:22.396Z"
+  },
+  "job_31033c73351f": {
+    "id": "job_31033c73351f",
+    "employerId": "usr_a76dcfe0dad1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:23.513Z"
+  },
+  "job_ac4c2c382ee5": {
+    "id": "job_ac4c2c382ee5",
+    "employerId": "usr_b787d19c4730",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:24.604Z"
+  },
+  "job_d401d1cb3e57": {
+    "id": "job_d401d1cb3e57",
+    "employerId": "usr_0e534575ecf0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:24.747Z"
+  },
+  "job_2ef7ea61177f": {
+    "id": "job_2ef7ea61177f",
+    "employerId": "usr_5889642d54a4",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:26.746Z"
+  },
+  "job_c7161329d3a2": {
+    "id": "job_c7161329d3a2",
+    "employerId": "usr_d2000c209ece",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:28.813Z"
+  },
+  "job_ed3020fdda34": {
+    "id": "job_ed3020fdda34",
+    "employerId": "usr_05965f3dd37e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:29.834Z"
+  },
+  "job_e4121fc4d75a": {
+    "id": "job_e4121fc4d75a",
+    "employerId": "usr_d3a59812c55b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:33.114Z"
+  },
+  "job_6b2dd3589403": {
+    "id": "job_6b2dd3589403",
+    "employerId": "usr_bdb9fad4dda8",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:35.380Z"
+  },
+  "job_ebaf98a8381a": {
+    "id": "job_ebaf98a8381a",
+    "employerId": "usr_84e7728b652d",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:37.661Z"
+  },
+  "job_3c412e6c43c1": {
+    "id": "job_3c412e6c43c1",
+    "employerId": "usr_e178dd752819",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:40.211Z"
+  },
+  "job_759b0b578e45": {
+    "id": "job_759b0b578e45",
+    "employerId": "usr_90874e1f6cf9",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:42.416Z"
+  },
+  "job_f576806e71b3": {
+    "id": "job_f576806e71b3",
+    "employerId": "usr_0933ed431abf",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:44.505Z"
+  },
+  "job_ce45ba00d13f": {
+    "id": "job_ce45ba00d13f",
+    "employerId": "usr_c8ddb311c8fe",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T16:40:46.907Z"
+  },
+  "job_467e7feb7698": {
+    "id": "job_467e7feb7698",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:34.181Z"
+  },
+  "job_fdfa6284d0c0": {
+    "id": "job_fdfa6284d0c0",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:34.848Z"
+  },
+  "job_2f7507ace64e": {
+    "id": "job_2f7507ace64e",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T21:13:35.956Z"
+  },
+  "job_e3ca4b4ac49e": {
+    "id": "job_e3ca4b4ac49e",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:36.015Z"
+  },
+  "job_7a43e7942419": {
+    "id": "job_7a43e7942419",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:36.598Z"
+  },
+  "job_3a0910889871": {
+    "id": "job_3a0910889871",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:37.205Z"
+  },
+  "job_881b0607fa13": {
+    "id": "job_881b0607fa13",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:37.825Z"
+  },
+  "job_7059b2977a43": {
+    "id": "job_7059b2977a43",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:38.429Z"
+  },
+  "job_04932c439141": {
+    "id": "job_04932c439141",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:39.069Z"
+  },
+  "job_b7bc83595253": {
+    "id": "job_b7bc83595253",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:40.795Z"
+  },
+  "job_caf7249ceee7": {
+    "id": "job_caf7249ceee7",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:40.821Z"
+  },
+  "job_ebb273209804": {
+    "id": "job_ebb273209804",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T21:13:42.128Z"
+  },
+  "job_00d727764e05": {
+    "id": "job_00d727764e05",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:42.215Z"
+  },
+  "job_a90b7d5673aa": {
+    "id": "job_a90b7d5673aa",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:13:42.248Z"
+  },
+  "job_c6ee8e64883d": {
+    "id": "job_c6ee8e64883d",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:13:42.305Z"
+  },
+  "job_7ce42c2e86cc": {
+    "id": "job_7ce42c2e86cc",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:42.431Z"
+  },
+  "job_9975ff784e21": {
+    "id": "job_9975ff784e21",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T21:13:42.462Z"
+  },
+  "job_4d662066fe52": {
+    "id": "job_4d662066fe52",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:13:42.558Z"
+  },
+  "job_4d054a1c390b": {
+    "id": "job_4d054a1c390b",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:13:42.621Z"
+  },
+  "job_04b8f8a5ddf1": {
+    "id": "job_04b8f8a5ddf1",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:13:42.688Z"
+  },
+  "job_d5517d542e88": {
+    "id": "job_d5517d542e88",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:13:42.714Z"
+  },
+  "job_3ecdeceb9a5c": {
+    "id": "job_3ecdeceb9a5c",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:44.628Z"
+  },
+  "job_55b647ef3362": {
+    "id": "job_55b647ef3362",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:44.669Z"
+  },
+  "job_b74b18d76331": {
+    "id": "job_b74b18d76331",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:44.704Z"
+  },
+  "job_af90277f1777": {
+    "id": "job_af90277f1777",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:44.741Z"
+  },
+  "job_5427ef7ecbaf": {
+    "id": "job_5427ef7ecbaf",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:45.673Z"
+  },
+  "job_a7e109e55938": {
+    "id": "job_a7e109e55938",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:46.561Z"
+  },
+  "job_98e322c23738": {
+    "id": "job_98e322c23738",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T21:13:48.348Z"
+  },
+  "job_b9d020aec25d": {
+    "id": "job_b9d020aec25d",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:48.403Z"
+  },
+  "job_57137f747046": {
+    "id": "job_57137f747046",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:13:48.445Z"
+  },
+  "job_86895312eb62": {
+    "id": "job_86895312eb62",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:51.240Z"
+  },
+  "job_8ad49757e5c7": {
+    "id": "job_8ad49757e5c7",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:51.880Z"
+  },
+  "job_093fb18359b7": {
+    "id": "job_093fb18359b7",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:52.445Z"
+  },
+  "job_9b584985a869": {
+    "id": "job_9b584985a869",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:53.048Z"
+  },
+  "job_67a63672d5ca": {
+    "id": "job_67a63672d5ca",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:53.581Z"
+  },
+  "job_78ebdbc75b3a": {
+    "id": "job_78ebdbc75b3a",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:53.605Z"
+  },
+  "job_1d8d7f898932": {
+    "id": "job_1d8d7f898932",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:56.430Z"
+  },
+  "job_ce3e73237f1c": {
+    "id": "job_ce3e73237f1c",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:13:59.287Z"
+  },
+  "job_8448fd541895": {
+    "id": "job_8448fd541895",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:00.526Z"
+  },
+  "job_21daa26e93b0": {
+    "id": "job_21daa26e93b0",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:02.277Z"
+  },
+  "job_f0506d57a737": {
+    "id": "job_f0506d57a737",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:02.924Z"
+  },
+  "job_cd712806c5fa": {
+    "id": "job_cd712806c5fa",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:03.545Z"
+  },
+  "job_0e061924092e": {
+    "id": "job_0e061924092e",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:04.708Z"
+  },
+  "job_f62749489e8a": {
+    "id": "job_f62749489e8a",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:06.002Z"
+  },
+  "job_1eef7800238d": {
+    "id": "job_1eef7800238d",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:07.275Z"
+  },
+  "job_72473ac9318e": {
+    "id": "job_72473ac9318e",
+    "employerId": "usr_39c48e9dcde0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:10.579Z"
+  },
+  "job_48a537ce73be": {
+    "id": "job_48a537ce73be",
+    "employerId": "usr_4a7458048aaf",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:11.007Z"
+  },
+  "job_8320b5b41b80": {
+    "id": "job_8320b5b41b80",
+    "employerId": "usr_51d2bb3a615d",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:14:13.783Z"
+  },
+  "job_188789c75d7d": {
+    "id": "job_188789c75d7d",
+    "employerId": "usr_52524ee663b7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:13.848Z"
+  },
+  "job_e9977fce5289": {
+    "id": "job_e9977fce5289",
+    "employerId": "usr_74273a63ca5f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:18.114Z"
+  },
+  "job_f9ecf7105e5b": {
+    "id": "job_f9ecf7105e5b",
+    "employerId": "usr_3a46e407a3a8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:19.506Z"
+  },
+  "job_63e1ebc54f2d": {
+    "id": "job_63e1ebc54f2d",
+    "employerId": "usr_7892e6dd879b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:20.908Z"
+  },
+  "job_040ce50114ff": {
+    "id": "job_040ce50114ff",
+    "employerId": "usr_3c94f792aa65",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:22.893Z"
+  },
+  "job_659b8b4f6062": {
+    "id": "job_659b8b4f6062",
+    "employerId": "usr_9b158a415163",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:25.595Z"
+  },
+  "job_36ad49696d23": {
+    "id": "job_36ad49696d23",
+    "employerId": "usr_1934fb9e2a72",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:28.476Z"
+  },
+  "job_e6beb508fc77": {
+    "id": "job_e6beb508fc77",
+    "employerId": "usr_2a9821fc9d89",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:29.746Z"
+  },
+  "job_cd5d61b3cbb7": {
+    "id": "job_cd5d61b3cbb7",
+    "employerId": "usr_53661d71b6d1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:34.101Z"
+  },
+  "job_915ef7bdf427": {
+    "id": "job_915ef7bdf427",
+    "employerId": "usr_8b0d252d17d1",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:37.026Z"
+  },
+  "job_83619de71fa1": {
+    "id": "job_83619de71fa1",
+    "employerId": "usr_62ed6dec074f",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:39.905Z"
+  },
+  "job_6e084074a399": {
+    "id": "job_6e084074a399",
+    "employerId": "usr_6ea8749cc6fd",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:40.438Z"
+  },
+  "job_0731e111fe21": {
+    "id": "job_0731e111fe21",
+    "employerId": "usr_71068093c88d",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:43.306Z"
+  },
+  "job_ce659102b6a8": {
+    "id": "job_ce659102b6a8",
+    "employerId": "usr_2c2bcc2e1be1",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:46.064Z"
+  },
+  "job_2f62ec123c51": {
+    "id": "job_2f62ec123c51",
+    "employerId": "usr_c32440bbc58e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:14:49.279Z"
+  },
+  "job_430dea92e434": {
+    "id": "job_430dea92e434",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:14.630Z"
+  },
+  "job_e142574b3421": {
+    "id": "job_e142574b3421",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:15.555Z"
+  },
+  "job_a299ea9b3131": {
+    "id": "job_a299ea9b3131",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T21:21:16.894Z"
+  },
+  "job_30bd6d8c9e16": {
+    "id": "job_30bd6d8c9e16",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:16.951Z"
+  },
+  "job_418cb7902338": {
+    "id": "job_418cb7902338",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:17.683Z"
+  },
+  "job_0014327db7e1": {
+    "id": "job_0014327db7e1",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:18.508Z"
+  },
+  "job_9c29528680ca": {
+    "id": "job_9c29528680ca",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:19.236Z"
+  },
+  "job_8490d430938d": {
+    "id": "job_8490d430938d",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:19.995Z"
+  },
+  "job_dfe84644bfe1": {
+    "id": "job_dfe84644bfe1",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:20.791Z"
+  },
+  "job_b48df09e6c8a": {
+    "id": "job_b48df09e6c8a",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:23.130Z"
+  },
+  "job_6679b43b2957": {
+    "id": "job_6679b43b2957",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:23.160Z"
+  },
+  "job_c84f0c28b2ef": {
+    "id": "job_c84f0c28b2ef",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T21:21:27.738Z"
+  },
+  "job_334ca9b5db41": {
+    "id": "job_334ca9b5db41",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:27.827Z"
+  },
+  "job_c889d8236822": {
+    "id": "job_c889d8236822",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:21:27.862Z"
+  },
+  "job_439cc775618d": {
+    "id": "job_439cc775618d",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:21:27.921Z"
+  },
+  "job_37fe32699332": {
+    "id": "job_37fe32699332",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:28.042Z"
+  },
+  "job_a4a84e0071ad": {
+    "id": "job_a4a84e0071ad",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-16T21:21:28.068Z"
+  },
+  "job_2cb2a8e4e08c": {
+    "id": "job_2cb2a8e4e08c",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:21:28.172Z"
+  },
+  "job_02bf672d6c4b": {
+    "id": "job_02bf672d6c4b",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:21:28.241Z"
+  },
+  "job_54535d4efa0e": {
+    "id": "job_54535d4efa0e",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:21:28.311Z"
+  },
+  "job_a5ae24d214eb": {
+    "id": "job_a5ae24d214eb",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-16T21:21:28.335Z"
+  },
+  "job_c19779dac1bc": {
+    "id": "job_c19779dac1bc",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:30.811Z"
+  },
+  "job_30336debc706": {
+    "id": "job_30336debc706",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:30.849Z"
+  },
+  "job_d33edf56880d": {
+    "id": "job_d33edf56880d",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:30.876Z"
+  },
+  "job_4f3d5c91dafd": {
+    "id": "job_4f3d5c91dafd",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:30.906Z"
+  },
+  "job_13d110b6cadf": {
+    "id": "job_13d110b6cadf",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:32.107Z"
+  },
+  "job_f1bc96b0f52f": {
+    "id": "job_f1bc96b0f52f",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:33.230Z"
+  },
+  "job_0dabfeb35d77": {
+    "id": "job_0dabfeb35d77",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-16T21:21:35.774Z"
+  },
+  "job_42f7cfd7f075": {
+    "id": "job_42f7cfd7f075",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:35.865Z"
+  },
+  "job_5c7b7795d8d6": {
+    "id": "job_5c7b7795d8d6",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-16T21:21:35.916Z"
+  },
+  "job_cfee4105ce3b": {
+    "id": "job_cfee4105ce3b",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:37.529Z"
+  },
+  "job_d375e722c4b4": {
+    "id": "job_d375e722c4b4",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:38.537Z"
+  },
+  "job_2f895ed6ac43": {
+    "id": "job_2f895ed6ac43",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:39.569Z"
+  },
+  "job_0a2dd1e666d8": {
+    "id": "job_0a2dd1e666d8",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:40.637Z"
+  },
+  "job_ee7e12802d0e": {
+    "id": "job_ee7e12802d0e",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:41.568Z"
+  },
+  "job_06784f824592": {
+    "id": "job_06784f824592",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:41.600Z"
+  },
+  "job_843ac8caf9f2": {
+    "id": "job_843ac8caf9f2",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:45.879Z"
+  },
+  "job_0dcf3c7e46a4": {
+    "id": "job_0dcf3c7e46a4",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:50.213Z"
+  },
+  "job_9c1d39d2ee32": {
+    "id": "job_9c1d39d2ee32",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:51.935Z"
+  },
+  "job_d63e28a5ef35": {
+    "id": "job_d63e28a5ef35",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:54.522Z"
+  },
+  "job_82902447b939": {
+    "id": "job_82902447b939",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:55.401Z"
+  },
+  "job_8626883508d2": {
+    "id": "job_8626883508d2",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:56.249Z"
+  },
+  "job_953b7086f536": {
+    "id": "job_953b7086f536",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:57.812Z"
+  },
+  "job_59c8eafc645f": {
+    "id": "job_59c8eafc645f",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:21:59.264Z"
+  },
+  "job_b914b19c08cf": {
+    "id": "job_b914b19c08cf",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-16T21:22:00.861Z"
+  },
+  "job_fbb830ed990a": {
+    "id": "job_fbb830ed990a",
+    "employerId": "usr_95b741193e68",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:05.346Z"
+  },
+  "job_687d96203ef8": {
+    "id": "job_687d96203ef8",
+    "employerId": "usr_68b7792b907a",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:09.136Z"
+  },
+  "job_ea4ca65ae7e8": {
+    "id": "job_ea4ca65ae7e8",
+    "employerId": "usr_be54268e3aa5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-16T21:22:10.743Z"
+  },
+  "job_0c0a2ef1afb1": {
+    "id": "job_0c0a2ef1afb1",
+    "employerId": "usr_0bd8a629dc29",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:10.805Z"
+  },
+  "job_fc645b96e033": {
+    "id": "job_fc645b96e033",
+    "employerId": "usr_20cfcef7fcb6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:16.269Z"
+  },
+  "job_d4bbaa0bf125": {
+    "id": "job_d4bbaa0bf125",
+    "employerId": "usr_9f06d41c5ac7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:18.142Z"
+  },
+  "job_518e9b93b991": {
+    "id": "job_518e9b93b991",
+    "employerId": "usr_718890125e8a",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:19.750Z"
+  },
+  "job_100cf277ae69": {
+    "id": "job_100cf277ae69",
+    "employerId": "usr_b41ec1203a0a",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:22.290Z"
+  },
+  "job_2440d24909d4": {
+    "id": "job_2440d24909d4",
+    "employerId": "usr_ee66d666ae51",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:25.643Z"
+  },
+  "job_e44fd5a4966c": {
+    "id": "job_e44fd5a4966c",
+    "employerId": "usr_06997bf5dff4",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:29.252Z"
+  },
+  "job_0337e77d7fd4": {
+    "id": "job_0337e77d7fd4",
+    "employerId": "usr_b2638722f1a8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:30.867Z"
+  },
+  "job_87200b1ba876": {
+    "id": "job_87200b1ba876",
+    "employerId": "usr_993320e96842",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:36.431Z"
+  },
+  "job_6bb368be1f08": {
+    "id": "job_6bb368be1f08",
+    "employerId": "usr_c065d1a2d0fc",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:37.401Z"
+  },
+  "job_a87180a644a1": {
+    "id": "job_a87180a644a1",
+    "employerId": "usr_bccad0c6af5c",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:40.903Z"
+  },
+  "job_765e725c5833": {
+    "id": "job_765e725c5833",
+    "employerId": "usr_4dfcc7540130",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:44.415Z"
+  },
+  "job_02d73ee8b62a": {
+    "id": "job_02d73ee8b62a",
+    "employerId": "usr_8965d3dfa180",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:48.047Z"
+  },
+  "job_43bb8f6b275d": {
+    "id": "job_43bb8f6b275d",
+    "employerId": "usr_3e799dca37ee",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:51.694Z"
+  },
+  "job_522c601a5cf6": {
+    "id": "job_522c601a5cf6",
+    "employerId": "usr_d0fa0ea02ad7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-16T21:22:55.694Z"
+  },
+  "job_3fd7bc7c5f17": {
+    "id": "job_3fd7bc7c5f17",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:07:55.549Z"
+  },
+  "job_34ef206c9b81": {
+    "id": "job_34ef206c9b81",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:07:56.395Z"
+  },
+  "job_dc44cd701640": {
+    "id": "job_dc44cd701640",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T11:07:57.468Z"
+  },
+  "job_e9d97e0fc0f4": {
+    "id": "job_e9d97e0fc0f4",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:07:57.535Z"
+  },
+  "job_0b13f68fa484": {
+    "id": "job_0b13f68fa484",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:07:58.342Z"
+  },
+  "job_5d3226166464": {
+    "id": "job_5d3226166464",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:07:59.333Z"
+  },
+  "job_5ab1ca99ff31": {
+    "id": "job_5ab1ca99ff31",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:00.149Z"
+  },
+  "job_46049d78625f": {
+    "id": "job_46049d78625f",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:00.997Z"
+  },
+  "job_9d7ce0c63c53": {
+    "id": "job_9d7ce0c63c53",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:01.850Z"
+  },
+  "job_135ad35f8613": {
+    "id": "job_135ad35f8613",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:02.695Z"
+  },
+  "job_8546bd5f8e48": {
+    "id": "job_8546bd5f8e48",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:02.727Z"
+  },
+  "job_5a7b54661adb": {
+    "id": "job_5a7b54661adb",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T11:08:06.135Z"
+  },
+  "job_23ff578dd642": {
+    "id": "job_23ff578dd642",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:06.229Z"
+  },
+  "job_bafb8a83dc82": {
+    "id": "job_bafb8a83dc82",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:08:06.266Z"
+  },
+  "job_4457c507dd0e": {
+    "id": "job_4457c507dd0e",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:06.333Z"
+  },
+  "job_607e7af82d07": {
+    "id": "job_607e7af82d07",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:06.454Z"
+  },
+  "job_a16d59262539": {
+    "id": "job_a16d59262539",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T11:08:06.499Z"
+  },
+  "job_3a4872d66ec1": {
+    "id": "job_3a4872d66ec1",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:08:06.600Z"
+  },
+  "job_279030192f8b": {
+    "id": "job_279030192f8b",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:08:06.671Z"
+  },
+  "job_e99d563616ba": {
+    "id": "job_e99d563616ba",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:08:06.747Z"
+  },
+  "job_9bf3fc0a6b7c": {
+    "id": "job_9bf3fc0a6b7c",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:08:06.784Z"
+  },
+  "job_ced67759fb16": {
+    "id": "job_ced67759fb16",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:09.222Z"
+  },
+  "job_fb46da75a570": {
+    "id": "job_fb46da75a570",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:09.268Z"
+  },
+  "job_8f2a4d981db0": {
+    "id": "job_8f2a4d981db0",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:09.305Z"
+  },
+  "job_0e823a7333ac": {
+    "id": "job_0e823a7333ac",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:09.344Z"
+  },
+  "job_e2f03d64a01e": {
+    "id": "job_e2f03d64a01e",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:10.527Z"
+  },
+  "job_5d18896e704d": {
+    "id": "job_5d18896e704d",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:11.713Z"
+  },
+  "job_03f7579d593f": {
+    "id": "job_03f7579d593f",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T11:08:13.984Z"
+  },
+  "job_d0314ad699da": {
+    "id": "job_d0314ad699da",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:14.048Z"
+  },
+  "job_d9dd2ec8979f": {
+    "id": "job_d9dd2ec8979f",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:08:14.095Z"
+  },
+  "job_1ee1b327a1d8": {
+    "id": "job_1ee1b327a1d8",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:15.842Z"
+  },
+  "job_2dc60165c558": {
+    "id": "job_2dc60165c558",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:16.725Z"
+  },
+  "job_5de656db2126": {
+    "id": "job_5de656db2126",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:17.526Z"
+  },
+  "job_abbe3da48267": {
+    "id": "job_abbe3da48267",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:18.383Z"
+  },
+  "job_fadf25736c9c": {
+    "id": "job_fadf25736c9c",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:19.275Z"
+  },
+  "job_8bc69410e831": {
+    "id": "job_8bc69410e831",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:19.306Z"
+  },
+  "job_66a022895c0c": {
+    "id": "job_66a022895c0c",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:21.796Z"
+  },
+  "job_7cef7178a139": {
+    "id": "job_7cef7178a139",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:23.574Z"
+  },
+  "job_dc2de477951d": {
+    "id": "job_dc2de477951d",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:24.443Z"
+  },
+  "job_2bcc820df101": {
+    "id": "job_2bcc820df101",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:25.404Z"
+  },
+  "job_493141f04fe5": {
+    "id": "job_493141f04fe5",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:26.315Z"
+  },
+  "job_43a94118f98d": {
+    "id": "job_43a94118f98d",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:27.163Z"
+  },
+  "job_cda7478c5c61": {
+    "id": "job_cda7478c5c61",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:28.009Z"
+  },
+  "job_96150c4dc8f3": {
+    "id": "job_96150c4dc8f3",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:28.853Z"
+  },
+  "job_5ede651d7838": {
+    "id": "job_5ede651d7838",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:29.798Z"
+  },
+  "job_c71792812965": {
+    "id": "job_c71792812965",
+    "employerId": "usr_40332501fb0b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:32.115Z"
+  },
+  "job_1009e4354747": {
+    "id": "job_1009e4354747",
+    "employerId": "usr_010d7fafe204",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:33.569Z"
+  },
+  "job_13f7f7cdf10a": {
+    "id": "job_13f7f7cdf10a",
+    "employerId": "usr_451b79f2b234",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:08:34.999Z"
+  },
+  "job_7624060dc2f0": {
+    "id": "job_7624060dc2f0",
+    "employerId": "usr_eb3b64d80390",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:35.072Z"
+  },
+  "job_bb1cdb01601a": {
+    "id": "job_bb1cdb01601a",
+    "employerId": "usr_4a1ab3ffade6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:36.656Z"
+  },
+  "job_bc9a03d794a8": {
+    "id": "job_bc9a03d794a8",
+    "employerId": "usr_adb330c33c8f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:37.716Z"
+  },
+  "job_eab3979930c0": {
+    "id": "job_eab3979930c0",
+    "employerId": "usr_e9cb7d582ce0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:38.717Z"
+  },
+  "job_90736b8ce79c": {
+    "id": "job_90736b8ce79c",
+    "employerId": "usr_357d213e19fc",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:39.782Z"
+  },
+  "job_069a81ec9197": {
+    "id": "job_069a81ec9197",
+    "employerId": "usr_6af074e9bfa2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:40.877Z"
+  },
+  "job_ac47567bab49": {
+    "id": "job_ac47567bab49",
+    "employerId": "usr_58f1780675cd",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:42.346Z"
+  },
+  "job_01e42ce79f72": {
+    "id": "job_01e42ce79f72",
+    "employerId": "usr_5357a5e5ec9d",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:43.316Z"
+  },
+  "job_144679c03a6c": {
+    "id": "job_144679c03a6c",
+    "employerId": "usr_e0796a617801",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:45.324Z"
+  },
+  "job_37cf4e9b6f34": {
+    "id": "job_37cf4e9b6f34",
+    "employerId": "usr_01a3f9b77473",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:46.920Z"
+  },
+  "job_b47377aa0c30": {
+    "id": "job_b47377aa0c30",
+    "employerId": "usr_031e380e6e0f",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:48.980Z"
+  },
+  "job_ec3147f00649": {
+    "id": "job_ec3147f00649",
+    "employerId": "usr_6c744238773a",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:50.333Z"
+  },
+  "job_38e4e0063081": {
+    "id": "job_38e4e0063081",
+    "employerId": "usr_b139316a2ee0",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:51.760Z"
+  },
+  "job_6dd5307d627c": {
+    "id": "job_6dd5307d627c",
+    "employerId": "usr_2bce66e536c0",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:53.255Z"
+  },
+  "job_279a8d2e16e4": {
+    "id": "job_279a8d2e16e4",
+    "employerId": "usr_4c165cd3b4e0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:08:55.082Z"
+  },
+  "job_72347d689c92": {
+    "id": "job_72347d689c92",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:38.188Z"
+  },
+  "job_f502b336e8fe": {
+    "id": "job_f502b336e8fe",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:39.063Z"
+  },
+  "job_be9d3ebaafa5": {
+    "id": "job_be9d3ebaafa5",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T11:15:39.974Z"
+  },
+  "job_b565b7363b2c": {
+    "id": "job_b565b7363b2c",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:40.033Z"
+  },
+  "job_4d6aeb37b5a2": {
+    "id": "job_4d6aeb37b5a2",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:41.019Z"
+  },
+  "job_94dad31cab45": {
+    "id": "job_94dad31cab45",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:42.322Z"
+  },
+  "job_7d314a9ff98e": {
+    "id": "job_7d314a9ff98e",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:43.273Z"
+  },
+  "job_de6203e90644": {
+    "id": "job_de6203e90644",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:44.297Z"
+  },
+  "job_fa0adc8005fb": {
+    "id": "job_fa0adc8005fb",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:45.263Z"
+  },
+  "job_c5769ce73365": {
+    "id": "job_c5769ce73365",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:46.281Z"
+  },
+  "job_d1648570ca4c": {
+    "id": "job_d1648570ca4c",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:46.314Z"
+  },
+  "job_f6d8f2ca1712": {
+    "id": "job_f6d8f2ca1712",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T11:15:50.268Z"
+  },
+  "job_4c81568ab1a2": {
+    "id": "job_4c81568ab1a2",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:50.357Z"
+  },
+  "job_a6d2bb185bb2": {
+    "id": "job_a6d2bb185bb2",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:15:50.399Z"
+  },
+  "job_933c1427186d": {
+    "id": "job_933c1427186d",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:15:50.464Z"
+  },
+  "job_d1b541859728": {
+    "id": "job_d1b541859728",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:50.575Z"
+  },
+  "job_0f8e53606001": {
+    "id": "job_0f8e53606001",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T11:15:50.617Z"
+  },
+  "job_7db2ed469b68": {
+    "id": "job_7db2ed469b68",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:15:50.713Z"
+  },
+  "job_1b0e618a451a": {
+    "id": "job_1b0e618a451a",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:15:50.794Z"
+  },
+  "job_3d40bc391bab": {
+    "id": "job_3d40bc391bab",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:15:50.879Z"
+  },
+  "job_f2cfc3c185f6": {
+    "id": "job_f2cfc3c185f6",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T11:15:50.922Z"
+  },
+  "job_12c657c99d6d": {
+    "id": "job_12c657c99d6d",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:53.688Z"
+  },
+  "job_d080ff7396c0": {
+    "id": "job_d080ff7396c0",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:53.734Z"
+  },
+  "job_9aad429d1ee2": {
+    "id": "job_9aad429d1ee2",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:53.771Z"
+  },
+  "job_5c62fd561e30": {
+    "id": "job_5c62fd561e30",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:53.812Z"
+  },
+  "job_9c64340de38b": {
+    "id": "job_9c64340de38b",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:55.180Z"
+  },
+  "job_be2fbf31ba16": {
+    "id": "job_be2fbf31ba16",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:56.494Z"
+  },
+  "job_862dcdd7d795": {
+    "id": "job_862dcdd7d795",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T11:15:59.429Z"
+  },
+  "job_8b05127197a9": {
+    "id": "job_8b05127197a9",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:15:59.496Z"
+  },
+  "job_510917242700": {
+    "id": "job_510917242700",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T11:15:59.541Z"
+  },
+  "job_8e4b185655e1": {
+    "id": "job_8e4b185655e1",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:00.904Z"
+  },
+  "job_b3ba116cd691": {
+    "id": "job_b3ba116cd691",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:01.921Z"
+  },
+  "job_8853afa619b4": {
+    "id": "job_8853afa619b4",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:02.869Z"
+  },
+  "job_e8a1070f4f8f": {
+    "id": "job_e8a1070f4f8f",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:03.841Z"
+  },
+  "job_e02df18ef696": {
+    "id": "job_e02df18ef696",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:04.782Z"
+  },
+  "job_b8de2937a4c8": {
+    "id": "job_b8de2937a4c8",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:04.817Z"
+  },
+  "job_11d377afcc04": {
+    "id": "job_11d377afcc04",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:07.714Z"
+  },
+  "job_5a5b55fad3d6": {
+    "id": "job_5a5b55fad3d6",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:09.736Z"
+  },
+  "job_f3916d59d370": {
+    "id": "job_f3916d59d370",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:10.735Z"
+  },
+  "job_76a02750754b": {
+    "id": "job_76a02750754b",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:11.836Z"
+  },
+  "job_523a5aec17fd": {
+    "id": "job_523a5aec17fd",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:12.873Z"
+  },
+  "job_93c425ce89b5": {
+    "id": "job_93c425ce89b5",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:13.846Z"
+  },
+  "job_748fbd97494b": {
+    "id": "job_748fbd97494b",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:14.847Z"
+  },
+  "job_29f044f6668f": {
+    "id": "job_29f044f6668f",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:15.885Z"
+  },
+  "job_68a5da8c3198": {
+    "id": "job_68a5da8c3198",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:16.995Z"
+  },
+  "job_d8247bbf4dc6": {
+    "id": "job_d8247bbf4dc6",
+    "employerId": "usr_b99bd662667c",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:19.412Z"
+  },
+  "job_a9c6a170fd6e": {
+    "id": "job_a9c6a170fd6e",
+    "employerId": "usr_14c9c879762f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:21.016Z"
+  },
+  "job_91678104d6ec": {
+    "id": "job_91678104d6ec",
+    "employerId": "usr_c6455a3982ad",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T11:16:22.628Z"
+  },
+  "job_1a85d6916003": {
+    "id": "job_1a85d6916003",
+    "employerId": "usr_aad00eb35001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:22.709Z"
+  },
+  "job_06471a36250f": {
+    "id": "job_06471a36250f",
+    "employerId": "usr_40edb976a7a5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:24.536Z"
+  },
+  "job_d1a21cb3e3f8": {
+    "id": "job_d1a21cb3e3f8",
+    "employerId": "usr_2732ad978af1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:25.704Z"
+  },
+  "job_e265f494a003": {
+    "id": "job_e265f494a003",
+    "employerId": "usr_6ef4e4193e9f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:26.891Z"
+  },
+  "job_2416d716b269": {
+    "id": "job_2416d716b269",
+    "employerId": "usr_11efea1c6b5f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:28.063Z"
+  },
+  "job_636cc21ab1de": {
+    "id": "job_636cc21ab1de",
+    "employerId": "usr_45a39eaef52d",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:29.264Z"
+  },
+  "job_a130b61a6431": {
+    "id": "job_a130b61a6431",
+    "employerId": "usr_569a9be861fb",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:30.855Z"
+  },
+  "job_8d062bb720c3": {
+    "id": "job_8d062bb720c3",
+    "employerId": "usr_46e4d3aec95f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:32.010Z"
+  },
+  "job_c69db9017627": {
+    "id": "job_c69db9017627",
+    "employerId": "usr_a55cf7156600",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:34.445Z"
+  },
+  "job_a25ea645bed6": {
+    "id": "job_a25ea645bed6",
+    "employerId": "usr_e84154dcf825",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:36.338Z"
+  },
+  "job_632e822e0695": {
+    "id": "job_632e822e0695",
+    "employerId": "usr_16084a0d8ac7",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:37.987Z"
+  },
+  "job_f0ebdf45ab97": {
+    "id": "job_f0ebdf45ab97",
+    "employerId": "usr_1500b736e0e6",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:39.554Z"
+  },
+  "job_725f9346333e": {
+    "id": "job_725f9346333e",
+    "employerId": "usr_5ba494b222b6",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:41.174Z"
+  },
+  "job_8fa24b873287": {
+    "id": "job_8fa24b873287",
+    "employerId": "usr_0317ca323184",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:42.885Z"
+  },
+  "job_7e7012125ddf": {
+    "id": "job_7e7012125ddf",
+    "employerId": "usr_3c4ad48c3dd9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T11:16:45.003Z"
+  },
+  "job_aa86dbf5dbf1": {
+    "id": "job_aa86dbf5dbf1",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:06.816Z"
+  },
+  "job_86c27f28fb1d": {
+    "id": "job_86c27f28fb1d",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:07.933Z"
+  },
+  "job_0ec54ff767d4": {
+    "id": "job_0ec54ff767d4",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T13:32:08.983Z"
+  },
+  "job_19423f719bb7": {
+    "id": "job_19423f719bb7",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:09.052Z"
+  },
+  "job_27112c258495": {
+    "id": "job_27112c258495",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:10.159Z"
+  },
+  "job_864d62c4cf9a": {
+    "id": "job_864d62c4cf9a",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:11.221Z"
+  },
+  "job_5ed961b2bba6": {
+    "id": "job_5ed961b2bba6",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:12.269Z"
+  },
+  "job_d3e57832d662": {
+    "id": "job_d3e57832d662",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:13.342Z"
+  },
+  "job_fb75d030fd64": {
+    "id": "job_fb75d030fd64",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:14.478Z"
+  },
+  "job_d8d4934a664a": {
+    "id": "job_d8d4934a664a",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:15.594Z"
+  },
+  "job_6281b2fa2d00": {
+    "id": "job_6281b2fa2d00",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:15.633Z"
+  },
+  "job_42f6a13ee29c": {
+    "id": "job_42f6a13ee29c",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T13:32:20.213Z"
+  },
+  "job_8b18ad498460": {
+    "id": "job_8b18ad498460",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:20.317Z"
+  },
+  "job_3cdb3cc82d20": {
+    "id": "job_3cdb3cc82d20",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:32:20.379Z"
+  },
+  "job_6bcf6c850086": {
+    "id": "job_6bcf6c850086",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:20.449Z"
+  },
+  "job_0547b2821185": {
+    "id": "job_0547b2821185",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:20.554Z"
+  },
+  "job_c329eb69e44e": {
+    "id": "job_c329eb69e44e",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T13:32:20.590Z"
+  },
+  "job_340266727aba": {
+    "id": "job_340266727aba",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:32:20.705Z"
+  },
+  "job_da9ea033dfaa": {
+    "id": "job_da9ea033dfaa",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:32:20.777Z"
+  },
+  "job_d7d7299ddd92": {
+    "id": "job_d7d7299ddd92",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:32:20.849Z"
+  },
+  "job_687dcbcf791b": {
+    "id": "job_687dcbcf791b",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:32:20.886Z"
+  },
+  "job_a80e11f46e7a": {
+    "id": "job_a80e11f46e7a",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:23.835Z"
+  },
+  "job_30ea10681952": {
+    "id": "job_30ea10681952",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:23.879Z"
+  },
+  "job_ba549b9f0f72": {
+    "id": "job_ba549b9f0f72",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:23.915Z"
+  },
+  "job_cb4b052422bc": {
+    "id": "job_cb4b052422bc",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:23.954Z"
+  },
+  "job_5661e8abe33a": {
+    "id": "job_5661e8abe33a",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:25.428Z"
+  },
+  "job_f809717926e2": {
+    "id": "job_f809717926e2",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:26.888Z"
+  },
+  "job_6c73028053a2": {
+    "id": "job_6c73028053a2",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T13:32:29.772Z"
+  },
+  "job_98fa2cee4db4": {
+    "id": "job_98fa2cee4db4",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:29.841Z"
+  },
+  "job_cca257113a3f": {
+    "id": "job_cca257113a3f",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:32:29.883Z"
+  },
+  "job_94c4ed83594e": {
+    "id": "job_94c4ed83594e",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:31.519Z"
+  },
+  "job_edb5dfbe144f": {
+    "id": "job_edb5dfbe144f",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:32.620Z"
+  },
+  "job_d5c415485541": {
+    "id": "job_d5c415485541",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:33.643Z"
+  },
+  "job_9f26448efe10": {
+    "id": "job_9f26448efe10",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:34.747Z"
+  },
+  "job_aa5ff34e59df": {
+    "id": "job_aa5ff34e59df",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:35.736Z"
+  },
+  "job_5e68b02aac19": {
+    "id": "job_5e68b02aac19",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:35.768Z"
+  },
+  "job_2dfa461ebf0b": {
+    "id": "job_2dfa461ebf0b",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:38.921Z"
+  },
+  "job_b420c1735b7e": {
+    "id": "job_b420c1735b7e",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:41.021Z"
+  },
+  "job_0b86f3d459c0": {
+    "id": "job_0b86f3d459c0",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:42.027Z"
+  },
+  "job_b3b3b3ddf7e5": {
+    "id": "job_b3b3b3ddf7e5",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:43.183Z"
+  },
+  "job_45900c35d927": {
+    "id": "job_45900c35d927",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:44.265Z"
+  },
+  "job_e8a1e8314dd3": {
+    "id": "job_e8a1e8314dd3",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:45.280Z"
+  },
+  "job_e90c0746bbcf": {
+    "id": "job_e90c0746bbcf",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:46.360Z"
+  },
+  "job_d9bf3be1d014": {
+    "id": "job_d9bf3be1d014",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:47.461Z"
+  },
+  "job_6170f774e109": {
+    "id": "job_6170f774e109",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:48.592Z"
+  },
+  "job_6a3c17f34f09": {
+    "id": "job_6a3c17f34f09",
+    "employerId": "usr_324d20814cd0",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:51.109Z"
+  },
+  "job_9d0c53b13972": {
+    "id": "job_9d0c53b13972",
+    "employerId": "usr_c1a04672a0da",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:52.805Z"
+  },
+  "job_a4f3665fb568": {
+    "id": "job_a4f3665fb568",
+    "employerId": "usr_f7aba3af4280",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:32:54.517Z"
+  },
+  "job_0168cca2bab3": {
+    "id": "job_0168cca2bab3",
+    "employerId": "usr_719eb28ade84",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:54.596Z"
+  },
+  "job_3536a2097890": {
+    "id": "job_3536a2097890",
+    "employerId": "usr_6c72d66cae63",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:56.615Z"
+  },
+  "job_52432afb0529": {
+    "id": "job_52432afb0529",
+    "employerId": "usr_46fda2261015",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:57.856Z"
+  },
+  "job_bbeee1c513f1": {
+    "id": "job_bbeee1c513f1",
+    "employerId": "usr_e670a3ae30f1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:32:59.125Z"
+  },
+  "job_537bf926cdd1": {
+    "id": "job_537bf926cdd1",
+    "employerId": "usr_01a4dda8d58e",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:00.390Z"
+  },
+  "job_fe87df585c41": {
+    "id": "job_fe87df585c41",
+    "employerId": "usr_32464ffdb2e8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:01.580Z"
+  },
+  "job_dba754bb0a64": {
+    "id": "job_dba754bb0a64",
+    "employerId": "usr_638ef9bcddce",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:03.334Z"
+  },
+  "job_304a8b29de27": {
+    "id": "job_304a8b29de27",
+    "employerId": "usr_ef82312c0ddc",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:04.560Z"
+  },
+  "job_94b8e2732616": {
+    "id": "job_94b8e2732616",
+    "employerId": "usr_82bdbccabd0f",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:06.968Z"
+  },
+  "job_b81110565bed": {
+    "id": "job_b81110565bed",
+    "employerId": "usr_876f3e0f5b63",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:09.003Z"
+  },
+  "job_4f62065724be": {
+    "id": "job_4f62065724be",
+    "employerId": "usr_8300ddc564e9",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:10.710Z"
+  },
+  "job_32a82f5e558e": {
+    "id": "job_32a82f5e558e",
+    "employerId": "usr_c79040bb1ca9",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:12.473Z"
+  },
+  "job_e575717f3e78": {
+    "id": "job_e575717f3e78",
+    "employerId": "usr_ef732cdfcdc3",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:14.204Z"
+  },
+  "job_c9215fff8782": {
+    "id": "job_c9215fff8782",
+    "employerId": "usr_03fa106d8fd7",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:15.974Z"
+  },
+  "job_573497d4eee3": {
+    "id": "job_573497d4eee3",
+    "employerId": "usr_d8a67fe977fc",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:33:18.299Z"
+  },
+  "job_eb620bb2d659": {
+    "id": "job_eb620bb2d659",
+    "employerId": "usr_emp100",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:48.841Z"
+  },
+  "job_c2e3d70c56b5": {
+    "id": "job_c2e3d70c56b5",
+    "employerId": "usr_emp101",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:50.070Z"
+  },
+  "job_60cbbdeae74c": {
+    "id": "job_60cbbdeae74c",
+    "employerId": "usr_emp102",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T13:40:51.223Z"
+  },
+  "job_3dfdc0d31b42": {
+    "id": "job_3dfdc0d31b42",
+    "employerId": "usr_emp103",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:51.296Z"
+  },
+  "job_046239542eef": {
+    "id": "job_046239542eef",
+    "employerId": "usr_emp104",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:52.436Z"
+  },
+  "job_32e350364b7f": {
+    "id": "job_32e350364b7f",
+    "employerId": "usr_emp105",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:53.648Z"
+  },
+  "job_da5da22d5b4c": {
+    "id": "job_da5da22d5b4c",
+    "employerId": "usr_emp106",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:54.792Z"
+  },
+  "job_cff150c08619": {
+    "id": "job_cff150c08619",
+    "employerId": "usr_emp107",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:56.005Z"
+  },
+  "job_7d7375ff382d": {
+    "id": "job_7d7375ff382d",
+    "employerId": "usr_emp108",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:57.201Z"
+  },
+  "job_39ba5205b0c8": {
+    "id": "job_39ba5205b0c8",
+    "employerId": "usr_emp109",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:58.432Z"
+  },
+  "job_75c1dd1646bc": {
+    "id": "job_75c1dd1646bc",
+    "employerId": "usr_emp110",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:40:58.461Z"
+  },
+  "job_3b74c3f16b39": {
+    "id": "job_3b74c3f16b39",
+    "employerId": "usr_emp_lc1",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T13:41:02.752Z"
+  },
+  "job_b1436033d269": {
+    "id": "job_b1436033d269",
+    "employerId": "usr_emp_lc2",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:02.841Z"
+  },
+  "job_a435d10ce840": {
+    "id": "job_a435d10ce840",
+    "employerId": "usr_emp_lc3",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:41:02.877Z"
+  },
+  "job_486e86525246": {
+    "id": "job_486e86525246",
+    "employerId": "usr_emp_lc5",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:02.941Z"
+  },
+  "job_1c4d71cee8bf": {
+    "id": "job_1c4d71cee8bf",
+    "employerId": "usr_emp_lc6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:03.047Z"
+  },
+  "job_4be38744637e": {
+    "id": "job_4be38744637e",
+    "employerId": "usr_emp_lc7",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "in_progress",
+    "createdAt": "2026-04-17T13:41:03.087Z"
+  },
+  "job_28aa9a4f76ba": {
+    "id": "job_28aa9a4f76ba",
+    "employerId": "usr_emp_lc8",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:41:03.186Z"
+  },
+  "job_9017cc2fdf28": {
+    "id": "job_9017cc2fdf28",
+    "employerId": "usr_emp_lc9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:41:03.256Z"
+  },
+  "job_9a9cfcc4c7ac": {
+    "id": "job_9a9cfcc4c7ac",
+    "employerId": "usr_emp_lc10",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:41:03.328Z"
+  },
+  "job_9e11913f26bd": {
+    "id": "job_9e11913f26bd",
+    "employerId": "usr_emp_lc10b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "expired",
+    "createdAt": "2026-04-17T13:41:03.366Z"
+  },
+  "job_004161612082": {
+    "id": "job_004161612082",
+    "employerId": "usr_emp001",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:06.683Z"
+  },
+  "job_3d68830f1871": {
+    "id": "job_3d68830f1871",
+    "employerId": "usr_emp002",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:06.728Z"
+  },
+  "job_8656a097efc5": {
+    "id": "job_8656a097efc5",
+    "employerId": "usr_emp003",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:06.769Z"
+  },
+  "job_6c4907d30bf4": {
+    "id": "job_6c4907d30bf4",
+    "employerId": "usr_emp004",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:06.813Z"
+  },
+  "job_769f6f2350f7": {
+    "id": "job_769f6f2350f7",
+    "employerId": "usr_emp005",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:08.479Z"
+  },
+  "job_00c6a6277557": {
+    "id": "job_00c6a6277557",
+    "employerId": "usr_emp006",
+    "category": "construction",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:10.078Z"
+  },
+  "job_e71f1815f521": {
+    "id": "job_e71f1815f521",
+    "employerId": "usr_emp007",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "cancelled",
+    "createdAt": "2026-04-17T13:41:13.211Z"
+  },
+  "job_a82067b22ccc": {
+    "id": "job_a82067b22ccc",
+    "employerId": "usr_emp008",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:13.297Z"
+  },
+  "job_006a35790fa8": {
+    "id": "job_006a35790fa8",
+    "employerId": "usr_emp009",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "filled",
+    "createdAt": "2026-04-17T13:41:13.342Z"
+  },
+  "job_ac4e8c5c99d1": {
+    "id": "job_ac4e8c5c99d1",
+    "employerId": "usr_emp_p401",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:15.145Z"
+  },
+  "job_406ec10221bf": {
+    "id": "job_406ec10221bf",
+    "employerId": "usr_emp_p402",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:16.369Z"
+  },
+  "job_ebdd01f7dc78": {
+    "id": "job_ebdd01f7dc78",
+    "employerId": "usr_emp_p403",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:17.556Z"
+  },
+  "job_6e712d7cae22": {
+    "id": "job_6e712d7cae22",
+    "employerId": "usr_emp_p405",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:18.778Z"
+  },
+  "job_7b7cf25733a6": {
+    "id": "job_7b7cf25733a6",
+    "employerId": "usr_emp_p406a",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:19.955Z"
+  },
+  "job_fa3e7f336e98": {
+    "id": "job_fa3e7f336e98",
+    "employerId": "usr_emp_p406b",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:19.989Z"
+  },
+  "job_be46f2af9229": {
+    "id": "job_be46f2af9229",
+    "employerId": "usr_emp_p408",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:23.630Z"
+  },
+  "job_adf490f926b5": {
+    "id": "job_adf490f926b5",
+    "employerId": "usr_emp_p410",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:26.072Z"
+  },
+  "job_83468825a0e7": {
+    "id": "job_83468825a0e7",
+    "employerId": "usr_emp_p411",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:27.298Z"
+  },
+  "job_d845d604e13e": {
+    "id": "job_d845d604e13e",
+    "employerId": "usr_emp_p412",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:28.693Z"
+  },
+  "job_c5cbd169bed7": {
+    "id": "job_c5cbd169bed7",
+    "employerId": "usr_emp_p413",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:29.896Z"
+  },
+  "job_21d66c7dd284": {
+    "id": "job_21d66c7dd284",
+    "employerId": "usr_emp_p414",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:31.168Z"
+  },
+  "job_23bd0c30984f": {
+    "id": "job_23bd0c30984f",
+    "employerId": "usr_emp_p415",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:32.425Z"
+  },
+  "job_bec6e5c1955a": {
+    "id": "job_bec6e5c1955a",
+    "employerId": "usr_emp_p416",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:33.685Z"
+  },
+  "job_59f519186966": {
+    "id": "job_59f519186966",
+    "employerId": "usr_emp_p417",
+    "category": "farming",
+    "governorate": "cairo",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:34.979Z"
+  },
+  "job_278d7ce306a1": {
+    "id": "job_278d7ce306a1",
+    "employerId": "usr_498152274647",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:37.738Z"
+  },
+  "job_79b1b809da64": {
+    "id": "job_79b1b809da64",
+    "employerId": "usr_54ed389e22c6",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:39.737Z"
+  },
+  "job_ad1ad23dff27": {
+    "id": "job_ad1ad23dff27",
+    "employerId": "usr_64f6d0079fc4",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "open",
+    "createdAt": "2026-04-17T13:41:41.670Z"
+  },
+  "job_141c37262a63": {
+    "id": "job_141c37262a63",
+    "employerId": "usr_b0ac0abfc6dc",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:41.743Z"
+  },
+  "job_eeb57a24fb1f": {
+    "id": "job_eeb57a24fb1f",
+    "employerId": "usr_80c59d96f1cc",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:43.957Z"
+  },
+  "job_994840960df4": {
+    "id": "job_994840960df4",
+    "employerId": "usr_23d19182505a",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:45.338Z"
+  },
+  "job_562a8c011780": {
+    "id": "job_562a8c011780",
+    "employerId": "usr_9cc69fdaa699",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:46.715Z"
+  },
+  "job_051a01fd7ea9": {
+    "id": "job_051a01fd7ea9",
+    "employerId": "usr_47e9eabaafd9",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:48.169Z"
+  },
+  "job_56c2ffb8c5a8": {
+    "id": "job_56c2ffb8c5a8",
+    "employerId": "usr_1bb862f1c37b",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:49.689Z"
+  },
+  "job_1f5320e64ea5": {
+    "id": "job_1f5320e64ea5",
+    "employerId": "usr_5562f0e0e908",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:51.681Z"
+  },
+  "job_678dc24b53b0": {
+    "id": "job_678dc24b53b0",
+    "employerId": "usr_3896b53459ee",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:53.083Z"
+  },
+  "job_8d442f44a9cc": {
+    "id": "job_8d442f44a9cc",
+    "employerId": "usr_b1d1c2a73619",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:55.926Z"
+  },
+  "job_0ad33ee76bb7": {
+    "id": "job_0ad33ee76bb7",
+    "employerId": "usr_ec90d4d6c4cc",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:41:58.173Z"
+  },
+  "job_6e8c6f1248dc": {
+    "id": "job_6e8c6f1248dc",
+    "employerId": "usr_b3186775f614",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:42:00.129Z"
+  },
+  "job_c4bd6541f9d8": {
+    "id": "job_c4bd6541f9d8",
+    "employerId": "usr_e5f5515126b8",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:42:02.101Z"
+  },
+  "job_27785f2c00a0": {
+    "id": "job_27785f2c00a0",
+    "employerId": "usr_534a181b8778",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:42:04.135Z"
+  },
+  "job_a63d7c29d1e9": {
+    "id": "job_a63d7c29d1e9",
+    "employerId": "usr_693a7db4719d",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:42:06.130Z"
+  },
+  "job_8cc5faf830f6": {
+    "id": "job_8cc5faf830f6",
+    "employerId": "usr_2f4f09e92a30",
+    "category": "farming",
+    "governorate": "fayoum",
+    "status": "completed",
+    "createdAt": "2026-04-17T13:42:08.722Z"
+  },
+  "job_expire01": {
+    "id": "job_expire01",
+    "employerId": "usr_emp01",
+    "category": "construction",
+    "governorate": "cairo",
+    "status": "expired",
+    "createdAt": "2026-04-17T17:06:45.905Z"
+  },
+  "job_expire02": {
+    "id": "job_expire02",
+    "employerId": "usr_emp02",
+    "category": "farming",
+    "governorate": "giza",
+    "status": "expired",
+    "createdAt": "2026-04-17T17:06:46.249Z"
+  },
+  "job_expire03": {
+    "id": "job_expire03",
+    "employerId": "usr_emp03",
+    "category": "loading",
+    "governorate": "alex",
+    "status": "expired",
+    "createdAt": "2026-04-17T17:06:46.598Z"
+  }
+}

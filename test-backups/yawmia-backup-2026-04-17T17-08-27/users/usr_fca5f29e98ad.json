@@ -1,0 +1,15 @@
+{
+  "id": "usr_fca5f29e98ad",
+  "phone": "01020000010",
+  "role": "worker",
+  "name": "",
+  "governorate": "",
+  "categories": [],
+  "rating": {
+    "avg": 5,
+    "count": 1
+  },
+  "status": "active",
+  "createdAt": "2026-04-16T15:35:21.149Z",
+  "updatedAt": "2026-04-16T15:35:22.129Z"
+}
