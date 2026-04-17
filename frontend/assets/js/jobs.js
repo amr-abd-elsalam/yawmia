@@ -261,6 +261,12 @@
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
+    // Payment info placeholder for completed jobs
+    var paymentBadgeHtml = '';
+    if (job.status === 'completed') {
+      paymentBadgeHtml = '<span class="payment-badge-placeholder" data-job-id="' + job.id + '"></span>';
+    }
+
     var completedLabel = '';
     if (job.status === 'completed' && !footerButtons) {
       completedLabel = '<span class="badge badge--status badge--completed">✓ مكتملة</span>';
@@ -280,6 +286,7 @@
         '<span>⏱ ' + job.durationDays + ' يوم</span>' +
       '</div>' +
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
+      paymentBadgeHtml +
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
         completedLabel +
@@ -367,6 +374,87 @@
           Yawmia.setLoading(cancelBtn, false);
         }
       });
+    }
+
+    // Load payment info for completed jobs
+    var paymentPlaceholder = card.querySelector('.payment-badge-placeholder');
+    if (paymentPlaceholder && job.status === 'completed') {
+      (async function loadPaymentInfo() {
+        try {
+          var payRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/payment');
+          if (payRes.data.ok && payRes.data.payment) {
+            var pay = payRes.data.payment;
+            var statusLabels = {
+              pending: 'في انتظار التأكيد',
+              employer_confirmed: 'تم تأكيد الدفع',
+              completed: 'مكتمل',
+              disputed: 'نزاع'
+            };
+            var badgeLabel = statusLabels[pay.status] || pay.status;
+            var html = '<div class="payment-info" style="margin-block-end: 0.5rem;">' +
+              '<span class="payment-badge payment-badge--' + pay.status + '">' + escapeHtml(badgeLabel) + '</span>' +
+              '<span style="font-size:0.8rem;color:var(--color-text-muted);margin-inline-start:0.5rem;">' + pay.amount + ' جنيه</span>';
+
+            // Confirm button for employer on pending payments
+            if (pay.status === 'pending' && user.role === 'employer' && job.employerId === user.id) {
+              html += ' <button class="btn btn--primary btn--sm btn-confirm-payment" data-pay-id="' + pay.id + '">أكد الدفع</button>';
+            }
+
+            // Dispute button for involved users (pending or employer_confirmed)
+            if (pay.status === 'pending' || pay.status === 'employer_confirmed') {
+              html += ' <button class="btn btn--ghost btn--sm btn-dispute-payment" data-pay-id="' + pay.id + '">فتح نزاع</button>';
+            }
+
+            html += '</div>';
+            paymentPlaceholder.innerHTML = html;
+
+            // Confirm handler
+            var confirmBtn = paymentPlaceholder.querySelector('.btn-confirm-payment');
+            if (confirmBtn) {
+              confirmBtn.addEventListener('click', async function () {
+                Yawmia.setLoading(confirmBtn, true);
+                try {
+                  var cRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/confirm');
+                  if (cRes.data.ok) {
+                    loadJobs();
+                  } else {
+                    alert(cRes.data.error || 'خطأ في تأكيد الدفع');
+                  }
+                } catch (e) {
+                  alert('خطأ في الاتصال');
+                } finally {
+                  Yawmia.setLoading(confirmBtn, false);
+                }
+              });
+            }
+
+            // Dispute handler
+            var disputeBtn = paymentPlaceholder.querySelector('.btn-dispute-payment');
+            if (disputeBtn) {
+              disputeBtn.addEventListener('click', async function () {
+                var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
+                if (!reason || reason.trim().length < 5) {
+                  alert('سبب النزاع لازم يكون 5 حروف على الأقل');
+                  return;
+                }
+                Yawmia.setLoading(disputeBtn, true);
+                try {
+                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason.trim() });
+                  if (dRes.data.ok) {
+                    loadJobs();
+                  } else {
+                    alert(dRes.data.error || 'خطأ في فتح النزاع');
+                  }
+                } catch (e) {
+                  alert('خطأ في الاتصال');
+                } finally {
+                  Yawmia.setLoading(disputeBtn, false);
+                }
+              });
+            }
+          }
+        } catch (e) { /* ignore — payment may not exist */ }
+      })();
     }
 
     // Rate button handler

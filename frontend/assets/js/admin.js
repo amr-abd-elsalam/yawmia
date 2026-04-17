@@ -50,7 +50,7 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs()]).catch(function () {});
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials()]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -61,15 +61,20 @@ var AdminApp = (function () {
     var grid = document.getElementById('statsGrid');
     if (!grid) return;
 
+    var stats = data.stats || data;
+
     var cards = [
-      { value: data.users ? data.users.total : 0, label: 'إجمالي المستخدمين' },
-      { value: data.users ? data.users.worker : 0, label: 'عمال' },
-      { value: data.users ? data.users.employer : 0, label: 'أصحاب عمل' },
-      { value: data.jobs ? data.jobs.total : 0, label: 'إجمالي الفرص' },
-      { value: data.jobs ? data.jobs.open : 0, label: 'فرص مفتوحة' },
-      { value: data.jobs ? data.jobs.completed : 0, label: 'فرص مكتملة' },
-      { value: data.applications ? data.applications.total : 0, label: 'إجمالي الطلبات' },
-      { value: data.applications ? data.applications.accepted : 0, label: 'طلبات مقبولة' },
+      { value: stats.users ? stats.users.total : 0, label: 'إجمالي المستخدمين' },
+      { value: stats.users ? stats.users.worker : 0, label: 'عمال' },
+      { value: stats.users ? stats.users.employer : 0, label: 'أصحاب عمل' },
+      { value: stats.jobs ? stats.jobs.total : 0, label: 'إجمالي الفرص' },
+      { value: stats.jobs ? stats.jobs.open : 0, label: 'فرص مفتوحة' },
+      { value: stats.jobs ? stats.jobs.completed : 0, label: 'فرص مكتملة' },
+      { value: stats.applications ? stats.applications.total : 0, label: 'إجمالي الطلبات' },
+      { value: stats.applications ? stats.applications.accepted : 0, label: 'طلبات مقبولة' },
+      { value: stats.payments ? stats.payments.total : 0, label: 'إجمالي المدفوعات' },
+      { value: stats.payments ? stats.payments.completed : 0, label: 'مدفوعات مكتملة' },
+      { value: stats.payments ? stats.payments.disputed : 0, label: 'مدفوعات في نزاع' },
     ];
 
     grid.innerHTML = '';
@@ -194,11 +199,43 @@ var AdminApp = (function () {
     container.innerHTML = html;
   }
 
+  async function loadFinancials() {
+    try {
+      var data = await api('/api/admin/financial-summary');
+      var container = document.getElementById('financialGrid');
+      if (!container) return;
+
+      var summary = data.summary || {};
+
+      var cards = [
+        { value: summary.totalPayments || 0, label: 'إجمالي المدفوعات', isCurrency: false },
+        { value: summary.totalAmount || 0, label: 'إجمالي المبالغ', isCurrency: true },
+        { value: summary.completedPlatformFee || 0, label: 'عمولة محصّلة', isCurrency: true },
+        { value: summary.pendingPlatformFee || 0, label: 'عمولة معلّقة', isCurrency: true },
+        { value: summary.disputedCount || 0, label: 'نزاعات مفتوحة', isCurrency: false },
+      ];
+
+      container.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'financial-card';
+        card.innerHTML =
+          '<div class="financial-card__value' + (c.isCurrency ? ' financial-card__value--currency' : '') + '">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="financial-card__label">' + escapeHtml(c.label) + '</div>';
+        container.appendChild(card);
+      });
+    } catch (err) {
+      var container = document.getElementById('financialGrid');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل البيانات المالية</p>';
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
     loadUsers: loadUsers,
     loadJobs: loadJobs,
     loadStats: loadStats,
+    loadFinancials: loadFinancials,
   };
 })();

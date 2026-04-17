@@ -5,6 +5,7 @@
 import { countByRole, listAll as listAllUsers } from '../services/users.js';
 import { countByStatus as jobCounts, listAll as listAllJobs } from '../services/jobs.js';
 import { countByStatus as appCounts } from '../services/applications.js';
+import { getFinancialSummary, countByStatus as countPaymentsByStatus } from '../services/payments.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -20,10 +21,12 @@ export async function handleAdminStats(req, res) {
     const users = await countByRole();
     const jobs = await jobCounts();
     const applications = await appCounts();
+    const payments = await countPaymentsByStatus();
+    const financials = await getFinancialSummary();
 
     return sendJSON(res, 200, {
       ok: true,
-      stats: { users, jobs, applications },
+      stats: { users, jobs, applications, payments, financials },
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب الإحصائيات', code: 'STATS_ERROR' });

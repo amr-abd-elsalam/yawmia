@@ -303,4 +303,26 @@ export function setupNotificationListeners() {
       { jobId: data.jobId, ratingId: data.ratingId, stars: data.stars }
     ).catch(() => {});
   });
+
+  // Employer gets notification when payment record is created
+  eventBus.on('payment:created', (data) => {
+    createNotification(
+      data.employerId,
+      'payment_created',
+      `تم إنشاء سجل دفع للفرصة — المبلغ: ${data.amount} جنيه (عمولة المنصة: ${data.platformFee} جنيه)`,
+      { jobId: data.jobId, paymentId: data.paymentId, amount: data.amount, platformFee: data.platformFee }
+    ).catch(() => {});
+  });
+
+  // Employer gets notification when payment is disputed
+  eventBus.on('payment:disputed', (data) => {
+    if (data.disputedBy !== data.employerId) {
+      createNotification(
+        data.employerId,
+        'payment_disputed',
+        'تم فتح نزاع على دفعة — برجاء مراجعة التفاصيل',
+        { jobId: data.jobId, paymentId: data.paymentId }
+      ).catch(() => {});
+    }
+  });
 }

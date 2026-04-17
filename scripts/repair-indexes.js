@@ -162,6 +162,24 @@ async function repair() {
     console.log(`   ✅ User-Notifications index OK (${Object.keys(userNtfIndex).length} users)`);
   }
 
+  // 7. Job-Payments Index (payments/job-index.json)
+  console.log('7️⃣  Job-Payments Index...');
+  const payments = await listRecords(join(DATA_DIR, 'payments'), 'pay_');
+  const jobPaymentsIndex = {};
+  for (const pay of payments) {
+    if (!jobPaymentsIndex[pay.jobId]) jobPaymentsIndex[pay.jobId] = [];
+    jobPaymentsIndex[pay.jobId].push(pay.id);
+  }
+  const existingPaymentsIndex = await readJSON(join(DATA_DIR, 'payments/job-index.json')) || {};
+  const paymentsIndexChanged = JSON.stringify(jobPaymentsIndex) !== JSON.stringify(existingPaymentsIndex);
+  if (paymentsIndexChanged) {
+    console.log(`   ⚠️  Job-Payments index needs repair (${Object.keys(jobPaymentsIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'payments/job-index.json'), jobPaymentsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Job-Payments index OK (${Object.keys(jobPaymentsIndex).length} jobs)`);
+  }
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

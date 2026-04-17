@@ -398,7 +398,15 @@ export async function completeJob(jobId, employerId) {
     await writeIndex('jobsIndex', jobsIndex);
   }
 
-  eventBus.emit('job:completed', { jobId, employerId });
+  eventBus.emit('job:completed', { jobId, employerId, jobTitle: job.title });
+
+  // Auto-create payment record (fire-and-forget)
+  try {
+    const { createPayment } = await import('./payments.js');
+    createPayment(jobId, employerId).catch(() => {});
+  } catch (_) {
+    // Fire-and-forget — don't break completion flow
+  }
 
   return { ok: true, job };
 }

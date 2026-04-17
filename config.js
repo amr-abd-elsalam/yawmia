@@ -243,6 +243,7 @@ const config = {
       otp: 'otp',
       notifications: 'notifications',
       ratings: 'ratings',
+      payments: 'payments',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -251,6 +252,7 @@ const config = {
       jobAppsIndex: 'applications/job-index.json',
       userNotificationsIndex: 'notifications/user-index.json',
       employerJobsIndex: 'jobs/employer-index.json',
+      jobPaymentsIndex: 'payments/job-index.json',
     },
     encoding: 'utf-8',
   },
@@ -348,6 +350,20 @@ const config = {
     notificationTtlDays: 90,         // حذف الإشعارات المقروءة بعد 90 يوم
     maxNotificationsPerUser: 500,    // أقصى عدد إشعارات لكل مستخدم (مرجع مستقبلي)
     otpCleanupEnabled: true,         // تنظيف OTP files المنتهية
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 22. المدفوعات (PAYMENTS)
+  // ═══════════════════════════════════════════════════════════
+  PAYMENTS: {
+    enabled: true,
+    autoCreateOnComplete: true,      // إنشاء سجل دفع تلقائي عند إنهاء الفرصة
+    methods: ['cash', 'wallet', 'instapay'],
+    defaultMethod: 'cash',
+    statuses: ['pending', 'employer_confirmed', 'completed', 'disputed'],
+    confirmationRequired: true,      // صاحب العمل لازم يأكد الدفع
+    adminApprovalRequired: true,     // الأدمن لازم يوافق على الإنهاء
+    disputeWindowDays: 7,            // مهلة فتح نزاع بعد الإنهاء (أيام)
   },
 
 };

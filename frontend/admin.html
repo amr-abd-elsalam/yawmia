@@ -255,6 +255,16 @@
 
       <div class="admin-section">
         <div class="admin-section__header">
+          <h2>الماليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadFinancials()">تحديث</button>
+        </div>
+        <div id="financialGrid" class="financial-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
           <h2>صحة النظام</h2>
           <button class="refresh-btn" onclick="AdminApp.loadHealth()">تحديث</button>
         </div>
