@@ -320,6 +320,27 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 20. خدمة المراسلة المتعددة القنوات (MESSAGING)
+  // ═══════════════════════════════════════════════════════════
+  MESSAGING: {
+    enabled: false,                    // false = mock mode (console.log only)
+    preferredChannel: 'whatsapp',      // 'whatsapp' | 'sms' | 'mock'
+    fallbackChannel: 'sms',           // fallback if preferred fails; null = no fallback
+    whatsapp: {
+      enabled: false,                  // enable WhatsApp Cloud API
+      apiVersion: 'v22.0',            // Meta Graph API version
+      templateName: 'yawmia_otp',     // pre-approved authentication template name
+      templateLanguage: 'ar',          // template language code
+      codeTtlSeconds: 300,             // message TTL (set at template creation)
+    },
+    sms: {
+      enabled: false,                  // enable SMS (Infobip)
+      gateway: 'infobip',             // 'infobip'
+      senderId: 'Yawmia',            // SMS sender ID
+    },
+  },
+
 };
 
 export default deepFreeze(config);

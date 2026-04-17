@@ -9,6 +9,7 @@ import { createSession } from './sessions.js';
 import { findByPhone, create as createUser } from './users.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { sendOtpMessage } from './messaging.js';
 
 /**
  * Generate a random OTP
@@ -41,9 +42,19 @@ export async function sendOtp(phone, role) {
   const otpPath = getRecordPath('otp', phone);
   await atomicWrite(otpPath, otpData);
 
-  // Mock SMS — print to console
-  console.log(`📱 OTP for ${phone}: ${otp}`);
-  logger.info('OTP sent (mock)', { phone, role });
+  // Send OTP via messaging (WhatsApp → SMS → mock based on config)
+  const msgResult = await sendOtpMessage(phone, otp);
+  if (!msgResult.ok) {
+    logger.warn('OTP message delivery failed — OTP still saved for verification', {
+      phone, channel: msgResult.channel, error: msgResult.error,
+    });
+  }
+  logger.info('OTP processed', {
+    phone, role,
+    channel: msgResult.channel,
+    delivered: msgResult.ok,
+    fallbackUsed: msgResult.fallbackUsed || false,
+  });
 
   eventBus.emit('otp:sent', { phone, role });
 
