@@ -17,7 +17,7 @@ const { initDatabase } = await import('../server/services/database.js');
 const { eventBus } = await import('../server/services/eventBus.js');
 
 // Remove all listeners to prevent notification side-effects
-eventBus.removeAllListeners();
+eventBus.clear();
 
 const { countTodayByEmployer, create: createJob } = await import('../server/services/jobs.js');
 const { countTodayByWorker, apply: applyToJob } = await import('../server/services/applications.js');
@@ -27,7 +27,7 @@ describe('Daily Limits — countTodayByEmployer', async () => {
 
   before(async () => {
     await initDatabase();
-    eventBus.removeAllListeners();
+    eventBus.clear();
   });
 
   after(async () => {
@@ -82,7 +82,7 @@ describe('Daily Limits — countTodayByWorker', async () => {
   const employerId2 = 'usr_emp_daily_test2';
 
   before(async () => {
-    eventBus.removeAllListeners();
+    eventBus.clear();
   });
 
   await it('D-04: countTodayByWorker returns 0 initially', async () => {
