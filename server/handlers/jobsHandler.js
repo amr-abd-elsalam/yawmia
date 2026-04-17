@@ -2,7 +2,8 @@
 // server/handlers/jobsHandler.js — Job Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { create, findById, list, listAll, startJob, completeJob, cancelJob } from '../services/jobs.js';
+import config from '../../config.js';
+import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
@@ -21,6 +22,16 @@ export async function handleCreateJob(req, res) {
   const result = validateJobFields(body);
   if (!result.valid) {
     return sendJSON(res, 400, { error: result.errors.join('. '), code: 'INVALID_JOB' });
+  }
+
+  // Daily limit enforcement (non-blocking — allows on count failure)
+  try {
+    const todayCount = await countTodayByEmployer(req.user.id);
+    if (todayCount >= config.LIMITS.maxJobsPerEmployerPerDay) {
+      return sendJSON(res, 429, { error: 'وصلت للحد الأقصى لنشر الفرص اليوم', code: 'DAILY_JOB_LIMIT' });
+    }
+  } catch (_) {
+    // Non-blocking: allow action if count check fails
   }
 
   try {

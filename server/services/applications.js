@@ -3,9 +3,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath } from './database.js';
+import config from '../../config.js';
+import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { findById as findJobById, incrementAccepted } from './jobs.js';
 import { eventBus } from './eventBus.js';
+
+const WORKER_APPS_INDEX = config.DATABASE.indexFiles.workerAppsIndex;
+const JOB_APPS_INDEX = config.DATABASE.indexFiles.jobAppsIndex;
 
 /**
  * Apply to a job
@@ -40,6 +44,10 @@ export async function apply(jobId, workerId) {
 
   const appPath = getRecordPath('applications', id);
   await atomicWrite(appPath, application);
+
+  // Update secondary indexes
+  await addToSetIndex(WORKER_APPS_INDEX, workerId, id);
+  await addToSetIndex(JOB_APPS_INDEX, jobId, id);
 
   eventBus.emit('application:submitted', { applicationId: id, jobId, workerId, employerId: job.employerId });
 
@@ -147,29 +155,77 @@ export async function findById(applicationId) {
 }
 
 /**
- * Find application by job + worker
+ * Find application by job + worker (index-accelerated with fallback)
  */
 export async function findByJobAndWorker(jobId, workerId) {
-  const apps = await listByJob(jobId);
-  return apps.find(a => a.workerId === workerId) || null;
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(JOB_APPS_INDEX, jobId);
+  if (indexedIds.length > 0) {
+    for (const appId of indexedIds) {
+      const app = await readJSON(getRecordPath('applications', appId));
+      if (app && app.workerId === workerId) return app;
+    }
+    return null;
+  }
+
+  // Fallback: full scan (backward compatibility for pre-index data)
+  const appsDir = getCollectionPath('applications');
+  const all = await listJSON(appsDir);
+  return all.find(a => a.jobId === jobId && a.workerId === workerId) || null;
 }
 
 /**
- * List all applications for a job
+ * List all applications for a job (index-accelerated with fallback)
  */
 export async function listByJob(jobId) {
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(JOB_APPS_INDEX, jobId);
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const appId of indexedIds) {
+      const app = await readJSON(getRecordPath('applications', appId));
+      if (app) results.push(app);
+    }
+    return results;
+  }
+
+  // Fallback: full scan (backward compatibility for pre-index data)
   const appsDir = getCollectionPath('applications');
   const all = await listJSON(appsDir);
   return all.filter(a => a.jobId === jobId);
 }
 
 /**
- * List all applications by a worker
+ * List all applications by a worker (index-accelerated with fallback)
  */
 export async function listByWorker(workerId) {
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(WORKER_APPS_INDEX, workerId);
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const appId of indexedIds) {
+      const app = await readJSON(getRecordPath('applications', appId));
+      if (app) results.push(app);
+    }
+    return results;
+  }
+
+  // Fallback: full scan (backward compatibility for pre-index data)
   const appsDir = getCollectionPath('applications');
   const all = await listJSON(appsDir);
   return all.filter(a => a.workerId === workerId);
+}
+
+/**
+ * Count applications submitted by a worker today
+ * @param {string} workerId
+ * @returns {Promise<number>}
+ */
+export async function countTodayByWorker(workerId) {
+  const apps = await listByWorker(workerId);
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  return apps.filter(a => new Date(a.appliedAt) >= todayMidnight).length;
 }
 
 /**

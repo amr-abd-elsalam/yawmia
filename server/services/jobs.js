@@ -4,8 +4,10 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
+
+const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
 
 /**
  * Calculate fees
@@ -60,6 +62,9 @@ export async function create(employerId, fields) {
     createdAt: job.createdAt,
   };
   await writeIndex('jobsIndex', jobsIndex);
+
+  // Update employer-jobs secondary index
+  await addToSetIndex(EMPLOYER_JOBS_INDEX, employerId, id);
 
   eventBus.emit('job:created', { jobId: id, employerId });
 
@@ -196,6 +201,34 @@ export async function countByStatus() {
 }
 
 /**
+ * Count jobs created by an employer today (index-accelerated with fallback)
+ * @param {string} employerId
+ * @returns {Promise<number>}
+ */
+export async function countTodayByEmployer(employerId) {
+  let employerJobs;
+
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(EMPLOYER_JOBS_INDEX, employerId);
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const jobId of indexedIds) {
+      const job = await readJSON(getRecordPath('jobs', jobId));
+      if (job) results.push(job);
+    }
+    employerJobs = results;
+  } else {
+    // Fallback: full scan
+    const allJobs = await listAll();
+    employerJobs = allJobs.filter(j => j.employerId === employerId);
+  }
+
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  return employerJobs.filter(j => new Date(j.createdAt) >= todayMidnight).length;
+}
+
+/**
  * Check if a job is expired and update its status if needed (lazy enforcement)
  */
 export async function checkExpiry(job) {
@@ -217,26 +250,36 @@ export async function checkExpiry(job) {
 
 /**
  * Enforce expiry on all open jobs (startup + periodic)
+ * Optimized: single index read/write instead of per-job
  * @returns {number} count of jobs that were expired
  */
 export async function enforceExpiredJobs() {
   const jobs = await listAll();
   let count = 0;
   const now = new Date();
+  const expiredJobIds = [];
+
   for (const job of jobs) {
     if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
       await atomicWrite(jobPath, job);
-
-      const jobsIndex = await readIndex('jobsIndex');
-      if (jobsIndex[job.id]) {
-        jobsIndex[job.id].status = 'expired';
-        await writeIndex('jobsIndex', jobsIndex);
-      }
+      expiredJobIds.push(job.id);
       count++;
     }
   }
+
+  // Batch update jobs index — single read + single write
+  if (expiredJobIds.length > 0) {
+    const jobsIndex = await readIndex('jobsIndex');
+    for (const jobId of expiredJobIds) {
+      if (jobsIndex[jobId]) {
+        jobsIndex[jobId].status = 'expired';
+      }
+    }
+    await writeIndex('jobsIndex', jobsIndex);
+  }
+
   return count;
 }
 

@@ -29,11 +29,19 @@ const routes = [
   {
     method: 'GET', path: '/api/health', middlewares: [],
     handler: (req, res) => {
+      const mem = process.memoryUsage();
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
+        version: '0.6.0',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
+        uptime: Math.floor(process.uptime()),
+        memory: {
+          heapUsedMB: +(mem.heapUsed / 1048576).toFixed(1),
+          heapTotalMB: +(mem.heapTotal / 1048576).toFixed(1),
+          rssMB: +(mem.rss / 1048576).toFixed(1),
+        },
+        node: process.version,
       });
     },
   },

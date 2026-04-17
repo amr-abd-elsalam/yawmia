@@ -81,6 +81,11 @@ const server = createServer((req, res) => {
   });
 });
 
+// ── Server Timeouts ───────────────────────────────────────────
+server.requestTimeout = 30000;       // 30s max for entire request
+server.headersTimeout = 10000;       // 10s max for headers
+server.keepAliveTimeout = 65000;     // 65s keep-alive (> typical LB timeout of 60s)
+
 // ── Startup Cleanup ───────────────────────────────────────────
 try {
   const expiredSessions = await cleanExpiredSessions();

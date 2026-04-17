@@ -2,7 +2,8 @@
 // server/handlers/applicationsHandler.js — Application Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { apply, accept, reject, listByJob, listByWorker, findById as findAppById, withdraw } from '../services/applications.js';
+import config from '../../config.js';
+import { apply, accept, reject, listByJob, listByWorker, findById as findAppById, withdraw, countTodayByWorker } from '../services/applications.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -16,6 +17,16 @@ function sendJSON(res, statusCode, data) {
 export async function handleApplyToJob(req, res) {
   const jobId = req.params.id;
   const workerId = req.user.id;
+
+  // Daily limit enforcement (non-blocking — allows on count failure)
+  try {
+    const todayCount = await countTodayByWorker(workerId);
+    if (todayCount >= config.LIMITS.maxApplicationsPerWorkerPerDay) {
+      return sendJSON(res, 429, { error: 'وصلت للحد الأقصى للتقديم على الفرص اليوم', code: 'DAILY_APPLICATION_LIMIT' });
+    }
+  } catch (_) {
+    // Non-blocking: allow action if count check fails
+  }
 
   try {
     const result = await apply(jobId, workerId);

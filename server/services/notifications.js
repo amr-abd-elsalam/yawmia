@@ -4,8 +4,10 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
+
+const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
 
 /**
  * Create a notification
@@ -28,22 +30,38 @@ export async function createNotification(userId, type, message, meta = {}) {
   const ntfPath = getRecordPath('notifications', id);
   await atomicWrite(ntfPath, notification);
 
+  // Update secondary index
+  await addToSetIndex(USER_NTF_INDEX, userId, id);
+
   eventBus.emit('notification:created', { notificationId: id, userId, type });
 
   return notification;
 }
 
 /**
- * List notifications for a user (paginated, newest first)
+ * List notifications for a user (index-accelerated, paginated, newest first)
  */
 export async function listByUser(userId, { limit = 20, offset = 0 } = {}) {
-  const ntfDir = getCollectionPath('notifications');
-  const allNotifications = await listJSON(ntfDir);
+  let userNotifications;
 
-  // Filter by user
-  const userNotifications = allNotifications
-    .filter(n => n.userId === userId)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(USER_NTF_INDEX, userId);
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const ntfId of indexedIds) {
+      const ntf = await readJSON(getRecordPath('notifications', ntfId));
+      if (ntf) results.push(ntf);
+    }
+    userNotifications = results;
+  } else {
+    // Fallback: full scan (backward compatibility for pre-index data)
+    const ntfDir = getCollectionPath('notifications');
+    const allNotifications = await listJSON(ntfDir);
+    userNotifications = allNotifications.filter(n => n.userId === userId);
+  }
+
+  // Sort newest first
+  userNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const total = userNotifications.length;
   const items = userNotifications.slice(offset, offset + limit);
@@ -53,9 +71,21 @@ export async function listByUser(userId, { limit = 20, offset = 0 } = {}) {
 }
 
 /**
- * Count unread notifications for a user
+ * Count unread notifications for a user (index-accelerated)
  */
 export async function countUnread(userId) {
+  // Try index-accelerated lookup first
+  const indexedIds = await getFromSetIndex(USER_NTF_INDEX, userId);
+  if (indexedIds.length > 0) {
+    let count = 0;
+    for (const ntfId of indexedIds) {
+      const ntf = await readJSON(getRecordPath('notifications', ntfId));
+      if (ntf && !ntf.read) count++;
+    }
+    return count;
+  }
+
+  // Fallback: full scan
   const ntfDir = getCollectionPath('notifications');
   const allNotifications = await listJSON(ntfDir);
   return allNotifications.filter(n => n.userId === userId && !n.read).length;

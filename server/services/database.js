@@ -122,3 +122,72 @@ export function getCollectionPath(collection) {
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   return join(BASE_PATH, dir);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Secondary Set-Based Index Helpers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Read a set-based index file — returns {} if not found
+ * @param {string} relativePath — path relative to BASE_PATH (e.g. 'applications/worker-index.json')
+ */
+export async function readSetIndex(relativePath) {
+  const filePath = join(BASE_PATH, relativePath);
+  return (await readJSON(filePath)) || {};
+}
+
+/**
+ * Write a set-based index file atomically
+ * @param {string} relativePath — path relative to BASE_PATH
+ * @param {object} data — the full index object
+ */
+export async function writeSetIndex(relativePath, data) {
+  const filePath = join(BASE_PATH, relativePath);
+  await atomicWrite(filePath, data);
+}
+
+/**
+ * Add an ID to a key's set in a set-based index (no duplicates)
+ * @param {string} relativePath — path relative to BASE_PATH
+ * @param {string} key — the grouping key (e.g. workerId, jobId)
+ * @param {string} id — the record ID to add
+ */
+export async function addToSetIndex(relativePath, key, id) {
+  const index = await readSetIndex(relativePath);
+  if (!index[key]) {
+    index[key] = [];
+  }
+  if (!index[key].includes(id)) {
+    index[key].push(id);
+  }
+  await writeSetIndex(relativePath, index);
+}
+
+/**
+ * Remove an ID from a key's set in a set-based index
+ * Deletes the key entirely if the array becomes empty
+ * @param {string} relativePath — path relative to BASE_PATH
+ * @param {string} key — the grouping key
+ * @param {string} id — the record ID to remove
+ */
+export async function removeFromSetIndex(relativePath, key, id) {
+  const index = await readSetIndex(relativePath);
+  if (!index[key]) return;
+  index[key] = index[key].filter(item => item !== id);
+  if (index[key].length === 0) {
+    delete index[key];
+  }
+  await writeSetIndex(relativePath, index);
+}
+
+/**
+ * Get all IDs for a key from a set-based index
+ * Returns [] if key doesn't exist
+ * @param {string} relativePath — path relative to BASE_PATH
+ * @param {string} key — the grouping key
+ * @returns {Promise<string[]>}
+ */
+export async function getFromSetIndex(relativePath, key) {
+  const index = await readSetIndex(relativePath);
+  return index[key] || [];
+}

@@ -247,6 +247,10 @@ const config = {
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
       jobsIndex: 'jobs/index.json',
+      workerAppsIndex: 'applications/worker-index.json',
+      jobAppsIndex: 'applications/job-index.json',
+      userNotificationsIndex: 'notifications/user-index.json',
+      employerJobsIndex: 'jobs/employer-index.json',
     },
     encoding: 'utf-8',
   },
