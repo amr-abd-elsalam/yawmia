@@ -94,6 +94,7 @@ export async function handleGetMe(req, res) {
       lng: user.lng || null,
       rating: user.rating,
       status: user.status,
+      notificationPreferences: user.notificationPreferences || null,
       createdAt: user.createdAt,
     },
   });
@@ -136,6 +137,32 @@ export async function handleUpdateProfile(req, res) {
     updateFields.lng = lngResult.value;
   }
 
+  // Handle notification preferences update
+  if (body.notificationPreferences && typeof body.notificationPreferences === 'object') {
+    const { updateNotificationPreferences } = await import('../services/users.js');
+    const prefsResult = await updateNotificationPreferences(userId, body.notificationPreferences);
+    if (prefsResult) {
+      if (Object.keys(updateFields).length === 0) {
+        return sendJSON(res, 200, {
+          ok: true,
+          user: {
+            id: prefsResult.id,
+            phone: prefsResult.phone,
+            role: prefsResult.role,
+            name: prefsResult.name,
+            governorate: prefsResult.governorate,
+            categories: prefsResult.categories,
+            lat: prefsResult.lat || null,
+            lng: prefsResult.lng || null,
+            rating: prefsResult.rating,
+            status: prefsResult.status,
+            notificationPreferences: prefsResult.notificationPreferences || null,
+          },
+        });
+      }
+    }
+  }
+
   if (Object.keys(updateFields).length === 0) {
     return sendJSON(res, 400, { error: 'لا توجد بيانات للتحديث', code: 'NO_FIELDS' });
   }
@@ -158,6 +185,7 @@ export async function handleUpdateProfile(req, res) {
         lng: updatedUser.lng || null,
         rating: updatedUser.rating,
         status: updatedUser.status,
+        notificationPreferences: updatedUser.notificationPreferences || null,
       },
     });
   } catch (err) {

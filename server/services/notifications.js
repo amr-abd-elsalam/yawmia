@@ -207,12 +207,30 @@ export function setupNotificationListeners() {
   // Worker gets notification when their application is accepted
   if (config.NOTIFICATIONS.workerNotifications.applicationAccepted) {
     eventBus.on('application:accepted', (data) => {
+      const message = `تم قبولك في الفرصة: ${data.jobTitle}`;
       createNotification(
         data.workerId,
         'application_accepted',
-        `تم قبولك في الفرصة: ${data.jobTitle}`,
+        message,
         { jobId: data.jobId, applicationId: data.applicationId }
       ).catch(() => {});
+
+      // Send WhatsApp/SMS for critical event (fire-and-forget)
+      import('./notificationMessenger.js').then(({ sendNotificationMessage }) => {
+        import('./users.js').then(({ findById: findUser }) => {
+          findUser(data.workerId).then(user => {
+            if (user && user.phone) {
+              sendNotificationMessage({
+                userId: data.workerId,
+                phone: user.phone,
+                eventType: 'application_accepted',
+                message: `يوميّة: ${message}`,
+                user,
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        }).catch(() => {});
+      }).catch(() => {});
     });
   }
 
@@ -245,12 +263,30 @@ export function setupNotificationListeners() {
   // Employer gets notification when their job is filled
   if (config.NOTIFICATIONS.employerNotifications.jobFilled) {
     eventBus.on('job:filled', (data) => {
+      const message = `الفرصة اكتملت العدد المطلوب: ${data.jobTitle}`;
       createNotification(
         data.employerId,
         'job_filled',
-        `الفرصة اكتملت العدد المطلوب: ${data.jobTitle}`,
+        message,
         { jobId: data.jobId }
       ).catch(() => {});
+
+      // Send WhatsApp/SMS for critical event (fire-and-forget)
+      import('./notificationMessenger.js').then(({ sendNotificationMessage }) => {
+        import('./users.js').then(({ findById: findUser }) => {
+          findUser(data.employerId).then(user => {
+            if (user && user.phone) {
+              sendNotificationMessage({
+                userId: data.employerId,
+                phone: user.phone,
+                eventType: 'job_filled',
+                message: `يوميّة: ${message}`,
+                user,
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        }).catch(() => {});
+      }).catch(() => {});
     });
   }
 
@@ -280,13 +316,34 @@ export function setupNotificationListeners() {
       }
 
       // Notify all affected workers
+      const cancelMessage = `تم إلغاء الفرصة: ${data.jobTitle}`;
       for (const workerId of affectedWorkerIds) {
         await createNotification(
           workerId,
           'job_cancelled',
-          `تم إلغاء الفرصة: ${data.jobTitle}`,
+          cancelMessage,
           { jobId: data.jobId }
         );
+      }
+
+      // Send WhatsApp/SMS to affected workers (fire-and-forget)
+      try {
+        const { sendNotificationMessage } = await import('./notificationMessenger.js');
+        const { findById: findUser } = await import('./users.js');
+        for (const workerId of affectedWorkerIds) {
+          const worker = await findUser(workerId);
+          if (worker && worker.phone) {
+            sendNotificationMessage({
+              userId: workerId,
+              phone: worker.phone,
+              eventType: 'job_cancelled',
+              message: `يوميّة: ${cancelMessage}`,
+              user: worker,
+            }).catch(() => {});
+          }
+        }
+      } catch (_) {
+        // Fire-and-forget
       }
     } catch (err) {
       // Fire-and-forget — errors don't break the cancel flow
@@ -306,12 +363,30 @@ export function setupNotificationListeners() {
 
   // Employer gets notification when payment record is created
   eventBus.on('payment:created', (data) => {
+    const message = `تم إنشاء سجل دفع للفرصة — المبلغ: ${data.amount} جنيه (عمولة المنصة: ${data.platformFee} جنيه)`;
     createNotification(
       data.employerId,
       'payment_created',
-      `تم إنشاء سجل دفع للفرصة — المبلغ: ${data.amount} جنيه (عمولة المنصة: ${data.platformFee} جنيه)`,
+      message,
       { jobId: data.jobId, paymentId: data.paymentId, amount: data.amount, platformFee: data.platformFee }
     ).catch(() => {});
+
+    // Send WhatsApp/SMS for critical event (fire-and-forget)
+    import('./notificationMessenger.js').then(({ sendNotificationMessage }) => {
+      import('./users.js').then(({ findById: findUser }) => {
+        findUser(data.employerId).then(user => {
+          if (user && user.phone) {
+            sendNotificationMessage({
+              userId: data.employerId,
+              phone: user.phone,
+              eventType: 'payment_created',
+              message: `يوميّة: ${message}`,
+              user,
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }).catch(() => {});
+    }).catch(() => {});
   });
 
   // Employer gets notification when payment is disputed

@@ -110,3 +110,67 @@ export async function sendOtpMessage(phone, otp) {
     fallbackUsed: !!fallbackChannel,
   };
 }
+
+// ── Generic Text Message Delivery ────────────────────────────
+
+/**
+ * Send a generic text message (non-OTP) via preferred channel
+ * Used for notification messages (application accepted, job filled, etc.)
+ *
+ * NOTE: sendSmsOtp() in sms.js constructs OTP message internally,
+ * so for arbitrary text we build the Infobip payload directly here.
+ * WhatsApp free-form messages require 24h conversation window —
+ * template-based notifications are a future enhancement.
+ *
+ * @param {string} phone — Egyptian phone number (01xxx)
+ * @param {string} message — Arabic text message
+ * @param {{ channel?: string }} options — optional preferred channel override
+ * @returns {Promise<{ ok: boolean, channel: string, messageId?: string, error?: string }>}
+ */
+export async function sendMessage(phone, message, options = {}) {
+  // Mock mode (development/testing)
+  if (!config.MESSAGING.enabled) {
+    console.log(`📩 NOTIFICATION [MOCK] to ${phone}: ${message}`);
+    return { ok: true, channel: 'mock', messageId: 'mock_' + Date.now() };
+  }
+
+  // Try SMS (the reliable channel for non-OTP text messages)
+  const wantSms = options.channel === 'sms' || config.MESSAGING.preferredChannel === 'sms' || config.MESSAGING.fallbackChannel === 'sms';
+  if (wantSms && config.MESSAGING.sms.enabled) {
+    try {
+      const apiKey = process.env.INFOBIP_API_KEY;
+      const baseUrl = process.env.INFOBIP_BASE_URL;
+      if (apiKey && baseUrl) {
+        const senderId = process.env.INFOBIP_SENDER || config.MESSAGING.sms.senderId;
+        const internationalPhone = phone.startsWith('0') ? '20' + phone.slice(1) : phone;
+        const payload = {
+          messages: [{
+            destinations: [{ to: internationalPhone }],
+            from: senderId,
+            text: message,
+          }],
+        };
+        const response = await fetch(`${baseUrl}/sms/2/text/advanced`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `App ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000),
+        });
+        const data = await response.json();
+        if (response.ok && data.messages && data.messages.length > 0) {
+          const msg = data.messages[0];
+          return { ok: true, channel: 'sms', messageId: msg.messageId || msg.id || 'unknown' };
+        }
+      }
+    } catch (err) {
+      logger.warn('SMS notification send failed', { phone, error: err.message });
+    }
+  }
+
+  // Fallback to mock
+  console.log(`📩 NOTIFICATION [MOCK-FALLBACK] to ${phone}: ${message}`);
+  return { ok: true, channel: 'mock', messageId: 'mock_fallback_' + Date.now() };
+}

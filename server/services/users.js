@@ -25,6 +25,7 @@ export async function create(phone, role) {
     status: 'active',
     termsAcceptedAt: null,
     termsVersion: null,
+    notificationPreferences: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -206,5 +207,38 @@ export async function softDelete(userId) {
     await writeIndex('phoneIndex', phoneIndex);
   }
 
+  return updatedUser;
+}
+
+/**
+ * Update notification preferences
+ * inApp is always forced to true — cannot be disabled by user.
+ * Partial updates: only provided fields change, rest preserved.
+ * @param {string} userId
+ * @param {{ inApp?: boolean, whatsapp?: boolean, sms?: boolean }} preferences
+ * @returns {Promise<object|null>}
+ */
+export async function updateNotificationPreferences(userId, preferences) {
+  const user = await findById(userId);
+  if (!user) return null;
+
+  const updatedPrefs = {
+    inApp: true,
+    whatsapp: typeof preferences.whatsapp === 'boolean'
+      ? preferences.whatsapp
+      : (user.notificationPreferences?.whatsapp ?? true),
+    sms: typeof preferences.sms === 'boolean'
+      ? preferences.sms
+      : (user.notificationPreferences?.sms ?? false),
+  };
+
+  const updatedUser = {
+    ...user,
+    notificationPreferences: updatedPrefs,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const userPath = getRecordPath('users', userId);
+  await atomicWrite(userPath, updatedUser);
   return updatedUser;
 }

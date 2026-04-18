@@ -35,7 +35,7 @@ const routes = [
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.12.0',
+        version: '0.13.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {

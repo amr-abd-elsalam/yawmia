@@ -52,6 +52,7 @@
         Yawmia.setAuth(Yawmia.getToken(), user);
         renderProfile(user);
         renderEditForm(user);
+        renderNotificationPreferences(user);
 
         // Role-specific sections
         if (user.role === 'worker') {
@@ -485,6 +486,60 @@
     });
 
     container.appendChild(list);
+  }
+
+  // ── Notification Preferences ──────────────────────────────
+  function renderNotificationPreferences(u) {
+    var container = Yawmia.$id('notification-prefs');
+    if (!container) return;
+
+    var prefs = u.notificationPreferences || { inApp: true, whatsapp: true, sms: false };
+
+    container.innerHTML =
+      '<section class="card">' +
+        '<h2 class="card__title">إعدادات الإشعارات</h2>' +
+        '<div class="pref-group">' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" checked disabled />' +
+            '<span>إشعارات داخل التطبيق (دايماً مفعّلة)</span>' +
+          '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-whatsapp" ' + (prefs.whatsapp ? 'checked' : '') + ' />' +
+            '<span>إشعارات واتساب للأحداث المهمة</span>' +
+          '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-sms" ' + (prefs.sms ? 'checked' : '') + ' />' +
+            '<span>إشعارات SMS للأحداث المهمة</span>' +
+          '</label>' +
+          '<button class="btn btn--ghost" id="save-prefs-btn">حفظ إعدادات الإشعارات</button>' +
+        '</div>' +
+      '</section>';
+
+    var saveBtn = Yawmia.$id('save-prefs-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async function () {
+        var whatsapp = Yawmia.$id('pref-whatsapp').checked;
+        var sms = Yawmia.$id('pref-sms').checked;
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'جاري الحفظ...';
+
+        try {
+          var res = await Yawmia.api('PUT', '/api/auth/profile', {
+            notificationPreferences: { whatsapp: whatsapp, sms: sms }
+          });
+          if (res.data.ok) {
+            saveBtn.textContent = 'تم الحفظ ✓';
+            setTimeout(function () { saveBtn.textContent = 'حفظ إعدادات الإشعارات'; saveBtn.disabled = false; }, 2000);
+          } else {
+            saveBtn.textContent = 'خطأ — حاول مرة تانية';
+            saveBtn.disabled = false;
+          }
+        } catch (err) {
+          saveBtn.textContent = 'خطأ — حاول مرة تانية';
+          saveBtn.disabled = false;
+        }
+      });
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────

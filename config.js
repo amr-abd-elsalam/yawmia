@@ -414,7 +414,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.12.0',
+    cacheName: 'yawmia-v0.13.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -450,6 +450,34 @@ const config = {
     termsRequired: true,
     termsVersion: '1.0',
     softDeleteRetentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 27. إشعارات عبر المراسلة (NOTIFICATION_MESSAGING)
+  // ═══════════════════════════════════════════════════════════
+  NOTIFICATION_MESSAGING: {
+    enabled: false,                    // false = in_app only (no external messages)
+    criticalEvents: {
+      application_accepted: true,      // العامل يوصلله رسالة لما يتقبل
+      application_rejected: false,     // الرفض — in_app فقط افتراضياً
+      job_filled: true,                // صاحب العمل — الفرصة اكتملت
+      payment_created: true,           // صاحب العمل — سجل دفع جديد
+      report_action: false,            // إجراء على بلاغ — in_app فقط
+      job_cancelled: true,             // العامل — الفرصة اتلغت
+    },
+    cooldownMs: 60000,                 // دقيقة واحدة بين رسالتين لنفس اليوزر
+    maxDailyMessagesPerUser: 20,       // أقصى عدد رسائل إشعار يومي لمستخدم واحد
+    whatsappTemplates: {
+      application_accepted: 'yawmia_accepted',
+      job_filled: 'yawmia_job_filled',
+      payment_created: 'yawmia_payment',
+      job_cancelled: 'yawmia_job_cancelled',
+    },
+    defaultPreferences: {
+      inApp: true,                     // دايماً مفعّل — مش قابل للتعطيل
+      whatsapp: true,                  // WhatsApp مفعّل افتراضياً
+      sms: false,                      // SMS مش مفعّل افتراضياً (غالي)
+    },
   },
 
 };
