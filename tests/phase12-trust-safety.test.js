@@ -55,9 +55,9 @@ async function createTestUser(role) {
 
 describe('Phase 12 — Config', () => {
 
-  it('P12-01: Config has 27 sections', () => {
+  it('P12-01: Config has 28 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 27, `expected 27 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 28, `expected 28 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P12-02: REPORTS section has all fields', () => {
@@ -78,13 +78,13 @@ describe('Phase 12 — Config', () => {
     assert.ok(Math.abs(sum - 1.0) < 1e-10, `weights should sum to 1.0, got ${sum}`);
   });
 
-  it('P12-04: DATABASE has 9 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 9);
+  it('P12-04: DATABASE has 10 dirs', () => {
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 10);
     assert.ok(config.DATABASE.dirs.reports);
   });
 
-  it('P12-05: DATABASE has 9 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 9);
+  it('P12-05: DATABASE has 10 indexFiles', () => {
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 10);
     assert.ok(config.DATABASE.indexFiles.targetReportsIndex);
     assert.ok(config.DATABASE.indexFiles.reporterReportsIndex);
   });

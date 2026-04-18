@@ -96,7 +96,7 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports()]).catch(function () {});
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications()]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -386,6 +386,82 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadVerifications(page) {
+    page = page || 1;
+    var statusFilter = '';
+    var filterEl = document.getElementById('verification-status-filter');
+    if (filterEl) statusFilter = filterEl.value;
+
+    try {
+      var query = '/api/admin/verifications?page=' + page + '&limit=20';
+      if (statusFilter) query += '&status=' + encodeURIComponent(statusFilter);
+      var data = await api(query);
+      var container = document.getElementById('verificationsTable');
+      if (!container) return;
+
+      var verifications = data.verifications || [];
+
+      if (verifications.length === 0) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد طلبات تحقق</p>';
+        renderPagination('verifications-pagination', 1, 1, loadVerifications);
+        return;
+      }
+
+      var statusLabels = {
+        pending: 'قيد المراجعة',
+        verified: 'محقق',
+        rejected: 'مرفوض',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المعرّف</th><th>المستخدم</th><th>الحالة</th><th>التاريخ</th><th>ملاحظات</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      verifications.forEach(function (v) {
+        var statusText = statusLabels[v.status] || v.status || '-';
+        var dateText = v.createdAt ? new Date(v.createdAt).toLocaleDateString('ar-EG') : '-';
+        var notesText = v.adminNotes ? escapeHtml(v.adminNotes.substring(0, 40)) : '-';
+
+        var actionBtns = '';
+        if (v.status === 'pending') {
+          actionBtns =
+            '<button class="btn btn--sm btn--success" onclick="AdminApp.reviewVerification(\'' + escapeHtml(v.id) + '\', \'verified\')">✓ قبول</button> ' +
+            '<button class="btn btn--sm btn--ghost" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.reviewVerification(\'' + escapeHtml(v.id) + '\', \'rejected\')">✗ رفض</button>';
+        }
+
+        html += '<tr>' +
+          '<td>' + escapeHtml(v.id || '-') + '</td>' +
+          '<td><a href="/user.html?id=' + escapeHtml(v.userId) + '" class="worker-link">' + escapeHtml(v.userId || '-') + '</a></td>' +
+          '<td>' + escapeHtml(statusText) + '</td>' +
+          '<td>' + escapeHtml(dateText) + '</td>' +
+          '<td>' + notesText + '</td>' +
+          '<td>' + actionBtns + '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      renderPagination('verifications-pagination', data.page || 1, data.totalPages || 1, loadVerifications);
+    } catch (err) {
+      var container = document.getElementById('verificationsTable');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل طلبات التحقق</p>';
+    }
+  }
+
+  async function reviewVerification(verificationId, newStatus) {
+    try {
+      var notes = '';
+      if (newStatus === 'rejected') {
+        notes = prompt('سبب الرفض (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/verifications/' + verificationId, { status: newStatus, adminNotes: notes });
+      await loadVerifications();
+    } catch (err) {
+      showError(err.message || 'خطأ في مراجعة طلب التحقق');
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -396,5 +472,7 @@ var AdminApp = (function () {
     toggleBan: toggleBan,
     loadReports: loadReports,
     reviewReport: reviewReport,
+    loadVerifications: loadVerifications,
+    reviewVerification: reviewVerification,
   };
 })();

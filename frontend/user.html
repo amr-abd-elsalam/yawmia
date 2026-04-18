@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — بروفايل</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <div class="header__right">
+          <a href="/" class="header__brand-link">
+            <h1 class="header__brand">🏗️ يوميّة</h1>
+          </a>
+        </div>
+        <div class="header__left">
+          <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Loading State -->
+        <div id="profileLoading">
+          <p class="empty-state">جاري تحميل البروفايل...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="profileError" class="hidden">
+          <p class="empty-state">المستخدم غير موجود</p>
+        </div>
+
+        <!-- Profile Content -->
+        <div id="profileContent" class="hidden">
+
+          <!-- Profile Card -->
+          <section class="card">
+            <div class="pub-profile-header">
+              <div class="profile-avatar" id="pubAvatar"></div>
+              <div class="profile-details">
+                <div class="profile-name" id="pubName"></div>
+                <div id="pubRoleBadge"></div>
+                <div class="profile-gov" id="pubGov"></div>
+                <div id="pubVerificationBadge" style="margin-block-start: 0.5rem;"></div>
+              </div>
+              <div class="profile-rating-summary" id="pubRatingSummary"></div>
+            </div>
+            <div class="profile-categories hidden" id="pubCategories"></div>
+          </section>
+
+          <!-- Trust Score -->
+          <section class="card" id="pubTrustSection" class="hidden">
+            <h2 class="card__title">نقاط الثقة</h2>
+            <div id="pubTrustScore"></div>
+          </section>
+
+          <!-- Ratings -->
+          <section class="card">
+            <h2 class="card__title">التقييمات</h2>
+            <div id="pubRatingSummaryArea"></div>
+            <hr class="section-divider">
+            <div id="pubRatingsListArea">
+              <p class="empty-state">جاري التحميل...</p>
+            </div>
+          </section>
+
+          <!-- Member Since -->
+          <div style="text-align: center; padding: 1rem; color: var(--color-text-muted); font-size: 0.85rem;">
+            <span id="pubMemberSince"></span>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/user.js"></script>
+</body>
+</html>

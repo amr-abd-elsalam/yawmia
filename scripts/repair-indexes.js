@@ -215,6 +215,24 @@ async function repair() {
     console.log(`   ✅ Reporter-Reports index OK (${Object.keys(reporterReportsIndex).length} reporters)`);
   }
 
+  // 10. User-Verifications Index (verifications/user-index.json)
+  console.log('🔟 User-Verifications Index...');
+  const verifications = await listRecords(join(DATA_DIR, 'verifications'), 'vrf_');
+  const userVerificationsIndex = {};
+  for (const vrf of verifications) {
+    if (!userVerificationsIndex[vrf.userId]) userVerificationsIndex[vrf.userId] = [];
+    userVerificationsIndex[vrf.userId].push(vrf.id);
+  }
+  const existingVrfIndex = await readJSON(join(DATA_DIR, 'verifications/user-index.json')) || {};
+  const vrfIndexChanged = JSON.stringify(userVerificationsIndex) !== JSON.stringify(existingVrfIndex);
+  if (vrfIndexChanged) {
+    console.log(`   ⚠️  User-Verifications index needs repair (${Object.keys(userVerificationsIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'verifications/user-index.json'), userVerificationsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ User-Verifications index OK (${Object.keys(userVerificationsIndex).length} users)`);
+  }
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

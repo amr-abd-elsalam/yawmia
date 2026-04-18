@@ -2,7 +2,7 @@
 // server/middleware/bodyParser.js — JSON Body Parser
 // ═══════════════════════════════════════════════════════════════
 
-const MAX_BODY_SIZE = 1024 * 100; // 100KB
+const MAX_BODY_SIZE = 4 * 1024 * 1024; // 4MB (supports base64 image upload for verification)
 
 export function bodyParserMiddleware(req, res, next) {
   const method = req.method;

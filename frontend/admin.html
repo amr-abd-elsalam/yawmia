@@ -319,6 +319,25 @@
         </div>
         <div id="reports-pagination"></div>
       </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>🔐 طلبات التحقق</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadVerifications()">تحديث</button>
+        </div>
+        <div id="verifications-filter" style="margin-bottom:1rem;">
+          <select id="verification-status-filter" onchange="AdminApp.loadVerifications(1)">
+            <option value="">الكل</option>
+            <option value="pending" selected>قيد المراجعة</option>
+            <option value="verified">محقق</option>
+            <option value="rejected">مرفوض</option>
+          </select>
+        </div>
+        <div id="verificationsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="verifications-pagination"></div>
+      </div>
     </div>
   </div>
 

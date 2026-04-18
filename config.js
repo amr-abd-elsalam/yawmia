@@ -245,6 +245,7 @@ const config = {
       ratings: 'ratings',
       payments: 'payments',
       reports: 'reports',
+      verifications: 'verifications',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -256,6 +257,7 @@ const config = {
       jobPaymentsIndex: 'payments/job-index.json',
       targetReportsIndex: 'reports/target-index.json',
       reporterReportsIndex: 'reports/reporter-index.json',
+      userVerificationIndex: 'verifications/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -414,7 +416,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.13.0',
+    cacheName: 'yawmia-v0.14.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -478,6 +480,20 @@ const config = {
       whatsapp: true,                  // WhatsApp مفعّل افتراضياً
       sms: false,                      // SMS مش مفعّل افتراضياً (غالي)
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 28. التحقق من الهوية (VERIFICATION)
+  // ═══════════════════════════════════════════════════════════
+  VERIFICATION: {
+    enabled: true,
+    maxImageSizeBytes: 2 * 1024 * 1024,    // 2MB max per image (base64)
+    allowedStatuses: ['unverified', 'pending', 'verified', 'rejected'],
+    requiredForApplication: false,           // لو true: العامل لازم يكون verified عشان يتقدم
+    requiredForJobCreation: false,           // لو true: صاحب العمل لازم يكون verified عشان ينشر
+    adminAutoApproveThreshold: null,         // null = manual review always
+    rejectionCooldownHours: 48,             // بعد رفض، لازم يستنى 48 ساعة قبل إعادة التقديم
+    maxSubmissionsPerDay: 3,                // أقصى عدد طلبات تحقق في اليوم
   },
 
 };

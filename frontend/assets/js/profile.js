@@ -53,6 +53,7 @@
         renderProfile(user);
         renderEditForm(user);
         renderNotificationPreferences(user);
+        renderVerificationSection(user);
 
         // Role-specific sections
         if (user.role === 'worker') {
@@ -540,6 +541,89 @@
         }
       });
     }
+  }
+
+  // ── Verification Section ──────────────────────────────────
+  function renderVerificationSection(u) {
+    var container = Yawmia.$id('verification-section');
+    if (!container) return;
+
+    var status = u.verificationStatus || 'unverified';
+    var html = '<section class="card">' +
+      '<h2 class="card__title">🔐 التحقق من الهوية</h2>';
+
+    if (status === 'verified') {
+      html += '<div class="verification-status verification-status--verified">' +
+        '<span class="verification-badge verification-badge--verified">✓ تم التحقق من هويتك</span>' +
+        '</div>';
+    } else if (status === 'pending') {
+      html += '<div class="verification-status verification-status--pending">' +
+        '<span class="verification-badge verification-badge--pending">⏳ طلب التحقق قيد المراجعة</span>' +
+        '</div>';
+    } else {
+      if (status === 'rejected') {
+        html += '<div class="verification-status verification-status--rejected">' +
+          '<span class="verification-badge verification-badge--rejected">✗ تم رفض طلب التحقق — يمكنك إعادة المحاولة</span>' +
+          '</div>';
+      }
+      html += '<p class="card__desc">ارفع صورة البطاقة الشخصية للتحقق من هويتك والحصول على علامة "محقق"</p>' +
+        '<div class="form-group">' +
+          '<label class="form-label">صورة البطاقة الشخصية</label>' +
+          '<input type="file" id="nationalIdInput" accept="image/*" class="form-input">' +
+        '</div>' +
+        '<button class="btn btn--primary" id="btnSubmitVerification">إرسال طلب التحقق</button>' +
+        '<div class="message" id="verificationMsg"></div>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    var submitBtn = Yawmia.$id('btnSubmitVerification');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleVerificationSubmit);
+    }
+  }
+
+  async function handleVerificationSubmit() {
+    Yawmia.clearMessage('verificationMsg');
+    var fileInput = Yawmia.$id('nationalIdInput');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+      return Yawmia.showMessage('verificationMsg', 'اختار صورة البطاقة', 'error');
+    }
+
+    var file = fileInput.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      return Yawmia.showMessage('verificationMsg', 'حجم الصورة أكبر من 2MB', 'error');
+    }
+
+    var submitBtn = Yawmia.$id('btnSubmitVerification');
+    Yawmia.setLoading(submitBtn, true);
+
+    try {
+      var base64 = await fileToBase64(file);
+      var res = await Yawmia.api('POST', '/api/auth/verify-identity', {
+        nationalIdImage: base64
+      });
+      if (res.data.ok) {
+        Yawmia.showMessage('verificationMsg', 'تم إرسال طلب التحقق بنجاح — سيتم مراجعته قريباً', 'success');
+        setTimeout(function() { location.reload(); }, 2000);
+      } else {
+        Yawmia.showMessage('verificationMsg', res.data.error || 'خطأ في إرسال الطلب', 'error');
+      }
+    } catch (err) {
+      Yawmia.showMessage('verificationMsg', 'خطأ في الاتصال بالسيرفر', 'error');
+    } finally {
+      Yawmia.setLoading(submitBtn, false);
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = function() { reject(new Error('فشل قراءة الملف')); };
+      reader.readAsDataURL(file);
+    });
   }
 
   // ── Helpers ───────────────────────────────────────────────

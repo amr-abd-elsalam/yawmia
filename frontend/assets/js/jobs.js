@@ -266,6 +266,12 @@
       footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
     }
 
+    // Employer profile link
+    var employerProfileLink = '';
+    if (job.employerId) {
+      employerProfileLink = '<a href="/user.html?id=' + escapeHtml(job.employerId) + '" class="worker-link">عرض بروفايل صاحب العمل</a>';
+    }
+
     // Payment info placeholder for completed jobs
     var paymentBadgeHtml = '';
     if (job.status === 'completed') {
@@ -296,6 +302,7 @@
         '<span>⏱ ' + job.durationDays + ' يوم</span>' +
       '</div>' +
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
+      (employerProfileLink ? '<div style="margin-block-end:0.5rem;">' + employerProfileLink + '</div>' : '') +
       paymentBadgeHtml +
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +

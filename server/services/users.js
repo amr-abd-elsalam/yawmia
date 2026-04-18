@@ -26,6 +26,8 @@ export async function create(phone, role) {
     termsAcceptedAt: null,
     termsVersion: null,
     notificationPreferences: null,
+    verificationStatus: 'unverified',
+    verificationSubmittedAt: null,
     createdAt: now,
     updatedAt: now,
   };

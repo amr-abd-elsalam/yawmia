@@ -3,7 +3,7 @@
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.13.0';
+const CACHE_NAME = 'yawmia-v0.14.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -17,6 +17,8 @@ const STATIC_ASSETS = [
   '/assets/js/jobs.js',
   '/assets/js/profile.js',
   '/assets/js/admin.js',
+  '/user.html',
+  '/assets/js/user.js',
 ];
 
 // ── Install: pre-cache static assets ──

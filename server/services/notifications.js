@@ -425,4 +425,18 @@ export function setupNotificationListeners() {
       { reportId: data.reportId, status: data.status }
     ).catch(() => {});
   });
+
+  // User gets notification when verification is reviewed
+  eventBus.on('verification:reviewed', (data) => {
+    const statusMessages = {
+      verified: 'تم التحقق من هويتك بنجاح ✓',
+      rejected: 'لم يتم قبول طلب التحقق — يُرجى إعادة المحاولة',
+    };
+    createNotification(
+      data.userId,
+      'verification_reviewed',
+      statusMessages[data.status] || 'تم تحديث حالة طلب التحقق',
+      { verificationId: data.verificationId, status: data.status }
+    ).catch(() => {});
+  });
 }

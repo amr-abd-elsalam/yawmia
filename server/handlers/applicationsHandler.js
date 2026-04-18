@@ -118,12 +118,13 @@ export async function handleListJobApplications(req, res) {
         ...app,
         worker: worker ? {
           id: worker.id,
-          name: worker.name,
+          name: worker.name || 'بدون اسم',
           phone: worker.phone,
-          governorate: worker.governorate,
-          categories: worker.categories,
-          rating: worker.rating,
-        } : null,
+          governorate: worker.governorate || '',
+          categories: worker.categories || [],
+          rating: worker.rating || { avg: 0, count: 0 },
+          verificationStatus: worker.verificationStatus || 'unverified',
+        } : { id: app.workerId, name: 'مستخدم محذوف', phone: '', governorate: '', categories: [], rating: { avg: 0, count: 0 }, verificationStatus: 'unverified' },
       });
     }
 
