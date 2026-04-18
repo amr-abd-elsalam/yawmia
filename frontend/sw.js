@@ -19,6 +19,9 @@ const STATIC_ASSETS = [
   '/assets/js/admin.js',
   '/user.html',
   '/assets/js/user.js',
+  '/assets/fonts/Cairo-Regular.woff2',
+  '/assets/fonts/Cairo-SemiBold.woff2',
+  '/assets/fonts/Cairo-Bold.woff2',
 ];
 
 // ── Install: pre-cache static assets ──
