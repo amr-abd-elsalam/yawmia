@@ -75,7 +75,7 @@ describe('Phase 12 — Config', () => {
     assert.ok(config.TRUST, 'TRUST section should exist');
     const w = config.TRUST.weights;
     const sum = w.ratingAvg + w.completionRate + w.reportScore + w.accountAge;
-    assert.strictEqual(sum, 1.0, `weights should sum to 1.0, got ${sum}`);
+    assert.ok(Math.abs(sum - 1.0) < 1e-10, `weights should sum to 1.0, got ${sum}`);
   });
 
   it('P12-04: DATABASE has 9 dirs', () => {
@@ -312,7 +312,7 @@ describe('Phase 12 — Trust Score', () => {
   it('P12-21: calculateTrustScore — weights sum to 1.0', () => {
     const w = config.TRUST.weights;
     const sum = w.ratingAvg + w.completionRate + w.reportScore + w.accountAge;
-    assert.strictEqual(sum, 1.0);
+    assert.ok(Math.abs(sum - 1.0) < 1e-10, `weights should sum to 1.0, got ${sum}`);
   });
 
   it('P12-22: calculateTrustScore — clamped 0–1', () => {
