@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer } from '../services/jobs.js';
+import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
@@ -273,5 +273,32 @@ export async function handleNearbyJobs(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب الفرص القريبة', code: 'NEARBY_JOBS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/renew
+ * Requires: auth (employer, owns job, status=expired|cancelled)
+ */
+export async function handleRenewJob(req, res) {
+  const jobId = req.params.id;
+
+  try {
+    const result = await renewJob(jobId, req.user.id);
+    if (!result.ok) {
+      const statusMap = {
+        RENEWAL_DISABLED: 503,
+        JOB_NOT_FOUND: 404,
+        NOT_JOB_OWNER: 403,
+        INVALID_STATUS_FOR_RENEWAL: 400,
+        MAX_RENEWALS_REACHED: 400,
+        DAILY_JOB_LIMIT: 429,
+      };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 200, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تجديد الفرصة', code: 'RENEW_JOB_ERROR' });
   }
 }

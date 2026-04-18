@@ -35,6 +35,14 @@ export async function createNotification(userId, type, message, meta = {}) {
 
   eventBus.emit('notification:created', { notificationId: id, userId, type });
 
+  // Push notification via SSE (fire-and-forget)
+  try {
+    const { sendToUser } = await import('./sseManager.js');
+    sendToUser(userId, 'notification', notification, id);
+  } catch (_) {
+    // Fire-and-forget — don't break notification creation flow
+  }
+
   return notification;
 }
 
@@ -438,5 +446,37 @@ export function setupNotificationListeners() {
       statusMessages[data.status] || 'تم تحديث حالة طلب التحقق',
       { verificationId: data.verificationId, status: data.status }
     ).catch(() => {});
+  });
+
+  // Workers get notified when a job they applied to is renewed
+  eventBus.on('job:renewed', async (data) => {
+    try {
+      const { listByJob } = await import('./applications.js');
+      const apps = await listByJob(data.jobId);
+      const renewMessage = `الفرصة "${data.jobTitle}" تم تجديدها وهي متاحة مرة تانية`;
+
+      for (const app of apps) {
+        if (app.status === 'pending' || app.status === 'accepted') {
+          await createNotification(
+            app.workerId,
+            'job_renewed',
+            renewMessage,
+            { jobId: data.jobId }
+          ).catch(() => {});
+        }
+      }
+    } catch (_) {
+      // Fire-and-forget
+    }
+  });
+
+  // Disconnect banned user from SSE (on auto-ban from reports)
+  eventBus.on('report:autoban', async (data) => {
+    try {
+      const { disconnectUser } = await import('./sseManager.js');
+      disconnectUser(data.targetId);
+    } catch (_) {
+      // Fire-and-forget
+    }
   });
 }

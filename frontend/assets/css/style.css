@@ -1434,3 +1434,25 @@ select.form-input {
   padding: 0.4rem 0.8rem;
   font-family: inherit;
 }
+
+/* ═══ SSE Notification Badge Animation ═══ */
+.notification-badge-live {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ═══ Renew Button ═══ */
+.btn-renew {
+  background: var(--color-warning);
+  color: #000;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-renew:hover:not(:disabled) {
+  filter: brightness(0.9);
+}

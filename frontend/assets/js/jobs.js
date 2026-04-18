@@ -79,6 +79,24 @@
     filtersDiv.insertBefore(sortSelect, btnFilter);
   })();
 
+  // ── SSE: Real-Time Notifications ──────────────────────────
+  if (Yawmia.connectSSE) {
+    Yawmia.connectSSE();
+  }
+
+  window.addEventListener('yawmia:notification', function (e) {
+    loadNotifications();
+  });
+
+  window.addEventListener('yawmia:sse-init', function (e) {
+    var countBadge = Yawmia.$id('notificationCount');
+    if (countBadge && e.detail && e.detail.unreadCount > 0) {
+      countBadge.textContent = e.detail.unreadCount;
+      countBadge.classList.remove('hidden');
+      countBadge.classList.add('notification-badge-live');
+    }
+  });
+
   // ── Notifications ─────────────────────────────────────────
   loadNotifications();
 
@@ -255,6 +273,8 @@
         footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
       } else if (job.status === 'completed') {
         footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
+      } else if (job.status === 'expired' || job.status === 'cancelled') {
+        footerButtons = '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
       }
     }
     if (user.role === 'worker' && job.status === 'completed') {
@@ -389,6 +409,27 @@
           alert('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(cancelBtn, false);
+        }
+      });
+    }
+
+    // Renew button handler (employer)
+    var renewBtn = card.querySelector('.btn-renew');
+    if (renewBtn) {
+      renewBtn.addEventListener('click', async function () {
+        if (!confirm('هل تريد تجديد هذه الفرصة؟')) return;
+        Yawmia.setLoading(renewBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/renew');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في تجديد الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(renewBtn, false);
         }
       });
     }

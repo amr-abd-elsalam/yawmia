@@ -43,6 +43,7 @@ var Yawmia = (function () {
   }
 
   function logout() {
+    disconnectSSE();
     if (state.token) {
       api('POST', '/api/auth/logout').catch(function () {});
     }
@@ -206,6 +207,47 @@ var Yawmia = (function () {
     }
   });
 
+  // ── SSE: Real-Time Notifications ──────────────────────────
+  var sseConnection = null;
+
+  function connectSSE() {
+    if (sseConnection) return; // Already connected
+    if (!state.token) return;  // Not logged in
+
+    try {
+      var url = API_BASE + '/api/notifications/stream?token=' + encodeURIComponent(state.token);
+      sseConnection = new EventSource(url);
+
+      sseConnection.addEventListener('init', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:sse-init', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.addEventListener('notification', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:notification', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.onerror = function () {
+        // EventSource auto-reconnects — no manual action needed
+      };
+    } catch (_) {
+      // SSE not supported or connection failed — degrade gracefully
+      sseConnection = null;
+    }
+  }
+
+  function disconnectSSE() {
+    if (sseConnection) {
+      sseConnection.close();
+      sseConnection = null;
+    }
+  }
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -227,5 +269,7 @@ var Yawmia = (function () {
     populateCategories: populateCategories,
     populateCategoriesCheckboxes: populateCategoriesCheckboxes,
     roleLabel: roleLabel,
+    connectSSE: connectSSE,
+    disconnectSSE: disconnectSSE,
   };
 })();

@@ -416,7 +416,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.14.0',
+    cacheName: 'yawmia-v0.15.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -494,6 +494,28 @@ const config = {
     adminAutoApproveThreshold: null,         // null = manual review always
     rejectionCooldownHours: 48,             // بعد رفض، لازم يستنى 48 ساعة قبل إعادة التقديم
     maxSubmissionsPerDay: 3,                // أقصى عدد طلبات تحقق في اليوم
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 29. الأحداث المُرسَلة من السيرفر (SSE)
+  // ═══════════════════════════════════════════════════════════
+  SSE: {
+    enabled: true,
+    heartbeatIntervalMs: 30000,            // 30 ثانية بين كل heartbeat
+    maxConnectionsPerUser: 3,              // أقصى 3 اتصالات لكل مستخدم (tabs/devices)
+    reconnectMs: 5000,                     // اقتراح retry للـ EventSource (5 ثوانٍ)
+    cleanupIntervalMs: 60000,              // تنظيف الاتصالات الميتة كل 60 ثانية
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 30. تجديد الفرص (JOB_RENEWAL)
+  // ═══════════════════════════════════════════════════════════
+  JOB_RENEWAL: {
+    enabled: true,
+    allowedFromStatuses: ['expired', 'cancelled'],
+    renewalExpiryHours: 72,                // مدة صلاحية الفرصة المُجدَّدة (72 ساعة)
+    maxRenewalsPerJob: 3,                  // أقصى عدد تجديدات لكل فرصة
+    resetApplications: false,              // false = الطلبات الموجودة تبقى كما هي
   },
 
 };

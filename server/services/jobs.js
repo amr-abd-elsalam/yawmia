@@ -474,3 +474,70 @@ export async function cancelJob(jobId, employerId) {
 
   return { ok: true, job };
 }
+
+/**
+ * Renew an expired or cancelled job
+ * Requires: employer owns job, status in allowedFromStatuses, under max renewals
+ */
+export async function renewJob(jobId, employerId) {
+  // 1. Feature flag check
+  if (!config.JOB_RENEWAL || !config.JOB_RENEWAL.enabled) {
+    return { ok: false, error: 'تجديد الفرص غير مفعّل حالياً', code: 'RENEWAL_DISABLED' };
+  }
+
+  // 2. Job exists
+  const job = await findById(jobId);
+  if (!job) {
+    return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  }
+
+  // 3. Employer owns job
+  if (job.employerId !== employerId) {
+    return { ok: false, error: 'مش مسموحلك تجدد هذه الفرصة', code: 'NOT_JOB_OWNER' };
+  }
+
+  // 4. Status check
+  const allowedStatuses = config.JOB_RENEWAL.allowedFromStatuses;
+  if (!allowedStatuses.includes(job.status)) {
+    return { ok: false, error: 'لا يمكن تجديد فرصة بحالة: ' + job.status, code: 'INVALID_STATUS_FOR_RENEWAL' };
+  }
+
+  // 5. Max renewals check
+  const currentRenewals = job.renewalCount || 0;
+  if (currentRenewals >= config.JOB_RENEWAL.maxRenewalsPerJob) {
+    return { ok: false, error: 'وصلت للحد الأقصى لتجديد هذه الفرصة', code: 'MAX_RENEWALS_REACHED' };
+  }
+
+  // 6. Daily limit check (non-blocking — same as create)
+  try {
+    const todayCount = await countTodayByEmployer(employerId);
+    if (todayCount >= config.LIMITS.maxJobsPerEmployerPerDay) {
+      return { ok: false, error: 'وصلت للحد الأقصى لنشر الفرص اليوم', code: 'DAILY_JOB_LIMIT' };
+    }
+  } catch (_) {
+    // Non-blocking: allow action if count check fails
+  }
+
+  // ── Reset job ──
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + config.JOB_RENEWAL.renewalExpiryHours * 60 * 60 * 1000);
+
+  job.status = 'open';
+  job.expiresAt = expiresAt.toISOString();
+  job.renewedAt = now.toISOString();
+  job.renewalCount = currentRenewals + 1;
+
+  const jobPath = getRecordPath('jobs', jobId);
+  await atomicWrite(jobPath, job);
+
+  // Update index
+  const jobsIndex = await readIndex('jobsIndex');
+  if (jobsIndex[jobId]) {
+    jobsIndex[jobId].status = 'open';
+    await writeIndex('jobsIndex', jobsIndex);
+  }
+
+  eventBus.emit('job:renewed', { jobId, employerId, jobTitle: job.title });
+
+  return { ok: true, job };
+}

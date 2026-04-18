@@ -486,9 +486,9 @@ describe('Stale Jobs Filter (Bug #3)', () => {
 
 describe('Config Section (Phase 8)', () => {
 
-  it('PH8-23: config has 28 sections (was 24)', () => {
+  it('PH8-23: config has 30 sections (was 24)', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 28, `expected 28 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 30, `expected 30 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('PH8-24: CLEANUP section has notificationTtlDays', () => {

@@ -3,7 +3,7 @@
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.14.0';
+const CACHE_NAME = 'yawmia-v0.15.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
