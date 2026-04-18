@@ -32,6 +32,9 @@ export function requireAuth(req, res, next) {
         if (!user) {
           return sendJSON(res, 401, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
         }
+        if (user.status === 'banned') {
+          return sendJSON(res, 403, { error: 'تم حظر حسابك. تواصل مع الدعم.', code: 'USER_BANNED' });
+        }
         if (user.status !== 'active') {
           return sendJSON(res, 403, { error: 'الحساب موقوف', code: 'ACCOUNT_SUSPENDED' });
         }

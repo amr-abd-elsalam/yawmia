@@ -101,3 +101,49 @@ export async function countByRole() {
   }
   return counts;
 }
+
+/**
+ * Ban a user (set status to 'banned')
+ * @param {string} userId
+ * @param {string} reason
+ * @returns {Promise<object|null>}
+ */
+export async function banUser(userId, reason = '') {
+  const user = await findById(userId);
+  if (!user) return null;
+  if (user.role === 'admin') return null; // Cannot ban admins
+
+  const updatedUser = {
+    ...user,
+    status: 'banned',
+    bannedAt: new Date().toISOString(),
+    banReason: reason,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const userPath = getRecordPath('users', userId);
+  await atomicWrite(userPath, updatedUser);
+  return updatedUser;
+}
+
+/**
+ * Unban a user (set status back to 'active')
+ * @param {string} userId
+ * @returns {Promise<object|null>}
+ */
+export async function unbanUser(userId) {
+  const user = await findById(userId);
+  if (!user) return null;
+
+  const updatedUser = {
+    ...user,
+    status: 'active',
+    bannedAt: null,
+    banReason: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const userPath = getRecordPath('users', userId);
+  await atomicWrite(userPath, updatedUser);
+  return updatedUser;
+}

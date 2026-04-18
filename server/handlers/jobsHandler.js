@@ -166,10 +166,30 @@ export async function handleCancelJob(req, res) {
  */
 export async function handleListMyJobs(req, res) {
   try {
-    const allJobs = await listAll();
+    let myJobs;
 
-    // Filter: employer's jobs only
-    let myJobs = allJobs.filter(j => j.employerId === req.user.id);
+    // Try index-accelerated lookup first (employer-jobs index)
+    try {
+      const { getFromSetIndex, readJSON, getRecordPath } = await import('../services/database.js');
+      const employerJobsIndex = config.DATABASE.indexFiles.employerJobsIndex;
+      const jobIds = await getFromSetIndex(employerJobsIndex, req.user.id);
+      if (jobIds.length > 0) {
+        const results = [];
+        for (const jobId of jobIds) {
+          const job = await readJSON(getRecordPath('jobs', jobId));
+          if (job) results.push(job);
+        }
+        myJobs = results;
+      }
+    } catch (_) {
+      // Fallback below
+    }
+
+    // Fallback: full scan (backward compatibility)
+    if (!myJobs) {
+      const allJobs = await listAll();
+      myJobs = allJobs.filter(j => j.employerId === req.user.id);
+    }
 
     // Sort: newest first
     myJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

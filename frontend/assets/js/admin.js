@@ -25,6 +25,52 @@ var AdminApp = (function () {
     return await res.json();
   }
 
+  function renderPagination(containerId, currentPage, totalPages, loadFn) {
+    var container = document.getElementById(containerId);
+    if (!container || totalPages <= 1) {
+      if (container) container.innerHTML = '';
+      return;
+    }
+    var html = '<div class="admin-pagination">';
+    if (currentPage > 1) {
+      html += '<button class="page-btn" data-page="' + (currentPage - 1) + '">السابق</button>';
+    }
+    html += '<span class="page-info">صفحة ' + currentPage + ' من ' + totalPages + '</span>';
+    if (currentPage < totalPages) {
+      html += '<button class="page-btn" data-page="' + (currentPage + 1) + '">التالي</button>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    container.querySelectorAll('.page-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        loadFn(parseInt(btn.dataset.page));
+      });
+    });
+  }
+
+  async function apiWrite(method, path, body) {
+    var headers = { 'X-Admin-Token': token, 'Content-Type': 'application/json' };
+    var res = await fetch(API + path, { method: method, headers: headers, body: JSON.stringify(body) });
+    if (!res.ok) {
+      var data = await res.json().catch(function () { return {}; });
+      throw new Error(data.error || 'خطأ في العملية');
+    }
+    return await res.json();
+  }
+
+  async function toggleBan(userId, newStatus) {
+    try {
+      var reason = '';
+      if (newStatus === 'banned') {
+        reason = prompt('سبب الحظر (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/users/' + userId + '/status', { status: newStatus, reason: reason });
+      await loadUsers();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحديث حالة المستخدم');
+    }
+  }
+
   function showError(msg) {
     var el = document.getElementById('errorMsg');
     if (!el) return;
@@ -116,53 +162,71 @@ var AdminApp = (function () {
     });
   }
 
-  async function loadUsers() {
-    var data = await api('/api/admin/users');
+  async function loadUsers(page) {
+    page = page || 1;
+    var data = await api('/api/admin/users?page=' + page + '&limit=20');
     var container = document.getElementById('usersTable');
     if (!container) return;
 
-    var users = (data.users || []).slice(0, 20);
+    var users = data.users || [];
 
     if (users.length === 0) {
       container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد مستخدمين</p>';
+      renderPagination('users-pagination', 1, 1, loadUsers);
       return;
     }
 
     var roleLabels = { worker: 'عامل', employer: 'صاحب عمل', admin: 'أدمن' };
+    var statusLabels = { active: 'نشط', banned: 'محظور' };
 
     var html = '<table class="admin-table"><thead><tr>' +
-      '<th>الاسم</th><th>الموبايل</th><th>النوع</th><th>المحافظة</th><th>تقييم</th><th>تاريخ التسجيل</th>' +
+      '<th>الاسم</th><th>الموبايل</th><th>النوع</th><th>الحالة</th><th>المحافظة</th><th>تاريخ التسجيل</th><th>إجراء</th>' +
       '</tr></thead><tbody>';
 
     users.forEach(function (u) {
       var roleBadgeClass = 'badge-' + (u.role || 'worker');
       var roleText = roleLabels[u.role] || u.role || '-';
-      var ratingText = u.rating && u.rating.avg ? u.rating.avg.toFixed(1) + ' ⭐' : '-';
+      var statusClass = u.status === 'banned' ? 'badge-banned' : 'badge-active';
+      var statusText = statusLabels[u.status] || u.status || '-';
       var dateText = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-EG') : '-';
+
+      var actionBtn = '';
+      if (u.role !== 'admin') {
+        if (u.status === 'banned') {
+          actionBtn = '<button class="btn btn--sm btn--success" onclick="AdminApp.toggleBan(\'' + escapeHtml(u.id) + '\', \'active\')">إلغاء الحظر</button>';
+        } else {
+          actionBtn = '<button class="btn btn--sm btn--ghost" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.toggleBan(\'' + escapeHtml(u.id) + '\', \'banned\')">حظر</button>';
+        }
+      }
 
       html += '<tr>' +
         '<td>' + escapeHtml(u.name || '-') + '</td>' +
         '<td><span class="phone-cell">' + escapeHtml(u.phone || '-') + '</span></td>' +
         '<td><span class="' + roleBadgeClass + '">' + escapeHtml(roleText) + '</span></td>' +
+        '<td><span class="' + statusClass + '">' + escapeHtml(statusText) + '</span></td>' +
         '<td>' + escapeHtml(u.governorate || '-') + '</td>' +
-        '<td>' + escapeHtml(ratingText) + '</td>' +
         '<td>' + escapeHtml(dateText) + '</td>' +
+        '<td>' + actionBtn + '</td>' +
         '</tr>';
     });
 
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    renderPagination('users-pagination', data.page || 1, data.totalPages || 1, loadUsers);
   }
 
-  async function loadJobs() {
-    var data = await api('/api/admin/jobs');
+  async function loadJobs(page) {
+    page = page || 1;
+    var data = await api('/api/admin/jobs?page=' + page + '&limit=20');
     var container = document.getElementById('jobsTable');
     if (!container) return;
 
-    var jobs = (data.jobs || []).slice(0, 20);
+    var jobs = data.jobs || [];
 
     if (jobs.length === 0) {
       container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد فرص</p>';
+      renderPagination('jobs-pagination', 1, 1, loadJobs);
       return;
     }
 
@@ -197,6 +261,8 @@ var AdminApp = (function () {
 
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    renderPagination('jobs-pagination', data.page || 1, data.totalPages || 1, loadJobs);
   }
 
   async function loadFinancials() {
@@ -237,5 +303,6 @@ var AdminApp = (function () {
     loadJobs: loadJobs,
     loadStats: loadStats,
     loadFinancials: loadFinancials,
+    toggleBan: toggleBan,
   };
 })();

@@ -406,6 +406,18 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 24. تطبيق الويب التدريجي (PWA)
+  // ═══════════════════════════════════════════════════════════
+  PWA: {
+    enabled: true,
+    cacheName: 'yawmia-v0.11.0',
+    swPath: '/sw.js',
+    manifestPath: '/manifest.json',
+    themeColor: '#2563eb',
+    backgroundColor: '#0f172a',
+  },
+
 };
 
 export default deepFreeze(config);

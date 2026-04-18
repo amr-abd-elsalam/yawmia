@@ -1163,3 +1163,75 @@ select.form-input {
     gap: 0.3rem;
   }
 }
+
+/* ═══ PWA Install Banner ═══ */
+.install-banner {
+  display: none;
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  z-index: 1000;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.install-banner button {
+  margin-top: 0.5rem;
+}
+
+/* ═══ Admin Pagination ═══ */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+}
+
+.page-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: opacity var(--transition);
+}
+
+.page-btn:hover {
+  opacity: 0.85;
+}
+
+.page-info {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* ═══ User Status Badges ═══ */
+.badge-banned {
+  display: inline-block;
+  background: var(--color-error);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-active {
+  display: inline-block;
+  background: var(--color-success);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

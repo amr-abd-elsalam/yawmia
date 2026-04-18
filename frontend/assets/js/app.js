@@ -179,6 +179,33 @@ var Yawmia = (function () {
     return role;
   }
 
+  // ── PWA: Service Worker Registration ──────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function (reg) { console.log('SW registered:', reg.scope); })
+        .catch(function (err) { console.log('SW registration failed:', err); });
+    });
+  }
+
+  // ── PWA: Install Prompt Capture ───────────────────────────
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    var installBtn = document.getElementById('install-app-btn');
+    if (installBtn) {
+      installBtn.style.display = 'inline-flex';
+      installBtn.addEventListener('click', function () {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(function () {
+          deferredInstallPrompt = null;
+          installBtn.style.display = 'none';
+        });
+      }, { once: true });
+    }
+  });
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,

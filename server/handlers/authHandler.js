@@ -37,6 +37,10 @@ export async function handleSendOtp(req, res) {
 
   try {
     const result = await sendOtp(phone, role);
+    if (!result.ok) {
+      const statusCode = result.code === 'PHONE_OTP_RATE_LIMITED' ? 429 : 400;
+      return sendJSON(res, statusCode, result);
+    }
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إرسال الكود', code: 'OTP_SEND_ERROR' });

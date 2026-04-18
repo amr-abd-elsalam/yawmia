@@ -2,7 +2,7 @@
 // server/handlers/adminHandler.js — Admin Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { countByRole, listAll as listAllUsers } from '../services/users.js';
+import { countByRole, listAll as listAllUsers, banUser, unbanUser } from '../services/users.js';
 import { countByStatus as jobCounts, listAll as listAllJobs } from '../services/jobs.js';
 import { countByStatus as appCounts } from '../services/applications.js';
 import { getFinancialSummary, countByStatus as countPaymentsByStatus } from '../services/payments.js';
@@ -36,6 +36,7 @@ export async function handleAdminStats(req, res) {
 /**
  * GET /api/admin/users
  * Requires: admin
+ * Supports: ?page=1&limit=20
  */
 export async function handleAdminUsers(req, res) {
   try {
@@ -48,9 +49,22 @@ export async function handleAdminUsers(req, res) {
       name: u.name,
       governorate: u.governorate,
       status: u.status,
+      bannedAt: u.bannedAt || null,
+      banReason: u.banReason || null,
       createdAt: u.createdAt,
     }));
-    return sendJSON(res, 200, { ok: true, users: safeUsers, count: safeUsers.length });
+
+    // Sort: newest first
+    safeUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const total = safeUsers.length;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const totalPages = Math.ceil(total / limit) || 1;
+    const offset = (page - 1) * limit;
+    const paginatedUsers = safeUsers.slice(offset, offset + limit);
+
+    return sendJSON(res, 200, { ok: true, users: paginatedUsers, count: paginatedUsers.length, total, page, totalPages, limit });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب المستخدمين', code: 'LIST_USERS_ERROR' });
   }
@@ -59,12 +73,57 @@ export async function handleAdminUsers(req, res) {
 /**
  * GET /api/admin/jobs
  * Requires: admin
+ * Supports: ?page=1&limit=20
  */
 export async function handleAdminJobs(req, res) {
   try {
-    const jobs = await listAllJobs();
-    return sendJSON(res, 200, { ok: true, jobs, count: jobs.length });
+    const allJobs = await listAllJobs();
+
+    // Sort: newest first
+    allJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const total = allJobs.length;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const totalPages = Math.ceil(total / limit) || 1;
+    const offset = (page - 1) * limit;
+    const jobs = allJobs.slice(offset, offset + limit);
+
+    return sendJSON(res, 200, { ok: true, jobs, count: jobs.length, total, page, totalPages, limit });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب الفرص', code: 'LIST_JOBS_ERROR' });
+  }
+}
+
+/**
+ * PUT /api/admin/users/:id/status
+ * Body: { status: 'active' | 'banned', reason?: string }
+ * Requires: requireAdmin
+ */
+export async function handleAdminUpdateUserStatus(req, res) {
+  try {
+    const userId = req.params.id;
+    const body = req.body || {};
+    const newStatus = body.status;
+
+    if (!newStatus || !['active', 'banned'].includes(newStatus)) {
+      return sendJSON(res, 400, { error: 'الحالة لازم تكون active أو banned', code: 'INVALID_STATUS' });
+    }
+
+    let user;
+    if (newStatus === 'banned') {
+      const reason = (body.reason || '').trim();
+      user = await banUser(userId, reason);
+    } else {
+      user = await unbanUser(userId);
+    }
+
+    if (!user) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود أو لا يمكن تعديله', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, { ok: true, user });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تحديث حالة المستخدم', code: 'UPDATE_USER_STATUS_ERROR' });
   }
 }
