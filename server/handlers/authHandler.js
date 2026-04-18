@@ -5,7 +5,7 @@
 import { sendOtp, verifyOtp } from '../services/auth.js';
 import { update as updateUser, findById } from '../services/users.js';
 import { destroySession } from '../services/sessions.js';
-import { validatePhone, validateOtp, validateRole, validateProfileFields } from '../services/validators.js';
+import { validatePhone, validateOtp, validateRole, validateProfileFields, validateLatitude, validateLongitude } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -86,6 +86,8 @@ export async function handleGetMe(req, res) {
       name: user.name,
       governorate: user.governorate,
       categories: user.categories,
+      lat: user.lat || null,
+      lng: user.lng || null,
       rating: user.rating,
       status: user.status,
       createdAt: user.createdAt,
@@ -114,6 +116,22 @@ export async function handleUpdateProfile(req, res) {
   if (body.governorate !== undefined) updateFields.governorate = body.governorate;
   if (body.categories !== undefined) updateFields.categories = body.categories;
 
+  // Validate and add lat/lng if provided
+  if (body.lat !== undefined && body.lat !== null && body.lat !== '') {
+    const latResult = validateLatitude(body.lat);
+    if (!latResult.valid) {
+      return sendJSON(res, 400, { error: latResult.error, code: 'INVALID_LATITUDE' });
+    }
+    updateFields.lat = latResult.value;
+  }
+  if (body.lng !== undefined && body.lng !== null && body.lng !== '') {
+    const lngResult = validateLongitude(body.lng);
+    if (!lngResult.valid) {
+      return sendJSON(res, 400, { error: lngResult.error, code: 'INVALID_LONGITUDE' });
+    }
+    updateFields.lng = lngResult.value;
+  }
+
   if (Object.keys(updateFields).length === 0) {
     return sendJSON(res, 400, { error: 'لا توجد بيانات للتحديث', code: 'NO_FIELDS' });
   }
@@ -132,6 +150,8 @@ export async function handleUpdateProfile(req, res) {
         name: updatedUser.name,
         governorate: updatedUser.governorate,
         categories: updatedUser.categories,
+        lat: updatedUser.lat || null,
+        lng: updatedUser.lng || null,
         rating: updatedUser.rating,
         status: updatedUser.status,
       },

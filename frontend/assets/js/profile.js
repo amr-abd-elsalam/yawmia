@@ -138,6 +138,64 @@
         });
       }
     }
+
+    // Location fields (lat/lng) — inject after governorate
+    var editForm = govSelect ? govSelect.closest('.card') : null;
+    if (editForm) {
+      var existingLocGroup = editForm.querySelector('.location-group');
+      if (!existingLocGroup) {
+        var locGroup = document.createElement('div');
+        locGroup.className = 'form-group';
+        locGroup.innerHTML =
+          '<label class="form-label">الموقع الجغرافي</label>' +
+          '<div class="location-group">' +
+            '<div class="form-group">' +
+              '<input type="number" step="any" id="editLat" class="form-input form-input--sm" placeholder="خط العرض (مثال: 30.04)" value="' + (u.lat || '') + '">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<input type="number" step="any" id="editLng" class="form-input form-input--sm" placeholder="خط الطول (مثال: 31.23)" value="' + (u.lng || '') + '">' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn-detect-location" id="btnDetectLocation">📍 استخدم موقعي الحالي</button>';
+
+        // Insert before the save button or at end of form
+        var btnUpdateEl = editForm.querySelector('#btnUpdateProfile');
+        if (btnUpdateEl) {
+          btnUpdateEl.parentNode.insertBefore(locGroup, btnUpdateEl);
+        } else {
+          editForm.appendChild(locGroup);
+        }
+
+        // Detect location button handler
+        var btnDetect = editForm.querySelector('#btnDetectLocation');
+        if (btnDetect) {
+          btnDetect.addEventListener('click', function () {
+            if (!navigator.geolocation) {
+              alert('المتصفح لا يدعم تحديد الموقع');
+              return;
+            }
+            btnDetect.textContent = '⏳ جاري تحديد الموقع...';
+            btnDetect.disabled = true;
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                var latInput = Yawmia.$id('editLat');
+                var lngInput = Yawmia.$id('editLng');
+                if (latInput) latInput.value = pos.coords.latitude.toFixed(6);
+                if (lngInput) lngInput.value = pos.coords.longitude.toFixed(6);
+                btnDetect.textContent = '📍 تم تحديد الموقع ✓';
+                btnDetect.disabled = false;
+              },
+              function (err) {
+                alert('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
+                btnDetect.textContent = '📍 استخدم موقعي الحالي';
+                btnDetect.disabled = false;
+              },
+              { enableHighAccuracy: true, timeout: 10000 }
+            );
+          });
+        }
+      }
+    }
   }
 
   // ── Update Profile Handler ────────────────────────────────
@@ -157,6 +215,12 @@
       }
 
       var body = { name: name.trim(), governorate: governorate };
+
+      // Include lat/lng if provided
+      var latVal = (Yawmia.$id('editLat') || {}).value;
+      var lngVal = (Yawmia.$id('editLng') || {}).value;
+      if (latVal !== undefined && latVal !== '') body.lat = parseFloat(latVal);
+      if (lngVal !== undefined && lngVal !== '') body.lng = parseFloat(lngVal);
 
       if (user.role === 'worker') {
         var checked = document.querySelectorAll('#editCategoriesGrid input[name="categories"]:checked');

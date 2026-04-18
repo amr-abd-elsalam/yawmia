@@ -366,6 +366,46 @@ const config = {
     disputeWindowDays: 7,            // مهلة فتح نزاع بعد الإنهاء (أيام)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 23. الموقع الجغرافي (GEOLOCATION)
+  // ═══════════════════════════════════════════════════════════
+  GEOLOCATION: {
+    enabled: true,
+    defaultRadiusKm: 30,             // نطاق البحث الافتراضي (كم)
+    maxRadiusKm: 100,                // أقصى نطاق بحث مسموح (كم)
+    earthRadiusKm: 6371,             // نصف قطر الأرض (للحساب)
+    // مراكز المحافظات — تُستخدم كـ fallback لو المستخدم/الفرصة مفيش lat/lng
+    governorateCenters: {
+      cairo:         { lat: 30.0444, lng: 31.2357 },
+      giza:          { lat: 30.0131, lng: 31.2089 },
+      alex:          { lat: 31.2001, lng: 29.9187 },
+      qalyubia:      { lat: 30.3292, lng: 31.2422 },
+      sharqia:       { lat: 30.5877, lng: 31.5020 },
+      dakahlia:      { lat: 31.0364, lng: 31.3807 },
+      gharbia:       { lat: 30.8754, lng: 31.0297 },
+      monufia:       { lat: 30.5972, lng: 30.9876 },
+      beheira:       { lat: 30.8481, lng: 30.3436 },
+      fayoum:        { lat: 29.3084, lng: 30.8428 },
+      minya:         { lat: 28.1099, lng: 30.7503 },
+      asyut:         { lat: 27.1783, lng: 31.1859 },
+      sohag:         { lat: 26.5591, lng: 31.6948 },
+      qena:          { lat: 26.1551, lng: 32.7160 },
+      luxor:         { lat: 25.6872, lng: 32.6396 },
+      aswan:         { lat: 24.0889, lng: 32.8998 },
+      ismailia:      { lat: 30.5965, lng: 32.2715 },
+      suez:          { lat: 29.9668, lng: 32.5498 },
+      portsaid:      { lat: 31.2565, lng: 32.2841 },
+      damietta:      { lat: 31.4175, lng: 31.8144 },
+      kafr_elsheikh: { lat: 31.1117, lng: 30.9388 },
+      beni_suef:     { lat: 29.0661, lng: 31.0994 },
+      new_valley:    { lat: 25.4390, lng: 30.0423 },
+      red_sea:       { lat: 27.1783, lng: 33.7998 },
+      north_sinai:   { lat: 31.0603, lng: 33.8357 },
+      south_sinai:   { lat: 28.4973, lng: 33.9558 },
+      matrouh:       { lat: 31.3525, lng: 27.2453 },
+    },
+  },
+
 };
 
 export default deepFreeze(config);

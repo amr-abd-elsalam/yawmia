@@ -19,6 +19,8 @@ export async function create(phone, role) {
     name: '',
     governorate: '',
     categories: [],
+    lat: null,
+    lng: null,
     rating: { avg: 0, count: 0 },
     status: 'active',
     createdAt: now,

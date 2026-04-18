@@ -223,8 +223,8 @@ export async function listByWorker(workerId) {
  */
 export async function countTodayByWorker(workerId) {
   const apps = await listByWorker(workerId);
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
   return apps.filter(a => new Date(a.appliedAt) >= todayMidnight).length;
 }
 

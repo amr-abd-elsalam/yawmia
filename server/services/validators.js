@@ -207,3 +207,29 @@ export function validateJobFields(body) {
   }
   return { valid: true };
 }
+
+/**
+ * Validate latitude (Egypt range: 22-32)
+ * @param {*} lat
+ * @returns {{ valid: boolean, error?: string, value?: number }}
+ */
+export function validateLatitude(lat) {
+  if (lat === undefined || lat === null || lat === '') return { valid: true };
+  const num = Number(lat);
+  if (isNaN(num)) return { valid: false, error: 'خط العرض لازم يكون رقم' };
+  if (num < 22 || num > 32) return { valid: false, error: 'خط العرض لازم يكون في نطاق مصر (22-32)' };
+  return { valid: true, value: num };
+}
+
+/**
+ * Validate longitude (Egypt range: 24-37)
+ * @param {*} lng
+ * @returns {{ valid: boolean, error?: string, value?: number }}
+ */
+export function validateLongitude(lng) {
+  if (lng === undefined || lng === null || lng === '') return { valid: true };
+  const num = Number(lng);
+  if (isNaN(num)) return { valid: false, error: 'خط الطول لازم يكون رقم' };
+  if (num < 24 || num > 37) return { valid: false, error: 'خط الطول لازم يكون في نطاق مصر (24-37)' };
+  return { valid: true, value: num };
+}

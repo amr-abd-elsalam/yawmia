@@ -55,6 +55,9 @@ export async function handleListJobs(req, res) {
   if (req.query.status) filters.status = req.query.status;
   if (req.query.search) filters.search = req.query.search;
   if (req.query.sort) filters.sort = req.query.sort;
+  if (req.query.lat) filters.lat = req.query.lat;
+  if (req.query.lng) filters.lng = req.query.lng;
+  if (req.query.radius) filters.radius = req.query.radius;
 
   try {
     const allJobs = await list(filters);
@@ -191,5 +194,64 @@ export async function handleListMyJobs(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب فرصك', code: 'LIST_MY_JOBS_ERROR' });
+  }
+}
+
+/**
+ * GET /api/jobs/nearby
+ * Requires: auth (worker)
+ * Returns: nearby jobs based on worker's saved location or governorate center
+ */
+export async function handleNearbyJobs(req, res) {
+  const user = req.user;
+
+  try {
+    const { resolveCoordinates } = await import('../services/geo.js');
+    const coords = resolveCoordinates({
+      lat: user.lat,
+      lng: user.lng,
+      governorate: user.governorate,
+    });
+
+    if (!coords) {
+      return sendJSON(res, 400, {
+        error: 'حدّد موقعك في الملف الشخصي عشان تشوف الفرص القريبة',
+        code: 'LOCATION_REQUIRED',
+      });
+    }
+
+    const radius = Math.min(
+      Number(req.query.radius) || config.GEOLOCATION.defaultRadiusKm,
+      config.GEOLOCATION.maxRadiusKm
+    );
+    const category = req.query.category || undefined;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+
+    const allJobs = await list({
+      status: 'open',
+      category,
+      lat: coords.lat,
+      lng: coords.lng,
+      radius,
+    });
+
+    const total = allJobs.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const start = (page - 1) * limit;
+    const paginatedJobs = allJobs.slice(start, start + limit);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      jobs: paginatedJobs,
+      count: paginatedJobs.length,
+      total,
+      page,
+      totalPages,
+      limit,
+      location: { lat: coords.lat, lng: coords.lng, radius },
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب الفرص القريبة', code: 'NEARBY_JOBS_ERROR' });
   }
 }

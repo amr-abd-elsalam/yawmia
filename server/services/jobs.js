@@ -34,6 +34,8 @@ export async function create(employerId, fields) {
     category: fields.category,
     governorate: fields.governorate,
     location: fields.location || null,
+    lat: (typeof fields.lat === 'number') ? fields.lat : null,
+    lng: (typeof fields.lng === 'number') ? fields.lng : null,
     workersNeeded: fields.workersNeeded,
     workersAccepted: 0,
     dailyWage: fields.dailyWage,
@@ -119,6 +121,25 @@ export async function list(filters = {}) {
     });
   }
 
+  // ── Proximity filter (Haversine) ──────────────────────────
+  if (filters.lat !== undefined && filters.lng !== undefined) {
+    const { filterByProximity } = await import('./geo.js');
+    const refLat = Number(filters.lat);
+    const refLng = Number(filters.lng);
+    const radius = Number(filters.radius) || config.GEOLOCATION.defaultRadiusKm;
+
+    if (!isNaN(refLat) && !isNaN(refLng) && config.GEOLOCATION.enabled) {
+      const clampedRadius = Math.min(radius, config.GEOLOCATION.maxRadiusKm);
+      const proximityResults = filterByProximity(jobs, refLat, refLng, clampedRadius);
+      jobs = proximityResults.map(r => {
+        r.item._distance = r.distance;
+        return r.item;
+      });
+      // Proximity results are already sorted by distance — skip manual sort later
+      filters._proximitySorted = true;
+    }
+  }
+
   // Text search on title + description (case-insensitive)
   if (filters.search) {
     const term = filters.search.toLowerCase();
@@ -129,15 +150,17 @@ export async function list(filters = {}) {
     });
   }
 
-  // Sort
-  const sort = filters.sort || 'newest';
-  if (sort === 'wage_high') {
-    jobs.sort((a, b) => (b.dailyWage || 0) - (a.dailyWage || 0));
-  } else if (sort === 'wage_low') {
-    jobs.sort((a, b) => (a.dailyWage || 0) - (b.dailyWage || 0));
-  } else {
-    // Default: newest first
-    jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Sort (skip if already sorted by proximity)
+  if (!filters._proximitySorted) {
+    const sort = filters.sort || 'newest';
+    if (sort === 'wage_high') {
+      jobs.sort((a, b) => (b.dailyWage || 0) - (a.dailyWage || 0));
+    } else if (sort === 'wage_low') {
+      jobs.sort((a, b) => (a.dailyWage || 0) - (b.dailyWage || 0));
+    } else {
+      // Default: newest first
+      jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
   }
 
   return jobs;
@@ -237,8 +260,8 @@ export async function countTodayByEmployer(employerId) {
     employerJobs = allJobs.filter(j => j.employerId === employerId);
   }
 
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
   return employerJobs.filter(j => new Date(j.createdAt) >= todayMidnight).length;
 }
 
@@ -310,6 +333,7 @@ export async function enforceExpiredJobs() {
   let count = 0;
   const now = new Date();
   const expiredJobIds = [];
+  const expiredJobTitles = {};
 
   for (const job of jobs) {
     if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
@@ -317,6 +341,7 @@ export async function enforceExpiredJobs() {
       const jobPath = getRecordPath('jobs', job.id);
       await atomicWrite(jobPath, job);
       expiredJobIds.push(job.id);
+      expiredJobTitles[job.id] = job.title;
       count++;
     }
   }
@@ -330,6 +355,11 @@ export async function enforceExpiredJobs() {
       }
     }
     await writeIndex('jobsIndex', jobsIndex);
+
+    // Auto-reject pending applications for each expired job (fire-and-forget)
+    for (const jobId of expiredJobIds) {
+      rejectPendingApplications(jobId, expiredJobTitles[jobId]).catch(() => {});
+    }
   }
 
   return count;

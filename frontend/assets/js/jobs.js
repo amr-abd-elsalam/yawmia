@@ -272,11 +272,16 @@
       completedLabel = '<span class="badge badge--status badge--completed">✓ مكتملة</span>';
     }
 
+    var distanceBadge = (job._distance !== undefined && job._distance !== null)
+      ? '<span class="job-distance">📍 ' + job._distance + ' كم</span>'
+      : '';
+
     card.innerHTML =
       '<div class="job-card__header">' +
         '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
         '<div class="job-card__header-right">' +
           statusBadge +
+          distanceBadge +
           '<span class="job-card__wage">' + job.dailyWage + ' جنيه/يوم</span>' +
         '</div>' +
       '</div>' +
