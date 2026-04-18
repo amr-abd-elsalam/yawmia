@@ -244,6 +244,7 @@ const config = {
       notifications: 'notifications',
       ratings: 'ratings',
       payments: 'payments',
+      reports: 'reports',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -253,6 +254,8 @@ const config = {
       userNotificationsIndex: 'notifications/user-index.json',
       employerJobsIndex: 'jobs/employer-index.json',
       jobPaymentsIndex: 'payments/job-index.json',
+      targetReportsIndex: 'reports/target-index.json',
+      reporterReportsIndex: 'reports/reporter-index.json',
     },
     encoding: 'utf-8',
   },
@@ -411,11 +414,42 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.11.0',
+    cacheName: 'yawmia-v0.12.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
     backgroundColor: '#0f172a',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 25. نظام البلاغات (REPORTS)
+  // ═══════════════════════════════════════════════════════════
+  REPORTS: {
+    enabled: true,
+    maxReportsPerUserPerDay: 5,
+    minReasonLength: 10,
+    maxReasonLength: 500,
+    statuses: ['pending', 'reviewed', 'action_taken', 'dismissed'],
+    types: ['fraud', 'no_show', 'harassment', 'quality', 'payment_issue', 'other'],
+    autobanThreshold: 5,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 26. نظام الثقة (TRUST)
+  // ═══════════════════════════════════════════════════════════
+  TRUST: {
+    enabled: true,
+    weights: {
+      ratingAvg: 0.4,
+      completionRate: 0.3,
+      reportScore: 0.2,
+      accountAge: 0.1,
+    },
+    minScoreToShow: 0.3,
+    accountAgeCap: 365,
+    termsRequired: true,
+    termsVersion: '1.0',
+    softDeleteRetentionDays: 90,
   },
 
 };

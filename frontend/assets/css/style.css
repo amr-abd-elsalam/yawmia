@@ -1235,3 +1235,80 @@ select.form-input {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* ═══ Report System ═══ */
+.report-btn {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-btn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.report-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.report-form select,
+.report-form textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.report-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.trust-badge.trust-high { border-color: #16a34a; color: #16a34a; }
+.trust-badge.trust-medium { border-color: #eab308; color: #eab308; }
+.trust-badge.trust-low { border-color: #ef4444; color: #ef4444; }
+
+.report-status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.report-status-pending { background: #eab308; color: #000; }
+.report-status-action_taken { background: #ef4444; color: #fff; }
+.report-status-dismissed { background: #6b7280; color: #fff; }
+.report-status-reviewed { background: #3b82f6; color: #fff; }
+
+#report-status-filter {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-family: inherit;
+}

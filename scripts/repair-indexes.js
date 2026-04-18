@@ -180,6 +180,41 @@ async function repair() {
     console.log(`   ✅ Job-Payments index OK (${Object.keys(jobPaymentsIndex).length} jobs)`);
   }
 
+  // 8. Target-Reports Index (reports/target-index.json)
+  console.log('8️⃣  Target-Reports Index...');
+  const reports = await listRecords(join(DATA_DIR, 'reports'), 'rpt_');
+  const targetReportsIndex = {};
+  for (const rpt of reports) {
+    if (!targetReportsIndex[rpt.targetId]) targetReportsIndex[rpt.targetId] = [];
+    targetReportsIndex[rpt.targetId].push(rpt.id);
+  }
+  const existingTargetIndex = await readJSON(join(DATA_DIR, 'reports/target-index.json')) || {};
+  const targetIndexChanged = JSON.stringify(targetReportsIndex) !== JSON.stringify(existingTargetIndex);
+  if (targetIndexChanged) {
+    console.log(`   ⚠️  Target-Reports index needs repair (${Object.keys(targetReportsIndex).length} targets)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/target-index.json'), targetReportsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Target-Reports index OK (${Object.keys(targetReportsIndex).length} targets)`);
+  }
+
+  // 9. Reporter-Reports Index (reports/reporter-index.json)
+  console.log('9️⃣  Reporter-Reports Index...');
+  const reporterReportsIndex = {};
+  for (const rpt of reports) {
+    if (!reporterReportsIndex[rpt.reporterId]) reporterReportsIndex[rpt.reporterId] = [];
+    reporterReportsIndex[rpt.reporterId].push(rpt.id);
+  }
+  const existingReporterIndex = await readJSON(join(DATA_DIR, 'reports/reporter-index.json')) || {};
+  const reporterIndexChanged = JSON.stringify(reporterReportsIndex) !== JSON.stringify(existingReporterIndex);
+  if (reporterIndexChanged) {
+    console.log(`   ⚠️  Reporter-Reports index needs repair (${Object.keys(reporterReportsIndex).length} reporters)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/reporter-index.json'), reporterReportsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Reporter-Reports index OK (${Object.keys(reporterReportsIndex).length} reporters)`);
+  }
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

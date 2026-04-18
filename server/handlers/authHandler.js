@@ -195,3 +195,55 @@ export async function handleLogoutAll(req, res) {
     return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
 }
+
+/**
+ * POST /api/auth/accept-terms
+ * Accept terms of service
+ * Requires: auth token
+ */
+export async function handleAcceptTerms(req, res) {
+  try {
+    const { default: config } = await import('../../config.js');
+    const { acceptTerms } = await import('../services/users.js');
+
+    const updatedUser = await acceptTerms(req.user.id, config.TRUST.termsVersion);
+    if (!updatedUser) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      message: 'تم قبول الشروط والأحكام',
+      termsVersion: updatedUser.termsVersion,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ داخلي', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * DELETE /api/auth/account
+ * Soft-delete user account
+ * Requires: auth token
+ */
+export async function handleDeleteAccount(req, res) {
+  try {
+    const { softDelete } = await import('../services/users.js');
+    const { destroyAllByUser } = await import('../services/sessions.js');
+
+    const deletedUser = await softDelete(req.user.id);
+    if (!deletedUser) {
+      return sendJSON(res, 400, { error: 'لا يمكن حذف هذا الحساب', code: 'DELETE_FAILED' });
+    }
+
+    // Destroy all sessions (fire-and-forget)
+    await destroyAllByUser(req.user.id).catch(() => {});
+
+    return sendJSON(res, 200, {
+      ok: true,
+      message: 'تم حذف الحساب. بياناتك هتتحذف نهائياً خلال 90 يوم.',
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في حذف الحساب', code: 'DELETE_ACCOUNT_ERROR' });
+  }
+}

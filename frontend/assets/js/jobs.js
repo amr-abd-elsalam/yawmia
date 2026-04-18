@@ -261,6 +261,11 @@
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
+    // Report button (any authenticated user can report the employer)
+    if (job.employerId && job.employerId !== user.id) {
+      footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
+    }
+
     // Payment info placeholder for completed jobs
     var paymentBadgeHtml = '';
     if (job.status === 'completed') {
@@ -462,6 +467,14 @@
       })();
     }
 
+    // Report button handler
+    var reportBtn = card.querySelector('.btn-report');
+    if (reportBtn) {
+      reportBtn.addEventListener('click', function () {
+        showReportForm(card, job.id, reportBtn.getAttribute('data-target'));
+      });
+    }
+
     // Rate button handler
     var rateBtn = card.querySelector('.btn-rate');
     if (rateBtn) {
@@ -549,6 +562,68 @@
         }
       });
     }
+  }
+
+  // ── Report Form ───────────────────────────────────────────
+  function showReportForm(card, jobId, targetId) {
+    // Remove existing form in this card if any
+    var existing = card.querySelector('.report-form');
+    if (existing) { existing.remove(); return; }
+
+    var form = document.createElement('div');
+    form.className = 'report-form';
+    form.innerHTML =
+      '<select class="report-type-select">' +
+        '<option value="">اختر نوع البلاغ...</option>' +
+        '<option value="fraud">نصب أو احتيال</option>' +
+        '<option value="no_show">عدم حضور</option>' +
+        '<option value="harassment">إساءة أو تحرش</option>' +
+        '<option value="quality">جودة عمل سيئة</option>' +
+        '<option value="payment_issue">مشكلة في الدفع</option>' +
+        '<option value="other">أخرى</option>' +
+      '</select>' +
+      '<textarea placeholder="اكتب سبب البلاغ (10 حروف على الأقل)..." maxlength="500"></textarea>' +
+      '<div style="display:flex;gap:0.5rem;">' +
+        '<button class="btn btn--primary btn--sm btn-submit-report">إرسال البلاغ</button>' +
+        '<button class="btn btn--ghost btn--sm btn-cancel-report">إلغاء</button>' +
+      '</div>' +
+      '<div class="report-form-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>';
+
+    card.appendChild(form);
+
+    form.querySelector('.btn-cancel-report').addEventListener('click', function () {
+      form.remove();
+    });
+
+    form.querySelector('.btn-submit-report').addEventListener('click', async function () {
+      var typeSelect = form.querySelector('.report-type-select');
+      var reasonTextarea = form.querySelector('textarea');
+      var msgEl = form.querySelector('.report-form-msg');
+      var type = typeSelect.value;
+      var reason = reasonTextarea.value.trim();
+
+      if (!type) { msgEl.textContent = 'اختر نوع البلاغ'; msgEl.style.color = 'var(--color-error)'; return; }
+      if (reason.length < 10) { msgEl.textContent = 'السبب لازم يكون 10 حروف على الأقل'; msgEl.style.color = 'var(--color-error)'; return; }
+
+      var submitBtn = form.querySelector('.btn-submit-report');
+      Yawmia.setLoading(submitBtn, true);
+      try {
+        var res = await Yawmia.api('POST', '/api/reports', { targetId: targetId, type: type, reason: reason, jobId: jobId });
+        if (res.data.ok) {
+          msgEl.textContent = 'تم إرسال البلاغ بنجاح ✓';
+          msgEl.style.color = 'var(--color-success)';
+          setTimeout(function () { form.remove(); }, 2000);
+        } else {
+          msgEl.textContent = res.data.error || 'خطأ في إرسال البلاغ';
+          msgEl.style.color = 'var(--color-error)';
+        }
+      } catch (err) {
+        msgEl.textContent = 'خطأ في الاتصال';
+        msgEl.style.color = 'var(--color-error)';
+      } finally {
+        Yawmia.setLoading(submitBtn, false);
+      }
+    });
   }
 
   // ── Escape HTML ───────────────────────────────────────────

@@ -325,4 +325,29 @@ export function setupNotificationListeners() {
       ).catch(() => {});
     }
   });
+
+  // Target user gets notification when reported
+  eventBus.on('report:created', (data) => {
+    createNotification(
+      data.targetId,
+      'report_received',
+      'تم تقديم بلاغ بخصوص حسابك — يُرجى الالتزام بسياسة المنصة',
+      { reportId: data.reportId, type: data.type }
+    ).catch(() => {});
+  });
+
+  // Reporter gets notification when their report is reviewed
+  eventBus.on('report:reviewed', (data) => {
+    const statusMessages = {
+      reviewed: 'تمت مراجعة بلاغك',
+      action_taken: 'تم اتخاذ إجراء بناءً على بلاغك',
+      dismissed: 'تم رفض بلاغك — لم يتم العثور على مخالفة',
+    };
+    createNotification(
+      data.reporterId,
+      'report_reviewed',
+      statusMessages[data.status] || 'تم تحديث حالة بلاغك',
+      { reportId: data.reportId, status: data.status }
+    ).catch(() => {});
+  });
 }

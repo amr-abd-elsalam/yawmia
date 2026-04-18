@@ -299,6 +299,26 @@
         </div>
         <div id="jobs-pagination"></div>
       </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>📋 البلاغات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadReports()">تحديث</button>
+        </div>
+        <div id="reports-filter" style="margin-bottom:1rem;">
+          <select id="report-status-filter" onchange="AdminApp.loadReports(1)">
+            <option value="">الكل</option>
+            <option value="pending" selected>قيد المراجعة</option>
+            <option value="action_taken">تم اتخاذ إجراء</option>
+            <option value="dismissed">مرفوض</option>
+            <option value="reviewed">تمت المراجعة</option>
+          </select>
+        </div>
+        <div id="reportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="reports-pagination"></div>
+      </div>
     </div>
   </div>
 

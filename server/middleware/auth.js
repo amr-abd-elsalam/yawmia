@@ -35,6 +35,9 @@ export function requireAuth(req, res, next) {
         if (user.status === 'banned') {
           return sendJSON(res, 403, { error: 'تم حظر حسابك. تواصل مع الدعم.', code: 'USER_BANNED' });
         }
+        if (user.status === 'deleted') {
+          return sendJSON(res, 403, { error: 'تم حذف هذا الحساب', code: 'ACCOUNT_DELETED' });
+        }
         if (user.status !== 'active') {
           return sendJSON(res, 403, { error: 'الحساب موقوف', code: 'ACCOUNT_SUSPENDED' });
         }

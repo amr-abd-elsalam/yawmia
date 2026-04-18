@@ -23,6 +23,8 @@ export async function create(phone, role) {
     lng: null,
     rating: { avg: 0, count: 0 },
     status: 'active',
+    termsAcceptedAt: null,
+    termsVersion: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -145,5 +147,64 @@ export async function unbanUser(userId) {
 
   const userPath = getRecordPath('users', userId);
   await atomicWrite(userPath, updatedUser);
+  return updatedUser;
+}
+
+/**
+ * Accept terms of service
+ * @param {string} userId
+ * @param {string} version
+ * @returns {Promise<object|null>}
+ */
+export async function acceptTerms(userId, version) {
+  const user = await findById(userId);
+  if (!user) return null;
+
+  const updatedUser = {
+    ...user,
+    termsAcceptedAt: new Date().toISOString(),
+    termsVersion: version,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const userPath = getRecordPath('users', userId);
+  await atomicWrite(userPath, updatedUser);
+  return updatedUser;
+}
+
+/**
+ * Soft-delete a user account (anonymize + remove phone from index)
+ * Cannot delete admin accounts.
+ * @param {string} userId
+ * @returns {Promise<object|null>}
+ */
+export async function softDelete(userId) {
+  const user = await findById(userId);
+  if (!user) return null;
+  if (user.role === 'admin') return null;
+
+  const now = new Date().toISOString();
+  const updatedUser = {
+    ...user,
+    status: 'deleted',
+    name: 'مستخدم محذوف',
+    phone: `deleted_${user.id}`,
+    categories: [],
+    lat: null,
+    lng: null,
+    deletedAt: now,
+    updatedAt: now,
+  };
+
+  const userPath = getRecordPath('users', userId);
+  await atomicWrite(userPath, updatedUser);
+
+  // Remove phone from index (allows reuse)
+  const phoneIndex = await readIndex('phoneIndex');
+  if (phoneIndex[user.phone]) {
+    delete phoneIndex[user.phone];
+    await writeIndex('phoneIndex', phoneIndex);
+  }
+
   return updatedUser;
 }

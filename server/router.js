@@ -4,13 +4,14 @@
 
 import config from '../config.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
-import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll } from './handlers/authHandler.js';
+import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
+import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 
@@ -34,7 +35,7 @@ const routes = [
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.11.0',
+        version: '0.12.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {
@@ -75,6 +76,8 @@ const routes = [
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
   { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
+  { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
+  { method: 'DELETE', path: '/api/auth/account', middlewares: [requireAuth], handler: handleDeleteAccount },
 
   // ── Job Routes ──
   { method: 'POST', path: '/api/jobs', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateJob },
@@ -95,6 +98,10 @@ const routes = [
   { method: 'GET', path: '/api/jobs/:id/ratings', middlewares: [], handler: handleListJobRatings },
   { method: 'GET', path: '/api/users/:id/ratings', middlewares: [], handler: handleListUserRatings },
   { method: 'GET', path: '/api/users/:id/rating-summary', middlewares: [], handler: handleUserRatingSummary },
+  { method: 'GET', path: '/api/users/:id/trust-score', middlewares: [], handler: handleGetTrustScore },
+
+  // ── Report Routes ──
+  { method: 'POST', path: '/api/reports', middlewares: [requireAuth], handler: handleCreateReport },
 
   // ── Notification Routes ──
   { method: 'GET', path: '/api/notifications', middlewares: [requireAuth], handler: handleListNotifications },
@@ -118,6 +125,8 @@ const routes = [
   { method: 'GET', path: '/api/admin/financial-summary', middlewares: [requireAdmin], handler: handleAdminFinancialSummary },
   { method: 'POST', path: '/api/admin/payments/:id/complete', middlewares: [requireAdmin], handler: handleAdminCompletePayment },
   { method: 'PUT', path: '/api/admin/users/:id/status', middlewares: [requireAdmin], handler: handleAdminUpdateUserStatus },
+  { method: 'GET', path: '/api/admin/reports', middlewares: [requireAdmin], handler: handleAdminListReports },
+  { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireAdmin], handler: handleAdminReviewReport },
 ];
 
 /**

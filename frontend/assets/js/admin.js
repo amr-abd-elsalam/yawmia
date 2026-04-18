@@ -96,7 +96,7 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials()]).catch(function () {});
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports()]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -296,6 +296,96 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadReports(page) {
+    page = page || 1;
+    var statusFilter = '';
+    var filterEl = document.getElementById('report-status-filter');
+    if (filterEl) statusFilter = filterEl.value;
+
+    try {
+      var query = '/api/admin/reports?page=' + page + '&limit=20';
+      if (statusFilter) query += '&status=' + encodeURIComponent(statusFilter);
+      var data = await api(query);
+      var container = document.getElementById('reportsTable');
+      if (!container) return;
+
+      var reports = data.reports || [];
+
+      if (reports.length === 0) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد بلاغات</p>';
+        renderPagination('reports-pagination', 1, 1, loadReports);
+        return;
+      }
+
+      var typeLabels = {
+        fraud: 'نصب',
+        no_show: 'عدم حضور',
+        harassment: 'إساءة',
+        quality: 'جودة',
+        payment_issue: 'مشكلة دفع',
+        other: 'أخرى',
+      };
+
+      var statusLabels = {
+        pending: 'قيد المراجعة',
+        reviewed: 'تمت المراجعة',
+        action_taken: 'تم اتخاذ إجراء',
+        dismissed: 'مرفوض',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المُبلِّغ</th><th>المُبلَّغ عنه</th><th>النوع</th><th>السبب</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      reports.forEach(function (r) {
+        var typeText = typeLabels[r.type] || r.type || '-';
+        var statusText = statusLabels[r.status] || r.status || '-';
+        var statusClass = 'report-status-' + (r.status || 'pending');
+        var reasonText = escapeHtml((r.reason || '').substring(0, 50));
+        if ((r.reason || '').length > 50) reasonText += '...';
+        var dateText = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-EG') : '-';
+
+        var actionBtns = '';
+        if (r.status === 'pending') {
+          actionBtns =
+            '<button class="btn btn--sm btn--primary" onclick="AdminApp.reviewReport(\'' + escapeHtml(r.id) + '\', \'action_taken\')">إجراء</button> ' +
+            '<button class="btn btn--sm btn--ghost" onclick="AdminApp.reviewReport(\'' + escapeHtml(r.id) + '\', \'dismissed\')">رفض</button>';
+        }
+
+        html += '<tr>' +
+          '<td>' + escapeHtml(r.reporterId || '-') + '</td>' +
+          '<td>' + escapeHtml(r.targetId || '-') + '</td>' +
+          '<td>' + escapeHtml(typeText) + '</td>' +
+          '<td>' + reasonText + '</td>' +
+          '<td><span class="report-status-badge ' + statusClass + '">' + escapeHtml(statusText) + '</span></td>' +
+          '<td>' + escapeHtml(dateText) + '</td>' +
+          '<td>' + actionBtns + '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      renderPagination('reports-pagination', data.page || 1, data.totalPages || 1, loadReports);
+    } catch (err) {
+      var container = document.getElementById('reportsTable');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل البلاغات</p>';
+    }
+  }
+
+  async function reviewReport(reportId, newStatus) {
+    try {
+      var notes = '';
+      if (newStatus === 'action_taken') {
+        notes = prompt('ملاحظات الأدمن (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/reports/' + reportId, { status: newStatus, adminNotes: notes });
+      await loadReports();
+    } catch (err) {
+      showError(err.message || 'خطأ في مراجعة البلاغ');
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -304,5 +394,7 @@ var AdminApp = (function () {
     loadStats: loadStats,
     loadFinancials: loadFinancials,
     toggleBan: toggleBan,
+    loadReports: loadReports,
+    reviewReport: reviewReport,
   };
 })();
