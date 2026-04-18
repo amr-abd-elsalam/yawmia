@@ -570,10 +570,10 @@ describe('Payment Service — Events', () => {
 
 describe('Payment Service — Config', () => {
 
-  it('PH9-27: Config has 22 sections', async () => {
+  it('PH9-27: Config has 23 sections', async () => {
     const config = (await import('../config.js')).default;
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 22, `expected 22 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 23, `expected 23 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('PH9-28: PAYMENTS section has correct default values', async () => {
