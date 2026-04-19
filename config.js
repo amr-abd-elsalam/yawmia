@@ -246,6 +246,7 @@ const config = {
       payments: 'payments',
       reports: 'reports',
       verifications: 'verifications',
+      attendance: 'attendance',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -258,6 +259,8 @@ const config = {
       targetReportsIndex: 'reports/target-index.json',
       reporterReportsIndex: 'reports/reporter-index.json',
       userVerificationIndex: 'verifications/user-index.json',
+      jobAttendanceIndex: 'attendance/job-index.json',
+      workerAttendanceIndex: 'attendance/worker-index.json',
     },
     encoding: 'utf-8',
   },
@@ -416,7 +419,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.15.0',
+    cacheName: 'yawmia-v0.16.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -516,6 +519,20 @@ const config = {
     renewalExpiryHours: 72,                // مدة صلاحية الفرصة المُجدَّدة (72 ساعة)
     maxRenewalsPerJob: 3,                  // أقصى عدد تجديدات لكل فرصة
     resetApplications: false,              // false = الطلبات الموجودة تبقى كما هي
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 31. نظام الحضور (ATTENDANCE)
+  // ═══════════════════════════════════════════════════════════
+  ATTENDANCE: {
+    enabled: true,
+    checkInRadiusKm: 0.5,                   // 500 متر — أقصى مسافة لتسجيل الحضور
+    allowEmployerOverride: true,             // صاحب العمل يقدر يأكد بدون GPS
+    autoNoShowAfterHours: 2,                 // عدد ساعات قبل اعتبار العامل غائب (مرجع مستقبلي)
+    statuses: ['pending', 'checked_in', 'checked_out', 'confirmed', 'no_show'],
+    requireGpsForCheckIn: true,              // GPS مطلوب لتسجيل الحضور
+    requireGpsForCheckOut: false,            // GPS اختياري لتسجيل الانصراف
+    maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
   },
 
 };

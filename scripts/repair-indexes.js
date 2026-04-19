@@ -233,6 +233,41 @@ async function repair() {
     console.log(`   ✅ User-Verifications index OK (${Object.keys(userVerificationsIndex).length} users)`);
   }
 
+  // 11. Job-Attendance Index (attendance/job-index.json)
+  console.log('1️⃣1️⃣ Job-Attendance Index...');
+  const attendanceRecords = await listRecords(join(DATA_DIR, 'attendance'), 'att_');
+  const jobAttendanceIndex = {};
+  for (const att of attendanceRecords) {
+    if (!jobAttendanceIndex[att.jobId]) jobAttendanceIndex[att.jobId] = [];
+    jobAttendanceIndex[att.jobId].push(att.id);
+  }
+  const existingJobAttIndex = await readJSON(join(DATA_DIR, 'attendance/job-index.json')) || {};
+  const jobAttIndexChanged = JSON.stringify(jobAttendanceIndex) !== JSON.stringify(existingJobAttIndex);
+  if (jobAttIndexChanged) {
+    console.log(`   ⚠️  Job-Attendance index needs repair (${Object.keys(jobAttendanceIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/job-index.json'), jobAttendanceIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Job-Attendance index OK (${Object.keys(jobAttendanceIndex).length} jobs)`);
+  }
+
+  // 12. Worker-Attendance Index (attendance/worker-index.json)
+  console.log('1️⃣2️⃣ Worker-Attendance Index...');
+  const workerAttendanceIndex = {};
+  for (const att of attendanceRecords) {
+    if (!workerAttendanceIndex[att.workerId]) workerAttendanceIndex[att.workerId] = [];
+    workerAttendanceIndex[att.workerId].push(att.id);
+  }
+  const existingWorkerAttIndex = await readJSON(join(DATA_DIR, 'attendance/worker-index.json')) || {};
+  const workerAttIndexChanged = JSON.stringify(workerAttendanceIndex) !== JSON.stringify(existingWorkerAttIndex);
+  if (workerAttIndexChanged) {
+    console.log(`   ⚠️  Worker-Attendance index needs repair (${Object.keys(workerAttendanceIndex).length} workers)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/worker-index.json'), workerAttendanceIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
+  }
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

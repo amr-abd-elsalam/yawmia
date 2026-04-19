@@ -479,4 +479,36 @@ export function setupNotificationListeners() {
       // Fire-and-forget
     }
   });
+
+  // ── Attendance Notifications ────────────────────────────────
+
+  // Employer gets notification when worker checks in
+  eventBus.on('attendance:checkin', (data) => {
+    createNotification(
+      data.employerId,
+      'worker_checked_in',
+      'عامل سجّل حضوره في موقع العمل',
+      { jobId: data.jobId, workerId: data.workerId, attendanceId: data.attendanceId }
+    ).catch(() => {});
+  });
+
+  // Worker gets notification when reported as no-show
+  eventBus.on('attendance:noshow', (data) => {
+    createNotification(
+      data.workerId,
+      'attendance_noshow',
+      'تم تسجيلك غائب عن العمل — تواصل مع صاحب العمل لو في خطأ',
+      { jobId: data.jobId, attendanceId: data.attendanceId }
+    ).catch(() => {});
+  });
+
+  // Worker gets notification when employer confirms attendance
+  eventBus.on('attendance:confirmed', (data) => {
+    createNotification(
+      data.workerId,
+      'attendance_confirmed',
+      'صاحب العمل أكّد حضورك ✓',
+      { jobId: data.jobId, attendanceId: data.attendanceId }
+    ).catch(() => {});
+  });
 }

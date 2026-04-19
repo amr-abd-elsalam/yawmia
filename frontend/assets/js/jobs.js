@@ -277,6 +277,10 @@
         footerButtons = '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
       }
     }
+    if (user.role === 'worker' && job.status === 'in_progress') {
+      footerButtons = '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>' +
+        '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
+    }
     if (user.role === 'worker' && job.status === 'completed') {
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
@@ -431,6 +435,22 @@
         } finally {
           Yawmia.setLoading(renewBtn, false);
         }
+      });
+    }
+
+    // Check-in button handler (worker)
+    var checkinBtn = card.querySelector('.btn-checkin');
+    if (checkinBtn) {
+      checkinBtn.addEventListener('click', function () {
+        handleCheckInClick(job.id, checkinBtn);
+      });
+    }
+
+    // Check-out button handler (worker)
+    var checkoutBtn = card.querySelector('.btn-checkout');
+    if (checkoutBtn) {
+      checkoutBtn.addEventListener('click', function () {
+        handleCheckOutClick(job.id, checkoutBtn);
       });
     }
 
@@ -680,6 +700,77 @@
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // ── Attendance Handlers ───────────────────────────────────
+  function handleCheckInClick(jobId, btn) {
+    if (!navigator.geolocation) {
+      alert('المتصفح لا يدعم تحديد الموقع');
+      return;
+    }
+    Yawmia.setLoading(btn, true);
+    navigator.geolocation.getCurrentPosition(
+      async function (pos) {
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkin', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          if (res.data.ok) {
+            btn.textContent = 'تم الحضور ✓';
+            btn.disabled = true;
+            btn.classList.remove('btn-checkin');
+          } else {
+            alert(res.data.error || 'خطأ في تسجيل الحضور');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(btn, false);
+        }
+      },
+      function (err) {
+        Yawmia.setLoading(btn, false);
+        alert('فشل تحديد الموقع — تأكد من تفعيل GPS');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function handleCheckOutClick(jobId, btn) {
+    Yawmia.setLoading(btn, true);
+    (async function () {
+      try {
+        var body = {};
+        // Optionally capture GPS for check-out
+        if (navigator.geolocation) {
+          try {
+            var pos = await new Promise(function (resolve, reject) {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+            });
+            body.lat = pos.coords.latitude;
+            body.lng = pos.coords.longitude;
+          } catch (_) {
+            // GPS optional for check-out — continue without
+          }
+        }
+        var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkout', body);
+        if (res.data.ok) {
+          btn.textContent = 'تم الانصراف ✓';
+          btn.disabled = true;
+          btn.classList.remove('btn-checkout');
+          if (res.data.attendance && res.data.attendance.hoursWorked != null) {
+            alert('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
+          }
+        } else {
+          alert(res.data.error || 'خطأ في تسجيل الانصراف');
+        }
+      } catch (err) {
+        alert('خطأ في الاتصال');
+      } finally {
+        Yawmia.setLoading(btn, false);
+      }
+    })();
   }
 
   // ── Rating Modal ──────────────────────────────────────────
