@@ -13,7 +13,7 @@ let tmpDir;
 
 before(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), 'yawmia-phase16-'));
-  const dirs = ['users', 'sessions', 'jobs', 'applications', 'otp', 'notifications', 'ratings', 'payments', 'reports', 'verifications', 'attendance'];
+  const dirs = ['users', 'sessions', 'jobs', 'applications', 'otp', 'notifications', 'ratings', 'payments', 'reports', 'verifications', 'attendance', 'audit'];
   for (const d of dirs) {
     await mkdir(join(tmpDir, d), { recursive: true });
   }
@@ -84,9 +84,9 @@ async function setupInProgressJob() {
 
 describe('Phase 16 — Config', () => {
 
-  it('P16-01: Config has 31 sections', () => {
+  it('P16-01: Config has 33 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 31, `expected 31 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 33, `expected 33 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P16-02: ATTENDANCE section has correct fields', () => {
@@ -117,8 +117,8 @@ describe('Phase 16 — Config', () => {
     }, TypeError, 'should not allow mutation');
   });
 
-  it('P16-05: DATABASE has 11 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 11);
+  it('P16-05: DATABASE has 12 dirs', () => {
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 12);
     assert.ok(config.DATABASE.dirs.attendance);
   });
 
@@ -353,18 +353,18 @@ describe('Phase 16 — Version & Routes', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.19.0');
+    assert.strictEqual(pkg.version, '0.20.0');
   });
 
-  it('P16-36: PWA cacheName v0.19.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
+  it('P16-36: PWA cacheName v0.20.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.20.0');
   });
 
-  it('P16-37: Router has 58 routes', async () => {
+  it('P16-37: Router has 61 routes', async () => {
     const routerPath = resolve('server/router.js');
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 59, `expected 59 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 61, `expected 61 routes, got ${routeMatches.length}`);
   });
 });

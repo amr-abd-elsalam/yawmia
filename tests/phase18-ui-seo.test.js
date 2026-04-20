@@ -37,18 +37,18 @@ describe('Phase 18 — Config & Version', () => {
   it('P18-01: package.json version is 0.18.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.19.0');
+    assert.strictEqual(pkg.version, '0.20.0');
   });
 
-  it('P18-02: PWA cacheName is yawmia-v0.18.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
+  it('P18-02: PWA cacheName is yawmia-v0.20.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.20.0');
   });
 
-  it('P18-03: Router has 59 routes (unchanged)', async () => {
+  it('P18-03: Router has 61 routes', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 59, `expected 59 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 61, `expected 61 routes, got ${routeMatches.length}`);
   });
 });
 

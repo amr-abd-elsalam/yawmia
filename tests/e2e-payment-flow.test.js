@@ -154,6 +154,8 @@ describe('E2E Payment Flow', () => {
   });
 
   it('PAY-08: Audit log records payment completion', async () => {
+    // Wait for fire-and-forget audit log write
+    await new Promise(r => setTimeout(r, 200));
     const res = await api('GET', '/api/admin/audit-log?action=payment_completed', null, { 'X-Admin-Token': 'e2e-payment-admin-token' });
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.actions.some(a => a.targetId === paymentId));

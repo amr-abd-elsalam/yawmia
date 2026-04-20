@@ -13,7 +13,7 @@ let tmpDir;
 
 before(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), 'yawmia-ph8-test-'));
-  const dirs = ['users', 'sessions', 'jobs', 'applications', 'otp', 'notifications', 'ratings'];
+  const dirs = ['users', 'sessions', 'jobs', 'applications', 'otp', 'notifications', 'ratings', 'audit'];
   for (const d of dirs) {
     await mkdir(join(tmpDir, d), { recursive: true });
   }
@@ -488,7 +488,7 @@ describe('Config Section (Phase 8)', () => {
 
   it('PH8-23: config has 31 sections (was 24)', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 31, `expected 31 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 33, `expected 33 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('PH8-24: CLEANUP section has notificationTtlDays', () => {

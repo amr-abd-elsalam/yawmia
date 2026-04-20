@@ -38,23 +38,23 @@ describe('Phase 19 — Config & Version', () => {
   it('P19-01: package.json version is 0.19.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.19.0');
+    assert.strictEqual(pkg.version, '0.20.0');
   });
 
   it('P19-02: PWA cacheName is yawmia-v0.19.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.20.0');
   });
 
   it('P19-03: Router has 59 routes (unchanged)', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 59, `expected 59 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 61, `expected 61 routes, got ${routeMatches.length}`);
   });
 
-  it('P19-04: Config still has 31 sections', () => {
+  it('P19-04: Config still has 33 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 31, `expected 31 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 33, `expected 33 config sections, got ${keys.length}`);
   });
 });
 
@@ -140,7 +140,7 @@ describe('Phase 19 — Service Worker', () => {
 
   it('P19-17: sw.js CACHE_NAME is yawmia-v0.19.0', async () => {
     const content = await readFrontend('sw.js');
-    assert.ok(content.includes("'yawmia-v0.19.0'"), 'cache name should be yawmia-v0.19.0');
+    assert.ok(content.includes("'yawmia-v0.20.0'"), 'cache name should be yawmia-v0.20.0');
   });
 });
 
