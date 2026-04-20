@@ -40,6 +40,40 @@ export async function createPayment(jobId, employerId, options = {}) {
     return { ok: false, error: 'سجل دفع موجود بالفعل لهذه الفرصة', code: 'PAYMENT_EXISTS' };
   }
 
+  // ── Attendance-based amount adjustment (non-blocking) ──
+  let attendanceBreakdown = null;
+  let adjustedTotalCost = job.totalCost;
+  let adjustedPlatformFee = job.platformFee;
+
+  try {
+    const { getJobSummary } = await import('./attendance.js');
+    const summary = await getJobSummary(jobId);
+
+    if (summary && summary.totalRecords > 0) {
+      const expectedWorkerDays = job.workersAccepted * job.durationDays;
+      const actualWorkerDays = summary.checkedInCount; // includes checked_in + checked_out + confirmed
+      const noShowDays = summary.noShowCount;
+
+      if (expectedWorkerDays > 0) {
+        const attendanceRate = Math.min(actualWorkerDays / expectedWorkerDays, 1);
+        attendanceBreakdown = {
+          expectedWorkerDays,
+          actualWorkerDays,
+          noShowDays,
+          attendanceRate: Math.round(attendanceRate * 100) / 100,
+        };
+
+        if (attendanceRate < 1) {
+          adjustedTotalCost = Math.round(job.totalCost * attendanceRate);
+          adjustedPlatformFee = Math.round(adjustedTotalCost * (config.FINANCIALS.platformFeePercent / 100));
+        }
+      }
+    }
+  } catch (err) {
+    // Non-blocking: if attendance unavailable, use full calculation
+    logger.warn('Attendance data unavailable for payment', { jobId, error: err.message });
+  }
+
   // Validate payment method
   const method = options.method || config.PAYMENTS.defaultMethod;
   if (!config.PAYMENTS.methods.includes(method)) {
@@ -49,8 +83,8 @@ export async function createPayment(jobId, employerId, options = {}) {
   const id = 'pay_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
-  const amount = job.totalCost;
-  const platformFee = job.platformFee;
+  const amount = adjustedTotalCost;
+  const platformFee = adjustedPlatformFee;
   const workerPayout = amount - platformFee;
 
   const payment = {
@@ -72,6 +106,7 @@ export async function createPayment(jobId, employerId, options = {}) {
     disputeReason: null,
     disputedAt: null,
     notes: options.notes || null,
+    attendanceBreakdown,
   };
 
   // Save payment file

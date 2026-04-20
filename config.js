@@ -419,7 +419,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.16.0',
+    cacheName: 'yawmia-v0.17.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -445,8 +445,9 @@ const config = {
   TRUST: {
     enabled: true,
     weights: {
-      ratingAvg: 0.4,
-      completionRate: 0.3,
+      ratingAvg: 0.3,
+      completionRate: 0.2,
+      attendanceRate: 0.2,
       reportScore: 0.2,
       accountAge: 0.1,
     },

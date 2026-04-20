@@ -28,12 +28,35 @@ import { cleanExpired as cleanExpiredSessions } from './server/services/sessions
 import { enforceExpiredJobs } from './server/services/jobs.js';
 import { cleanExpiredOtps } from './server/services/auth.js';
 import { cleanOldNotifications } from './server/services/notifications.js';
+import { autoDetectNoShows } from './server/services/attendance.js';
 
 const PORT = parseInt(process.env.PORT || '3002', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Startup Index Integrity Check (lightweight — warning only) ──
+try {
+  const { readJSON: readJSONCheck } = await import('./server/services/database.js');
+  const { join: joinPath } = await import('node:path');
+  const dataPath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+  const criticalIndexes = [
+    { name: 'phone-index', path: config.DATABASE.indexFiles.phoneIndex },
+    { name: 'jobs-index', path: config.DATABASE.indexFiles.jobsIndex },
+  ];
+
+  for (const idx of criticalIndexes) {
+    const fullPath = joinPath(dataPath, idx.path);
+    const data = await readJSONCheck(fullPath);
+    if (!data) {
+      logger.warn(`⚠️ Critical index missing: ${idx.name} (${idx.path}). Run: node scripts/repair-indexes.js`);
+    }
+  }
+} catch (err) {
+  logger.warn('Startup index check error', { error: err.message });
+}
 
 // ── Create Router ─────────────────────────────────────────────
 const router = createRouter();
@@ -98,6 +121,8 @@ try {
   if (expiredOtps > 0) logger.info(`Startup: cleaned ${expiredOtps} expired OTPs`);
   const oldNotifs = await cleanOldNotifications();
   if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
+  const autoNoShows = await autoDetectNoShows();
+  if (autoNoShows > 0) logger.info(`Startup: detected ${autoNoShows} auto no-shows`);
 } catch (err) {
   logger.warn('Startup cleanup error', { error: err.message });
 }
@@ -110,6 +135,7 @@ const cleanupTimer = setInterval(async () => {
     await enforceExpiredJobs();
     await cleanExpiredOtps();
     await cleanOldNotifications();
+    await autoDetectNoShows();
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
   }

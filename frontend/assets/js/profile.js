@@ -59,6 +59,7 @@
         if (user.role === 'worker') {
           Yawmia.show('myApplicationsSection');
           loadMyApplications();
+          loadAttendanceHistory();
         } else if (user.role === 'employer') {
           Yawmia.show('myJobsSection');
           loadMyJobs();
@@ -624,6 +625,117 @@
       reader.onerror = function() { reject(new Error('فشل قراءة الملف')); };
       reader.readAsDataURL(file);
     });
+  }
+
+  // ── Attendance History (Worker) ───────────────────────────
+  async function loadAttendanceHistory() {
+    var section = Yawmia.$id('attendanceHistorySection');
+    var summaryArea = Yawmia.$id('attendanceSummaryArea');
+    var listArea = Yawmia.$id('attendanceHistoryList');
+    if (!section || !listArea) return;
+
+    Yawmia.show('attendanceHistorySection');
+
+    try {
+      // Get accepted applications (last 10)
+      var appsRes = await Yawmia.api('GET', '/api/applications/mine');
+      if (!appsRes.data.ok || !appsRes.data.applications) {
+        listArea.innerHTML = '<p class="empty-state">لا يوجد سجل حضور بعد</p>';
+        return;
+      }
+
+      var acceptedApps = appsRes.data.applications
+        .filter(function (a) { return a.status === 'accepted'; })
+        .slice(0, 10);
+
+      if (acceptedApps.length === 0) {
+        listArea.innerHTML = '<p class="empty-state">لا يوجد سجل حضور بعد</p>';
+        return;
+      }
+
+      var allRecords = [];
+      var totalRecords = 0;
+      var attendedRecords = 0;
+
+      for (var i = 0; i < acceptedApps.length; i++) {
+        var app = acceptedApps[i];
+        try {
+          var attRes = await Yawmia.api('GET', '/api/jobs/' + app.jobId + '/attendance');
+          if (attRes.data.ok && attRes.data.records) {
+            var myRecords = attRes.data.records.filter(function (r) { return r.workerId === user.id; });
+            for (var j = 0; j < myRecords.length; j++) {
+              myRecords[j]._jobTitle = app.job ? app.job.title : 'فرصة';
+              allRecords.push(myRecords[j]);
+              totalRecords++;
+              if (myRecords[j].status === 'checked_in' || myRecords[j].status === 'checked_out' || myRecords[j].status === 'confirmed') {
+                attendedRecords++;
+              }
+            }
+          }
+        } catch (e) {
+          // Skip failed fetch
+        }
+      }
+
+      // Render summary
+      if (summaryArea && totalRecords > 0) {
+        var rate = Math.round((attendedRecords / totalRecords) * 100);
+        summaryArea.innerHTML =
+          '<div class="attendance-summary">' +
+            '<div class="attendance-summary__rate">' + rate + '%</div>' +
+            '<div class="attendance-summary__label">نسبة الحضور</div>' +
+            '<div class="attendance-summary__detail">' + attendedRecords + ' حضور من ' + totalRecords + ' سجل</div>' +
+          '</div>';
+      }
+
+      // Render records
+      if (allRecords.length === 0) {
+        listArea.innerHTML = '<p class="empty-state">لا يوجد سجل حضور بعد</p>';
+        return;
+      }
+
+      // Sort newest first
+      allRecords.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+      listArea.innerHTML = '';
+      var statusLabels = {
+        pending: 'في الانتظار',
+        checked_in: 'حاضر ✓',
+        checked_out: 'انصرف',
+        confirmed: 'مؤكد ✓✓',
+        no_show: 'غائب ✗'
+      };
+      var statusClasses = {
+        pending: 'badge--filled',
+        checked_in: 'badge--completed',
+        checked_out: 'badge--expired',
+        confirmed: 'badge--completed',
+        no_show: 'badge--cancelled'
+      };
+
+      allRecords.forEach(function (record) {
+        var card = document.createElement('div');
+        card.className = 'app-card';
+        var statusLabel = statusLabels[record.status] || record.status;
+        var statusClass = statusClasses[record.status] || '';
+        card.innerHTML =
+          '<div class="app-card__info">' +
+            '<div class="app-card__title">' + escapeHtml(record._jobTitle || '') + '</div>' +
+            '<div class="app-card__meta">' +
+              '📅 ' + (record.date || '') +
+              (record.hoursWorked ? ' • ⏱ ' + record.hoursWorked + ' ساعة' : '') +
+              (record.employerConfirmed ? ' • ✓ مؤكد من صاحب العمل' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="app-card__actions">' +
+            '<span class="badge badge--status ' + statusClass + '">' + statusLabel + '</span>' +
+          '</div>';
+        listArea.appendChild(card);
+      });
+
+    } catch (err) {
+      listArea.innerHTML = '<p class="empty-state">خطأ في تحميل سجل الحضور</p>';
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────

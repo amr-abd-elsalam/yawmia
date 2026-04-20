@@ -17,6 +17,7 @@ function sendJSON(res, statusCode, data) {
  */
 const ERROR_STATUS = {
   ATTENDANCE_DISABLED: 503,
+  MANUAL_CHECKIN_DISABLED: 503,
   JOB_NOT_FOUND: 404,
   JOB_NOT_IN_PROGRESS: 400,
   NOT_ACCEPTED_WORKER: 403,
@@ -118,6 +119,32 @@ export async function handleReportNoShow(req, res) {
     }
 
     const result = await reportNoShow(jobId, body.workerId, employerId);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, attendance: result.attendance });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/manual-checkin — Employer manual check-in for worker
+ */
+export async function handleEmployerCheckIn(req, res) {
+  try {
+    const jobId = req.params.id;
+    const employerId = req.user.id;
+    const body = req.body || {};
+
+    if (!body.workerId || typeof body.workerId !== 'string') {
+      return sendJSON(res, 400, { error: 'معرّف العامل مطلوب', code: 'WORKER_ID_REQUIRED' });
+    }
+
+    const { employerCheckIn } = await import('../services/attendance.js');
+    const result = await employerCheckIn(jobId, body.workerId, employerId);
 
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });

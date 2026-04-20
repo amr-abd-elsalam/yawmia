@@ -145,7 +145,7 @@ describe('Phase 11 — PWA Files', () => {
   it('P11-13: sw.js exists and contains cache name', async () => {
     const swPath = resolve('frontend/sw.js');
     const content = await readFile(swPath, 'utf-8');
-    assert.ok(content.includes('yawmia-v0.16.0'), 'sw.js should contain cache name yawmia-v0.16.0');
+    assert.ok(content.includes('yawmia-v0.17.0'), 'sw.js should contain cache name yawmia-v0.17.0');
   });
 
   it('P11-14: sw.js contains STATIC_ASSETS array', async () => {
@@ -234,10 +234,10 @@ describe('Phase 11 — Version', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.16.0');
+    assert.strictEqual(pkg.version, '0.17.0');
   });
 
   it('P11-20: Config cacheName matches version', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.16.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.17.0');
   });
 });

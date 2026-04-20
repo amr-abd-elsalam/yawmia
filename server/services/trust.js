@@ -12,6 +12,14 @@ import config from '../../config.js';
 export function calculateTrustScore(data) {
   const weights = config.TRUST.weights;
 
+  // Attendance component (0–1)
+  let attendanceScore;
+  if (!data.totalAttendanceRecords || data.totalAttendanceRecords === 0) {
+    attendanceScore = 0.5; // neutral
+  } else {
+    attendanceScore = (data.attendedDays || 0) / data.totalAttendanceRecords;
+  }
+
   // Rating component (0–1)
   let ratingScore;
   if (data.ratingCount === 0) {
@@ -44,6 +52,7 @@ export function calculateTrustScore(data) {
   let score = 
     weights.ratingAvg * ratingScore +
     weights.completionRate * completionScore +
+    (weights.attendanceRate || 0) * attendanceScore +
     weights.reportScore * reportScore +
     weights.accountAge * accountAgeScore;
 
@@ -58,6 +67,7 @@ export function calculateTrustScore(data) {
     components: {
       ratingScore: Math.round(ratingScore * 100) / 100,
       completionScore: Math.round(completionScore * 100) / 100,
+      attendanceScore: Math.round(attendanceScore * 100) / 100,
       reportScore: Math.round(reportScore * 100) / 100,
       accountAgeScore: Math.round(accountAgeScore * 100) / 100,
     },
@@ -110,6 +120,23 @@ export async function getUserTrustScore(userId) {
     }
   }
 
+  // Gather attendance data (workers only)
+  let totalAttendanceRecords = 0;
+  let attendedDays = 0;
+
+  if (user.role === 'worker') {
+    try {
+      const { listByWorker: listAttendanceByWorker } = await import('./attendance.js');
+      const attendanceRecords = await listAttendanceByWorker(userId);
+      totalAttendanceRecords = attendanceRecords.length;
+      attendedDays = attendanceRecords.filter(r =>
+        r.status === 'checked_in' || r.status === 'checked_out' || r.status === 'confirmed'
+      ).length;
+    } catch (_) {
+      // Non-blocking — attendance data unavailable
+    }
+  }
+
   // Gather report data
   const { listByTarget } = await import('./reports.js');
   const reports = await listByTarget(userId);
@@ -129,5 +156,7 @@ export async function getUserTrustScore(userId) {
     confirmedReports,
     totalReports,
     accountAgeDays,
+    totalAttendanceRecords,
+    attendedDays,
   });
 }

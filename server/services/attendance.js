@@ -10,6 +10,7 @@ import {
 } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
 
 const JOB_ATTENDANCE_INDEX = config.DATABASE.indexFiles.jobAttendanceIndex;
 const WORKER_ATTENDANCE_INDEX = config.DATABASE.indexFiles.workerAttendanceIndex;
@@ -70,7 +71,8 @@ async function findTodayRecord(jobId, workerId, todayMidnight) {
  * @param {{ lat?: number, lng?: number }} coords
  * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
  */
-export async function checkIn(jobId, workerId, coords = {}) {
+export function checkIn(jobId, workerId, coords = {}) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
   // 1. Feature flag
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
     return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
@@ -184,6 +186,7 @@ export async function checkIn(jobId, workerId, coords = {}) {
   });
 
   return { ok: true, attendance };
+  }); // end withLock
 }
 
 /**
@@ -293,7 +296,8 @@ export async function confirmAttendance(attendanceId, employerId) {
  * @param {string} reportedBy — employer ID
  * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
  */
-export async function reportNoShow(jobId, workerId, reportedBy) {
+export function reportNoShow(jobId, workerId, reportedBy) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
   // 1. Feature flag
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
     return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
@@ -371,6 +375,117 @@ export async function reportNoShow(jobId, workerId, reportedBy) {
   });
 
   return { ok: true, attendance };
+  }); // end withLock
+}
+
+/**
+ * Employer manual check-in (no GPS required)
+ * @param {string} jobId
+ * @param {string} workerId
+ * @param {string} employerId
+ * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
+ */
+export function employerCheckIn(jobId, workerId, employerId) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
+    // 1. Feature flag
+    if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
+      return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
+    }
+
+    // 2. allowEmployerOverride check
+    if (!config.ATTENDANCE.allowEmployerOverride) {
+      return { ok: false, error: 'تسجيل الحضور اليدوي غير مفعّل', code: 'MANUAL_CHECKIN_DISABLED' };
+    }
+
+    // 3. Job exists & in_progress
+    const { findById: findJob } = await import('./jobs.js');
+    const job = await findJob(jobId);
+    if (!job) {
+      return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+    }
+    if (job.status !== 'in_progress') {
+      return { ok: false, error: 'الفرصة مش في حالة تنفيذ', code: 'JOB_NOT_IN_PROGRESS' };
+    }
+
+    // 4. Employer owns the job
+    if (job.employerId !== employerId) {
+      return { ok: false, error: 'مش مسموحلك تسجل حضور في هذه الفرصة', code: 'NOT_JOB_OWNER' };
+    }
+
+    // 5. Worker is accepted on this job
+    const { listByJob: listApps } = await import('./applications.js');
+    const apps = await listApps(jobId);
+    const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+    if (!accepted) {
+      return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
+    }
+
+    // 6. No duplicate today
+    const { getEgyptMidnight } = await import('./geo.js');
+    const todayMidnight = getEgyptMidnight();
+    const existing = await findTodayRecord(jobId, workerId, todayMidnight);
+
+    if (existing) {
+      if (existing.status === 'no_show') {
+        // Override no_show → checked_in (confirmed by employer)
+        const now = new Date();
+        existing.status = 'confirmed';
+        existing.checkInAt = now.toISOString();
+        existing.employerConfirmed = true;
+        existing.employerConfirmedAt = now.toISOString();
+        await atomicWrite(getRecordPath('attendance', existing.id), existing);
+
+        eventBus.emit('attendance:checkin', {
+          attendanceId: existing.id,
+          jobId,
+          workerId,
+          employerId,
+        });
+
+        return { ok: true, attendance: existing };
+      }
+      return { ok: false, error: 'العامل سجّل حضوره النهارده بالفعل', code: 'ALREADY_CHECKED_IN' };
+    }
+
+    // ── Create attendance record (pre-confirmed, no GPS) ──
+    const now = new Date();
+    const id = generateId();
+    const attendance = {
+      id,
+      jobId,
+      workerId,
+      employerId: job.employerId,
+      date: getEgyptDateString(now),
+      status: 'confirmed',
+      checkInAt: now.toISOString(),
+      checkInLat: null,
+      checkInLng: null,
+      checkOutAt: null,
+      checkOutLat: null,
+      checkOutLng: null,
+      hoursWorked: null,
+      employerConfirmed: true,
+      employerConfirmedAt: now.toISOString(),
+      noShowReportedBy: null,
+      noShowReportedAt: null,
+      createdAt: now.toISOString(),
+    };
+
+    await atomicWrite(getRecordPath('attendance', id), attendance);
+
+    // Update indexes
+    await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
+    await addToSetIndex(WORKER_ATTENDANCE_INDEX, workerId, id);
+
+    eventBus.emit('attendance:checkin', {
+      attendanceId: id,
+      jobId,
+      workerId,
+      employerId,
+    });
+
+    return { ok: true, attendance };
+  }); // end withLock
 }
 
 /**
@@ -493,4 +608,63 @@ export async function getJobSummary(jobId) {
  */
 export async function findById(attendanceId) {
   return await readJSON(getRecordPath('attendance', attendanceId));
+}
+
+/**
+ * Auto-detect no-shows for in_progress jobs
+ * Checks accepted workers who haven't checked in after autoNoShowAfterHours
+ * Runs at startup + periodic cleanup (fire-and-forget)
+ * @returns {Promise<number>} count of auto-detected no-shows
+ */
+export async function autoDetectNoShows() {
+  // 1. Feature flag checks
+  if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) return 0;
+  if (!config.ATTENDANCE.autoNoShowAfterHours || config.ATTENDANCE.autoNoShowAfterHours <= 0) return 0;
+
+  // 2. Calculate cutoff time
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
+  const cutoffMs = config.ATTENDANCE.autoNoShowAfterHours * 60 * 60 * 1000;
+  const cutoffTime = new Date(todayMidnight.getTime() + cutoffMs);
+  const now = new Date();
+
+  // 3. Too early — don't mark anyone yet
+  if (now < cutoffTime) return 0;
+
+  // 4. Get all in_progress jobs
+  const { listAll: listAllJobs } = await import('./jobs.js');
+  const allJobs = await listAllJobs();
+  const inProgressJobs = allJobs.filter(j => j.status === 'in_progress');
+
+  if (inProgressJobs.length === 0) return 0;
+
+  // 5. For each in_progress job, check accepted workers
+  const { listByJob: listAppsByJob } = await import('./applications.js');
+  let count = 0;
+
+  for (const job of inProgressJobs) {
+    try {
+      const apps = await listAppsByJob(job.id);
+      const acceptedWorkers = apps.filter(a => a.status === 'accepted');
+
+      for (const app of acceptedWorkers) {
+        // Check if worker has any record today
+        const existing = await findTodayRecord(job.id, app.workerId, todayMidnight);
+        if (!existing) {
+          // No record → auto no-show (use 'system' as reporter)
+          const result = await reportNoShow(job.id, app.workerId, 'system');
+          if (result.ok) count++;
+        }
+      }
+    } catch (err) {
+      // Fire-and-forget per job — continue to next
+      logger.warn('Auto no-show detection error for job', { jobId: job.id, error: err.message });
+    }
+  }
+
+  if (count > 0) {
+    logger.info(`Auto no-show: detected ${count} absences`);
+  }
+
+  return count;
 }

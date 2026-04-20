@@ -7,6 +7,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { findById as findJobById, incrementAccepted } from './jobs.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const WORKER_APPS_INDEX = config.DATABASE.indexFiles.workerAppsIndex;
 const JOB_APPS_INDEX = config.DATABASE.indexFiles.jobAppsIndex;
@@ -14,7 +15,8 @@ const JOB_APPS_INDEX = config.DATABASE.indexFiles.jobAppsIndex;
 /**
  * Apply to a job
  */
-export async function apply(jobId, workerId) {
+export function apply(jobId, workerId) {
+  return withLock(`apply:${jobId}:${workerId}`, async () => {
   // Check job exists and is open
   const job = await findJobById(jobId);
   if (!job) {
@@ -52,12 +54,14 @@ export async function apply(jobId, workerId) {
   eventBus.emit('application:submitted', { applicationId: id, jobId, workerId, employerId: job.employerId });
 
   return { ok: true, application };
+  }); // end withLock
 }
 
 /**
  * Accept a worker application
  */
-export async function accept(applicationId, employerId) {
+export function accept(applicationId, employerId) {
+  return withLock(`accept:${applicationId}`, async () => {
   const application = await findById(applicationId);
   if (!application) {
     return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
@@ -107,6 +111,7 @@ export async function accept(applicationId, employerId) {
   }
 
   return { ok: true, application };
+  }); // end withLock
 }
 
 /**
