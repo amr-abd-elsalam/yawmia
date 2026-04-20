@@ -24,6 +24,20 @@ export function staticMiddleware(req, res, next) {
   });
 }
 
+async function serve404(res, next) {
+  try {
+    const notFoundPath = resolve(join(STATIC_ROOT, '404.html'));
+    const content = await readFile(notFoundPath);
+    res.writeHead(404, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': content.length,
+    });
+    res.end(content);
+  } catch {
+    next();
+  }
+}
+
 async function serveStatic(req, res, next) {
   let urlPath = req.pathname;
 
@@ -52,10 +66,10 @@ async function serveStatic(req, res, next) {
   try {
     const fileStat = await stat(filePath);
     if (!fileStat.isFile()) {
-      return next();
+      return serve404(res, next);
     }
   } catch {
-    return next();
+    return serve404(res, next);
   }
 
   // Determine Content-Type

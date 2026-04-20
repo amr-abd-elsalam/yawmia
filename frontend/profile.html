@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — ملفي الشخصي</title>
+  <meta name="description" content="ملفك الشخصي على منصة يوميّة — تعديل البيانات والتقييمات وطلبات التوظيف.">
+  <meta property="og:title" content="يوميّة — ملفي الشخصي">
+  <meta property="og:description" content="ملفك الشخصي على منصة يوميّة — تعديل البيانات والتقييمات وطلبات التوظيف.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/profile.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/profile.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -12,26 +20,29 @@
   <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <a href="/dashboard.html" class="header__brand-link">
-            <h1 class="header__brand">🏗️ يوميّة</h1>
-          </a>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/dashboard.html" class="header__brand-link">
+              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <span class="header__user" id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
+            <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+          </div>
         </div>
-        <div class="header__left">
-          <span class="header__user" id="headerUserName"></span>
-          <span class="badge" id="headerUserRole"></span>
-          <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
-          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Profile Card -->
@@ -54,7 +65,7 @@
 
           <div class="form-group">
             <label class="form-label" for="editName">الاسم</label>
-            <input type="text" id="editName" class="form-input" placeholder="اسمك بالكامل">
+            <input type="text" id="editName" class="form-input" placeholder="اسمك بالكامل" aria-required="true" aria-describedby="editProfileMsg">
           </div>
 
           <div class="form-group">
@@ -131,6 +142,8 @@
   </div>
 
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>

@@ -216,22 +216,13 @@
     Yawmia.show('profileError');
   }
 
+  // ── Helpers — delegated to YawmiaUtils ────────────────────
   function starsDisplay(rating) {
-    var full = Math.floor(rating);
-    var half = (rating - full) >= 0.5 ? 1 : 0;
-    var empty = 5 - full - half;
-    var str = '';
-    for (var i = 0; i < full; i++) str += '★';
-    if (half) str += '☆';
-    for (var j = 0; j < empty; j++) str += '☆';
-    return str;
+    return YawmiaUtils.starsDisplay(rating);
   }
 
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return YawmiaUtils.escapeHtml(str);
   }
 
 })();

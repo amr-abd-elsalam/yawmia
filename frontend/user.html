@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — بروفايل</title>
+  <meta name="description" content="بروفايل المستخدم على منصة يوميّة — التقييمات ونقاط الثقة.">
+  <meta property="og:title" content="يوميّة — بروفايل المستخدم">
+  <meta property="og:description" content="بروفايل المستخدم على منصة يوميّة — التقييمات ونقاط الثقة.">
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="https://yowmia.com/user.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/user.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -12,23 +20,26 @@
   <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <a href="/" class="header__brand-link">
-            <h1 class="header__brand">🏗️ يوميّة</h1>
-          </a>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/" class="header__brand-link">
+              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
+          </div>
         </div>
-        <div class="header__left">
-          <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Loading State -->
@@ -94,6 +105,8 @@
   </div>
 
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/user.js"></script>
 </body>
 </html>

@@ -349,15 +349,15 @@ describe('Phase 16 — GPS Verification Config', () => {
 
 describe('Phase 16 — Version & Routes', () => {
 
-  it('P16-35: package.json version 0.16.0', async () => {
+  it('P16-35: package.json version 0.18.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.17.0');
+    assert.strictEqual(pkg.version, '0.18.0');
   });
 
-  it('P16-36: PWA cacheName v0.16.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.17.0');
+  it('P16-36: PWA cacheName v0.18.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.18.0');
   });
 
   it('P16-37: Router has 58 routes', async () => {

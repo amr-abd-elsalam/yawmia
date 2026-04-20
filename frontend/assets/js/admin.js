@@ -9,10 +9,7 @@ var AdminApp = (function () {
   var API = '';
 
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
   }
 
   async function api(path) {

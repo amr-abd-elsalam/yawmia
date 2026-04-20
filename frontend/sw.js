@@ -3,7 +3,7 @@
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.17.0';
+const CACHE_NAME = 'yawmia-v0.18.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -19,9 +19,15 @@ const STATIC_ASSETS = [
   '/assets/js/admin.js',
   '/user.html',
   '/assets/js/user.js',
+  '/assets/js/icons.js',
+  '/assets/js/utils.js',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',
   '/assets/fonts/Cairo-Bold.woff2',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/404.html',
+  '/offline.html',
 ];
 
 // ── Install: pre-cache static assets ──
@@ -81,7 +87,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         // Offline fallback for HTML pages
         if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
+          return caches.match('/offline.html');
         }
         return new Response('Offline', { status: 503 });
       })

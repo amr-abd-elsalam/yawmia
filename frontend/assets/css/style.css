@@ -1482,6 +1482,336 @@ select.form-input {
   filter: brightness(0.9);
 }
 
+/* ═══ Skip Link (Accessibility) ═══ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  z-index: 9999;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ═══ Spacing Scale ═══ */
+:root {
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+}
+
+/* ═══ Icon Utilities ═══ */
+.icon-inline {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.icon-sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-md svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-lg svg {
+  width: 28px;
+  height: 28px;
+}
+
+.star-icon {
+  color: var(--color-warning);
+}
+
+.star-filled {
+  color: var(--color-warning);
+}
+
+.star-empty {
+  color: var(--color-border);
+}
+
+/* ═══ Admin Styles (migrated from admin.html inline) ═══ */
+.admin-container {
+  max-width: 1000px;
+  margin-inline: auto;
+  padding: 2rem 1rem;
+}
+
+.admin-header {
+  text-align: center;
+  margin-block-end: 2rem;
+}
+
+.admin-header h1 {
+  font-size: 1.8rem;
+  color: var(--color-primary);
+  margin-block-end: 0.3rem;
+}
+
+.admin-header p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.token-form {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  margin-block-end: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.token-form input {
+  max-width: 320px;
+  flex: 1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-block-end: 2rem;
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.stat-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.stat-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-block-start: 0.3rem;
+}
+
+.admin-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-block-end: 1.5rem;
+}
+
+.admin-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 1rem;
+}
+
+.admin-section__header h2 {
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.6rem 0.75rem;
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+}
+
+.admin-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: var(--color-surface-2);
+}
+
+.admin-table td {
+  color: var(--color-text);
+}
+
+.health-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-block-end: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.health-row:last-child {
+  border-block-end: none;
+}
+
+.health-row__label {
+  color: var(--color-text-muted);
+}
+
+.health-row__value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.badge-worker {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-success);
+  color: #fff;
+}
+
+.badge-employer {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-warning);
+  color: #000;
+}
+
+.badge-admin {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-error);
+  color: #fff;
+}
+
+.badge-open {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.badge-filled {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-success);
+  color: #fff;
+}
+
+.badge-in_progress {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-warning);
+  color: #000;
+}
+
+.badge-completed {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.badge-cancelled {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-error);
+  color: #fff;
+}
+
+.badge-expired {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.error-msg {
+  text-align: center;
+  color: var(--color-error);
+  font-size: 0.9rem;
+  margin-block-end: 1rem;
+  display: none;
+}
+
+.refresh-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition);
+}
+
+.refresh-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.phone-cell {
+  direction: ltr;
+  display: inline-block;
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-table {
+    font-size: 0.75rem;
+  }
+  .admin-table th,
+  .admin-table td {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
 /* ═══ Attendance Styles ═══ */
 .btn-checkin {
   background: #059669;

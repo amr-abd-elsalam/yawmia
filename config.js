@@ -313,6 +313,8 @@ const config = {
       '.woff2': 'font/woff2',
       '.ttf':  'font/ttf',
       '.webp': 'image/webp',
+      '.xml':  'application/xml; charset=utf-8',
+      '.txt':  'text/plain; charset=utf-8',
     },
   },
 
@@ -419,7 +421,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.17.0',
+    cacheName: 'yawmia-v0.18.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',

@@ -321,15 +321,15 @@
         '</div>' +
       '</div>' +
       '<div class="job-card__meta">' +
-        '<span>📍 ' + escapeHtml(job.governorate) + '</span>' +
-        '<span>📅 ' + job.startDate + '</span>' +
-        '<span>⏱ ' + job.durationDays + ' يوم</span>' +
+        '<span>' + YawmiaIcons.get('mapPin', {size:14}) + ' ' + escapeHtml(job.governorate) + '</span>' +
+        '<span>' + YawmiaIcons.get('calendar', {size:14}) + ' ' + job.startDate + '</span>' +
+        '<span>' + YawmiaIcons.get('clock', {size:14}) + ' ' + job.durationDays + ' يوم</span>' +
       '</div>' +
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
       (employerProfileLink ? '<div style="margin-block-end:0.5rem;">' + employerProfileLink + '</div>' : '') +
       paymentBadgeHtml +
       '<div class="job-card__footer">' +
-        '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
+        '<span class="job-card__workers">' + YawmiaIcons.get('workers', {size:14}) + ' ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
         completedLabel +
         footerButtons +
       '</div>';
@@ -694,12 +694,9 @@
     });
   }
 
-  // ── Escape HTML ───────────────────────────────────────────
+  // ── Escape HTML — delegated to YawmiaUtils ───────────────
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return YawmiaUtils.escapeHtml(str);
   }
 
   // ── Attendance Handlers ───────────────────────────────────

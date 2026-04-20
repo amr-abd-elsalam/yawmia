@@ -174,6 +174,7 @@ var Yawmia = (function () {
 
   // ── Role Labels ───────────────────────────────────────────
   function roleLabel(role) {
+    if (typeof YawmiaUtils !== 'undefined') return YawmiaUtils.roleLabel(role);
     if (role === 'worker') return 'عامل';
     if (role === 'employer') return 'صاحب عمل';
     if (role === 'admin') return 'أدمن';
@@ -186,6 +187,13 @@ var Yawmia = (function () {
       navigator.serviceWorker.register('/sw.js')
         .then(function (reg) { console.log('SW registered:', reg.scope); })
         .catch(function (err) { console.log('SW registration failed:', err); });
+    });
+  }
+
+  // ── Render data-icon elements after DOM ready ─────────────
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
     });
   }
 

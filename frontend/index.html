@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — شغلك قريب منّك</title>
   <meta name="description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <meta property="og:title" content="يوميّة — شغلك قريب منّك">
+  <meta property="og:description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -14,17 +21,20 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <h1 class="header__brand">🏗️ يوميّة</h1>
-        <p class="header__tagline">شغلك قريب منّك</p>
-      </div>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+          <p class="header__tagline">شغلك قريب منّك</p>
+        </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Auth Section -->
@@ -45,6 +55,8 @@
                 autocomplete="tel"
                 dir="ltr"
                 inputmode="numeric"
+                aria-required="true"
+                aria-describedby="phoneError"
               >
               <span class="form-hint">مثال: 01012345678</span>
             </div>
@@ -86,6 +98,8 @@
                 autocomplete="one-time-code"
                 dir="ltr"
                 inputmode="numeric"
+                aria-required="true"
+                aria-describedby="otpError"
               >
             </div>
 
@@ -112,6 +126,8 @@
                 id="nameInput"
                 class="form-input"
                 placeholder="اسمك بالكامل"
+                aria-required="true"
+                aria-describedby="profileError"
               >
             </div>
 
@@ -146,7 +162,25 @@
     </footer>
   </div>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "يوميّة",
+    "alternateName": "Yowmia",
+    "url": "https://yowmia.com",
+    "logo": "https://yowmia.com/assets/img/icon-512.png",
+    "description": "منصة توظيف العمالة اليومية في مصر",
+    "foundingDate": "2026",
+    "areaServed": {
+      "@type": "Country",
+      "name": "مصر"
+    }
+  }
+  </script>
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/auth.js"></script>
 </body>
 </html>

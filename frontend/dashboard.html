@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — لوحة التحكم</title>
+  <meta name="description" content="لوحة التحكم الرئيسية لمنصة يوميّة — تصفح فرص العمل اليومية أو انشر فرصة جديدة.">
+  <meta property="og:title" content="يوميّة — لوحة التحكم">
+  <meta property="og:description" content="لوحة التحكم الرئيسية لمنصة يوميّة — تصفح فرص العمل اليومية أو انشر فرصة جديدة.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/dashboard.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/dashboard.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -13,28 +21,31 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <h1 class="header__brand">🏗️ يوميّة</h1>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+          </div>
+          <div class="header__left">
+            <button class="notification-bell" id="notificationBell" title="الإشعارات" aria-label="الإشعارات">
+              <span data-icon="bell" data-icon-size="20"></span>
+              <span class="notification-bell__badge hidden" id="notificationCount" aria-live="polite">0</span>
+            </button>
+            <span class="header__user" id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <a href="/profile.html" class="btn btn--ghost btn--sm">ملفي</a>
+            <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+          </div>
         </div>
-        <div class="header__left">
-          <button class="notification-bell" id="notificationBell" title="الإشعارات">
-            🔔
-            <span class="notification-bell__badge hidden" id="notificationCount">0</span>
-          </button>
-          <span class="header__user" id="headerUserName"></span>
-          <span class="badge" id="headerUserRole"></span>
-          <a href="/profile.html" class="btn btn--ghost btn--sm">ملفي</a>
-          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Welcome Card -->
@@ -49,7 +60,7 @@
 
           <div class="form-group">
             <label class="form-label" for="jobTitle">عنوان الفرصة</label>
-            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح">
+            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح" aria-required="true" aria-describedby="createJobError">
           </div>
 
           <div class="form-group">
@@ -139,7 +150,7 @@
     </main>
 
     <!-- Notifications Panel -->
-    <div class="notification-panel hidden" id="notificationPanel">
+    <div class="notification-panel hidden" id="notificationPanel" role="dialog" aria-label="الإشعارات">
       <div class="notification-panel__header">
         <h3>الإشعارات</h3>
         <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
@@ -157,7 +168,26 @@
     </footer>
   </div>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "يوميّة",
+    "alternateName": "Yowmia",
+    "url": "https://yowmia.com",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "منصة توظيف العمالة اليومية في مصر",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EGP"
+    }
+  }
+  </script>
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
