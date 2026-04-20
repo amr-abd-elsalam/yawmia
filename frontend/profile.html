@@ -12,6 +12,7 @@
   <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
   <meta property="og:locale" content="ar_EG">
   <link rel="canonical" href="https://yowmia.com/profile.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -139,11 +140,32 @@
         <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
       </div>
     </footer>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="home" data-icon-size="20"></span>
+        <span class="bottom-nav__label">الرئيسية</span>
+      </a>
+      <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
+        <span data-icon="search" data-icon-size="20"></span>
+        <span class="bottom-nav__label">بحث</span>
+      </a>
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="bell" data-icon-size="20"></span>
+        <span class="bottom-nav__label">إشعارات</span>
+      </a>
+      <a href="/profile.html" class="bottom-nav__item bottom-nav__item--active">
+        <span data-icon="user" data-icon-size="20"></span>
+        <span class="bottom-nav__label">ملفي</span>
+      </a>
+    </nav>
   </div>
 
   <script src="./assets/js/app.js"></script>
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>

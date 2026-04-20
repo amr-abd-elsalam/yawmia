@@ -174,7 +174,7 @@
         if (btnDetect) {
           btnDetect.addEventListener('click', function () {
             if (!navigator.geolocation) {
-              alert('المتصفح لا يدعم تحديد الموقع');
+              YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
               return;
             }
             btnDetect.textContent = '⏳ جاري تحديد الموقع...';
@@ -189,7 +189,7 @@
                 btnDetect.disabled = false;
               },
               function (err) {
-                alert('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
+                YawmiaToast.error('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
                 btnDetect.textContent = '📍 استخدم موقعي الحالي';
                 btnDetect.disabled = false;
               },
@@ -333,10 +333,10 @@
           if (res.data.ok) {
             loadMyApplications(); // Reload list
           } else {
-            alert(res.data.error || 'خطأ في سحب الطلب');
+            YawmiaToast.error(res.data.error || 'خطأ في سحب الطلب');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(withdrawBtn, false);
         }

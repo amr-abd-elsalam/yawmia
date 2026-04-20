@@ -154,6 +154,83 @@ var YawmiaUtils = (function () {
     return role || '';
   }
 
+  /**
+   * Generate skeleton loading HTML for job cards.
+   * @param {number} count — number of skeleton cards to generate
+   * @returns {string} HTML string
+   */
+  function skeletonJobCards(count) {
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      html +=
+        '<div class="skeleton-card" style="margin-block-end: 1rem;">' +
+          '<div class="skeleton skeleton-text--lg" style="width: 55%;"></div>' +
+          '<div class="skeleton skeleton-text" style="width: 80%; margin-block-start: 0.75rem;"></div>' +
+          '<div class="skeleton skeleton-text--sm" style="width: 35%; margin-block-start: 0.5rem;"></div>' +
+        '</div>';
+    }
+    return html;
+  }
+
+  /**
+   * Trap focus within a container element.
+   * Handles Tab cycling and Escape key to close.
+   * @param {HTMLElement} container — the element to trap focus within
+   * @param {Function} [onEscape] — callback when Escape is pressed
+   * @returns {Function} cleanup — call to release the trap
+   */
+  function trapFocus(container, onEscape) {
+    if (!container) return function () {};
+
+    var focusableSelector = 'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])';
+
+    function getFocusable() {
+      return container.querySelectorAll(focusableSelector);
+    }
+
+    function handleKeydown(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (typeof onEscape === 'function') {
+          onEscape();
+        }
+        return;
+      }
+
+      if (e.key !== 'Tab' && e.keyCode !== 9) return;
+
+      var focusable = getFocusable();
+      if (focusable.length === 0) return;
+
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    container.addEventListener('keydown', handleKeydown);
+
+    // Focus first focusable element
+    var initial = getFocusable();
+    if (initial.length > 0) {
+      initial[0].focus();
+    }
+
+    // Return cleanup function
+    return function () {
+      container.removeEventListener('keydown', handleKeydown);
+    };
+  }
+
   return {
     escapeHtml: escapeHtml,
     starsDisplay: starsDisplay,
@@ -163,5 +240,7 @@ var YawmiaUtils = (function () {
     formatDateTime: formatDateTime,
     statusLabel: statusLabel,
     roleLabel: roleLabel,
+    skeletonJobCards: skeletonJobCards,
+    trapFocus: trapFocus,
   };
 })();

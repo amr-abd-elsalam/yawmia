@@ -7,6 +7,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
 
 const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
 
@@ -17,6 +18,7 @@ const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
  * @param {{ method?: string, notes?: string }} options
  */
 export async function createPayment(jobId, employerId, options = {}) {
+  return withLock(`payment:${jobId}`, async () => {
   if (!config.PAYMENTS.enabled) {
     return { ok: false, error: 'نظام المدفوعات غير مفعّل', code: 'PAYMENTS_DISABLED' };
   }
@@ -127,6 +129,7 @@ export async function createPayment(jobId, employerId, options = {}) {
   });
 
   return { ok: true, payment };
+  }); // end withLock
 }
 
 /**

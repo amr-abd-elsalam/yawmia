@@ -95,6 +95,14 @@
       countBadge.classList.remove('hidden');
       countBadge.classList.add('notification-badge-live');
     }
+    // Sync bottom nav badge
+    var bottomBadge = Yawmia.$id('bottomNavBadge');
+    if (bottomBadge && e.detail && e.detail.unreadCount > 0) {
+      bottomBadge.textContent = e.detail.unreadCount;
+      bottomBadge.classList.remove('hidden');
+    } else if (bottomBadge) {
+      bottomBadge.classList.add('hidden');
+    }
   });
 
   // ── Notifications ─────────────────────────────────────────
@@ -102,11 +110,18 @@
 
   var notificationBell = Yawmia.$id('notificationBell');
   var notificationPanel = Yawmia.$id('notificationPanel');
+  var releaseNotifTrap = null;
   if (notificationBell && notificationPanel) {
     notificationBell.addEventListener('click', function () {
       notificationPanel.classList.toggle('hidden');
       if (!notificationPanel.classList.contains('hidden')) {
         loadNotifications();
+        releaseNotifTrap = YawmiaUtils.trapFocus(notificationPanel, function () {
+          notificationPanel.classList.add('hidden');
+          if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
+        });
+      } else {
+        if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
       }
     });
   }
@@ -132,6 +147,16 @@
             countBadge.classList.remove('hidden');
           } else {
             countBadge.classList.add('hidden');
+          }
+          // Sync bottom nav badge
+          var bottomBadge2 = Yawmia.$id('bottomNavBadge');
+          if (bottomBadge2) {
+            if (res.data.unread > 0) {
+              bottomBadge2.textContent = res.data.unread;
+              bottomBadge2.classList.remove('hidden');
+            } else {
+              bottomBadge2.classList.add('hidden');
+            }
           }
         }
         var ntfList = Yawmia.$id('notificationList');
@@ -195,7 +220,7 @@
   async function loadJobs() {
     var jobsList = Yawmia.$id('jobsList');
     if (!jobsList) return;
-    jobsList.innerHTML = '<p class="empty-state">جاري تحميل الفرص...</p>';
+    jobsList.innerHTML = YawmiaUtils.skeletonJobCards(3);
 
     var gov = Yawmia.$id('filterGov') ? Yawmia.$id('filterGov').value : '';
     var cat = Yawmia.$id('filterCat') ? Yawmia.$id('filterCat').value : '';
@@ -257,6 +282,7 @@
   function createJobCard(job) {
     var card = document.createElement('div');
     card.className = 'job-card';
+    card.setAttribute('data-status', job.status);
 
     var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
 
@@ -346,10 +372,10 @@
             applyBtn.disabled = true;
             applyBtn.classList.remove('btn--primary');
           } else {
-            alert(res.data.error || 'خطأ في التقديم');
+            YawmiaToast.error(res.data.error || 'خطأ في التقديم');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(applyBtn, false);
         }
@@ -366,10 +392,10 @@
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في بدء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في بدء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(startBtn, false);
         }
@@ -386,10 +412,10 @@
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في إنهاء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في إنهاء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(completeBtn, false);
         }
@@ -407,10 +433,10 @@
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في إلغاء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في إلغاء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(cancelBtn, false);
         }
@@ -428,10 +454,10 @@
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في تجديد الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في تجديد الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(renewBtn, false);
         }
@@ -496,10 +522,10 @@
                   if (cRes.data.ok) {
                     loadJobs();
                   } else {
-                    alert(cRes.data.error || 'خطأ في تأكيد الدفع');
+                    YawmiaToast.error(cRes.data.error || 'خطأ في تأكيد الدفع');
                   }
                 } catch (e) {
-                  alert('خطأ في الاتصال');
+                  YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(confirmBtn, false);
                 }
@@ -512,7 +538,7 @@
               disputeBtn.addEventListener('click', async function () {
                 var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
                 if (!reason || reason.trim().length < 5) {
-                  alert('سبب النزاع لازم يكون 5 حروف على الأقل');
+                  YawmiaToast.warning('سبب النزاع لازم يكون 5 حروف على الأقل');
                   return;
                 }
                 Yawmia.setLoading(disputeBtn, true);
@@ -521,10 +547,10 @@
                   if (dRes.data.ok) {
                     loadJobs();
                   } else {
-                    alert(dRes.data.error || 'خطأ في فتح النزاع');
+                    YawmiaToast.error(dRes.data.error || 'خطأ في فتح النزاع');
                   }
                 } catch (e) {
-                  alert('خطأ في الاتصال');
+                  YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(disputeBtn, false);
                 }
@@ -702,7 +728,7 @@
   // ── Attendance Handlers ───────────────────────────────────
   function handleCheckInClick(jobId, btn) {
     if (!navigator.geolocation) {
-      alert('المتصفح لا يدعم تحديد الموقع');
+      YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
       return;
     }
     Yawmia.setLoading(btn, true);
@@ -718,17 +744,17 @@
             btn.disabled = true;
             btn.classList.remove('btn-checkin');
           } else {
-            alert(res.data.error || 'خطأ في تسجيل الحضور');
+            YawmiaToast.error(res.data.error || 'خطأ في تسجيل الحضور');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(btn, false);
         }
       },
       function (err) {
         Yawmia.setLoading(btn, false);
-        alert('فشل تحديد الموقع — تأكد من تفعيل GPS');
+        YawmiaToast.error('فشل تحديد الموقع — تأكد من تفعيل GPS');
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -752,18 +778,18 @@
           }
         }
         var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkout', body);
-        if (res.data.ok) {
+          if (res.data.ok) {
           btn.textContent = 'تم الانصراف ✓';
           btn.disabled = true;
           btn.classList.remove('btn-checkout');
           if (res.data.attendance && res.data.attendance.hoursWorked != null) {
-            alert('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
+            YawmiaToast.success('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
           }
         } else {
-          alert(res.data.error || 'خطأ في تسجيل الانصراف');
+          YawmiaToast.error(res.data.error || 'خطأ في تسجيل الانصراف');
         }
       } catch (err) {
-        alert('خطأ في الاتصال');
+        YawmiaToast.error('خطأ في الاتصال');
       } finally {
         Yawmia.setLoading(btn, false);
       }
@@ -813,6 +839,11 @@
 
     document.body.appendChild(modal);
 
+    // Focus trap
+    var releaseTrap = YawmiaUtils.trapFocus(modal.querySelector('.rating-modal__card'), function () {
+      modal.remove();
+    });
+
     // Star selection
     var starBtns = modal.querySelectorAll('.star-btn');
     starBtns.forEach(function (btn) {
@@ -831,12 +862,16 @@
 
     // Cancel
     modal.querySelector('#btnCancelRating').addEventListener('click', function () {
+      releaseTrap();
       modal.remove();
     });
 
     // Click outside card to close
     modal.addEventListener('click', function (e) {
-      if (e.target === modal) modal.remove();
+      if (e.target === modal) {
+        releaseTrap();
+        modal.remove();
+      }
     });
 
     // Submit
@@ -870,8 +905,9 @@
 
         var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/rate', body);
         if (res.data.ok) {
+          releaseTrap();
           modal.remove();
-          alert('تم إرسال التقييم بنجاح ⭐');
+          YawmiaToast.success('تم إرسال التقييم بنجاح ⭐');
           loadJobs();
         } else {
           errorEl.textContent = res.data.error || 'خطأ في إرسال التقييم';

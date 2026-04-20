@@ -154,6 +154,7 @@ body {
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .card__title {
@@ -317,8 +318,8 @@ select.form-input {
   text-decoration: none;
 }
 
-.btn:active {
-  transform: scale(0.98);
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .btn:disabled {
@@ -1870,3 +1871,279 @@ select.form-input {
 .attendance-status-checked_out { color: #fbbf24; }
 .attendance-status-confirmed { color: #60a5fa; }
 .attendance-status-no_show { color: #f87171; }
+
+/* ═══ Phase 19 — Toast Notification Styles ═══ */
+.toast-container {
+  position: fixed;
+  bottom: calc(var(--space-4, 1rem) + var(--safe-bottom, 0px));
+  inset-inline-start: var(--space-4, 1rem);
+  inset-inline-end: var(--space-4, 1rem);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  z-index: var(--z-toast, 400);
+  pointer-events: none;
+  max-width: 480px;
+  margin-inline: auto;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  width: 100%;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  background: var(--elevation-2, #242836);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity var(--duration-normal, 0.2s) var(--ease-default, ease),
+              transform var(--duration-normal, 0.2s) var(--ease-default, ease);
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast--exit {
+  opacity: 0;
+  transform: translateY(1rem);
+}
+
+.toast__icon-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toast__message {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1, 0.25rem);
+  border-radius: var(--radius-xs, 4px);
+  flex-shrink: 0;
+  transition: color var(--duration-fast, 0.15s);
+}
+
+.toast__close:hover {
+  color: var(--color-text);
+}
+
+.toast--success {
+  border-inline-start: 3px solid var(--color-success);
+}
+.toast--success .toast__icon-wrap { color: var(--color-success); }
+
+.toast--error {
+  border-inline-start: 3px solid var(--color-error);
+}
+.toast--error .toast__icon-wrap { color: var(--color-error); }
+
+.toast--warning {
+  border-inline-start: 3px solid var(--color-warning);
+}
+.toast--warning .toast__icon-wrap { color: var(--color-warning); }
+
+.toast--info {
+  border-inline-start: 3px solid var(--color-primary);
+}
+.toast--info .toast__icon-wrap { color: var(--color-primary); }
+
+/* ═══ Phase 19 — Skeleton Loading Styles ═══ */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+.skeleton {
+  background: var(--elevation-2, #242836);
+  border-radius: var(--radius-sm, 6px);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 0.9rem;
+  margin-block-end: 0.5rem;
+  border-radius: var(--radius-xs, 4px);
+}
+
+.skeleton-text--lg {
+  height: 1.2rem;
+  width: 60%;
+}
+
+.skeleton-text--sm {
+  height: 0.7rem;
+  width: 40%;
+}
+
+.skeleton-circle {
+  border-radius: var(--radius-full, 9999px);
+}
+
+.skeleton-card {
+  background: var(--elevation-2, #242836);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ═══ Phase 19 — Bottom Navigation ═══ */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--elevation-1, #1a1d27);
+    border-block-start: 1px solid var(--color-border);
+    z-index: var(--z-sticky, 100);
+    padding-block-end: var(--safe-bottom, 0px);
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0.5rem 0.75rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-family: inherit;
+    transition: color var(--duration-fast, 0.15s);
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .bottom-nav__item--active {
+    color: var(--color-primary);
+  }
+
+  .bottom-nav__item:hover {
+    color: var(--color-text);
+  }
+
+  .bottom-nav__label {
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
+  .bottom-nav__badge {
+    position: absolute;
+    top: 2px;
+    inset-inline-end: 4px;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: var(--radius-full, 9999px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+  }
+
+  /* Add padding to main content so bottom nav doesn't overlap */
+  .main {
+    padding-block-end: 4rem;
+  }
+
+  /* Adjust toast container when bottom nav is visible */
+  .toast-container {
+    bottom: calc(4rem + var(--safe-bottom, 0px));
+  }
+}
+
+/* ═══ Phase 19 — Enhanced Card Animations ═══ */
+.card {
+  transition: box-shadow var(--duration-normal, 0.2s) var(--ease-default, ease),
+              transform var(--duration-normal, 0.2s) var(--ease-default, ease),
+              border-color var(--duration-normal, 0.2s) var(--ease-default, ease);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: var(--duration-fast, 0.15s);
+}
+
+.job-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.job-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--color-border);
+  transition: background var(--duration-normal, 0.2s);
+}
+
+.job-card[data-status="open"]::before { background: var(--color-primary); }
+.job-card[data-status="filled"]::before { background: var(--color-warning); }
+.job-card[data-status="in_progress"]::before { background: #3b82f6; }
+.job-card[data-status="completed"]::before { background: var(--color-success); }
+.job-card[data-status="expired"]::before { background: var(--color-text-muted); }
+.job-card[data-status="cancelled"]::before { background: var(--color-error); }
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jobs-list .job-card {
+  animation: slide-up-fade var(--duration-slow, 0.3s) var(--ease-out, ease-out) both;
+}
+
+.jobs-list .job-card:nth-child(1) { animation-delay: 0ms; }
+.jobs-list .job-card:nth-child(2) { animation-delay: 50ms; }
+.jobs-list .job-card:nth-child(3) { animation-delay: 100ms; }
+.jobs-list .job-card:nth-child(4) { animation-delay: 150ms; }
+.jobs-list .job-card:nth-child(5) { animation-delay: 200ms; }
