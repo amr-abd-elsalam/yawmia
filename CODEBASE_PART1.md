@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.19.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-20T13:08:53.881Z
+# يوميّة (Yawmia) v0.20.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-20T22:48:07.404Z
 > Files in this part: 6
 
 ## Files
@@ -311,6 +311,7 @@ const config = {
       reports: 'reports',
       verifications: 'verifications',
       attendance: 'attendance',
+      audit: 'audit',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -485,7 +486,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.19.0',
+    cacheName: 'yawmia-v0.20.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -602,7 +603,62 @@ const config = {
     maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 32. بيئة التشغيل (ENV)
+  // ═══════════════════════════════════════════════════════════
+  ENV: {
+    current: process.env.NODE_ENV || 'development',
+    isProduction: (process.env.NODE_ENV || 'development') === 'production',
+    isDevelopment: (process.env.NODE_ENV || 'development') === 'development',
+    isStaging: (process.env.NODE_ENV || 'development') === 'staging',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 33. سجل العمليات الإدارية (AUDIT)
+  // ═══════════════════════════════════════════════════════════
+  AUDIT: {
+    enabled: true,
+    maxEntriesPerPage: 50,
+    retentionDays: 365,                      // مدة الاحتفاظ بالسجلات (يوم)
+  },
+
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Environment Overrides — applied BEFORE deepFreeze
+// ═══════════════════════════════════════════════════════════════
+const _ENV = process.env.NODE_ENV || 'development';
+const envOverrides = {
+  production: {
+    SECURITY: {
+      allowedOrigins: [process.env.ALLOWED_ORIGIN || 'https://yowmia.com'],
+      sanitizeInput: true,
+      headers: config.SECURITY.headers,
+    },
+    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500 },
+    STATIC: {
+      root: config.STATIC.root,
+      maxAge: 604800,
+      indexFile: config.STATIC.indexFile,
+      mimeTypes: config.STATIC.mimeTypes,
+    },
+  },
+  staging: {
+    SECURITY: {
+      allowedOrigins: [process.env.ALLOWED_ORIGIN || 'https://staging.yowmia.com'],
+      sanitizeInput: true,
+      headers: config.SECURITY.headers,
+    },
+  },
+};
+
+if (envOverrides[_ENV]) {
+  for (const [key, overrides] of Object.entries(envOverrides[_ENV])) {
+    if (config[key] && typeof config[key] === 'object' && typeof overrides === 'object') {
+      config[key] = { ...config[key], ...overrides };
+    }
+  }
+}
 
 export default deepFreeze(config);
 ```
@@ -614,7 +670,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -792,14 +848,33 @@ server.listen(PORT, HOST, () => {
 });
 
 // ── Graceful shutdown ─────────────────────────────────────────
-process.on('SIGINT', () => {
-  logger.info('🔴 Shutting down...');
-  server.close(() => process.exit(0));
-});
+async function gracefulShutdown(signal) {
+  logger.info(`🔴 ${signal} received — shutting down gracefully...`);
 
-process.on('SIGTERM', () => {
-  server.close(() => process.exit(0));
-});
+  // 1. Stop accepting new connections
+  server.close(() => {});
+
+  // 2. Broadcast SSE shutdown event (fire-and-forget)
+  try {
+    const { broadcast } = await import('./server/services/sseManager.js');
+    broadcast('shutdown', { reason: 'server_restart', message: 'السيرفر هيعيد التشغيل — هتتوصل تاني تلقائياً' });
+  } catch (_) { /* SSE broadcast failure is non-fatal */ }
+
+  // 3. Wait 1 second for pending writes to complete
+  setTimeout(() => {
+    logger.info('🔴 Shutdown complete');
+    process.exit(0);
+  }, 1000);
+
+  // 4. Force exit after 10 seconds as safety net
+  setTimeout(() => {
+    logger.warn('🔴 Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // ── Export for testing ────────────────────────────────────────
 export { server, PORT, HOST };
@@ -829,6 +904,7 @@ import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
+import { listActions } from './services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -845,12 +921,13 @@ const routes = [
   // ── Public Routes ──
   {
     method: 'GET', path: '/api/health', middlewares: [],
-    handler: (req, res) => {
+    handler: async (req, res) => {
       const mem = process.memoryUsage();
-      sendJSON(res, 200, {
+      const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.19.0',
+        version: '0.20.0',
+        environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {
@@ -859,7 +936,23 @@ const routes = [
           rssMB: +(mem.rss / 1048576).toFixed(1),
         },
         node: process.version,
-      });
+      };
+      // SSE connection stats (non-blocking)
+      try {
+        const { getStats } = await import('./services/sseManager.js');
+        const sseStats = getStats();
+        response.connections = { sse: sseStats.totalConnections, sseUsers: sseStats.totalUsers };
+      } catch (_) {
+        response.connections = { sse: 0, sseUsers: 0 };
+      }
+      // Active lock count (non-blocking)
+      try {
+        const { getLockCount } = await import('./services/resourceLock.js');
+        response.locks = { active: getLockCount() };
+      } catch (_) {
+        response.locks = { active: 0 };
+      }
+      sendJSON(res, 200, response);
     },
   },
   {
@@ -879,6 +972,18 @@ const routes = [
           paymentMethods: config.FINANCIALS.paymentMethods,
         },
       });
+    },
+  },
+  {
+    method: 'GET', path: '/api/docs', middlewares: [],
+    handler: (req, res) => {
+      const docs = routes.map(r => ({
+        method: r.method,
+        path: r.path,
+        auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
+        admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
+      }));
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.20.0' });
     },
   },
 
@@ -958,6 +1063,24 @@ const routes = [
   { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireAdmin], handler: handleAdminReviewReport },
   { method: 'GET', path: '/api/admin/verifications', middlewares: [requireAdmin], handler: handleAdminListVerifications },
   { method: 'PUT', path: '/api/admin/verifications/:id', middlewares: [requireAdmin], handler: handleAdminReviewVerification },
+
+  // ── Admin Audit Log ──
+  {
+    method: 'GET', path: '/api/admin/audit-log', middlewares: [requireAdmin],
+    handler: async (req, res) => {
+      try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const filters = {};
+        if (req.query.action) filters.action = req.query.action;
+        if (req.query.targetType) filters.targetType = req.query.targetType;
+        const result = await listActions({ page, limit, ...filters });
+        sendJSON(res, 200, { ok: true, ...result });
+      } catch (err) {
+        sendJSON(res, 500, { error: 'خطأ في جلب سجل العمليات', code: 'AUDIT_LOG_ERROR' });
+      }
+    },
+  },
 ];
 
 /**

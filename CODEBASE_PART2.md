@@ -1,32 +1,33 @@
-# يوميّة (Yawmia) v0.19.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-20T13:08:53.884Z
-> Files in this part: 24
+# يوميّة (Yawmia) v0.20.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-20T22:48:07.408Z
+> Files in this part: 25
 
 ## Files
 1. `server/services/applications.js`
 2. `server/services/attendance.js`
-3. `server/services/auth.js`
-4. `server/services/channels/sms.js`
-5. `server/services/channels/whatsapp.js`
-6. `server/services/database.js`
-7. `server/services/eventBus.js`
-8. `server/services/geo.js`
-9. `server/services/jobs.js`
-10. `server/services/logger.js`
-11. `server/services/messaging.js`
-12. `server/services/notificationMessenger.js`
-13. `server/services/notifications.js`
-14. `server/services/payments.js`
-15. `server/services/ratings.js`
-16. `server/services/reports.js`
-17. `server/services/resourceLock.js`
-18. `server/services/sanitizer.js`
-19. `server/services/sessions.js`
-20. `server/services/sseManager.js`
-21. `server/services/trust.js`
-22. `server/services/users.js`
-23. `server/services/validators.js`
-24. `server/services/verification.js`
+3. `server/services/auditLog.js`
+4. `server/services/auth.js`
+5. `server/services/channels/sms.js`
+6. `server/services/channels/whatsapp.js`
+7. `server/services/database.js`
+8. `server/services/eventBus.js`
+9. `server/services/geo.js`
+10. `server/services/jobs.js`
+11. `server/services/logger.js`
+12. `server/services/messaging.js`
+13. `server/services/notificationMessenger.js`
+14. `server/services/notifications.js`
+15. `server/services/payments.js`
+16. `server/services/ratings.js`
+17. `server/services/reports.js`
+18. `server/services/resourceLock.js`
+19. `server/services/sanitizer.js`
+20. `server/services/sessions.js`
+21. `server/services/sseManager.js`
+22. `server/services/trust.js`
+23. `server/services/users.js`
+24. `server/services/validators.js`
+25. `server/services/verification.js`
 
 ---
 
@@ -1007,6 +1008,97 @@ export async function autoDetectNoShows() {
 
 ---
 
+## `server/services/auditLog.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/auditLog.js — Admin Audit Trail (Append-Only)
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
+
+/**
+ * Log an admin action (append-only — no update or delete)
+ * Fire-and-forget safe — callers should use .catch(() => {})
+ *
+ * @param {{ adminId: string, action: string, targetType: string, targetId: string, details?: object, ip?: string }} params
+ * @returns {Promise<object>} the created audit record
+ */
+export async function logAction({ adminId, action, targetType, targetId, details, ip }) {
+  if (!config.AUDIT || !config.AUDIT.enabled) return null;
+
+  const id = 'aud_' + crypto.randomBytes(6).toString('hex');
+  const now = new Date().toISOString();
+
+  const record = {
+    id,
+    adminId: adminId || 'unknown',
+    action: action || 'unknown',
+    targetType: targetType || 'unknown',
+    targetId: targetId || 'unknown',
+    details: details || null,
+    ip: ip || 'unknown',
+    createdAt: now,
+  };
+
+  const recordPath = getRecordPath('audit', id);
+  await atomicWrite(recordPath, record);
+
+  return record;
+}
+
+/**
+ * List audit log entries (paginated, filterable, newest first)
+ *
+ * @param {{ page?: number, limit?: number, action?: string, targetType?: string }} options
+ * @returns {Promise<{ actions: object[], page: number, limit: number, total: number, totalPages: number }>}
+ */
+export async function listActions({ page = 1, limit = 50, action, targetType } = {}) {
+  const maxPerPage = config.AUDIT ? config.AUDIT.maxEntriesPerPage : 50;
+  const safeLimit = Math.min(Math.max(1, limit), maxPerPage);
+  const safePage = Math.max(1, page);
+
+  const auditDir = getCollectionPath('audit');
+  let records = await listJSON(auditDir);
+
+  // Filter to audit records only (prefix check)
+  records = records.filter(r => r.id && r.id.startsWith('aud_'));
+
+  // Apply filters
+  if (action) {
+    records = records.filter(r => r.action === action);
+  }
+  if (targetType) {
+    records = records.filter(r => r.targetType === targetType);
+  }
+
+  // Sort newest first
+  records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = records.length;
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+  const clampedPage = Math.min(safePage, totalPages);
+  const offset = (clampedPage - 1) * safeLimit;
+  const actions = records.slice(offset, offset + safeLimit);
+
+  return { actions, page: clampedPage, limit: safeLimit, total, totalPages };
+}
+
+/**
+ * Count total audit log entries
+ * @returns {Promise<number>}
+ */
+export async function countActions() {
+  const auditDir = getCollectionPath('audit');
+  const records = await listJSON(auditDir);
+  return records.filter(r => r.id && r.id.startsWith('aud_')).length;
+}
+```
+
+---
+
 ## `server/services/auth.js`
 
 ```javascript
@@ -1521,6 +1613,47 @@ export async function readJSON(filePath) {
     return JSON.parse(raw);
   } catch (err) {
     if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/**
+ * Safe Read JSON — attempts recovery from .tmp backup on corrupted JSON
+ * Use for critical paths (users, jobs, payments) where data loss is unacceptable.
+ * Falls back to readJSON behavior for ENOENT. Re-throws non-parse, non-ENOENT errors.
+ *
+ * @param {string} filePath
+ * @returns {Promise<object|null>}
+ */
+export async function safeReadJSON(filePath) {
+  try {
+    const raw = await readFile(filePath, ENCODING);
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    if (err instanceof SyntaxError) {
+      // Corrupted JSON — attempt recovery from .tmp backup
+      const tmpPath = filePath + '.tmp';
+      try {
+        const tmpRaw = await readFile(tmpPath, ENCODING);
+        const data = JSON.parse(tmpRaw);
+        // Restore from .tmp — overwrite corrupted file
+        await writeFile(filePath, tmpRaw, ENCODING);
+        // Log recovery (dynamic import to avoid circular dependency)
+        try {
+          const { logger } = await import('./logger.js');
+          logger.warn('Recovered corrupted JSON from .tmp', { filePath });
+        } catch (_) { /* logging failure is non-fatal */ }
+        return data;
+      } catch {
+        // .tmp also missing or corrupted — unrecoverable
+        try {
+          const { logger } = await import('./logger.js');
+          logger.error('Unrecoverable corrupted JSON', { filePath, error: err.message });
+        } catch (_) { /* logging failure is non-fatal */ }
+        return null;
+      }
+    }
     throw err;
   }
 }
@@ -2481,6 +2614,13 @@ const configLevel = LEVELS[config.LOGGING.level] ?? LEVELS.info;
 
 function formatMessage(level, msg, data) {
   const timestamp = new Date().toISOString();
+  // JSON output in production — parseable by log aggregation tools (ELK, CloudWatch, Datadog)
+  if (config.ENV && config.ENV.isProduction) {
+    const entry = { timestamp, level, msg };
+    if (data && Object.keys(data).length > 0) Object.assign(entry, data);
+    return JSON.stringify(entry);
+  }
+  // Development: human-readable format
   const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
   if (data && Object.keys(data).length > 0) {
     return `${prefix} ${msg} ${JSON.stringify(data)}`;

@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.19.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-20T13:08:53.891Z
+# يوميّة (Yawmia) v0.20.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-20T22:48:07.416Z
 > Files in this part: 18
 
 ## Files
@@ -35,6 +35,7 @@ import { countByRole, listAll as listAllUsers, banUser, unbanUser } from '../ser
 import { countByStatus as jobCounts, listAll as listAllJobs } from '../services/jobs.js';
 import { countByStatus as appCounts } from '../services/applications.js';
 import { getFinancialSummary, countByStatus as countPaymentsByStatus } from '../services/payments.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -150,6 +151,16 @@ export async function handleAdminUpdateUserStatus(req, res) {
     if (!user) {
       return sendJSON(res, 404, { error: 'المستخدم غير موجود أو لا يمكن تعديله', code: 'USER_NOT_FOUND' });
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: newStatus === 'banned' ? 'user_banned' : 'user_unbanned',
+      targetType: 'user',
+      targetId: userId,
+      details: { reason: body.reason || null },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, { ok: true, user });
   } catch (err) {
@@ -1226,6 +1237,7 @@ export async function handleMarkAllAsRead(req, res) {
 
 import { createPayment, confirmPayment, completePayment, disputePayment, findById, listByJob, getFinancialSummary } from '../services/payments.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -1384,6 +1396,16 @@ export async function handleAdminCompletePayment(req, res) {
       return sendJSON(res, status, { error: result.error, code: result.code });
     }
 
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'payment_completed',
+      targetType: 'payment',
+      targetId: paymentId,
+      details: { jobId: result.payment?.jobId },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
     return sendJSON(res, 200, { ok: true, payment: result.payment });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إنهاء الدفعة', code: 'COMPLETE_PAYMENT_ERROR' });
@@ -1498,6 +1520,7 @@ export async function handleUserRatingSummary(req, res) {
 import { createReport, listPending, listAll, reviewReport, findById } from '../services/reports.js';
 import { getUserTrustScore } from '../services/trust.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -1604,6 +1627,16 @@ export async function handleAdminReviewReport(req, res) {
       const statusCode = statusMap[result.code] || 400;
       return sendJSON(res, statusCode, { error: result.error, code: result.code });
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'report_reviewed',
+      targetType: 'report',
+      targetId: reportId,
+      details: { status, adminNotes },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, { ok: true, report: result.report });
   } catch (err) {
@@ -1753,6 +1786,7 @@ export async function handleNotificationStream(req, res) {
 
 import { submitVerification, reviewVerification, listByUser, listAll } from '../services/verification.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -1912,6 +1946,16 @@ export async function handleAdminReviewVerification(req, res) {
       const httpStatus = statusMap[result.code] || 400;
       return sendJSON(res, httpStatus, result);
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'verification_reviewed',
+      targetType: 'verification',
+      targetId: verificationId,
+      details: { status, adminNotes: sanitizedNotes },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, result);
   } catch (err) {
