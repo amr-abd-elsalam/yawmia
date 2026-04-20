@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.16.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-20T00:16:01.390Z
+> Auto-generated: 2026-04-20T00:32:11.446Z
 > Files in this part: 17
 
 ## Files
