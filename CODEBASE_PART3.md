@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.17.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-20T01:54:21.255Z
+# يوميّة (Yawmia) v0.18.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-20T11:03:29.565Z
 > Files in this part: 18
 
 ## Files
@@ -2329,6 +2329,20 @@ export function staticMiddleware(req, res, next) {
   });
 }
 
+async function serve404(res, next) {
+  try {
+    const notFoundPath = resolve(join(STATIC_ROOT, '404.html'));
+    const content = await readFile(notFoundPath);
+    res.writeHead(404, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': content.length,
+    });
+    res.end(content);
+  } catch {
+    next();
+  }
+}
+
 async function serveStatic(req, res, next) {
   let urlPath = req.pathname;
 
@@ -2357,10 +2371,10 @@ async function serveStatic(req, res, next) {
   try {
     const fileStat = await stat(filePath);
     if (!fileStat.isFile()) {
-      return next();
+      return serve404(res, next);
     }
   } catch {
-    return next();
+    return serve404(res, next);
   }
 
   // Determine Content-Type

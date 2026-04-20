@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.17.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-20T01:54:21.244Z
+# يوميّة (Yawmia) v0.18.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-20T11:03:29.555Z
 > Files in this part: 6
 
 ## Files
@@ -377,6 +377,8 @@ const config = {
       '.woff2': 'font/woff2',
       '.ttf':  'font/ttf',
       '.webp': 'image/webp',
+      '.xml':  'application/xml; charset=utf-8',
+      '.txt':  'text/plain; charset=utf-8',
     },
   },
 
@@ -483,7 +485,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.17.0',
+    cacheName: 'yawmia-v0.18.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -612,7 +614,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -848,7 +850,7 @@ const routes = [
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.17.0',
+        version: '0.18.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {

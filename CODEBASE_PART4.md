@@ -1,25 +1,66 @@
-# يوميّة (Yawmia) v0.17.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-20T01:54:21.260Z
-> Files in this part: 17
+# يوميّة (Yawmia) v0.18.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-20T11:03:29.570Z
+> Files in this part: 23
 
 ## Files
-1. `frontend/admin.html`
-2. `frontend/assets/css/style.css`
-3. `frontend/assets/js/admin.js`
-4. `frontend/assets/js/app.js`
-5. `frontend/assets/js/auth.js`
-6. `frontend/assets/js/jobs.js`
-7. `frontend/assets/js/profile.js`
-8. `frontend/assets/js/user.js`
-9. `frontend/dashboard.html`
-10. `frontend/index.html`
-11. `frontend/manifest.json`
-12. `frontend/profile.html`
-13. `frontend/sw.js`
-14. `frontend/user.html`
-15. `scripts/backup.js`
-16. `scripts/bundle-for-review.js`
-17. `scripts/repair-indexes.js`
+1. `frontend/404.html`
+2. `frontend/admin.html`
+3. `frontend/assets/css/style.css`
+4. `frontend/assets/js/admin.js`
+5. `frontend/assets/js/app.js`
+6. `frontend/assets/js/auth.js`
+7. `frontend/assets/js/icons.js`
+8. `frontend/assets/js/jobs.js`
+9. `frontend/assets/js/profile.js`
+10. `frontend/assets/js/user.js`
+11. `frontend/assets/js/utils.js`
+12. `frontend/dashboard.html`
+13. `frontend/index.html`
+14. `frontend/manifest.json`
+15. `frontend/offline.html`
+16. `frontend/profile.html`
+17. `frontend/robots.txt`
+18. `frontend/sitemap.xml`
+19. `frontend/sw.js`
+20. `frontend/user.html`
+21. `scripts/backup.js`
+22. `scripts/bundle-for-review.js`
+23. `scripts/repair-indexes.js`
+
+---
+
+## `frontend/404.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — الصفحة غير موجودة</title>
+  <meta name="description" content="الصفحة المطلوبة غير موجودة على منصة يوميّة.">
+  <meta name="theme-color" content="#2563eb">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif;background:#0f1117;color:#e4e6f0;min-height:100vh;display:flex;align-items:center;justify-content:center;direction:rtl;text-align:center;padding:2rem}
+    .container{max-width:480px}
+    .code{font-size:6rem;font-weight:700;color:#2563eb;line-height:1}
+    .title{font-size:1.5rem;margin-block:1rem;font-weight:600}
+    .desc{color:#8b8fa3;margin-block-end:2rem;font-size:0.95rem}
+    .link{display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:1rem;transition:background 0.2s}
+    .link:hover{background:#1d4fd8}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="code">404</div>
+    <h1 class="title">الصفحة غير موجودة</h1>
+    <p class="desc">الصفحة اللي بتدوّر عليها مش موجودة أو تم نقلها.</p>
+    <a href="/" class="link">الرجوع للصفحة الرئيسية</a>
+  </div>
+</body>
+</html>
+```
 
 ---
 
@@ -32,249 +73,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — لوحة تحكم الأدمن</title>
+  <meta name="description" content="لوحة تحكم الأدمن لمنصة يوميّة — إدارة المستخدمين والفرص والبلاغات.">
   <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
-  <style>
-    .admin-container {
-      max-width: 1000px;
-      margin-inline: auto;
-      padding: 2rem 1rem;
-    }
-    .admin-header {
-      text-align: center;
-      margin-block-end: 2rem;
-    }
-    .admin-header h1 {
-      font-size: 1.8rem;
-      color: var(--color-primary);
-      margin-block-end: 0.3rem;
-    }
-    .admin-header p {
-      color: var(--color-text-muted);
-      font-size: 0.9rem;
-    }
-    .token-form {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      align-items: center;
-      margin-block-end: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .token-form input {
-      max-width: 320px;
-      flex: 1;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-block-end: 2rem;
-    }
-    .stat-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: 1.25rem;
-      text-align: center;
-    }
-    .stat-card__value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--color-primary);
-      line-height: 1.2;
-    }
-    .stat-card__label {
-      color: var(--color-text-muted);
-      font-size: 0.85rem;
-      margin-block-start: 0.3rem;
-    }
-    .admin-section {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      margin-block-end: 1.5rem;
-    }
-    .admin-section__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-block-end: 1rem;
-    }
-    .admin-section__header h2 {
-      font-size: 1.15rem;
-      color: var(--color-text);
-    }
-    .admin-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    .admin-table th,
-    .admin-table td {
-      padding: 0.6rem 0.75rem;
-      border-block-end: 1px solid var(--color-border);
-      text-align: start;
-    }
-    .admin-table th {
-      color: var(--color-text-muted);
-      font-weight: 600;
-      font-size: 0.8rem;
-      background: var(--color-surface-2);
-    }
-    .admin-table td {
-      color: var(--color-text);
-    }
-    .health-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 0;
-      border-block-end: 1px solid var(--color-border);
-      font-size: 0.9rem;
-    }
-    .health-row:last-child {
-      border-block-end: none;
-    }
-    .health-row__label {
-      color: var(--color-text-muted);
-    }
-    .health-row__value {
-      color: var(--color-text);
-      font-weight: 600;
-    }
-    .badge-worker {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-success);
-      color: #fff;
-    }
-    .badge-employer {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-warning);
-      color: #000;
-    }
-    .badge-admin {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-error);
-      color: #fff;
-    }
-    .badge-open {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-primary);
-      color: #fff;
-    }
-    .badge-filled {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-success);
-      color: #fff;
-    }
-    .badge-in_progress {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-warning);
-      color: #000;
-    }
-    .badge-completed {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: #8b5cf6;
-      color: #fff;
-    }
-    .badge-cancelled {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-error);
-      color: #fff;
-    }
-    .badge-expired {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--color-text-muted);
-      color: #fff;
-    }
-    .error-msg {
-      text-align: center;
-      color: var(--color-error);
-      font-size: 0.9rem;
-      margin-block-end: 1rem;
-      display: none;
-    }
-    .refresh-btn {
-      padding: 0.3rem 0.6rem;
-      font-size: 0.8rem;
-      background: transparent;
-      color: var(--color-text-muted);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-family: inherit;
-      transition: background var(--transition);
-    }
-    .refresh-btn:hover {
-      background: var(--color-surface-2);
-      color: var(--color-text);
-    }
-    .phone-cell {
-      direction: ltr;
-      display: inline-block;
-    }
-    @media (max-width: 600px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .admin-table {
-        font-size: 0.75rem;
-      }
-      .admin-table th,
-      .admin-table td {
-        padding: 0.4rem 0.5rem;
-      }
-    }
-  </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="admin-container">
-    <div class="admin-header">
-      <h1>🛡️ لوحة تحكم يوميّة</h1>
-      <p>إدارة ومراقبة المنصة</p>
-    </div>
+    <nav aria-label="التنقل الرئيسي">
+      <div class="admin-header">
+        <h1><span data-icon="shieldCheck" data-icon-size="28"></span> لوحة تحكم يوميّة</h1>
+        <p>إدارة ومراقبة المنصة</p>
+      </div>
+    </nav>
+    <main id="main-content">
 
     <form class="token-form" id="tokenForm" onsubmit="return false;">
       <input type="password" class="form-input" id="adminTokenInput" placeholder="أدخل توكن الأدمن...">
@@ -367,9 +183,13 @@
         <div id="verifications-pagination"></div>
       </div>
     </div>
+    </main>
   </div>
 
+  <script src="/assets/js/icons.js"></script>
+  <script src="/assets/js/utils.js"></script>
   <script src="/assets/js/admin.js"></script>
+  <script>if(typeof YawmiaIcons!=='undefined')YawmiaIcons.renderAll();</script>
 </body>
 </html>
 ```
@@ -1863,6 +1683,336 @@ select.form-input {
   filter: brightness(0.9);
 }
 
+/* ═══ Skip Link (Accessibility) ═══ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  z-index: 9999;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ═══ Spacing Scale ═══ */
+:root {
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+}
+
+/* ═══ Icon Utilities ═══ */
+.icon-inline {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.icon-sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-md svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-lg svg {
+  width: 28px;
+  height: 28px;
+}
+
+.star-icon {
+  color: var(--color-warning);
+}
+
+.star-filled {
+  color: var(--color-warning);
+}
+
+.star-empty {
+  color: var(--color-border);
+}
+
+/* ═══ Admin Styles (migrated from admin.html inline) ═══ */
+.admin-container {
+  max-width: 1000px;
+  margin-inline: auto;
+  padding: 2rem 1rem;
+}
+
+.admin-header {
+  text-align: center;
+  margin-block-end: 2rem;
+}
+
+.admin-header h1 {
+  font-size: 1.8rem;
+  color: var(--color-primary);
+  margin-block-end: 0.3rem;
+}
+
+.admin-header p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.token-form {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  margin-block-end: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.token-form input {
+  max-width: 320px;
+  flex: 1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-block-end: 2rem;
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.stat-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.stat-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-block-start: 0.3rem;
+}
+
+.admin-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-block-end: 1.5rem;
+}
+
+.admin-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 1rem;
+}
+
+.admin-section__header h2 {
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.6rem 0.75rem;
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+}
+
+.admin-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: var(--color-surface-2);
+}
+
+.admin-table td {
+  color: var(--color-text);
+}
+
+.health-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-block-end: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.health-row:last-child {
+  border-block-end: none;
+}
+
+.health-row__label {
+  color: var(--color-text-muted);
+}
+
+.health-row__value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.badge-worker {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-success);
+  color: #fff;
+}
+
+.badge-employer {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-warning);
+  color: #000;
+}
+
+.badge-admin {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-error);
+  color: #fff;
+}
+
+.badge-open {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.badge-filled {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-success);
+  color: #fff;
+}
+
+.badge-in_progress {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-warning);
+  color: #000;
+}
+
+.badge-completed {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.badge-cancelled {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-error);
+  color: #fff;
+}
+
+.badge-expired {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.error-msg {
+  text-align: center;
+  color: var(--color-error);
+  font-size: 0.9rem;
+  margin-block-end: 1rem;
+  display: none;
+}
+
+.refresh-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition);
+}
+
+.refresh-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.phone-cell {
+  direction: ltr;
+  display: inline-block;
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-table {
+    font-size: 0.75rem;
+  }
+  .admin-table th,
+  .admin-table td {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
 /* ═══ Attendance Styles ═══ */
 .btn-checkin {
   background: #059669;
@@ -1939,10 +2089,7 @@ var AdminApp = (function () {
   var API = '';
 
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
   }
 
   async function api(path) {
@@ -2589,6 +2736,7 @@ var Yawmia = (function () {
 
   // ── Role Labels ───────────────────────────────────────────
   function roleLabel(role) {
+    if (typeof YawmiaUtils !== 'undefined') return YawmiaUtils.roleLabel(role);
     if (role === 'worker') return 'عامل';
     if (role === 'employer') return 'صاحب عمل';
     if (role === 'admin') return 'أدمن';
@@ -2601,6 +2749,13 @@ var Yawmia = (function () {
       navigator.serviceWorker.register('/sw.js')
         .then(function (reg) { console.log('SW registered:', reg.scope); })
         .catch(function (err) { console.log('SW registration failed:', err); });
+    });
+  }
+
+  // ── Render data-icon elements after DOM ready ─────────────
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
     });
   }
 
@@ -2866,6 +3021,197 @@ var Yawmia = (function () {
       }
     });
   }
+})();
+```
+
+---
+
+## `frontend/assets/js/icons.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/icons.js — SVG Icon System (IIFE)
+// Phase 18 — Inline SVG icons, aria-hidden, currentColor, data-icon
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaIcons = (function () {
+  'use strict';
+
+  // All icons: 24x24 viewBox, stroke-based, currentColor
+  var icons = {
+
+    home: '<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/>',
+
+    user: '<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>',
+
+    bell: '<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>',
+
+    logout: '<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>',
+
+    search: '<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>',
+
+    filter: '<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>',
+
+    close: '<path d="M6 18L18 6M6 6l12 12"/>',
+
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+
+    chevronLeft: '<path d="M15 19l-7-7 7-7"/>',
+
+    chevronRight: '<path d="M9 5l7 7-7 7"/>',
+
+    externalLink: '<path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>',
+
+    settings: '<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>',
+
+    check: '<path d="M5 13l4 4L19 7"/>',
+
+    checkCircle: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+
+    alertTriangle: '<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
+
+    xCircle: '<path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+
+    info: '<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+
+    briefcase: '<path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0H8m8 0h2a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2h2"/>',
+
+    plus: '<path d="M12 4v16m8-8H4"/>',
+
+    clock: '<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+
+    calendar: '<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',
+
+    workers: '<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>',
+
+    refresh: '<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>',
+
+    mapPin: '<path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>',
+
+    navigation: '<path d="M12 2l9 18-9-4-9 4 9-18z"/>',
+
+    wallet: '<path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>',
+
+    star: '<path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>',
+
+    starFilled: '<path fill="currentColor" stroke="none" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>',
+
+    shield: '<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>',
+
+    shieldCheck: '<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>',
+
+    flag: '<path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z"/>',
+
+    lock: '<path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>',
+
+    eye: '<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>',
+
+    phone: '<path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>',
+
+    edit: '<path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>',
+
+    trash: '<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>',
+
+    download: '<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>',
+
+    upload: '<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>',
+
+    construction: '<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
+
+    checkin: '<path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>',
+
+    checkout: '<path d="M17 16l4-4m0 0l-4-4m4 4H7"/>',
+  };
+
+  /**
+   * Get SVG icon as HTML string.
+   * @param {string} name — icon name
+   * @param {object} [options]
+   * @param {number} [options.size=20] — width/height in px
+   * @param {string} [options.class] — additional CSS class
+   * @param {string} [options.ariaLabel] — if set, adds aria-label + role="img" instead of aria-hidden
+   * @returns {string} SVG HTML string, or '' if icon not found
+   */
+  function get(name, options) {
+    var paths = icons[name];
+    if (!paths) return '';
+
+    var opts = options || {};
+    var size = opts.size || 20;
+    var cls = 'icon-inline' + (opts['class'] ? ' ' + opts['class'] : '');
+
+    var ariaAttrs;
+    if (opts.ariaLabel) {
+      ariaAttrs = 'role="img" aria-label="' + escapeAttr(opts.ariaLabel) + '"';
+    } else {
+      ariaAttrs = 'aria-hidden="true"';
+    }
+
+    return '<svg ' + ariaAttrs + ' class="' + cls + '" xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+  }
+
+  /**
+   * Render icon into a DOM element.
+   * @param {HTMLElement} el
+   * @param {string} name
+   * @param {object} [options]
+   */
+  function render(el, name, options) {
+    if (!el) return;
+    var html = get(name, options);
+    if (html) {
+      el.innerHTML = html;
+    }
+  }
+
+  /**
+   * Render all elements with [data-icon] attribute.
+   * Can be called multiple times safely.
+   * Reads: data-icon="name", data-icon-size="20", data-icon-label="..."
+   */
+  function renderAll() {
+    var elements = document.querySelectorAll('[data-icon]');
+    for (var i = 0; i < elements.length; i++) {
+      var el = elements[i];
+      var name = el.getAttribute('data-icon');
+      if (!name) continue;
+
+      var opts = {};
+      var sizeAttr = el.getAttribute('data-icon-size');
+      if (sizeAttr) opts.size = parseInt(sizeAttr, 10) || 20;
+
+      var labelAttr = el.getAttribute('data-icon-label');
+      if (labelAttr) opts.ariaLabel = labelAttr;
+
+      var html = get(name, opts);
+      if (html) {
+        el.innerHTML = html;
+      }
+    }
+  }
+
+  /**
+   * Returns array of available icon names.
+   * @returns {string[]}
+   */
+  function list() {
+    return Object.keys(icons);
+  }
+
+  /**
+   * Escape string for use in HTML attributes.
+   */
+  function escapeAttr(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  return {
+    get: get,
+    render: render,
+    renderAll: renderAll,
+    list: list,
+  };
 })();
 ```
 
@@ -3197,15 +3543,15 @@ var Yawmia = (function () {
         '</div>' +
       '</div>' +
       '<div class="job-card__meta">' +
-        '<span>📍 ' + escapeHtml(job.governorate) + '</span>' +
-        '<span>📅 ' + job.startDate + '</span>' +
-        '<span>⏱ ' + job.durationDays + ' يوم</span>' +
+        '<span>' + YawmiaIcons.get('mapPin', {size:14}) + ' ' + escapeHtml(job.governorate) + '</span>' +
+        '<span>' + YawmiaIcons.get('calendar', {size:14}) + ' ' + job.startDate + '</span>' +
+        '<span>' + YawmiaIcons.get('clock', {size:14}) + ' ' + job.durationDays + ' يوم</span>' +
       '</div>' +
       (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
       (employerProfileLink ? '<div style="margin-block-end:0.5rem;">' + employerProfileLink + '</div>' : '') +
       paymentBadgeHtml +
       '<div class="job-card__footer">' +
-        '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
+        '<span class="job-card__workers">' + YawmiaIcons.get('workers', {size:14}) + ' ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
         completedLabel +
         footerButtons +
       '</div>';
@@ -3570,12 +3916,9 @@ var Yawmia = (function () {
     });
   }
 
-  // ── Escape HTML ───────────────────────────────────────────
+  // ── Escape HTML — delegated to YawmiaUtils ───────────────
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return YawmiaUtils.escapeHtml(str);
   }
 
   // ── Attendance Handlers ───────────────────────────────────
@@ -4512,22 +4855,13 @@ var Yawmia = (function () {
   }
 
   // ── Helpers ───────────────────────────────────────────────
+  // ── Helpers — delegated to YawmiaUtils ────────────────────
   function starsDisplay(rating) {
-    var full = Math.floor(rating);
-    var half = (rating - full) >= 0.5 ? 1 : 0;
-    var empty = 5 - full - half;
-    var str = '';
-    for (var i = 0; i < full; i++) str += '★';
-    if (half) str += '☆';
-    for (var j = 0; j < empty; j++) str += '☆';
-    return str;
+    return YawmiaUtils.starsDisplay(rating);
   }
 
   function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return YawmiaUtils.escapeHtml(str);
   }
 
 })();
@@ -4756,7 +5090,66 @@ var Yawmia = (function () {
     Yawmia.show('profileError');
   }
 
+  // ── Helpers — delegated to YawmiaUtils ────────────────────
   function starsDisplay(rating) {
+    return YawmiaUtils.starsDisplay(rating);
+  }
+
+  function escapeHtml(str) {
+    return YawmiaUtils.escapeHtml(str);
+  }
+
+})();
+```
+
+---
+
+## `frontend/assets/js/utils.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/utils.js — Shared Frontend Utilities (IIFE)
+// Phase 18 — Deduplicated escapeHtml, starsDisplay, timeAgo, etc.
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaUtils = (function () {
+  'use strict';
+
+  /**
+   * Escape HTML entities in a string.
+   * Same implementation as previously duplicated across modules.
+   */
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /**
+   * Star rating display using SVG icons from YawmiaIcons.
+   * @param {number} rating — 0 to 5
+   * @returns {string} HTML string with SVG star icons
+   */
+  function starsDisplay(rating) {
+    var full = Math.floor(rating);
+    var half = (rating - full) >= 0.5 ? 1 : 0;
+    var empty = 5 - full - half;
+    var html = '';
+    var filledIcon = (typeof YawmiaIcons !== 'undefined') ? YawmiaIcons.get('starFilled', { size: 16, 'class': 'star-icon star-filled' }) : '★';
+    var emptyIcon = (typeof YawmiaIcons !== 'undefined') ? YawmiaIcons.get('star', { size: 16, 'class': 'star-icon star-empty' }) : '☆';
+    for (var i = 0; i < full; i++) html += filledIcon;
+    for (var j = 0; j < half; j++) html += emptyIcon;
+    for (var k = 0; k < empty; k++) html += emptyIcon;
+    return html;
+  }
+
+  /**
+   * Unicode text-based star rating (for non-SVG contexts like admin tables).
+   * @param {number} rating — 0 to 5
+   * @returns {string} Unicode star string
+   */
+  function starsText(rating) {
     var full = Math.floor(rating);
     var half = (rating - full) >= 0.5 ? 1 : 0;
     var empty = 5 - full - half;
@@ -4767,13 +5160,119 @@ var Yawmia = (function () {
     return str;
   }
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  /**
+   * Relative time in Arabic (e.g., "منذ 5 دقائق").
+   * @param {string} isoDate — ISO date string
+   * @returns {string}
+   */
+  function timeAgo(isoDate) {
+    if (!isoDate) return '';
+    var now = Date.now();
+    var then = new Date(isoDate).getTime();
+    var diffMs = now - then;
+    if (diffMs < 0) return 'الآن';
+
+    var seconds = Math.floor(diffMs / 1000);
+    var minutes = Math.floor(seconds / 60);
+    var hours = Math.floor(minutes / 60);
+    var days = Math.floor(hours / 24);
+
+    if (seconds < 60) return 'منذ لحظات';
+    if (minutes < 60) return 'منذ ' + minutes + ' دقيقة';
+    if (hours < 24) return 'منذ ' + hours + ' ساعة';
+    if (days < 30) return 'منذ ' + days + ' يوم';
+    return formatDate(isoDate);
   }
 
+  /**
+   * Format date in Arabic locale.
+   * @param {string} isoDate
+   * @returns {string}
+   */
+  function formatDate(isoDate) {
+    if (!isoDate) return '';
+    try {
+      return new Date(isoDate).toLocaleDateString('ar-EG');
+    } catch (e) {
+      return isoDate;
+    }
+  }
+
+  /**
+   * Format date+time in Arabic locale.
+   * @param {string} isoDate
+   * @returns {string}
+   */
+  function formatDateTime(isoDate) {
+    if (!isoDate) return '';
+    try {
+      return new Date(isoDate).toLocaleString('ar-EG');
+    } catch (e) {
+      return isoDate;
+    }
+  }
+
+  /**
+   * Human-readable status label in Arabic.
+   * Covers: job, application, payment, attendance, verification, user statuses.
+   * @param {string} status
+   * @returns {string}
+   */
+  function statusLabel(status) {
+    var labels = {
+      // Job statuses
+      open: 'متاحة',
+      filled: 'مكتملة العدد',
+      in_progress: 'جاري التنفيذ',
+      completed: 'مكتملة',
+      expired: 'منتهية',
+      cancelled: 'ملغية',
+      // Application statuses
+      pending: 'في الانتظار',
+      accepted: 'مقبول',
+      rejected: 'مرفوض',
+      withdrawn: 'تم السحب',
+      // Payment statuses
+      employer_confirmed: 'تم تأكيد الدفع',
+      disputed: 'نزاع',
+      // Attendance statuses
+      checked_in: 'حاضر',
+      checked_out: 'انصرف',
+      confirmed: 'مؤكد',
+      no_show: 'غائب',
+      // Verification statuses
+      verified: 'محقق',
+      unverified: 'غير محقق',
+      // User statuses
+      active: 'نشط',
+      banned: 'محظور',
+      deleted: 'محذوف',
+    };
+    return labels[status] || status || '';
+  }
+
+  /**
+   * Role label in Arabic.
+   * @param {string} role
+   * @returns {string}
+   */
+  function roleLabel(role) {
+    if (role === 'worker') return 'عامل';
+    if (role === 'employer') return 'صاحب عمل';
+    if (role === 'admin') return 'أدمن';
+    return role || '';
+  }
+
+  return {
+    escapeHtml: escapeHtml,
+    starsDisplay: starsDisplay,
+    starsText: starsText,
+    timeAgo: timeAgo,
+    formatDate: formatDate,
+    formatDateTime: formatDateTime,
+    statusLabel: statusLabel,
+    roleLabel: roleLabel,
+  };
 })();
 ```
 
@@ -4788,6 +5287,14 @@ var Yawmia = (function () {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — لوحة التحكم</title>
+  <meta name="description" content="لوحة التحكم الرئيسية لمنصة يوميّة — تصفح فرص العمل اليومية أو انشر فرصة جديدة.">
+  <meta property="og:title" content="يوميّة — لوحة التحكم">
+  <meta property="og:description" content="لوحة التحكم الرئيسية لمنصة يوميّة — تصفح فرص العمل اليومية أو انشر فرصة جديدة.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/dashboard.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/dashboard.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -4797,28 +5304,31 @@ var Yawmia = (function () {
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <h1 class="header__brand">🏗️ يوميّة</h1>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+          </div>
+          <div class="header__left">
+            <button class="notification-bell" id="notificationBell" title="الإشعارات" aria-label="الإشعارات">
+              <span data-icon="bell" data-icon-size="20"></span>
+              <span class="notification-bell__badge hidden" id="notificationCount" aria-live="polite">0</span>
+            </button>
+            <span class="header__user" id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <a href="/profile.html" class="btn btn--ghost btn--sm">ملفي</a>
+            <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+          </div>
         </div>
-        <div class="header__left">
-          <button class="notification-bell" id="notificationBell" title="الإشعارات">
-            🔔
-            <span class="notification-bell__badge hidden" id="notificationCount">0</span>
-          </button>
-          <span class="header__user" id="headerUserName"></span>
-          <span class="badge" id="headerUserRole"></span>
-          <a href="/profile.html" class="btn btn--ghost btn--sm">ملفي</a>
-          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Welcome Card -->
@@ -4833,7 +5343,7 @@ var Yawmia = (function () {
 
           <div class="form-group">
             <label class="form-label" for="jobTitle">عنوان الفرصة</label>
-            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح">
+            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح" aria-required="true" aria-describedby="createJobError">
           </div>
 
           <div class="form-group">
@@ -4923,7 +5433,7 @@ var Yawmia = (function () {
     </main>
 
     <!-- Notifications Panel -->
-    <div class="notification-panel hidden" id="notificationPanel">
+    <div class="notification-panel hidden" id="notificationPanel" role="dialog" aria-label="الإشعارات">
       <div class="notification-panel__header">
         <h3>الإشعارات</h3>
         <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
@@ -4941,7 +5451,26 @@ var Yawmia = (function () {
     </footer>
   </div>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "يوميّة",
+    "alternateName": "Yowmia",
+    "url": "https://yowmia.com",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "منصة توظيف العمالة اليومية في مصر",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EGP"
+    }
+  }
+  </script>
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
@@ -4959,6 +5488,13 @@ var Yawmia = (function () {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — شغلك قريب منّك</title>
   <meta name="description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <meta property="og:title" content="يوميّة — شغلك قريب منّك">
+  <meta property="og:description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -4968,17 +5504,20 @@ var Yawmia = (function () {
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <h1 class="header__brand">🏗️ يوميّة</h1>
-        <p class="header__tagline">شغلك قريب منّك</p>
-      </div>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+          <p class="header__tagline">شغلك قريب منّك</p>
+        </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Auth Section -->
@@ -4999,6 +5538,8 @@ var Yawmia = (function () {
                 autocomplete="tel"
                 dir="ltr"
                 inputmode="numeric"
+                aria-required="true"
+                aria-describedby="phoneError"
               >
               <span class="form-hint">مثال: 01012345678</span>
             </div>
@@ -5040,6 +5581,8 @@ var Yawmia = (function () {
                 autocomplete="one-time-code"
                 dir="ltr"
                 inputmode="numeric"
+                aria-required="true"
+                aria-describedby="otpError"
               >
             </div>
 
@@ -5066,6 +5609,8 @@ var Yawmia = (function () {
                 id="nameInput"
                 class="form-input"
                 placeholder="اسمك بالكامل"
+                aria-required="true"
+                aria-describedby="profileError"
               >
             </div>
 
@@ -5100,7 +5645,25 @@ var Yawmia = (function () {
     </footer>
   </div>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "يوميّة",
+    "alternateName": "Yowmia",
+    "url": "https://yowmia.com",
+    "logo": "https://yowmia.com/assets/img/icon-512.png",
+    "description": "منصة توظيف العمالة اليومية في مصر",
+    "foundingDate": "2026",
+    "areaServed": {
+      "@type": "Country",
+      "name": "مصر"
+    }
+  }
+  </script>
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/auth.js"></script>
 </body>
 </html>
@@ -5141,6 +5704,41 @@ var Yawmia = (function () {
 
 ---
 
+## `frontend/offline.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — غير متصل</title>
+  <meta name="description" content="أنت غير متصل بالإنترنت حالياً.">
+  <meta name="theme-color" content="#2563eb">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif;background:#0f1117;color:#e4e6f0;min-height:100vh;display:flex;align-items:center;justify-content:center;direction:rtl;text-align:center;padding:2rem}
+    .container{max-width:480px}
+    .icon{font-size:4rem;margin-block-end:1rem}
+    .title{font-size:1.5rem;margin-block-end:0.75rem;font-weight:600}
+    .desc{color:#8b8fa3;margin-block-end:2rem;font-size:0.95rem;line-height:1.7}
+    .btn{display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:600;font-size:1rem;cursor:pointer;font-family:inherit;transition:background 0.2s}
+    .btn:hover{background:#1d4fd8}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1 class="title">أنت غير متصل بالإنترنت</h1>
+    <p class="desc">تأكد من اتصالك بالإنترنت وحاول مرة تانية.<br>بعض الصفحات المحفوظة ممكن تكون متاحة.</p>
+    <button class="btn" onclick="location.reload()">إعادة المحاولة</button>
+  </div>
+</body>
+</html>
+```
+
+---
+
 ## `frontend/profile.html`
 
 ```html
@@ -5150,6 +5748,14 @@ var Yawmia = (function () {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — ملفي الشخصي</title>
+  <meta name="description" content="ملفك الشخصي على منصة يوميّة — تعديل البيانات والتقييمات وطلبات التوظيف.">
+  <meta property="og:title" content="يوميّة — ملفي الشخصي">
+  <meta property="og:description" content="ملفك الشخصي على منصة يوميّة — تعديل البيانات والتقييمات وطلبات التوظيف.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/profile.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/profile.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -5158,26 +5764,29 @@ var Yawmia = (function () {
   <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <a href="/dashboard.html" class="header__brand-link">
-            <h1 class="header__brand">🏗️ يوميّة</h1>
-          </a>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/dashboard.html" class="header__brand-link">
+              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <span class="header__user" id="headerUserName"></span>
+            <span class="badge" id="headerUserRole"></span>
+            <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
+            <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+          </div>
         </div>
-        <div class="header__left">
-          <span class="header__user" id="headerUserName"></span>
-          <span class="badge" id="headerUserRole"></span>
-          <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
-          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Profile Card -->
@@ -5200,7 +5809,7 @@ var Yawmia = (function () {
 
           <div class="form-group">
             <label class="form-label" for="editName">الاسم</label>
-            <input type="text" id="editName" class="form-input" placeholder="اسمك بالكامل">
+            <input type="text" id="editName" class="form-input" placeholder="اسمك بالكامل" aria-required="true" aria-describedby="editProfileMsg">
           </div>
 
           <div class="form-group">
@@ -5277,9 +5886,51 @@ var Yawmia = (function () {
   </div>
 
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
+```
+
+---
+
+## `frontend/robots.txt`
+
+```text
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin.html
+Sitemap: https://yowmia.com/sitemap.xml
+```
+
+---
+
+## `frontend/sitemap.xml`
+
+```text
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://yowmia.com/</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://yowmia.com/dashboard.html</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://yowmia.com/profile.html</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
 ```
 
 ---
@@ -5292,7 +5943,7 @@ var Yawmia = (function () {
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.17.0';
+const CACHE_NAME = 'yawmia-v0.18.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -5308,9 +5959,15 @@ const STATIC_ASSETS = [
   '/assets/js/admin.js',
   '/user.html',
   '/assets/js/user.js',
+  '/assets/js/icons.js',
+  '/assets/js/utils.js',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',
   '/assets/fonts/Cairo-Bold.woff2',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/404.html',
+  '/offline.html',
 ];
 
 // ── Install: pre-cache static assets ──
@@ -5370,7 +6027,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         // Offline fallback for HTML pages
         if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
+          return caches.match('/offline.html');
         }
         return new Response('Offline', { status: 503 });
       })
@@ -5389,6 +6046,14 @@ self.addEventListener('fetch', (event) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — بروفايل</title>
+  <meta name="description" content="بروفايل المستخدم على منصة يوميّة — التقييمات ونقاط الثقة.">
+  <meta property="og:title" content="يوميّة — بروفايل المستخدم">
+  <meta property="og:description" content="بروفايل المستخدم على منصة يوميّة — التقييمات ونقاط الثقة.">
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="https://yowmia.com/user.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/user.html">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -5397,23 +6062,26 @@ self.addEventListener('fetch', (event) => {
   <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <div class="container header__inner">
-        <div class="header__right">
-          <a href="/" class="header__brand-link">
-            <h1 class="header__brand">🏗️ يوميّة</h1>
-          </a>
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/" class="header__brand-link">
+              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
+          </div>
         </div>
-        <div class="header__left">
-          <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
-        </div>
-      </div>
+      </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="container">
 
         <!-- Loading State -->
@@ -5479,6 +6147,8 @@ self.addEventListener('fetch', (event) => {
   </div>
 
   <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/user.js"></script>
 </body>
 </html>
