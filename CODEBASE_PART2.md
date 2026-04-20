@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.18.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-20T11:03:29.558Z
+# يوميّة (Yawmia) v0.19.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-20T12:32:34.598Z
 > Files in this part: 24
 
 ## Files
@@ -3441,6 +3441,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
 
 const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
 
@@ -3451,6 +3452,7 @@ const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
  * @param {{ method?: string, notes?: string }} options
  */
 export async function createPayment(jobId, employerId, options = {}) {
+  return withLock(`payment:${jobId}`, async () => {
   if (!config.PAYMENTS.enabled) {
     return { ok: false, error: 'نظام المدفوعات غير مفعّل', code: 'PAYMENTS_DISABLED' };
   }
@@ -3561,6 +3563,7 @@ export async function createPayment(jobId, employerId, options = {}) {
   });
 
   return { ok: true, payment };
+  }); // end withLock
 }
 
 /**

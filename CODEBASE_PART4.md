@@ -1,31 +1,33 @@
-# يوميّة (Yawmia) v0.18.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-20T11:03:29.570Z
-> Files in this part: 23
+# يوميّة (Yawmia) v0.19.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-20T12:32:34.610Z
+> Files in this part: 25
 
 ## Files
 1. `frontend/404.html`
 2. `frontend/admin.html`
 3. `frontend/assets/css/style.css`
-4. `frontend/assets/js/admin.js`
-5. `frontend/assets/js/app.js`
-6. `frontend/assets/js/auth.js`
-7. `frontend/assets/js/icons.js`
-8. `frontend/assets/js/jobs.js`
-9. `frontend/assets/js/profile.js`
-10. `frontend/assets/js/user.js`
-11. `frontend/assets/js/utils.js`
-12. `frontend/dashboard.html`
-13. `frontend/index.html`
-14. `frontend/manifest.json`
-15. `frontend/offline.html`
-16. `frontend/profile.html`
-17. `frontend/robots.txt`
-18. `frontend/sitemap.xml`
-19. `frontend/sw.js`
-20. `frontend/user.html`
-21. `scripts/backup.js`
-22. `scripts/bundle-for-review.js`
-23. `scripts/repair-indexes.js`
+4. `frontend/assets/css/tokens.css`
+5. `frontend/assets/js/admin.js`
+6. `frontend/assets/js/app.js`
+7. `frontend/assets/js/auth.js`
+8. `frontend/assets/js/icons.js`
+9. `frontend/assets/js/jobs.js`
+10. `frontend/assets/js/profile.js`
+11. `frontend/assets/js/toast.js`
+12. `frontend/assets/js/user.js`
+13. `frontend/assets/js/utils.js`
+14. `frontend/dashboard.html`
+15. `frontend/index.html`
+16. `frontend/manifest.json`
+17. `frontend/offline.html`
+18. `frontend/profile.html`
+19. `frontend/robots.txt`
+20. `frontend/sitemap.xml`
+21. `frontend/sw.js`
+22. `frontend/user.html`
+23. `scripts/backup.js`
+24. `scripts/bundle-for-review.js`
+25. `scripts/repair-indexes.js`
 
 ---
 
@@ -74,6 +76,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>يوميّة — لوحة تحكم الأدمن</title>
   <meta name="description" content="لوحة تحكم الأدمن لمنصة يوميّة — إدارة المستخدمين والفرص والبلاغات.">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
   <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -188,6 +191,7 @@
 
   <script src="/assets/js/icons.js"></script>
   <script src="/assets/js/utils.js"></script>
+  <script src="/assets/js/toast.js"></script>
   <script src="/assets/js/admin.js"></script>
   <script>if(typeof YawmiaIcons!=='undefined')YawmiaIcons.renderAll();</script>
 </body>
@@ -355,6 +359,7 @@ body {
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .card__title {
@@ -518,8 +523,8 @@ select.form-input {
   text-decoration: none;
 }
 
-.btn:active {
-  transform: scale(0.98);
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .btn:disabled {
@@ -2071,6 +2076,415 @@ select.form-input {
 .attendance-status-checked_out { color: #fbbf24; }
 .attendance-status-confirmed { color: #60a5fa; }
 .attendance-status-no_show { color: #f87171; }
+
+/* ═══ Phase 19 — Toast Notification Styles ═══ */
+.toast-container {
+  position: fixed;
+  bottom: calc(var(--space-4, 1rem) + var(--safe-bottom, 0px));
+  inset-inline-start: var(--space-4, 1rem);
+  inset-inline-end: var(--space-4, 1rem);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  z-index: var(--z-toast, 400);
+  pointer-events: none;
+  max-width: 480px;
+  margin-inline: auto;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  width: 100%;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  background: var(--elevation-2, #242836);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity var(--duration-normal, 0.2s) var(--ease-default, ease),
+              transform var(--duration-normal, 0.2s) var(--ease-default, ease);
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast--exit {
+  opacity: 0;
+  transform: translateY(1rem);
+}
+
+.toast__icon-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toast__message {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1, 0.25rem);
+  border-radius: var(--radius-xs, 4px);
+  flex-shrink: 0;
+  transition: color var(--duration-fast, 0.15s);
+}
+
+.toast__close:hover {
+  color: var(--color-text);
+}
+
+.toast--success {
+  border-inline-start: 3px solid var(--color-success);
+}
+.toast--success .toast__icon-wrap { color: var(--color-success); }
+
+.toast--error {
+  border-inline-start: 3px solid var(--color-error);
+}
+.toast--error .toast__icon-wrap { color: var(--color-error); }
+
+.toast--warning {
+  border-inline-start: 3px solid var(--color-warning);
+}
+.toast--warning .toast__icon-wrap { color: var(--color-warning); }
+
+.toast--info {
+  border-inline-start: 3px solid var(--color-primary);
+}
+.toast--info .toast__icon-wrap { color: var(--color-primary); }
+
+/* ═══ Phase 19 — Skeleton Loading Styles ═══ */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+.skeleton {
+  background: var(--elevation-2, #242836);
+  border-radius: var(--radius-sm, 6px);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 0.9rem;
+  margin-block-end: 0.5rem;
+  border-radius: var(--radius-xs, 4px);
+}
+
+.skeleton-text--lg {
+  height: 1.2rem;
+  width: 60%;
+}
+
+.skeleton-text--sm {
+  height: 0.7rem;
+  width: 40%;
+}
+
+.skeleton-circle {
+  border-radius: var(--radius-full, 9999px);
+}
+
+.skeleton-card {
+  background: var(--elevation-2, #242836);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ═══ Phase 19 — Bottom Navigation ═══ */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--elevation-1, #1a1d27);
+    border-block-start: 1px solid var(--color-border);
+    z-index: var(--z-sticky, 100);
+    padding-block-end: var(--safe-bottom, 0px);
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0.5rem 0.75rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-family: inherit;
+    transition: color var(--duration-fast, 0.15s);
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .bottom-nav__item--active {
+    color: var(--color-primary);
+  }
+
+  .bottom-nav__item:hover {
+    color: var(--color-text);
+  }
+
+  .bottom-nav__label {
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
+  .bottom-nav__badge {
+    position: absolute;
+    top: 2px;
+    inset-inline-end: 4px;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: var(--radius-full, 9999px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+  }
+
+  /* Add padding to main content so bottom nav doesn't overlap */
+  .main {
+    padding-block-end: 4rem;
+  }
+
+  /* Adjust toast container when bottom nav is visible */
+  .toast-container {
+    bottom: calc(4rem + var(--safe-bottom, 0px));
+  }
+}
+
+/* ═══ Phase 19 — Enhanced Card Animations ═══ */
+.card {
+  transition: box-shadow var(--duration-normal, 0.2s) var(--ease-default, ease),
+              transform var(--duration-normal, 0.2s) var(--ease-default, ease),
+              border-color var(--duration-normal, 0.2s) var(--ease-default, ease);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: var(--duration-fast, 0.15s);
+}
+
+.job-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.job-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--color-border);
+  transition: background var(--duration-normal, 0.2s);
+}
+
+.job-card[data-status="open"]::before { background: var(--color-primary); }
+.job-card[data-status="filled"]::before { background: var(--color-warning); }
+.job-card[data-status="in_progress"]::before { background: #3b82f6; }
+.job-card[data-status="completed"]::before { background: var(--color-success); }
+.job-card[data-status="expired"]::before { background: var(--color-text-muted); }
+.job-card[data-status="cancelled"]::before { background: var(--color-error); }
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jobs-list .job-card {
+  animation: slide-up-fade var(--duration-slow, 0.3s) var(--ease-out, ease-out) both;
+}
+
+.jobs-list .job-card:nth-child(1) { animation-delay: 0ms; }
+.jobs-list .job-card:nth-child(2) { animation-delay: 50ms; }
+.jobs-list .job-card:nth-child(3) { animation-delay: 100ms; }
+.jobs-list .job-card:nth-child(4) { animation-delay: 150ms; }
+.jobs-list .job-card:nth-child(5) { animation-delay: 200ms; }
+```
+
+---
+
+## `frontend/assets/css/tokens.css`
+
+```css
+/* ═══════════════════════════════════════════════════════════════
+   tokens.css — يوميّة: Design Token System
+   Phase 19 — Elevation, Colors, Spacing, Typography, Shadows,
+              Transitions, Z-Index, Safe Areas
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Elevation Surfaces (Dark Theme) ───────────────────────── */
+  --elevation-0: #0f1117;       /* Page background (deepest) */
+  --elevation-1: #1a1d27;       /* Cards, panels */
+  --elevation-2: #242836;       /* Nested surfaces, inputs */
+  --elevation-3: #2e3347;       /* Modals, overlays, tooltips */
+
+  /* ── Primary Color Scale ───────────────────────────────────── */
+  --primary-50:  #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4fd8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+
+  /* ── Semantic Colors ───────────────────────────────────────── */
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --error-500:   #ef4444;
+  --error-600:   #dc2626;
+
+  /* ── Text Hierarchy ────────────────────────────────────────── */
+  --text-primary:   #e4e6f0;
+  --text-secondary: #8b8fa3;
+  --text-tertiary:  #6b7085;
+  --text-disabled:  #4b4f63;
+  --text-inverse:   #0f1117;
+
+  /* ── Border Scale ──────────────────────────────────────────── */
+  --border-subtle:  #252938;
+  --border-default: #2e3347;
+  --border-strong:  #3d4260;
+  --border-focus:   rgba(37, 99, 235, 0.5);
+
+  /* ── Spacing (8px Grid — 16 Steps) ─────────────────────────── */
+  --space-1:  0.25rem;    /*  4px */
+  --space-2:  0.5rem;     /*  8px */
+  --space-3:  0.75rem;    /* 12px */
+  --space-4:  1rem;       /* 16px */
+  --space-5:  1.25rem;    /* 20px */
+  --space-6:  1.5rem;     /* 24px */
+  --space-7:  1.75rem;    /* 28px */
+  --space-8:  2rem;       /* 32px */
+  --space-9:  2.25rem;    /* 36px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-11: 2.75rem;    /* 44px */
+  --space-12: 3rem;       /* 48px */
+  --space-13: 3.25rem;    /* 52px */
+  --space-14: 3.5rem;     /* 56px */
+  --space-15: 3.75rem;    /* 60px */
+  --space-16: 4rem;       /* 64px */
+
+  /* ── Typography Scale ──────────────────────────────────────── */
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg:   1.125rem;  /* 18px */
+  --text-xl:   1.25rem;   /* 20px */
+  --text-2xl:  1.5rem;    /* 24px */
+  --text-3xl:  1.875rem;  /* 30px */
+  --text-4xl:  2.25rem;   /* 36px */
+
+  --leading-tight:   1.25;
+  --leading-normal:  1.6;
+  --leading-relaxed: 1.75;
+
+  /* ── Radius Scale ──────────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  /* ── Shadow Scale ──────────────────────────────────────────── */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:   0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 16px rgba(37, 99, 235, 0.25);
+
+  /* ── Transition Scale ──────────────────────────────────────── */
+  --duration-fast:   0.15s;
+  --duration-normal: 0.2s;
+  --duration-slow:   0.3s;
+  --duration-slower:  0.5s;
+
+  --ease-default: ease;
+  --ease-in:      ease-in;
+  --ease-out:     ease-out;
+  --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Z-Index Scale ─────────────────────────────────────────── */
+  --z-base:       1;
+  --z-dropdown:   10;
+  --z-sticky:     100;
+  --z-overlay:    200;
+  --z-modal:      300;
+  --z-toast:      400;
+  --z-popover:    500;
+  --z-tooltip:    600;
+
+  /* ── Container Widths ──────────────────────────────────────── */
+  --container-sm: 480px;
+  --container-md: 800px;
+  --container-lg: 1000px;
+
+  /* ── Safe Area Insets ──────────────────────────────────────── */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+}
 ```
 
 ---
@@ -3317,6 +3731,14 @@ var YawmiaIcons = (function () {
       countBadge.classList.remove('hidden');
       countBadge.classList.add('notification-badge-live');
     }
+    // Sync bottom nav badge
+    var bottomBadge = Yawmia.$id('bottomNavBadge');
+    if (bottomBadge && e.detail && e.detail.unreadCount > 0) {
+      bottomBadge.textContent = e.detail.unreadCount;
+      bottomBadge.classList.remove('hidden');
+    } else if (bottomBadge) {
+      bottomBadge.classList.add('hidden');
+    }
   });
 
   // ── Notifications ─────────────────────────────────────────
@@ -3324,11 +3746,18 @@ var YawmiaIcons = (function () {
 
   var notificationBell = Yawmia.$id('notificationBell');
   var notificationPanel = Yawmia.$id('notificationPanel');
+  var releaseNotifTrap = null;
   if (notificationBell && notificationPanel) {
     notificationBell.addEventListener('click', function () {
       notificationPanel.classList.toggle('hidden');
       if (!notificationPanel.classList.contains('hidden')) {
         loadNotifications();
+        releaseNotifTrap = YawmiaUtils.trapFocus(notificationPanel, function () {
+          notificationPanel.classList.add('hidden');
+          if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
+        });
+      } else {
+        if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
       }
     });
   }
@@ -3354,6 +3783,16 @@ var YawmiaIcons = (function () {
             countBadge.classList.remove('hidden');
           } else {
             countBadge.classList.add('hidden');
+          }
+          // Sync bottom nav badge
+          var bottomBadge2 = Yawmia.$id('bottomNavBadge');
+          if (bottomBadge2) {
+            if (res.data.unread > 0) {
+              bottomBadge2.textContent = res.data.unread;
+              bottomBadge2.classList.remove('hidden');
+            } else {
+              bottomBadge2.classList.add('hidden');
+            }
           }
         }
         var ntfList = Yawmia.$id('notificationList');
@@ -3417,7 +3856,7 @@ var YawmiaIcons = (function () {
   async function loadJobs() {
     var jobsList = Yawmia.$id('jobsList');
     if (!jobsList) return;
-    jobsList.innerHTML = '<p class="empty-state">جاري تحميل الفرص...</p>';
+    jobsList.innerHTML = YawmiaUtils.skeletonJobCards(3);
 
     var gov = Yawmia.$id('filterGov') ? Yawmia.$id('filterGov').value : '';
     var cat = Yawmia.$id('filterCat') ? Yawmia.$id('filterCat').value : '';
@@ -3479,6 +3918,7 @@ var YawmiaIcons = (function () {
   function createJobCard(job) {
     var card = document.createElement('div');
     card.className = 'job-card';
+    card.setAttribute('data-status', job.status);
 
     var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
 
@@ -3568,10 +4008,10 @@ var YawmiaIcons = (function () {
             applyBtn.disabled = true;
             applyBtn.classList.remove('btn--primary');
           } else {
-            alert(res.data.error || 'خطأ في التقديم');
+            YawmiaToast.error(res.data.error || 'خطأ في التقديم');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(applyBtn, false);
         }
@@ -3588,10 +4028,10 @@ var YawmiaIcons = (function () {
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في بدء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في بدء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(startBtn, false);
         }
@@ -3608,10 +4048,10 @@ var YawmiaIcons = (function () {
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في إنهاء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في إنهاء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(completeBtn, false);
         }
@@ -3629,10 +4069,10 @@ var YawmiaIcons = (function () {
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في إلغاء الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في إلغاء الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(cancelBtn, false);
         }
@@ -3650,10 +4090,10 @@ var YawmiaIcons = (function () {
           if (res.data.ok) {
             loadJobs();
           } else {
-            alert(res.data.error || 'خطأ في تجديد الفرصة');
+            YawmiaToast.error(res.data.error || 'خطأ في تجديد الفرصة');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(renewBtn, false);
         }
@@ -3718,10 +4158,10 @@ var YawmiaIcons = (function () {
                   if (cRes.data.ok) {
                     loadJobs();
                   } else {
-                    alert(cRes.data.error || 'خطأ في تأكيد الدفع');
+                    YawmiaToast.error(cRes.data.error || 'خطأ في تأكيد الدفع');
                   }
                 } catch (e) {
-                  alert('خطأ في الاتصال');
+                  YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(confirmBtn, false);
                 }
@@ -3734,7 +4174,7 @@ var YawmiaIcons = (function () {
               disputeBtn.addEventListener('click', async function () {
                 var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
                 if (!reason || reason.trim().length < 5) {
-                  alert('سبب النزاع لازم يكون 5 حروف على الأقل');
+                  YawmiaToast.warning('سبب النزاع لازم يكون 5 حروف على الأقل');
                   return;
                 }
                 Yawmia.setLoading(disputeBtn, true);
@@ -3743,10 +4183,10 @@ var YawmiaIcons = (function () {
                   if (dRes.data.ok) {
                     loadJobs();
                   } else {
-                    alert(dRes.data.error || 'خطأ في فتح النزاع');
+                    YawmiaToast.error(dRes.data.error || 'خطأ في فتح النزاع');
                   }
                 } catch (e) {
-                  alert('خطأ في الاتصال');
+                  YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(disputeBtn, false);
                 }
@@ -3924,7 +4364,7 @@ var YawmiaIcons = (function () {
   // ── Attendance Handlers ───────────────────────────────────
   function handleCheckInClick(jobId, btn) {
     if (!navigator.geolocation) {
-      alert('المتصفح لا يدعم تحديد الموقع');
+      YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
       return;
     }
     Yawmia.setLoading(btn, true);
@@ -3940,17 +4380,17 @@ var YawmiaIcons = (function () {
             btn.disabled = true;
             btn.classList.remove('btn-checkin');
           } else {
-            alert(res.data.error || 'خطأ في تسجيل الحضور');
+            YawmiaToast.error(res.data.error || 'خطأ في تسجيل الحضور');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(btn, false);
         }
       },
       function (err) {
         Yawmia.setLoading(btn, false);
-        alert('فشل تحديد الموقع — تأكد من تفعيل GPS');
+        YawmiaToast.error('فشل تحديد الموقع — تأكد من تفعيل GPS');
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -3974,18 +4414,18 @@ var YawmiaIcons = (function () {
           }
         }
         var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkout', body);
-        if (res.data.ok) {
+          if (res.data.ok) {
           btn.textContent = 'تم الانصراف ✓';
           btn.disabled = true;
           btn.classList.remove('btn-checkout');
           if (res.data.attendance && res.data.attendance.hoursWorked != null) {
-            alert('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
+            YawmiaToast.success('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
           }
         } else {
-          alert(res.data.error || 'خطأ في تسجيل الانصراف');
+          YawmiaToast.error(res.data.error || 'خطأ في تسجيل الانصراف');
         }
       } catch (err) {
-        alert('خطأ في الاتصال');
+        YawmiaToast.error('خطأ في الاتصال');
       } finally {
         Yawmia.setLoading(btn, false);
       }
@@ -4035,6 +4475,11 @@ var YawmiaIcons = (function () {
 
     document.body.appendChild(modal);
 
+    // Focus trap
+    var releaseTrap = YawmiaUtils.trapFocus(modal.querySelector('.rating-modal__card'), function () {
+      modal.remove();
+    });
+
     // Star selection
     var starBtns = modal.querySelectorAll('.star-btn');
     starBtns.forEach(function (btn) {
@@ -4053,12 +4498,16 @@ var YawmiaIcons = (function () {
 
     // Cancel
     modal.querySelector('#btnCancelRating').addEventListener('click', function () {
+      releaseTrap();
       modal.remove();
     });
 
     // Click outside card to close
     modal.addEventListener('click', function (e) {
-      if (e.target === modal) modal.remove();
+      if (e.target === modal) {
+        releaseTrap();
+        modal.remove();
+      }
     });
 
     // Submit
@@ -4092,8 +4541,9 @@ var YawmiaIcons = (function () {
 
         var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/rate', body);
         if (res.data.ok) {
+          releaseTrap();
           modal.remove();
-          alert('تم إرسال التقييم بنجاح ⭐');
+          YawmiaToast.success('تم إرسال التقييم بنجاح ⭐');
           loadJobs();
         } else {
           errorEl.textContent = res.data.error || 'خطأ في إرسال التقييم';
@@ -4290,7 +4740,7 @@ var YawmiaIcons = (function () {
         if (btnDetect) {
           btnDetect.addEventListener('click', function () {
             if (!navigator.geolocation) {
-              alert('المتصفح لا يدعم تحديد الموقع');
+              YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
               return;
             }
             btnDetect.textContent = '⏳ جاري تحديد الموقع...';
@@ -4305,7 +4755,7 @@ var YawmiaIcons = (function () {
                 btnDetect.disabled = false;
               },
               function (err) {
-                alert('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
+                YawmiaToast.error('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
                 btnDetect.textContent = '📍 استخدم موقعي الحالي';
                 btnDetect.disabled = false;
               },
@@ -4449,10 +4899,10 @@ var YawmiaIcons = (function () {
           if (res.data.ok) {
             loadMyApplications(); // Reload list
           } else {
-            alert(res.data.error || 'خطأ في سحب الطلب');
+            YawmiaToast.error(res.data.error || 'خطأ في سحب الطلب');
           }
         } catch (err) {
-          alert('خطأ في الاتصال');
+          YawmiaToast.error('خطأ في الاتصال');
         } finally {
           Yawmia.setLoading(withdrawBtn, false);
         }
@@ -4869,6 +5319,165 @@ var YawmiaIcons = (function () {
 
 ---
 
+## `frontend/assets/js/toast.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/toast.js — Toast Notification System (IIFE)
+// Phase 19 — 4 types, SVG icons, aria-live, auto-dismiss
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaToast = (function () {
+  'use strict';
+
+  var container = null;
+  var toastCounter = 0;
+
+  var defaultIcons = {
+    success: 'checkCircle',
+    error: 'xCircle',
+    warning: 'alertTriangle',
+    info: 'info',
+  };
+
+  var defaultDuration = 4000;
+
+  /**
+   * Lazily create and return the toast container element.
+   */
+  function getContainer() {
+    if (container) return container;
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'false');
+    document.body.appendChild(container);
+    return container;
+  }
+
+  /**
+   * Show a toast notification.
+   * @param {string} message — text to display
+   * @param {object} [options]
+   * @param {string} [options.type='info'] — 'success'|'error'|'warning'|'info'
+   * @param {number} [options.duration=4000] — auto-dismiss delay in ms (0 = no auto-dismiss)
+   * @param {string} [options.icon] — icon name override from YawmiaIcons
+   * @returns {string} — toast ID
+   */
+  function show(message, options) {
+    var opts = options || {};
+    var type = opts.type || 'info';
+    var duration = typeof opts.duration === 'number' ? opts.duration : defaultDuration;
+    var iconName = opts.icon || defaultIcons[type] || 'info';
+
+    var id = 'toast-' + (++toastCounter);
+    var cont = getContainer();
+
+    var toast = document.createElement('div');
+    toast.id = id;
+    toast.className = 'toast toast--' + type;
+    toast.setAttribute('role', 'alert');
+
+    // Icon
+    var iconHtml = '';
+    if (typeof YawmiaIcons !== 'undefined') {
+      iconHtml = YawmiaIcons.get(iconName, { size: 20, 'class': 'toast__icon' });
+    }
+
+    // Message (escaped)
+    var safeMsg = (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(message) : message;
+
+    // Close button icon
+    var closeIconHtml = '';
+    if (typeof YawmiaIcons !== 'undefined') {
+      closeIconHtml = YawmiaIcons.get('close', { size: 16 });
+    } else {
+      closeIconHtml = '✕';
+    }
+
+    toast.innerHTML =
+      (iconHtml ? '<span class="toast__icon-wrap">' + iconHtml + '</span>' : '') +
+      '<span class="toast__message">' + safeMsg + '</span>' +
+      '<button class="toast__close" aria-label="إغلاق">' + closeIconHtml + '</button>';
+
+    // Close button handler
+    var closeBtn = toast.querySelector('.toast__close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        dismiss(id);
+      });
+    }
+
+    cont.appendChild(toast);
+
+    // Entrance animation via rAF
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        toast.classList.add('toast--visible');
+      });
+    });
+
+    // Auto-dismiss
+    if (duration > 0) {
+      setTimeout(function () {
+        dismiss(id);
+      }, duration);
+    }
+
+    return id;
+  }
+
+  /**
+   * Dismiss a toast by ID.
+   * @param {string} id
+   */
+  function dismiss(id) {
+    var toast = document.getElementById(id);
+    if (!toast) return;
+
+    toast.classList.remove('toast--visible');
+    toast.classList.add('toast--exit');
+
+    // Remove from DOM after exit animation
+    setTimeout(function () {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }
+
+  // ── Convenience Methods ───────────────────────────────────
+  function success(msg, opts) {
+    return show(msg, Object.assign({}, opts || {}, { type: 'success' }));
+  }
+
+  function error(msg, opts) {
+    return show(msg, Object.assign({}, opts || {}, { type: 'error' }));
+  }
+
+  function warning(msg, opts) {
+    return show(msg, Object.assign({}, opts || {}, { type: 'warning' }));
+  }
+
+  function info(msg, opts) {
+    return show(msg, Object.assign({}, opts || {}, { type: 'info' }));
+  }
+
+  return {
+    show: show,
+    dismiss: dismiss,
+    success: success,
+    error: error,
+    warning: warning,
+    info: info,
+  };
+})();
+```
+
+---
+
 ## `frontend/assets/js/user.js`
 
 ```javascript
@@ -5263,6 +5872,83 @@ var YawmiaUtils = (function () {
     return role || '';
   }
 
+  /**
+   * Generate skeleton loading HTML for job cards.
+   * @param {number} count — number of skeleton cards to generate
+   * @returns {string} HTML string
+   */
+  function skeletonJobCards(count) {
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      html +=
+        '<div class="skeleton-card" style="margin-block-end: 1rem;">' +
+          '<div class="skeleton skeleton-text--lg" style="width: 55%;"></div>' +
+          '<div class="skeleton skeleton-text" style="width: 80%; margin-block-start: 0.75rem;"></div>' +
+          '<div class="skeleton skeleton-text--sm" style="width: 35%; margin-block-start: 0.5rem;"></div>' +
+        '</div>';
+    }
+    return html;
+  }
+
+  /**
+   * Trap focus within a container element.
+   * Handles Tab cycling and Escape key to close.
+   * @param {HTMLElement} container — the element to trap focus within
+   * @param {Function} [onEscape] — callback when Escape is pressed
+   * @returns {Function} cleanup — call to release the trap
+   */
+  function trapFocus(container, onEscape) {
+    if (!container) return function () {};
+
+    var focusableSelector = 'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])';
+
+    function getFocusable() {
+      return container.querySelectorAll(focusableSelector);
+    }
+
+    function handleKeydown(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if (typeof onEscape === 'function') {
+          onEscape();
+        }
+        return;
+      }
+
+      if (e.key !== 'Tab' && e.keyCode !== 9) return;
+
+      var focusable = getFocusable();
+      if (focusable.length === 0) return;
+
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    container.addEventListener('keydown', handleKeydown);
+
+    // Focus first focusable element
+    var initial = getFocusable();
+    if (initial.length > 0) {
+      initial[0].focus();
+    }
+
+    // Return cleanup function
+    return function () {
+      container.removeEventListener('keydown', handleKeydown);
+    };
+  }
+
   return {
     escapeHtml: escapeHtml,
     starsDisplay: starsDisplay,
@@ -5272,6 +5958,8 @@ var YawmiaUtils = (function () {
     formatDateTime: formatDateTime,
     statusLabel: statusLabel,
     roleLabel: roleLabel,
+    skeletonJobCards: skeletonJobCards,
+    trapFocus: trapFocus,
   };
 })();
 ```
@@ -5295,6 +5983,7 @@ var YawmiaUtils = (function () {
   <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
   <meta property="og:locale" content="ar_EG">
   <link rel="canonical" href="https://yowmia.com/dashboard.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -5449,6 +6138,27 @@ var YawmiaUtils = (function () {
         <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
       </div>
     </footer>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+      <a href="/dashboard.html" class="bottom-nav__item bottom-nav__item--active">
+        <span data-icon="home" data-icon-size="20"></span>
+        <span class="bottom-nav__label">الرئيسية</span>
+      </a>
+      <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
+        <span data-icon="search" data-icon-size="20"></span>
+        <span class="bottom-nav__label">بحث</span>
+      </a>
+      <button class="bottom-nav__item" id="bottomNavNotif" aria-label="الإشعارات">
+        <span data-icon="bell" data-icon-size="20"></span>
+        <span class="bottom-nav__label">إشعارات</span>
+        <span class="bottom-nav__badge hidden" id="bottomNavBadge">0</span>
+      </button>
+      <a href="/profile.html" class="bottom-nav__item">
+        <span data-icon="user" data-icon-size="20"></span>
+        <span class="bottom-nav__label">ملفي</span>
+      </a>
+    </nav>
   </div>
 
   <script type="application/ld+json">
@@ -5471,6 +6181,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/app.js"></script>
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
@@ -5495,6 +6206,7 @@ var YawmiaUtils = (function () {
   <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
   <meta property="og:locale" content="ar_EG">
   <link rel="canonical" href="https://yowmia.com/">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -5664,6 +6376,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/app.js"></script>
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/auth.js"></script>
 </body>
 </html>
@@ -5756,6 +6469,7 @@ var YawmiaUtils = (function () {
   <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
   <meta property="og:locale" content="ar_EG">
   <link rel="canonical" href="https://yowmia.com/profile.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -5883,11 +6597,32 @@ var YawmiaUtils = (function () {
         <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
       </div>
     </footer>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="home" data-icon-size="20"></span>
+        <span class="bottom-nav__label">الرئيسية</span>
+      </a>
+      <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
+        <span data-icon="search" data-icon-size="20"></span>
+        <span class="bottom-nav__label">بحث</span>
+      </a>
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="bell" data-icon-size="20"></span>
+        <span class="bottom-nav__label">إشعارات</span>
+      </a>
+      <a href="/profile.html" class="bottom-nav__item bottom-nav__item--active">
+        <span data-icon="user" data-icon-size="20"></span>
+        <span class="bottom-nav__label">ملفي</span>
+      </a>
+    </nav>
   </div>
 
   <script src="./assets/js/app.js"></script>
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -5943,7 +6678,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.18.0';
+const CACHE_NAME = 'yawmia-v0.19.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -5961,6 +6696,8 @@ const STATIC_ASSETS = [
   '/assets/js/user.js',
   '/assets/js/icons.js',
   '/assets/js/utils.js',
+  '/assets/js/toast.js',
+  '/assets/css/tokens.css',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',
   '/assets/fonts/Cairo-Bold.woff2',
@@ -6054,6 +6791,7 @@ self.addEventListener('fetch', (event) => {
   <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
   <meta property="og:locale" content="ar_EG">
   <link rel="canonical" href="https://yowmia.com/user.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
@@ -6149,6 +6887,7 @@ self.addEventListener('fetch', (event) => {
   <script src="./assets/js/app.js"></script>
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/user.js"></script>
 </body>
 </html>
