@@ -4,6 +4,7 @@
 
 import { createPayment, confirmPayment, completePayment, disputePayment, findById, listByJob, getFinancialSummary } from '../services/payments.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -161,6 +162,16 @@ export async function handleAdminCompletePayment(req, res) {
       const status = statusMap[result.code] || 400;
       return sendJSON(res, status, { error: result.error, code: result.code });
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'payment_completed',
+      targetType: 'payment',
+      targetId: paymentId,
+      details: { jobId: result.payment?.jobId },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, { ok: true, payment: result.payment });
   } catch (err) {

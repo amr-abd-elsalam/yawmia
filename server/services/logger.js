@@ -9,6 +9,13 @@ const configLevel = LEVELS[config.LOGGING.level] ?? LEVELS.info;
 
 function formatMessage(level, msg, data) {
   const timestamp = new Date().toISOString();
+  // JSON output in production — parseable by log aggregation tools (ELK, CloudWatch, Datadog)
+  if (config.ENV && config.ENV.isProduction) {
+    const entry = { timestamp, level, msg };
+    if (data && Object.keys(data).length > 0) Object.assign(entry, data);
+    return JSON.stringify(entry);
+  }
+  // Development: human-readable format
   const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
   if (data && Object.keys(data).length > 0) {
     return `${prefix} ${msg} ${JSON.stringify(data)}`;

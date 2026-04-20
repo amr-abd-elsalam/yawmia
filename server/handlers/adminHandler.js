@@ -6,6 +6,7 @@ import { countByRole, listAll as listAllUsers, banUser, unbanUser } from '../ser
 import { countByStatus as jobCounts, listAll as listAllJobs } from '../services/jobs.js';
 import { countByStatus as appCounts } from '../services/applications.js';
 import { getFinancialSummary, countByStatus as countPaymentsByStatus } from '../services/payments.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -121,6 +122,16 @@ export async function handleAdminUpdateUserStatus(req, res) {
     if (!user) {
       return sendJSON(res, 404, { error: 'المستخدم غير موجود أو لا يمكن تعديله', code: 'USER_NOT_FOUND' });
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: newStatus === 'banned' ? 'user_banned' : 'user_unbanned',
+      targetType: 'user',
+      targetId: userId,
+      details: { reason: body.reason || null },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, { ok: true, user });
   } catch (err) {

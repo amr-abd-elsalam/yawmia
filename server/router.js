@@ -17,6 +17,7 @@ import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
+import { listActions } from './services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -33,12 +34,13 @@ const routes = [
   // ── Public Routes ──
   {
     method: 'GET', path: '/api/health', middlewares: [],
-    handler: (req, res) => {
+    handler: async (req, res) => {
       const mem = process.memoryUsage();
-      sendJSON(res, 200, {
+      const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.19.0',
+        version: '0.20.0',
+        environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {
@@ -47,7 +49,23 @@ const routes = [
           rssMB: +(mem.rss / 1048576).toFixed(1),
         },
         node: process.version,
-      });
+      };
+      // SSE connection stats (non-blocking)
+      try {
+        const { getStats } = await import('./services/sseManager.js');
+        const sseStats = getStats();
+        response.connections = { sse: sseStats.totalConnections, sseUsers: sseStats.totalUsers };
+      } catch (_) {
+        response.connections = { sse: 0, sseUsers: 0 };
+      }
+      // Active lock count (non-blocking)
+      try {
+        const { getLockCount } = await import('./services/resourceLock.js');
+        response.locks = { active: getLockCount() };
+      } catch (_) {
+        response.locks = { active: 0 };
+      }
+      sendJSON(res, 200, response);
     },
   },
   {
@@ -67,6 +85,18 @@ const routes = [
           paymentMethods: config.FINANCIALS.paymentMethods,
         },
       });
+    },
+  },
+  {
+    method: 'GET', path: '/api/docs', middlewares: [],
+    handler: (req, res) => {
+      const docs = routes.map(r => ({
+        method: r.method,
+        path: r.path,
+        auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
+        admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
+      }));
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.20.0' });
     },
   },
 
@@ -146,6 +176,24 @@ const routes = [
   { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireAdmin], handler: handleAdminReviewReport },
   { method: 'GET', path: '/api/admin/verifications', middlewares: [requireAdmin], handler: handleAdminListVerifications },
   { method: 'PUT', path: '/api/admin/verifications/:id', middlewares: [requireAdmin], handler: handleAdminReviewVerification },
+
+  // ── Admin Audit Log ──
+  {
+    method: 'GET', path: '/api/admin/audit-log', middlewares: [requireAdmin],
+    handler: async (req, res) => {
+      try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const filters = {};
+        if (req.query.action) filters.action = req.query.action;
+        if (req.query.targetType) filters.targetType = req.query.targetType;
+        const result = await listActions({ page, limit, ...filters });
+        sendJSON(res, 200, { ok: true, ...result });
+      } catch (err) {
+        sendJSON(res, 500, { error: 'خطأ في جلب سجل العمليات', code: 'AUDIT_LOG_ERROR' });
+      }
+    },
+  },
 ];
 
 /**

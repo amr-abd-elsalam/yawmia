@@ -46,6 +46,47 @@ export async function readJSON(filePath) {
 }
 
 /**
+ * Safe Read JSON — attempts recovery from .tmp backup on corrupted JSON
+ * Use for critical paths (users, jobs, payments) where data loss is unacceptable.
+ * Falls back to readJSON behavior for ENOENT. Re-throws non-parse, non-ENOENT errors.
+ *
+ * @param {string} filePath
+ * @returns {Promise<object|null>}
+ */
+export async function safeReadJSON(filePath) {
+  try {
+    const raw = await readFile(filePath, ENCODING);
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    if (err instanceof SyntaxError) {
+      // Corrupted JSON — attempt recovery from .tmp backup
+      const tmpPath = filePath + '.tmp';
+      try {
+        const tmpRaw = await readFile(tmpPath, ENCODING);
+        const data = JSON.parse(tmpRaw);
+        // Restore from .tmp — overwrite corrupted file
+        await writeFile(filePath, tmpRaw, ENCODING);
+        // Log recovery (dynamic import to avoid circular dependency)
+        try {
+          const { logger } = await import('./logger.js');
+          logger.warn('Recovered corrupted JSON from .tmp', { filePath });
+        } catch (_) { /* logging failure is non-fatal */ }
+        return data;
+      } catch {
+        // .tmp also missing or corrupted — unrecoverable
+        try {
+          const { logger } = await import('./logger.js');
+          logger.error('Unrecoverable corrupted JSON', { filePath, error: err.message });
+        } catch (_) { /* logging failure is non-fatal */ }
+        return null;
+      }
+    }
+    throw err;
+  }
+}
+
+/**
  * Delete a JSON file — ignores ENOENT
  */
 export async function deleteJSON(filePath) {

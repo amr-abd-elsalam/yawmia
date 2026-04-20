@@ -247,6 +247,7 @@ const config = {
       reports: 'reports',
       verifications: 'verifications',
       attendance: 'attendance',
+      audit: 'audit',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -421,7 +422,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.19.0',
+    cacheName: 'yawmia-v0.20.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -538,6 +539,61 @@ const config = {
     maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 32. بيئة التشغيل (ENV)
+  // ═══════════════════════════════════════════════════════════
+  ENV: {
+    current: process.env.NODE_ENV || 'development',
+    isProduction: (process.env.NODE_ENV || 'development') === 'production',
+    isDevelopment: (process.env.NODE_ENV || 'development') === 'development',
+    isStaging: (process.env.NODE_ENV || 'development') === 'staging',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 33. سجل العمليات الإدارية (AUDIT)
+  // ═══════════════════════════════════════════════════════════
+  AUDIT: {
+    enabled: true,
+    maxEntriesPerPage: 50,
+    retentionDays: 365,                      // مدة الاحتفاظ بالسجلات (يوم)
+  },
+
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Environment Overrides — applied BEFORE deepFreeze
+// ═══════════════════════════════════════════════════════════════
+const _ENV = process.env.NODE_ENV || 'development';
+const envOverrides = {
+  production: {
+    SECURITY: {
+      allowedOrigins: [process.env.ALLOWED_ORIGIN || 'https://yowmia.com'],
+      sanitizeInput: true,
+      headers: config.SECURITY.headers,
+    },
+    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500 },
+    STATIC: {
+      root: config.STATIC.root,
+      maxAge: 604800,
+      indexFile: config.STATIC.indexFile,
+      mimeTypes: config.STATIC.mimeTypes,
+    },
+  },
+  staging: {
+    SECURITY: {
+      allowedOrigins: [process.env.ALLOWED_ORIGIN || 'https://staging.yowmia.com'],
+      sanitizeInput: true,
+      headers: config.SECURITY.headers,
+    },
+  },
+};
+
+if (envOverrides[_ENV]) {
+  for (const [key, overrides] of Object.entries(envOverrides[_ENV])) {
+    if (config[key] && typeof config[key] === 'object' && typeof overrides === 'object') {
+      config[key] = { ...config[key], ...overrides };
+    }
+  }
+}
 
 export default deepFreeze(config);

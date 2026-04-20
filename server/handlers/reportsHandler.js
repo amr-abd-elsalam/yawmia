@@ -5,6 +5,7 @@
 import { createReport, listPending, listAll, reviewReport, findById } from '../services/reports.js';
 import { getUserTrustScore } from '../services/trust.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -111,6 +112,16 @@ export async function handleAdminReviewReport(req, res) {
       const statusCode = statusMap[result.code] || 400;
       return sendJSON(res, statusCode, { error: result.error, code: result.code });
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'report_reviewed',
+      targetType: 'report',
+      targetId: reportId,
+      details: { status, adminNotes },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, { ok: true, report: result.report });
   } catch (err) {

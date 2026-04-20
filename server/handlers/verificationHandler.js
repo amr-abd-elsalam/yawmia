@@ -4,6 +4,7 @@
 
 import { submitVerification, reviewVerification, listByUser, listAll } from '../services/verification.js';
 import { sanitizeText } from '../services/sanitizer.js';
+import { logAction } from '../services/auditLog.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -163,6 +164,16 @@ export async function handleAdminReviewVerification(req, res) {
       const httpStatus = statusMap[result.code] || 400;
       return sendJSON(res, httpStatus, result);
     }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'verification_reviewed',
+      targetType: 'verification',
+      targetId: verificationId,
+      details: { status, adminNotes: sanitizedNotes },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
 
     return sendJSON(res, 200, result);
   } catch (err) {

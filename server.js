@@ -151,14 +151,33 @@ server.listen(PORT, HOST, () => {
 });
 
 // ── Graceful shutdown ─────────────────────────────────────────
-process.on('SIGINT', () => {
-  logger.info('🔴 Shutting down...');
-  server.close(() => process.exit(0));
-});
+async function gracefulShutdown(signal) {
+  logger.info(`🔴 ${signal} received — shutting down gracefully...`);
 
-process.on('SIGTERM', () => {
-  server.close(() => process.exit(0));
-});
+  // 1. Stop accepting new connections
+  server.close(() => {});
+
+  // 2. Broadcast SSE shutdown event (fire-and-forget)
+  try {
+    const { broadcast } = await import('./server/services/sseManager.js');
+    broadcast('shutdown', { reason: 'server_restart', message: 'السيرفر هيعيد التشغيل — هتتوصل تاني تلقائياً' });
+  } catch (_) { /* SSE broadcast failure is non-fatal */ }
+
+  // 3. Wait 1 second for pending writes to complete
+  setTimeout(() => {
+    logger.info('🔴 Shutdown complete');
+    process.exit(0);
+  }, 1000);
+
+  // 4. Force exit after 10 seconds as safety net
+  setTimeout(() => {
+    logger.warn('🔴 Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // ── Export for testing ────────────────────────────────────────
 export { server, PORT, HOST };
