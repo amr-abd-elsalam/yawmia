@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.16.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-20T00:32:11.435Z
-> Files in this part: 23
+# يوميّة (Yawmia) v0.17.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-20T01:54:21.247Z
+> Files in this part: 24
 
 ## Files
 1. `server/services/applications.js`
@@ -19,13 +19,14 @@
 14. `server/services/payments.js`
 15. `server/services/ratings.js`
 16. `server/services/reports.js`
-17. `server/services/sanitizer.js`
-18. `server/services/sessions.js`
-19. `server/services/sseManager.js`
-20. `server/services/trust.js`
-21. `server/services/users.js`
-22. `server/services/validators.js`
-23. `server/services/verification.js`
+17. `server/services/resourceLock.js`
+18. `server/services/sanitizer.js`
+19. `server/services/sessions.js`
+20. `server/services/sseManager.js`
+21. `server/services/trust.js`
+22. `server/services/users.js`
+23. `server/services/validators.js`
+24. `server/services/verification.js`
 
 ---
 
@@ -41,6 +42,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { findById as findJobById, incrementAccepted } from './jobs.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const WORKER_APPS_INDEX = config.DATABASE.indexFiles.workerAppsIndex;
 const JOB_APPS_INDEX = config.DATABASE.indexFiles.jobAppsIndex;
@@ -48,7 +50,8 @@ const JOB_APPS_INDEX = config.DATABASE.indexFiles.jobAppsIndex;
 /**
  * Apply to a job
  */
-export async function apply(jobId, workerId) {
+export function apply(jobId, workerId) {
+  return withLock(`apply:${jobId}:${workerId}`, async () => {
   // Check job exists and is open
   const job = await findJobById(jobId);
   if (!job) {
@@ -86,12 +89,14 @@ export async function apply(jobId, workerId) {
   eventBus.emit('application:submitted', { applicationId: id, jobId, workerId, employerId: job.employerId });
 
   return { ok: true, application };
+  }); // end withLock
 }
 
 /**
  * Accept a worker application
  */
-export async function accept(applicationId, employerId) {
+export function accept(applicationId, employerId) {
+  return withLock(`accept:${applicationId}`, async () => {
   const application = await findById(applicationId);
   if (!application) {
     return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
@@ -141,6 +146,7 @@ export async function accept(applicationId, employerId) {
   }
 
   return { ok: true, application };
+  }); // end withLock
 }
 
 /**
@@ -339,6 +345,7 @@ import {
 } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
 
 const JOB_ATTENDANCE_INDEX = config.DATABASE.indexFiles.jobAttendanceIndex;
 const WORKER_ATTENDANCE_INDEX = config.DATABASE.indexFiles.workerAttendanceIndex;
@@ -399,7 +406,8 @@ async function findTodayRecord(jobId, workerId, todayMidnight) {
  * @param {{ lat?: number, lng?: number }} coords
  * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
  */
-export async function checkIn(jobId, workerId, coords = {}) {
+export function checkIn(jobId, workerId, coords = {}) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
   // 1. Feature flag
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
     return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
@@ -513,6 +521,7 @@ export async function checkIn(jobId, workerId, coords = {}) {
   });
 
   return { ok: true, attendance };
+  }); // end withLock
 }
 
 /**
@@ -622,7 +631,8 @@ export async function confirmAttendance(attendanceId, employerId) {
  * @param {string} reportedBy — employer ID
  * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
  */
-export async function reportNoShow(jobId, workerId, reportedBy) {
+export function reportNoShow(jobId, workerId, reportedBy) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
   // 1. Feature flag
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
     return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
@@ -700,6 +710,117 @@ export async function reportNoShow(jobId, workerId, reportedBy) {
   });
 
   return { ok: true, attendance };
+  }); // end withLock
+}
+
+/**
+ * Employer manual check-in (no GPS required)
+ * @param {string} jobId
+ * @param {string} workerId
+ * @param {string} employerId
+ * @returns {Promise<{ ok: boolean, attendance?: object, error?: string, code?: string }>}
+ */
+export function employerCheckIn(jobId, workerId, employerId) {
+  return withLock(`attendance:${jobId}:${workerId}`, async () => {
+    // 1. Feature flag
+    if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) {
+      return { ok: false, error: 'نظام الحضور غير مفعّل حالياً', code: 'ATTENDANCE_DISABLED' };
+    }
+
+    // 2. allowEmployerOverride check
+    if (!config.ATTENDANCE.allowEmployerOverride) {
+      return { ok: false, error: 'تسجيل الحضور اليدوي غير مفعّل', code: 'MANUAL_CHECKIN_DISABLED' };
+    }
+
+    // 3. Job exists & in_progress
+    const { findById: findJob } = await import('./jobs.js');
+    const job = await findJob(jobId);
+    if (!job) {
+      return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+    }
+    if (job.status !== 'in_progress') {
+      return { ok: false, error: 'الفرصة مش في حالة تنفيذ', code: 'JOB_NOT_IN_PROGRESS' };
+    }
+
+    // 4. Employer owns the job
+    if (job.employerId !== employerId) {
+      return { ok: false, error: 'مش مسموحلك تسجل حضور في هذه الفرصة', code: 'NOT_JOB_OWNER' };
+    }
+
+    // 5. Worker is accepted on this job
+    const { listByJob: listApps } = await import('./applications.js');
+    const apps = await listApps(jobId);
+    const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+    if (!accepted) {
+      return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
+    }
+
+    // 6. No duplicate today
+    const { getEgyptMidnight } = await import('./geo.js');
+    const todayMidnight = getEgyptMidnight();
+    const existing = await findTodayRecord(jobId, workerId, todayMidnight);
+
+    if (existing) {
+      if (existing.status === 'no_show') {
+        // Override no_show → checked_in (confirmed by employer)
+        const now = new Date();
+        existing.status = 'confirmed';
+        existing.checkInAt = now.toISOString();
+        existing.employerConfirmed = true;
+        existing.employerConfirmedAt = now.toISOString();
+        await atomicWrite(getRecordPath('attendance', existing.id), existing);
+
+        eventBus.emit('attendance:checkin', {
+          attendanceId: existing.id,
+          jobId,
+          workerId,
+          employerId,
+        });
+
+        return { ok: true, attendance: existing };
+      }
+      return { ok: false, error: 'العامل سجّل حضوره النهارده بالفعل', code: 'ALREADY_CHECKED_IN' };
+    }
+
+    // ── Create attendance record (pre-confirmed, no GPS) ──
+    const now = new Date();
+    const id = generateId();
+    const attendance = {
+      id,
+      jobId,
+      workerId,
+      employerId: job.employerId,
+      date: getEgyptDateString(now),
+      status: 'confirmed',
+      checkInAt: now.toISOString(),
+      checkInLat: null,
+      checkInLng: null,
+      checkOutAt: null,
+      checkOutLat: null,
+      checkOutLng: null,
+      hoursWorked: null,
+      employerConfirmed: true,
+      employerConfirmedAt: now.toISOString(),
+      noShowReportedBy: null,
+      noShowReportedAt: null,
+      createdAt: now.toISOString(),
+    };
+
+    await atomicWrite(getRecordPath('attendance', id), attendance);
+
+    // Update indexes
+    await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
+    await addToSetIndex(WORKER_ATTENDANCE_INDEX, workerId, id);
+
+    eventBus.emit('attendance:checkin', {
+      attendanceId: id,
+      jobId,
+      workerId,
+      employerId,
+    });
+
+    return { ok: true, attendance };
+  }); // end withLock
 }
 
 /**
@@ -822,6 +943,65 @@ export async function getJobSummary(jobId) {
  */
 export async function findById(attendanceId) {
   return await readJSON(getRecordPath('attendance', attendanceId));
+}
+
+/**
+ * Auto-detect no-shows for in_progress jobs
+ * Checks accepted workers who haven't checked in after autoNoShowAfterHours
+ * Runs at startup + periodic cleanup (fire-and-forget)
+ * @returns {Promise<number>} count of auto-detected no-shows
+ */
+export async function autoDetectNoShows() {
+  // 1. Feature flag checks
+  if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) return 0;
+  if (!config.ATTENDANCE.autoNoShowAfterHours || config.ATTENDANCE.autoNoShowAfterHours <= 0) return 0;
+
+  // 2. Calculate cutoff time
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
+  const cutoffMs = config.ATTENDANCE.autoNoShowAfterHours * 60 * 60 * 1000;
+  const cutoffTime = new Date(todayMidnight.getTime() + cutoffMs);
+  const now = new Date();
+
+  // 3. Too early — don't mark anyone yet
+  if (now < cutoffTime) return 0;
+
+  // 4. Get all in_progress jobs
+  const { listAll: listAllJobs } = await import('./jobs.js');
+  const allJobs = await listAllJobs();
+  const inProgressJobs = allJobs.filter(j => j.status === 'in_progress');
+
+  if (inProgressJobs.length === 0) return 0;
+
+  // 5. For each in_progress job, check accepted workers
+  const { listByJob: listAppsByJob } = await import('./applications.js');
+  let count = 0;
+
+  for (const job of inProgressJobs) {
+    try {
+      const apps = await listAppsByJob(job.id);
+      const acceptedWorkers = apps.filter(a => a.status === 'accepted');
+
+      for (const app of acceptedWorkers) {
+        // Check if worker has any record today
+        const existing = await findTodayRecord(job.id, app.workerId, todayMidnight);
+        if (!existing) {
+          // No record → auto no-show (use 'system' as reporter)
+          const result = await reportNoShow(job.id, app.workerId, 'system');
+          if (result.ok) count++;
+        }
+      }
+    } catch (err) {
+      // Fire-and-forget per job — continue to next
+      logger.warn('Auto no-show detection error for job', { jobId: job.id, error: err.message });
+    }
+  }
+
+  if (count > 0) {
+    logger.info(`Auto no-show: detected ${count} absences`);
+  }
+
+  return count;
 }
 ```
 
@@ -3294,6 +3474,40 @@ export async function createPayment(jobId, employerId, options = {}) {
     return { ok: false, error: 'سجل دفع موجود بالفعل لهذه الفرصة', code: 'PAYMENT_EXISTS' };
   }
 
+  // ── Attendance-based amount adjustment (non-blocking) ──
+  let attendanceBreakdown = null;
+  let adjustedTotalCost = job.totalCost;
+  let adjustedPlatformFee = job.platformFee;
+
+  try {
+    const { getJobSummary } = await import('./attendance.js');
+    const summary = await getJobSummary(jobId);
+
+    if (summary && summary.totalRecords > 0) {
+      const expectedWorkerDays = job.workersAccepted * job.durationDays;
+      const actualWorkerDays = summary.checkedInCount; // includes checked_in + checked_out + confirmed
+      const noShowDays = summary.noShowCount;
+
+      if (expectedWorkerDays > 0) {
+        const attendanceRate = Math.min(actualWorkerDays / expectedWorkerDays, 1);
+        attendanceBreakdown = {
+          expectedWorkerDays,
+          actualWorkerDays,
+          noShowDays,
+          attendanceRate: Math.round(attendanceRate * 100) / 100,
+        };
+
+        if (attendanceRate < 1) {
+          adjustedTotalCost = Math.round(job.totalCost * attendanceRate);
+          adjustedPlatformFee = Math.round(adjustedTotalCost * (config.FINANCIALS.platformFeePercent / 100));
+        }
+      }
+    }
+  } catch (err) {
+    // Non-blocking: if attendance unavailable, use full calculation
+    logger.warn('Attendance data unavailable for payment', { jobId, error: err.message });
+  }
+
   // Validate payment method
   const method = options.method || config.PAYMENTS.defaultMethod;
   if (!config.PAYMENTS.methods.includes(method)) {
@@ -3303,8 +3517,8 @@ export async function createPayment(jobId, employerId, options = {}) {
   const id = 'pay_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
-  const amount = job.totalCost;
-  const platformFee = job.platformFee;
+  const amount = adjustedTotalCost;
+  const platformFee = adjustedPlatformFee;
   const workerPayout = amount - platformFee;
 
   const payment = {
@@ -3326,6 +3540,7 @@ export async function createPayment(jobId, employerId, options = {}) {
     disputeReason: null,
     disputedAt: null,
     notes: options.notes || null,
+    attendanceBreakdown,
   };
 
   // Save payment file
@@ -4082,6 +4297,78 @@ async function checkAutoban(targetId) {
 
 ---
 
+## `server/services/resourceLock.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/resourceLock.js — In-Memory Mutex per Resource Key
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * In-memory mutex map: key → Promise chain
+ * Same key → serialized (waits for previous)
+ * Different keys → fully concurrent
+ * Lock released on success OR error (finally block)
+ * Auto-cleanup after last operation per key
+ * No deadlock risk (no nested locks on same key)
+ * In-memory only — server restart clears all locks
+ */
+const locks = new Map();
+
+/**
+ * Execute fn() with exclusive access to the given resource key.
+ * Concurrent calls with the SAME key are serialized.
+ * Calls with DIFFERENT keys run concurrently.
+ *
+ * @param {string} key — resource identifier (e.g. 'apply:job_abc:usr_xyz')
+ * @param {Function} fn — async function to execute under lock
+ * @returns {Promise<*>} — result of fn()
+ */
+export function withLock(key, fn) {
+  const prev = locks.get(key) || Promise.resolve();
+
+  let releaseLock;
+  const current = new Promise((resolve) => {
+    releaseLock = resolve;
+  });
+
+  // Chain: wait for previous → run fn → release
+  const execution = prev.then(async () => {
+    try {
+      return await fn();
+    } finally {
+      // Auto-cleanup: if this is still the current promise for this key, remove it
+      if (locks.get(key) === current) {
+        locks.delete(key);
+      }
+      releaseLock();
+    }
+  });
+
+  // Store the release promise (not the execution) as the chain link
+  locks.set(key, current);
+
+  return execution;
+}
+
+/**
+ * Get count of active lock keys (for monitoring/testing)
+ * @returns {number}
+ */
+export function getLockCount() {
+  return locks.size;
+}
+
+/**
+ * Clear all locks (testing only)
+ */
+export function clearLocks() {
+  locks.clear();
+}
+```
+
+---
+
 ## `server/services/sanitizer.js`
 
 ```javascript
@@ -4460,6 +4747,14 @@ import config from '../../config.js';
 export function calculateTrustScore(data) {
   const weights = config.TRUST.weights;
 
+  // Attendance component (0–1)
+  let attendanceScore;
+  if (!data.totalAttendanceRecords || data.totalAttendanceRecords === 0) {
+    attendanceScore = 0.5; // neutral
+  } else {
+    attendanceScore = (data.attendedDays || 0) / data.totalAttendanceRecords;
+  }
+
   // Rating component (0–1)
   let ratingScore;
   if (data.ratingCount === 0) {
@@ -4492,6 +4787,7 @@ export function calculateTrustScore(data) {
   let score = 
     weights.ratingAvg * ratingScore +
     weights.completionRate * completionScore +
+    (weights.attendanceRate || 0) * attendanceScore +
     weights.reportScore * reportScore +
     weights.accountAge * accountAgeScore;
 
@@ -4506,6 +4802,7 @@ export function calculateTrustScore(data) {
     components: {
       ratingScore: Math.round(ratingScore * 100) / 100,
       completionScore: Math.round(completionScore * 100) / 100,
+      attendanceScore: Math.round(attendanceScore * 100) / 100,
       reportScore: Math.round(reportScore * 100) / 100,
       accountAgeScore: Math.round(accountAgeScore * 100) / 100,
     },
@@ -4558,6 +4855,23 @@ export async function getUserTrustScore(userId) {
     }
   }
 
+  // Gather attendance data (workers only)
+  let totalAttendanceRecords = 0;
+  let attendedDays = 0;
+
+  if (user.role === 'worker') {
+    try {
+      const { listByWorker: listAttendanceByWorker } = await import('./attendance.js');
+      const attendanceRecords = await listAttendanceByWorker(userId);
+      totalAttendanceRecords = attendanceRecords.length;
+      attendedDays = attendanceRecords.filter(r =>
+        r.status === 'checked_in' || r.status === 'checked_out' || r.status === 'confirmed'
+      ).length;
+    } catch (_) {
+      // Non-blocking — attendance data unavailable
+    }
+  }
+
   // Gather report data
   const { listByTarget } = await import('./reports.js');
   const reports = await listByTarget(userId);
@@ -4577,6 +4891,8 @@ export async function getUserTrustScore(userId) {
     confirmedReports,
     totalReports,
     accountAgeDays,
+    totalAttendanceRecords,
+    attendedDays,
   });
 }
 ```

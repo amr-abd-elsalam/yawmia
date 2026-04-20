@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.16.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-20T00:32:11.433Z
+# يوميّة (Yawmia) v0.17.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-20T01:54:21.244Z
 > Files in this part: 6
 
 ## Files
@@ -483,7 +483,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.16.0',
+    cacheName: 'yawmia-v0.17.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -509,8 +509,9 @@ const config = {
   TRUST: {
     enabled: true,
     weights: {
-      ratingAvg: 0.4,
-      completionRate: 0.3,
+      ratingAvg: 0.3,
+      completionRate: 0.2,
+      attendanceRate: 0.2,
       reportScore: 0.2,
       accountAge: 0.1,
     },
@@ -611,7 +612,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -666,12 +667,35 @@ import { cleanExpired as cleanExpiredSessions } from './server/services/sessions
 import { enforceExpiredJobs } from './server/services/jobs.js';
 import { cleanExpiredOtps } from './server/services/auth.js';
 import { cleanOldNotifications } from './server/services/notifications.js';
+import { autoDetectNoShows } from './server/services/attendance.js';
 
 const PORT = parseInt(process.env.PORT || '3002', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Startup Index Integrity Check (lightweight — warning only) ──
+try {
+  const { readJSON: readJSONCheck } = await import('./server/services/database.js');
+  const { join: joinPath } = await import('node:path');
+  const dataPath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+  const criticalIndexes = [
+    { name: 'phone-index', path: config.DATABASE.indexFiles.phoneIndex },
+    { name: 'jobs-index', path: config.DATABASE.indexFiles.jobsIndex },
+  ];
+
+  for (const idx of criticalIndexes) {
+    const fullPath = joinPath(dataPath, idx.path);
+    const data = await readJSONCheck(fullPath);
+    if (!data) {
+      logger.warn(`⚠️ Critical index missing: ${idx.name} (${idx.path}). Run: node scripts/repair-indexes.js`);
+    }
+  }
+} catch (err) {
+  logger.warn('Startup index check error', { error: err.message });
+}
 
 // ── Create Router ─────────────────────────────────────────────
 const router = createRouter();
@@ -736,6 +760,8 @@ try {
   if (expiredOtps > 0) logger.info(`Startup: cleaned ${expiredOtps} expired OTPs`);
   const oldNotifs = await cleanOldNotifications();
   if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
+  const autoNoShows = await autoDetectNoShows();
+  if (autoNoShows > 0) logger.info(`Startup: detected ${autoNoShows} auto no-shows`);
 } catch (err) {
   logger.warn('Startup cleanup error', { error: err.message });
 }
@@ -748,6 +774,7 @@ const cleanupTimer = setInterval(async () => {
     await enforceExpiredJobs();
     await cleanExpiredOtps();
     await cleanOldNotifications();
+    await autoDetectNoShows();
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
   }
@@ -797,7 +824,7 @@ import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, 
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
-import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
+import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 
@@ -821,7 +848,7 @@ const routes = [
       sendJSON(res, 200, {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.16.0',
+        version: '0.17.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
         memory: {
@@ -886,6 +913,7 @@ const routes = [
   { method: 'POST', path: '/api/jobs/:id/checkin', middlewares: [requireAuth, requireRole('worker')], handler: handleCheckIn },
   { method: 'POST', path: '/api/jobs/:id/checkout', middlewares: [requireAuth, requireRole('worker')], handler: handleCheckOut },
   { method: 'POST', path: '/api/jobs/:id/no-show', middlewares: [requireAuth, requireRole('employer')], handler: handleReportNoShow },
+  { method: 'POST', path: '/api/jobs/:id/manual-checkin', middlewares: [requireAuth, requireRole('employer')], handler: handleEmployerCheckIn },
   { method: 'GET', path: '/api/jobs/:id/attendance/summary', middlewares: [requireAuth], handler: handleJobAttendanceSummary },
   { method: 'GET', path: '/api/jobs/:id/attendance', middlewares: [requireAuth], handler: handleListJobAttendance },
   { method: 'POST', path: '/api/attendance/:id/confirm', middlewares: [requireAuth, requireRole('employer')], handler: handleConfirmAttendance },
