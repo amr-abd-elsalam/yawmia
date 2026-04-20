@@ -100,8 +100,8 @@ describe('Phase 14 — Config', () => {
     assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 12);
   });
 
-  it('P14-07: PWA cacheName updated to v0.18.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.18.0');
+  it('P14-07: PWA cacheName updated to v0.19.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
   });
 });
 
@@ -380,10 +380,10 @@ describe('Phase 14 — Integration', () => {
     assert.ok(indexIds.includes(sub.verification.id));
   });
 
-  it('P14-36: Version is 0.18.0', async () => {
+  it('P14-36: Version is 0.19.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.18.0');
+    assert.strictEqual(pkg.version, '0.19.0');
   });
 });

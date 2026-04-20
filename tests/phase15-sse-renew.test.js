@@ -126,8 +126,8 @@ describe('Phase 15 — Config', () => {
     }, TypeError, 'should not allow mutation');
   });
 
-  it('P15-06: PWA cacheName updated to v0.18.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.18.0');
+  it('P15-06: PWA cacheName updated to v0.19.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
   });
 });
 
@@ -416,11 +416,11 @@ describe('Phase 15 — SSE Handler', () => {
 
 describe('Phase 15 — Version', () => {
 
-  it('P15-28: package.json version 0.18.0', async () => {
+  it('P15-28: package.json version 0.19.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.18.0');
+    assert.strictEqual(pkg.version, '0.19.0');
   });
 });
 
