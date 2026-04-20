@@ -1,0 +1,1024 @@
+# يوميّة (Yawmia) v0.16.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-20T00:03:53.224Z
+> Files in this part: 6
+
+## Files
+1. `.env.example`
+2. `.gitignore`
+3. `config.js`
+4. `package.json`
+5. `server.js`
+6. `server/router.js`
+
+---
+
+## `.env.example`
+
+```text
+# Server
+PORT=3002
+NODE_ENV=development
+
+# Admin
+ADMIN_TOKEN=change-me-in-production
+
+# ── Messaging Channels ─────────────────────────────────
+# Set MESSAGING.enabled=true in config.js to activate
+
+# WhatsApp Cloud API (Primary — ~$0.006/OTP in Egypt)
+# Get these from Meta Business Suite → WhatsApp → API Setup
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_BUSINESS_ACCOUNT_ID=
+
+# SMS via Infobip (Fallback — ~$0.04/OTP in Egypt)
+INFOBIP_API_KEY=
+INFOBIP_BASE_URL=https://xxxxx.api.infobip.com
+INFOBIP_SENDER=Yawmia
+```
+
+---
+
+## `.gitignore`
+
+```text
+node_modules/
+.env
+data/
+*.log
+.DS_Store
+Thumbs.db
+cloudflared.deb
+backups/
+test-backups/
+*.tmp
+backups/
+test-backups/
+*.tmp
+```
+
+---
+
+## `config.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// config.js — يوميّة: ملف الإعدادات الرئيسي
+// ═══════════════════════════════════════════════════════════════
+
+function deepFreeze(obj) {
+  Object.freeze(obj);
+  for (const val of Object.values(obj)) {
+    if (val && typeof val === 'object' && !Object.isFrozen(val)) {
+      deepFreeze(val);
+    }
+  }
+  return obj;
+}
+
+const config = {
+
+  // ═══════════════════════════════════════════════════════════
+  // 1. هوية العلامة التجارية (BRAND)
+  // ═══════════════════════════════════════════════════════════
+  BRAND: {
+    name: "يوميّة",
+    nameEn: "Yawmia",
+    tagline: "شغلك قريب منّك",
+    logo: "./assets/img/logo.png",
+    primaryColor: "#2563eb",
+    domain: "yawmia.com",
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 2. بيانات الصفحة (META)
+  // ═══════════════════════════════════════════════════════════
+  META: {
+    title: "يوميّة — شغلك قريب منّك",
+    description: "منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.",
+    lang: "ar",
+    dir: "rtl",
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 3. فئات العمالة (LABOR_CATEGORIES)
+  // ═══════════════════════════════════════════════════════════
+  LABOR_CATEGORIES: [
+    { id: "farming",       label: "زراعة وحصاد",       icon: "🌾" },
+    { id: "construction",  label: "بناء وتشييد",       icon: "🏗️" },
+    { id: "cleaning",      label: "نظافة وتنظيف",      icon: "🧹" },
+    { id: "loading",       label: "شحن وتحميل",       icon: "📦" },
+    { id: "painting",      label: "دهانات ونقاشة",     icon: "🎨" },
+    { id: "plumbing",      label: "سباكة",            icon: "🔧" },
+    { id: "electrical",    label: "كهرباء",           icon: "⚡" },
+    { id: "carpentry",     label: "نجارة",            icon: "🪚" },
+    { id: "driving",       label: "قيادة ونقل",       icon: "🚛" },
+    { id: "cooking",       label: "طبخ وتقديم",       icon: "🍳" },
+    { id: "security",      label: "حراسة وأمن",       icon: "🛡️" },
+    { id: "general",       label: "أعمال عامة",       icon: "👷" },
+  ],
+
+  // ═══════════════════════════════════════════════════════════
+  // 4. المناطق الجغرافية (REGIONS)
+  // ═══════════════════════════════════════════════════════════
+  REGIONS: {
+    enabled: true,
+    // المحافظات الرئيسية — يتوسع لاحقاً
+    governorates: [
+      { id: "cairo",       label: "القاهرة" },
+      { id: "giza",        label: "الجيزة" },
+      { id: "alex",        label: "الإسكندرية" },
+      { id: "qalyubia",    label: "القليوبية" },
+      { id: "sharqia",     label: "الشرقية" },
+      { id: "dakahlia",    label: "الدقهلية" },
+      { id: "gharbia",     label: "الغربية" },
+      { id: "monufia",     label: "المنوفية" },
+      { id: "beheira",     label: "البحيرة" },
+      { id: "fayoum",      label: "الفيوم" },
+      { id: "minya",       label: "المنيا" },
+      { id: "asyut",       label: "أسيوط" },
+      { id: "sohag",       label: "سوهاج" },
+      { id: "qena",        label: "قنا" },
+      { id: "luxor",       label: "الأقصر" },
+      { id: "aswan",       label: "أسوان" },
+      { id: "ismailia",    label: "الإسماعيلية" },
+      { id: "suez",        label: "السويس" },
+      { id: "portsaid",    label: "بورسعيد" },
+      { id: "damietta",    label: "دمياط" },
+      { id: "kafr_elsheikh", label: "كفر الشيخ" },
+      { id: "beni_suef",   label: "بني سويف" },
+      { id: "new_valley",  label: "الوادي الجديد" },
+      { id: "red_sea",     label: "البحر الأحمر" },
+      { id: "north_sinai", label: "شمال سيناء" },
+      { id: "south_sinai", label: "جنوب سيناء" },
+      { id: "matrouh",     label: "مطروح" },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 5. النموذج المالي (FINANCIALS)
+  // ═══════════════════════════════════════════════════════════
+  FINANCIALS: {
+    platformFeePercent: 15,        // نسبة المنصة من اليومية (%)
+    minDailyWage: 150,             // أقل يومية مسموحة (جنيه)
+    maxDailyWage: 1000,            // أعلى يومية مسموحة (جنيه)
+    compensationEnabled: true,     // نظام التعويضات مفعّل
+    compensationDailyRate: 0.75,   // نسبة اليومية المدفوعة كتعويض عن كل يوم إصابة (75%)
+    maxCompensationDays: 30,       // أقصى أيام تعويض
+    paymentMethods: ['cash', 'wallet', 'instapay'],
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 6. إعدادات المصادقة (AUTH)
+  // ═══════════════════════════════════════════════════════════
+  AUTH: {
+    otpEnabled: true,              // التحقق عبر OTP على الموبايل
+    otpLength: 4,                  // عدد أرقام الكود
+    otpExpiryMs: 300000,           // مدة صلاحية الكود (5 دقائق)
+    maxOtpAttempts: 3,             // أقصى محاولات خاطئة
+    sessionTtlDays: 30,            // مدة الجلسة (يوم)
+    roles: ['worker', 'employer', 'admin'],
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 7. إعدادات الإعلانات/فرص العمل (JOBS)
+  // ═══════════════════════════════════════════════════════════
+  JOBS: {
+    maxWorkersPerJob: 100,         // أقصى عدد عمال مطلوبين في فرصة واحدة
+    minWorkersPerJob: 1,
+    maxDescriptionLength: 500,
+    expiryHours: 72,               // الفرصة تنتهي بعد 72 ساعة لو مش مكتملة
+    autoMatchByLocation: true,     // مطابقة تلقائية حسب الموقع الجغرافي
+    maxDistanceKm: 30,             // أقصى مسافة للمطابقة التلقائية (كم)
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 8. إعدادات التقييم (RATINGS)
+  // ═══════════════════════════════════════════════════════════
+  RATINGS: {
+    enabled: true,
+    maxStars: 5,
+    minRatingsToShow: 3,           // أقل عدد تقييمات لعرض المتوسط
+    canWorkerRateEmployer: true,
+    canEmployerRateWorker: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 9. مسارات API (API)
+  // ═══════════════════════════════════════════════════════════
+  API: {
+    // Auth
+    sendOtp:          "/api/auth/send-otp",
+    verifyOtp:        "/api/auth/verify-otp",
+    profile:          "/api/auth/profile",
+
+    // Jobs
+    createJob:        "/api/jobs",
+    listJobs:         "/api/jobs",
+    jobDetail:        "/api/jobs/:id",
+    applyJob:         "/api/jobs/:id/apply",
+    acceptWorker:     "/api/jobs/:id/accept",
+
+    // Workers
+    workerProfile:    "/api/workers/:id",
+    nearbyJobs:       "/api/workers/nearby",
+
+    // Admin
+    adminStats:       "/api/admin/stats",
+    adminUsers:       "/api/admin/users",
+    adminJobs:        "/api/admin/jobs",
+
+    // Health
+    health:           "/api/health",
+    config:           "/api/config",
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 10. حدود الاستخدام (LIMITS)
+  // ═══════════════════════════════════════════════════════════
+  LIMITS: {
+    maxJobsPerEmployerPerDay: 10,
+    maxApplicationsPerWorkerPerDay: 20,
+    rateLimitPerMinute: 60,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 11. الجلسات (SESSIONS)
+  // ═══════════════════════════════════════════════════════════
+  SESSIONS: {
+    enabled: true,
+    ttlDays: 30,
+    maxSessions: 50000,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 12. التسجيل والمراقبة (LOGGING)
+  // ═══════════════════════════════════════════════════════════
+  LOGGING: {
+    level: 'info',
+    operationalLog: true,
+    maxEntries: 500,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 13. لوحة التحكم (ADMIN)
+  // ═══════════════════════════════════════════════════════════
+  ADMIN: {
+    refreshIntervalMs: 60000,
+    showFinancials: true,
+    showHealth: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 14. إعدادات الإشعارات (NOTIFICATIONS)
+  // ═══════════════════════════════════════════════════════════
+  NOTIFICATIONS: {
+    enabled: true,
+    channels: ['sms', 'push', 'in_app'],
+    // إشعارات للعامل
+    workerNotifications: {
+      newJobNearby: true,           // فرصة شغل جديدة قريبة منك
+      applicationAccepted: true,    // تم قبولك في الفرصة
+      applicationRejected: true,    // لم يتم قبولك
+      paymentReceived: true,        // تم استلام المبلغ
+      ratingReceived: true,         // تم تقييمك
+      ratePrompt: true,             // قيّم تجربتك
+    },
+    // إشعارات لصاحب العمل
+    employerNotifications: {
+      newApplication: true,         // عامل جديد تقدّم
+      jobFilled: true,              // الفرصة اكتملت
+      workerNoShow: true,           // العامل لم يحضر
+      ratingReceived: true,         // تم تقييمك
+      ratePrompt: true,             // قيّم تجربتك
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 15. قاعدة البيانات (DATABASE)
+  // ═══════════════════════════════════════════════════════════
+  DATABASE: {
+    basePath: './data',
+    dirs: {
+      users: 'users',
+      sessions: 'sessions',
+      jobs: 'jobs',
+      applications: 'applications',
+      otp: 'otp',
+      notifications: 'notifications',
+      ratings: 'ratings',
+      payments: 'payments',
+      reports: 'reports',
+      verifications: 'verifications',
+      attendance: 'attendance',
+    },
+    indexFiles: {
+      phoneIndex: 'users/phone-index.json',
+      jobsIndex: 'jobs/index.json',
+      workerAppsIndex: 'applications/worker-index.json',
+      jobAppsIndex: 'applications/job-index.json',
+      userNotificationsIndex: 'notifications/user-index.json',
+      employerJobsIndex: 'jobs/employer-index.json',
+      jobPaymentsIndex: 'payments/job-index.json',
+      targetReportsIndex: 'reports/target-index.json',
+      reporterReportsIndex: 'reports/reporter-index.json',
+      userVerificationIndex: 'verifications/user-index.json',
+      jobAttendanceIndex: 'attendance/job-index.json',
+      workerAttendanceIndex: 'attendance/worker-index.json',
+    },
+    encoding: 'utf-8',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 16. قواعد التحقق (VALIDATION)
+  // ═══════════════════════════════════════════════════════════
+  VALIDATION: {
+    phoneRegex: '^01[0125]\\d{8}$',      // Egyptian mobile format
+    nameMinLength: 2,
+    nameMaxLength: 50,
+    descriptionMaxLength: 500,
+    titleMinLength: 5,
+    titleMaxLength: 100,
+    minDurationDays: 1,
+    maxDurationDays: 30,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 17. تحديد المعدل (RATE_LIMIT)
+  // ═══════════════════════════════════════════════════════════
+  RATE_LIMIT: {
+    enabled: true,
+    windowMs: 60000,                     // نافذة زمنية (1 دقيقة)
+    maxRequests: 60,                     // أقصى طلبات في النافذة
+    otpMaxRequests: 5,                   // أقصى طلبات OTP في النافذة
+    otpWindowMs: 300000,                 // نافذة OTP (5 دقائق)
+    message: 'تم تجاوز الحد المسموح من الطلبات. حاول بعد قليل.',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 18. الملفات الثابتة (STATIC)
+  // ═══════════════════════════════════════════════════════════
+  STATIC: {
+    root: './frontend',
+    maxAge: 86400,                       // Cache-Control max-age (ثانية) — يوم واحد
+    indexFile: 'index.html',
+    mimeTypes: {
+      '.html': 'text/html; charset=utf-8',
+      '.css':  'text/css; charset=utf-8',
+      '.js':   'application/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.png':  'image/png',
+      '.jpg':  'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif':  'image/gif',
+      '.svg':  'image/svg+xml',
+      '.ico':  'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf':  'font/ttf',
+      '.webp': 'image/webp',
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 19. الأمان (SECURITY)
+  // ═══════════════════════════════════════════════════════════
+  SECURITY: {
+    allowedOrigins: ['*'],             // في production غيّرها: ['https://yawmia.com']
+    sanitizeInput: true,               // تنظيف المدخلات من HTML tags
+    headers: {
+      xContentTypeOptions: 'nosniff',
+      xFrameOptions: 'DENY',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 20. خدمة المراسلة المتعددة القنوات (MESSAGING)
+  // ═══════════════════════════════════════════════════════════
+  MESSAGING: {
+    enabled: false,                    // false = mock mode (console.log only)
+    preferredChannel: 'whatsapp',      // 'whatsapp' | 'sms' | 'mock'
+    fallbackChannel: 'sms',           // fallback if preferred fails; null = no fallback
+    whatsapp: {
+      enabled: false,                  // enable WhatsApp Cloud API
+      apiVersion: 'v22.0',            // Meta Graph API version
+      templateName: 'yawmia_otp',     // pre-approved authentication template name
+      templateLanguage: 'ar',          // template language code
+      codeTtlSeconds: 300,             // message TTL (set at template creation)
+    },
+    sms: {
+      enabled: false,                  // enable SMS (Infobip)
+      gateway: 'infobip',             // 'infobip'
+      senderId: 'Yawmia',            // SMS sender ID
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 21. التنظيف الدوري (CLEANUP)
+  // ═══════════════════════════════════════════════════════════
+  CLEANUP: {
+    notificationTtlDays: 90,         // حذف الإشعارات المقروءة بعد 90 يوم
+    maxNotificationsPerUser: 500,    // أقصى عدد إشعارات لكل مستخدم (مرجع مستقبلي)
+    otpCleanupEnabled: true,         // تنظيف OTP files المنتهية
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 22. المدفوعات (PAYMENTS)
+  // ═══════════════════════════════════════════════════════════
+  PAYMENTS: {
+    enabled: true,
+    autoCreateOnComplete: true,      // إنشاء سجل دفع تلقائي عند إنهاء الفرصة
+    methods: ['cash', 'wallet', 'instapay'],
+    defaultMethod: 'cash',
+    statuses: ['pending', 'employer_confirmed', 'completed', 'disputed'],
+    confirmationRequired: true,      // صاحب العمل لازم يأكد الدفع
+    adminApprovalRequired: true,     // الأدمن لازم يوافق على الإنهاء
+    disputeWindowDays: 7,            // مهلة فتح نزاع بعد الإنهاء (أيام)
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 23. الموقع الجغرافي (GEOLOCATION)
+  // ═══════════════════════════════════════════════════════════
+  GEOLOCATION: {
+    enabled: true,
+    defaultRadiusKm: 30,             // نطاق البحث الافتراضي (كم)
+    maxRadiusKm: 100,                // أقصى نطاق بحث مسموح (كم)
+    earthRadiusKm: 6371,             // نصف قطر الأرض (للحساب)
+    // مراكز المحافظات — تُستخدم كـ fallback لو المستخدم/الفرصة مفيش lat/lng
+    governorateCenters: {
+      cairo:         { lat: 30.0444, lng: 31.2357 },
+      giza:          { lat: 30.0131, lng: 31.2089 },
+      alex:          { lat: 31.2001, lng: 29.9187 },
+      qalyubia:      { lat: 30.3292, lng: 31.2422 },
+      sharqia:       { lat: 30.5877, lng: 31.5020 },
+      dakahlia:      { lat: 31.0364, lng: 31.3807 },
+      gharbia:       { lat: 30.8754, lng: 31.0297 },
+      monufia:       { lat: 30.5972, lng: 30.9876 },
+      beheira:       { lat: 30.8481, lng: 30.3436 },
+      fayoum:        { lat: 29.3084, lng: 30.8428 },
+      minya:         { lat: 28.1099, lng: 30.7503 },
+      asyut:         { lat: 27.1783, lng: 31.1859 },
+      sohag:         { lat: 26.5591, lng: 31.6948 },
+      qena:          { lat: 26.1551, lng: 32.7160 },
+      luxor:         { lat: 25.6872, lng: 32.6396 },
+      aswan:         { lat: 24.0889, lng: 32.8998 },
+      ismailia:      { lat: 30.5965, lng: 32.2715 },
+      suez:          { lat: 29.9668, lng: 32.5498 },
+      portsaid:      { lat: 31.2565, lng: 32.2841 },
+      damietta:      { lat: 31.4175, lng: 31.8144 },
+      kafr_elsheikh: { lat: 31.1117, lng: 30.9388 },
+      beni_suef:     { lat: 29.0661, lng: 31.0994 },
+      new_valley:    { lat: 25.4390, lng: 30.0423 },
+      red_sea:       { lat: 27.1783, lng: 33.7998 },
+      north_sinai:   { lat: 31.0603, lng: 33.8357 },
+      south_sinai:   { lat: 28.4973, lng: 33.9558 },
+      matrouh:       { lat: 31.3525, lng: 27.2453 },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 24. تطبيق الويب التدريجي (PWA)
+  // ═══════════════════════════════════════════════════════════
+  PWA: {
+    enabled: true,
+    cacheName: 'yawmia-v0.16.0',
+    swPath: '/sw.js',
+    manifestPath: '/manifest.json',
+    themeColor: '#2563eb',
+    backgroundColor: '#0f172a',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 25. نظام البلاغات (REPORTS)
+  // ═══════════════════════════════════════════════════════════
+  REPORTS: {
+    enabled: true,
+    maxReportsPerUserPerDay: 5,
+    minReasonLength: 10,
+    maxReasonLength: 500,
+    statuses: ['pending', 'reviewed', 'action_taken', 'dismissed'],
+    types: ['fraud', 'no_show', 'harassment', 'quality', 'payment_issue', 'other'],
+    autobanThreshold: 5,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 26. نظام الثقة (TRUST)
+  // ═══════════════════════════════════════════════════════════
+  TRUST: {
+    enabled: true,
+    weights: {
+      ratingAvg: 0.4,
+      completionRate: 0.3,
+      reportScore: 0.2,
+      accountAge: 0.1,
+    },
+    minScoreToShow: 0.3,
+    accountAgeCap: 365,
+    termsRequired: true,
+    termsVersion: '1.0',
+    softDeleteRetentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 27. إشعارات عبر المراسلة (NOTIFICATION_MESSAGING)
+  // ═══════════════════════════════════════════════════════════
+  NOTIFICATION_MESSAGING: {
+    enabled: false,                    // false = in_app only (no external messages)
+    criticalEvents: {
+      application_accepted: true,      // العامل يوصلله رسالة لما يتقبل
+      application_rejected: false,     // الرفض — in_app فقط افتراضياً
+      job_filled: true,                // صاحب العمل — الفرصة اكتملت
+      payment_created: true,           // صاحب العمل — سجل دفع جديد
+      report_action: false,            // إجراء على بلاغ — in_app فقط
+      job_cancelled: true,             // العامل — الفرصة اتلغت
+    },
+    cooldownMs: 60000,                 // دقيقة واحدة بين رسالتين لنفس اليوزر
+    maxDailyMessagesPerUser: 20,       // أقصى عدد رسائل إشعار يومي لمستخدم واحد
+    whatsappTemplates: {
+      application_accepted: 'yawmia_accepted',
+      job_filled: 'yawmia_job_filled',
+      payment_created: 'yawmia_payment',
+      job_cancelled: 'yawmia_job_cancelled',
+    },
+    defaultPreferences: {
+      inApp: true,                     // دايماً مفعّل — مش قابل للتعطيل
+      whatsapp: true,                  // WhatsApp مفعّل افتراضياً
+      sms: false,                      // SMS مش مفعّل افتراضياً (غالي)
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 28. التحقق من الهوية (VERIFICATION)
+  // ═══════════════════════════════════════════════════════════
+  VERIFICATION: {
+    enabled: true,
+    maxImageSizeBytes: 2 * 1024 * 1024,    // 2MB max per image (base64)
+    allowedStatuses: ['unverified', 'pending', 'verified', 'rejected'],
+    requiredForApplication: false,           // لو true: العامل لازم يكون verified عشان يتقدم
+    requiredForJobCreation: false,           // لو true: صاحب العمل لازم يكون verified عشان ينشر
+    adminAutoApproveThreshold: null,         // null = manual review always
+    rejectionCooldownHours: 48,             // بعد رفض، لازم يستنى 48 ساعة قبل إعادة التقديم
+    maxSubmissionsPerDay: 3,                // أقصى عدد طلبات تحقق في اليوم
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 29. الأحداث المُرسَلة من السيرفر (SSE)
+  // ═══════════════════════════════════════════════════════════
+  SSE: {
+    enabled: true,
+    heartbeatIntervalMs: 30000,            // 30 ثانية بين كل heartbeat
+    maxConnectionsPerUser: 3,              // أقصى 3 اتصالات لكل مستخدم (tabs/devices)
+    reconnectMs: 5000,                     // اقتراح retry للـ EventSource (5 ثوانٍ)
+    cleanupIntervalMs: 60000,              // تنظيف الاتصالات الميتة كل 60 ثانية
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 30. تجديد الفرص (JOB_RENEWAL)
+  // ═══════════════════════════════════════════════════════════
+  JOB_RENEWAL: {
+    enabled: true,
+    allowedFromStatuses: ['expired', 'cancelled'],
+    renewalExpiryHours: 72,                // مدة صلاحية الفرصة المُجدَّدة (72 ساعة)
+    maxRenewalsPerJob: 3,                  // أقصى عدد تجديدات لكل فرصة
+    resetApplications: false,              // false = الطلبات الموجودة تبقى كما هي
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 31. نظام الحضور (ATTENDANCE)
+  // ═══════════════════════════════════════════════════════════
+  ATTENDANCE: {
+    enabled: true,
+    checkInRadiusKm: 0.5,                   // 500 متر — أقصى مسافة لتسجيل الحضور
+    allowEmployerOverride: true,             // صاحب العمل يقدر يأكد بدون GPS
+    autoNoShowAfterHours: 2,                 // عدد ساعات قبل اعتبار العامل غائب (مرجع مستقبلي)
+    statuses: ['pending', 'checked_in', 'checked_out', 'confirmed', 'no_show'],
+    requireGpsForCheckIn: true,              // GPS مطلوب لتسجيل الحضور
+    requireGpsForCheckOut: false,            // GPS اختياري لتسجيل الانصراف
+    maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
+  },
+
+};
+
+export default deepFreeze(config);
+```
+
+---
+
+## `package.json`
+
+```json
+{
+  "name": "yawmia",
+  "version": "0.16.0",
+  "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "keywords": ["daily-labor", "egypt", "employment", "platform"],
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0"
+  }
+}
+```
+
+---
+
+## `server.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server.js — يوميّة: Entry Point
+// ═══════════════════════════════════════════════════════════════
+
+import { createServer } from 'node:http';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+
+// Load env
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {
+  // dotenv not installed yet — use process.env directly
+}
+
+import config from './config.js';
+import { createRouter } from './server/router.js';
+import { corsMiddleware } from './server/middleware/cors.js';
+import { securityMiddleware } from './server/middleware/security.js';
+import { requestIdMiddleware } from './server/middleware/requestId.js';
+import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
+import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
+import { logger } from './server/services/logger.js';
+import { initDatabase } from './server/services/database.js';
+import { staticMiddleware } from './server/middleware/static.js';
+import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
+import { enforceExpiredJobs } from './server/services/jobs.js';
+import { cleanExpiredOtps } from './server/services/auth.js';
+import { cleanOldNotifications } from './server/services/notifications.js';
+
+const PORT = parseInt(process.env.PORT || '3002', 10);
+const HOST = process.env.HOST || '0.0.0.0';
+
+// ── Initialize Database Directories ──────────────────────────
+await initDatabase();
+
+// ── Create Router ─────────────────────────────────────────────
+const router = createRouter();
+
+// ── Middleware Chain ───────────────────────────────────────────
+function runMiddleware(middlewares, req, res, done) {
+  let idx = 0;
+  function next(err) {
+    if (err) {
+      logger.error('Middleware error', { error: err.message });
+      if (!res.writableEnded) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' }));
+      }
+      return;
+    }
+    const mw = middlewares[idx++];
+    if (!mw) return done();
+    try {
+      mw(req, res, next);
+    } catch (e) {
+      next(e);
+    }
+  }
+  next();
+}
+
+const globalMiddleware = [
+  corsMiddleware,
+  securityMiddleware,
+  requestIdMiddleware,
+  rateLimitMiddleware,
+  bodyParserMiddleware,
+];
+
+// ── HTTP Server ───────────────────────────────────────────────
+const server = createServer((req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  req.pathname = url.pathname;
+  req.query = Object.fromEntries(url.searchParams);
+
+  // Static file serving runs BEFORE the API middleware chain
+  staticMiddleware(req, res, () => {
+    runMiddleware(globalMiddleware, req, res, () => {
+      router(req, res);
+    });
+  });
+});
+
+// ── Server Timeouts ───────────────────────────────────────────
+server.requestTimeout = 30000;       // 30s max for entire request
+server.headersTimeout = 10000;       // 10s max for headers
+server.keepAliveTimeout = 65000;     // 65s keep-alive (> typical LB timeout of 60s)
+
+// ── Startup Cleanup ───────────────────────────────────────────
+try {
+  const expiredSessions = await cleanExpiredSessions();
+  if (expiredSessions > 0) logger.info(`Startup: cleaned ${expiredSessions} expired sessions`);
+  const expiredJobs = await enforceExpiredJobs();
+  if (expiredJobs > 0) logger.info(`Startup: enforced ${expiredJobs} expired jobs`);
+  const expiredOtps = await cleanExpiredOtps();
+  if (expiredOtps > 0) logger.info(`Startup: cleaned ${expiredOtps} expired OTPs`);
+  const oldNotifs = await cleanOldNotifications();
+  if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
+} catch (err) {
+  logger.warn('Startup cleanup error', { error: err.message });
+}
+
+// ── Periodic Cleanup (every 30 minutes) ───────────────────────
+const CLEANUP_INTERVAL = 30 * 60 * 1000;
+const cleanupTimer = setInterval(async () => {
+  try {
+    await cleanExpiredSessions();
+    await enforceExpiredJobs();
+    await cleanExpiredOtps();
+    await cleanOldNotifications();
+  } catch (err) {
+    logger.warn('Periodic cleanup error', { error: err.message });
+  }
+}, CLEANUP_INTERVAL);
+if (cleanupTimer.unref) cleanupTimer.unref();
+
+// ── Start ─────────────────────────────────────────────────────
+server.listen(PORT, HOST, () => {
+  logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);
+  logger.info(`   Server: http://${HOST}:${PORT}`);
+  logger.info(`   Health: http://localhost:${PORT}/api/health`);
+  logger.info(`   Config: http://localhost:${PORT}/api/config`);
+});
+
+// ── Graceful shutdown ─────────────────────────────────────────
+process.on('SIGINT', () => {
+  logger.info('🔴 Shutting down...');
+  server.close(() => process.exit(0));
+});
+
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
+});
+
+// ── Export for testing ────────────────────────────────────────
+export { server, PORT, HOST };
+```
+
+---
+
+## `server/router.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/router.js — Central Route Registry
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../config.js';
+import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
+import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
+import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob } from './handlers/jobsHandler.js';
+import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
+import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
+import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
+import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary } from './handlers/ratingsHandler.js';
+import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
+import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
+import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
+import { handleNotificationStream } from './handlers/sseHandler.js';
+import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
+import { setupNotificationListeners } from './services/notifications.js';
+import { logger } from './services/logger.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+/**
+ * Route definition format:
+ * { method, path, middlewares: [...], handler }
+ *
+ * Path supports :param patterns (e.g., /api/jobs/:id)
+ */
+const routes = [
+  // ── Public Routes ──
+  {
+    method: 'GET', path: '/api/health', middlewares: [],
+    handler: (req, res) => {
+      const mem = process.memoryUsage();
+      sendJSON(res, 200, {
+        status: 'ok',
+        brand: config.BRAND.name,
+        version: '0.16.0',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+        memory: {
+          heapUsedMB: +(mem.heapUsed / 1048576).toFixed(1),
+          heapTotalMB: +(mem.heapTotal / 1048576).toFixed(1),
+          rssMB: +(mem.rss / 1048576).toFixed(1),
+        },
+        node: process.version,
+      });
+    },
+  },
+  {
+    method: 'GET', path: '/api/config', middlewares: [],
+    handler: (req, res) => {
+      sendJSON(res, 200, {
+        BRAND: config.BRAND,
+        META: config.META,
+        LABOR_CATEGORIES: config.LABOR_CATEGORIES,
+        REGIONS: config.REGIONS,
+        RATINGS: config.RATINGS,
+        FINANCIALS: {
+          platformFeePercent: config.FINANCIALS.platformFeePercent,
+          minDailyWage: config.FINANCIALS.minDailyWage,
+          maxDailyWage: config.FINANCIALS.maxDailyWage,
+          compensationEnabled: config.FINANCIALS.compensationEnabled,
+          paymentMethods: config.FINANCIALS.paymentMethods,
+        },
+      });
+    },
+  },
+
+  // ── Auth Routes (Public) ──
+  { method: 'POST', path: '/api/auth/send-otp', middlewares: [], handler: handleSendOtp },
+  { method: 'POST', path: '/api/auth/verify-otp', middlewares: [], handler: handleVerifyOtp },
+
+  // ── Auth Routes (Protected) ──
+  { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
+  { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
+  { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
+  { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
+  { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
+  { method: 'DELETE', path: '/api/auth/account', middlewares: [requireAuth], handler: handleDeleteAccount },
+  { method: 'POST', path: '/api/auth/verify-identity', middlewares: [requireAuth], handler: handleSubmitVerification },
+  { method: 'GET', path: '/api/auth/verification-status', middlewares: [requireAuth], handler: handleGetVerificationStatus },
+
+  // ── Job Routes ──
+  { method: 'POST', path: '/api/jobs', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateJob },
+  { method: 'GET', path: '/api/jobs', middlewares: [], handler: handleListJobs },
+  { method: 'GET', path: '/api/jobs/mine', middlewares: [requireAuth, requireRole('employer')], handler: handleListMyJobs },
+  { method: 'GET', path: '/api/jobs/nearby', middlewares: [requireAuth, requireRole('worker')], handler: handleNearbyJobs },
+  { method: 'GET', path: '/api/jobs/:id', middlewares: [], handler: handleGetJob },
+  { method: 'GET', path: '/api/jobs/:id/applications', middlewares: [requireAuth, requireRole('employer')], handler: handleListJobApplications },
+  { method: 'POST', path: '/api/jobs/:id/apply', middlewares: [requireAuth, requireRole('worker')], handler: handleApplyToJob },
+  { method: 'POST', path: '/api/jobs/:id/accept', middlewares: [requireAuth, requireRole('employer')], handler: handleAcceptWorker },
+  { method: 'POST', path: '/api/jobs/:id/reject', middlewares: [requireAuth, requireRole('employer')], handler: handleRejectWorker },
+  { method: 'POST', path: '/api/jobs/:id/start', middlewares: [requireAuth, requireRole('employer')], handler: handleStartJob },
+  { method: 'POST', path: '/api/jobs/:id/complete', middlewares: [requireAuth, requireRole('employer')], handler: handleCompleteJob },
+  { method: 'POST', path: '/api/jobs/:id/cancel', middlewares: [requireAuth, requireRole('employer')], handler: handleCancelJob },
+  { method: 'POST', path: '/api/jobs/:id/renew', middlewares: [requireAuth, requireRole('employer')], handler: handleRenewJob },
+
+  // ── Attendance Routes ──
+  { method: 'POST', path: '/api/jobs/:id/checkin', middlewares: [requireAuth, requireRole('worker')], handler: handleCheckIn },
+  { method: 'POST', path: '/api/jobs/:id/checkout', middlewares: [requireAuth, requireRole('worker')], handler: handleCheckOut },
+  { method: 'POST', path: '/api/jobs/:id/no-show', middlewares: [requireAuth, requireRole('employer')], handler: handleReportNoShow },
+  { method: 'GET', path: '/api/jobs/:id/attendance/summary', middlewares: [requireAuth], handler: handleJobAttendanceSummary },
+  { method: 'GET', path: '/api/jobs/:id/attendance', middlewares: [requireAuth], handler: handleListJobAttendance },
+  { method: 'POST', path: '/api/attendance/:id/confirm', middlewares: [requireAuth, requireRole('employer')], handler: handleConfirmAttendance },
+
+  // ── Rating Routes ──
+  { method: 'POST', path: '/api/jobs/:id/rate', middlewares: [requireAuth], handler: handleSubmitRating },
+  { method: 'GET', path: '/api/jobs/:id/ratings', middlewares: [], handler: handleListJobRatings },
+  { method: 'GET', path: '/api/users/:id/ratings', middlewares: [], handler: handleListUserRatings },
+  { method: 'GET', path: '/api/users/:id/rating-summary', middlewares: [], handler: handleUserRatingSummary },
+  { method: 'GET', path: '/api/users/:id/trust-score', middlewares: [], handler: handleGetTrustScore },
+  { method: 'GET', path: '/api/users/:id/public-profile', middlewares: [], handler: handleGetPublicProfile },
+
+  // ── Report Routes ──
+  { method: 'POST', path: '/api/reports', middlewares: [requireAuth], handler: handleCreateReport },
+
+  // ── Notification Routes ──
+  { method: 'GET', path: '/api/notifications', middlewares: [requireAuth], handler: handleListNotifications },
+  { method: 'GET', path: '/api/notifications/stream', middlewares: [], handler: handleNotificationStream },
+  { method: 'POST', path: '/api/notifications/read-all', middlewares: [requireAuth], handler: handleMarkAllAsRead },
+  { method: 'POST', path: '/api/notifications/:id/read', middlewares: [requireAuth], handler: handleMarkAsRead },
+
+  // ── Application Management Routes ──
+  { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },
+  { method: 'POST', path: '/api/applications/:id/withdraw', middlewares: [requireAuth, requireRole('worker')], handler: handleWithdrawApplication },
+
+  // ── Payment Routes ──
+  { method: 'POST', path: '/api/jobs/:id/payment', middlewares: [requireAuth, requireRole('employer')], handler: handleCreatePayment },
+  { method: 'GET', path: '/api/jobs/:id/payment', middlewares: [requireAuth], handler: handleGetJobPayment },
+  { method: 'POST', path: '/api/payments/:id/confirm', middlewares: [requireAuth, requireRole('employer')], handler: handleConfirmPayment },
+  { method: 'POST', path: '/api/payments/:id/dispute', middlewares: [requireAuth], handler: handleDisputePayment },
+
+  // ── Admin Routes ──
+  { method: 'GET', path: '/api/admin/stats', middlewares: [requireAdmin], handler: handleAdminStats },
+  { method: 'GET', path: '/api/admin/users', middlewares: [requireAdmin], handler: handleAdminUsers },
+  { method: 'GET', path: '/api/admin/jobs', middlewares: [requireAdmin], handler: handleAdminJobs },
+  { method: 'GET', path: '/api/admin/financial-summary', middlewares: [requireAdmin], handler: handleAdminFinancialSummary },
+  { method: 'POST', path: '/api/admin/payments/:id/complete', middlewares: [requireAdmin], handler: handleAdminCompletePayment },
+  { method: 'PUT', path: '/api/admin/users/:id/status', middlewares: [requireAdmin], handler: handleAdminUpdateUserStatus },
+  { method: 'GET', path: '/api/admin/reports', middlewares: [requireAdmin], handler: handleAdminListReports },
+  { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireAdmin], handler: handleAdminReviewReport },
+  { method: 'GET', path: '/api/admin/verifications', middlewares: [requireAdmin], handler: handleAdminListVerifications },
+  { method: 'PUT', path: '/api/admin/verifications/:id', middlewares: [requireAdmin], handler: handleAdminReviewVerification },
+];
+
+/**
+ * Match a path pattern like /api/jobs/:id/apply against /api/jobs/job_abc123/apply
+ * Returns params object or null
+ */
+function matchPath(pattern, pathname) {
+  const patternParts = pattern.split('/');
+  const pathParts = pathname.split('/');
+
+  if (patternParts.length !== pathParts.length) return null;
+
+  const params = {};
+  for (let i = 0; i < patternParts.length; i++) {
+    if (patternParts[i].startsWith(':')) {
+      params[patternParts[i].slice(1)] = pathParts[i];
+    } else if (patternParts[i] !== pathParts[i]) {
+      return null;
+    }
+  }
+  return params;
+}
+
+/**
+ * Run an array of middleware functions in sequence
+ */
+function runMiddlewares(middlewares, req, res, done) {
+  let idx = 0;
+  function next(err) {
+    if (err) {
+      if (!res.writableEnded) {
+        sendJSON(res, 500, { error: 'خطأ داخلي', code: 'INTERNAL_ERROR' });
+      }
+      return;
+    }
+    if (res.writableEnded) return;  // Middleware already responded
+    const mw = middlewares[idx++];
+    if (!mw) return done();
+    try {
+      mw(req, res, next);
+    } catch (e) {
+      next(e);
+    }
+  }
+  next();
+}
+
+// Setup notification event listeners
+setupNotificationListeners();
+
+/**
+ * Creates the router function
+ */
+export function createRouter() {
+  return function router(req, res) {
+    const method = req.method;
+    const pathname = req.pathname;
+    const startTime = Date.now();
+
+    // Find matching route
+    for (const route of routes) {
+      if (route.method !== method) continue;
+
+      const params = matchPath(route.path, pathname);
+      if (params === null) continue;
+
+      // Attach params
+      req.params = params;
+
+      // Run route-specific middleware then handler
+      runMiddlewares(route.middlewares, req, res, () => {
+        Promise.resolve(route.handler(req, res)).catch((err) => {
+          logger.error('Handler error', { error: err.message, path: pathname });
+          if (!res.writableEnded) {
+            sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+          }
+        }).finally(() => {
+          const duration = Date.now() - startTime;
+          logger.request(req, res.statusCode, duration);
+        });
+      });
+
+      return;
+    }
+
+    // No route matched — 404
+    sendJSON(res, 404, { error: 'المسار غير موجود', code: 'NOT_FOUND' });
+    const duration = Date.now() - startTime;
+    logger.request(req, 404, duration);
+  };
+}
+```
+
+---

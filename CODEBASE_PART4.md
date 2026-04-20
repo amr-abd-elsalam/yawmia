@@ -1,0 +1,5873 @@
+# يوميّة (Yawmia) v0.16.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-20T00:03:53.676Z
+> Files in this part: 17
+
+## Files
+1. `frontend/admin.html`
+2. `frontend/assets/css/style.css`
+3. `frontend/assets/js/admin.js`
+4. `frontend/assets/js/app.js`
+5. `frontend/assets/js/auth.js`
+6. `frontend/assets/js/jobs.js`
+7. `frontend/assets/js/profile.js`
+8. `frontend/assets/js/user.js`
+9. `frontend/dashboard.html`
+10. `frontend/index.html`
+11. `frontend/manifest.json`
+12. `frontend/profile.html`
+13. `frontend/sw.js`
+14. `frontend/user.html`
+15. `scripts/backup.js`
+16. `scripts/bundle-for-review.js`
+17. `scripts/repair-indexes.js`
+
+---
+
+## `frontend/admin.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — لوحة تحكم الأدمن</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <style>
+    .admin-container {
+      max-width: 1000px;
+      margin-inline: auto;
+      padding: 2rem 1rem;
+    }
+    .admin-header {
+      text-align: center;
+      margin-block-end: 2rem;
+    }
+    .admin-header h1 {
+      font-size: 1.8rem;
+      color: var(--color-primary);
+      margin-block-end: 0.3rem;
+    }
+    .admin-header p {
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+    .token-form {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      align-items: center;
+      margin-block-end: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .token-form input {
+      max-width: 320px;
+      flex: 1;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-block-end: 2rem;
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .stat-card__value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      line-height: 1.2;
+    }
+    .stat-card__label {
+      color: var(--color-text-muted);
+      font-size: 0.85rem;
+      margin-block-start: 0.3rem;
+    }
+    .admin-section {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-block-end: 1.5rem;
+    }
+    .admin-section__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-block-end: 1rem;
+    }
+    .admin-section__header h2 {
+      font-size: 1.15rem;
+      color: var(--color-text);
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .admin-table th,
+    .admin-table td {
+      padding: 0.6rem 0.75rem;
+      border-block-end: 1px solid var(--color-border);
+      text-align: start;
+    }
+    .admin-table th {
+      color: var(--color-text-muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      background: var(--color-surface-2);
+    }
+    .admin-table td {
+      color: var(--color-text);
+    }
+    .health-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-block-end: 1px solid var(--color-border);
+      font-size: 0.9rem;
+    }
+    .health-row:last-child {
+      border-block-end: none;
+    }
+    .health-row__label {
+      color: var(--color-text-muted);
+    }
+    .health-row__value {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+    .badge-worker {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-success);
+      color: #fff;
+    }
+    .badge-employer {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-warning);
+      color: #000;
+    }
+    .badge-admin {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-error);
+      color: #fff;
+    }
+    .badge-open {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-primary);
+      color: #fff;
+    }
+    .badge-filled {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-success);
+      color: #fff;
+    }
+    .badge-in_progress {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-warning);
+      color: #000;
+    }
+    .badge-completed {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #8b5cf6;
+      color: #fff;
+    }
+    .badge-cancelled {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-error);
+      color: #fff;
+    }
+    .badge-expired {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--color-text-muted);
+      color: #fff;
+    }
+    .error-msg {
+      text-align: center;
+      color: var(--color-error);
+      font-size: 0.9rem;
+      margin-block-end: 1rem;
+      display: none;
+    }
+    .refresh-btn {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      background: transparent;
+      color: var(--color-text-muted);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background var(--transition);
+    }
+    .refresh-btn:hover {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
+    .phone-cell {
+      direction: ltr;
+      display: inline-block;
+    }
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .admin-table {
+        font-size: 0.75rem;
+      }
+      .admin-table th,
+      .admin-table td {
+        padding: 0.4rem 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>🛡️ لوحة تحكم يوميّة</h1>
+      <p>إدارة ومراقبة المنصة</p>
+    </div>
+
+    <form class="token-form" id="tokenForm" onsubmit="return false;">
+      <input type="password" class="form-input" id="adminTokenInput" placeholder="أدخل توكن الأدمن...">
+      <button class="btn btn--primary btn--sm" onclick="AdminApp.connect()">اتصال</button>
+    </form>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div id="dashboard" class="hidden">
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>الماليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadFinancials()">تحديث</button>
+        </div>
+        <div id="financialGrid" class="financial-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>صحة النظام</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadHealth()">تحديث</button>
+        </div>
+        <div id="healthInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>آخر المستخدمين</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadUsers()">تحديث</button>
+        </div>
+        <div id="usersTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="users-pagination"></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>آخر الفرص</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadJobs()">تحديث</button>
+        </div>
+        <div id="jobsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="jobs-pagination"></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>📋 البلاغات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadReports()">تحديث</button>
+        </div>
+        <div id="reports-filter" style="margin-bottom:1rem;">
+          <select id="report-status-filter" onchange="AdminApp.loadReports(1)">
+            <option value="">الكل</option>
+            <option value="pending" selected>قيد المراجعة</option>
+            <option value="action_taken">تم اتخاذ إجراء</option>
+            <option value="dismissed">مرفوض</option>
+            <option value="reviewed">تمت المراجعة</option>
+          </select>
+        </div>
+        <div id="reportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="reports-pagination"></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>🔐 طلبات التحقق</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadVerifications()">تحديث</button>
+        </div>
+        <div id="verifications-filter" style="margin-bottom:1rem;">
+          <select id="verification-status-filter" onchange="AdminApp.loadVerifications(1)">
+            <option value="">الكل</option>
+            <option value="pending" selected>قيد المراجعة</option>
+            <option value="verified">محقق</option>
+            <option value="rejected">مرفوض</option>
+          </select>
+        </div>
+        <div id="verificationsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="verifications-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/admin.js"></script>
+</body>
+</html>
+```
+
+---
+
+## `frontend/assets/css/style.css`
+
+```css
+/* ═══════════════════════════════════════════════════════════════
+   style.css — يوميّة: Dark Theme, RTL-first, Mobile-first
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── @font-face — Cairo (self-hosted) ───────────────────────── */
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/Cairo-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/Cairo-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/Cairo-Bold.woff2') format('woff2');
+}
+
+/* ── CSS Custom Properties ──────────────────────────────────── */
+:root {
+  --color-bg:         #0f1117;
+  --color-surface:    #1a1d27;
+  --color-surface-2:  #242836;
+  --color-border:     #2e3347;
+  --color-text:       #e4e6f0;
+  --color-text-muted: #8b8fa3;
+  --color-primary:    #2563eb;
+  --color-primary-hover: #1d4fd8;
+  --color-success:    #22c55e;
+  --color-warning:    #f59e0b;
+  --color-error:      #ef4444;
+  --color-error-bg:   rgba(239, 68, 68, 0.1);
+  --color-success-bg: rgba(34, 197, 94, 0.1);
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        16px;
+  --shadow-sm:        0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:        0 4px 12px rgba(0,0,0,0.4);
+  --font-family:      'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --transition:       0.2s ease;
+  --container-max:    800px;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  direction: rtl;
+}
+
+/* ── Container ─────────────────────────────────────────────── */
+.container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.header {
+  background: var(--color-surface);
+  border-block-end: 1px solid var(--color-border);
+  padding-block: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.header__brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.header__tagline {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header__user {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Badge ─────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.badge--worker { background: var(--color-success); }
+.badge--employer { background: var(--color-warning); color: #000; }
+
+/* ── Main ──────────────────────────────────────────────────── */
+.main {
+  padding-block: 2rem;
+  min-height: calc(100vh - 140px);
+}
+
+/* ── Card ──────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-block-end: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card__title {
+  font-size: 1.25rem;
+  margin-block-end: 0.5rem;
+  color: var(--color-text);
+}
+
+.card__desc {
+  color: var(--color-text-muted);
+  margin-block-end: 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* ── Auth Card ─────────────────────────────────────────────── */
+.auth-section {
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+/* ── Form ──────────────────────────────────────────────────── */
+.form-group {
+  margin-block-end: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  margin-block-end: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.form-input--otp {
+  text-align: center;
+  font-size: 2rem;
+  letter-spacing: 0.5em;
+  padding-inline-end: 0;
+}
+
+.form-input--sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+select.form-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b8fa3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 0.75rem center;
+  padding-inline-start: 2.5rem;
+}
+
+.form-hint {
+  display: block;
+  margin-block-start: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Radio & Checkbox ──────────────────────────────────────── */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.radio-label:hover {
+  border-color: var(--color-primary);
+}
+
+.radio-label input:checked + span {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color var(--transition);
+}
+
+.checkbox-label:hover {
+  border-color: var(--color-primary);
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), opacity var(--transition);
+  outline: none;
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.btn--full {
+  width: 100%;
+}
+
+.btn--sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* ── Messages ──────────────────────────────────────────────── */
+.message {
+  margin-block-start: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  display: none;
+}
+
+.message--error {
+  display: block;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.message--success {
+  display: block;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+/* ── Jobs List ─────────────────────────────────────────────── */
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  transition: border-color var(--transition);
+}
+
+.job-card:hover {
+  border-color: var(--color-primary);
+}
+
+.job-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-block-end: 0.5rem;
+}
+
+.job-card__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.job-card__wage {
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.job-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-block-end: 0.5rem;
+}
+
+.job-card__desc {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-block-end: 0.75rem;
+}
+
+.job-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.job-card__workers {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Cost Preview ──────────────────────────────────────────── */
+.cost-preview {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 1.25rem;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  padding-block: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.cost-row--fee {
+  color: var(--color-warning);
+  font-size: 0.85rem;
+}
+
+/* ── Section Header ────────────────────────────────────────── */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-end: 1.25rem;
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Welcome Card ──────────────────────────────────────────── */
+.welcome-card {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+  border-color: var(--color-primary);
+}
+
+/* ── Empty State ───────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 2rem;
+  font-size: 0.95rem;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding-block: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+/* ── Utility ───────────────────────────────────────────────── */
+.hidden {
+  display: none !important;
+}
+
+/* ── Loading Spinner ───────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.6s linear infinite;
+  margin-inline-end: 0.4rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Notification Bell ─────────────────────────────────────── */
+.notification-bell {
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.notification-bell:hover {
+  background: var(--color-surface-2);
+}
+
+.notification-bell__badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ── Notification Panel ────────────────────────────────────── */
+.notification-panel {
+  position: fixed;
+  top: 60px;
+  inset-inline-end: 1rem;
+  width: 360px;
+  max-height: 480px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.notification-panel__header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.notification-panel__list {
+  overflow-y: auto;
+  max-height: 400px;
+  padding: 0.5rem;
+}
+
+.notification-item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-block-end: 0.25rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.notification-item:hover {
+  background: var(--color-surface-2);
+}
+
+.notification-item--unread {
+  background: rgba(37, 99, 235, 0.08);
+  border-inline-start: 3px solid var(--color-primary);
+}
+
+.notification-item__msg {
+  font-size: 0.85rem;
+  margin-block-end: 0.25rem;
+}
+
+.notification-item__time {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 1.5rem;
+}
+
+.pagination__info {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Status Badges ─────────────────────────────────────────── */
+.badge--status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+}
+
+.badge--open { background: var(--color-primary); color: #fff; }
+.badge--filled { background: var(--color-warning); color: #000; }
+.badge--in_progress { background: #3b82f6; color: #fff; }
+.badge--completed { background: var(--color-success); color: #fff; }
+.badge--expired { background: var(--color-text-muted); color: #fff; }
+.badge--cancelled { background: var(--color-error); color: #fff; }
+
+/* ── Job Card Header Right ─────────────────────────────────── */
+.job-card__header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Start/Complete Buttons ────────────────────────────────── */
+.btn--success {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.btn--success:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+/* ── Rating Display ────────────────────────────────────────── */
+.rating-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rating-display__stars {
+  color: var(--color-warning);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.rating-display__count {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* ── Rating Modal ──────────────────────────────────────────── */
+.rating-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1rem;
+}
+
+.rating-modal__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-md);
+}
+
+.rating-modal__title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-block-end: 1.25rem;
+  color: var(--color-text);
+}
+
+.rating-stars-input {
+  display: flex;
+  direction: ltr;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  transition: transform var(--transition), color var(--transition);
+  color: var(--color-border);
+  line-height: 1;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+  color: var(--color-warning);
+}
+
+.star-btn.active {
+  color: var(--color-warning);
+  transform: scale(1.15);
+}
+
+.rating-comment-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 70px;
+  margin-block-end: 1rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.rating-comment-input:focus {
+  border-color: var(--color-primary);
+}
+
+.rating-comment-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.rating-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.rating-modal__error {
+  text-align: center;
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-block-end: 0.75rem;
+  min-height: 1.2em;
+}
+
+.btn--warning {
+  background: var(--color-warning);
+  color: #000;
+}
+
+.btn--warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
+/* ── Header Brand Link ─────────────────────────────────────── */
+.header__brand-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.header__brand-link:hover {
+  opacity: 0.85;
+}
+
+/* ── Profile Page ──────────────────────────────────────────── */
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  background: var(--color-surface-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+
+.profile-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-block-end: 0.25rem;
+}
+
+.profile-phone {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  direction: ltr;
+  display: inline-block;
+}
+
+.profile-gov {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-rating-summary {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 100px;
+}
+
+.profile-categories {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: 1rem;
+  margin-block-start: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ── Rating Summary Card ───────────────────────────────────── */
+.rating-summary-card {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.rating-summary-avg {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-warning);
+  line-height: 1.2;
+}
+
+.rating-summary-stars {
+  color: var(--color-warning);
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-block: 0.25rem;
+}
+
+.rating-summary-count {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.rating-summary-msg {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+/* ── Rating Distribution ───────────────────────────────────── */
+.rating-dist {
+  max-width: 400px;
+  margin-inline: auto;
+  padding-block: 1rem;
+}
+
+.rating-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-end: 0.4rem;
+}
+
+.rating-dist-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 30px;
+  text-align: end;
+}
+
+.rating-dist-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--color-surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rating-dist-fill {
+  height: 100%;
+  background: var(--color-warning);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.rating-dist-count {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  min-width: 20px;
+}
+
+/* ── Ratings List ──────────────────────────────────────────── */
+.ratings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rating-item {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.rating-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.4rem;
+}
+
+.rating-item__stars {
+  color: var(--color-warning);
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+.rating-item__date {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.rating-item__comment {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.rating-item__from {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.3rem;
+}
+
+/* ── Application Card (Profile) ────────────────────────────── */
+.app-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.app-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-card__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-block-end: 0.2rem;
+}
+
+.app-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.app-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── My Jobs Card (Profile) ────────────────────────────────── */
+.myjob-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.myjob-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.myjob-card__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-block-end: 0.2rem;
+}
+
+.myjob-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* ── Section Separator ─────────────────────────────────────── */
+.section-divider {
+  border: none;
+  border-block-start: 1px solid var(--color-border);
+  margin-block: 1.5rem;
+}
+
+/* ── Payment Badges ──────────────────────────────────────── */
+.payment-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.payment-badge--pending {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+.payment-badge--employer_confirmed {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.payment-badge--completed {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.payment-badge--disputed {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.payment-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+/* ── Financial Cards ─────────────────────────────────────── */
+.financial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+.financial-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+}
+.financial-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-block-end: 0.25rem;
+}
+.financial-card__label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.financial-card__value--currency::after {
+  content: ' جنيه';
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* ── Distance Badge ──────────────────────────────────────── */
+.job-distance {
+  display: inline-block;
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-inline-start: 0.5rem;
+}
+
+/* ── Location Input Group ────────────────────────────────── */
+.location-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.location-group .form-group {
+  flex: 1;
+  min-width: 120px;
+  margin-block-end: 0;
+}
+
+.btn-detect-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: background 0.2s;
+  margin-block-start: 0.5rem;
+}
+.btn-detect-location:hover {
+  background: rgba(37, 99, 235, 0.25);
+}
+.btn-detect-location:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .header__inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .header__left {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .job-card__header {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+}
+
+/* ═══ PWA Install Banner ═══ */
+.install-banner {
+  display: none;
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  z-index: 1000;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.install-banner button {
+  margin-top: 0.5rem;
+}
+
+/* ═══ Admin Pagination ═══ */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+}
+
+.page-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: opacity var(--transition);
+}
+
+.page-btn:hover {
+  opacity: 0.85;
+}
+
+.page-info {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* ═══ User Status Badges ═══ */
+.badge-banned {
+  display: inline-block;
+  background: var(--color-error);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-active {
+  display: inline-block;
+  background: var(--color-success);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ═══ Report System ═══ */
+.report-btn {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-btn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.report-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.report-form select,
+.report-form textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.report-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.trust-badge.trust-high { border-color: #16a34a; color: #16a34a; }
+.trust-badge.trust-medium { border-color: #eab308; color: #eab308; }
+.trust-badge.trust-low { border-color: #ef4444; color: #ef4444; }
+
+.report-status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.report-status-pending { background: #eab308; color: #000; }
+.report-status-action_taken { background: #ef4444; color: #fff; }
+.report-status-dismissed { background: #6b7280; color: #fff; }
+.report-status-reviewed { background: #3b82f6; color: #fff; }
+
+#report-status-filter {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-family: inherit;
+}
+
+/* ═══ Notification Preferences ═══ */
+.pref-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.pref-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.pref-item input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--color-primary);
+}
+
+.pref-item input[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#save-prefs-btn {
+  align-self: flex-start;
+  margin-block-start: 0.5rem;
+}
+
+/* ═══ Verification Badges ═══ */
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.verification-badge--verified {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.verification-badge--unverified {
+  background: rgba(139, 143, 163, 0.1);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.verification-badge--pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.verification-badge--rejected {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.verification-status {
+  margin-block-end: 1rem;
+}
+
+/* ═══ Trust Score Display ═══ */
+.trust-score-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 1.5rem;
+}
+
+.trust-score-value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.trust-score-label {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.trust-high .trust-score-value { color: var(--color-success); }
+.trust-medium .trust-score-value { color: var(--color-warning); }
+.trust-low .trust-score-value { color: var(--color-error); }
+
+/* ═══ Public Profile Page ═══ */
+.pub-profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.worker-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.worker-link:hover {
+  text-decoration: underline;
+}
+
+#verification-status-filter {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-family: inherit;
+}
+
+/* ═══ SSE Notification Badge Animation ═══ */
+.notification-badge-live {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ═══ Renew Button ═══ */
+.btn-renew {
+  background: var(--color-warning);
+  color: #000;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-renew:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+/* ═══ Attendance Styles ═══ */
+.btn-checkin {
+  background: #059669;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 600;
+  margin-inline-end: 0.5rem;
+}
+.btn-checkin:hover:not(:disabled) { background: #047857; }
+
+.btn-checkout {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 600;
+  margin-inline-end: 0.5rem;
+}
+.btn-checkout:hover:not(:disabled) { background: #b45309; }
+
+.btn-noshow {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 600;
+}
+.btn-noshow:hover:not(:disabled) { background: #b91c1c; }
+
+.attendance-record {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  margin-block-end: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.attendance-status-checked_in { color: #34d399; }
+.attendance-status-checked_out { color: #fbbf24; }
+.attendance-status-confirmed { color: #60a5fa; }
+.attendance-status-no_show { color: #f87171; }
+```
+
+---
+
+## `frontend/assets/js/admin.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/admin.js — Admin Dashboard Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+var AdminApp = (function () {
+  'use strict';
+
+  var token = '';
+  var API = '';
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function api(path) {
+    var headers = { 'X-Admin-Token': token };
+    var res = await fetch(API + path, { headers: headers });
+    if (!res.ok) {
+      var data = await res.json().catch(function () { return {}; });
+      throw new Error(data.error || 'خطأ في الاتصال');
+    }
+    return await res.json();
+  }
+
+  function renderPagination(containerId, currentPage, totalPages, loadFn) {
+    var container = document.getElementById(containerId);
+    if (!container || totalPages <= 1) {
+      if (container) container.innerHTML = '';
+      return;
+    }
+    var html = '<div class="admin-pagination">';
+    if (currentPage > 1) {
+      html += '<button class="page-btn" data-page="' + (currentPage - 1) + '">السابق</button>';
+    }
+    html += '<span class="page-info">صفحة ' + currentPage + ' من ' + totalPages + '</span>';
+    if (currentPage < totalPages) {
+      html += '<button class="page-btn" data-page="' + (currentPage + 1) + '">التالي</button>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    container.querySelectorAll('.page-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        loadFn(parseInt(btn.dataset.page));
+      });
+    });
+  }
+
+  async function apiWrite(method, path, body) {
+    var headers = { 'X-Admin-Token': token, 'Content-Type': 'application/json' };
+    var res = await fetch(API + path, { method: method, headers: headers, body: JSON.stringify(body) });
+    if (!res.ok) {
+      var data = await res.json().catch(function () { return {}; });
+      throw new Error(data.error || 'خطأ في العملية');
+    }
+    return await res.json();
+  }
+
+  async function toggleBan(userId, newStatus) {
+    try {
+      var reason = '';
+      if (newStatus === 'banned') {
+        reason = prompt('سبب الحظر (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/users/' + userId + '/status', { status: newStatus, reason: reason });
+      await loadUsers();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحديث حالة المستخدم');
+    }
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('errorMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(function () {
+      el.style.display = 'none';
+    }, 5000);
+  }
+
+  async function connect() {
+    var input = document.getElementById('adminTokenInput');
+    if (!input || !input.value.trim()) {
+      showError('أدخل التوكن');
+      return;
+    }
+    token = input.value.trim();
+
+    try {
+      await loadStats();
+      // Success — show dashboard, hide form
+      document.getElementById('tokenForm').style.display = 'none';
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('dashboard').classList.remove('hidden');
+      // Load remaining data in parallel
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications()]).catch(function () {});
+    } catch (err) {
+      showError('توكن غير صحيح أو خطأ في الاتصال');
+    }
+  }
+
+  async function loadStats() {
+    var data = await api('/api/admin/stats');
+    var grid = document.getElementById('statsGrid');
+    if (!grid) return;
+
+    var stats = data.stats || data;
+
+    var cards = [
+      { value: stats.users ? stats.users.total : 0, label: 'إجمالي المستخدمين' },
+      { value: stats.users ? stats.users.worker : 0, label: 'عمال' },
+      { value: stats.users ? stats.users.employer : 0, label: 'أصحاب عمل' },
+      { value: stats.jobs ? stats.jobs.total : 0, label: 'إجمالي الفرص' },
+      { value: stats.jobs ? stats.jobs.open : 0, label: 'فرص مفتوحة' },
+      { value: stats.jobs ? stats.jobs.completed : 0, label: 'فرص مكتملة' },
+      { value: stats.applications ? stats.applications.total : 0, label: 'إجمالي الطلبات' },
+      { value: stats.applications ? stats.applications.accepted : 0, label: 'طلبات مقبولة' },
+      { value: stats.payments ? stats.payments.total : 0, label: 'إجمالي المدفوعات' },
+      { value: stats.payments ? stats.payments.completed : 0, label: 'مدفوعات مكتملة' },
+      { value: stats.payments ? stats.payments.disputed : 0, label: 'مدفوعات في نزاع' },
+    ];
+
+    grid.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'stat-card';
+      card.innerHTML =
+        '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  async function loadHealth() {
+    // Health is public — no token needed
+    var res = await fetch(API + '/api/health');
+    var data = await res.json();
+    var container = document.getElementById('healthInfo');
+    if (!container) return;
+
+    var rows = [
+      { label: 'الحالة', value: data.status === 'ok' ? '🟢 شغّال' : '🔴 متوقف' },
+      { label: 'الإصدار', value: data.version || '-' },
+      { label: 'الوقت', value: data.timestamp || '-' },
+      { label: 'Uptime', value: data.uptime != null ? data.uptime + ' ثانية' : '-' },
+      { label: 'Node.js', value: data.node || '-' },
+      { label: 'Heap Used', value: data.memory ? data.memory.heapUsedMB + ' MB' : '-' },
+      { label: 'RSS', value: data.memory ? data.memory.rssMB + ' MB' : '-' },
+    ];
+
+    container.innerHTML = '';
+    rows.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'health-row';
+      row.innerHTML =
+        '<span class="health-row__label">' + escapeHtml(r.label) + '</span>' +
+        '<span class="health-row__value">' + escapeHtml(String(r.value)) + '</span>';
+      container.appendChild(row);
+    });
+  }
+
+  async function loadUsers(page) {
+    page = page || 1;
+    var data = await api('/api/admin/users?page=' + page + '&limit=20');
+    var container = document.getElementById('usersTable');
+    if (!container) return;
+
+    var users = data.users || [];
+
+    if (users.length === 0) {
+      container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد مستخدمين</p>';
+      renderPagination('users-pagination', 1, 1, loadUsers);
+      return;
+    }
+
+    var roleLabels = { worker: 'عامل', employer: 'صاحب عمل', admin: 'أدمن' };
+    var statusLabels = { active: 'نشط', banned: 'محظور' };
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>الاسم</th><th>الموبايل</th><th>النوع</th><th>الحالة</th><th>المحافظة</th><th>تاريخ التسجيل</th><th>إجراء</th>' +
+      '</tr></thead><tbody>';
+
+    users.forEach(function (u) {
+      var roleBadgeClass = 'badge-' + (u.role || 'worker');
+      var roleText = roleLabels[u.role] || u.role || '-';
+      var statusClass = u.status === 'banned' ? 'badge-banned' : 'badge-active';
+      var statusText = statusLabels[u.status] || u.status || '-';
+      var dateText = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-EG') : '-';
+
+      var actionBtn = '';
+      if (u.role !== 'admin') {
+        if (u.status === 'banned') {
+          actionBtn = '<button class="btn btn--sm btn--success" onclick="AdminApp.toggleBan(\'' + escapeHtml(u.id) + '\', \'active\')">إلغاء الحظر</button>';
+        } else {
+          actionBtn = '<button class="btn btn--sm btn--ghost" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.toggleBan(\'' + escapeHtml(u.id) + '\', \'banned\')">حظر</button>';
+        }
+      }
+
+      html += '<tr>' +
+        '<td>' + escapeHtml(u.name || '-') + '</td>' +
+        '<td><span class="phone-cell">' + escapeHtml(u.phone || '-') + '</span></td>' +
+        '<td><span class="' + roleBadgeClass + '">' + escapeHtml(roleText) + '</span></td>' +
+        '<td><span class="' + statusClass + '">' + escapeHtml(statusText) + '</span></td>' +
+        '<td>' + escapeHtml(u.governorate || '-') + '</td>' +
+        '<td>' + escapeHtml(dateText) + '</td>' +
+        '<td>' + actionBtn + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    renderPagination('users-pagination', data.page || 1, data.totalPages || 1, loadUsers);
+  }
+
+  async function loadJobs(page) {
+    page = page || 1;
+    var data = await api('/api/admin/jobs?page=' + page + '&limit=20');
+    var container = document.getElementById('jobsTable');
+    if (!container) return;
+
+    var jobs = data.jobs || [];
+
+    if (jobs.length === 0) {
+      container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد فرص</p>';
+      renderPagination('jobs-pagination', 1, 1, loadJobs);
+      return;
+    }
+
+    var statusLabels = {
+      open: 'مفتوحة',
+      filled: 'مكتملة',
+      in_progress: 'جاري التنفيذ',
+      completed: 'منتهية',
+      cancelled: 'ملغية',
+      expired: 'منتهية الصلاحية',
+    };
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>العنوان</th><th>المحافظة</th><th>اليومية (ج.م)</th><th>الحالة</th><th>عمال</th><th>تاريخ الإنشاء</th>' +
+      '</tr></thead><tbody>';
+
+    jobs.forEach(function (j) {
+      var statusClass = 'badge-' + (j.status || 'open');
+      var statusText = statusLabels[j.status] || j.status || '-';
+      var workersText = (j.workersAccepted || 0) + '/' + (j.workersNeeded || 0);
+      var dateText = j.createdAt ? new Date(j.createdAt).toLocaleDateString('ar-EG') : '-';
+
+      html += '<tr>' +
+        '<td>' + escapeHtml(j.title || '-') + '</td>' +
+        '<td>' + escapeHtml(j.governorate || '-') + '</td>' +
+        '<td>' + escapeHtml(String(j.dailyWage || 0)) + '</td>' +
+        '<td><span class="' + statusClass + '">' + escapeHtml(statusText) + '</span></td>' +
+        '<td>' + escapeHtml(workersText) + '</td>' +
+        '<td>' + escapeHtml(dateText) + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    renderPagination('jobs-pagination', data.page || 1, data.totalPages || 1, loadJobs);
+  }
+
+  async function loadFinancials() {
+    try {
+      var data = await api('/api/admin/financial-summary');
+      var container = document.getElementById('financialGrid');
+      if (!container) return;
+
+      var summary = data.summary || {};
+
+      var cards = [
+        { value: summary.totalPayments || 0, label: 'إجمالي المدفوعات', isCurrency: false },
+        { value: summary.totalAmount || 0, label: 'إجمالي المبالغ', isCurrency: true },
+        { value: summary.completedPlatformFee || 0, label: 'عمولة محصّلة', isCurrency: true },
+        { value: summary.pendingPlatformFee || 0, label: 'عمولة معلّقة', isCurrency: true },
+        { value: summary.disputedCount || 0, label: 'نزاعات مفتوحة', isCurrency: false },
+      ];
+
+      container.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'financial-card';
+        card.innerHTML =
+          '<div class="financial-card__value' + (c.isCurrency ? ' financial-card__value--currency' : '') + '">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="financial-card__label">' + escapeHtml(c.label) + '</div>';
+        container.appendChild(card);
+      });
+    } catch (err) {
+      var container = document.getElementById('financialGrid');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل البيانات المالية</p>';
+    }
+  }
+
+  async function loadReports(page) {
+    page = page || 1;
+    var statusFilter = '';
+    var filterEl = document.getElementById('report-status-filter');
+    if (filterEl) statusFilter = filterEl.value;
+
+    try {
+      var query = '/api/admin/reports?page=' + page + '&limit=20';
+      if (statusFilter) query += '&status=' + encodeURIComponent(statusFilter);
+      var data = await api(query);
+      var container = document.getElementById('reportsTable');
+      if (!container) return;
+
+      var reports = data.reports || [];
+
+      if (reports.length === 0) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد بلاغات</p>';
+        renderPagination('reports-pagination', 1, 1, loadReports);
+        return;
+      }
+
+      var typeLabels = {
+        fraud: 'نصب',
+        no_show: 'عدم حضور',
+        harassment: 'إساءة',
+        quality: 'جودة',
+        payment_issue: 'مشكلة دفع',
+        other: 'أخرى',
+      };
+
+      var statusLabels = {
+        pending: 'قيد المراجعة',
+        reviewed: 'تمت المراجعة',
+        action_taken: 'تم اتخاذ إجراء',
+        dismissed: 'مرفوض',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المُبلِّغ</th><th>المُبلَّغ عنه</th><th>النوع</th><th>السبب</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      reports.forEach(function (r) {
+        var typeText = typeLabels[r.type] || r.type || '-';
+        var statusText = statusLabels[r.status] || r.status || '-';
+        var statusClass = 'report-status-' + (r.status || 'pending');
+        var reasonText = escapeHtml((r.reason || '').substring(0, 50));
+        if ((r.reason || '').length > 50) reasonText += '...';
+        var dateText = r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-EG') : '-';
+
+        var actionBtns = '';
+        if (r.status === 'pending') {
+          actionBtns =
+            '<button class="btn btn--sm btn--primary" onclick="AdminApp.reviewReport(\'' + escapeHtml(r.id) + '\', \'action_taken\')">إجراء</button> ' +
+            '<button class="btn btn--sm btn--ghost" onclick="AdminApp.reviewReport(\'' + escapeHtml(r.id) + '\', \'dismissed\')">رفض</button>';
+        }
+
+        html += '<tr>' +
+          '<td>' + escapeHtml(r.reporterId || '-') + '</td>' +
+          '<td>' + escapeHtml(r.targetId || '-') + '</td>' +
+          '<td>' + escapeHtml(typeText) + '</td>' +
+          '<td>' + reasonText + '</td>' +
+          '<td><span class="report-status-badge ' + statusClass + '">' + escapeHtml(statusText) + '</span></td>' +
+          '<td>' + escapeHtml(dateText) + '</td>' +
+          '<td>' + actionBtns + '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      renderPagination('reports-pagination', data.page || 1, data.totalPages || 1, loadReports);
+    } catch (err) {
+      var container = document.getElementById('reportsTable');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل البلاغات</p>';
+    }
+  }
+
+  async function reviewReport(reportId, newStatus) {
+    try {
+      var notes = '';
+      if (newStatus === 'action_taken') {
+        notes = prompt('ملاحظات الأدمن (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/reports/' + reportId, { status: newStatus, adminNotes: notes });
+      await loadReports();
+    } catch (err) {
+      showError(err.message || 'خطأ في مراجعة البلاغ');
+    }
+  }
+
+  async function loadVerifications(page) {
+    page = page || 1;
+    var statusFilter = '';
+    var filterEl = document.getElementById('verification-status-filter');
+    if (filterEl) statusFilter = filterEl.value;
+
+    try {
+      var query = '/api/admin/verifications?page=' + page + '&limit=20';
+      if (statusFilter) query += '&status=' + encodeURIComponent(statusFilter);
+      var data = await api(query);
+      var container = document.getElementById('verificationsTable');
+      if (!container) return;
+
+      var verifications = data.verifications || [];
+
+      if (verifications.length === 0) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا يوجد طلبات تحقق</p>';
+        renderPagination('verifications-pagination', 1, 1, loadVerifications);
+        return;
+      }
+
+      var statusLabels = {
+        pending: 'قيد المراجعة',
+        verified: 'محقق',
+        rejected: 'مرفوض',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المعرّف</th><th>المستخدم</th><th>الحالة</th><th>التاريخ</th><th>ملاحظات</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      verifications.forEach(function (v) {
+        var statusText = statusLabels[v.status] || v.status || '-';
+        var dateText = v.createdAt ? new Date(v.createdAt).toLocaleDateString('ar-EG') : '-';
+        var notesText = v.adminNotes ? escapeHtml(v.adminNotes.substring(0, 40)) : '-';
+
+        var actionBtns = '';
+        if (v.status === 'pending') {
+          actionBtns =
+            '<button class="btn btn--sm btn--success" onclick="AdminApp.reviewVerification(\'' + escapeHtml(v.id) + '\', \'verified\')">✓ قبول</button> ' +
+            '<button class="btn btn--sm btn--ghost" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.reviewVerification(\'' + escapeHtml(v.id) + '\', \'rejected\')">✗ رفض</button>';
+        }
+
+        html += '<tr>' +
+          '<td>' + escapeHtml(v.id || '-') + '</td>' +
+          '<td><a href="/user.html?id=' + escapeHtml(v.userId) + '" class="worker-link">' + escapeHtml(v.userId || '-') + '</a></td>' +
+          '<td>' + escapeHtml(statusText) + '</td>' +
+          '<td>' + escapeHtml(dateText) + '</td>' +
+          '<td>' + notesText + '</td>' +
+          '<td>' + actionBtns + '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      renderPagination('verifications-pagination', data.page || 1, data.totalPages || 1, loadVerifications);
+    } catch (err) {
+      var container = document.getElementById('verificationsTable');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل طلبات التحقق</p>';
+    }
+  }
+
+  async function reviewVerification(verificationId, newStatus) {
+    try {
+      var notes = '';
+      if (newStatus === 'rejected') {
+        notes = prompt('سبب الرفض (اختياري):') || '';
+      }
+      await apiWrite('PUT', '/api/admin/verifications/' + verificationId, { status: newStatus, adminNotes: notes });
+      await loadVerifications();
+    } catch (err) {
+      showError(err.message || 'خطأ في مراجعة طلب التحقق');
+    }
+  }
+
+  return {
+    connect: connect,
+    loadHealth: loadHealth,
+    loadUsers: loadUsers,
+    loadJobs: loadJobs,
+    loadStats: loadStats,
+    loadFinancials: loadFinancials,
+    toggleBan: toggleBan,
+    loadReports: loadReports,
+    reviewReport: reviewReport,
+    loadVerifications: loadVerifications,
+    reviewVerification: reviewVerification,
+  };
+})();
+```
+
+---
+
+## `frontend/assets/js/app.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/app.js — Core Frontend Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+var Yawmia = (function () {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────
+  const state = {
+    token: localStorage.getItem('yawmia_token') || null,
+    user: JSON.parse(localStorage.getItem('yawmia_user') || 'null'),
+    config: null,
+  };
+
+  // ── API Base URL ──────────────────────────────────────────
+  const API_BASE = window.location.origin;
+
+  // ── API Helper ────────────────────────────────────────────
+  async function api(method, path, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (state.token) {
+      headers['Authorization'] = 'Bearer ' + state.token;
+    }
+    const opts = { method, headers };
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(API_BASE + path, opts);
+    const data = await res.json();
+    if (!res.ok && res.status === 401) {
+      // Session expired
+      logout();
+    }
+    return { status: res.status, data };
+  }
+
+  // ── Auth State ────────────────────────────────────────────
+  function setAuth(token, user) {
+    state.token = token;
+    state.user = user;
+    localStorage.setItem('yawmia_token', token);
+    localStorage.setItem('yawmia_user', JSON.stringify(user));
+  }
+
+  function logout() {
+    disconnectSSE();
+    if (state.token) {
+      api('POST', '/api/auth/logout').catch(function () {});
+    }
+    state.token = null;
+    state.user = null;
+    localStorage.removeItem('yawmia_token');
+    localStorage.removeItem('yawmia_user');
+    window.location.href = '/';
+  }
+
+  function isLoggedIn() {
+    return !!state.token;
+  }
+
+  function getUser() {
+    return state.user;
+  }
+
+  function getToken() {
+    return state.token;
+  }
+
+  // ── Config ────────────────────────────────────────────────
+  async function loadConfig() {
+    if (state.config) return state.config;
+    var res = await api('GET', '/api/config');
+    if (res.status === 200) {
+      state.config = res.data;
+    }
+    return state.config;
+  }
+
+  // ── DOM Helpers ───────────────────────────────────────────
+  function $(selector) {
+    return document.querySelector(selector);
+  }
+
+  function $id(id) {
+    return document.getElementById(id);
+  }
+
+  function show(el) {
+    if (typeof el === 'string') el = $id(el);
+    if (el) el.classList.remove('hidden');
+  }
+
+  function hide(el) {
+    if (typeof el === 'string') el = $id(el);
+    if (el) el.classList.add('hidden');
+  }
+
+  function showMessage(elId, text, type) {
+    var el = $id(elId);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'message message--' + type;
+  }
+
+  function clearMessage(elId) {
+    var el = $id(elId);
+    if (!el) return;
+    el.textContent = '';
+    el.className = 'message';
+  }
+
+  function setLoading(btn, loading) {
+    if (typeof btn === 'string') btn = $id(btn);
+    if (!btn) return;
+    btn.disabled = loading;
+    if (loading) {
+      btn.dataset.originalText = btn.textContent;
+      btn.innerHTML = '<span class="spinner"></span> جاري...';
+    } else {
+      btn.textContent = btn.dataset.originalText || btn.textContent;
+    }
+  }
+
+  // ── Populate Dropdowns ────────────────────────────────────
+  async function populateGovernorates(selectId) {
+    var config = await loadConfig();
+    if (!config || !config.REGIONS) return;
+    var select = $id(selectId);
+    if (!select) return;
+    // Keep first option
+    while (select.children.length > 1) select.removeChild(select.lastChild);
+    config.REGIONS.governorates.forEach(function (gov) {
+      var opt = document.createElement('option');
+      opt.value = gov.id;
+      opt.textContent = gov.label;
+      select.appendChild(opt);
+    });
+  }
+
+  async function populateCategories(selectId) {
+    var config = await loadConfig();
+    if (!config || !config.LABOR_CATEGORIES) return;
+    var select = $id(selectId);
+    if (!select) return;
+    while (select.children.length > 1) select.removeChild(select.lastChild);
+    config.LABOR_CATEGORIES.forEach(function (cat) {
+      var opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.icon + ' ' + cat.label;
+      select.appendChild(opt);
+    });
+  }
+
+  async function populateCategoriesCheckboxes(containerId) {
+    var config = await loadConfig();
+    if (!config || !config.LABOR_CATEGORIES) return;
+    var container = $id(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    config.LABOR_CATEGORIES.forEach(function (cat) {
+      var label = document.createElement('label');
+      label.className = 'checkbox-label';
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = 'categories';
+      input.value = cat.id;
+      var span = document.createElement('span');
+      span.textContent = cat.icon + ' ' + cat.label;
+      label.appendChild(input);
+      label.appendChild(span);
+      container.appendChild(label);
+    });
+  }
+
+  // ── Role Labels ───────────────────────────────────────────
+  function roleLabel(role) {
+    if (role === 'worker') return 'عامل';
+    if (role === 'employer') return 'صاحب عمل';
+    if (role === 'admin') return 'أدمن';
+    return role;
+  }
+
+  // ── PWA: Service Worker Registration ──────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function (reg) { console.log('SW registered:', reg.scope); })
+        .catch(function (err) { console.log('SW registration failed:', err); });
+    });
+  }
+
+  // ── PWA: Install Prompt Capture ───────────────────────────
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    var installBtn = document.getElementById('install-app-btn');
+    if (installBtn) {
+      installBtn.style.display = 'inline-flex';
+      installBtn.addEventListener('click', function () {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(function () {
+          deferredInstallPrompt = null;
+          installBtn.style.display = 'none';
+        });
+      }, { once: true });
+    }
+  });
+
+  // ── SSE: Real-Time Notifications ──────────────────────────
+  var sseConnection = null;
+
+  function connectSSE() {
+    if (sseConnection) return; // Already connected
+    if (!state.token) return;  // Not logged in
+
+    try {
+      var url = API_BASE + '/api/notifications/stream?token=' + encodeURIComponent(state.token);
+      sseConnection = new EventSource(url);
+
+      sseConnection.addEventListener('init', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:sse-init', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.addEventListener('notification', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:notification', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.onerror = function () {
+        // EventSource auto-reconnects — no manual action needed
+      };
+    } catch (_) {
+      // SSE not supported or connection failed — degrade gracefully
+      sseConnection = null;
+    }
+  }
+
+  function disconnectSSE() {
+    if (sseConnection) {
+      sseConnection.close();
+      sseConnection = null;
+    }
+  }
+
+  // ── Public API ────────────────────────────────────────────
+  return {
+    api: api,
+    state: state,
+    setAuth: setAuth,
+    logout: logout,
+    isLoggedIn: isLoggedIn,
+    getUser: getUser,
+    getToken: getToken,
+    loadConfig: loadConfig,
+    $: $,
+    $id: $id,
+    show: show,
+    hide: hide,
+    showMessage: showMessage,
+    clearMessage: clearMessage,
+    setLoading: setLoading,
+    populateGovernorates: populateGovernorates,
+    populateCategories: populateCategories,
+    populateCategoriesCheckboxes: populateCategoriesCheckboxes,
+    roleLabel: roleLabel,
+    connectSSE: connectSSE,
+    disconnectSSE: disconnectSSE,
+  };
+})();
+```
+
+---
+
+## `frontend/assets/js/auth.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/auth.js — Auth UI Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // If already logged in, redirect to dashboard
+  if (Yawmia.isLoggedIn()) {
+    window.location.href = '/dashboard.html';
+    return;
+  }
+
+  var currentPhone = '';
+  var currentRole = 'worker';
+
+  // ── Step 1: Send OTP ──────────────────────────────────────
+  var btnSendOtp = Yawmia.$id('btnSendOtp');
+  if (btnSendOtp) {
+    btnSendOtp.addEventListener('click', async function () {
+      Yawmia.clearMessage('phoneError');
+
+      var phone = Yawmia.$id('phoneInput').value.trim();
+      var roleEl = document.querySelector('input[name="role"]:checked');
+      var role = roleEl ? roleEl.value : 'worker';
+
+      if (!phone) {
+        return Yawmia.showMessage('phoneError', 'أدخل رقم الموبايل', 'error');
+      }
+
+      Yawmia.setLoading(btnSendOtp, true);
+
+      try {
+        var res = await Yawmia.api('POST', '/api/auth/send-otp', { phone: phone, role: role });
+        if (res.data.ok) {
+          currentPhone = phone;
+          currentRole = role;
+          Yawmia.hide('stepPhone');
+          Yawmia.show('stepOtp');
+          Yawmia.$id('otpPhone').textContent = phone;
+          Yawmia.$id('otpInput').focus();
+        } else {
+          Yawmia.showMessage('phoneError', res.data.error || 'خطأ في إرسال الكود', 'error');
+        }
+      } catch (err) {
+        Yawmia.showMessage('phoneError', 'خطأ في الاتصال بالسيرفر', 'error');
+      } finally {
+        Yawmia.setLoading(btnSendOtp, false);
+      }
+    });
+  }
+
+  // ── Step 2: Verify OTP ────────────────────────────────────
+  var btnVerifyOtp = Yawmia.$id('btnVerifyOtp');
+  if (btnVerifyOtp) {
+    btnVerifyOtp.addEventListener('click', async function () {
+      Yawmia.clearMessage('otpError');
+
+      var otp = Yawmia.$id('otpInput').value.trim();
+      if (!otp) {
+        return Yawmia.showMessage('otpError', 'أدخل كود التحقق', 'error');
+      }
+
+      Yawmia.setLoading(btnVerifyOtp, true);
+
+      try {
+        var res = await Yawmia.api('POST', '/api/auth/verify-otp', { phone: currentPhone, otp: otp });
+        if (res.data.ok) {
+          Yawmia.setAuth(res.data.token, res.data.user);
+
+          // If user has no name yet → profile completion
+          if (!res.data.user.name) {
+            Yawmia.hide('stepOtp');
+            Yawmia.show('stepProfile');
+            setupProfileStep();
+          } else {
+            window.location.href = '/dashboard.html';
+          }
+        } else {
+          var msg = res.data.error || 'كود التحقق غير صحيح';
+          if (res.data.attemptsLeft !== undefined) {
+            msg += ' — محاولات متبقية: ' + res.data.attemptsLeft;
+          }
+          Yawmia.showMessage('otpError', msg, 'error');
+        }
+      } catch (err) {
+        Yawmia.showMessage('otpError', 'خطأ في الاتصال بالسيرفر', 'error');
+      } finally {
+        Yawmia.setLoading(btnVerifyOtp, false);
+      }
+    });
+  }
+
+  // ── Resend OTP ────────────────────────────────────────────
+  var btnResendOtp = Yawmia.$id('btnResendOtp');
+  if (btnResendOtp) {
+    btnResendOtp.addEventListener('click', async function () {
+      Yawmia.clearMessage('otpError');
+      Yawmia.setLoading(btnResendOtp, true);
+
+      try {
+        var res = await Yawmia.api('POST', '/api/auth/send-otp', { phone: currentPhone, role: currentRole });
+        if (res.data.ok) {
+          Yawmia.showMessage('otpError', 'تم إعادة إرسال الكود', 'success');
+        } else {
+          Yawmia.showMessage('otpError', res.data.error || 'خطأ', 'error');
+        }
+      } catch (err) {
+        Yawmia.showMessage('otpError', 'خطأ في الاتصال', 'error');
+      } finally {
+        Yawmia.setLoading(btnResendOtp, false);
+      }
+    });
+  }
+
+  // ── Step 3: Profile Completion ────────────────────────────
+  function setupProfileStep() {
+    Yawmia.populateGovernorates('govSelect');
+
+    // Show categories only for workers
+    if (currentRole === 'worker') {
+      Yawmia.show('categoriesGroup');
+      Yawmia.populateCategoriesCheckboxes('categoriesGrid');
+    }
+  }
+
+  var btnSaveProfile = Yawmia.$id('btnSaveProfile');
+  if (btnSaveProfile) {
+    btnSaveProfile.addEventListener('click', async function () {
+      Yawmia.clearMessage('profileError');
+
+      var name = Yawmia.$id('nameInput').value.trim();
+      var governorate = Yawmia.$id('govSelect').value;
+
+      if (!name) {
+        return Yawmia.showMessage('profileError', 'أدخل اسمك', 'error');
+      }
+      if (!governorate) {
+        return Yawmia.showMessage('profileError', 'اختار المحافظة', 'error');
+      }
+
+      var body = { name: name, governorate: governorate };
+
+      // Get selected categories for workers
+      if (currentRole === 'worker') {
+        var checked = document.querySelectorAll('input[name="categories"]:checked');
+        var categories = Array.from(checked).map(function (el) { return el.value; });
+        if (categories.length === 0) {
+          return Yawmia.showMessage('profileError', 'اختار تخصص واحد على الأقل', 'error');
+        }
+        body.categories = categories;
+      }
+
+      Yawmia.setLoading(btnSaveProfile, true);
+
+      try {
+        var res = await Yawmia.api('PUT', '/api/auth/profile', body);
+        if (res.data.ok) {
+          // Update stored user
+          Yawmia.setAuth(Yawmia.getToken(), res.data.user);
+          window.location.href = '/dashboard.html';
+        } else {
+          Yawmia.showMessage('profileError', res.data.error || 'خطأ في حفظ البيانات', 'error');
+        }
+      } catch (err) {
+        Yawmia.showMessage('profileError', 'خطأ في الاتصال بالسيرفر', 'error');
+      } finally {
+        Yawmia.setLoading(btnSaveProfile, false);
+      }
+    });
+  }
+})();
+```
+
+---
+
+## `frontend/assets/js/jobs.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/jobs.js — Jobs UI Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // If not logged in, redirect
+  if (!Yawmia.isLoggedIn()) {
+    window.location.href = '/';
+    return;
+  }
+
+  var user = Yawmia.getUser();
+
+  // ── Setup Header ──────────────────────────────────────────
+  var headerName = Yawmia.$id('headerUserName');
+  var headerRole = Yawmia.$id('headerUserRole');
+  if (headerName) headerName.textContent = user.name || user.phone;
+  if (headerRole) {
+    headerRole.textContent = Yawmia.roleLabel(user.role);
+    headerRole.classList.add('badge--' + user.role);
+  }
+
+  // ── Logout ────────────────────────────────────────────────
+  var btnLogout = Yawmia.$id('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', function () {
+      Yawmia.logout();
+    });
+  }
+
+  // ── Welcome Card ──────────────────────────────────────────
+  var welcomeTitle = Yawmia.$id('welcomeTitle');
+  var welcomeDesc = Yawmia.$id('welcomeDesc');
+  if (welcomeTitle) {
+    welcomeTitle.textContent = 'أهلاً ' + (user.name || 'بيك') + '!';
+  }
+  if (welcomeDesc) {
+    if (user.role === 'worker') {
+      welcomeDesc.textContent = 'شوف الفرص المتاحة قريب منك وتقدّم دلوقتي.';
+    } else if (user.role === 'employer') {
+      welcomeDesc.textContent = 'انشر فرصة عمل جديدة وأوصل لأفضل العمال.';
+    }
+  }
+
+  // ── Show/Hide Sections Based on Role ──────────────────────
+  if (user.role === 'employer') {
+    Yawmia.show('createJobSection');
+    setupCreateJob();
+  }
+
+  // ── Populate Filter Dropdowns ─────────────────────────────
+  Yawmia.populateGovernorates('filterGov');
+  Yawmia.populateCategories('filterCat');
+
+  // ── Inject Search + Sort Controls ─────────────────────────
+  (function injectFilterControls() {
+    var filtersDiv = document.querySelector('.filters');
+    if (!filtersDiv) return;
+    var btnFilter = Yawmia.$id('btnFilterJobs');
+
+    // Search input
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.id = 'filterSearch';
+    searchInput.className = 'form-input form-input--sm';
+    searchInput.placeholder = 'بحث بالكلمة...';
+    filtersDiv.insertBefore(searchInput, btnFilter);
+
+    // Sort dropdown
+    var sortSelect = document.createElement('select');
+    sortSelect.id = 'filterSort';
+    sortSelect.className = 'form-input form-input--sm';
+    sortSelect.innerHTML =
+      '<option value="">ترتيب: الأحدث</option>' +
+      '<option value="wage_high">الأجر الأعلى</option>' +
+      '<option value="wage_low">الأجر الأقل</option>';
+    filtersDiv.insertBefore(sortSelect, btnFilter);
+  })();
+
+  // ── SSE: Real-Time Notifications ──────────────────────────
+  if (Yawmia.connectSSE) {
+    Yawmia.connectSSE();
+  }
+
+  window.addEventListener('yawmia:notification', function (e) {
+    loadNotifications();
+  });
+
+  window.addEventListener('yawmia:sse-init', function (e) {
+    var countBadge = Yawmia.$id('notificationCount');
+    if (countBadge && e.detail && e.detail.unreadCount > 0) {
+      countBadge.textContent = e.detail.unreadCount;
+      countBadge.classList.remove('hidden');
+      countBadge.classList.add('notification-badge-live');
+    }
+  });
+
+  // ── Notifications ─────────────────────────────────────────
+  loadNotifications();
+
+  var notificationBell = Yawmia.$id('notificationBell');
+  var notificationPanel = Yawmia.$id('notificationPanel');
+  if (notificationBell && notificationPanel) {
+    notificationBell.addEventListener('click', function () {
+      notificationPanel.classList.toggle('hidden');
+      if (!notificationPanel.classList.contains('hidden')) {
+        loadNotifications();
+      }
+    });
+  }
+
+  var btnMarkAllRead = Yawmia.$id('btnMarkAllRead');
+  if (btnMarkAllRead) {
+    btnMarkAllRead.addEventListener('click', async function () {
+      try {
+        await Yawmia.api('POST', '/api/notifications/read-all');
+        loadNotifications();
+      } catch (err) { /* ignore */ }
+    });
+  }
+
+  async function loadNotifications() {
+    try {
+      var res = await Yawmia.api('GET', '/api/notifications?limit=20&offset=0');
+      if (res.data.ok) {
+        var countBadge = Yawmia.$id('notificationCount');
+        if (countBadge) {
+          if (res.data.unread > 0) {
+            countBadge.textContent = res.data.unread;
+            countBadge.classList.remove('hidden');
+          } else {
+            countBadge.classList.add('hidden');
+          }
+        }
+        var ntfList = Yawmia.$id('notificationList');
+        if (ntfList && res.data.items.length > 0) {
+          ntfList.innerHTML = '';
+          res.data.items.forEach(function (ntf) {
+            var item = document.createElement('div');
+            item.className = 'notification-item' + (ntf.read ? '' : ' notification-item--unread');
+            item.innerHTML = '<p class="notification-item__msg">' + escapeHtml(ntf.message) + '</p>' +
+              '<span class="notification-item__time">' + new Date(ntf.createdAt).toLocaleString('ar-EG') + '</span>';
+            if (!ntf.read) {
+              item.addEventListener('click', async function () {
+                try {
+                  await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read');
+                  item.classList.remove('notification-item--unread');
+                  loadNotifications();
+                } catch (e) { /* ignore */ }
+              });
+            }
+            ntfList.appendChild(item);
+          });
+        } else if (ntfList) {
+          ntfList.innerHTML = '<p class="empty-state">لا توجد إشعارات</p>';
+        }
+      }
+    } catch (err) { /* ignore */ }
+  }
+
+  // ── Pagination State ──────────────────────────────────────
+  var currentPage = 1;
+  var pageLimit = 20;
+
+  // ── Load Jobs ─────────────────────────────────────────────
+  loadJobs();
+
+  var btnFilterJobs = Yawmia.$id('btnFilterJobs');
+  if (btnFilterJobs) {
+    btnFilterJobs.addEventListener('click', function () {
+      currentPage = 1;
+      loadJobs();
+    });
+  }
+
+  var btnPrevPage = Yawmia.$id('btnPrevPage');
+  var btnNextPage = Yawmia.$id('btnNextPage');
+  if (btnPrevPage) {
+    btnPrevPage.addEventListener('click', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        loadJobs();
+      }
+    });
+  }
+  if (btnNextPage) {
+    btnNextPage.addEventListener('click', function () {
+      currentPage++;
+      loadJobs();
+    });
+  }
+
+  async function loadJobs() {
+    var jobsList = Yawmia.$id('jobsList');
+    if (!jobsList) return;
+    jobsList.innerHTML = '<p class="empty-state">جاري تحميل الفرص...</p>';
+
+    var gov = Yawmia.$id('filterGov') ? Yawmia.$id('filterGov').value : '';
+    var cat = Yawmia.$id('filterCat') ? Yawmia.$id('filterCat').value : '';
+
+    var search = Yawmia.$id('filterSearch') ? Yawmia.$id('filterSearch').value.trim() : '';
+    var sort = Yawmia.$id('filterSort') ? Yawmia.$id('filterSort').value : '';
+
+    var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
+    if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
+    if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
+    if (search) query += 'search=' + encodeURIComponent(search) + '&';
+    if (sort) query += 'sort=' + encodeURIComponent(sort) + '&';
+
+    try {
+      var res = await Yawmia.api('GET', query);
+      if (res.data.ok && res.data.jobs.length > 0) {
+        jobsList.innerHTML = '';
+        res.data.jobs.forEach(function (job) {
+          jobsList.appendChild(createJobCard(job));
+        });
+        updatePagination(res.data);
+      } else {
+        jobsList.innerHTML = '<p class="empty-state">لا توجد فرص متاحة حالياً</p>';
+        Yawmia.hide('paginationControls');
+      }
+    } catch (err) {
+      jobsList.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      Yawmia.hide('paginationControls');
+    }
+  }
+
+  function updatePagination(data) {
+    var controls = Yawmia.$id('paginationControls');
+    var info = Yawmia.$id('paginationInfo');
+    if (!controls) return;
+
+    if (data.totalPages > 1) {
+      Yawmia.show('paginationControls');
+      if (info) info.textContent = 'صفحة ' + data.page + ' من ' + data.totalPages + ' (' + data.total + ' فرصة)';
+      if (btnPrevPage) btnPrevPage.disabled = (data.page <= 1);
+      if (btnNextPage) btnNextPage.disabled = (data.page >= data.totalPages);
+    } else {
+      Yawmia.hide('paginationControls');
+    }
+  }
+
+  function getStatusLabel(status) {
+    var labels = {
+      open: 'متاحة',
+      filled: 'مكتملة',
+      in_progress: 'جاري التنفيذ',
+      completed: 'مكتملة ✓',
+      expired: 'منتهية',
+      cancelled: 'ملغية'
+    };
+    return labels[status] || status;
+  }
+
+  function createJobCard(job) {
+    var card = document.createElement('div');
+    card.className = 'job-card';
+
+    var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
+
+    var footerButtons = '';
+    if (user.role === 'worker' && job.status === 'open') {
+      footerButtons = '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
+    }
+    if (user.role === 'employer' && job.employerId === user.id) {
+      if (job.status === 'open') {
+        footerButtons = '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
+      } else if (job.status === 'filled') {
+        footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
+      } else if (job.status === 'in_progress') {
+        footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+      } else if (job.status === 'completed') {
+        footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
+      } else if (job.status === 'expired' || job.status === 'cancelled') {
+        footerButtons = '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
+      }
+    }
+    if (user.role === 'worker' && job.status === 'in_progress') {
+      footerButtons = '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>' +
+        '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
+    }
+    if (user.role === 'worker' && job.status === 'completed') {
+      footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
+    }
+
+    // Report button (any authenticated user can report the employer)
+    if (job.employerId && job.employerId !== user.id) {
+      footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
+    }
+
+    // Employer profile link
+    var employerProfileLink = '';
+    if (job.employerId) {
+      employerProfileLink = '<a href="/user.html?id=' + escapeHtml(job.employerId) + '" class="worker-link">عرض بروفايل صاحب العمل</a>';
+    }
+
+    // Payment info placeholder for completed jobs
+    var paymentBadgeHtml = '';
+    if (job.status === 'completed') {
+      paymentBadgeHtml = '<span class="payment-badge-placeholder" data-job-id="' + job.id + '"></span>';
+    }
+
+    var completedLabel = '';
+    if (job.status === 'completed' && !footerButtons) {
+      completedLabel = '<span class="badge badge--status badge--completed">✓ مكتملة</span>';
+    }
+
+    var distanceBadge = (job._distance !== undefined && job._distance !== null)
+      ? '<span class="job-distance">📍 ' + job._distance + ' كم</span>'
+      : '';
+
+    card.innerHTML =
+      '<div class="job-card__header">' +
+        '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
+        '<div class="job-card__header-right">' +
+          statusBadge +
+          distanceBadge +
+          '<span class="job-card__wage">' + job.dailyWage + ' جنيه/يوم</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="job-card__meta">' +
+        '<span>📍 ' + escapeHtml(job.governorate) + '</span>' +
+        '<span>📅 ' + job.startDate + '</span>' +
+        '<span>⏱ ' + job.durationDays + ' يوم</span>' +
+      '</div>' +
+      (job.description ? '<p class="job-card__desc">' + escapeHtml(job.description) + '</p>' : '') +
+      (employerProfileLink ? '<div style="margin-block-end:0.5rem;">' + employerProfileLink + '</div>' : '') +
+      paymentBadgeHtml +
+      '<div class="job-card__footer">' +
+        '<span class="job-card__workers">👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
+        completedLabel +
+        footerButtons +
+      '</div>';
+
+    // Apply button handler
+    var applyBtn = card.querySelector('.btn-apply');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(applyBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/apply');
+          if (res.data.ok) {
+            applyBtn.textContent = 'تم التقديم ✓';
+            applyBtn.disabled = true;
+            applyBtn.classList.remove('btn--primary');
+          } else {
+            alert(res.data.error || 'خطأ في التقديم');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(applyBtn, false);
+        }
+      });
+    }
+
+    // Start button handler (employer)
+    var startBtn = card.querySelector('.btn-start');
+    if (startBtn) {
+      startBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(startBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/start');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في بدء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(startBtn, false);
+        }
+      });
+    }
+
+    // Complete button handler (employer)
+    var completeBtn = card.querySelector('.btn-complete');
+    if (completeBtn) {
+      completeBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(completeBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/complete');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في إنهاء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(completeBtn, false);
+        }
+      });
+    }
+
+    // Cancel button handler (employer)
+    var cancelBtn = card.querySelector('.btn-cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async function () {
+        if (!confirm('متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.')) return;
+        Yawmia.setLoading(cancelBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/cancel');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في إلغاء الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(cancelBtn, false);
+        }
+      });
+    }
+
+    // Renew button handler (employer)
+    var renewBtn = card.querySelector('.btn-renew');
+    if (renewBtn) {
+      renewBtn.addEventListener('click', async function () {
+        if (!confirm('هل تريد تجديد هذه الفرصة؟')) return;
+        Yawmia.setLoading(renewBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/renew');
+          if (res.data.ok) {
+            loadJobs();
+          } else {
+            alert(res.data.error || 'خطأ في تجديد الفرصة');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(renewBtn, false);
+        }
+      });
+    }
+
+    // Check-in button handler (worker)
+    var checkinBtn = card.querySelector('.btn-checkin');
+    if (checkinBtn) {
+      checkinBtn.addEventListener('click', function () {
+        handleCheckInClick(job.id, checkinBtn);
+      });
+    }
+
+    // Check-out button handler (worker)
+    var checkoutBtn = card.querySelector('.btn-checkout');
+    if (checkoutBtn) {
+      checkoutBtn.addEventListener('click', function () {
+        handleCheckOutClick(job.id, checkoutBtn);
+      });
+    }
+
+    // Load payment info for completed jobs
+    var paymentPlaceholder = card.querySelector('.payment-badge-placeholder');
+    if (paymentPlaceholder && job.status === 'completed') {
+      (async function loadPaymentInfo() {
+        try {
+          var payRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/payment');
+          if (payRes.data.ok && payRes.data.payment) {
+            var pay = payRes.data.payment;
+            var statusLabels = {
+              pending: 'في انتظار التأكيد',
+              employer_confirmed: 'تم تأكيد الدفع',
+              completed: 'مكتمل',
+              disputed: 'نزاع'
+            };
+            var badgeLabel = statusLabels[pay.status] || pay.status;
+            var html = '<div class="payment-info" style="margin-block-end: 0.5rem;">' +
+              '<span class="payment-badge payment-badge--' + pay.status + '">' + escapeHtml(badgeLabel) + '</span>' +
+              '<span style="font-size:0.8rem;color:var(--color-text-muted);margin-inline-start:0.5rem;">' + pay.amount + ' جنيه</span>';
+
+            // Confirm button for employer on pending payments
+            if (pay.status === 'pending' && user.role === 'employer' && job.employerId === user.id) {
+              html += ' <button class="btn btn--primary btn--sm btn-confirm-payment" data-pay-id="' + pay.id + '">أكد الدفع</button>';
+            }
+
+            // Dispute button for involved users (pending or employer_confirmed)
+            if (pay.status === 'pending' || pay.status === 'employer_confirmed') {
+              html += ' <button class="btn btn--ghost btn--sm btn-dispute-payment" data-pay-id="' + pay.id + '">فتح نزاع</button>';
+            }
+
+            html += '</div>';
+            paymentPlaceholder.innerHTML = html;
+
+            // Confirm handler
+            var confirmBtn = paymentPlaceholder.querySelector('.btn-confirm-payment');
+            if (confirmBtn) {
+              confirmBtn.addEventListener('click', async function () {
+                Yawmia.setLoading(confirmBtn, true);
+                try {
+                  var cRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/confirm');
+                  if (cRes.data.ok) {
+                    loadJobs();
+                  } else {
+                    alert(cRes.data.error || 'خطأ في تأكيد الدفع');
+                  }
+                } catch (e) {
+                  alert('خطأ في الاتصال');
+                } finally {
+                  Yawmia.setLoading(confirmBtn, false);
+                }
+              });
+            }
+
+            // Dispute handler
+            var disputeBtn = paymentPlaceholder.querySelector('.btn-dispute-payment');
+            if (disputeBtn) {
+              disputeBtn.addEventListener('click', async function () {
+                var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
+                if (!reason || reason.trim().length < 5) {
+                  alert('سبب النزاع لازم يكون 5 حروف على الأقل');
+                  return;
+                }
+                Yawmia.setLoading(disputeBtn, true);
+                try {
+                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason.trim() });
+                  if (dRes.data.ok) {
+                    loadJobs();
+                  } else {
+                    alert(dRes.data.error || 'خطأ في فتح النزاع');
+                  }
+                } catch (e) {
+                  alert('خطأ في الاتصال');
+                } finally {
+                  Yawmia.setLoading(disputeBtn, false);
+                }
+              });
+            }
+          }
+        } catch (e) { /* ignore — payment may not exist */ }
+      })();
+    }
+
+    // Report button handler
+    var reportBtn = card.querySelector('.btn-report');
+    if (reportBtn) {
+      reportBtn.addEventListener('click', function () {
+        showReportForm(card, job.id, reportBtn.getAttribute('data-target'));
+      });
+    }
+
+    // Rate button handler
+    var rateBtn = card.querySelector('.btn-rate');
+    if (rateBtn) {
+      rateBtn.addEventListener('click', function () {
+        var targetUserId = rateBtn.getAttribute('data-target') || '';
+        showRatingModal(job, targetUserId);
+      });
+    }
+
+    return card;
+  }
+
+  // ── Create Job Form ───────────────────────────────────────
+  function setupCreateJob() {
+    Yawmia.populateCategories('jobCategory');
+    Yawmia.populateGovernorates('jobGovernorate');
+
+    // Cost preview
+    var workerInput = Yawmia.$id('jobWorkers');
+    var wageInput = Yawmia.$id('jobWage');
+    var durationInput = Yawmia.$id('jobDuration');
+
+    function updateCost() {
+      var workers = parseInt(workerInput ? workerInput.value : 0) || 0;
+      var wage = parseInt(wageInput ? wageInput.value : 0) || 0;
+      var duration = parseInt(durationInput ? durationInput.value : 0) || 0;
+
+      if (workers > 0 && wage > 0 && duration > 0) {
+        var total = workers * wage * duration;
+        var fee = Math.round(total * 0.15);
+        Yawmia.$id('costTotal').textContent = total.toLocaleString('ar-EG') + ' جنيه';
+        Yawmia.$id('costFee').textContent = fee.toLocaleString('ar-EG') + ' جنيه';
+        Yawmia.show('costPreview');
+      } else {
+        Yawmia.hide('costPreview');
+      }
+    }
+
+    if (workerInput) workerInput.addEventListener('input', updateCost);
+    if (wageInput) wageInput.addEventListener('input', updateCost);
+    if (durationInput) durationInput.addEventListener('input', updateCost);
+
+    // Submit Job
+    var btnCreateJob = Yawmia.$id('btnCreateJob');
+    if (btnCreateJob) {
+      btnCreateJob.addEventListener('click', async function () {
+        Yawmia.clearMessage('createJobError');
+
+        var body = {
+          title: (Yawmia.$id('jobTitle') || {}).value || '',
+          category: (Yawmia.$id('jobCategory') || {}).value || '',
+          governorate: (Yawmia.$id('jobGovernorate') || {}).value || '',
+          workersNeeded: parseInt((Yawmia.$id('jobWorkers') || {}).value) || 0,
+          dailyWage: parseInt((Yawmia.$id('jobWage') || {}).value) || 0,
+          startDate: (Yawmia.$id('jobStartDate') || {}).value || '',
+          durationDays: parseInt((Yawmia.$id('jobDuration') || {}).value) || 0,
+          description: (Yawmia.$id('jobDescription') || {}).value || '',
+        };
+
+        Yawmia.setLoading(btnCreateJob, true);
+
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs', body);
+          if (res.data.ok) {
+            Yawmia.showMessage('createJobError', 'تم نشر الفرصة بنجاح!', 'success');
+            // Clear form
+            Yawmia.$id('jobTitle').value = '';
+            Yawmia.$id('jobCategory').value = '';
+            Yawmia.$id('jobGovernorate').value = '';
+            Yawmia.$id('jobWorkers').value = '';
+            Yawmia.$id('jobWage').value = '';
+            Yawmia.$id('jobStartDate').value = '';
+            Yawmia.$id('jobDuration').value = '';
+            Yawmia.$id('jobDescription').value = '';
+            Yawmia.hide('costPreview');
+            // Reload jobs
+            loadJobs();
+          } else {
+            Yawmia.showMessage('createJobError', res.data.error || 'خطأ في نشر الفرصة', 'error');
+          }
+        } catch (err) {
+          Yawmia.showMessage('createJobError', 'خطأ في الاتصال بالسيرفر', 'error');
+        } finally {
+          Yawmia.setLoading(btnCreateJob, false);
+        }
+      });
+    }
+  }
+
+  // ── Report Form ───────────────────────────────────────────
+  function showReportForm(card, jobId, targetId) {
+    // Remove existing form in this card if any
+    var existing = card.querySelector('.report-form');
+    if (existing) { existing.remove(); return; }
+
+    var form = document.createElement('div');
+    form.className = 'report-form';
+    form.innerHTML =
+      '<select class="report-type-select">' +
+        '<option value="">اختر نوع البلاغ...</option>' +
+        '<option value="fraud">نصب أو احتيال</option>' +
+        '<option value="no_show">عدم حضور</option>' +
+        '<option value="harassment">إساءة أو تحرش</option>' +
+        '<option value="quality">جودة عمل سيئة</option>' +
+        '<option value="payment_issue">مشكلة في الدفع</option>' +
+        '<option value="other">أخرى</option>' +
+      '</select>' +
+      '<textarea placeholder="اكتب سبب البلاغ (10 حروف على الأقل)..." maxlength="500"></textarea>' +
+      '<div style="display:flex;gap:0.5rem;">' +
+        '<button class="btn btn--primary btn--sm btn-submit-report">إرسال البلاغ</button>' +
+        '<button class="btn btn--ghost btn--sm btn-cancel-report">إلغاء</button>' +
+      '</div>' +
+      '<div class="report-form-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>';
+
+    card.appendChild(form);
+
+    form.querySelector('.btn-cancel-report').addEventListener('click', function () {
+      form.remove();
+    });
+
+    form.querySelector('.btn-submit-report').addEventListener('click', async function () {
+      var typeSelect = form.querySelector('.report-type-select');
+      var reasonTextarea = form.querySelector('textarea');
+      var msgEl = form.querySelector('.report-form-msg');
+      var type = typeSelect.value;
+      var reason = reasonTextarea.value.trim();
+
+      if (!type) { msgEl.textContent = 'اختر نوع البلاغ'; msgEl.style.color = 'var(--color-error)'; return; }
+      if (reason.length < 10) { msgEl.textContent = 'السبب لازم يكون 10 حروف على الأقل'; msgEl.style.color = 'var(--color-error)'; return; }
+
+      var submitBtn = form.querySelector('.btn-submit-report');
+      Yawmia.setLoading(submitBtn, true);
+      try {
+        var res = await Yawmia.api('POST', '/api/reports', { targetId: targetId, type: type, reason: reason, jobId: jobId });
+        if (res.data.ok) {
+          msgEl.textContent = 'تم إرسال البلاغ بنجاح ✓';
+          msgEl.style.color = 'var(--color-success)';
+          setTimeout(function () { form.remove(); }, 2000);
+        } else {
+          msgEl.textContent = res.data.error || 'خطأ في إرسال البلاغ';
+          msgEl.style.color = 'var(--color-error)';
+        }
+      } catch (err) {
+        msgEl.textContent = 'خطأ في الاتصال';
+        msgEl.style.color = 'var(--color-error)';
+      } finally {
+        Yawmia.setLoading(submitBtn, false);
+      }
+    });
+  }
+
+  // ── Escape HTML ───────────────────────────────────────────
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ── Attendance Handlers ───────────────────────────────────
+  function handleCheckInClick(jobId, btn) {
+    if (!navigator.geolocation) {
+      alert('المتصفح لا يدعم تحديد الموقع');
+      return;
+    }
+    Yawmia.setLoading(btn, true);
+    navigator.geolocation.getCurrentPosition(
+      async function (pos) {
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkin', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          if (res.data.ok) {
+            btn.textContent = 'تم الحضور ✓';
+            btn.disabled = true;
+            btn.classList.remove('btn-checkin');
+          } else {
+            alert(res.data.error || 'خطأ في تسجيل الحضور');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(btn, false);
+        }
+      },
+      function (err) {
+        Yawmia.setLoading(btn, false);
+        alert('فشل تحديد الموقع — تأكد من تفعيل GPS');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function handleCheckOutClick(jobId, btn) {
+    Yawmia.setLoading(btn, true);
+    (async function () {
+      try {
+        var body = {};
+        // Optionally capture GPS for check-out
+        if (navigator.geolocation) {
+          try {
+            var pos = await new Promise(function (resolve, reject) {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+            });
+            body.lat = pos.coords.latitude;
+            body.lng = pos.coords.longitude;
+          } catch (_) {
+            // GPS optional for check-out — continue without
+          }
+        }
+        var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/checkout', body);
+        if (res.data.ok) {
+          btn.textContent = 'تم الانصراف ✓';
+          btn.disabled = true;
+          btn.classList.remove('btn-checkout');
+          if (res.data.attendance && res.data.attendance.hoursWorked != null) {
+            alert('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
+          }
+        } else {
+          alert(res.data.error || 'خطأ في تسجيل الانصراف');
+        }
+      } catch (err) {
+        alert('خطأ في الاتصال');
+      } finally {
+        Yawmia.setLoading(btn, false);
+      }
+    })();
+  }
+
+  // ── Rating Modal ──────────────────────────────────────────
+  function showRatingModal(job, prefilledTargetId) {
+    // Remove existing modal if any
+    var existingModal = document.querySelector('.rating-modal');
+    if (existingModal) existingModal.remove();
+
+    var selectedStars = 0;
+
+    var modal = document.createElement('div');
+    modal.className = 'rating-modal';
+
+    var isEmployer = user.role === 'employer' && job.employerId === user.id;
+
+    var targetField = '';
+    if (isEmployer) {
+      targetField =
+        '<div class="form-group">' +
+          '<label class="form-label">معرّف العامل (User ID)</label>' +
+          '<input type="text" class="form-input form-input--sm" id="ratingTargetId" placeholder="usr_xxx" value="' + escapeHtml(prefilledTargetId) + '">' +
+        '</div>';
+    }
+
+    modal.innerHTML =
+      '<div class="rating-modal__card">' +
+        '<h3 class="rating-modal__title">⭐ قيّم تجربتك في: ' + escapeHtml(job.title) + '</h3>' +
+        '<div class="rating-stars-input" id="ratingStarsInput">' +
+          '<button class="star-btn" data-star="1">★</button>' +
+          '<button class="star-btn" data-star="2">★</button>' +
+          '<button class="star-btn" data-star="3">★</button>' +
+          '<button class="star-btn" data-star="4">★</button>' +
+          '<button class="star-btn" data-star="5">★</button>' +
+        '</div>' +
+        targetField +
+        '<textarea class="rating-comment-input" id="ratingComment" placeholder="تعليق (اختياري)..." maxlength="500"></textarea>' +
+        '<div class="rating-modal__error" id="ratingError"></div>' +
+        '<div class="rating-modal__actions">' +
+          '<button class="btn btn--primary btn--sm" id="btnSubmitRating">إرسال التقييم</button>' +
+          '<button class="btn btn--ghost btn--sm" id="btnCancelRating">إلغاء</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    // Star selection
+    var starBtns = modal.querySelectorAll('.star-btn');
+    starBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        selectedStars = parseInt(btn.getAttribute('data-star'));
+        starBtns.forEach(function (b) {
+          var s = parseInt(b.getAttribute('data-star'));
+          if (s <= selectedStars) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+      });
+    });
+
+    // Cancel
+    modal.querySelector('#btnCancelRating').addEventListener('click', function () {
+      modal.remove();
+    });
+
+    // Click outside card to close
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) modal.remove();
+    });
+
+    // Submit
+    modal.querySelector('#btnSubmitRating').addEventListener('click', async function () {
+      var errorEl = modal.querySelector('#ratingError');
+      errorEl.textContent = '';
+
+      if (selectedStars < 1) {
+        errorEl.textContent = 'اختار عدد النجوم';
+        return;
+      }
+
+      var toUserId = prefilledTargetId;
+      if (isEmployer) {
+        toUserId = (modal.querySelector('#ratingTargetId') || {}).value || '';
+        if (!toUserId.trim()) {
+          errorEl.textContent = 'أدخل معرّف العامل';
+          return;
+        }
+        toUserId = toUserId.trim();
+      }
+
+      var comment = (modal.querySelector('#ratingComment') || {}).value || '';
+
+      var submitBtn = modal.querySelector('#btnSubmitRating');
+      Yawmia.setLoading(submitBtn, true);
+
+      try {
+        var body = { toUserId: toUserId, stars: selectedStars };
+        if (comment.trim()) body.comment = comment.trim();
+
+        var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/rate', body);
+        if (res.data.ok) {
+          modal.remove();
+          alert('تم إرسال التقييم بنجاح ⭐');
+          loadJobs();
+        } else {
+          errorEl.textContent = res.data.error || 'خطأ في إرسال التقييم';
+        }
+      } catch (err) {
+        errorEl.textContent = 'خطأ في الاتصال بالسيرفر';
+      } finally {
+        Yawmia.setLoading(submitBtn, false);
+      }
+    });
+  }
+
+})();
+```
+
+---
+
+## `frontend/assets/js/profile.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/profile.js — Profile UI Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // Auth check — redirect if not logged in
+  if (!Yawmia.isLoggedIn()) {
+    window.location.href = '/';
+    return;
+  }
+
+  var user = Yawmia.getUser();
+
+  // ── Setup Header ──────────────────────────────────────────
+  var headerName = Yawmia.$id('headerUserName');
+  var headerRole = Yawmia.$id('headerUserRole');
+  if (headerName) headerName.textContent = user.name || user.phone;
+  if (headerRole) {
+    headerRole.textContent = Yawmia.roleLabel(user.role);
+    headerRole.classList.add('badge--' + user.role);
+  }
+
+  // ── Logout ────────────────────────────────────────────────
+  var btnLogout = Yawmia.$id('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', function () {
+      Yawmia.logout();
+    });
+  }
+
+  // ── minRatingsToShow from config ──────────────────────────
+  var minRatingsToShow = 3; // default fallback
+
+  // ── Load Profile ──────────────────────────────────────────
+  loadProfile();
+
+  async function loadProfile() {
+    try {
+      // Load config for minRatingsToShow
+      var cfg = await Yawmia.loadConfig();
+      if (cfg && cfg.RATINGS && typeof cfg.RATINGS.minRatingsToShow === 'number') {
+        minRatingsToShow = cfg.RATINGS.minRatingsToShow;
+      }
+
+      // Fetch fresh user data
+      var res = await Yawmia.api('GET', '/api/auth/me');
+      if (res.data.ok) {
+        user = res.data.user;
+        // Update stored user
+        Yawmia.setAuth(Yawmia.getToken(), user);
+        renderProfile(user);
+        renderEditForm(user);
+        renderNotificationPreferences(user);
+        renderVerificationSection(user);
+
+        // Role-specific sections
+        if (user.role === 'worker') {
+          Yawmia.show('myApplicationsSection');
+          loadMyApplications();
+        } else if (user.role === 'employer') {
+          Yawmia.show('myJobsSection');
+          loadMyJobs();
+        }
+
+        // Load ratings
+        loadRatings(user.id);
+      }
+    } catch (err) {
+      // Ignore — will show cached data
+    }
+  }
+
+  // ── Render Profile Card ───────────────────────────────────
+  function renderProfile(u) {
+    var avatarEl = Yawmia.$id('profileAvatar');
+    var nameEl = Yawmia.$id('profileName');
+    var phoneEl = Yawmia.$id('profilePhone');
+    var govEl = Yawmia.$id('profileGov');
+    var ratingSummaryEl = Yawmia.$id('profileRatingSummary');
+    var categoriesEl = Yawmia.$id('profileCategories');
+
+    if (avatarEl) avatarEl.textContent = u.role === 'worker' ? '👷' : '🏢';
+    if (nameEl) nameEl.textContent = u.name || 'بدون اسم';
+    if (phoneEl) phoneEl.textContent = u.phone;
+    if (govEl) govEl.textContent = u.governorate ? '📍 ' + u.governorate : '';
+
+    // Rating summary in profile header
+    if (ratingSummaryEl) {
+      var rating = u.rating || { avg: 0, count: 0 };
+      if (rating.count >= minRatingsToShow) {
+        ratingSummaryEl.innerHTML =
+          '<div class="rating-summary-avg">' + rating.avg + '</div>' +
+          '<div class="rating-summary-stars">' + starsDisplay(rating.avg) + '</div>' +
+          '<div class="rating-summary-count">' + rating.count + ' تقييم</div>';
+      } else if (rating.count > 0) {
+        var needed = minRatingsToShow - rating.count;
+        ratingSummaryEl.innerHTML =
+          '<div class="rating-summary-msg">محتاج ' + needed + ' تقييمات كمان لعرض المتوسط</div>';
+      } else {
+        ratingSummaryEl.innerHTML =
+          '<div class="rating-summary-msg">لا توجد تقييمات بعد</div>';
+      }
+    }
+
+    // Categories (worker only)
+    if (categoriesEl && u.categories && u.categories.length > 0) {
+      Yawmia.show('profileCategories');
+      categoriesEl.innerHTML = '';
+      u.categories.forEach(function (catId) {
+        var span = document.createElement('span');
+        span.className = 'badge badge--worker';
+        span.textContent = catId;
+        categoriesEl.appendChild(span);
+      });
+    }
+  }
+
+  // ── Render Edit Form ──────────────────────────────────────
+  async function renderEditForm(u) {
+    var nameInput = Yawmia.$id('editName');
+    var govSelect = Yawmia.$id('editGov');
+
+    if (nameInput) nameInput.value = u.name || '';
+
+    // Populate governorates
+    await Yawmia.populateGovernorates('editGov');
+    if (govSelect && u.governorate) govSelect.value = u.governorate;
+
+    // Categories for workers
+    if (u.role === 'worker') {
+      Yawmia.show('editCategoriesGroup');
+      await Yawmia.populateCategoriesCheckboxes('editCategoriesGrid');
+      // Pre-check existing categories
+      if (u.categories && u.categories.length > 0) {
+        u.categories.forEach(function (catId) {
+          var cb = document.querySelector('#editCategoriesGrid input[value="' + catId + '"]');
+          if (cb) cb.checked = true;
+        });
+      }
+    }
+
+    // Location fields (lat/lng) — inject after governorate
+    var editForm = govSelect ? govSelect.closest('.card') : null;
+    if (editForm) {
+      var existingLocGroup = editForm.querySelector('.location-group');
+      if (!existingLocGroup) {
+        var locGroup = document.createElement('div');
+        locGroup.className = 'form-group';
+        locGroup.innerHTML =
+          '<label class="form-label">الموقع الجغرافي</label>' +
+          '<div class="location-group">' +
+            '<div class="form-group">' +
+              '<input type="number" step="any" id="editLat" class="form-input form-input--sm" placeholder="خط العرض (مثال: 30.04)" value="' + (u.lat || '') + '">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<input type="number" step="any" id="editLng" class="form-input form-input--sm" placeholder="خط الطول (مثال: 31.23)" value="' + (u.lng || '') + '">' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn-detect-location" id="btnDetectLocation">📍 استخدم موقعي الحالي</button>';
+
+        // Insert before the save button or at end of form
+        var btnUpdateEl = editForm.querySelector('#btnUpdateProfile');
+        if (btnUpdateEl) {
+          btnUpdateEl.parentNode.insertBefore(locGroup, btnUpdateEl);
+        } else {
+          editForm.appendChild(locGroup);
+        }
+
+        // Detect location button handler
+        var btnDetect = editForm.querySelector('#btnDetectLocation');
+        if (btnDetect) {
+          btnDetect.addEventListener('click', function () {
+            if (!navigator.geolocation) {
+              alert('المتصفح لا يدعم تحديد الموقع');
+              return;
+            }
+            btnDetect.textContent = '⏳ جاري تحديد الموقع...';
+            btnDetect.disabled = true;
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                var latInput = Yawmia.$id('editLat');
+                var lngInput = Yawmia.$id('editLng');
+                if (latInput) latInput.value = pos.coords.latitude.toFixed(6);
+                if (lngInput) lngInput.value = pos.coords.longitude.toFixed(6);
+                btnDetect.textContent = '📍 تم تحديد الموقع ✓';
+                btnDetect.disabled = false;
+              },
+              function (err) {
+                alert('تعذّر تحديد الموقع: ' + (err.message || 'خطأ غير معروف'));
+                btnDetect.textContent = '📍 استخدم موقعي الحالي';
+                btnDetect.disabled = false;
+              },
+              { enableHighAccuracy: true, timeout: 10000 }
+            );
+          });
+        }
+      }
+    }
+  }
+
+  // ── Update Profile Handler ────────────────────────────────
+  var btnUpdate = Yawmia.$id('btnUpdateProfile');
+  if (btnUpdate) {
+    btnUpdate.addEventListener('click', async function () {
+      Yawmia.clearMessage('editProfileMsg');
+
+      var name = (Yawmia.$id('editName') || {}).value || '';
+      var governorate = (Yawmia.$id('editGov') || {}).value || '';
+
+      if (!name.trim()) {
+        return Yawmia.showMessage('editProfileMsg', 'أدخل اسمك', 'error');
+      }
+      if (!governorate) {
+        return Yawmia.showMessage('editProfileMsg', 'اختار المحافظة', 'error');
+      }
+
+      var body = { name: name.trim(), governorate: governorate };
+
+      // Include lat/lng if provided
+      var latVal = (Yawmia.$id('editLat') || {}).value;
+      var lngVal = (Yawmia.$id('editLng') || {}).value;
+      if (latVal !== undefined && latVal !== '') body.lat = parseFloat(latVal);
+      if (lngVal !== undefined && lngVal !== '') body.lng = parseFloat(lngVal);
+
+      if (user.role === 'worker') {
+        var checked = document.querySelectorAll('#editCategoriesGrid input[name="categories"]:checked');
+        var categories = Array.from(checked).map(function (el) { return el.value; });
+        if (categories.length === 0) {
+          return Yawmia.showMessage('editProfileMsg', 'اختار تخصص واحد على الأقل', 'error');
+        }
+        body.categories = categories;
+      }
+
+      Yawmia.setLoading(btnUpdate, true);
+
+      try {
+        var res = await Yawmia.api('PUT', '/api/auth/profile', body);
+        if (res.data.ok) {
+          user = res.data.user;
+          Yawmia.setAuth(Yawmia.getToken(), user);
+          renderProfile(user);
+          // Update header
+          if (headerName) headerName.textContent = user.name || user.phone;
+          Yawmia.showMessage('editProfileMsg', 'تم حفظ التعديلات بنجاح', 'success');
+        } else {
+          Yawmia.showMessage('editProfileMsg', res.data.error || 'خطأ في الحفظ', 'error');
+        }
+      } catch (err) {
+        Yawmia.showMessage('editProfileMsg', 'خطأ في الاتصال بالسيرفر', 'error');
+      } finally {
+        Yawmia.setLoading(btnUpdate, false);
+      }
+    });
+  }
+
+  // ── Load My Applications (Worker) ─────────────────────────
+  async function loadMyApplications() {
+    var listEl = Yawmia.$id('myApplicationsList');
+    if (!listEl) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/applications/mine');
+      if (res.data.ok && res.data.applications.length > 0) {
+        listEl.innerHTML = '';
+        res.data.applications.forEach(function (app) {
+          listEl.appendChild(createApplicationCard(app));
+        });
+      } else {
+        listEl.innerHTML = '<p class="empty-state">لا توجد طلبات بعد</p>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الطلبات</p>';
+    }
+  }
+
+  function createApplicationCard(app) {
+    var card = document.createElement('div');
+    card.className = 'app-card';
+
+    var statusLabels = {
+      pending: 'في الانتظار',
+      accepted: 'مقبول ✓',
+      rejected: 'مرفوض ✗',
+      withdrawn: 'تم السحب'
+    };
+    var statusClasses = {
+      pending: 'badge--filled',
+      accepted: 'badge--completed',
+      rejected: 'badge--cancelled',
+      withdrawn: 'badge--expired'
+    };
+
+    var statusLabel = statusLabels[app.status] || app.status;
+    var statusClass = statusClasses[app.status] || '';
+
+    var jobTitle = app.job ? escapeHtml(app.job.title) : 'فرصة محذوفة';
+    var jobWage = app.job ? app.job.dailyWage + ' جنيه/يوم' : '';
+    var jobGov = app.job ? app.job.governorate : '';
+
+    var infoHtml =
+      '<div class="app-card__info">' +
+        '<div class="app-card__title">' + jobTitle + '</div>' +
+        '<div class="app-card__meta">' +
+          (jobWage ? jobWage + ' • ' : '') +
+          (jobGov ? '📍 ' + escapeHtml(jobGov) + ' • ' : '') +
+          new Date(app.appliedAt).toLocaleDateString('ar-EG') +
+        '</div>' +
+      '</div>';
+
+    var actionsHtml =
+      '<div class="app-card__actions">' +
+        '<span class="badge badge--status ' + statusClass + '">' + statusLabel + '</span>';
+
+    if (app.status === 'pending') {
+      actionsHtml += ' <button class="btn btn--ghost btn--sm btn-withdraw" data-app-id="' + app.id + '">سحب الطلب</button>';
+    }
+
+    actionsHtml += '</div>';
+
+    card.innerHTML = infoHtml + actionsHtml;
+
+    // Withdraw handler
+    var withdrawBtn = card.querySelector('.btn-withdraw');
+    if (withdrawBtn) {
+      withdrawBtn.addEventListener('click', async function () {
+        if (!confirm('متأكد إنك عايز تسحب الطلب؟')) return;
+        Yawmia.setLoading(withdrawBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/applications/' + app.id + '/withdraw');
+          if (res.data.ok) {
+            loadMyApplications(); // Reload list
+          } else {
+            alert(res.data.error || 'خطأ في سحب الطلب');
+          }
+        } catch (err) {
+          alert('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(withdrawBtn, false);
+        }
+      });
+    }
+
+    return card;
+  }
+
+  // ── Load My Jobs (Employer) ───────────────────────────────
+  async function loadMyJobs() {
+    var listEl = Yawmia.$id('myJobsList');
+    if (!listEl) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/jobs/mine');
+      if (res.data.ok && res.data.jobs.length > 0) {
+        listEl.innerHTML = '';
+        res.data.jobs.forEach(function (job) {
+          listEl.appendChild(createMyJobCard(job));
+        });
+      } else {
+        listEl.innerHTML = '<p class="empty-state">لا توجد فرص منشورة بعد</p>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+    }
+  }
+
+  function createMyJobCard(job) {
+    var card = document.createElement('div');
+    card.className = 'myjob-card';
+
+    var statusLabels = {
+      open: 'متاحة',
+      filled: 'مكتملة العدد',
+      in_progress: 'جاري التنفيذ',
+      completed: 'مكتملة ✓',
+      expired: 'منتهية',
+      cancelled: 'ملغية'
+    };
+    var statusLabel = statusLabels[job.status] || job.status;
+
+    card.innerHTML =
+      '<div class="myjob-card__info">' +
+        '<div class="myjob-card__title">' + escapeHtml(job.title) + '</div>' +
+        '<div class="myjob-card__meta">' +
+          job.dailyWage + ' جنيه/يوم • ' +
+          '👷 ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل • ' +
+          new Date(job.createdAt).toLocaleDateString('ar-EG') +
+        '</div>' +
+      '</div>' +
+      '<span class="badge badge--status badge--' + job.status + '">' + statusLabel + '</span>';
+
+    return card;
+  }
+
+  // ── Load Ratings ──────────────────────────────────────────
+  async function loadRatings(userId) {
+    var summaryArea = Yawmia.$id('ratingSummaryArea');
+    var listArea = Yawmia.$id('ratingsListArea');
+
+    // Load summary + distribution
+    try {
+      var summaryRes = await Yawmia.api('GET', '/api/users/' + userId + '/rating-summary');
+      if (summaryRes.data) {
+        renderRatingSummary(summaryArea, summaryRes.data);
+      }
+    } catch (err) {
+      if (summaryArea) summaryArea.innerHTML = '';
+    }
+
+    // Load individual ratings
+    try {
+      var ratingsRes = await Yawmia.api('GET', '/api/users/' + userId + '/ratings?limit=10&offset=0');
+      if (ratingsRes.data && ratingsRes.data.items && ratingsRes.data.items.length > 0) {
+        renderRatingsList(listArea, ratingsRes.data.items);
+      } else {
+        if (listArea) listArea.innerHTML = '<p class="empty-state">لا توجد تقييمات تفصيلية بعد</p>';
+      }
+    } catch (err) {
+      if (listArea) listArea.innerHTML = '<p class="empty-state">خطأ في تحميل التقييمات</p>';
+    }
+  }
+
+  function renderRatingSummary(container, summary) {
+    if (!container) return;
+
+    var html = '<div class="rating-summary-card">';
+
+    if (summary.count >= minRatingsToShow) {
+      html +=
+        '<div class="rating-summary-avg">' + summary.avg + '</div>' +
+        '<div class="rating-summary-stars">' + starsDisplay(summary.avg) + '</div>' +
+        '<div class="rating-summary-count">' + summary.count + ' تقييم</div>';
+    } else if (summary.count > 0) {
+      var needed = minRatingsToShow - summary.count;
+      html += '<div class="rating-summary-msg">محتاج ' + needed + ' تقييمات كمان لعرض المتوسط</div>';
+    } else {
+      html += '<div class="rating-summary-msg">لا توجد تقييمات بعد</div>';
+    }
+
+    html += '</div>';
+
+    // Distribution bars (always show if there are any ratings)
+    if (summary.count > 0 && summary.distribution) {
+      html += '<div class="rating-dist">';
+      for (var star = 5; star >= 1; star--) {
+        var count = summary.distribution[star] || 0;
+        var pct = summary.count > 0 ? Math.round((count / summary.count) * 100) : 0;
+        html +=
+          '<div class="rating-dist-row">' +
+            '<span class="rating-dist-label">' + star + ' ★</span>' +
+            '<div class="rating-dist-bar"><div class="rating-dist-fill" style="width:' + pct + '%"></div></div>' +
+            '<span class="rating-dist-count">' + count + '</span>' +
+          '</div>';
+      }
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function renderRatingsList(container, items) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    var list = document.createElement('div');
+    list.className = 'ratings-list';
+
+    items.forEach(function (r) {
+      var item = document.createElement('div');
+      item.className = 'rating-item';
+
+      var headerHtml =
+        '<div class="rating-item__header">' +
+          '<span class="rating-item__stars">' + starsDisplay(r.stars) + '</span>' +
+          '<span class="rating-item__date">' + new Date(r.createdAt).toLocaleDateString('ar-EG') + '</span>' +
+        '</div>';
+
+      var commentHtml = r.comment
+        ? '<div class="rating-item__comment">' + escapeHtml(r.comment) + '</div>'
+        : '';
+
+      var fromHtml = '<div class="rating-item__from">من: ' + (r.fromRole === 'worker' ? 'عامل' : 'صاحب عمل') + '</div>';
+
+      item.innerHTML = headerHtml + commentHtml + fromHtml;
+      list.appendChild(item);
+    });
+
+    container.appendChild(list);
+  }
+
+  // ── Notification Preferences ──────────────────────────────
+  function renderNotificationPreferences(u) {
+    var container = Yawmia.$id('notification-prefs');
+    if (!container) return;
+
+    var prefs = u.notificationPreferences || { inApp: true, whatsapp: true, sms: false };
+
+    container.innerHTML =
+      '<section class="card">' +
+        '<h2 class="card__title">إعدادات الإشعارات</h2>' +
+        '<div class="pref-group">' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" checked disabled />' +
+            '<span>إشعارات داخل التطبيق (دايماً مفعّلة)</span>' +
+          '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-whatsapp" ' + (prefs.whatsapp ? 'checked' : '') + ' />' +
+            '<span>إشعارات واتساب للأحداث المهمة</span>' +
+          '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-sms" ' + (prefs.sms ? 'checked' : '') + ' />' +
+            '<span>إشعارات SMS للأحداث المهمة</span>' +
+          '</label>' +
+          '<button class="btn btn--ghost" id="save-prefs-btn">حفظ إعدادات الإشعارات</button>' +
+        '</div>' +
+      '</section>';
+
+    var saveBtn = Yawmia.$id('save-prefs-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async function () {
+        var whatsapp = Yawmia.$id('pref-whatsapp').checked;
+        var sms = Yawmia.$id('pref-sms').checked;
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'جاري الحفظ...';
+
+        try {
+          var res = await Yawmia.api('PUT', '/api/auth/profile', {
+            notificationPreferences: { whatsapp: whatsapp, sms: sms }
+          });
+          if (res.data.ok) {
+            saveBtn.textContent = 'تم الحفظ ✓';
+            setTimeout(function () { saveBtn.textContent = 'حفظ إعدادات الإشعارات'; saveBtn.disabled = false; }, 2000);
+          } else {
+            saveBtn.textContent = 'خطأ — حاول مرة تانية';
+            saveBtn.disabled = false;
+          }
+        } catch (err) {
+          saveBtn.textContent = 'خطأ — حاول مرة تانية';
+          saveBtn.disabled = false;
+        }
+      });
+    }
+  }
+
+  // ── Verification Section ──────────────────────────────────
+  function renderVerificationSection(u) {
+    var container = Yawmia.$id('verification-section');
+    if (!container) return;
+
+    var status = u.verificationStatus || 'unverified';
+    var html = '<section class="card">' +
+      '<h2 class="card__title">🔐 التحقق من الهوية</h2>';
+
+    if (status === 'verified') {
+      html += '<div class="verification-status verification-status--verified">' +
+        '<span class="verification-badge verification-badge--verified">✓ تم التحقق من هويتك</span>' +
+        '</div>';
+    } else if (status === 'pending') {
+      html += '<div class="verification-status verification-status--pending">' +
+        '<span class="verification-badge verification-badge--pending">⏳ طلب التحقق قيد المراجعة</span>' +
+        '</div>';
+    } else {
+      if (status === 'rejected') {
+        html += '<div class="verification-status verification-status--rejected">' +
+          '<span class="verification-badge verification-badge--rejected">✗ تم رفض طلب التحقق — يمكنك إعادة المحاولة</span>' +
+          '</div>';
+      }
+      html += '<p class="card__desc">ارفع صورة البطاقة الشخصية للتحقق من هويتك والحصول على علامة "محقق"</p>' +
+        '<div class="form-group">' +
+          '<label class="form-label">صورة البطاقة الشخصية</label>' +
+          '<input type="file" id="nationalIdInput" accept="image/*" class="form-input">' +
+        '</div>' +
+        '<button class="btn btn--primary" id="btnSubmitVerification">إرسال طلب التحقق</button>' +
+        '<div class="message" id="verificationMsg"></div>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    var submitBtn = Yawmia.$id('btnSubmitVerification');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleVerificationSubmit);
+    }
+  }
+
+  async function handleVerificationSubmit() {
+    Yawmia.clearMessage('verificationMsg');
+    var fileInput = Yawmia.$id('nationalIdInput');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+      return Yawmia.showMessage('verificationMsg', 'اختار صورة البطاقة', 'error');
+    }
+
+    var file = fileInput.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      return Yawmia.showMessage('verificationMsg', 'حجم الصورة أكبر من 2MB', 'error');
+    }
+
+    var submitBtn = Yawmia.$id('btnSubmitVerification');
+    Yawmia.setLoading(submitBtn, true);
+
+    try {
+      var base64 = await fileToBase64(file);
+      var res = await Yawmia.api('POST', '/api/auth/verify-identity', {
+        nationalIdImage: base64
+      });
+      if (res.data.ok) {
+        Yawmia.showMessage('verificationMsg', 'تم إرسال طلب التحقق بنجاح — سيتم مراجعته قريباً', 'success');
+        setTimeout(function() { location.reload(); }, 2000);
+      } else {
+        Yawmia.showMessage('verificationMsg', res.data.error || 'خطأ في إرسال الطلب', 'error');
+      }
+    } catch (err) {
+      Yawmia.showMessage('verificationMsg', 'خطأ في الاتصال بالسيرفر', 'error');
+    } finally {
+      Yawmia.setLoading(submitBtn, false);
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = function() { reject(new Error('فشل قراءة الملف')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function starsDisplay(rating) {
+    var full = Math.floor(rating);
+    var half = (rating - full) >= 0.5 ? 1 : 0;
+    var empty = 5 - full - half;
+    var str = '';
+    for (var i = 0; i < full; i++) str += '★';
+    if (half) str += '☆';
+    for (var j = 0; j < empty; j++) str += '☆';
+    return str;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+})();
+```
+
+---
+
+## `frontend/assets/js/user.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/user.js — Public Profile Page Module (IIFE)
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  var minRatingsToShow = 3;
+
+  // Get userId from URL
+  var params = new URLSearchParams(window.location.search);
+  var userId = params.get('id');
+
+  if (!userId) {
+    showError();
+    return;
+  }
+
+  loadPublicProfile(userId);
+
+  async function loadPublicProfile(uid) {
+    try {
+      // Load config
+      var cfg = await Yawmia.loadConfig();
+      if (cfg && cfg.RATINGS && typeof cfg.RATINGS.minRatingsToShow === 'number') {
+        minRatingsToShow = cfg.RATINGS.minRatingsToShow;
+      }
+
+      var res = await Yawmia.api('GET', '/api/users/' + uid + '/public-profile');
+      if (!res.data.ok || !res.data.profile) {
+        showError();
+        return;
+      }
+
+      var profile = res.data.profile;
+      renderProfile(profile);
+
+      // Load ratings
+      loadRatings(uid);
+
+      Yawmia.hide('profileLoading');
+      Yawmia.show('profileContent');
+
+    } catch (err) {
+      showError();
+    }
+  }
+
+  function renderProfile(p) {
+    var avatarEl = Yawmia.$id('pubAvatar');
+    var nameEl = Yawmia.$id('pubName');
+    var govEl = Yawmia.$id('pubGov');
+    var roleBadgeEl = Yawmia.$id('pubRoleBadge');
+    var verBadgeEl = Yawmia.$id('pubVerificationBadge');
+    var ratingEl = Yawmia.$id('pubRatingSummary');
+    var categoriesEl = Yawmia.$id('pubCategories');
+    var trustSection = Yawmia.$id('pubTrustSection');
+    var trustScoreEl = Yawmia.$id('pubTrustScore');
+    var memberEl = Yawmia.$id('pubMemberSince');
+
+    if (avatarEl) avatarEl.textContent = p.role === 'worker' ? '👷' : '🏢';
+    if (nameEl) nameEl.textContent = p.name || 'بدون اسم';
+    if (govEl) govEl.textContent = p.governorate ? '📍 ' + p.governorate : '';
+
+    // Role badge
+    if (roleBadgeEl) {
+      var roleText = p.role === 'worker' ? 'عامل' : (p.role === 'employer' ? 'صاحب عمل' : p.role);
+      roleBadgeEl.innerHTML = '<span class="badge badge--' + escapeHtml(p.role) + '">' + escapeHtml(roleText) + '</span>';
+    }
+
+    // Verification badge
+    if (verBadgeEl) {
+      var verLabels = {
+        verified: '✓ هوية محققة',
+        pending: '⏳ قيد التحقق',
+        rejected: '',
+        unverified: '',
+      };
+      var verClasses = {
+        verified: 'verification-badge--verified',
+        pending: 'verification-badge--pending',
+        rejected: '',
+        unverified: '',
+      };
+      var vStatus = p.verificationStatus || 'unverified';
+      if (verLabels[vStatus]) {
+        verBadgeEl.innerHTML = '<span class="verification-badge ' + verClasses[vStatus] + '">' + escapeHtml(verLabels[vStatus]) + '</span>';
+      }
+    }
+
+    // Rating
+    if (ratingEl) {
+      var rating = p.rating || { avg: 0, count: 0 };
+      if (rating.count >= minRatingsToShow) {
+        ratingEl.innerHTML =
+          '<div class="rating-summary-avg">' + rating.avg + '</div>' +
+          '<div class="rating-summary-stars">' + starsDisplay(rating.avg) + '</div>' +
+          '<div class="rating-summary-count">' + rating.count + ' تقييم</div>';
+      } else if (rating.count > 0) {
+        ratingEl.innerHTML = '<div class="rating-summary-msg">تقييمات غير كافية لعرض المتوسط</div>';
+      } else {
+        ratingEl.innerHTML = '<div class="rating-summary-msg">لا توجد تقييمات</div>';
+      }
+    }
+
+    // Categories
+    if (categoriesEl && p.categories && p.categories.length > 0) {
+      Yawmia.show('pubCategories');
+      categoriesEl.innerHTML = '';
+      p.categories.forEach(function (catId) {
+        var span = document.createElement('span');
+        span.className = 'badge badge--worker';
+        span.textContent = catId;
+        categoriesEl.appendChild(span);
+      });
+    }
+
+    // Trust score
+    if (trustSection && trustScoreEl && typeof p.trustScore === 'number') {
+      var trustClass = p.trustScore >= 0.7 ? 'trust-high' : (p.trustScore >= 0.4 ? 'trust-medium' : 'trust-low');
+      trustScoreEl.innerHTML =
+        '<div class="trust-score-display ' + trustClass + '">' +
+          '<span class="trust-score-value">' + Math.round(p.trustScore * 100) + '</span>' +
+          '<span class="trust-score-label">/ 100</span>' +
+        '</div>';
+      trustSection.classList.remove('hidden');
+    } else if (trustSection) {
+      trustSection.classList.add('hidden');
+    }
+
+    // Member since
+    if (memberEl && p.memberSince) {
+      memberEl.textContent = 'عضو منذ ' + new Date(p.memberSince).toLocaleDateString('ar-EG');
+    }
+  }
+
+  async function loadRatings(uid) {
+    var summaryArea = Yawmia.$id('pubRatingSummaryArea');
+    var listArea = Yawmia.$id('pubRatingsListArea');
+
+    try {
+      var summaryRes = await Yawmia.api('GET', '/api/users/' + uid + '/rating-summary');
+      if (summaryRes.data) {
+        renderRatingSummary(summaryArea, summaryRes.data);
+      }
+    } catch (err) {
+      if (summaryArea) summaryArea.innerHTML = '';
+    }
+
+    try {
+      var ratingsRes = await Yawmia.api('GET', '/api/users/' + uid + '/ratings?limit=10&offset=0');
+      if (ratingsRes.data && ratingsRes.data.items && ratingsRes.data.items.length > 0) {
+        renderRatingsList(listArea, ratingsRes.data.items);
+      } else {
+        if (listArea) listArea.innerHTML = '<p class="empty-state">لا توجد تقييمات تفصيلية</p>';
+      }
+    } catch (err) {
+      if (listArea) listArea.innerHTML = '<p class="empty-state">خطأ في تحميل التقييمات</p>';
+    }
+  }
+
+  function renderRatingSummary(container, summary) {
+    if (!container) return;
+    var html = '<div class="rating-summary-card">';
+    if (summary.count >= minRatingsToShow) {
+      html +=
+        '<div class="rating-summary-avg">' + summary.avg + '</div>' +
+        '<div class="rating-summary-stars">' + starsDisplay(summary.avg) + '</div>' +
+        '<div class="rating-summary-count">' + summary.count + ' تقييم</div>';
+    } else if (summary.count > 0) {
+      html += '<div class="rating-summary-msg">تقييمات غير كافية لعرض المتوسط</div>';
+    } else {
+      html += '<div class="rating-summary-msg">لا توجد تقييمات</div>';
+    }
+    html += '</div>';
+
+    if (summary.count > 0 && summary.distribution) {
+      html += '<div class="rating-dist">';
+      for (var star = 5; star >= 1; star--) {
+        var count = summary.distribution[star] || 0;
+        var pct = summary.count > 0 ? Math.round((count / summary.count) * 100) : 0;
+        html +=
+          '<div class="rating-dist-row">' +
+            '<span class="rating-dist-label">' + star + ' ★</span>' +
+            '<div class="rating-dist-bar"><div class="rating-dist-fill" style="width:' + pct + '%"></div></div>' +
+            '<span class="rating-dist-count">' + count + '</span>' +
+          '</div>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderRatingsList(container, items) {
+    if (!container) return;
+    container.innerHTML = '';
+    var list = document.createElement('div');
+    list.className = 'ratings-list';
+    items.forEach(function (r) {
+      var item = document.createElement('div');
+      item.className = 'rating-item';
+      item.innerHTML =
+        '<div class="rating-item__header">' +
+          '<span class="rating-item__stars">' + starsDisplay(r.stars) + '</span>' +
+          '<span class="rating-item__date">' + new Date(r.createdAt).toLocaleDateString('ar-EG') + '</span>' +
+        '</div>' +
+        (r.comment ? '<div class="rating-item__comment">' + escapeHtml(r.comment) + '</div>' : '') +
+        '<div class="rating-item__from">من: ' + (r.fromRole === 'worker' ? 'عامل' : 'صاحب عمل') + '</div>';
+      list.appendChild(item);
+    });
+    container.appendChild(list);
+  }
+
+  function showError() {
+    Yawmia.hide('profileLoading');
+    Yawmia.show('profileError');
+  }
+
+  function starsDisplay(rating) {
+    var full = Math.floor(rating);
+    var half = (rating - full) >= 0.5 ? 1 : 0;
+    var empty = 5 - full - half;
+    var str = '';
+    for (var i = 0; i < full; i++) str += '★';
+    if (half) str += '☆';
+    for (var j = 0; j < empty; j++) str += '☆';
+    return str;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+})();
+```
+
+---
+
+## `frontend/dashboard.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — لوحة التحكم</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <div class="header__right">
+          <h1 class="header__brand">🏗️ يوميّة</h1>
+        </div>
+        <div class="header__left">
+          <button class="notification-bell" id="notificationBell" title="الإشعارات">
+            🔔
+            <span class="notification-bell__badge hidden" id="notificationCount">0</span>
+          </button>
+          <span class="header__user" id="headerUserName"></span>
+          <span class="badge" id="headerUserRole"></span>
+          <a href="/profile.html" class="btn btn--ghost btn--sm">ملفي</a>
+          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Welcome Card -->
+        <section class="card welcome-card" id="welcomeCard">
+          <h2 id="welcomeTitle">أهلاً بيك!</h2>
+          <p id="welcomeDesc"></p>
+        </section>
+
+        <!-- Employer Section: Create Job -->
+        <section class="card hidden" id="createJobSection">
+          <h2 class="card__title">نشر فرصة عمل جديدة</h2>
+
+          <div class="form-group">
+            <label class="form-label" for="jobTitle">عنوان الفرصة</label>
+            <input type="text" id="jobTitle" class="form-input" placeholder="مثال: جمع محصول قمح">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobCategory">التخصص</label>
+            <select id="jobCategory" class="form-input">
+              <option value="">اختار التخصص</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobGovernorate">المحافظة</label>
+            <select id="jobGovernorate" class="form-input">
+              <option value="">اختار المحافظة</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="jobWorkers">عدد العمال</label>
+              <input type="number" id="jobWorkers" class="form-input" min="1" max="100" placeholder="20">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jobWage">اليومية (جنيه)</label>
+              <input type="number" id="jobWage" class="form-input" min="150" max="1000" placeholder="250">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="jobStartDate">تاريخ البدء</label>
+              <input type="date" id="jobStartDate" class="form-input" dir="ltr">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jobDuration">المدة (أيام)</label>
+              <input type="number" id="jobDuration" class="form-input" min="1" max="30" placeholder="3">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="jobDescription">وصف الفرصة</label>
+            <textarea id="jobDescription" class="form-input form-textarea" rows="3" maxlength="500" placeholder="تفاصيل عن الشغل..."></textarea>
+          </div>
+
+          <!-- Cost Preview -->
+          <div class="cost-preview hidden" id="costPreview">
+            <div class="cost-row">
+              <span>إجمالي التكلفة:</span>
+              <span id="costTotal">0 جنيه</span>
+            </div>
+            <div class="cost-row cost-row--fee">
+              <span>عمولة المنصة (15%):</span>
+              <span id="costFee">0 جنيه</span>
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--full" id="btnCreateJob">نشر الفرصة</button>
+          <div class="message" id="createJobError"></div>
+        </section>
+
+        <!-- Job Listings -->
+        <section class="card" id="jobsSection">
+          <div class="section-header">
+            <h2 class="card__title">الفرص المتاحة</h2>
+            <div class="filters">
+              <select id="filterGov" class="form-input form-input--sm">
+                <option value="">كل المحافظات</option>
+              </select>
+              <select id="filterCat" class="form-input form-input--sm">
+                <option value="">كل التخصصات</option>
+              </select>
+              <button class="btn btn--sm btn--primary" id="btnFilterJobs">بحث</button>
+            </div>
+          </div>
+          <div id="jobsList" class="jobs-list">
+            <p class="empty-state">جاري تحميل الفرص...</p>
+          </div>
+        </section>
+
+        <!-- Pagination -->
+        <div class="pagination hidden" id="paginationControls">
+          <button class="btn btn--ghost btn--sm" id="btnPrevPage" disabled>السابق</button>
+          <span class="pagination__info" id="paginationInfo"></span>
+          <button class="btn btn--ghost btn--sm" id="btnNextPage">التالي</button>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Notifications Panel -->
+    <div class="notification-panel hidden" id="notificationPanel">
+      <div class="notification-panel__header">
+        <h3>الإشعارات</h3>
+        <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+      </div>
+      <div class="notification-panel__list" id="notificationList">
+        <p class="empty-state">لا توجد إشعارات</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/jobs.js"></script>
+</body>
+</html>
+```
+
+---
+
+## `frontend/index.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — شغلك قريب منّك</title>
+  <meta name="description" content="منصة توظيف العمالة اليومية في مصر. اعرض فرص شغل أو اشتغل بالقرب منك.">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <h1 class="header__brand">🏗️ يوميّة</h1>
+        <p class="header__tagline">شغلك قريب منّك</p>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Auth Section -->
+        <section class="auth-section" id="authSection">
+          <!-- Step 1: Phone Input -->
+          <div class="card auth-card" id="stepPhone">
+            <h2 class="card__title">تسجيل الدخول</h2>
+            <p class="card__desc">أدخل رقم موبايلك للبدء</p>
+
+            <div class="form-group">
+              <label class="form-label" for="phoneInput">رقم الموبايل</label>
+              <input
+                type="tel"
+                id="phoneInput"
+                class="form-input"
+                placeholder="01XXXXXXXXX"
+                maxlength="11"
+                autocomplete="tel"
+                dir="ltr"
+                inputmode="numeric"
+              >
+              <span class="form-hint">مثال: 01012345678</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">أنا:</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="role" value="worker" checked>
+                  <span>عامل — بدور على شغل</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="role" value="employer">
+                  <span>صاحب عمل — محتاج عمال</span>
+                </label>
+              </div>
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnSendOtp">
+              إرسال كود التحقق
+            </button>
+
+            <div class="message" id="phoneError"></div>
+          </div>
+
+          <!-- Step 2: OTP Verification -->
+          <div class="card auth-card hidden" id="stepOtp">
+            <h2 class="card__title">أدخل كود التحقق</h2>
+            <p class="card__desc">تم إرسال كود مكوّن من 4 أرقام على رقم <span id="otpPhone"></span></p>
+
+            <div class="form-group">
+              <label class="form-label" for="otpInput">كود التحقق</label>
+              <input
+                type="text"
+                id="otpInput"
+                class="form-input form-input--otp"
+                placeholder="0000"
+                maxlength="4"
+                autocomplete="one-time-code"
+                dir="ltr"
+                inputmode="numeric"
+              >
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnVerifyOtp">
+              تأكيد الكود
+            </button>
+
+            <button class="btn btn--ghost btn--full" id="btnResendOtp">
+              إعادة إرسال الكود
+            </button>
+
+            <div class="message" id="otpError"></div>
+          </div>
+
+          <!-- Step 3: Profile Completion -->
+          <div class="card auth-card hidden" id="stepProfile">
+            <h2 class="card__title">أكمل بياناتك</h2>
+            <p class="card__desc">محتاجين بيانات بسيطة عشان نوصّلك بالفرص المناسبة</p>
+
+            <div class="form-group">
+              <label class="form-label" for="nameInput">الاسم</label>
+              <input
+                type="text"
+                id="nameInput"
+                class="form-input"
+                placeholder="اسمك بالكامل"
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="govSelect">المحافظة</label>
+              <select id="govSelect" class="form-input">
+                <option value="">اختار المحافظة</option>
+              </select>
+            </div>
+
+            <div class="form-group hidden" id="categoriesGroup">
+              <label class="form-label">التخصصات (للعمّال)</label>
+              <div class="checkbox-grid" id="categoriesGrid"></div>
+            </div>
+
+            <button class="btn btn--primary btn--full" id="btnSaveProfile">
+              حفظ البيانات
+            </button>
+
+            <div class="message" id="profileError"></div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/auth.js"></script>
+</body>
+</html>
+```
+
+---
+
+## `frontend/manifest.json`
+
+```json
+{
+  "name": "يوميّة — شغلك قريب منّك",
+  "short_name": "يوميّة",
+  "description": "منصة توظيف العمالة اليومية في مصر",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "dir": "rtl",
+  "lang": "ar",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+```
+
+---
+
+## `frontend/profile.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — ملفي الشخصي</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <div class="header__right">
+          <a href="/dashboard.html" class="header__brand-link">
+            <h1 class="header__brand">🏗️ يوميّة</h1>
+          </a>
+        </div>
+        <div class="header__left">
+          <span class="header__user" id="headerUserName"></span>
+          <span class="badge" id="headerUserRole"></span>
+          <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
+          <button class="btn btn--ghost btn--sm" id="btnLogout">خروج</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Profile Card -->
+        <section class="card" id="profileCard">
+          <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar"></div>
+            <div class="profile-details">
+              <div class="profile-name" id="profileName"></div>
+              <div><span class="profile-phone" id="profilePhone"></span></div>
+              <div class="profile-gov" id="profileGov"></div>
+            </div>
+            <div class="profile-rating-summary" id="profileRatingSummary"></div>
+          </div>
+          <div class="profile-categories hidden" id="profileCategories"></div>
+        </section>
+
+        <!-- Edit Profile -->
+        <section class="card" id="editProfileSection">
+          <h2 class="card__title">تعديل البيانات</h2>
+
+          <div class="form-group">
+            <label class="form-label" for="editName">الاسم</label>
+            <input type="text" id="editName" class="form-input" placeholder="اسمك بالكامل">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="editGov">المحافظة</label>
+            <select id="editGov" class="form-input">
+              <option value="">اختار المحافظة</option>
+            </select>
+          </div>
+
+          <div class="form-group hidden" id="editCategoriesGroup">
+            <label class="form-label">التخصصات</label>
+            <div class="checkbox-grid" id="editCategoriesGrid"></div>
+          </div>
+
+          <button class="btn btn--primary" id="btnUpdateProfile">حفظ التعديلات</button>
+          <div class="message" id="editProfileMsg"></div>
+        </section>
+
+        <!-- Notification Preferences -->
+        <div id="notification-prefs"></div>
+
+        <!-- Verification Section -->
+        <div id="verification-section"></div>
+
+        <!-- My Applications (worker only) -->
+        <section class="card hidden" id="myApplicationsSection">
+          <h2 class="card__title">طلباتي</h2>
+          <div id="myApplicationsList" class="jobs-list">
+            <p class="empty-state">جاري التحميل...</p>
+          </div>
+        </section>
+
+        <!-- My Jobs (employer only) -->
+        <section class="card hidden" id="myJobsSection">
+          <h2 class="card__title">فرصي المنشورة</h2>
+          <div id="myJobsList" class="jobs-list">
+            <p class="empty-state">جاري التحميل...</p>
+          </div>
+        </section>
+
+        <!-- Ratings Received -->
+        <section class="card" id="myRatingsSection">
+          <h2 class="card__title">التقييمات</h2>
+
+          <!-- Rating Summary + Distribution -->
+          <div id="ratingSummaryArea"></div>
+
+          <hr class="section-divider">
+
+          <!-- Individual Ratings -->
+          <div id="ratingsListArea">
+            <p class="empty-state">جاري التحميل...</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/profile.js"></script>
+</body>
+</html>
+```
+
+---
+
+## `frontend/sw.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// sw.js — يوميّة Service Worker (PWA)
+// Strategy: Cache-first for static assets, Network-first for API
+// ═══════════════════════════════════════════════════════════════
+
+const CACHE_NAME = 'yawmia-v0.16.0';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/dashboard.html',
+  '/profile.html',
+  '/admin.html',
+  '/manifest.json',
+  '/assets/css/style.css',
+  '/assets/js/app.js',
+  '/assets/js/auth.js',
+  '/assets/js/jobs.js',
+  '/assets/js/profile.js',
+  '/assets/js/admin.js',
+  '/user.html',
+  '/assets/js/user.js',
+  '/assets/fonts/Cairo-Regular.woff2',
+  '/assets/fonts/Cairo-SemiBold.woff2',
+  '/assets/fonts/Cairo-Bold.woff2',
+];
+
+// ── Install: pre-cache static assets ──
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// ── Activate: clean old caches ──
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+// ── Fetch: strategy per request type ──
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // API requests: network-first (never cache API responses)
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => new Response(
+          JSON.stringify({ error: 'أنت offline حالياً', code: 'OFFLINE' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        ))
+    );
+    return;
+  }
+
+  // Static assets: cache-first, fallback to network
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          // Cache successful GET responses for future use
+          if (networkResponse.ok && event.request.method === 'GET') {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        });
+      })
+      .catch(() => {
+        // Offline fallback for HTML pages
+        if (event.request.headers.get('accept')?.includes('text/html')) {
+          return caches.match('/index.html');
+        }
+        return new Response('Offline', { status: 503 });
+      })
+  );
+});
+```
+
+---
+
+## `frontend/user.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — بروفايل</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header__inner">
+        <div class="header__right">
+          <a href="/" class="header__brand-link">
+            <h1 class="header__brand">🏗️ يوميّة</h1>
+          </a>
+        </div>
+        <div class="header__left">
+          <a href="/" class="btn btn--ghost btn--sm">الرئيسية</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Loading State -->
+        <div id="profileLoading">
+          <p class="empty-state">جاري تحميل البروفايل...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="profileError" class="hidden">
+          <p class="empty-state">المستخدم غير موجود</p>
+        </div>
+
+        <!-- Profile Content -->
+        <div id="profileContent" class="hidden">
+
+          <!-- Profile Card -->
+          <section class="card">
+            <div class="pub-profile-header">
+              <div class="profile-avatar" id="pubAvatar"></div>
+              <div class="profile-details">
+                <div class="profile-name" id="pubName"></div>
+                <div id="pubRoleBadge"></div>
+                <div class="profile-gov" id="pubGov"></div>
+                <div id="pubVerificationBadge" style="margin-block-start: 0.5rem;"></div>
+              </div>
+              <div class="profile-rating-summary" id="pubRatingSummary"></div>
+            </div>
+            <div class="profile-categories hidden" id="pubCategories"></div>
+          </section>
+
+          <!-- Trust Score -->
+          <section class="card" id="pubTrustSection" class="hidden">
+            <h2 class="card__title">نقاط الثقة</h2>
+            <div id="pubTrustScore"></div>
+          </section>
+
+          <!-- Ratings -->
+          <section class="card">
+            <h2 class="card__title">التقييمات</h2>
+            <div id="pubRatingSummaryArea"></div>
+            <hr class="section-divider">
+            <div id="pubRatingsListArea">
+              <p class="empty-state">جاري التحميل...</p>
+            </div>
+          </section>
+
+          <!-- Member Since -->
+          <div style="text-align: center; padding: 1rem; color: var(--color-text-muted); font-size: 0.85rem;">
+            <span id="pubMemberSince"></span>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/user.js"></script>
+</body>
+</html>
+```
+
+---
+
+## `scripts/backup.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/backup.js — يوميّة: Data Backup Utility
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/backup.js [target-dir]
+// Creates a timestamped copy of the data/ directory
+// ═══════════════════════════════════════════════════════════════
+
+import { cp, mkdir, readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
+const BACKUP_BASE = process.argv[2] || './backups';
+
+async function backup() {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const backupDir = join(BACKUP_BASE, `yawmia-backup-${timestamp}`);
+
+  console.log(`📦 يوميّة Backup`);
+  console.log(`   Source: ${DATA_DIR}`);
+  console.log(`   Target: ${backupDir}`);
+
+  // Check source exists
+  try {
+    await stat(DATA_DIR);
+  } catch {
+    console.error(`❌ Data directory not found: ${DATA_DIR}`);
+    process.exit(1);
+  }
+
+  // Create backup
+  await mkdir(backupDir, { recursive: true });
+  await cp(DATA_DIR, backupDir, { recursive: true });
+
+  // Count files
+  let fileCount = 0;
+  async function countFiles(dir) {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        await countFiles(join(dir, entry.name));
+      } else if (entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+        fileCount++;
+      }
+    }
+  }
+  await countFiles(backupDir);
+
+  console.log(`✅ Backup complete: ${fileCount} JSON files`);
+  console.log(`   Location: ${backupDir}`);
+}
+
+backup().catch(err => {
+  console.error('❌ Backup failed:', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/bundle-for-review.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/bundle-for-review.js
+// يجمع كل ملفات المشروع في 4 ملفات للمراجعة
+// Usage: node scripts/bundle-for-review.js
+// Output: CODEBASE_PART1.md ... CODEBASE_PART4.md
+// ═══════════════════════════════════════════════════════════════
+
+import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { join, extname, relative } from 'node:path';
+
+const ROOT = new URL('..', import.meta.url).pathname;
+
+const IGNORE = new Set([
+  'node_modules', '.git', 'data', 'backups', 'test-backups',
+  '.env', 'package-lock.json', '.DS_Store', 'Thumbs.db',
+  'cloudflared.deb', 'tests',
+]);
+
+const IGNORE_FILES = new Set([
+  'CODEBASE_PART1.md', 'CODEBASE_PART2.md',
+  'CODEBASE_PART3.md', 'CODEBASE_PART4.md',
+]);
+
+const IGNORE_EXT = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp',
+  '.woff', '.woff2', '.ttf', '.svg', '.log', '.tmp', '.deb',
+]);
+
+// ── التقسيم المنطقي ──
+const PART_RULES = [
+  {
+    file: 'CODEBASE_PART1.md',
+    title: 'Part 1: Config + Server Core + Router',
+    match: (f) => [
+      'config.js', 'package.json', 'server.js',
+      '.env.example', '.gitignore',
+      'server/router.js',
+    ].includes(f),
+  },
+  {
+    file: 'CODEBASE_PART2.md',
+    title: 'Part 2: Backend Services (21 services + 2 adapters)',
+    match: (f) => f.startsWith('server/services/'),
+  },
+  {
+    file: 'CODEBASE_PART3.md',
+    title: 'Part 3: Middleware (7) + Handlers (11)',
+    match: (f) => f.startsWith('server/middleware/') || f.startsWith('server/handlers/'),
+  },
+  {
+    file: 'CODEBASE_PART4.md',
+    title: 'Part 4: Frontend + PWA + Scripts',
+    match: (f) => f.startsWith('frontend/') || f.startsWith('scripts/'),
+  },
+];
+
+function getLanguage(filePath) {
+  const ext = extname(filePath).toLowerCase();
+  return { '.js': 'javascript', '.json': 'json', '.html': 'html', '.css': 'css', '.sh': 'bash' }[ext] || 'text';
+}
+
+async function collectFiles(dir, base = ROOT) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (IGNORE.has(entry.name) || IGNORE_FILES.has(entry.name)) continue;
+    const fullPath = join(dir, entry.name);
+    const relPath = relative(base, fullPath);
+    if (entry.isDirectory()) {
+      files.push(...await collectFiles(fullPath, base));
+    } else if (entry.isFile()) {
+      if (IGNORE_EXT.has(extname(entry.name).toLowerCase())) continue;
+      files.push(relPath);
+    }
+  }
+  return files;
+}
+
+async function main() {
+  console.log('📦 جاري تجميع ملفات المشروع...');
+
+  const allFiles = (await collectFiles(ROOT)).sort();
+
+  let version = '?';
+  try {
+    const pkg = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf-8'));
+    version = pkg.version;
+  } catch (_) {}
+
+  let totalFiles = 0;
+
+  for (const part of PART_RULES) {
+    const partFiles = allFiles.filter(f => part.match(f));
+    if (partFiles.length === 0) continue;
+
+    const lines = [];
+    lines.push(`# يوميّة (Yawmia) v${version} — ${part.title}`);
+    lines.push(`> Auto-generated: ${new Date().toISOString()}`);
+    lines.push(`> Files in this part: ${partFiles.length}`);
+    lines.push('');
+
+    // Table of contents
+    lines.push('## Files');
+    partFiles.forEach((f, i) => lines.push(`${i + 1}. \`${f}\``));
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+
+    for (const filePath of partFiles) {
+      try {
+        const content = await readFile(join(ROOT, filePath), 'utf-8');
+        lines.push(`## \`${filePath}\``);
+        lines.push('');
+        lines.push(`\`\`\`${getLanguage(filePath)}`);
+        lines.push(content.trimEnd());
+        lines.push('```');
+        lines.push('');
+        lines.push('---');
+        lines.push('');
+      } catch (err) {
+        lines.push(`## \`${filePath}\``);
+        lines.push(`> ⚠️ Error: ${err.message}`);
+        lines.push('---');
+        lines.push('');
+      }
+    }
+
+    const outputPath = join(ROOT, part.file);
+    await writeFile(outputPath, lines.join('\n'), 'utf-8');
+    const sizeKB = (Buffer.byteLength(lines.join('\n')) / 1024).toFixed(1);
+    console.log(`  ✅ ${part.file} — ${partFiles.length} files (${sizeKB} KB)`);
+    totalFiles += partFiles.length;
+  }
+
+  // Catch unmatched files
+  const matched = new Set();
+  for (const part of PART_RULES) {
+    allFiles.filter(f => part.match(f)).forEach(f => matched.add(f));
+  }
+  const unmatched = allFiles.filter(f => !matched.has(f));
+  if (unmatched.length > 0) {
+    console.log(`  ⚠️ Unmatched files (not in any part): ${unmatched.join(', ')}`);
+  }
+
+  console.log(`\n📊 Total: ${totalFiles} files across ${PART_RULES.length} parts`);
+}
+
+main().catch(err => {
+  console.error('❌', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/repair-indexes.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/repair-indexes.js — يوميّة: Index Repair Utility
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/repair-indexes.js [--dry-run]
+// Rebuilds all secondary indexes from source record files
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, readFile, writeFile, rename, mkdir } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
+const DRY_RUN = process.argv.includes('--dry-run');
+
+async function readJSON(filePath) {
+  try {
+    const raw = await readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function atomicWrite(filePath, data) {
+  const dir = dirname(filePath);
+  await mkdir(dir, { recursive: true });
+  const tmpPath = filePath + '.tmp';
+  await writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+  await rename(tmpPath, filePath);
+}
+
+async function listRecords(dir, prefix) {
+  try {
+    const files = await readdir(dir);
+    const results = [];
+    for (const f of files) {
+      if (f.startsWith(prefix) && f.endsWith('.json')) {
+        const data = await readJSON(join(dir, f));
+        if (data) results.push(data);
+      }
+    }
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+async function repair() {
+  console.log(`🔧 يوميّة Index Repair${DRY_RUN ? ' (DRY RUN)' : ''}`);
+  console.log(`   Data: ${DATA_DIR}\n`);
+
+  let totalFixed = 0;
+
+  // 1. Phone Index (users/phone-index.json)
+  console.log('1️⃣  Phone Index...');
+  const users = await listRecords(join(DATA_DIR, 'users'), 'usr_');
+  const phoneIndex = {};
+  for (const user of users) {
+    if (user.phone && user.id) phoneIndex[user.phone] = user.id;
+  }
+  const existingPhoneIndex = await readJSON(join(DATA_DIR, 'users/phone-index.json')) || {};
+  const phoneIndexChanged = JSON.stringify(phoneIndex) !== JSON.stringify(existingPhoneIndex);
+  if (phoneIndexChanged) {
+    console.log(`   ⚠️  Phone index needs repair (${Object.keys(phoneIndex).length} entries)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'users/phone-index.json'), phoneIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Phone index OK (${Object.keys(phoneIndex).length} entries)`);
+  }
+
+  // 2. Jobs Index (jobs/index.json)
+  console.log('2️⃣  Jobs Index...');
+  const jobs = await listRecords(join(DATA_DIR, 'jobs'), 'job_');
+  const jobsIndex = {};
+  for (const job of jobs) {
+    jobsIndex[job.id] = {
+      id: job.id,
+      employerId: job.employerId,
+      category: job.category,
+      governorate: job.governorate,
+      status: job.status,
+      createdAt: job.createdAt,
+    };
+  }
+  const existingJobsIndex = await readJSON(join(DATA_DIR, 'jobs/index.json')) || {};
+  const jobsIndexChanged = JSON.stringify(jobsIndex) !== JSON.stringify(existingJobsIndex);
+  if (jobsIndexChanged) {
+    console.log(`   ⚠️  Jobs index needs repair (${Object.keys(jobsIndex).length} entries)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'jobs/index.json'), jobsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Jobs index OK (${Object.keys(jobsIndex).length} entries)`);
+  }
+
+  // 3. Employer-Jobs Index (jobs/employer-index.json)
+  console.log('3️⃣  Employer-Jobs Index...');
+  const employerJobsIndex = {};
+  for (const job of jobs) {
+    if (!employerJobsIndex[job.employerId]) employerJobsIndex[job.employerId] = [];
+    employerJobsIndex[job.employerId].push(job.id);
+  }
+  const existingEmpIndex = await readJSON(join(DATA_DIR, 'jobs/employer-index.json')) || {};
+  const empIndexChanged = JSON.stringify(employerJobsIndex) !== JSON.stringify(existingEmpIndex);
+  if (empIndexChanged) {
+    console.log(`   ⚠️  Employer-Jobs index needs repair (${Object.keys(employerJobsIndex).length} employers)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'jobs/employer-index.json'), employerJobsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Employer-Jobs index OK (${Object.keys(employerJobsIndex).length} employers)`);
+  }
+
+  // 4. Worker-Apps Index (applications/worker-index.json)
+  console.log('4️⃣  Worker-Apps Index...');
+  const apps = await listRecords(join(DATA_DIR, 'applications'), 'app_');
+  const workerAppsIndex = {};
+  for (const app of apps) {
+    if (!workerAppsIndex[app.workerId]) workerAppsIndex[app.workerId] = [];
+    workerAppsIndex[app.workerId].push(app.id);
+  }
+  const existingWorkerIndex = await readJSON(join(DATA_DIR, 'applications/worker-index.json')) || {};
+  const workerIndexChanged = JSON.stringify(workerAppsIndex) !== JSON.stringify(existingWorkerIndex);
+  if (workerIndexChanged) {
+    console.log(`   ⚠️  Worker-Apps index needs repair (${Object.keys(workerAppsIndex).length} workers)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'applications/worker-index.json'), workerAppsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Apps index OK (${Object.keys(workerAppsIndex).length} workers)`);
+  }
+
+  // 5. Job-Apps Index (applications/job-index.json)
+  console.log('5️⃣  Job-Apps Index...');
+  const jobAppsIndex = {};
+  for (const app of apps) {
+    if (!jobAppsIndex[app.jobId]) jobAppsIndex[app.jobId] = [];
+    jobAppsIndex[app.jobId].push(app.id);
+  }
+  const existingJobAppsIndex = await readJSON(join(DATA_DIR, 'applications/job-index.json')) || {};
+  const jobAppsIndexChanged = JSON.stringify(jobAppsIndex) !== JSON.stringify(existingJobAppsIndex);
+  if (jobAppsIndexChanged) {
+    console.log(`   ⚠️  Job-Apps index needs repair (${Object.keys(jobAppsIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'applications/job-index.json'), jobAppsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Job-Apps index OK (${Object.keys(jobAppsIndex).length} jobs)`);
+  }
+
+  // 6. User-Notifications Index (notifications/user-index.json)
+  console.log('6️⃣  User-Notifications Index...');
+  const notifs = await listRecords(join(DATA_DIR, 'notifications'), 'ntf_');
+  const userNtfIndex = {};
+  for (const ntf of notifs) {
+    if (!userNtfIndex[ntf.userId]) userNtfIndex[ntf.userId] = [];
+    userNtfIndex[ntf.userId].push(ntf.id);
+  }
+  const existingNtfIndex = await readJSON(join(DATA_DIR, 'notifications/user-index.json')) || {};
+  const ntfIndexChanged = JSON.stringify(userNtfIndex) !== JSON.stringify(existingNtfIndex);
+  if (ntfIndexChanged) {
+    console.log(`   ⚠️  User-Notifications index needs repair (${Object.keys(userNtfIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'notifications/user-index.json'), userNtfIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ User-Notifications index OK (${Object.keys(userNtfIndex).length} users)`);
+  }
+
+  // 7. Job-Payments Index (payments/job-index.json)
+  console.log('7️⃣  Job-Payments Index...');
+  const payments = await listRecords(join(DATA_DIR, 'payments'), 'pay_');
+  const jobPaymentsIndex = {};
+  for (const pay of payments) {
+    if (!jobPaymentsIndex[pay.jobId]) jobPaymentsIndex[pay.jobId] = [];
+    jobPaymentsIndex[pay.jobId].push(pay.id);
+  }
+  const existingPaymentsIndex = await readJSON(join(DATA_DIR, 'payments/job-index.json')) || {};
+  const paymentsIndexChanged = JSON.stringify(jobPaymentsIndex) !== JSON.stringify(existingPaymentsIndex);
+  if (paymentsIndexChanged) {
+    console.log(`   ⚠️  Job-Payments index needs repair (${Object.keys(jobPaymentsIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'payments/job-index.json'), jobPaymentsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Job-Payments index OK (${Object.keys(jobPaymentsIndex).length} jobs)`);
+  }
+
+  // 8. Target-Reports Index (reports/target-index.json)
+  console.log('8️⃣  Target-Reports Index...');
+  const reports = await listRecords(join(DATA_DIR, 'reports'), 'rpt_');
+  const targetReportsIndex = {};
+  for (const rpt of reports) {
+    if (!targetReportsIndex[rpt.targetId]) targetReportsIndex[rpt.targetId] = [];
+    targetReportsIndex[rpt.targetId].push(rpt.id);
+  }
+  const existingTargetIndex = await readJSON(join(DATA_DIR, 'reports/target-index.json')) || {};
+  const targetIndexChanged = JSON.stringify(targetReportsIndex) !== JSON.stringify(existingTargetIndex);
+  if (targetIndexChanged) {
+    console.log(`   ⚠️  Target-Reports index needs repair (${Object.keys(targetReportsIndex).length} targets)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/target-index.json'), targetReportsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Target-Reports index OK (${Object.keys(targetReportsIndex).length} targets)`);
+  }
+
+  // 9. Reporter-Reports Index (reports/reporter-index.json)
+  console.log('9️⃣  Reporter-Reports Index...');
+  const reporterReportsIndex = {};
+  for (const rpt of reports) {
+    if (!reporterReportsIndex[rpt.reporterId]) reporterReportsIndex[rpt.reporterId] = [];
+    reporterReportsIndex[rpt.reporterId].push(rpt.id);
+  }
+  const existingReporterIndex = await readJSON(join(DATA_DIR, 'reports/reporter-index.json')) || {};
+  const reporterIndexChanged = JSON.stringify(reporterReportsIndex) !== JSON.stringify(existingReporterIndex);
+  if (reporterIndexChanged) {
+    console.log(`   ⚠️  Reporter-Reports index needs repair (${Object.keys(reporterReportsIndex).length} reporters)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/reporter-index.json'), reporterReportsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Reporter-Reports index OK (${Object.keys(reporterReportsIndex).length} reporters)`);
+  }
+
+  // 10. User-Verifications Index (verifications/user-index.json)
+  console.log('🔟 User-Verifications Index...');
+  const verifications = await listRecords(join(DATA_DIR, 'verifications'), 'vrf_');
+  const userVerificationsIndex = {};
+  for (const vrf of verifications) {
+    if (!userVerificationsIndex[vrf.userId]) userVerificationsIndex[vrf.userId] = [];
+    userVerificationsIndex[vrf.userId].push(vrf.id);
+  }
+  const existingVrfIndex = await readJSON(join(DATA_DIR, 'verifications/user-index.json')) || {};
+  const vrfIndexChanged = JSON.stringify(userVerificationsIndex) !== JSON.stringify(existingVrfIndex);
+  if (vrfIndexChanged) {
+    console.log(`   ⚠️  User-Verifications index needs repair (${Object.keys(userVerificationsIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'verifications/user-index.json'), userVerificationsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ User-Verifications index OK (${Object.keys(userVerificationsIndex).length} users)`);
+  }
+
+  // 11. Job-Attendance Index (attendance/job-index.json)
+  console.log('1️⃣1️⃣ Job-Attendance Index...');
+  const attendanceRecords = await listRecords(join(DATA_DIR, 'attendance'), 'att_');
+  const jobAttendanceIndex = {};
+  for (const att of attendanceRecords) {
+    if (!jobAttendanceIndex[att.jobId]) jobAttendanceIndex[att.jobId] = [];
+    jobAttendanceIndex[att.jobId].push(att.id);
+  }
+  const existingJobAttIndex = await readJSON(join(DATA_DIR, 'attendance/job-index.json')) || {};
+  const jobAttIndexChanged = JSON.stringify(jobAttendanceIndex) !== JSON.stringify(existingJobAttIndex);
+  if (jobAttIndexChanged) {
+    console.log(`   ⚠️  Job-Attendance index needs repair (${Object.keys(jobAttendanceIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/job-index.json'), jobAttendanceIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Job-Attendance index OK (${Object.keys(jobAttendanceIndex).length} jobs)`);
+  }
+
+  // 12. Worker-Attendance Index (attendance/worker-index.json)
+  console.log('1️⃣2️⃣ Worker-Attendance Index...');
+  const workerAttendanceIndex = {};
+  for (const att of attendanceRecords) {
+    if (!workerAttendanceIndex[att.workerId]) workerAttendanceIndex[att.workerId] = [];
+    workerAttendanceIndex[att.workerId].push(att.id);
+  }
+  const existingWorkerAttIndex = await readJSON(join(DATA_DIR, 'attendance/worker-index.json')) || {};
+  const workerAttIndexChanged = JSON.stringify(workerAttendanceIndex) !== JSON.stringify(existingWorkerAttIndex);
+  if (workerAttIndexChanged) {
+    console.log(`   ⚠️  Worker-Attendance index needs repair (${Object.keys(workerAttendanceIndex).length} workers)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/worker-index.json'), workerAttendanceIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
+  }
+
+  console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
+}
+
+repair().catch(err => {
+  console.error('❌ Repair failed:', err.message);
+  process.exit(1);
+});
+```
+
+---
