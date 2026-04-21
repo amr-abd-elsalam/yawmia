@@ -659,7 +659,7 @@ select.form-input {
 .notification-panel {
   position: fixed;
   top: 0;
-  inset-inline-end: 0;
+  right: 0;
   width: 100%;
   max-width: 400px;
   height: 100vh;
