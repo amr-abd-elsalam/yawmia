@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.21.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T04:35:17.008Z
-> Files in this part: 26
+# يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-21T12:15:50.015Z
+> Files in this part: 27
 
 ## Files
 1. `frontend/404.html`
@@ -28,7 +28,8 @@
 23. `scripts/backup.js`
 24. `scripts/benchmark.js`
 25. `scripts/bundle-for-review.js`
-26. `scripts/repair-indexes.js`
+26. `scripts/generate-vapid-keys.js`
+27. `scripts/repair-indexes.js`
 
 ---
 
@@ -2293,6 +2294,100 @@ select.form-input {
   }
 }
 
+/* ═══ Phase 22 — Messaging Styles ═══ */
+.messaging-panel {
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.messaging-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.message-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.message-bubble {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.4rem;
+  max-width: 85%;
+  font-size: 0.85rem;
+}
+
+.message-bubble--mine {
+  background: rgba(37, 99, 235, 0.15);
+  margin-inline-start: auto;
+  border-bottom-left-radius: 4px;
+}
+
+.message-bubble--other {
+  background: var(--color-surface-2);
+  margin-inline-end: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.message-bubble__sender {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.message-bubble__text {
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.message-bubble__time {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-align: end;
+  margin-top: 0.15rem;
+}
+
+.message-send-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.message-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.message-input:focus {
+  border-color: var(--color-primary);
+}
+
+.pending-badge {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* ═══ Phase 19 — Enhanced Card Animations ═══ */
 .card {
   transition: box-shadow var(--duration-normal, 0.2s) var(--ease-default, ease),
@@ -3233,6 +3328,71 @@ var Yawmia = (function () {
     }
   }
 
+  // ── Web Push: Subscribe ───────────────────────────────────
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var rawData = atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; i++) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function subscribeToPush() {
+    if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
+    if (!state.token) return;
+    try {
+      var registration = await navigator.serviceWorker.ready;
+      var existing = await registration.pushManager.getSubscription();
+      if (existing) return; // Already subscribed
+
+      var permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      // Get VAPID public key from server config
+      var cfg = await loadConfig();
+      var vapidKey = cfg && cfg.WEB_PUSH && cfg.WEB_PUSH.vapidPublicKey;
+      if (!vapidKey) return;
+
+      var subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+
+      // Extract keys
+      var p256dhKey = subscription.getKey('p256dh');
+      var authKey = subscription.getKey('auth');
+      if (!p256dhKey || !authKey) return;
+
+      var p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhKey)));
+      var auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authKey)));
+
+      await api('POST', '/api/push/subscribe', {
+        endpoint: subscription.endpoint,
+        keys: { p256dh: p256dh, auth: auth },
+      });
+    } catch (_) {
+      // Push subscription failure is non-fatal
+    }
+  }
+
+  // ── Global Error Boundary ─────────────────────────────────
+  window.addEventListener('unhandledrejection', function (e) {
+    console.error('[Yawmia] Unhandled rejection:', e.reason);
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.error('حصل خطأ غير متوقع — حاول تاني');
+    }
+  });
+
+  window.addEventListener('error', function (e) {
+    console.error('[Yawmia] Unhandled error:', e.error || e.message);
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.error('حصل خطأ غير متوقع');
+    }
+  });
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -3256,6 +3416,7 @@ var Yawmia = (function () {
     roleLabel: roleLabel,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
+    subscribeToPush: subscribeToPush,
   };
 })();
 ```
@@ -3721,6 +3882,11 @@ var YawmiaIcons = (function () {
     Yawmia.connectSSE();
   }
 
+  // ── Web Push: Subscribe after SSE ─────────────────────────
+  if (Yawmia.subscribeToPush) {
+    Yawmia.subscribeToPush();
+  }
+
   window.addEventListener('yawmia:notification', function (e) {
     loadNotifications();
   });
@@ -3865,6 +4031,20 @@ var YawmiaIcons = (function () {
     var search = Yawmia.$id('filterSearch') ? Yawmia.$id('filterSearch').value.trim() : '';
     var sort = Yawmia.$id('filterSort') ? Yawmia.$id('filterSort').value : '';
 
+    // For employers, also fetch their enriched jobs for pending count
+    if (user.role === 'employer') {
+      Yawmia.api('GET', '/api/jobs/mine?enrich=applications&limit=100').then(function (mineRes) {
+        if (mineRes.data.ok && mineRes.data.jobs) {
+          window._enrichedMyJobs = {};
+          mineRes.data.jobs.forEach(function (j) {
+            if (typeof j.pendingApplicationsCount === 'number') {
+              window._enrichedMyJobs[j.id] = j.pendingApplicationsCount;
+            }
+          });
+        }
+      }).catch(function () {});
+    }
+
     var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
     if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
@@ -3948,6 +4128,25 @@ var YawmiaIcons = (function () {
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
+    // Duplicate button for employer (any status except open)
+    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
+      footerButtons += ' <button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
+    }
+
+    // Messaging button for involved users (filled, in_progress, completed)
+    var messagingStatuses = ['filled', 'in_progress', 'completed'];
+    if (messagingStatuses.indexOf(job.status) !== -1) {
+      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
+      if (isInvolved) {
+        footerButtons += ' <button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
+      }
+    }
+
+    // Pending applications badge for employer
+    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
+      footerButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
+    }
+
     // Report button (any authenticated user can report the employer)
     if (job.employerId && job.employerId !== user.id) {
       footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
@@ -3973,6 +4172,11 @@ var YawmiaIcons = (function () {
     var distanceBadge = (job._distance !== undefined && job._distance !== null)
       ? '<span class="job-distance">📍 ' + job._distance + ' كم</span>'
       : '';
+
+    // Inject pending count from enriched data if available
+    if (user.role === 'employer' && job.employerId === user.id && window._enrichedMyJobs && window._enrichedMyJobs[job.id] !== undefined) {
+      job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
+    }
 
     card.innerHTML =
       '<div class="job-card__header">' +
@@ -4098,6 +4302,36 @@ var YawmiaIcons = (function () {
         } finally {
           Yawmia.setLoading(renewBtn, false);
         }
+      });
+    }
+
+    // Duplicate button handler (employer)
+    var duplicateBtn = card.querySelector('.btn-duplicate');
+    if (duplicateBtn) {
+      duplicateBtn.addEventListener('click', async function () {
+        if (!confirm('هل تريد نسخ هذه الفرصة؟')) return;
+        Yawmia.setLoading(duplicateBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/duplicate');
+          if (res.data.ok) {
+            YawmiaToast.success('تم نسخ الفرصة بنجاح ✓');
+            loadJobs();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في نسخ الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(duplicateBtn, false);
+        }
+      });
+    }
+
+    // Messaging toggle handler
+    var messagesBtn = card.querySelector('.btn-messages');
+    if (messagesBtn) {
+      messagesBtn.addEventListener('click', function () {
+        toggleMessagingPanel(card, job);
       });
     }
 
@@ -4432,6 +4666,145 @@ var YawmiaIcons = (function () {
       }
     })();
   }
+
+  // ── Messaging Panel ───────────────────────────────────────
+  function toggleMessagingPanel(card, job) {
+    var existing = card.querySelector('.messaging-panel');
+    if (existing) { existing.remove(); return; }
+
+    var panel = document.createElement('div');
+    panel.className = 'messaging-panel';
+    panel.innerHTML =
+      '<div class="messaging-panel__header">' +
+        '<strong>💬 رسائل الفرصة</strong>' +
+        '<button class="btn btn--ghost btn--sm btn-close-msgs">✕</button>' +
+      '</div>' +
+      '<div class="message-list" id="msgList-' + job.id + '">' +
+        '<p class="empty-state">جاري التحميل...</p>' +
+      '</div>' +
+      '<div class="message-send-form">' +
+        '<input type="text" class="message-input" placeholder="اكتب رسالة..." maxlength="500">' +
+        (user.role === 'employer' && job.employerId === user.id
+          ? '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button><button class="btn btn--ghost btn--sm btn-broadcast-msg">📢 بث</button>'
+          : '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button>') +
+      '</div>';
+
+    card.appendChild(panel);
+
+    // Close
+    panel.querySelector('.btn-close-msgs').addEventListener('click', function () { panel.remove(); });
+
+    // Load messages
+    loadJobMessages(panel, job);
+
+    // Send handler
+    var sendBtn = panel.querySelector('.btn-send-msg');
+    var input = panel.querySelector('.message-input');
+    if (sendBtn) {
+      sendBtn.addEventListener('click', function () {
+        sendJobMessage(panel, job, input);
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') sendJobMessage(panel, job, input);
+      });
+    }
+
+    // Broadcast handler
+    var broadcastBtn = panel.querySelector('.btn-broadcast-msg');
+    if (broadcastBtn) {
+      broadcastBtn.addEventListener('click', async function () {
+        var text = input.value.trim();
+        if (!text) return;
+        Yawmia.setLoading(broadcastBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/broadcast', { text: text });
+          if (res.data.ok) {
+            input.value = '';
+            loadJobMessages(panel, job);
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في البث');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(broadcastBtn, false); }
+      });
+    }
+  }
+
+  async function loadJobMessages(panel, job) {
+    var listEl = panel.querySelector('.message-list');
+    try {
+      var res = await Yawmia.api('GET', '/api/jobs/' + job.id + '/messages?limit=50&offset=0');
+      if (res.data.ok && res.data.items && res.data.items.length > 0) {
+        listEl.innerHTML = '';
+        // Reverse to show oldest first (chat order)
+        var items = res.data.items.slice().reverse();
+        items.forEach(function (msg) {
+          var isMine = msg.senderId === user.id;
+          var bubble = document.createElement('div');
+          bubble.className = 'message-bubble' + (isMine ? ' message-bubble--mine' : ' message-bubble--other');
+          var roleLabel = msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل';
+          var broadcastLabel = msg.recipientId === null ? ' 📢' : '';
+          bubble.innerHTML =
+            '<div class="message-bubble__sender">' + escapeHtml(roleLabel) + broadcastLabel + '</div>' +
+            '<div class="message-bubble__text">' + escapeHtml(msg.text) + '</div>' +
+            '<div class="message-bubble__time">' + new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+          listEl.appendChild(bubble);
+        });
+        // Scroll to bottom
+        listEl.scrollTop = listEl.scrollHeight;
+
+        // Mark all as read (fire-and-forget)
+        Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/read-all').catch(function () {});
+      } else {
+        listEl.innerHTML = '<p class="empty-state">لا توجد رسائل بعد</p>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل</p>';
+    }
+  }
+
+  async function sendJobMessage(panel, job, input) {
+    var text = input.value.trim();
+    if (!text) return;
+
+    // Determine recipientId: worker → employer, employer → needs to pick (send to first accepted for simplicity)
+    var recipientId = null;
+    if (user.role === 'worker') {
+      recipientId = job.employerId;
+    } else {
+      // Employer sending to specific worker — for now use broadcast or first interaction
+      // Simple approach: prompt for worker ID or use last message sender
+      var listEl = panel.querySelector('.message-list');
+      var lastOther = listEl.querySelector('.message-bubble--other');
+      if (lastOther) {
+        // Try to infer from loaded messages
+      }
+      // Fallback: prompt
+      if (!recipientId) {
+        recipientId = prompt('أدخل معرّف العامل (usr_xxx):');
+        if (!recipientId) return;
+      }
+    }
+
+    try {
+      var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages', {
+        recipientId: recipientId,
+        text: text,
+      });
+      if (res.data.ok) {
+        input.value = '';
+        loadJobMessages(panel, job);
+      } else {
+        YawmiaToast.error(res.data.error || 'خطأ في إرسال الرسالة');
+      }
+    } catch (err) {
+      YawmiaToast.error('خطأ في الاتصال');
+    }
+  }
+
+  // ── Load jobs with enrichment for employer ─────────────────
+  // Override loadJobs to fetch enriched data for employers
+  var originalLoadJobs = loadJobs;
 
   // ── Rating Modal ──────────────────────────────────────────
   function showRatingModal(job, prefilledTargetId) {
@@ -5079,6 +5452,10 @@ var YawmiaIcons = (function () {
           '<label class="pref-item">' +
             '<input type="checkbox" id="pref-sms" ' + (prefs.sms ? 'checked' : '') + ' />' +
             '<span>إشعارات SMS للأحداث المهمة</span>' +
+          '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-push" checked />' +
+            '<span>إشعارات Push (حتى لو التطبيق مقفول)</span>' +
           '</label>' +
           '<button class="btn btn--ghost" id="save-prefs-btn">حفظ إعدادات الإشعارات</button>' +
         '</div>' +
@@ -6679,7 +7056,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.21.0';
+const CACHE_NAME = 'yawmia-v0.22.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -6769,6 +7146,54 @@ self.addEventListener('fetch', (event) => {
         }
         return new Response('Offline', { status: 503 });
       })
+  );
+});
+
+// ── Push: display notification ──
+self.addEventListener('push', (event) => {
+  let data = { title: 'يوميّة', body: 'إشعار جديد', icon: '/assets/img/icon-192.png', url: '/dashboard.html' };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      if (payload.title) data.title = payload.title;
+      if (payload.body) data.body = payload.body;
+      if (payload.icon) data.icon = payload.icon;
+      if (payload.url) data.url = payload.url;
+    } catch (_) {
+      // Invalid JSON or no payload — use defaults
+      try {
+        const text = event.data.text();
+        if (text) data.body = text;
+      } catch (_2) { /* ignore */ }
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: '/assets/img/icon-192.png',
+      dir: 'rtl',
+      lang: 'ar',
+      data: { url: data.url },
+    })
+  );
+});
+
+// ── Notification Click: navigate to URL ──
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/dashboard.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });
 ```
@@ -7195,6 +7620,48 @@ main().catch(err => {
 
 ---
 
+## `scripts/generate-vapid-keys.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/generate-vapid-keys.js — VAPID Key Pair Generation
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/generate-vapid-keys.js
+// Generates P-256 ECDH key pair for Web Push VAPID authentication
+// Output: base64url-encoded keys ready for .env file
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+
+function base64urlEncode(buffer) {
+  return Buffer.from(buffer)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+// Generate P-256 (prime256v1) key pair
+const ecdh = crypto.createECDH('prime256v1');
+ecdh.generateKeys();
+
+const publicKey = ecdh.getPublicKey(); // 65 bytes uncompressed (0x04 || x || y)
+const privateKey = ecdh.getPrivateKey(); // 32 bytes
+
+const publicKeyB64 = base64urlEncode(publicKey);
+const privateKeyB64 = base64urlEncode(privateKey);
+
+console.log('\n🔑 VAPID Key Pair Generated (P-256)\n');
+console.log('Add these to your .env file:\n');
+console.log(`VAPID_PUBLIC_KEY=${publicKeyB64}`);
+console.log(`VAPID_PRIVATE_KEY=${privateKeyB64}`);
+console.log('\n⚠️  Keep VAPID_PRIVATE_KEY secret! Never commit it to git.');
+console.log('⚠️  If you regenerate keys, all existing push subscriptions will become invalid.\n');
+```
+
+---
+
 ## `scripts/repair-indexes.js`
 
 ```javascript
@@ -7466,6 +7933,62 @@ async function repair() {
     totalFixed++;
   } else {
     console.log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
+  }
+
+  // 13. Message-Job Index (messages/job-index.json)
+  console.log('1️⃣3️⃣ Message-Job Index...');
+  const messages = await listRecords(join(DATA_DIR, 'messages'), 'msg_');
+  const messageJobIndex = {};
+  for (const msg of messages) {
+    if (!messageJobIndex[msg.jobId]) messageJobIndex[msg.jobId] = [];
+    messageJobIndex[msg.jobId].push(msg.id);
+  }
+  const existingMsgJobIndex = await readJSON(join(DATA_DIR, 'messages/job-index.json')) || {};
+  const msgJobIndexChanged = JSON.stringify(messageJobIndex) !== JSON.stringify(existingMsgJobIndex);
+  if (msgJobIndexChanged) {
+    console.log(`   ⚠️  Message-Job index needs repair (${Object.keys(messageJobIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/job-index.json'), messageJobIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Message-Job index OK (${Object.keys(messageJobIndex).length} jobs)`);
+  }
+
+  // 14. Message-User Index (messages/user-index.json)
+  console.log('1️⃣4️⃣ Message-User Index...');
+  const messageUserIndex = {};
+  for (const msg of messages) {
+    if (msg.recipientId) {
+      if (!messageUserIndex[msg.recipientId]) messageUserIndex[msg.recipientId] = [];
+      messageUserIndex[msg.recipientId].push(msg.id);
+    }
+    // For broadcasts (recipientId: null), we'd need to resolve accepted workers — skip in repair
+  }
+  const existingMsgUserIndex = await readJSON(join(DATA_DIR, 'messages/user-index.json')) || {};
+  const msgUserIndexChanged = JSON.stringify(messageUserIndex) !== JSON.stringify(existingMsgUserIndex);
+  if (msgUserIndexChanged) {
+    console.log(`   ⚠️  Message-User index needs repair (${Object.keys(messageUserIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/user-index.json'), messageUserIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Message-User index OK (${Object.keys(messageUserIndex).length} users)`);
+  }
+
+  // 15. Push-User Index (push_subscriptions/user-index.json)
+  console.log('1️⃣5️⃣ Push-User Index...');
+  const pushSubs = await listRecords(join(DATA_DIR, 'push_subscriptions'), 'psub_');
+  const pushUserIndex = {};
+  for (const sub of pushSubs) {
+    if (!pushUserIndex[sub.userId]) pushUserIndex[sub.userId] = [];
+    pushUserIndex[sub.userId].push(sub.id);
+  }
+  const existingPushIndex = await readJSON(join(DATA_DIR, 'push_subscriptions/user-index.json')) || {};
+  const pushIndexChanged = JSON.stringify(pushUserIndex) !== JSON.stringify(existingPushIndex);
+  if (pushIndexChanged) {
+    console.log(`   ⚠️  Push-User index needs repair (${Object.keys(pushUserIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'push_subscriptions/user-index.json'), pushUserIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);

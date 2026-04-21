@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.21.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-21T04:35:17.004Z
-> Files in this part: 18
+# يوميّة (Yawmia) v0.22.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-21T12:15:50.010Z
+> Files in this part: 20
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -8,19 +8,21 @@
 3. `server/handlers/attendanceHandler.js`
 4. `server/handlers/authHandler.js`
 5. `server/handlers/jobsHandler.js`
-6. `server/handlers/notificationsHandler.js`
-7. `server/handlers/paymentsHandler.js`
-8. `server/handlers/ratingsHandler.js`
-9. `server/handlers/reportsHandler.js`
-10. `server/handlers/sseHandler.js`
-11. `server/handlers/verificationHandler.js`
-12. `server/middleware/auth.js`
-13. `server/middleware/bodyParser.js`
-14. `server/middleware/cors.js`
-15. `server/middleware/rateLimit.js`
-16. `server/middleware/requestId.js`
-17. `server/middleware/security.js`
-18. `server/middleware/static.js`
+6. `server/handlers/messagesHandler.js`
+7. `server/handlers/notificationsHandler.js`
+8. `server/handlers/paymentsHandler.js`
+9. `server/handlers/pushHandler.js`
+10. `server/handlers/ratingsHandler.js`
+11. `server/handlers/reportsHandler.js`
+12. `server/handlers/sseHandler.js`
+13. `server/handlers/verificationHandler.js`
+14. `server/middleware/auth.js`
+15. `server/middleware/bodyParser.js`
+16. `server/middleware/cors.js`
+17. `server/middleware/rateLimit.js`
+18. `server/middleware/requestId.js`
+19. `server/middleware/security.js`
+20. `server/middleware/static.js`
 
 ---
 
@@ -859,7 +861,7 @@ export async function handleDeleteAccount(req, res) {
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob } from '../services/jobs.js';
+import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob, duplicateJob } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
@@ -1059,6 +1061,19 @@ export async function handleListMyJobs(req, res) {
     const offset = (page - 1) * limit;
     const jobs = myJobs.slice(offset, offset + limit);
 
+    // Optional enrichment: pending applications count
+    if (req.query.enrich === 'applications') {
+      try {
+        const { listByJob: listAppsByJob } = await import('../services/applications.js');
+        for (const job of jobs) {
+          const apps = await listAppsByJob(job.id);
+          job.pendingApplicationsCount = apps.filter(a => a.status === 'pending').length;
+        }
+      } catch (_) {
+        // Non-blocking: enrichment failure doesn't break the response
+      }
+    }
+
     return sendJSON(res, 200, {
       ok: true,
       jobs,
@@ -1156,6 +1171,203 @@ export async function handleRenewJob(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في تجديد الفرصة', code: 'RENEW_JOB_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/duplicate
+ * Duplicate an existing job (copies content, resets lifecycle)
+ * Requires: auth (employer, owns job)
+ */
+export async function handleDuplicateJob(req, res) {
+  const jobId = req.params.id;
+
+  try {
+    const result = await duplicateJob(jobId, req.user.id);
+    if (!result.ok) {
+      const statusMap = {
+        JOB_NOT_FOUND: 404,
+        NOT_JOB_OWNER: 403,
+        DAILY_JOB_LIMIT: 429,
+      };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 201, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في نسخ الفرصة', code: 'DUPLICATE_JOB_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/messagesHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/messagesHandler.js — Messaging API Handlers
+// ═══════════════════════════════════════════════════════════════
+
+import {
+  sendMessage, broadcastMessage, listByJob, markAsRead,
+  markAllAsRead, countUnread, canMessage,
+} from '../services/messages.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const ERROR_STATUS = {
+  MESSAGES_DISABLED: 503,
+  JOB_NOT_FOUND: 404,
+  JOB_STATUS_NOT_ELIGIBLE: 400,
+  NOT_INVOLVED: 403,
+  TEXT_REQUIRED: 400,
+  TEXT_TOO_LONG: 400,
+  RECIPIENT_REQUIRED: 400,
+  RECIPIENT_NOT_INVOLVED: 400,
+  CANNOT_MESSAGE_SELF: 400,
+  DAILY_MESSAGE_LIMIT: 429,
+  BROADCAST_DISABLED: 503,
+  NOT_JOB_OWNER: 403,
+  NO_ACCEPTED_WORKERS: 400,
+  MESSAGE_NOT_FOUND: 404,
+  NOT_MESSAGE_RECIPIENT: 403,
+};
+
+function errorStatus(code) {
+  return ERROR_STATUS[code] || 400;
+}
+
+/**
+ * POST /api/jobs/:id/messages
+ * Send a message to a specific user on a job
+ * Requires: requireAuth
+ */
+export async function handleSendMessage(req, res) {
+  try {
+    const jobId = req.params.id;
+    const senderId = req.user.id;
+    const body = req.body || {};
+
+    const result = await sendMessage(jobId, senderId, {
+      recipientId: body.recipientId,
+      text: body.text,
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, message: result.message });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/messages/broadcast
+ * Broadcast a message to all accepted workers on a job
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleBroadcastMessage(req, res) {
+  try {
+    const jobId = req.params.id;
+    const employerId = req.user.id;
+    const body = req.body || {};
+
+    const result = await broadcastMessage(jobId, employerId, body.text);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, message: result.message });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/jobs/:id/messages
+ * List messages for a job (only messages the user can see)
+ * Requires: requireAuth
+ */
+export async function handleListJobMessages(req, res) {
+  try {
+    const jobId = req.params.id;
+    const userId = req.user.id;
+
+    // Verify user is involved
+    const check = await canMessage(jobId, userId);
+    if (!check.allowed) {
+      return sendJSON(res, errorStatus(check.code), { error: check.error, code: check.code });
+    }
+
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset) || 0);
+
+    const result = await listByJob(jobId, userId, { limit, offset });
+
+    sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/messages/unread-count
+ * Get total unread message count for the authenticated user
+ * Requires: requireAuth
+ */
+export async function handleGetUnreadCount(req, res) {
+  try {
+    const count = await countUnread(req.user.id);
+    sendJSON(res, 200, { ok: true, unread: count });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /api/messages/:id/read
+ * Mark a single message as read
+ * Requires: requireAuth
+ */
+export async function handleMarkMessageRead(req, res) {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await markAsRead(messageId, userId);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true, message: result.message });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/messages/read-all
+ * Mark all messages in a job as read for the authenticated user
+ * Requires: requireAuth
+ */
+export async function handleMarkAllJobMessagesRead(req, res) {
+  try {
+    const jobId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await markAllAsRead(jobId, userId);
+
+    sendJSON(res, 200, result);
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
 }
 ```
@@ -1409,6 +1621,78 @@ export async function handleAdminCompletePayment(req, res) {
     return sendJSON(res, 200, { ok: true, payment: result.payment });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إنهاء الدفعة', code: 'COMPLETE_PAYMENT_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/pushHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/pushHandler.js — Push Subscription Handlers
+// ═══════════════════════════════════════════════════════════════
+
+import { subscribe, unsubscribe } from '../services/webpush.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+/**
+ * POST /api/push/subscribe
+ * Register a push subscription
+ * Requires: requireAuth
+ * Body: { endpoint, keys: { p256dh, auth } }
+ */
+export async function handlePushSubscribe(req, res) {
+  try {
+    const userId = req.user.id;
+    const body = req.body || {};
+    const userAgent = req.headers['user-agent'] || '';
+
+    const result = await subscribe(userId, {
+      endpoint: body.endpoint,
+      keys: body.keys,
+    }, userAgent);
+
+    if (!result.ok) {
+      const statusMap = {
+        PUSH_DISABLED: 503,
+        INVALID_SUBSCRIPTION: 400,
+      };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, subscriptionId: result.subscription.id });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * DELETE /api/push/subscribe
+ * Remove a push subscription
+ * Requires: requireAuth
+ * Body: { endpoint }
+ */
+export async function handlePushUnsubscribe(req, res) {
+  try {
+    const userId = req.user.id;
+    const body = req.body || {};
+
+    const result = await unsubscribe(userId, body.endpoint);
+
+    if (!result.ok) {
+      return sendJSON(res, 400, { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
 }
 ```

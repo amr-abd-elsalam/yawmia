@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.21.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-21T04:35:16.995Z
+# يوميّة (Yawmia) v0.22.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-21T12:15:49.998Z
 > Files in this part: 6
 
 ## Files
@@ -35,6 +35,11 @@ WHATSAPP_BUSINESS_ACCOUNT_ID=
 INFOBIP_API_KEY=
 INFOBIP_BASE_URL=https://xxxxx.api.infobip.com
 INFOBIP_SENDER=Yawmia
+
+# ── Web Push (VAPID) ───────────────────────────────────────
+# Generate keys: node scripts/generate-vapid-keys.js
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
 ```
 
 ---
@@ -316,6 +321,8 @@ const config = {
       verifications: 'verifications',
       attendance: 'attendance',
       audit: 'audit',
+      messages: 'messages',
+      push_subscriptions: 'push_subscriptions',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -330,6 +337,9 @@ const config = {
       userVerificationIndex: 'verifications/user-index.json',
       jobAttendanceIndex: 'attendance/job-index.json',
       workerAttendanceIndex: 'attendance/worker-index.json',
+      messageJobIndex: 'messages/job-index.json',
+      messageUserIndex: 'messages/user-index.json',
+      pushUserIndex: 'push_subscriptions/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -490,7 +500,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.21.0',
+    cacheName: 'yawmia-v0.22.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -642,6 +652,34 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 35. الرسائل الداخلية (MESSAGES)
+  // ═══════════════════════════════════════════════════════════
+  MESSAGES: {
+    enabled: true,
+    maxLengthChars: 500,                     // أقصى طول رسالة (حرف)
+    maxMessagesPerJobPerDay: 50,             // أقصى رسائل لكل مستخدم في كل فرصة/يوم
+    allowBroadcast: true,                    // صاحب العمل يقدر يبعت لكل العمال المقبولين
+    allowWorkerInitiate: true,               // العامل يقدر يبدأ محادثة
+    onlyAfterAcceptance: true,               // الرسائل بس بعد القبول
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 36. إشعارات الويب (WEB_PUSH)
+  // ═══════════════════════════════════════════════════════════
+  WEB_PUSH: {
+    enabled: true,
+    maxSubscriptionsPerUser: 5,              // أقصى 5 أجهزة لكل مستخدم
+    events: {
+      application_accepted: true,            // العامل اتقبل
+      job_filled: true,                      // الفرصة اكتملت
+      new_message: true,                     // رسالة جديدة
+      payment_created: true,                 // سجل دفع جديد
+      job_cancelled: true,                   // الفرصة اتلغت
+      attendance_noshow: true,               // تسجيل غياب
+    },
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -690,7 +728,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -752,6 +790,13 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Clean Stale .tmp Files (orphans from crashes) ────────────
+try {
+  const { cleanStaleTmpFiles } = await import('./server/services/database.js');
+  const cleanedTmp = await cleanStaleTmpFiles();
+  if (cleanedTmp > 0) logger.warn(`Startup: cleaned ${cleanedTmp} stale .tmp files`);
+} catch (_) { /* non-fatal */ }
 
 // ── Create Logs Directory ────────────────────────────────────
 try {
@@ -917,7 +962,7 @@ export { server, PORT, HOST };
 import config from '../config.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
-import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob } from './handlers/jobsHandler.js';
+import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -927,6 +972,8 @@ import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, ha
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
+import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
+import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -951,7 +998,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.21.0',
+        version: '0.22.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1003,6 +1050,9 @@ const routes = [
           compensationEnabled: config.FINANCIALS.compensationEnabled,
           paymentMethods: config.FINANCIALS.paymentMethods,
         },
+        WEB_PUSH: {
+          vapidPublicKey: process.env.VAPID_PUBLIC_KEY || null,
+        },
       });
     },
   },
@@ -1015,7 +1065,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.21.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.22.0' });
     },
   },
 
@@ -1047,6 +1097,13 @@ const routes = [
   { method: 'POST', path: '/api/jobs/:id/complete', middlewares: [requireAuth, requireRole('employer')], handler: handleCompleteJob },
   { method: 'POST', path: '/api/jobs/:id/cancel', middlewares: [requireAuth, requireRole('employer')], handler: handleCancelJob },
   { method: 'POST', path: '/api/jobs/:id/renew', middlewares: [requireAuth, requireRole('employer')], handler: handleRenewJob },
+  { method: 'POST', path: '/api/jobs/:id/duplicate', middlewares: [requireAuth, requireRole('employer')], handler: handleDuplicateJob },
+
+  // ── Messaging Routes ──
+  { method: 'POST', path: '/api/jobs/:id/messages/broadcast', middlewares: [requireAuth, requireRole('employer')], handler: handleBroadcastMessage },
+  { method: 'POST', path: '/api/jobs/:id/messages/read-all', middlewares: [requireAuth], handler: handleMarkAllJobMessagesRead },
+  { method: 'GET', path: '/api/jobs/:id/messages', middlewares: [requireAuth], handler: handleListJobMessages },
+  { method: 'POST', path: '/api/jobs/:id/messages', middlewares: [requireAuth], handler: handleSendMessage },
 
   // ── Attendance Routes ──
   { method: 'POST', path: '/api/jobs/:id/checkin', middlewares: [requireAuth, requireRole('worker')], handler: handleCheckIn },
@@ -1073,6 +1130,14 @@ const routes = [
   { method: 'GET', path: '/api/notifications/stream', middlewares: [], handler: handleNotificationStream },
   { method: 'POST', path: '/api/notifications/read-all', middlewares: [requireAuth], handler: handleMarkAllAsRead },
   { method: 'POST', path: '/api/notifications/:id/read', middlewares: [requireAuth], handler: handleMarkAsRead },
+
+  // ── Message Unread Count ──
+  { method: 'GET', path: '/api/messages/unread-count', middlewares: [requireAuth], handler: handleGetUnreadCount },
+  { method: 'POST', path: '/api/messages/:id/read', middlewares: [requireAuth], handler: handleMarkMessageRead },
+
+  // ── Push Subscription Routes ──
+  { method: 'POST', path: '/api/push/subscribe', middlewares: [requireAuth], handler: handlePushSubscribe },
+  { method: 'DELETE', path: '/api/push/subscribe', middlewares: [requireAuth], handler: handlePushUnsubscribe },
 
   // ── Application Management Routes ──
   { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },
