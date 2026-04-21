@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T22:24:41.604Z
+> Auto-generated: 2026-04-21T22:38:25.956Z
 > Files in this part: 28
 
 ## Files
@@ -868,7 +868,7 @@ select.form-input {
 .notification-panel {
   position: fixed;
   top: 0;
-  inset-inline-end: 0;
+  right: 0;
   width: 100%;
   max-width: 400px;
   height: 100vh;
