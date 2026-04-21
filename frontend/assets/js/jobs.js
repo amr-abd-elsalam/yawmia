@@ -151,8 +151,6 @@
     notificationPanel.classList.add('notification-panel--open');
     document.body.style.overflow = 'hidden';
     loadNotifications();
-    // Render icons inside the drawer (close button)
-    if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
     // Focus close button for accessibility
     if (btnCloseNotifPanel) btnCloseNotifPanel.focus();
   }
