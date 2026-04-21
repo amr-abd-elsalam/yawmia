@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T21:14:55.502Z
-> Files in this part: 27
+> Auto-generated: 2026-04-21T22:15:12.316Z
+> Files in this part: 28
 
 ## Files
 1. `frontend/404.html`
@@ -12,24 +12,25 @@
 7. `frontend/assets/js/auth.js`
 8. `frontend/assets/js/icons.js`
 9. `frontend/assets/js/jobs.js`
-10. `frontend/assets/js/profile.js`
-11. `frontend/assets/js/toast.js`
-12. `frontend/assets/js/user.js`
-13. `frontend/assets/js/utils.js`
-14. `frontend/dashboard.html`
-15. `frontend/index.html`
-16. `frontend/manifest.json`
-17. `frontend/offline.html`
-18. `frontend/profile.html`
-19. `frontend/robots.txt`
-20. `frontend/sitemap.xml`
-21. `frontend/sw.js`
-22. `frontend/user.html`
-23. `scripts/backup.js`
-24. `scripts/benchmark.js`
-25. `scripts/bundle-for-review.js`
-26. `scripts/generate-vapid-keys.js`
-27. `scripts/repair-indexes.js`
+10. `frontend/assets/js/modal.js`
+11. `frontend/assets/js/profile.js`
+12. `frontend/assets/js/toast.js`
+13. `frontend/assets/js/user.js`
+14. `frontend/assets/js/utils.js`
+15. `frontend/dashboard.html`
+16. `frontend/index.html`
+17. `frontend/manifest.json`
+18. `frontend/offline.html`
+19. `frontend/profile.html`
+20. `frontend/robots.txt`
+21. `frontend/sitemap.xml`
+22. `frontend/sw.js`
+23. `frontend/user.html`
+24. `scripts/backup.js`
+25. `scripts/benchmark.js`
+26. `scripts/bundle-for-review.js`
+27. `scripts/generate-vapid-keys.js`
+28. `scripts/repair-indexes.js`
 
 ---
 
@@ -194,6 +195,7 @@
   <script src="/assets/js/icons.js"></script>
   <script src="/assets/js/utils.js"></script>
   <script src="/assets/js/toast.js"></script>
+  <script src="/assets/js/modal.js"></script>
   <script src="/assets/js/admin.js"></script>
   <script>if(typeof YawmiaIcons!=='undefined')YawmiaIcons.renderAll();</script>
 </body>
@@ -2377,6 +2379,100 @@ textarea:focus:not(:focus-visible) {
 }
 .toast--info .toast__icon-wrap { color: var(--color-primary); }
 
+/* ═══ Phase 26 — Custom Modal System ═══ */
+.ym-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1rem;
+}
+
+.ym-modal-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-md);
+}
+
+.ym-modal-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-block-end: 0.75rem;
+  color: var(--color-text);
+}
+
+.ym-modal-message {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-block-end: 1.25rem;
+  line-height: 1.6;
+}
+
+.ym-modal-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 44px;
+  margin-block-end: 0.5rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.ym-modal-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.ym-modal-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.ym-modal-error {
+  text-align: center;
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-block-end: 0.75rem;
+  min-height: 1.2em;
+}
+
+.ym-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.ym-modal-btn--danger {
+  background: var(--color-error);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.ym-modal-btn--danger:hover:not(:disabled) {
+  background: var(--color-error);
+  filter: brightness(0.85);
+}
+
 /* ═══ Phase 19 — Skeleton Loading Styles ═══ */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.4; }
@@ -3005,7 +3101,9 @@ var AdminApp = (function () {
     try {
       var reason = '';
       if (newStatus === 'banned') {
-        reason = prompt('سبب الحظر (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'حظر المستخدم', message: 'سبب الحظر (اختياري)', placeholder: 'اكتب السبب...' });
+        if (promptResult === null) return;
+        reason = promptResult;
       }
       await apiWrite('PUT', '/api/admin/users/' + userId + '/status', { status: newStatus, reason: reason });
       await loadUsers();
@@ -3320,7 +3418,9 @@ var AdminApp = (function () {
     try {
       var notes = '';
       if (newStatus === 'action_taken') {
-        notes = prompt('ملاحظات الأدمن (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'مراجعة البلاغ', message: 'ملاحظات الأدمن (اختياري)', placeholder: 'اكتب الملاحظات...' });
+        if (promptResult === null) return;
+        notes = promptResult;
       }
       await apiWrite('PUT', '/api/admin/reports/' + reportId, { status: newStatus, adminNotes: notes });
       await loadReports();
@@ -3396,7 +3496,9 @@ var AdminApp = (function () {
     try {
       var notes = '';
       if (newStatus === 'rejected') {
-        notes = prompt('سبب الرفض (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'رفض طلب التحقق', message: 'سبب الرفض (اختياري)', placeholder: 'اكتب السبب...' });
+        if (promptResult === null) return;
+        notes = promptResult;
       }
       await apiWrite('PUT', '/api/admin/verifications/' + verificationId, { status: newStatus, adminNotes: notes });
       await loadVerifications();
@@ -4721,7 +4823,8 @@ var YawmiaIcons = (function () {
     var cancelBtn = card.querySelector('.btn-cancel');
     if (cancelBtn) {
       cancelBtn.addEventListener('click', async function () {
-        if (!confirm('متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'إلغاء الفرصة', message: 'متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.', confirmText: 'إلغاء الفرصة', cancelText: 'رجوع', danger: true });
+        if (!confirmed) return;
         Yawmia.setLoading(cancelBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/cancel');
@@ -4742,7 +4845,8 @@ var YawmiaIcons = (function () {
     var renewBtn = card.querySelector('.btn-renew');
     if (renewBtn) {
       renewBtn.addEventListener('click', async function () {
-        if (!confirm('هل تريد تجديد هذه الفرصة؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'تجديد الفرصة', message: 'هل تريد تجديد هذه الفرصة؟', confirmText: 'تجديد', cancelText: 'إلغاء' });
+        if (!confirmed) return;
         Yawmia.setLoading(renewBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/renew');
@@ -4763,7 +4867,8 @@ var YawmiaIcons = (function () {
     var duplicateBtn = card.querySelector('.btn-duplicate');
     if (duplicateBtn) {
       duplicateBtn.addEventListener('click', async function () {
-        if (!confirm('هل تريد نسخ هذه الفرصة؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'نسخ الفرصة', message: 'هل تريد نسخ هذه الفرصة؟', confirmText: 'نسخ', cancelText: 'إلغاء' });
+        if (!confirmed) return;
         Yawmia.setLoading(duplicateBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/duplicate');
@@ -4877,14 +4982,11 @@ var YawmiaIcons = (function () {
             var disputeBtn = paymentPlaceholder.querySelector('.btn-dispute-payment');
             if (disputeBtn) {
               disputeBtn.addEventListener('click', async function () {
-                var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
-                if (!reason || reason.trim().length < 5) {
-                  YawmiaToast.warning('سبب النزاع لازم يكون 5 حروف على الأقل');
-                  return;
-                }
+                var reason = await YawmiaModal.prompt({ title: 'فتح نزاع', message: 'اكتب سبب النزاع', placeholder: 'اكتب السبب هنا...', minLength: 5, required: true });
+                if (!reason) return;
                 Yawmia.setLoading(disputeBtn, true);
                 try {
-                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason.trim() });
+                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason });
                   if (dRes.data.ok) {
                     loadJobs();
                   } else {
@@ -5788,6 +5890,266 @@ var YawmiaIcons = (function () {
 
 ---
 
+## `frontend/assets/js/modal.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/modal.js — Custom Modal System (IIFE)
+// Phase 26 — Promise-based confirm() + prompt() replacements
+// Dark theme, RTL-aware, accessible, focus-trapped
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaModal = (function () {
+  'use strict';
+
+  var escapeHtml = (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml : function (s) { return s || ''; };
+
+  /**
+   * Show a confirmation modal (replaces native confirm()).
+   *
+   * @param {object} options
+   * @param {string} options.title — modal title (Arabic)
+   * @param {string} options.message — description text (Arabic)
+   * @param {string} [options.confirmText='تأكيد'] — confirm button label
+   * @param {string} [options.cancelText='إلغاء'] — cancel button label
+   * @param {boolean} [options.danger=false] — if true, confirm button is red
+   * @returns {Promise<boolean>} — true if confirmed, false if cancelled
+   */
+  function confirm(options) {
+    var opts = options || {};
+    var title = opts.title || 'تأكيد';
+    var message = opts.message || '';
+    var confirmText = opts.confirmText || 'تأكيد';
+    var cancelText = opts.cancelText || 'إلغاء';
+    var danger = !!opts.danger;
+
+    return new Promise(function (resolve) {
+      var previousFocus = document.activeElement;
+
+      // Build modal DOM
+      var overlay = document.createElement('div');
+      overlay.className = 'ym-modal-overlay';
+
+      var titleId = 'ym-modal-title-' + Date.now();
+      var messageId = 'ym-modal-msg-' + Date.now();
+
+      var card = document.createElement('div');
+      card.className = 'ym-modal-card';
+      card.setAttribute('role', 'alertdialog');
+      card.setAttribute('aria-modal', 'true');
+      card.setAttribute('aria-labelledby', titleId);
+      if (message) card.setAttribute('aria-describedby', messageId);
+
+      var btnClass = danger ? 'btn btn--sm ym-modal-btn--danger' : 'btn btn--sm btn--primary';
+
+      card.innerHTML =
+        '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(title) + '</h3>' +
+        (message ? '<p class="ym-modal-message" id="' + messageId + '">' + escapeHtml(message) + '</p>' : '') +
+        '<div class="ym-modal-actions">' +
+          '<button class="' + btnClass + '" data-ym-role="confirm">' + escapeHtml(confirmText) + '</button>' +
+          '<button class="btn btn--sm btn--ghost" data-ym-role="cancel">' + escapeHtml(cancelText) + '</button>' +
+        '</div>';
+
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+
+      // Focus trap
+      var releaseTrap = null;
+      if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.trapFocus) {
+        releaseTrap = YawmiaUtils.trapFocus(card, function () {
+          cleanup(false);
+        });
+      }
+
+      function cleanup(result) {
+        if (releaseTrap) releaseTrap();
+        document.body.style.overflow = '';
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        // Restore focus
+        if (previousFocus && typeof previousFocus.focus === 'function') {
+          try { previousFocus.focus(); } catch (_) {}
+        }
+        resolve(result);
+      }
+
+      // Button handlers
+      var confirmBtn = card.querySelector('[data-ym-role="confirm"]');
+      var cancelBtn = card.querySelector('[data-ym-role="cancel"]');
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () { cleanup(true); });
+      }
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () { cleanup(false); });
+      }
+
+      // Click outside card → cancel
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) {
+          cleanup(false);
+        }
+      });
+    });
+  }
+
+  /**
+   * Show a prompt modal (replaces native prompt()).
+   *
+   * @param {object} options
+   * @param {string} options.title — modal title (Arabic)
+   * @param {string} [options.message] — description text (Arabic)
+   * @param {string} [options.placeholder=''] — input placeholder
+   * @param {string} [options.inputType='text'] — input type
+   * @param {number} [options.minLength] — minimum input length for validation
+   * @param {boolean} [options.required=false] — if true, empty input shows error
+   * @param {string} [options.confirmText='إرسال'] — submit button label
+   * @param {string} [options.cancelText='إلغاء'] — cancel button label
+   * @returns {Promise<string|null>} — submitted string or null if cancelled
+   */
+  function prompt(options) {
+    var opts = options || {};
+    var title = opts.title || 'إدخال';
+    var message = opts.message || '';
+    var placeholder = opts.placeholder || '';
+    var inputType = opts.inputType || 'text';
+    var minLength = typeof opts.minLength === 'number' ? opts.minLength : 0;
+    var required = !!opts.required;
+    var confirmText = opts.confirmText || 'إرسال';
+    var cancelText = opts.cancelText || 'إلغاء';
+
+    return new Promise(function (resolve) {
+      var previousFocus = document.activeElement;
+
+      // Build modal DOM
+      var overlay = document.createElement('div');
+      overlay.className = 'ym-modal-overlay';
+
+      var titleId = 'ym-modal-title-' + Date.now();
+      var messageId = 'ym-modal-msg-' + Date.now();
+      var errorId = 'ym-modal-error-' + Date.now();
+
+      var card = document.createElement('div');
+      card.className = 'ym-modal-card';
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+      card.setAttribute('aria-labelledby', titleId);
+      if (message) card.setAttribute('aria-describedby', messageId);
+
+      var inputTag = inputType === 'textarea'
+        ? '<textarea class="ym-modal-input" placeholder="' + escapeHtml(placeholder) + '" aria-describedby="' + errorId + '"></textarea>'
+        : '<input type="' + escapeHtml(inputType) + '" class="ym-modal-input" placeholder="' + escapeHtml(placeholder) + '" aria-describedby="' + errorId + '">';
+
+      card.innerHTML =
+        '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(title) + '</h3>' +
+        (message ? '<p class="ym-modal-message" id="' + messageId + '">' + escapeHtml(message) + '</p>' : '') +
+        inputTag +
+        '<div class="ym-modal-error" id="' + errorId + '" aria-live="polite"></div>' +
+        '<div class="ym-modal-actions">' +
+          '<button class="btn btn--sm btn--primary" data-ym-role="submit">' + escapeHtml(confirmText) + '</button>' +
+          '<button class="btn btn--sm btn--ghost" data-ym-role="cancel">' + escapeHtml(cancelText) + '</button>' +
+        '</div>';
+
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+
+      // Auto-focus input
+      var inputEl = card.querySelector('.ym-modal-input');
+      var errorEl = card.querySelector('.ym-modal-error');
+
+      // Focus trap
+      var releaseTrap = null;
+      if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.trapFocus) {
+        releaseTrap = YawmiaUtils.trapFocus(card, function () {
+          cleanup(null);
+        });
+      }
+
+      // Override auto-focus from trapFocus to focus input instead
+      if (inputEl) {
+        setTimeout(function () { inputEl.focus(); }, 0);
+      }
+
+      function cleanup(result) {
+        if (releaseTrap) releaseTrap();
+        document.body.style.overflow = '';
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        // Restore focus
+        if (previousFocus && typeof previousFocus.focus === 'function') {
+          try { previousFocus.focus(); } catch (_) {}
+        }
+        resolve(result);
+      }
+
+      function trySubmit() {
+        var value = inputEl ? inputEl.value.trim() : '';
+
+        // Validation
+        if (required && !value) {
+          if (errorEl) errorEl.textContent = 'هذا الحقل مطلوب';
+          if (inputEl) inputEl.focus();
+          return;
+        }
+        if (minLength > 0 && value.length > 0 && value.length < minLength) {
+          if (errorEl) errorEl.textContent = 'لازم يكون ' + minLength + ' حروف على الأقل';
+          if (inputEl) inputEl.focus();
+          return;
+        }
+
+        cleanup(value || null);
+      }
+
+      // Button handlers
+      var submitBtn = card.querySelector('[data-ym-role="submit"]');
+      var cancelBtn = card.querySelector('[data-ym-role="cancel"]');
+
+      if (submitBtn) {
+        submitBtn.addEventListener('click', trySubmit);
+      }
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () { cleanup(null); });
+      }
+
+      // Enter key in input → submit
+      if (inputEl && inputType !== 'textarea') {
+        inputEl.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            trySubmit();
+          }
+        });
+      }
+
+      // Clear error on input
+      if (inputEl && errorEl) {
+        inputEl.addEventListener('input', function () {
+          errorEl.textContent = '';
+        });
+      }
+
+      // Click outside card → cancel
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) {
+          cleanup(null);
+        }
+      });
+    });
+  }
+
+  return {
+    confirm: confirm,
+    prompt: prompt,
+  };
+})();
+```
+
+---
+
 ## `frontend/assets/js/profile.js`
 
 ```javascript
@@ -6119,7 +6481,8 @@ var YawmiaIcons = (function () {
     var withdrawBtn = card.querySelector('.btn-withdraw');
     if (withdrawBtn) {
       withdrawBtn.addEventListener('click', async function () {
-        if (!confirm('متأكد إنك عايز تسحب الطلب؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'سحب الطلب', message: 'متأكد إنك عايز تسحب الطلب؟', confirmText: 'سحب الطلب', cancelText: 'رجوع', danger: true });
+        if (!confirmed) return;
         Yawmia.setLoading(withdrawBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/applications/' + app.id + '/withdraw');
@@ -7435,6 +7798,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
+  <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
@@ -7876,6 +8240,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/icons.js"></script>
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
+  <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -7950,6 +8315,7 @@ const STATIC_ASSETS = [
   '/assets/js/icons.js',
   '/assets/js/utils.js',
   '/assets/js/toast.js',
+  '/assets/js/modal.js',
   '/assets/css/tokens.css',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',
