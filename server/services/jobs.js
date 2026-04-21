@@ -493,6 +493,59 @@ export async function cancelJob(jobId, employerId) {
 }
 
 /**
+ * Duplicate an existing job (employer action)
+ * Copies content fields, resets lifecycle fields
+ * @param {string} jobId — source job to duplicate
+ * @param {string} employerId — must own the source job
+ * @returns {Promise<{ ok: boolean, job?: object, error?: string, code?: string }>}
+ */
+export async function duplicateJob(jobId, employerId) {
+  // 1. Source job exists
+  const source = await findById(jobId);
+  if (!source) {
+    return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  }
+
+  // 2. Employer owns source job
+  if (source.employerId !== employerId) {
+    return { ok: false, error: 'مش مسموحلك تنسخ هذه الفرصة', code: 'NOT_JOB_OWNER' };
+  }
+
+  // 3. Daily limit check
+  try {
+    const todayCount = await countTodayByEmployer(employerId);
+    if (todayCount >= config.LIMITS.maxJobsPerEmployerPerDay) {
+      return { ok: false, error: 'وصلت للحد الأقصى لنشر الفرص اليوم', code: 'DAILY_JOB_LIMIT' };
+    }
+  } catch (_) {
+    // Non-blocking: allow action if count check fails
+  }
+
+  // 4. Calculate startDate = tomorrow (Egypt timezone)
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
+  const tomorrowMidnight = new Date(todayMidnight.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowStr = tomorrowMidnight.toISOString().split('T')[0];
+
+  // 5. Create new job with copied content fields
+  const newJob = await create(employerId, {
+    title: source.title,
+    category: source.category,
+    governorate: source.governorate,
+    location: source.location || null,
+    lat: source.lat,
+    lng: source.lng,
+    workersNeeded: source.workersNeeded,
+    dailyWage: source.dailyWage,
+    durationDays: source.durationDays,
+    description: source.description || '',
+    startDate: tomorrowStr,
+  });
+
+  return { ok: true, job: newJob };
+}
+
+/**
  * Renew an expired or cancelled job
  * Requires: employer owns job, status in allowedFromStatuses, under max renewals
  */

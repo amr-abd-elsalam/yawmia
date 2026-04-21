@@ -251,6 +251,8 @@ const config = {
       verifications: 'verifications',
       attendance: 'attendance',
       audit: 'audit',
+      messages: 'messages',
+      push_subscriptions: 'push_subscriptions',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -265,6 +267,9 @@ const config = {
       userVerificationIndex: 'verifications/user-index.json',
       jobAttendanceIndex: 'attendance/job-index.json',
       workerAttendanceIndex: 'attendance/worker-index.json',
+      messageJobIndex: 'messages/job-index.json',
+      messageUserIndex: 'messages/user-index.json',
+      pushUserIndex: 'push_subscriptions/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -425,7 +430,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.21.0',
+    cacheName: 'yawmia-v0.22.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -574,6 +579,34 @@ const config = {
       user: 120000,                          // 2 minutes
       job: 60000,                            // 1 minute
       session: 60000,                        // 1 minute
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 35. الرسائل الداخلية (MESSAGES)
+  // ═══════════════════════════════════════════════════════════
+  MESSAGES: {
+    enabled: true,
+    maxLengthChars: 500,                     // أقصى طول رسالة (حرف)
+    maxMessagesPerJobPerDay: 50,             // أقصى رسائل لكل مستخدم في كل فرصة/يوم
+    allowBroadcast: true,                    // صاحب العمل يقدر يبعت لكل العمال المقبولين
+    allowWorkerInitiate: true,               // العامل يقدر يبدأ محادثة
+    onlyAfterAcceptance: true,               // الرسائل بس بعد القبول
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 36. إشعارات الويب (WEB_PUSH)
+  // ═══════════════════════════════════════════════════════════
+  WEB_PUSH: {
+    enabled: true,
+    maxSubscriptionsPerUser: 5,              // أقصى 5 أجهزة لكل مستخدم
+    events: {
+      application_accepted: true,            // العامل اتقبل
+      job_filled: true,                      // الفرصة اكتملت
+      new_message: true,                     // رسالة جديدة
+      payment_created: true,                 // سجل دفع جديد
+      job_cancelled: true,                   // الفرصة اتلغت
+      attendance_noshow: true,               // تسجيل غياب
     },
   },
 

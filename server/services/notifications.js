@@ -257,6 +257,16 @@ export function setupNotificationListeners() {
           }).catch(() => {});
         }).catch(() => {});
       }).catch(() => {});
+
+      // Web Push (fire-and-forget)
+      import('./webpush.js').then(({ sendPush }) => {
+        sendPush(data.workerId, {
+          title: 'يوميّة',
+          body: message,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      }).catch(() => {});
     });
   }
 
@@ -311,6 +321,16 @@ export function setupNotificationListeners() {
               }).catch(() => {});
             }
           }).catch(() => {});
+        }).catch(() => {});
+      }).catch(() => {});
+
+      // Web Push (fire-and-forget)
+      import('./webpush.js').then(({ sendPush }) => {
+        sendPush(data.employerId, {
+          title: 'يوميّة',
+          body: message,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
         }).catch(() => {});
       }).catch(() => {});
     });
@@ -411,6 +431,16 @@ export function setupNotificationListeners() {
             }).catch(() => {});
           }
         }).catch(() => {});
+      }).catch(() => {});
+    }).catch(() => {});
+
+    // Web Push (fire-and-forget)
+    import('./webpush.js').then(({ sendPush }) => {
+      sendPush(data.employerId, {
+        title: 'يوميّة',
+        body: message,
+        icon: '/assets/img/icon-192.png',
+        url: '/dashboard.html',
       }).catch(() => {});
     }).catch(() => {});
   });
@@ -528,5 +558,55 @@ export function setupNotificationListeners() {
       'صاحب العمل أكّد حضورك ✓',
       { jobId: data.jobId, attendanceId: data.attendanceId }
     ).catch(() => {});
+  });
+
+  // ── Messaging Notifications ─────────────────────────────────
+
+  // Recipient gets notification when they receive a direct message
+  eventBus.on('message:created', (data) => {
+    if (data.recipientId) {
+      const msgText = `رسالة جديدة في الفرصة: ${data.jobTitle || 'فرصة عمل'}`;
+      createNotification(
+        data.recipientId,
+        'new_message',
+        msgText,
+        { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId }
+      ).catch(() => {});
+
+      // Web Push (fire-and-forget)
+      import('./webpush.js').then(({ sendPush }) => {
+        sendPush(data.recipientId, {
+          title: 'يوميّة — رسالة جديدة',
+          body: data.preview || msgText,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+  });
+
+  // All accepted workers get notification on broadcast message
+  eventBus.on('message:broadcast', (data) => {
+    if (data.workerIds && data.workerIds.length > 0) {
+      const msgText = `رسالة جديدة من صاحب العمل في الفرصة: ${data.jobTitle || 'فرصة عمل'}`;
+      for (const workerId of data.workerIds) {
+        createNotification(
+          workerId,
+          'new_message',
+          msgText,
+          { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId }
+        ).catch(() => {});
+      }
+
+      // Web Push to all workers (fire-and-forget)
+      import('./webpush.js').then(({ sendPushToMany }) => {
+        sendPushToMany(data.workerIds, {
+          title: 'يوميّة — رسالة جديدة',
+          body: data.preview || msgText,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      }).catch(() => {});
+    }
   });
 }

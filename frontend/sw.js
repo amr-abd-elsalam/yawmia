@@ -3,7 +3,7 @@
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.21.0';
+const CACHE_NAME = 'yawmia-v0.22.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -93,5 +93,53 @@ self.addEventListener('fetch', (event) => {
         }
         return new Response('Offline', { status: 503 });
       })
+  );
+});
+
+// ── Push: display notification ──
+self.addEventListener('push', (event) => {
+  let data = { title: 'يوميّة', body: 'إشعار جديد', icon: '/assets/img/icon-192.png', url: '/dashboard.html' };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      if (payload.title) data.title = payload.title;
+      if (payload.body) data.body = payload.body;
+      if (payload.icon) data.icon = payload.icon;
+      if (payload.url) data.url = payload.url;
+    } catch (_) {
+      // Invalid JSON or no payload — use defaults
+      try {
+        const text = event.data.text();
+        if (text) data.body = text;
+      } catch (_2) { /* ignore */ }
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: '/assets/img/icon-192.png',
+      dir: 'rtl',
+      lang: 'ar',
+      data: { url: data.url },
+    })
+  );
+});
+
+// ── Notification Click: navigate to URL ──
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/dashboard.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });

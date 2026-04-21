@@ -513,6 +513,10 @@
             '<input type="checkbox" id="pref-sms" ' + (prefs.sms ? 'checked' : '') + ' />' +
             '<span>إشعارات SMS للأحداث المهمة</span>' +
           '</label>' +
+          '<label class="pref-item">' +
+            '<input type="checkbox" id="pref-push" checked />' +
+            '<span>إشعارات Push (حتى لو التطبيق مقفول)</span>' +
+          '</label>' +
           '<button class="btn btn--ghost" id="save-prefs-btn">حفظ إعدادات الإشعارات</button>' +
         '</div>' +
       '</section>';

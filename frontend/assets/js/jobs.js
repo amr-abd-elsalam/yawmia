@@ -84,6 +84,11 @@
     Yawmia.connectSSE();
   }
 
+  // ── Web Push: Subscribe after SSE ─────────────────────────
+  if (Yawmia.subscribeToPush) {
+    Yawmia.subscribeToPush();
+  }
+
   window.addEventListener('yawmia:notification', function (e) {
     loadNotifications();
   });
@@ -228,6 +233,20 @@
     var search = Yawmia.$id('filterSearch') ? Yawmia.$id('filterSearch').value.trim() : '';
     var sort = Yawmia.$id('filterSort') ? Yawmia.$id('filterSort').value : '';
 
+    // For employers, also fetch their enriched jobs for pending count
+    if (user.role === 'employer') {
+      Yawmia.api('GET', '/api/jobs/mine?enrich=applications&limit=100').then(function (mineRes) {
+        if (mineRes.data.ok && mineRes.data.jobs) {
+          window._enrichedMyJobs = {};
+          mineRes.data.jobs.forEach(function (j) {
+            if (typeof j.pendingApplicationsCount === 'number') {
+              window._enrichedMyJobs[j.id] = j.pendingApplicationsCount;
+            }
+          });
+        }
+      }).catch(function () {});
+    }
+
     var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
     if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
@@ -311,6 +330,25 @@
       footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
+    // Duplicate button for employer (any status except open)
+    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
+      footerButtons += ' <button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
+    }
+
+    // Messaging button for involved users (filled, in_progress, completed)
+    var messagingStatuses = ['filled', 'in_progress', 'completed'];
+    if (messagingStatuses.indexOf(job.status) !== -1) {
+      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
+      if (isInvolved) {
+        footerButtons += ' <button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
+      }
+    }
+
+    // Pending applications badge for employer
+    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
+      footerButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
+    }
+
     // Report button (any authenticated user can report the employer)
     if (job.employerId && job.employerId !== user.id) {
       footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
@@ -336,6 +374,11 @@
     var distanceBadge = (job._distance !== undefined && job._distance !== null)
       ? '<span class="job-distance">📍 ' + job._distance + ' كم</span>'
       : '';
+
+    // Inject pending count from enriched data if available
+    if (user.role === 'employer' && job.employerId === user.id && window._enrichedMyJobs && window._enrichedMyJobs[job.id] !== undefined) {
+      job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
+    }
 
     card.innerHTML =
       '<div class="job-card__header">' +
@@ -461,6 +504,36 @@
         } finally {
           Yawmia.setLoading(renewBtn, false);
         }
+      });
+    }
+
+    // Duplicate button handler (employer)
+    var duplicateBtn = card.querySelector('.btn-duplicate');
+    if (duplicateBtn) {
+      duplicateBtn.addEventListener('click', async function () {
+        if (!confirm('هل تريد نسخ هذه الفرصة؟')) return;
+        Yawmia.setLoading(duplicateBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/duplicate');
+          if (res.data.ok) {
+            YawmiaToast.success('تم نسخ الفرصة بنجاح ✓');
+            loadJobs();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في نسخ الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(duplicateBtn, false);
+        }
+      });
+    }
+
+    // Messaging toggle handler
+    var messagesBtn = card.querySelector('.btn-messages');
+    if (messagesBtn) {
+      messagesBtn.addEventListener('click', function () {
+        toggleMessagingPanel(card, job);
       });
     }
 
@@ -795,6 +868,145 @@
       }
     })();
   }
+
+  // ── Messaging Panel ───────────────────────────────────────
+  function toggleMessagingPanel(card, job) {
+    var existing = card.querySelector('.messaging-panel');
+    if (existing) { existing.remove(); return; }
+
+    var panel = document.createElement('div');
+    panel.className = 'messaging-panel';
+    panel.innerHTML =
+      '<div class="messaging-panel__header">' +
+        '<strong>💬 رسائل الفرصة</strong>' +
+        '<button class="btn btn--ghost btn--sm btn-close-msgs">✕</button>' +
+      '</div>' +
+      '<div class="message-list" id="msgList-' + job.id + '">' +
+        '<p class="empty-state">جاري التحميل...</p>' +
+      '</div>' +
+      '<div class="message-send-form">' +
+        '<input type="text" class="message-input" placeholder="اكتب رسالة..." maxlength="500">' +
+        (user.role === 'employer' && job.employerId === user.id
+          ? '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button><button class="btn btn--ghost btn--sm btn-broadcast-msg">📢 بث</button>'
+          : '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button>') +
+      '</div>';
+
+    card.appendChild(panel);
+
+    // Close
+    panel.querySelector('.btn-close-msgs').addEventListener('click', function () { panel.remove(); });
+
+    // Load messages
+    loadJobMessages(panel, job);
+
+    // Send handler
+    var sendBtn = panel.querySelector('.btn-send-msg');
+    var input = panel.querySelector('.message-input');
+    if (sendBtn) {
+      sendBtn.addEventListener('click', function () {
+        sendJobMessage(panel, job, input);
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') sendJobMessage(panel, job, input);
+      });
+    }
+
+    // Broadcast handler
+    var broadcastBtn = panel.querySelector('.btn-broadcast-msg');
+    if (broadcastBtn) {
+      broadcastBtn.addEventListener('click', async function () {
+        var text = input.value.trim();
+        if (!text) return;
+        Yawmia.setLoading(broadcastBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/broadcast', { text: text });
+          if (res.data.ok) {
+            input.value = '';
+            loadJobMessages(panel, job);
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في البث');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(broadcastBtn, false); }
+      });
+    }
+  }
+
+  async function loadJobMessages(panel, job) {
+    var listEl = panel.querySelector('.message-list');
+    try {
+      var res = await Yawmia.api('GET', '/api/jobs/' + job.id + '/messages?limit=50&offset=0');
+      if (res.data.ok && res.data.items && res.data.items.length > 0) {
+        listEl.innerHTML = '';
+        // Reverse to show oldest first (chat order)
+        var items = res.data.items.slice().reverse();
+        items.forEach(function (msg) {
+          var isMine = msg.senderId === user.id;
+          var bubble = document.createElement('div');
+          bubble.className = 'message-bubble' + (isMine ? ' message-bubble--mine' : ' message-bubble--other');
+          var roleLabel = msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل';
+          var broadcastLabel = msg.recipientId === null ? ' 📢' : '';
+          bubble.innerHTML =
+            '<div class="message-bubble__sender">' + escapeHtml(roleLabel) + broadcastLabel + '</div>' +
+            '<div class="message-bubble__text">' + escapeHtml(msg.text) + '</div>' +
+            '<div class="message-bubble__time">' + new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+          listEl.appendChild(bubble);
+        });
+        // Scroll to bottom
+        listEl.scrollTop = listEl.scrollHeight;
+
+        // Mark all as read (fire-and-forget)
+        Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/read-all').catch(function () {});
+      } else {
+        listEl.innerHTML = '<p class="empty-state">لا توجد رسائل بعد</p>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل</p>';
+    }
+  }
+
+  async function sendJobMessage(panel, job, input) {
+    var text = input.value.trim();
+    if (!text) return;
+
+    // Determine recipientId: worker → employer, employer → needs to pick (send to first accepted for simplicity)
+    var recipientId = null;
+    if (user.role === 'worker') {
+      recipientId = job.employerId;
+    } else {
+      // Employer sending to specific worker — for now use broadcast or first interaction
+      // Simple approach: prompt for worker ID or use last message sender
+      var listEl = panel.querySelector('.message-list');
+      var lastOther = listEl.querySelector('.message-bubble--other');
+      if (lastOther) {
+        // Try to infer from loaded messages
+      }
+      // Fallback: prompt
+      if (!recipientId) {
+        recipientId = prompt('أدخل معرّف العامل (usr_xxx):');
+        if (!recipientId) return;
+      }
+    }
+
+    try {
+      var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages', {
+        recipientId: recipientId,
+        text: text,
+      });
+      if (res.data.ok) {
+        input.value = '';
+        loadJobMessages(panel, job);
+      } else {
+        YawmiaToast.error(res.data.error || 'خطأ في إرسال الرسالة');
+      }
+    } catch (err) {
+      YawmiaToast.error('خطأ في الاتصال');
+    }
+  }
+
+  // ── Load jobs with enrichment for employer ─────────────────
+  // Override loadJobs to fetch enriched data for employers
+  var originalLoadJobs = loadJobs;
 
   // ── Rating Modal ──────────────────────────────────────────
   function showRatingModal(job, prefilledTargetId) {

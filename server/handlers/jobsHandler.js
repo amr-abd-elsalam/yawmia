@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob } from '../services/jobs.js';
+import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob, duplicateJob } from '../services/jobs.js';
 import { validateJobFields } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
@@ -203,6 +203,19 @@ export async function handleListMyJobs(req, res) {
     const offset = (page - 1) * limit;
     const jobs = myJobs.slice(offset, offset + limit);
 
+    // Optional enrichment: pending applications count
+    if (req.query.enrich === 'applications') {
+      try {
+        const { listByJob: listAppsByJob } = await import('../services/applications.js');
+        for (const job of jobs) {
+          const apps = await listAppsByJob(job.id);
+          job.pendingApplicationsCount = apps.filter(a => a.status === 'pending').length;
+        }
+      } catch (_) {
+        // Non-blocking: enrichment failure doesn't break the response
+      }
+    }
+
     return sendJSON(res, 200, {
       ok: true,
       jobs,
@@ -300,5 +313,30 @@ export async function handleRenewJob(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في تجديد الفرصة', code: 'RENEW_JOB_ERROR' });
+  }
+}
+
+/**
+ * POST /api/jobs/:id/duplicate
+ * Duplicate an existing job (copies content, resets lifecycle)
+ * Requires: auth (employer, owns job)
+ */
+export async function handleDuplicateJob(req, res) {
+  const jobId = req.params.id;
+
+  try {
+    const result = await duplicateJob(jobId, req.user.id);
+    if (!result.ok) {
+      const statusMap = {
+        JOB_NOT_FOUND: 404,
+        NOT_JOB_OWNER: 403,
+        DAILY_JOB_LIMIT: 429,
+      };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 201, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في نسخ الفرصة', code: 'DUPLICATE_JOB_ERROR' });
   }
 }

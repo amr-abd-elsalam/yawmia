@@ -2,7 +2,7 @@
 // server/services/database.js — File-based DB with atomic writes
 // ═══════════════════════════════════════════════════════════════
 
-import { readFile, writeFile, rename, unlink, readdir, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, rename, unlink, readdir, mkdir, stat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from './cache.js';
@@ -263,4 +263,51 @@ export async function removeFromSetIndex(relativePath, key, id) {
 export async function getFromSetIndex(relativePath, key) {
   const index = await readSetIndex(relativePath);
   return index[key] || [];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Stale .tmp File Cleanup
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Clean stale .tmp files from all data directories
+ * Orphan .tmp files older than 5 minutes are deleted (crash leftovers)
+ * Fire-and-forget safe — logs warnings but never throws
+ * @returns {Promise<number>} count of cleaned .tmp files
+ */
+export async function cleanStaleTmpFiles() {
+  const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+  let cleaned = 0;
+
+  const dirs = Object.values(config.DATABASE.dirs);
+  for (const dir of dirs) {
+    const fullPath = join(BASE_PATH, dir);
+    try {
+      const files = await readdir(fullPath);
+      for (const file of files) {
+        if (!file.endsWith('.tmp')) continue;
+        try {
+          const filePath = join(fullPath, file);
+          const fileStat = await stat(filePath);
+          const ageMs = now - fileStat.mtime.getTime();
+          if (ageMs > STALE_THRESHOLD_MS) {
+            await unlink(filePath);
+            cleaned++;
+            // Dynamic import to avoid circular dependency
+            try {
+              const { logger } = await import('./logger.js');
+              logger.warn('Cleaned stale .tmp file', { file: filePath, ageMinutes: Math.round(ageMs / 60000) });
+            } catch (_) { /* non-fatal */ }
+          }
+        } catch (_) {
+          // Skip individual file errors — non-fatal
+        }
+      }
+    } catch (_) {
+      // Skip directory errors — non-fatal (dir might not exist yet)
+    }
+  }
+
+  return cleaned;
 }

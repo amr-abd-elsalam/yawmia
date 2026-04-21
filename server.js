@@ -36,6 +36,13 @@ const HOST = process.env.HOST || '0.0.0.0';
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
 
+// ── Clean Stale .tmp Files (orphans from crashes) ────────────
+try {
+  const { cleanStaleTmpFiles } = await import('./server/services/database.js');
+  const cleanedTmp = await cleanStaleTmpFiles();
+  if (cleanedTmp > 0) logger.warn(`Startup: cleaned ${cleanedTmp} stale .tmp files`);
+} catch (_) { /* non-fatal */ }
+
 // ── Create Logs Directory ────────────────────────────────────
 try {
   await mkdir(join('.', 'logs'), { recursive: true });

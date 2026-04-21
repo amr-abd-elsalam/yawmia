@@ -268,6 +268,62 @@ async function repair() {
     console.log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
   }
 
+  // 13. Message-Job Index (messages/job-index.json)
+  console.log('1️⃣3️⃣ Message-Job Index...');
+  const messages = await listRecords(join(DATA_DIR, 'messages'), 'msg_');
+  const messageJobIndex = {};
+  for (const msg of messages) {
+    if (!messageJobIndex[msg.jobId]) messageJobIndex[msg.jobId] = [];
+    messageJobIndex[msg.jobId].push(msg.id);
+  }
+  const existingMsgJobIndex = await readJSON(join(DATA_DIR, 'messages/job-index.json')) || {};
+  const msgJobIndexChanged = JSON.stringify(messageJobIndex) !== JSON.stringify(existingMsgJobIndex);
+  if (msgJobIndexChanged) {
+    console.log(`   ⚠️  Message-Job index needs repair (${Object.keys(messageJobIndex).length} jobs)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/job-index.json'), messageJobIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Message-Job index OK (${Object.keys(messageJobIndex).length} jobs)`);
+  }
+
+  // 14. Message-User Index (messages/user-index.json)
+  console.log('1️⃣4️⃣ Message-User Index...');
+  const messageUserIndex = {};
+  for (const msg of messages) {
+    if (msg.recipientId) {
+      if (!messageUserIndex[msg.recipientId]) messageUserIndex[msg.recipientId] = [];
+      messageUserIndex[msg.recipientId].push(msg.id);
+    }
+    // For broadcasts (recipientId: null), we'd need to resolve accepted workers — skip in repair
+  }
+  const existingMsgUserIndex = await readJSON(join(DATA_DIR, 'messages/user-index.json')) || {};
+  const msgUserIndexChanged = JSON.stringify(messageUserIndex) !== JSON.stringify(existingMsgUserIndex);
+  if (msgUserIndexChanged) {
+    console.log(`   ⚠️  Message-User index needs repair (${Object.keys(messageUserIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/user-index.json'), messageUserIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Message-User index OK (${Object.keys(messageUserIndex).length} users)`);
+  }
+
+  // 15. Push-User Index (push_subscriptions/user-index.json)
+  console.log('1️⃣5️⃣ Push-User Index...');
+  const pushSubs = await listRecords(join(DATA_DIR, 'push_subscriptions'), 'psub_');
+  const pushUserIndex = {};
+  for (const sub of pushSubs) {
+    if (!pushUserIndex[sub.userId]) pushUserIndex[sub.userId] = [];
+    pushUserIndex[sub.userId].push(sub.id);
+  }
+  const existingPushIndex = await readJSON(join(DATA_DIR, 'push_subscriptions/user-index.json')) || {};
+  const pushIndexChanged = JSON.stringify(pushUserIndex) !== JSON.stringify(existingPushIndex);
+  if (pushIndexChanged) {
+    console.log(`   ⚠️  Push-User index needs repair (${Object.keys(pushUserIndex).length} users)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'push_subscriptions/user-index.json'), pushUserIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
+  }
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

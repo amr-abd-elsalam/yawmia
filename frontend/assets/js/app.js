@@ -256,6 +256,71 @@ var Yawmia = (function () {
     }
   }
 
+  // ── Web Push: Subscribe ───────────────────────────────────
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var rawData = atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; i++) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function subscribeToPush() {
+    if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
+    if (!state.token) return;
+    try {
+      var registration = await navigator.serviceWorker.ready;
+      var existing = await registration.pushManager.getSubscription();
+      if (existing) return; // Already subscribed
+
+      var permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      // Get VAPID public key from server config
+      var cfg = await loadConfig();
+      var vapidKey = cfg && cfg.WEB_PUSH && cfg.WEB_PUSH.vapidPublicKey;
+      if (!vapidKey) return;
+
+      var subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+
+      // Extract keys
+      var p256dhKey = subscription.getKey('p256dh');
+      var authKey = subscription.getKey('auth');
+      if (!p256dhKey || !authKey) return;
+
+      var p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhKey)));
+      var auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authKey)));
+
+      await api('POST', '/api/push/subscribe', {
+        endpoint: subscription.endpoint,
+        keys: { p256dh: p256dh, auth: auth },
+      });
+    } catch (_) {
+      // Push subscription failure is non-fatal
+    }
+  }
+
+  // ── Global Error Boundary ─────────────────────────────────
+  window.addEventListener('unhandledrejection', function (e) {
+    console.error('[Yawmia] Unhandled rejection:', e.reason);
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.error('حصل خطأ غير متوقع — حاول تاني');
+    }
+  });
+
+  window.addEventListener('error', function (e) {
+    console.error('[Yawmia] Unhandled error:', e.error || e.message);
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.error('حصل خطأ غير متوقع');
+    }
+  });
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -279,5 +344,6 @@ var Yawmia = (function () {
     roleLabel: roleLabel,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
+    subscribeToPush: subscribeToPush,
   };
 })();
