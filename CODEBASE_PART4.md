@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T22:15:12.316Z
+> Auto-generated: 2026-04-21T22:24:41.604Z
 > Files in this part: 28
 
 ## Files
@@ -827,6 +827,7 @@ select.form-input {
   font-size: 1.2rem;
   cursor: pointer;
   transition: background var(--transition);
+  color: var(--color-text);
 }
 
 .notification-bell:hover {
@@ -879,17 +880,14 @@ select.form-input {
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
-  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out);
+  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out), visibility 0s linear var(--duration-slow, 0.3s);
   visibility: hidden;
-}
-
-[dir="rtl"] .notification-panel {
-  transform: translateX(-100%);
 }
 
 .notification-panel--open {
   transform: translateX(0) !important;
   visibility: visible;
+  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out), visibility 0s linear 0s;
 }
 
 .notification-panel__header {
@@ -919,9 +917,11 @@ select.form-input {
   background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   cursor: pointer;
-  padding: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  min-width: 32px;
+  min-height: 32px;
   transition: color var(--transition), background var(--transition);
 }
 
