@@ -326,7 +326,8 @@
     var withdrawBtn = card.querySelector('.btn-withdraw');
     if (withdrawBtn) {
       withdrawBtn.addEventListener('click', async function () {
-        if (!confirm('متأكد إنك عايز تسحب الطلب؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'سحب الطلب', message: 'متأكد إنك عايز تسحب الطلب؟', confirmText: 'سحب الطلب', cancelText: 'رجوع', danger: true });
+        if (!confirmed) return;
         Yawmia.setLoading(withdrawBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/applications/' + app.id + '/withdraw');

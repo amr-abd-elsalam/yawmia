@@ -565,7 +565,8 @@
     var cancelBtn = card.querySelector('.btn-cancel');
     if (cancelBtn) {
       cancelBtn.addEventListener('click', async function () {
-        if (!confirm('متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'إلغاء الفرصة', message: 'متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.', confirmText: 'إلغاء الفرصة', cancelText: 'رجوع', danger: true });
+        if (!confirmed) return;
         Yawmia.setLoading(cancelBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/cancel');
@@ -586,7 +587,8 @@
     var renewBtn = card.querySelector('.btn-renew');
     if (renewBtn) {
       renewBtn.addEventListener('click', async function () {
-        if (!confirm('هل تريد تجديد هذه الفرصة؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'تجديد الفرصة', message: 'هل تريد تجديد هذه الفرصة؟', confirmText: 'تجديد', cancelText: 'إلغاء' });
+        if (!confirmed) return;
         Yawmia.setLoading(renewBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/renew');
@@ -607,7 +609,8 @@
     var duplicateBtn = card.querySelector('.btn-duplicate');
     if (duplicateBtn) {
       duplicateBtn.addEventListener('click', async function () {
-        if (!confirm('هل تريد نسخ هذه الفرصة؟')) return;
+        var confirmed = await YawmiaModal.confirm({ title: 'نسخ الفرصة', message: 'هل تريد نسخ هذه الفرصة؟', confirmText: 'نسخ', cancelText: 'إلغاء' });
+        if (!confirmed) return;
         Yawmia.setLoading(duplicateBtn, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/duplicate');
@@ -721,14 +724,11 @@
             var disputeBtn = paymentPlaceholder.querySelector('.btn-dispute-payment');
             if (disputeBtn) {
               disputeBtn.addEventListener('click', async function () {
-                var reason = prompt('اكتب سبب النزاع (5 حروف على الأقل):');
-                if (!reason || reason.trim().length < 5) {
-                  YawmiaToast.warning('سبب النزاع لازم يكون 5 حروف على الأقل');
-                  return;
-                }
+                var reason = await YawmiaModal.prompt({ title: 'فتح نزاع', message: 'اكتب سبب النزاع', placeholder: 'اكتب السبب هنا...', minLength: 5, required: true });
+                if (!reason) return;
                 Yawmia.setLoading(disputeBtn, true);
                 try {
-                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason.trim() });
+                  var dRes = await Yawmia.api('POST', '/api/payments/' + pay.id + '/dispute', { reason: reason });
                   if (dRes.data.ok) {
                     loadJobs();
                   } else {

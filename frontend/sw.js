@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   '/assets/js/icons.js',
   '/assets/js/utils.js',
   '/assets/js/toast.js',
+  '/assets/js/modal.js',
   '/assets/css/tokens.css',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',

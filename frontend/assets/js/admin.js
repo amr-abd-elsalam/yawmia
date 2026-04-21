@@ -59,7 +59,9 @@ var AdminApp = (function () {
     try {
       var reason = '';
       if (newStatus === 'banned') {
-        reason = prompt('سبب الحظر (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'حظر المستخدم', message: 'سبب الحظر (اختياري)', placeholder: 'اكتب السبب...' });
+        if (promptResult === null) return;
+        reason = promptResult;
       }
       await apiWrite('PUT', '/api/admin/users/' + userId + '/status', { status: newStatus, reason: reason });
       await loadUsers();
@@ -374,7 +376,9 @@ var AdminApp = (function () {
     try {
       var notes = '';
       if (newStatus === 'action_taken') {
-        notes = prompt('ملاحظات الأدمن (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'مراجعة البلاغ', message: 'ملاحظات الأدمن (اختياري)', placeholder: 'اكتب الملاحظات...' });
+        if (promptResult === null) return;
+        notes = promptResult;
       }
       await apiWrite('PUT', '/api/admin/reports/' + reportId, { status: newStatus, adminNotes: notes });
       await loadReports();
@@ -450,7 +454,9 @@ var AdminApp = (function () {
     try {
       var notes = '';
       if (newStatus === 'rejected') {
-        notes = prompt('سبب الرفض (اختياري):') || '';
+        var promptResult = await YawmiaModal.prompt({ title: 'رفض طلب التحقق', message: 'سبب الرفض (اختياري)', placeholder: 'اكتب السبب...' });
+        if (promptResult === null) return;
+        notes = promptResult;
       }
       await apiWrite('PUT', '/api/admin/verifications/' + verificationId, { status: newStatus, adminNotes: notes });
       await loadVerifications();
