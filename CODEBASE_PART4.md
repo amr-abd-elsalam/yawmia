@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T22:38:25.956Z
+> Auto-generated: 2026-04-21T22:52:27.931Z
 > Files in this part: 28
 
 ## Files
@@ -866,6 +866,7 @@ select.form-input {
 
 /* ── Notification Drawer ───────────────────────────────── */
 .notification-panel {
+  display: none;
   position: fixed;
   top: 0;
   right: 0;
@@ -875,19 +876,13 @@ select.form-input {
   height: 100dvh;
   background: var(--color-surface);
   border-inline-start: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   z-index: 200;
-  display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out), visibility 0s linear var(--duration-slow, 0.3s);
-  visibility: hidden;
 }
 
 .notification-panel--open {
-  transform: translateX(0) !important;
-  visibility: visible;
-  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out), visibility 0s linear 0s;
+  display: flex;
 }
 
 .notification-panel__header {
@@ -4409,8 +4404,6 @@ var YawmiaIcons = (function () {
     notificationPanel.classList.add('notification-panel--open');
     document.body.style.overflow = 'hidden';
     loadNotifications();
-    // Render icons inside the drawer (close button)
-    if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
     // Focus close button for accessibility
     if (btnCloseNotifPanel) btnCloseNotifPanel.focus();
   }
@@ -7737,7 +7730,7 @@ var YawmiaUtils = (function () {
         <h3>الإشعارات</h3>
         <div class="notification-panel__header-actions">
           <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
-          <button class="notification-panel__close" id="btnCloseNotifPanel" aria-label="إغلاق"><span data-icon="close" data-icon-size="20"></span></button>
+          <button class="notification-panel__close" id="btnCloseNotifPanel" aria-label="إغلاق">✕</button>
         </div>
       </div>
       <div class="notification-panel__list" id="notificationList">
