@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T17:01:41.095Z
+> Auto-generated: 2026-04-21T19:03:14.354Z
 > Files in this part: 27
 
 ## Files
@@ -2565,6 +2565,159 @@ textarea:focus:not(:focus-visible) {
   font-weight: 600;
 }
 
+/* ═══ Phase 24 — Applications Review Panel ═══ */
+.applications-panel {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.applications-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.applications-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.app-review-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.app-review-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-review-card__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-block-end: 0.15rem;
+}
+
+.app-review-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.app-review-card__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-block-start: 0.3rem;
+}
+
+.app-review-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ═══ Phase 24 — Attendance Panel ═══ */
+.attendance-panel {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.attendance-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.attendance-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.att-worker-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.att-worker-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.att-worker-card__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-block-end: 0.15rem;
+}
+
+.att-worker-card__status {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.att-worker-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ═══ Phase 24 — Message Recipient Picker ═══ */
+.msg-recipient-picker {
+  padding-block-end: 0.5rem;
+}
+
+.msg-recipient-picker select {
+  width: 100%;
+}
+
+/* ═══ Phase 24 — Responsive ═══ */
+@media (max-width: 600px) {
+  .app-review-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-review-card__actions {
+    justify-content: flex-start;
+  }
+
+  .att-worker-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .att-worker-card__actions {
+    justify-content: flex-start;
+  }
+}
+
 /* ═══ Phase 19 — Enhanced Card Animations ═══ */
 .card {
   transition: box-shadow var(--duration-normal, 0.2s) var(--ease-default, ease),
@@ -4019,6 +4172,16 @@ var YawmiaIcons = (function () {
     }
   }
 
+  // ── Panel Conflict Prevention ─────────────────────────────
+  function closeOtherPanels(card, keepClass) {
+    ['applications-panel', 'messaging-panel', 'attendance-panel', 'report-form'].forEach(function (cls) {
+      if (cls !== keepClass) {
+        var existing = card.querySelector('.' + cls);
+        if (existing) existing.remove();
+      }
+    });
+  }
+
   // ── Show/Hide Sections Based on Role ──────────────────────
   if (user.role === 'employer') {
     Yawmia.show('createJobSection');
@@ -4066,6 +4229,10 @@ var YawmiaIcons = (function () {
 
   window.addEventListener('yawmia:notification', function (e) {
     loadNotifications();
+    // Refresh job list when a new application arrives (live pending count update)
+    if (e.detail && e.detail.type === 'new_application') {
+      loadJobs();
+    }
   });
 
   window.addEventListener('yawmia:sse-init', function (e) {
@@ -4336,7 +4503,7 @@ var YawmiaIcons = (function () {
     }
 
     var completedLabel = '';
-    if (job.status === 'completed' && !footerButtons) {
+    if (job.status === 'completed') {
       completedLabel = '<span class="badge badge--status badge--completed">✓ مكتملة</span>';
     }
 
@@ -4378,8 +4545,14 @@ var YawmiaIcons = (function () {
       primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
     }
 
-    // Secondary: duplicate, messages, report, pending badge
+    // Secondary: view applications, attendance, duplicate, messages, report, pending badge
     var messagingStatuses = ['filled', 'in_progress', 'completed'];
+    if (user.role === 'employer' && job.employerId === user.id && (job.status === 'open' || job.status === 'filled')) {
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-view-apps" data-job-id="' + job.id + '">📋 عرض الطلبات</button>';
+    }
+    if (user.role === 'employer' && job.employerId === user.id && job.status === 'in_progress') {
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-attendance" data-job-id="' + job.id + '">📊 الحضور</button>';
+    }
     if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
       secondaryButtons += '<button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
     }
@@ -4557,6 +4730,22 @@ var YawmiaIcons = (function () {
         } finally {
           Yawmia.setLoading(duplicateBtn, false);
         }
+      });
+    }
+
+    // Applications panel toggle handler (employer)
+    var viewAppsBtn = card.querySelector('.btn-view-apps');
+    if (viewAppsBtn) {
+      viewAppsBtn.addEventListener('click', function () {
+        toggleApplicationsPanel(card, job);
+      });
+    }
+
+    // Attendance panel toggle handler (employer)
+    var attendanceBtn = card.querySelector('.btn-attendance');
+    if (attendanceBtn) {
+      attendanceBtn.addEventListener('click', function () {
+        toggleAttendancePanel(card, job);
       });
     }
 
@@ -4762,6 +4951,134 @@ var YawmiaIcons = (function () {
     }
   }
 
+  // ── Applications Review Panel (Employer) ──────────────────
+  function toggleApplicationsPanel(card, job) {
+    closeOtherPanels(card, 'applications-panel');
+    var existing = card.querySelector('.applications-panel');
+    if (existing) { existing.remove(); return; }
+
+    var panel = document.createElement('div');
+    panel.className = 'applications-panel';
+    panel.innerHTML =
+      '<div class="applications-panel__header">' +
+        '<strong>📋 طلبات التقدم</strong>' +
+        '<button class="btn btn--ghost btn--sm btn-close-apps">✕</button>' +
+      '</div>' +
+      '<div class="applications-panel__list">' +
+        '<p class="empty-state">جاري تحميل الطلبات...</p>' +
+      '</div>';
+
+    card.appendChild(panel);
+
+    panel.querySelector('.btn-close-apps').addEventListener('click', function () { panel.remove(); });
+
+    // Load applications
+    (async function () {
+      try {
+        var res = await Yawmia.api('GET', '/api/jobs/' + job.id + '/applications');
+        var listEl = panel.querySelector('.applications-panel__list');
+        if (!res.data.ok || !res.data.applications || res.data.applications.length === 0) {
+          listEl.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📭</span><p class="empty-state__text">لا توجد طلبات بعد</p></div>';
+          return;
+        }
+        listEl.innerHTML = '';
+        res.data.applications.forEach(function (app) {
+          var w = app.worker || {};
+          var statusLabels = { pending: 'في الانتظار', accepted: 'مقبول ✓', rejected: 'مرفوض ✗', withdrawn: 'تم السحب' };
+          var statusLabel = statusLabels[app.status] || app.status;
+
+          var verBadge = '';
+          if (w.verificationStatus === 'verified') {
+            verBadge = ' <span class="verification-badge verification-badge--verified">✓ محقق</span>';
+          }
+
+          var ratingHtml = '';
+          if (w.rating && w.rating.count > 0) {
+            ratingHtml = '<span style="color:var(--color-warning);font-size:0.8rem;">⭐ ' + w.rating.avg + ' (' + w.rating.count + ')</span>';
+          }
+
+          var catsHtml = '';
+          if (w.categories && w.categories.length > 0) {
+            catsHtml = '<div class="app-review-card__cats">' + w.categories.map(function (c) { return '<span class="badge badge--worker" style="font-size:0.7rem;padding:0.1rem 0.4rem;">' + escapeHtml(c) + '</span>'; }).join(' ') + '</div>';
+          }
+
+          var actionsHtml = '';
+          if (app.status === 'pending') {
+            actionsHtml =
+              '<div class="app-review-card__actions">' +
+                '<button class="btn btn--success btn--sm btn-accept-app" data-app-id="' + app.id + '">✓ قبول</button>' +
+                '<button class="btn btn--ghost btn--sm btn-reject-app" data-app-id="' + app.id + '" style="color:var(--color-error);border-color:var(--color-error);">✗ رفض</button>' +
+              '</div>';
+          } else {
+            actionsHtml = '<div class="app-review-card__actions"><span class="badge badge--status badge--' + app.status + '">' + escapeHtml(statusLabel) + '</span></div>';
+          }
+
+          var appCard = document.createElement('div');
+          appCard.className = 'app-review-card';
+          appCard.innerHTML =
+            '<div class="app-review-card__info">' +
+              '<div class="app-review-card__name">' +
+                '<a href="/user.html?id=' + escapeHtml(w.id || app.workerId) + '" class="worker-link">' + escapeHtml(w.name || 'بدون اسم') + '</a>' +
+                verBadge +
+              '</div>' +
+              '<div class="app-review-card__meta">' +
+                '<span class="phone-cell">' + escapeHtml(w.phone || '') + '</span>' +
+                (w.governorate ? ' • 📍 ' + escapeHtml(w.governorate) : '') +
+                (ratingHtml ? ' • ' + ratingHtml : '') +
+              '</div>' +
+              catsHtml +
+            '</div>' +
+            actionsHtml;
+
+          // Accept handler
+          var acceptBtn = appCard.querySelector('.btn-accept-app');
+          if (acceptBtn) {
+            acceptBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(acceptBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/jobs/' + job.id + '/accept', { applicationId: app.id });
+                if (r.data.ok) {
+                  YawmiaToast.success('تم قبول العامل ✓');
+                  panel.remove();
+                  toggleApplicationsPanel(card, job);
+                  loadJobs();
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ في قبول العامل');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(acceptBtn, false); }
+            });
+          }
+
+          // Reject handler
+          var rejectBtn = appCard.querySelector('.btn-reject-app');
+          if (rejectBtn) {
+            rejectBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(rejectBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/jobs/' + job.id + '/reject', { applicationId: app.id });
+                if (r.data.ok) {
+                  YawmiaToast.success('تم رفض الطلب');
+                  panel.remove();
+                  toggleApplicationsPanel(card, job);
+                  loadJobs();
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ في رفض الطلب');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(rejectBtn, false); }
+            });
+          }
+
+          listEl.appendChild(appCard);
+        });
+      } catch (err) {
+        var listEl = panel.querySelector('.applications-panel__list');
+        if (listEl) listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الطلبات</p>';
+      }
+    })();
+  }
+
   // ── Report Form ───────────────────────────────────────────
   function showReportForm(card, jobId, targetId) {
     // Remove existing form in this card if any
@@ -4822,6 +5139,170 @@ var YawmiaIcons = (function () {
         Yawmia.setLoading(submitBtn, false);
       }
     });
+  }
+
+  // ── Attendance Panel (Employer) ───────────────────────────
+  function toggleAttendancePanel(card, job) {
+    closeOtherPanels(card, 'attendance-panel');
+    var existing = card.querySelector('.attendance-panel');
+    if (existing) { existing.remove(); return; }
+
+    var panel = document.createElement('div');
+    panel.className = 'attendance-panel';
+    panel.innerHTML =
+      '<div class="attendance-panel__header">' +
+        '<strong>📊 حضور العمال</strong>' +
+        '<button class="btn btn--ghost btn--sm btn-close-att">✕</button>' +
+      '</div>' +
+      '<div class="attendance-panel__list">' +
+        '<p class="empty-state">جاري تحميل بيانات الحضور...</p>' +
+      '</div>';
+
+    card.appendChild(panel);
+
+    panel.querySelector('.btn-close-att').addEventListener('click', function () { panel.remove(); });
+
+    // Load attendance data
+    (async function () {
+      try {
+        var appsRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/applications');
+        var attRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/attendance');
+
+        var listEl = panel.querySelector('.attendance-panel__list');
+        if (!appsRes.data.ok || !appsRes.data.applications) {
+          listEl.innerHTML = '<p class="empty-state">لا يوجد عمال مقبولين</p>';
+          return;
+        }
+
+        var accepted = appsRes.data.applications.filter(function (a) { return a.status === 'accepted'; });
+        if (accepted.length === 0) {
+          listEl.innerHTML = '<div class="empty-state"><span class="empty-state__icon">👷</span><p class="empty-state__text">لا يوجد عمال مقبولين بعد</p></div>';
+          return;
+        }
+
+        var attRecords = (attRes.data.ok && attRes.data.records) ? attRes.data.records : [];
+
+        // Build a map: workerId → latest attendance record
+        var attMap = {};
+        attRecords.forEach(function (r) {
+          if (!attMap[r.workerId] || new Date(r.createdAt) > new Date(attMap[r.workerId].createdAt)) {
+            attMap[r.workerId] = r;
+          }
+        });
+
+        var attStatusLabels = {
+          checked_in: '✓ حاضر',
+          checked_out: '🏁 انصرف',
+          confirmed: '✓✓ مؤكد',
+          no_show: '✗ غائب',
+          pending: '⏳ في الانتظار'
+        };
+        var attStatusClasses = {
+          checked_in: 'attendance-status-checked_in',
+          checked_out: 'attendance-status-checked_out',
+          confirmed: 'attendance-status-confirmed',
+          no_show: 'attendance-status-no_show'
+        };
+
+        listEl.innerHTML = '';
+        accepted.forEach(function (app) {
+          var w = app.worker || {};
+          var att = attMap[app.workerId];
+          var attStatus = att ? att.status : 'none';
+          var attLabel = att ? (attStatusLabels[attStatus] || attStatus) : 'لم يسجل بعد';
+          var attClass = att ? (attStatusClasses[attStatus] || '') : '';
+
+          var actionsHtml = '';
+          if (!att || attStatus === 'no_show') {
+            // Can do manual check-in
+            actionsHtml += '<button class="btn btn-checkin btn--sm btn-manual-checkin" data-worker-id="' + app.workerId + '">📍 تسجيل يدوي</button>';
+          }
+          if (!att) {
+            // Can report no-show
+            actionsHtml += '<button class="btn btn-noshow btn--sm btn-noshow-att" data-worker-id="' + app.workerId + '">✗ غياب</button>';
+          }
+          if (att && (attStatus === 'checked_in' || attStatus === 'checked_out') && !att.employerConfirmed) {
+            // Can confirm
+            actionsHtml += '<button class="btn btn--primary btn--sm btn-confirm-att" data-att-id="' + att.id + '">✓ تأكيد</button>';
+          }
+
+          var workerCard = document.createElement('div');
+          workerCard.className = 'att-worker-card';
+          workerCard.innerHTML =
+            '<div class="att-worker-card__info">' +
+              '<div class="att-worker-card__name">' +
+                '<a href="/user.html?id=' + escapeHtml(w.id || app.workerId) + '" class="worker-link">' + escapeHtml(w.name || 'بدون اسم') + '</a>' +
+              '</div>' +
+              '<div class="att-worker-card__status ' + attClass + '">' + attLabel +
+                (att && att.hoursWorked ? ' • ' + att.hoursWorked + ' ساعة' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="att-worker-card__actions">' + actionsHtml + '</div>';
+
+          // Manual check-in handler
+          var manualBtn = workerCard.querySelector('.btn-manual-checkin');
+          if (manualBtn) {
+            manualBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(manualBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/jobs/' + job.id + '/manual-checkin', { workerId: app.workerId });
+                if (r.data.ok) {
+                  YawmiaToast.success('تم تسجيل الحضور ✓');
+                  panel.remove();
+                  toggleAttendancePanel(card, job);
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ في تسجيل الحضور');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(manualBtn, false); }
+            });
+          }
+
+          // No-show handler
+          var noshowBtn = workerCard.querySelector('.btn-noshow-att');
+          if (noshowBtn) {
+            noshowBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(noshowBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/jobs/' + job.id + '/no-show', { workerId: app.workerId });
+                if (r.data.ok) {
+                  YawmiaToast.success('تم تسجيل الغياب');
+                  panel.remove();
+                  toggleAttendancePanel(card, job);
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ في تسجيل الغياب');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(noshowBtn, false); }
+            });
+          }
+
+          // Confirm handler
+          var confirmBtn = workerCard.querySelector('.btn-confirm-att');
+          if (confirmBtn) {
+            confirmBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(confirmBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/attendance/' + att.id + '/confirm');
+                if (r.data.ok) {
+                  YawmiaToast.success('تم تأكيد الحضور ✓');
+                  panel.remove();
+                  toggleAttendancePanel(card, job);
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ في تأكيد الحضور');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(confirmBtn, false); }
+            });
+          }
+
+          listEl.appendChild(workerCard);
+        });
+      } catch (err) {
+        var listEl = panel.querySelector('.attendance-panel__list');
+        if (listEl) listEl.innerHTML = '<p class="empty-state">خطأ في تحميل بيانات الحضور</p>';
+      }
+    })();
   }
 
   // ── Escape HTML — delegated to YawmiaUtils ───────────────
@@ -4902,8 +5383,21 @@ var YawmiaIcons = (function () {
 
   // ── Messaging Panel ───────────────────────────────────────
   function toggleMessagingPanel(card, job) {
+    closeOtherPanels(card, 'messaging-panel');
     var existing = card.querySelector('.messaging-panel');
     if (existing) { existing.remove(); return; }
+
+    var isJobEmployer = user.role === 'employer' && job.employerId === user.id;
+
+    var recipientPickerHtml = '';
+    if (isJobEmployer) {
+      recipientPickerHtml =
+        '<div class="msg-recipient-picker">' +
+          '<select class="form-input form-input--sm" id="msgRecipient-' + job.id + '">' +
+            '<option value="__broadcast__">📢 بث لكل العمال</option>' +
+          '</select>' +
+        '</div>';
+    }
 
     var panel = document.createElement('div');
     panel.className = 'messaging-panel';
@@ -4912,14 +5406,13 @@ var YawmiaIcons = (function () {
         '<strong>💬 رسائل الفرصة</strong>' +
         '<button class="btn btn--ghost btn--sm btn-close-msgs">✕</button>' +
       '</div>' +
+      recipientPickerHtml +
       '<div class="message-list" id="msgList-' + job.id + '">' +
         '<p class="empty-state">جاري التحميل...</p>' +
       '</div>' +
       '<div class="message-send-form">' +
         '<input type="text" class="message-input" placeholder="اكتب رسالة..." maxlength="500">' +
-        (user.role === 'employer' && job.employerId === user.id
-          ? '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button><button class="btn btn--ghost btn--sm btn-broadcast-msg">📢 بث</button>'
-          : '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button>') +
+        '<button class="btn btn--primary btn--sm btn-send-msg">إرسال</button>' +
       '</div>';
 
     card.appendChild(panel);
@@ -4927,38 +5420,68 @@ var YawmiaIcons = (function () {
     // Close
     panel.querySelector('.btn-close-msgs').addEventListener('click', function () { panel.remove(); });
 
+    // Populate recipient picker for employer
+    if (isJobEmployer) {
+      (async function () {
+        try {
+          var appsRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/applications');
+          var selectEl = panel.querySelector('#msgRecipient-' + job.id);
+          if (selectEl && appsRes.data.ok && appsRes.data.applications) {
+            var accepted = appsRes.data.applications.filter(function (a) { return a.status === 'accepted'; });
+            accepted.forEach(function (a) {
+              var w = a.worker || {};
+              var label = (w.name || 'بدون اسم') + ' — ' + (w.phone || a.workerId);
+              var opt = document.createElement('option');
+              opt.value = a.workerId;
+              opt.textContent = label;
+              selectEl.appendChild(opt);
+            });
+          }
+        } catch (_) { /* non-blocking */ }
+      })();
+    }
+
     // Load messages
     loadJobMessages(panel, job);
 
-    // Send handler
+    // Unified send handler
     var sendBtn = panel.querySelector('.btn-send-msg');
     var input = panel.querySelector('.message-input');
-    if (sendBtn) {
-      sendBtn.addEventListener('click', function () {
-        sendJobMessage(panel, job, input);
-      });
-      input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') sendJobMessage(panel, job, input);
-      });
-    }
 
-    // Broadcast handler
-    var broadcastBtn = panel.querySelector('.btn-broadcast-msg');
-    if (broadcastBtn) {
-      broadcastBtn.addEventListener('click', async function () {
-        var text = input.value.trim();
-        if (!text) return;
-        Yawmia.setLoading(broadcastBtn, true);
+    async function handleSend() {
+      var text = input.value.trim();
+      if (!text) return;
+
+      if (isJobEmployer) {
+        var selectEl = panel.querySelector('#msgRecipient-' + job.id);
+        var selectedValue = selectEl ? selectEl.value : '__broadcast__';
+
+        Yawmia.setLoading(sendBtn, true);
         try {
-          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/broadcast', { text: text });
+          var res;
+          if (selectedValue === '__broadcast__') {
+            res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages/broadcast', { text: text });
+          } else {
+            res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages', { recipientId: selectedValue, text: text });
+          }
           if (res.data.ok) {
             input.value = '';
             loadJobMessages(panel, job);
           } else {
-            YawmiaToast.error(res.data.error || 'خطأ في البث');
+            YawmiaToast.error(res.data.error || 'خطأ في إرسال الرسالة');
           }
         } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
-        finally { Yawmia.setLoading(broadcastBtn, false); }
+        finally { Yawmia.setLoading(sendBtn, false); }
+      } else {
+        // Worker sends to employer directly
+        sendJobMessage(panel, job, input);
+      }
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', handleSend);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') handleSend();
       });
     }
   }
@@ -5000,24 +5523,8 @@ var YawmiaIcons = (function () {
     var text = input.value.trim();
     if (!text) return;
 
-    // Determine recipientId: worker → employer, employer → needs to pick (send to first accepted for simplicity)
-    var recipientId = null;
-    if (user.role === 'worker') {
-      recipientId = job.employerId;
-    } else {
-      // Employer sending to specific worker — for now use broadcast or first interaction
-      // Simple approach: prompt for worker ID or use last message sender
-      var listEl = panel.querySelector('.message-list');
-      var lastOther = listEl.querySelector('.message-bubble--other');
-      if (lastOther) {
-        // Try to infer from loaded messages
-      }
-      // Fallback: prompt
-      if (!recipientId) {
-        recipientId = prompt('أدخل معرّف العامل (usr_xxx):');
-        if (!recipientId) return;
-      }
-    }
+    // Worker always sends to employer
+    var recipientId = job.employerId;
 
     try {
       var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/messages', {
@@ -5056,8 +5563,10 @@ var YawmiaIcons = (function () {
     if (isEmployer) {
       targetField =
         '<div class="form-group">' +
-          '<label class="form-label">معرّف العامل (User ID)</label>' +
-          '<input type="text" class="form-input form-input--sm" id="ratingTargetId" placeholder="usr_xxx" value="' + escapeHtml(prefilledTargetId) + '">' +
+          '<label class="form-label">اختار العامل</label>' +
+          '<select class="form-input form-input--sm" id="ratingTargetSelect">' +
+            '<option value="">جاري تحميل العمال...</option>' +
+          '</select>' +
         '</div>';
     }
 
@@ -5081,6 +5590,35 @@ var YawmiaIcons = (function () {
       '</div>';
 
     document.body.appendChild(modal);
+
+    // Load accepted workers into dropdown (employer only)
+    if (isEmployer) {
+      (async function () {
+        try {
+          var appsRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/applications');
+          var selectEl = modal.querySelector('#ratingTargetSelect');
+          if (selectEl && appsRes.data.ok && appsRes.data.applications) {
+            var accepted = appsRes.data.applications.filter(function (a) { return a.status === 'accepted'; });
+            if (accepted.length === 0) {
+              selectEl.innerHTML = '<option value="">لا يوجد عمال مقبولين</option>';
+            } else {
+              selectEl.innerHTML = '<option value="">اختار العامل...</option>';
+              accepted.forEach(function (a) {
+                var w = a.worker || {};
+                var label = (w.name || 'بدون اسم') + ' — ' + (w.phone || a.workerId);
+                var opt = document.createElement('option');
+                opt.value = a.workerId;
+                opt.textContent = label;
+                selectEl.appendChild(opt);
+              });
+            }
+          }
+        } catch (_) {
+          var selectEl = modal.querySelector('#ratingTargetSelect');
+          if (selectEl) selectEl.innerHTML = '<option value="">خطأ في تحميل العمال</option>';
+        }
+      })();
+    }
 
     // Focus trap
     var releaseTrap = YawmiaUtils.trapFocus(modal.querySelector('.rating-modal__card'), function () {
@@ -5129,12 +5667,11 @@ var YawmiaIcons = (function () {
 
       var toUserId = prefilledTargetId;
       if (isEmployer) {
-        toUserId = (modal.querySelector('#ratingTargetId') || {}).value || '';
-        if (!toUserId.trim()) {
-          errorEl.textContent = 'أدخل معرّف العامل';
+        toUserId = (modal.querySelector('#ratingTargetSelect') || {}).value || '';
+        if (!toUserId) {
+          errorEl.textContent = 'اختار العامل';
           return;
         }
-        toUserId = toUserId.trim();
       }
 
       var comment = (modal.querySelector('#ratingComment') || {}).value || '';
