@@ -49,7 +49,7 @@ before(async () => {
 
 after(async () => {
   await new Promise(r => server.close(r));
-  if (tmpDir) await rm(tmpDir, { recursive: true, force: true });
+  if (tmpDir) { try { await rm(tmpDir, { recursive: true, force: true }); } catch(_) {} }
 });
 
 async function api(method, path, body, headers = {}) {

@@ -221,12 +221,3 @@ export async function getUserRatingSummary(userId) {
   return { avg, count, distribution };
 }
 
-/**
- * Find a single rating by ID
- * @param {string} ratingId
- * @returns {Promise<object|null>}
- */
-export async function findById(ratingId) {
-  const ratingPath = getRecordPath('ratings', ratingId);
-  return await readJSON(ratingPath);
-}

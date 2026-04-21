@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { apply, accept, reject, listByJob, listByWorker, findById as findAppById, withdraw, countTodayByWorker } from '../services/applications.js';
+import { apply, accept, reject, listByJob, listByWorker, withdraw, countTodayByWorker } from '../services/applications.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });

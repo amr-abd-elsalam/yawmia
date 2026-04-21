@@ -57,9 +57,9 @@ const TEST_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAA
 
 describe('Phase 14 — Config', () => {
 
-  it('P14-01: Config has 31 sections', () => {
+  it('P14-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 31, `expected 31 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P14-02: VERIFICATION section has correct fields', () => {
@@ -91,7 +91,7 @@ describe('Phase 14 — Config', () => {
 
   it('P14-05: DATABASE.dirs includes verifications', () => {
     assert.strictEqual(config.DATABASE.dirs.verifications, 'verifications');
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 11);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 12);
   });
 
   it('P14-06: DATABASE.indexFiles includes userVerificationIndex', () => {
@@ -100,8 +100,8 @@ describe('Phase 14 — Config', () => {
     assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 12);
   });
 
-  it('P14-07: PWA cacheName updated to v0.19.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.19.0');
+  it('P14-07: PWA cacheName updated to v0.21.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.21.0');
   });
 });
 
@@ -384,6 +384,6 @@ describe('Phase 14 — Integration', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.19.0');
+    assert.strictEqual(pkg.version, '0.21.0');
   });
 });

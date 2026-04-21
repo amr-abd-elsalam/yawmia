@@ -50,16 +50,6 @@ class EventBus {
     }
   }
 
-  /**
-   * Subscribe once — auto-removes after first call
-   */
-  once(event, callback) {
-    const wrapper = (data) => {
-      this.off(event, wrapper);
-      callback(data);
-    };
-    this.on(event, wrapper);
-  }
 
   /**
    * Remove all listeners (useful for testing)
@@ -68,13 +58,6 @@ class EventBus {
     this._listeners.clear();
   }
 
-  /**
-   * Get listener count for an event
-   */
-  listenerCount(event) {
-    const set = this._listeners.get(event);
-    return set ? set.size : 0;
-  }
 }
 
 // Singleton

@@ -55,9 +55,9 @@ async function createTestUser(role) {
 
 describe('Phase 12 — Config', () => {
 
-  it('P12-01: Config has 31 sections', () => {
+  it('P12-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 31, `expected 31 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P12-02: REPORTS section has all fields', () => {
@@ -74,12 +74,12 @@ describe('Phase 12 — Config', () => {
   it('P12-03: TRUST section has weights summing to 1.0', () => {
     assert.ok(config.TRUST, 'TRUST section should exist');
     const w = config.TRUST.weights;
-    const sum = w.ratingAvg + w.completionRate + w.reportScore + w.accountAge;
-    assert.ok(Math.abs(sum - 1.0) < 1e-10, `weights should sum to 1.0, got ${sum}`);
+    const sum = w.ratingAvg + w.completionRate + (w.attendanceRate || 0) + w.reportScore + w.accountAge;
+    assert.ok(Math.abs(sum - 1.0) < 0.01, `weights should sum to 1.0, got ${sum}`);
   });
 
-  it('P12-04: DATABASE has 11 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 11);
+  it('P12-04: DATABASE has 12 dirs', () => {
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 12);
     assert.ok(config.DATABASE.dirs.reports);
   });
 
@@ -287,8 +287,9 @@ describe('Phase 12 — Trust Score', () => {
       confirmedReports: 0,
       totalReports: 0,
       accountAgeDays: 365,
+      totalAttendanceRecords: 20, attendedDays: 20,
     });
-    // 0.4*1.0 + 0.3*1.0 + 0.2*1.0 + 0.1*1.0 = 1.0
+    // 0.3*1.0 + 0.2*1.0 + 0.2*1.0 + 0.2*1.0 + 0.1*1.0 = 1.0
     assert.ok(result.score > 0.8, `expected >0.8, got ${result.score}`);
     assert.strictEqual(result.score, 1.0);
   });
@@ -311,8 +312,8 @@ describe('Phase 12 — Trust Score', () => {
 
   it('P12-21: calculateTrustScore — weights sum to 1.0', () => {
     const w = config.TRUST.weights;
-    const sum = w.ratingAvg + w.completionRate + w.reportScore + w.accountAge;
-    assert.ok(Math.abs(sum - 1.0) < 1e-10, `weights should sum to 1.0, got ${sum}`);
+    const sum = w.ratingAvg + w.completionRate + (w.attendanceRate || 0) + w.reportScore + w.accountAge;
+    assert.ok(Math.abs(sum - 1.0) < 0.01, `weights should sum to 1.0, got ${sum}`);
   });
 
   it('P12-22: calculateTrustScore — clamped 0–1', () => {

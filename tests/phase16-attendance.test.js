@@ -84,9 +84,9 @@ async function setupInProgressJob() {
 
 describe('Phase 16 — Config', () => {
 
-  it('P16-01: Config has 33 sections', () => {
+  it('P16-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 33, `expected 33 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P16-02: ATTENDANCE section has correct fields', () => {
@@ -353,11 +353,11 @@ describe('Phase 16 — Version & Routes', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.20.0');
+    assert.strictEqual(pkg.version, '0.21.0');
   });
 
   it('P16-36: PWA cacheName v0.20.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.20.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.21.0');
   });
 
   it('P16-37: Router has 61 routes', async () => {

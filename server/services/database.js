@@ -2,7 +2,7 @@
 // server/services/database.js — File-based DB with atomic writes
 // ═══════════════════════════════════════════════════════════════
 
-import { readFile, writeFile, rename, unlink, readdir, mkdir, access } from 'node:fs/promises';
+import { readFile, writeFile, rename, unlink, readdir, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from './cache.js';
@@ -136,17 +136,6 @@ export async function deleteJSON(filePath) {
   }
 }
 
-/**
- * Check if file exists
- */
-export async function exists(filePath) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * List all JSON files in a directory
