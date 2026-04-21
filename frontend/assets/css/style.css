@@ -2358,6 +2358,159 @@ textarea:focus:not(:focus-visible) {
   font-weight: 600;
 }
 
+/* ═══ Phase 24 — Applications Review Panel ═══ */
+.applications-panel {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.applications-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.applications-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.app-review-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.app-review-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-review-card__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-block-end: 0.15rem;
+}
+
+.app-review-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.app-review-card__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-block-start: 0.3rem;
+}
+
+.app-review-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ═══ Phase 24 — Attendance Panel ═══ */
+.attendance-panel {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.attendance-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.attendance-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.att-worker-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.att-worker-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.att-worker-card__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-block-end: 0.15rem;
+}
+
+.att-worker-card__status {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.att-worker-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ═══ Phase 24 — Message Recipient Picker ═══ */
+.msg-recipient-picker {
+  padding-block-end: 0.5rem;
+}
+
+.msg-recipient-picker select {
+  width: 100%;
+}
+
+/* ═══ Phase 24 — Responsive ═══ */
+@media (max-width: 600px) {
+  .app-review-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-review-card__actions {
+    justify-content: flex-start;
+  }
+
+  .att-worker-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .att-worker-card__actions {
+    justify-content: flex-start;
+  }
+}
+
 /* ═══ Phase 19 — Enhanced Card Animations ═══ */
 .card {
   transition: box-shadow var(--duration-normal, 0.2s) var(--ease-default, ease),
