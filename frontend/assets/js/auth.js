@@ -73,6 +73,8 @@
             Yawmia.hide('stepOtp');
             Yawmia.show('stepProfile');
             setupProfileStep();
+            var nameField = Yawmia.$id('nameInput');
+            if (nameField) nameField.focus();
           } else {
             window.location.href = '/dashboard.html';
           }

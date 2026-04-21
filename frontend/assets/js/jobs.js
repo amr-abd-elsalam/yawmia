@@ -71,14 +71,26 @@
     var btnFilter = Yawmia.$id('btnFilterJobs');
 
     // Search input
+    var searchLabel = document.createElement('label');
+    searchLabel.className = 'sr-only';
+    searchLabel.setAttribute('for', 'filterSearch');
+    searchLabel.textContent = 'بحث في الفرص';
     var searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.id = 'filterSearch';
     searchInput.className = 'form-input form-input--sm';
     searchInput.placeholder = 'بحث بالكلمة...';
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { currentPage = 1; loadJobs(); }
+    });
+    filtersDiv.insertBefore(searchLabel, btnFilter);
     filtersDiv.insertBefore(searchInput, btnFilter);
 
     // Sort dropdown
+    var sortLabel = document.createElement('label');
+    sortLabel.className = 'sr-only';
+    sortLabel.setAttribute('for', 'filterSort');
+    sortLabel.textContent = 'ترتيب الفرص';
     var sortSelect = document.createElement('select');
     sortSelect.id = 'filterSort';
     sortSelect.className = 'form-input form-input--sm';
@@ -86,6 +98,7 @@
       '<option value="">ترتيب: الأحدث</option>' +
       '<option value="wage_high">الأجر الأعلى</option>' +
       '<option value="wage_low">الأجر الأقل</option>';
+    filtersDiv.insertBefore(sortLabel, btnFilter);
     filtersDiv.insertBefore(sortSelect, btnFilter);
   })();
 
@@ -136,6 +149,7 @@
     if (!notificationPanel || !notificationOverlay) return;
     notificationOverlay.classList.add('notification-overlay--visible');
     notificationPanel.classList.add('notification-panel--open');
+    document.body.style.overflow = 'hidden';
     loadNotifications();
     // Render icons inside the drawer (close button)
     if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
@@ -147,6 +161,7 @@
     if (!notificationPanel || !notificationOverlay) return;
     notificationPanel.classList.remove('notification-panel--open');
     notificationOverlay.classList.remove('notification-overlay--visible');
+    document.body.style.overflow = '';
     // Return focus to bell
     if (notificationBell) notificationBell.focus();
   }
@@ -225,6 +240,7 @@
           res.data.items.forEach(function (ntf) {
             var item = document.createElement('div');
             item.className = 'notification-item' + (ntf.read ? '' : ' notification-item--unread');
+            item.setAttribute('aria-label', (ntf.read ? '' : 'غير مقروء: ') + ntf.message);
             item.innerHTML = '<p class="notification-item__msg">' + escapeHtml(ntf.message) + '</p>' +
               '<span class="notification-item__time">' + new Date(ntf.createdAt).toLocaleString('ar-EG') + '</span>';
             if (!ntf.read) {
@@ -316,6 +332,8 @@
           jobsList.appendChild(createJobCard(job));
         });
         updatePagination(res.data);
+        var liveRegion = Yawmia.$id('jobsLiveRegion');
+        if (liveRegion) liveRegion.textContent = 'تم تحميل ' + res.data.total + ' فرصة';
       } else {
         jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📋</span><p class="empty-state__text">لا توجد فرص متاحة حالياً</p><p class="empty-state__hint">جرّب تغيير الفلاتر أو المحافظة</p></div>';
         Yawmia.hide('paginationControls');
@@ -394,48 +412,48 @@
 
     // Primary: apply, start, complete, cancel, renew, checkin/checkout
     if (user.role === 'worker' && job.status === 'open') {
-      primaryButtons += '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
+      primaryButtons += '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '" aria-label="تقدّم لفرصة ' + escapeHtml(job.title) + '">تقدّم</button>';
     }
     if (user.role === 'employer' && job.employerId === user.id) {
       if (job.status === 'open') {
-        primaryButtons += '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
+        primaryButtons += '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '" aria-label="إلغاء فرصة ' + escapeHtml(job.title) + '">إلغاء الفرصة</button>';
       } else if (job.status === 'filled') {
-        primaryButtons += '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
+        primaryButtons += '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '" aria-label="ابدأ تنفيذ فرصة ' + escapeHtml(job.title) + '">ابدأ التنفيذ</button>';
       } else if (job.status === 'in_progress') {
-        primaryButtons += '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+        primaryButtons += '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '" aria-label="إنهاء فرصة ' + escapeHtml(job.title) + '">إنهاء الفرصة</button>';
       } else if (job.status === 'completed') {
-        primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
+        primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" aria-label="قيّم العمال في فرصة ' + escapeHtml(job.title) + '">⭐ قيّم العمال</button>';
       } else if (job.status === 'expired' || job.status === 'cancelled') {
-        primaryButtons += '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
+        primaryButtons += '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '" aria-label="تجديد فرصة ' + escapeHtml(job.title) + '">🔄 تجديد الفرصة</button>';
       }
     }
     if (user.role === 'worker' && job.status === 'in_progress') {
-      primaryButtons += '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>';
-      primaryButtons += '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
+      primaryButtons += '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '" aria-label="تسجيل حضور في فرصة ' + escapeHtml(job.title) + '">📍 تسجيل حضور</button>';
+      primaryButtons += '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '" aria-label="تسجيل انصراف من فرصة ' + escapeHtml(job.title) + '">🏁 تسجيل انصراف</button>';
     }
     if (user.role === 'worker' && job.status === 'completed') {
-      primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
+      primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '" aria-label="قيّم صاحب العمل في فرصة ' + escapeHtml(job.title) + '">⭐ قيّم صاحب العمل</button>';
     }
 
     // Secondary: view applications, attendance, duplicate, messages, report, pending badge
     var messagingStatuses = ['filled', 'in_progress', 'completed'];
     if (user.role === 'employer' && job.employerId === user.id && (job.status === 'open' || job.status === 'filled')) {
-      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-view-apps" data-job-id="' + job.id + '">📋 عرض الطلبات</button>';
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-view-apps" data-job-id="' + job.id + '" aria-label="عرض طلبات فرصة ' + escapeHtml(job.title) + '">📋 عرض الطلبات</button>';
     }
     if (user.role === 'employer' && job.employerId === user.id && job.status === 'in_progress') {
-      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-attendance" data-job-id="' + job.id + '">📊 الحضور</button>';
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-attendance" data-job-id="' + job.id + '" aria-label="حضور عمال فرصة ' + escapeHtml(job.title) + '">📊 الحضور</button>';
     }
     if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
-      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '" aria-label="نسخ فرصة ' + escapeHtml(job.title) + '">📋 نسخ الفرصة</button>';
     }
     if (messagingStatuses.indexOf(job.status) !== -1) {
       var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
       if (isInvolved) {
-        secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
+        secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '" aria-label="رسائل فرصة ' + escapeHtml(job.title) + '">💬 رسائل</button>';
       }
     }
     if (job.employerId && job.employerId !== user.id) {
-      secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
+      secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '" aria-label="بلّغ عن مخالفة في فرصة ' + escapeHtml(job.title) + '">🚩 بلّغ</button>';
     }
 
     // Pending applications badge for employer
@@ -489,7 +507,9 @@
           if (res.data.ok) {
             applyBtn.textContent = 'تم التقديم ✓';
             applyBtn.disabled = true;
+            applyBtn.setAttribute('aria-disabled', 'true');
             applyBtn.classList.remove('btn--primary');
+            applyBtn.classList.add('btn--done');
           } else {
             YawmiaToast.error(res.data.error || 'خطأ في التقديم');
           }
@@ -831,10 +851,12 @@
 
     var panel = document.createElement('div');
     panel.className = 'applications-panel';
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'طلبات التقدم لفرصة ' + escapeHtml(job.title));
     panel.innerHTML =
       '<div class="applications-panel__header">' +
         '<strong>📋 طلبات التقدم</strong>' +
-        '<button class="btn btn--ghost btn--sm btn-close-apps">✕</button>' +
+        '<button class="btn btn--ghost btn--sm btn-close-apps" aria-label="إغلاق لوحة الطلبات">✕</button>' +
       '</div>' +
       '<div class="applications-panel__list">' +
         '<p class="empty-state">جاري تحميل الطلبات...</p>' +
@@ -972,7 +994,7 @@
       '<textarea placeholder="اكتب سبب البلاغ (10 حروف على الأقل)..." maxlength="500"></textarea>' +
       '<div style="display:flex;gap:0.5rem;">' +
         '<button class="btn btn--primary btn--sm btn-submit-report">إرسال البلاغ</button>' +
-        '<button class="btn btn--ghost btn--sm btn-cancel-report">إلغاء</button>' +
+        '<button class="btn btn--ghost btn--sm btn-cancel-report" aria-label="إغلاق نموذج البلاغ">إلغاء</button>' +
       '</div>' +
       '<div class="report-form-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>';
 
@@ -1021,10 +1043,12 @@
 
     var panel = document.createElement('div');
     panel.className = 'attendance-panel';
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'حضور عمال فرصة ' + escapeHtml(job.title));
     panel.innerHTML =
       '<div class="attendance-panel__header">' +
         '<strong>📊 حضور العمال</strong>' +
-        '<button class="btn btn--ghost btn--sm btn-close-att">✕</button>' +
+        '<button class="btn btn--ghost btn--sm btn-close-att" aria-label="إغلاق لوحة الحضور">✕</button>' +
       '</div>' +
       '<div class="attendance-panel__list">' +
         '<p class="empty-state">جاري تحميل بيانات الحضور...</p>' +
@@ -1199,7 +1223,9 @@
           if (res.data.ok) {
             btn.textContent = 'تم الحضور ✓';
             btn.disabled = true;
+            btn.setAttribute('aria-disabled', 'true');
             btn.classList.remove('btn-checkin');
+            btn.classList.add('btn--done');
           } else {
             YawmiaToast.error(res.data.error || 'خطأ في تسجيل الحضور');
           }
@@ -1238,7 +1264,9 @@
           if (res.data.ok) {
           btn.textContent = 'تم الانصراف ✓';
           btn.disabled = true;
+          btn.setAttribute('aria-disabled', 'true');
           btn.classList.remove('btn-checkout');
+          btn.classList.add('btn--done');
           if (res.data.attendance && res.data.attendance.hoursWorked != null) {
             YawmiaToast.success('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
           }
@@ -1265,7 +1293,7 @@
     if (isJobEmployer) {
       recipientPickerHtml =
         '<div class="msg-recipient-picker">' +
-          '<select class="form-input form-input--sm" id="msgRecipient-' + job.id + '">' +
+          '<select class="form-input form-input--sm" id="msgRecipient-' + job.id + '" aria-label="اختار المستلم">' +
             '<option value="__broadcast__">📢 بث لكل العمال</option>' +
           '</select>' +
         '</div>';
@@ -1273,10 +1301,12 @@
 
     var panel = document.createElement('div');
     panel.className = 'messaging-panel';
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'رسائل فرصة ' + escapeHtml(job.title));
     panel.innerHTML =
       '<div class="messaging-panel__header">' +
         '<strong>💬 رسائل الفرصة</strong>' +
-        '<button class="btn btn--ghost btn--sm btn-close-msgs">✕</button>' +
+        '<button class="btn btn--ghost btn--sm btn-close-msgs" aria-label="إغلاق لوحة الرسائل">✕</button>' +
       '</div>' +
       recipientPickerHtml +
       '<div class="message-list" id="msgList-' + job.id + '">' +
@@ -1445,12 +1475,12 @@
     modal.innerHTML =
       '<div class="rating-modal__card">' +
         '<h3 class="rating-modal__title">⭐ قيّم تجربتك في: ' + escapeHtml(job.title) + '</h3>' +
-        '<div class="rating-stars-input" id="ratingStarsInput">' +
-          '<button class="star-btn" data-star="1">★</button>' +
-          '<button class="star-btn" data-star="2">★</button>' +
-          '<button class="star-btn" data-star="3">★</button>' +
-          '<button class="star-btn" data-star="4">★</button>' +
-          '<button class="star-btn" data-star="5">★</button>' +
+        '<div class="rating-stars-input" id="ratingStarsInput" role="radiogroup" aria-label="اختار عدد النجوم">' +
+          '<button class="star-btn" data-star="1" role="radio" aria-checked="false" aria-label="نجمة واحدة من 5" tabindex="0">★</button>' +
+          '<button class="star-btn" data-star="2" role="radio" aria-checked="false" aria-label="نجمتين من 5" tabindex="-1">★</button>' +
+          '<button class="star-btn" data-star="3" role="radio" aria-checked="false" aria-label="3 نجوم من 5" tabindex="-1">★</button>' +
+          '<button class="star-btn" data-star="4" role="radio" aria-checked="false" aria-label="4 نجوم من 5" tabindex="-1">★</button>' +
+          '<button class="star-btn" data-star="5" role="radio" aria-checked="false" aria-label="5 نجوم من 5" tabindex="-1">★</button>' +
         '</div>' +
         targetField +
         '<textarea class="rating-comment-input" id="ratingComment" placeholder="تعليق (اختياري)..." maxlength="500"></textarea>' +
@@ -1499,19 +1529,44 @@
 
     // Star selection
     var starBtns = modal.querySelectorAll('.star-btn');
+    function selectStar(starNum) {
+      selectedStars = starNum;
+      starBtns.forEach(function (b) {
+        var s = parseInt(b.getAttribute('data-star'));
+        if (s <= selectedStars) {
+          b.classList.add('active');
+          b.setAttribute('aria-checked', 'true');
+        } else {
+          b.classList.remove('active');
+          b.setAttribute('aria-checked', 'false');
+        }
+        b.setAttribute('tabindex', s === selectedStars ? '0' : '-1');
+      });
+    }
     starBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        selectedStars = parseInt(btn.getAttribute('data-star'));
-        starBtns.forEach(function (b) {
-          var s = parseInt(b.getAttribute('data-star'));
-          if (s <= selectedStars) {
-            b.classList.add('active');
-          } else {
-            b.classList.remove('active');
-          }
-        });
+        selectStar(parseInt(btn.getAttribute('data-star')));
       });
     });
+
+    // Arrow key navigation for stars (RTL-aware: Right=decrease, Left=increase)
+    var starsContainer = modal.querySelector('#ratingStarsInput');
+    if (starsContainer) {
+      starsContainer.addEventListener('keydown', function (e) {
+        var current = selectedStars || 1;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          var next = Math.min(current + 1, 5);
+          selectStar(next);
+          starBtns[next - 1].focus();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          var prev = Math.max(current - 1, 1);
+          selectStar(prev);
+          starBtns[prev - 1].focus();
+        }
+      });
+    }
 
     // Cancel
     modal.querySelector('#btnCancelRating').addEventListener('click', function () {
