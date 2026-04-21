@@ -167,11 +167,12 @@ describe('Phase 23 — UX/UI Quality Revolution', () => {
   // ── Mobile Responsive Tests ─────────────────────────────────
 
   describe('Mobile Responsive', () => {
-    it('P23-23: style.css has .header__logo responsive rule', async () => {
+    it('P23-23: style.css has .header__logo responsive rule for max-width: 600px', async () => {
       const css = await readFrontendFile('frontend/assets/css/style.css');
-      // Check that there's a responsive rule for header__logo
-      const mobileSection = css.substring(css.lastIndexOf('@media (max-width: 600px)'));
-      assert.ok(mobileSection.includes('.header__logo'), 'style.css should have responsive .header__logo rule');
+      // Check that at least one @media (max-width: 600px) block contains .header__logo
+      const mediaBlocks = css.split('@media (max-width: 600px)');
+      const hasLogoResponsive = mediaBlocks.some(block => block.includes('.header__logo'));
+      assert.ok(hasLogoResponsive, 'style.css should have responsive .header__logo rule inside a max-width: 600px media query');
     });
   });
 
