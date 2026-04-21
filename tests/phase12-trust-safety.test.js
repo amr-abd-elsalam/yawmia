@@ -57,7 +57,7 @@ describe('Phase 12 — Config', () => {
 
   it('P12-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P12-02: REPORTS section has all fields', () => {
@@ -79,12 +79,12 @@ describe('Phase 12 — Config', () => {
   });
 
   it('P12-04: DATABASE has 12 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 12);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 14);
     assert.ok(config.DATABASE.dirs.reports);
   });
 
   it('P12-05: DATABASE has 12 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 12);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 15);
     assert.ok(config.DATABASE.indexFiles.targetReportsIndex);
     assert.ok(config.DATABASE.indexFiles.reporterReportsIndex);
   });

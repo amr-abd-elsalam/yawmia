@@ -86,7 +86,7 @@ describe('Phase 16 — Config', () => {
 
   it('P16-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P16-02: ATTENDANCE section has correct fields', () => {
@@ -118,12 +118,12 @@ describe('Phase 16 — Config', () => {
   });
 
   it('P16-05: DATABASE has 12 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 12);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 14);
     assert.ok(config.DATABASE.dirs.attendance);
   });
 
   it('P16-06: DATABASE has 12 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 12);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 15);
   });
 
   it('P16-07: jobAttendanceIndex path exists', () => {
@@ -353,11 +353,11 @@ describe('Phase 16 — Version & Routes', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.21.0');
+    assert.strictEqual(pkg.version, '0.22.0');
   });
 
   it('P16-36: PWA cacheName v0.20.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.21.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
   });
 
   it('P16-37: Router has 61 routes', async () => {
@@ -365,6 +365,6 @@ describe('Phase 16 — Version & Routes', () => {
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 61, `expected 61 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 61, `expected 70 routes, got ${routeMatches.length}`);
   });
 });

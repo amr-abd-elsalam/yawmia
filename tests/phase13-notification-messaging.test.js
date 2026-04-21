@@ -50,7 +50,7 @@ describe('Phase 13 — Config', () => {
 
   it('P13-01: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P13-02: NOTIFICATION_MESSAGING section has correct fields', () => {
@@ -71,7 +71,7 @@ describe('Phase 13 — Config', () => {
   });
 
   it('P13-04: PWA cacheName updated to v0.21.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.21.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
   });
 
   it('P13-05: criticalEvents has 6 entries — 4 true + 2 false', () => {
@@ -282,7 +282,7 @@ describe('Phase 13 — Version', () => {
   it('P13-24: package.json version is 0.21.0', async () => {
     const pkgRaw = await readFile(join(import.meta.dirname, '..', 'package.json'), 'utf-8');
     const pkg = JSON.parse(pkgRaw);
-    assert.strictEqual(pkg.version, '0.21.0');
+    assert.strictEqual(pkg.version, '0.22.0');
   });
 });
 

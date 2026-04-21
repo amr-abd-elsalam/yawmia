@@ -35,16 +35,16 @@ describe('Phase 20 — Config & Version', () => {
   it('P20-01: package.json version is 0.21.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.21.0');
+    assert.strictEqual(pkg.version, '0.22.0');
   });
 
   it('P20-02: PWA cacheName is yawmia-v0.21.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.21.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
   });
 
   it('P20-03: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 34, `expected 34 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 34, `expected 36 config sections, got ${keys.length}`);
   });
 
   it('P20-04: ENV section exists with correct fields', () => {
@@ -71,7 +71,7 @@ describe('Phase 20 — Config & Version', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 61, `expected 61 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 61, `expected 70 routes, got ${routeMatches.length}`);
   });
 });
 
@@ -237,7 +237,7 @@ describe('Phase 20 — Health & Docs (Source Check)', () => {
 
   it('P20-20: health handler version is 0.21.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.21.0'"), 'version should be 0.21.0');
+    assert.ok(content.includes("version: '0.21.0'"), 'version should be 0.22.0');
   });
 
   it('P20-21: /api/docs route exists', async () => {
@@ -269,6 +269,6 @@ describe('Phase 20 — File Existence', () => {
 
   it('P20-25: sw.js CACHE_NAME is yawmia-v0.21.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.21.0'"), 'cache name should be yawmia-v0.21.0');
+    assert.ok(content.includes("'yawmia-v0.22.0'"), 'cache name should be yawmia-v0.22.0');
   });
 });
