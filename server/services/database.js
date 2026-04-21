@@ -5,6 +5,8 @@
 import { readFile, writeFile, rename, unlink, readdir, mkdir, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
+import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from './cache.js';
+import { withLock } from './resourceLock.js';
 
 // Allow override via env variable (for testing with temp directories)
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
@@ -23,6 +25,7 @@ export async function initDatabase() {
 
 /**
  * Atomic write — write to .tmp then rename
+ * Invalidates cache after successful write
  */
 export async function atomicWrite(filePath, data) {
   const dir = dirname(filePath);
@@ -30,19 +33,50 @@ export async function atomicWrite(filePath, data) {
   const tmpPath = filePath + '.tmp';
   await writeFile(tmpPath, JSON.stringify(data, null, 2), ENCODING);
   await rename(tmpPath, filePath);
+  // Invalidate cache AFTER successful disk write
+  cacheInvalidate(`file:${filePath}`);
 }
 
 /**
  * Read JSON file — returns null if not found
+ * Integrates with in-memory cache for read acceleration
  */
 export async function readJSON(filePath) {
+  // Check cache first
+  const cacheKey = `file:${filePath}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== undefined) return cached;
+
   try {
     const raw = await readFile(filePath, ENCODING);
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+
+    // Cache the result with appropriate TTL
+    const ttl = resolveCacheTtl(filePath);
+    if (ttl > 0) {
+      cacheSet(cacheKey, parsed, ttl);
+    }
+
+    return parsed;
   } catch (err) {
     if (err.code === 'ENOENT') return null;
     throw err;
   }
+}
+
+/**
+ * Resolve cache TTL based on file path
+ * @param {string} filePath
+ * @returns {number} TTL in ms (0 = don't cache)
+ */
+function resolveCacheTtl(filePath) {
+  if (!config.CACHE || !config.CACHE.enabled) return 0;
+  const ttl = config.CACHE.ttl;
+  if (filePath.includes('/users/') && filePath.includes('phone-index')) return ttl.phoneIndex;
+  if (filePath.includes('/users/')) return ttl.user;
+  if (filePath.includes('/jobs/') && !filePath.includes('index.json') && !filePath.includes('employer-index')) return ttl.job;
+  if (filePath.includes('/sessions/')) return ttl.session;
+  return config.CACHE.defaultTtlMs;
 }
 
 /**
@@ -88,10 +122,13 @@ export async function safeReadJSON(filePath) {
 
 /**
  * Delete a JSON file — ignores ENOENT
+ * Invalidates cache after successful delete
  */
 export async function deleteJSON(filePath) {
   try {
     await unlink(filePath);
+    // Invalidate cache AFTER successful disk delete
+    cacheInvalidate(`file:${filePath}`);
     return true;
   } catch (err) {
     if (err.code === 'ENOENT') return false;
@@ -189,36 +226,42 @@ export async function writeSetIndex(relativePath, data) {
 
 /**
  * Add an ID to a key's set in a set-based index (no duplicates)
+ * Serialized per index file via withLock to prevent concurrent write races
  * @param {string} relativePath — path relative to BASE_PATH
  * @param {string} key — the grouping key (e.g. workerId, jobId)
  * @param {string} id — the record ID to add
  */
 export async function addToSetIndex(relativePath, key, id) {
-  const index = await readSetIndex(relativePath);
-  if (!index[key]) {
-    index[key] = [];
-  }
-  if (!index[key].includes(id)) {
-    index[key].push(id);
-  }
-  await writeSetIndex(relativePath, index);
+  return withLock(`index:${relativePath}`, async () => {
+    const index = await readSetIndex(relativePath);
+    if (!index[key]) {
+      index[key] = [];
+    }
+    if (!index[key].includes(id)) {
+      index[key].push(id);
+    }
+    await writeSetIndex(relativePath, index);
+  });
 }
 
 /**
  * Remove an ID from a key's set in a set-based index
  * Deletes the key entirely if the array becomes empty
+ * Serialized per index file via withLock to prevent concurrent write races
  * @param {string} relativePath — path relative to BASE_PATH
  * @param {string} key — the grouping key
  * @param {string} id — the record ID to remove
  */
 export async function removeFromSetIndex(relativePath, key, id) {
-  const index = await readSetIndex(relativePath);
-  if (!index[key]) return;
-  index[key] = index[key].filter(item => item !== id);
-  if (index[key].length === 0) {
-    delete index[key];
-  }
-  await writeSetIndex(relativePath, index);
+  return withLock(`index:${relativePath}`, async () => {
+    const index = await readSetIndex(relativePath);
+    if (!index[key]) return;
+    index[key] = index[key].filter(item => item !== id);
+    if (index[key].length === 0) {
+      delete index[key];
+    }
+    await writeSetIndex(relativePath, index);
+  });
 }
 
 /**

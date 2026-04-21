@@ -39,7 +39,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.20.0',
+        version: '0.21.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -64,6 +64,13 @@ const routes = [
         response.locks = { active: getLockCount() };
       } catch (_) {
         response.locks = { active: 0 };
+      }
+      // Cache stats (non-blocking)
+      try {
+        const { stats: cacheStats } = await import('./services/cache.js');
+        response.cache = cacheStats();
+      } catch (_) {
+        response.cache = { hits: 0, misses: 0, size: 0, hitRate: '0%' };
       }
       sendJSON(res, 200, response);
     },
@@ -96,7 +103,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.20.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.21.0' });
     },
   },
 

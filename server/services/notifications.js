@@ -166,6 +166,7 @@ export async function markAllAsRead(userId) {
 /**
  * Clean old notifications beyond TTL (startup + periodic)
  * Only deletes READ notifications — unread always survive regardless of age
+ * Uses batch processing with event loop yielding to avoid blocking
  * @returns {Promise<number>} count of cleaned notifications
  */
 export async function cleanOldNotifications() {
@@ -174,18 +175,35 @@ export async function cleanOldNotifications() {
 
   const cutoff = new Date(Date.now() - ttlDays * 24 * 60 * 60 * 1000);
   const ntfDir = getCollectionPath('notifications');
-  const allNotifications = await listJSON(ntfDir);
+
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(ntfDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ntf_'));
   let cleaned = 0;
   const affectedUsers = new Set();
   const cleanedIds = new Set();
+  const BATCH_SIZE = 100;
+  const { join: joinPath } = await import('node:path');
 
-  for (const ntf of allNotifications) {
-    if (ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const ntf = await readJSON(joinPath(ntfDir, jsonFiles[i]));
+    if (ntf && ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
       const ntfPath = getRecordPath('notifications', ntf.id);
       await deleteJSON(ntfPath);
       if (ntf.userId) affectedUsers.add(ntf.userId);
       cleanedIds.add(ntf.id);
       cleaned++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 

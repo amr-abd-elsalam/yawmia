@@ -7,6 +7,21 @@ import config from '../../config.js';
 const LEVELS = { error: 0, warn: 1, info: 2, debug: 3 };
 const configLevel = LEVELS[config.LOGGING.level] ?? LEVELS.info;
 
+// Lazy logWriter singleton — avoids top-level await / circular deps
+let _logWriter = null;
+let _logWriterLoaded = false;
+function writeToFile(formatted) {
+  if (_logWriterLoaded) {
+    if (_logWriter) _logWriter.append(formatted + '\n');
+    return;
+  }
+  _logWriterLoaded = true;
+  import('./logWriter.js').then(mod => {
+    _logWriter = mod;
+    _logWriter.append(formatted + '\n');
+  }).catch(() => { _logWriter = null; });
+}
+
 function formatMessage(level, msg, data) {
   const timestamp = new Date().toISOString();
   // JSON output in production — parseable by log aggregation tools (ELK, CloudWatch, Datadog)
@@ -26,25 +41,33 @@ function formatMessage(level, msg, data) {
 export const logger = {
   error(msg, data = {}) {
     if (configLevel >= LEVELS.error) {
-      console.error(formatMessage('error', msg, data));
+      const formatted = formatMessage('error', msg, data);
+      console.error(formatted);
+      writeToFile(formatted);
     }
   },
 
   warn(msg, data = {}) {
     if (configLevel >= LEVELS.warn) {
-      console.warn(formatMessage('warn', msg, data));
+      const formatted = formatMessage('warn', msg, data);
+      console.warn(formatted);
+      writeToFile(formatted);
     }
   },
 
   info(msg, data = {}) {
     if (configLevel >= LEVELS.info) {
-      console.log(formatMessage('info', msg, data));
+      const formatted = formatMessage('info', msg, data);
+      console.log(formatted);
+      writeToFile(formatted);
     }
   },
 
   debug(msg, data = {}) {
     if (configLevel >= LEVELS.debug) {
-      console.log(formatMessage('debug', msg, data));
+      const formatted = formatMessage('debug', msg, data);
+      console.log(formatted);
+      writeToFile(formatted);
     }
   },
 

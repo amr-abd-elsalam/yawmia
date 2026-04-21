@@ -36,6 +36,11 @@ const HOST = process.env.HOST || '0.0.0.0';
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
 
+// ── Create Logs Directory ────────────────────────────────────
+try {
+  await mkdir(join('.', 'logs'), { recursive: true });
+} catch (_) { /* logs dir creation failure is non-fatal */ }
+
 // ── Startup Index Integrity Check (lightweight — warning only) ──
 try {
   const { readJSON: readJSONCheck } = await import('./server/services/database.js');

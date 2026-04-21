@@ -326,23 +326,40 @@ async function rejectPendingApplications(jobId, jobTitle) {
 /**
  * Enforce expiry on all open jobs (startup + periodic)
  * Optimized: single index read/write instead of per-job
+ * Uses batch processing with event loop yielding to avoid blocking
  * @returns {number} count of jobs that were expired
  */
 export async function enforceExpiredJobs() {
-  const jobs = await listAll();
+  const jobsDir = getCollectionPath('jobs');
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(jobsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
   let count = 0;
   const now = new Date();
   const expiredJobIds = [];
   const expiredJobTitles = {};
+  const BATCH_SIZE = 100;
 
-  for (const job of jobs) {
-    if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const job = await readJSON(getCollectionPath('jobs') + '/' + jsonFiles[i]);
+    if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
       await atomicWrite(jobPath, job);
       expiredJobIds.push(job.id);
       expiredJobTitles[job.id] = job.title;
       count++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 

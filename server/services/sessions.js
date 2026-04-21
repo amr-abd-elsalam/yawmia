@@ -59,17 +59,36 @@ export async function destroySession(token) {
 
 /**
  * Clean up expired sessions
+ * Uses batch processing with event loop yielding to avoid blocking
  */
 export async function cleanExpired() {
   const sessionsDir = getCollectionPath('sessions');
-  const sessions = await listJSON(sessionsDir);
-  let cleaned = 0;
 
-  for (const session of sessions) {
-    if (new Date() > new Date(session.expiresAt)) {
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(sessionsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ses_'));
+  let cleaned = 0;
+  const now = new Date();
+  const BATCH_SIZE = 100;
+  const { join: joinPath } = await import('node:path');
+
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const session = await readJSON(joinPath(sessionsDir, jsonFiles[i]));
+    if (session && now > new Date(session.expiresAt)) {
       const sessionPath = getRecordPath('sessions', session.token);
       await deleteJSON(sessionPath);
       cleaned++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 

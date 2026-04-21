@@ -194,6 +194,9 @@ const config = {
     level: 'info',
     operationalLog: true,
     maxEntries: 500,
+    fileEnabled: false,                      // true in production via env override
+    filePath: './logs',
+    retentionDays: 30,
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -422,7 +425,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.20.0',
+    cacheName: 'yawmia-v0.21.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -558,6 +561,22 @@ const config = {
     retentionDays: 365,                      // مدة الاحتفاظ بالسجلات (يوم)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 34. التخزين المؤقت (CACHE)
+  // ═══════════════════════════════════════════════════════════
+  CACHE: {
+    enabled: true,
+    defaultTtlMs: 60000,                     // 1 minute default TTL
+    maxEntries: 10000,                       // max cached items (soft limit)
+    cleanupIntervalMs: 300000,               // cleanup expired entries every 5 min
+    ttl: {
+      phoneIndex: 300000,                    // 5 minutes — most read, least written
+      user: 120000,                          // 2 minutes
+      job: 60000,                            // 1 minute
+      session: 60000,                        // 1 minute
+    },
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -571,7 +590,7 @@ const envOverrides = {
       sanitizeInput: true,
       headers: config.SECURITY.headers,
     },
-    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500 },
+    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500, fileEnabled: true, filePath: './logs', retentionDays: 30 },
     STATIC: {
       root: config.STATIC.root,
       maxAge: 604800,
