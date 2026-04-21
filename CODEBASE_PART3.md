@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.21.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-21T00:32:27.617Z
+> Auto-generated: 2026-04-21T04:35:17.004Z
 > Files in this part: 18
 
 ## Files
@@ -179,7 +179,7 @@ export async function handleAdminUpdateUserStatus(req, res) {
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { apply, accept, reject, listByJob, listByWorker, findById as findAppById, withdraw, countTodayByWorker } from '../services/applications.js';
+import { apply, accept, reject, listByJob, listByWorker, withdraw, countTodayByWorker } from '../services/applications.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });

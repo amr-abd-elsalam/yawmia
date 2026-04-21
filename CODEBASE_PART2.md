@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.21.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-21T00:32:27.610Z
+> Auto-generated: 2026-04-21T04:35:16.998Z
 > Files in this part: 27
 
 ## Files
@@ -1730,7 +1730,7 @@ export async function sendWhatsAppOtp(phone, otp) {
 // server/services/database.js — File-based DB with atomic writes
 // ═══════════════════════════════════════════════════════════════
 
-import { readFile, writeFile, rename, unlink, readdir, mkdir, access } from 'node:fs/promises';
+import { readFile, writeFile, rename, unlink, readdir, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from './cache.js';
@@ -1864,17 +1864,6 @@ export async function deleteJSON(filePath) {
   }
 }
 
-/**
- * Check if file exists
- */
-export async function exists(filePath) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * List all JSON files in a directory
@@ -2062,16 +2051,6 @@ class EventBus {
     }
   }
 
-  /**
-   * Subscribe once — auto-removes after first call
-   */
-  once(event, callback) {
-    const wrapper = (data) => {
-      this.off(event, wrapper);
-      callback(data);
-    };
-    this.on(event, wrapper);
-  }
 
   /**
    * Remove all listeners (useful for testing)
@@ -2080,13 +2059,6 @@ class EventBus {
     this._listeners.clear();
   }
 
-  /**
-   * Get listener count for an event
-   */
-  listenerCount(event) {
-    const set = this._listeners.get(event);
-    return set ? set.size : 0;
-  }
 }
 
 // Singleton
@@ -4510,16 +4482,6 @@ export async function getUserRatingSummary(userId) {
   const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
 
   return { avg, count, distribution };
-}
-
-/**
- * Find a single rating by ID
- * @param {string} ratingId
- * @returns {Promise<object|null>}
- */
-export async function findById(ratingId) {
-  const ratingPath = getRecordPath('ratings', ratingId);
-  return await readJSON(ratingPath);
 }
 ```
 
