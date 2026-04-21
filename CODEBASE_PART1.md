@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.20.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-20T23:17:28.449Z
+# يوميّة (Yawmia) v0.21.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-21T00:32:27.606Z
 > Files in this part: 6
 
 ## Files
@@ -45,6 +45,7 @@ INFOBIP_SENDER=Yawmia
 node_modules/
 .env
 data/
+logs/
 *.log
 .DS_Store
 Thumbs.db
@@ -258,6 +259,9 @@ const config = {
     level: 'info',
     operationalLog: true,
     maxEntries: 500,
+    fileEnabled: false,                      // true in production via env override
+    filePath: './logs',
+    retentionDays: 30,
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -486,7 +490,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.20.0',
+    cacheName: 'yawmia-v0.21.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -622,6 +626,22 @@ const config = {
     retentionDays: 365,                      // مدة الاحتفاظ بالسجلات (يوم)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 34. التخزين المؤقت (CACHE)
+  // ═══════════════════════════════════════════════════════════
+  CACHE: {
+    enabled: true,
+    defaultTtlMs: 60000,                     // 1 minute default TTL
+    maxEntries: 10000,                       // max cached items (soft limit)
+    cleanupIntervalMs: 300000,               // cleanup expired entries every 5 min
+    ttl: {
+      phoneIndex: 300000,                    // 5 minutes — most read, least written
+      user: 120000,                          // 2 minutes
+      job: 60000,                            // 1 minute
+      session: 60000,                        // 1 minute
+    },
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -635,7 +655,7 @@ const envOverrides = {
       sanitizeInput: true,
       headers: config.SECURITY.headers,
     },
-    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500 },
+    LOGGING: { level: 'warn', operationalLog: true, maxEntries: 500, fileEnabled: true, filePath: './logs', retentionDays: 30 },
     STATIC: {
       root: config.STATIC.root,
       maxAge: 604800,
@@ -670,7 +690,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -732,6 +752,11 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Create Logs Directory ────────────────────────────────────
+try {
+  await mkdir(join('.', 'logs'), { recursive: true });
+} catch (_) { /* logs dir creation failure is non-fatal */ }
 
 // ── Startup Index Integrity Check (lightweight — warning only) ──
 try {
@@ -926,7 +951,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.20.0',
+        version: '0.21.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -951,6 +976,13 @@ const routes = [
         response.locks = { active: getLockCount() };
       } catch (_) {
         response.locks = { active: 0 };
+      }
+      // Cache stats (non-blocking)
+      try {
+        const { stats: cacheStats } = await import('./services/cache.js');
+        response.cache = cacheStats();
+      } catch (_) {
+        response.cache = { hits: 0, misses: 0, size: 0, hitRate: '0%' };
       }
       sendJSON(res, 200, response);
     },
@@ -983,7 +1015,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.20.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.21.0' });
     },
   },
 

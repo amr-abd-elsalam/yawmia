@@ -1,33 +1,35 @@
-# يوميّة (Yawmia) v0.20.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-20T23:17:28.453Z
-> Files in this part: 25
+# يوميّة (Yawmia) v0.21.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-21T00:32:27.610Z
+> Files in this part: 27
 
 ## Files
 1. `server/services/applications.js`
 2. `server/services/attendance.js`
 3. `server/services/auditLog.js`
 4. `server/services/auth.js`
-5. `server/services/channels/sms.js`
-6. `server/services/channels/whatsapp.js`
-7. `server/services/database.js`
-8. `server/services/eventBus.js`
-9. `server/services/geo.js`
-10. `server/services/jobs.js`
-11. `server/services/logger.js`
-12. `server/services/messaging.js`
-13. `server/services/notificationMessenger.js`
-14. `server/services/notifications.js`
-15. `server/services/payments.js`
-16. `server/services/ratings.js`
-17. `server/services/reports.js`
-18. `server/services/resourceLock.js`
-19. `server/services/sanitizer.js`
-20. `server/services/sessions.js`
-21. `server/services/sseManager.js`
-22. `server/services/trust.js`
-23. `server/services/users.js`
-24. `server/services/validators.js`
-25. `server/services/verification.js`
+5. `server/services/cache.js`
+6. `server/services/channels/sms.js`
+7. `server/services/channels/whatsapp.js`
+8. `server/services/database.js`
+9. `server/services/eventBus.js`
+10. `server/services/geo.js`
+11. `server/services/jobs.js`
+12. `server/services/logWriter.js`
+13. `server/services/logger.js`
+14. `server/services/messaging.js`
+15. `server/services/notificationMessenger.js`
+16. `server/services/notifications.js`
+17. `server/services/payments.js`
+18. `server/services/ratings.js`
+19. `server/services/reports.js`
+20. `server/services/resourceLock.js`
+21. `server/services/sanitizer.js`
+22. `server/services/sessions.js`
+23. `server/services/sseManager.js`
+24. `server/services/trust.js`
+25. `server/services/users.js`
+26. `server/services/validators.js`
+27. `server/services/verification.js`
 
 ---
 
@@ -1301,6 +1303,160 @@ export async function cleanExpiredOtps() {
 
 ---
 
+## `server/services/cache.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/cache.js — In-Memory Read Cache (TTL-based)
+// ═══════════════════════════════════════════════════════════════
+// Map-based cache with per-entry TTL, invalidation, prefix invalidation.
+// Config-driven via config.CACHE — disabled mode = all ops are no-ops.
+// Used by database.js to reduce filesystem I/O on hot paths.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+/** @type {Map<string, { value: *, expiresAt: number }>} */
+const store = new Map();
+
+/** @type {{ hits: number, misses: number }} */
+const counters = { hits: 0, misses: 0 };
+
+/**
+ * Check if cache is enabled via config
+ * @returns {boolean}
+ */
+function isEnabled() {
+  return !!(config.CACHE && config.CACHE.enabled);
+}
+
+/**
+ * Get a cached value by key.
+ * Returns undefined on miss or if cache is disabled.
+ * @param {string} key
+ * @returns {*} cached value or undefined
+ */
+export function get(key) {
+  if (!isEnabled()) {
+    counters.misses++;
+    return undefined;
+  }
+
+  const entry = store.get(key);
+  if (!entry) {
+    counters.misses++;
+    return undefined;
+  }
+
+  // Check TTL expiry
+  if (Date.now() > entry.expiresAt) {
+    store.delete(key);
+    counters.misses++;
+    return undefined;
+  }
+
+  counters.hits++;
+  return entry.value;
+}
+
+/**
+ * Store a value in cache with TTL.
+ * No-op if cache is disabled.
+ * @param {string} key
+ * @param {*} value — the value to cache (should be JSON-serializable)
+ * @param {number} [ttlMs] — TTL in milliseconds (defaults to config.CACHE.defaultTtlMs)
+ */
+export function set(key, value, ttlMs) {
+  if (!isEnabled()) return;
+
+  const ttl = ttlMs || config.CACHE.defaultTtlMs;
+  const expiresAt = Date.now() + ttl;
+
+  // Soft limit enforcement — evict oldest if over maxEntries
+  if (store.size >= config.CACHE.maxEntries) {
+    // Delete first entry (oldest insertion order in Map)
+    const firstKey = store.keys().next().value;
+    if (firstKey !== undefined) {
+      store.delete(firstKey);
+    }
+  }
+
+  store.set(key, { value, expiresAt });
+}
+
+/**
+ * Invalidate (remove) a specific cache key.
+ * No-op if cache is disabled.
+ * @param {string} key
+ */
+export function invalidate(key) {
+  if (!isEnabled()) return;
+  store.delete(key);
+}
+
+/**
+ * Invalidate all cache keys starting with the given prefix.
+ * No-op if cache is disabled.
+ * @param {string} prefix
+ */
+export function invalidatePrefix(prefix) {
+  if (!isEnabled()) return;
+  for (const key of store.keys()) {
+    if (key.startsWith(prefix)) {
+      store.delete(key);
+    }
+  }
+}
+
+/**
+ * Get cache statistics.
+ * @returns {{ hits: number, misses: number, size: number, hitRate: string }}
+ */
+export function stats() {
+  const total = counters.hits + counters.misses;
+  const hitRate = total > 0
+    ? Math.round((counters.hits / total) * 100) + '%'
+    : '0%';
+
+  return {
+    hits: counters.hits,
+    misses: counters.misses,
+    size: store.size,
+    hitRate,
+  };
+}
+
+/**
+ * Clear all cache entries and reset counters.
+ * Used for testing.
+ */
+export function clear() {
+  store.clear();
+  counters.hits = 0;
+  counters.misses = 0;
+}
+
+/**
+ * Remove expired entries from cache.
+ * Called by cleanup timer.
+ */
+function cleanupExpired() {
+  const now = Date.now();
+  for (const [key, entry] of store) {
+    if (now > entry.expiresAt) {
+      store.delete(key);
+    }
+  }
+}
+
+// ── Cleanup Timer (unref'd — doesn't prevent process exit) ───
+const cleanupIntervalMs = (config.CACHE && config.CACHE.cleanupIntervalMs) || 300000;
+const cleanupTimer = setInterval(cleanupExpired, cleanupIntervalMs);
+if (cleanupTimer.unref) cleanupTimer.unref();
+```
+
+---
+
 ## `server/services/channels/sms.js`
 
 ```javascript
@@ -1577,6 +1733,8 @@ export async function sendWhatsAppOtp(phone, otp) {
 import { readFile, writeFile, rename, unlink, readdir, mkdir, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
+import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from './cache.js';
+import { withLock } from './resourceLock.js';
 
 // Allow override via env variable (for testing with temp directories)
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
@@ -1595,6 +1753,7 @@ export async function initDatabase() {
 
 /**
  * Atomic write — write to .tmp then rename
+ * Invalidates cache after successful write
  */
 export async function atomicWrite(filePath, data) {
   const dir = dirname(filePath);
@@ -1602,19 +1761,50 @@ export async function atomicWrite(filePath, data) {
   const tmpPath = filePath + '.tmp';
   await writeFile(tmpPath, JSON.stringify(data, null, 2), ENCODING);
   await rename(tmpPath, filePath);
+  // Invalidate cache AFTER successful disk write
+  cacheInvalidate(`file:${filePath}`);
 }
 
 /**
  * Read JSON file — returns null if not found
+ * Integrates with in-memory cache for read acceleration
  */
 export async function readJSON(filePath) {
+  // Check cache first
+  const cacheKey = `file:${filePath}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== undefined) return cached;
+
   try {
     const raw = await readFile(filePath, ENCODING);
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+
+    // Cache the result with appropriate TTL
+    const ttl = resolveCacheTtl(filePath);
+    if (ttl > 0) {
+      cacheSet(cacheKey, parsed, ttl);
+    }
+
+    return parsed;
   } catch (err) {
     if (err.code === 'ENOENT') return null;
     throw err;
   }
+}
+
+/**
+ * Resolve cache TTL based on file path
+ * @param {string} filePath
+ * @returns {number} TTL in ms (0 = don't cache)
+ */
+function resolveCacheTtl(filePath) {
+  if (!config.CACHE || !config.CACHE.enabled) return 0;
+  const ttl = config.CACHE.ttl;
+  if (filePath.includes('/users/') && filePath.includes('phone-index')) return ttl.phoneIndex;
+  if (filePath.includes('/users/')) return ttl.user;
+  if (filePath.includes('/jobs/') && !filePath.includes('index.json') && !filePath.includes('employer-index')) return ttl.job;
+  if (filePath.includes('/sessions/')) return ttl.session;
+  return config.CACHE.defaultTtlMs;
 }
 
 /**
@@ -1660,10 +1850,13 @@ export async function safeReadJSON(filePath) {
 
 /**
  * Delete a JSON file — ignores ENOENT
+ * Invalidates cache after successful delete
  */
 export async function deleteJSON(filePath) {
   try {
     await unlink(filePath);
+    // Invalidate cache AFTER successful disk delete
+    cacheInvalidate(`file:${filePath}`);
     return true;
   } catch (err) {
     if (err.code === 'ENOENT') return false;
@@ -1761,36 +1954,42 @@ export async function writeSetIndex(relativePath, data) {
 
 /**
  * Add an ID to a key's set in a set-based index (no duplicates)
+ * Serialized per index file via withLock to prevent concurrent write races
  * @param {string} relativePath — path relative to BASE_PATH
  * @param {string} key — the grouping key (e.g. workerId, jobId)
  * @param {string} id — the record ID to add
  */
 export async function addToSetIndex(relativePath, key, id) {
-  const index = await readSetIndex(relativePath);
-  if (!index[key]) {
-    index[key] = [];
-  }
-  if (!index[key].includes(id)) {
-    index[key].push(id);
-  }
-  await writeSetIndex(relativePath, index);
+  return withLock(`index:${relativePath}`, async () => {
+    const index = await readSetIndex(relativePath);
+    if (!index[key]) {
+      index[key] = [];
+    }
+    if (!index[key].includes(id)) {
+      index[key].push(id);
+    }
+    await writeSetIndex(relativePath, index);
+  });
 }
 
 /**
  * Remove an ID from a key's set in a set-based index
  * Deletes the key entirely if the array becomes empty
+ * Serialized per index file via withLock to prevent concurrent write races
  * @param {string} relativePath — path relative to BASE_PATH
  * @param {string} key — the grouping key
  * @param {string} id — the record ID to remove
  */
 export async function removeFromSetIndex(relativePath, key, id) {
-  const index = await readSetIndex(relativePath);
-  if (!index[key]) return;
-  index[key] = index[key].filter(item => item !== id);
-  if (index[key].length === 0) {
-    delete index[key];
-  }
-  await writeSetIndex(relativePath, index);
+  return withLock(`index:${relativePath}`, async () => {
+    const index = await readSetIndex(relativePath);
+    if (!index[key]) return;
+    index[key] = index[key].filter(item => item !== id);
+    if (index[key].length === 0) {
+      delete index[key];
+    }
+    await writeSetIndex(relativePath, index);
+  });
 }
 
 /**
@@ -2381,23 +2580,40 @@ async function rejectPendingApplications(jobId, jobTitle) {
 /**
  * Enforce expiry on all open jobs (startup + periodic)
  * Optimized: single index read/write instead of per-job
+ * Uses batch processing with event loop yielding to avoid blocking
  * @returns {number} count of jobs that were expired
  */
 export async function enforceExpiredJobs() {
-  const jobs = await listAll();
+  const jobsDir = getCollectionPath('jobs');
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(jobsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
   let count = 0;
   const now = new Date();
   const expiredJobIds = [];
   const expiredJobTitles = {};
+  const BATCH_SIZE = 100;
 
-  for (const job of jobs) {
-    if (job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const job = await readJSON(getCollectionPath('jobs') + '/' + jsonFiles[i]);
+    if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
       await atomicWrite(jobPath, job);
       expiredJobIds.push(job.id);
       expiredJobTitles[job.id] = job.title;
       count++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 
@@ -2600,6 +2816,88 @@ export async function renewJob(jobId, employerId) {
 
 ---
 
+## `server/services/logWriter.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/logWriter.js — Append-Only Log File Writer
+// ═══════════════════════════════════════════════════════════════
+// Daily rotation by Egypt timezone (UTC+2).
+// Fire-and-forget — NEVER throws, NEVER imports logger.js.
+// Writes to: {filePath}/yawmia-YYYY-MM-DD.log
+// ═══════════════════════════════════════════════════════════════
+
+import { appendFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+
+/** @type {boolean} */
+let dirCreated = false;
+
+/**
+ * Get current date string in Egypt timezone (UTC+2) — YYYY-MM-DD
+ * Egypt abolished DST in 2014 — always UTC+2
+ * @returns {string}
+ */
+function getEgyptDateString() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(egyptDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Get the log file path for today.
+ * @returns {string}
+ */
+function getLogFilePath() {
+  const logDir = (config.LOGGING && config.LOGGING.filePath) || './logs';
+  const dateStr = getEgyptDateString();
+  return join(logDir, `yawmia-${dateStr}.log`);
+}
+
+/**
+ * Ensure log directory exists (once per process).
+ */
+async function ensureDir() {
+  if (dirCreated) return;
+  try {
+    const logDir = (config.LOGGING && config.LOGGING.filePath) || './logs';
+    await mkdir(logDir, { recursive: true });
+    dirCreated = true;
+  } catch (_) {
+    // Directory creation failure — will retry next call
+  }
+}
+
+/**
+ * Append a message to today's log file.
+ * Fire-and-forget — NEVER throws.
+ * @param {string} message — pre-formatted log line (should include \n)
+ */
+export function append(message) {
+  // Feature flag check
+  if (!config.LOGGING || !config.LOGGING.fileEnabled) return;
+
+  // Fire-and-forget async operation
+  (async () => {
+    try {
+      await ensureDir();
+      const filePath = getLogFilePath();
+      await appendFile(filePath, message, 'utf-8');
+    } catch (_) {
+      // NEVER throw — log writer failure is non-fatal
+      // Fallback: silent — console output still works via logger.js
+    }
+  })();
+}
+```
+
+---
+
 ## `server/services/logger.js`
 
 ```javascript
@@ -2611,6 +2909,21 @@ import config from '../../config.js';
 
 const LEVELS = { error: 0, warn: 1, info: 2, debug: 3 };
 const configLevel = LEVELS[config.LOGGING.level] ?? LEVELS.info;
+
+// Lazy logWriter singleton — avoids top-level await / circular deps
+let _logWriter = null;
+let _logWriterLoaded = false;
+function writeToFile(formatted) {
+  if (_logWriterLoaded) {
+    if (_logWriter) _logWriter.append(formatted + '\n');
+    return;
+  }
+  _logWriterLoaded = true;
+  import('./logWriter.js').then(mod => {
+    _logWriter = mod;
+    _logWriter.append(formatted + '\n');
+  }).catch(() => { _logWriter = null; });
+}
 
 function formatMessage(level, msg, data) {
   const timestamp = new Date().toISOString();
@@ -2631,25 +2944,33 @@ function formatMessage(level, msg, data) {
 export const logger = {
   error(msg, data = {}) {
     if (configLevel >= LEVELS.error) {
-      console.error(formatMessage('error', msg, data));
+      const formatted = formatMessage('error', msg, data);
+      console.error(formatted);
+      writeToFile(formatted);
     }
   },
 
   warn(msg, data = {}) {
     if (configLevel >= LEVELS.warn) {
-      console.warn(formatMessage('warn', msg, data));
+      const formatted = formatMessage('warn', msg, data);
+      console.warn(formatted);
+      writeToFile(formatted);
     }
   },
 
   info(msg, data = {}) {
     if (configLevel >= LEVELS.info) {
-      console.log(formatMessage('info', msg, data));
+      const formatted = formatMessage('info', msg, data);
+      console.log(formatted);
+      writeToFile(formatted);
     }
   },
 
   debug(msg, data = {}) {
     if (configLevel >= LEVELS.debug) {
-      console.log(formatMessage('debug', msg, data));
+      const formatted = formatMessage('debug', msg, data);
+      console.log(formatted);
+      writeToFile(formatted);
     }
   },
 
@@ -3219,6 +3540,7 @@ export async function markAllAsRead(userId) {
 /**
  * Clean old notifications beyond TTL (startup + periodic)
  * Only deletes READ notifications — unread always survive regardless of age
+ * Uses batch processing with event loop yielding to avoid blocking
  * @returns {Promise<number>} count of cleaned notifications
  */
 export async function cleanOldNotifications() {
@@ -3227,18 +3549,35 @@ export async function cleanOldNotifications() {
 
   const cutoff = new Date(Date.now() - ttlDays * 24 * 60 * 60 * 1000);
   const ntfDir = getCollectionPath('notifications');
-  const allNotifications = await listJSON(ntfDir);
+
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(ntfDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ntf_'));
   let cleaned = 0;
   const affectedUsers = new Set();
   const cleanedIds = new Set();
+  const BATCH_SIZE = 100;
+  const { join: joinPath } = await import('node:path');
 
-  for (const ntf of allNotifications) {
-    if (ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const ntf = await readJSON(joinPath(ntfDir, jsonFiles[i]));
+    if (ntf && ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
       const ntfPath = getRecordPath('notifications', ntf.id);
       await deleteJSON(ntfPath);
       if (ntf.userId) affectedUsers.add(ntf.userId);
       cleanedIds.add(ntf.id);
       cleaned++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 
@@ -4627,17 +4966,36 @@ export async function destroySession(token) {
 
 /**
  * Clean up expired sessions
+ * Uses batch processing with event loop yielding to avoid blocking
  */
 export async function cleanExpired() {
   const sessionsDir = getCollectionPath('sessions');
-  const sessions = await listJSON(sessionsDir);
-  let cleaned = 0;
 
-  for (const session of sessions) {
-    if (new Date() > new Date(session.expiresAt)) {
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(sessionsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ses_'));
+  let cleaned = 0;
+  const now = new Date();
+  const BATCH_SIZE = 100;
+  const { join: joinPath } = await import('node:path');
+
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const session = await readJSON(joinPath(sessionsDir, jsonFiles[i]));
+    if (session && now > new Date(session.expiresAt)) {
       const sessionPath = getRecordPath('sessions', session.token);
       await deleteJSON(sessionPath);
       cleaned++;
+    }
+    // Yield to event loop every BATCH_SIZE files
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
     }
   }
 
