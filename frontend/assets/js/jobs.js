@@ -110,24 +110,65 @@
     }
   });
 
-  // ── Notifications ─────────────────────────────────────────
+  // ── Notifications (Drawer) ────────────────────────────────
   loadNotifications();
 
   var notificationBell = Yawmia.$id('notificationBell');
   var notificationPanel = Yawmia.$id('notificationPanel');
-  var releaseNotifTrap = null;
-  if (notificationBell && notificationPanel) {
+  var notificationOverlay = Yawmia.$id('notificationOverlay');
+  var btnCloseNotifPanel = Yawmia.$id('btnCloseNotifPanel');
+
+  function openNotifPanel() {
+    if (!notificationPanel || !notificationOverlay) return;
+    notificationOverlay.classList.add('notification-overlay--visible');
+    notificationPanel.classList.add('notification-panel--open');
+    loadNotifications();
+    // Render icons inside the drawer (close button)
+    if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
+    // Focus close button for accessibility
+    if (btnCloseNotifPanel) btnCloseNotifPanel.focus();
+  }
+
+  function closeNotifPanel() {
+    if (!notificationPanel || !notificationOverlay) return;
+    notificationPanel.classList.remove('notification-panel--open');
+    notificationOverlay.classList.remove('notification-overlay--visible');
+    // Return focus to bell
+    if (notificationBell) notificationBell.focus();
+  }
+
+  if (notificationBell) {
     notificationBell.addEventListener('click', function () {
-      notificationPanel.classList.toggle('hidden');
-      if (!notificationPanel.classList.contains('hidden')) {
-        loadNotifications();
-        releaseNotifTrap = YawmiaUtils.trapFocus(notificationPanel, function () {
-          notificationPanel.classList.add('hidden');
-          if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
-        });
+      if (notificationPanel && notificationPanel.classList.contains('notification-panel--open')) {
+        closeNotifPanel();
       } else {
-        if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
+        openNotifPanel();
       }
+    });
+  }
+
+  // Overlay click → close
+  if (notificationOverlay) {
+    notificationOverlay.addEventListener('click', closeNotifPanel);
+  }
+
+  // Close button → close
+  if (btnCloseNotifPanel) {
+    btnCloseNotifPanel.addEventListener('click', closeNotifPanel);
+  }
+
+  // Escape key → close drawer
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.keyCode === 27) && notificationPanel && notificationPanel.classList.contains('notification-panel--open')) {
+      closeNotifPanel();
+    }
+  });
+
+  // Bottom nav notification button → open drawer
+  var bottomNavNotifBtn = Yawmia.$id('bottomNavNotif');
+  if (bottomNavNotifBtn) {
+    bottomNavNotifBtn.addEventListener('click', function () {
+      openNotifPanel();
     });
   }
 
@@ -184,7 +225,7 @@
             ntfList.appendChild(item);
           });
         } else if (ntfList) {
-          ntfList.innerHTML = '<p class="empty-state">لا توجد إشعارات</p>';
+          ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>';
         }
       }
     } catch (err) { /* ignore */ }
@@ -262,11 +303,11 @@
         });
         updatePagination(res.data);
       } else {
-        jobsList.innerHTML = '<p class="empty-state">لا توجد فرص متاحة حالياً</p>';
+        jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📋</span><p class="empty-state__text">لا توجد فرص متاحة حالياً</p><p class="empty-state__hint">جرّب تغيير الفلاتر أو المحافظة</p></div>';
         Yawmia.hide('paginationControls');
       }
     } catch (err) {
-      jobsList.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p></div>';
       Yawmia.hide('paginationControls');
     }
   }
@@ -305,54 +346,7 @@
 
     var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
 
-    var footerButtons = '';
-    if (user.role === 'worker' && job.status === 'open') {
-      footerButtons = '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
-    }
-    if (user.role === 'employer' && job.employerId === user.id) {
-      if (job.status === 'open') {
-        footerButtons = '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
-      } else if (job.status === 'filled') {
-        footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
-      } else if (job.status === 'in_progress') {
-        footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
-      } else if (job.status === 'completed') {
-        footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
-      } else if (job.status === 'expired' || job.status === 'cancelled') {
-        footerButtons = '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
-      }
-    }
-    if (user.role === 'worker' && job.status === 'in_progress') {
-      footerButtons = '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>' +
-        '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
-    }
-    if (user.role === 'worker' && job.status === 'completed') {
-      footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
-    }
-
-    // Duplicate button for employer (any status except open)
-    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
-      footerButtons += ' <button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
-    }
-
-    // Messaging button for involved users (filled, in_progress, completed)
-    var messagingStatuses = ['filled', 'in_progress', 'completed'];
-    if (messagingStatuses.indexOf(job.status) !== -1) {
-      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
-      if (isInvolved) {
-        footerButtons += ' <button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
-      }
-    }
-
-    // Pending applications badge for employer
-    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
-      footerButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
-    }
-
-    // Report button (any authenticated user can report the employer)
-    if (job.employerId && job.employerId !== user.id) {
-      footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
-    }
+    // Button building moved into card.innerHTML section below
 
     // Employer profile link
     var employerProfileLink = '';
@@ -380,6 +374,68 @@
       job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
     }
 
+    // Separate primary and secondary buttons
+    var primaryButtons = '';
+    var secondaryButtons = '';
+
+    // Primary: apply, start, complete, cancel, renew, checkin/checkout
+    if (user.role === 'worker' && job.status === 'open') {
+      primaryButtons += '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
+    }
+    if (user.role === 'employer' && job.employerId === user.id) {
+      if (job.status === 'open') {
+        primaryButtons += '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
+      } else if (job.status === 'filled') {
+        primaryButtons += '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
+      } else if (job.status === 'in_progress') {
+        primaryButtons += '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+      } else if (job.status === 'completed') {
+        primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
+      } else if (job.status === 'expired' || job.status === 'cancelled') {
+        primaryButtons += '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
+      }
+    }
+    if (user.role === 'worker' && job.status === 'in_progress') {
+      primaryButtons += '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>';
+      primaryButtons += '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
+    }
+    if (user.role === 'worker' && job.status === 'completed') {
+      primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
+    }
+
+    // Secondary: duplicate, messages, report, pending badge
+    var messagingStatuses = ['filled', 'in_progress', 'completed'];
+    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
+    }
+    if (messagingStatuses.indexOf(job.status) !== -1) {
+      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
+      if (isInvolved) {
+        secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
+      }
+    }
+    if (job.employerId && job.employerId !== user.id) {
+      secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
+    }
+
+    // Pending applications badge for employer
+    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
+      secondaryButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
+    }
+
+    // Inject pending count from enriched data if available
+    if (user.role === 'employer' && job.employerId === user.id && window._enrichedMyJobs && window._enrichedMyJobs[job.id] !== undefined) {
+      job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
+    }
+
+    var actionsHtml = '';
+    if (primaryButtons || secondaryButtons) {
+      actionsHtml = '<div class="job-card__actions">';
+      if (primaryButtons) actionsHtml += '<div class="job-card__actions-primary">' + primaryButtons + '</div>';
+      if (secondaryButtons) actionsHtml += '<div class="job-card__actions-secondary">' + secondaryButtons + '</div>';
+      actionsHtml += '</div>';
+    }
+
     card.innerHTML =
       '<div class="job-card__header">' +
         '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
@@ -400,7 +456,7 @@
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">' + YawmiaIcons.get('workers', {size:14}) + ' ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
         completedLabel +
-        footerButtons +
+        actionsHtml +
       '</div>';
 
     // Apply button handler

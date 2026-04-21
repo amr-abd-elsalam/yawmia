@@ -163,10 +163,22 @@ var YawmiaUtils = (function () {
     var html = '';
     for (var i = 0; i < count; i++) {
       html +=
-        '<div class="skeleton-card" style="margin-block-end: 1rem;">' +
-          '<div class="skeleton skeleton-text--lg" style="width: 55%;"></div>' +
-          '<div class="skeleton skeleton-text" style="width: 80%; margin-block-start: 0.75rem;"></div>' +
-          '<div class="skeleton skeleton-text--sm" style="width: 35%; margin-block-start: 0.5rem;"></div>' +
+        '<div class="skeleton-card" style="margin-block-end: 1rem; padding: 1.25rem;">' +
+          '<div style="display:flex;justify-content:space-between;margin-block-end:0.75rem;">' +
+            '<div class="skeleton skeleton-text--lg" style="width: 50%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:0.75rem;margin-block-end:0.75rem;">' +
+            '<div class="skeleton skeleton-text--sm" style="width: 25%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 15%;"></div>' +
+          '</div>' +
+          '<div class="skeleton skeleton-text" style="width: 90%;"></div>' +
+          '<div class="skeleton skeleton-text" style="width: 70%;"></div>' +
+          '<div style="display:flex;justify-content:space-between;margin-block-start:0.75rem;">' +
+            '<div class="skeleton skeleton-text--sm" style="width: 30%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+          '</div>' +
         '</div>';
     }
     return html;

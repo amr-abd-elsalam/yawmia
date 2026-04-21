@@ -29,7 +29,7 @@
       <nav aria-label="التنقل الرئيسي">
         <div class="container header__inner">
           <div class="header__right">
-            <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
           </div>
           <div class="header__left">
             <button class="notification-bell" id="notificationBell" title="الإشعارات" aria-label="الإشعارات">
@@ -150,14 +150,23 @@
       </div>
     </main>
 
-    <!-- Notifications Panel -->
-    <div class="notification-panel hidden" id="notificationPanel" role="dialog" aria-label="الإشعارات">
+    <!-- Notification Overlay -->
+    <div class="notification-overlay" id="notificationOverlay"></div>
+
+    <!-- Notifications Drawer -->
+    <div class="notification-panel" id="notificationPanel" role="dialog" aria-modal="true" aria-label="الإشعارات">
       <div class="notification-panel__header">
         <h3>الإشعارات</h3>
-        <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+        <div class="notification-panel__header-actions">
+          <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+          <button class="notification-panel__close" id="btnCloseNotifPanel" aria-label="إغلاق"><span data-icon="close" data-icon-size="20"></span></button>
+        </div>
       </div>
       <div class="notification-panel__list" id="notificationList">
-        <p class="empty-state">لا توجد إشعارات</p>
+        <div class="notification-panel__empty">
+          <span class="notification-panel__empty-icon">🔔</span>
+          <p>لا توجد إشعارات</p>
+        </div>
       </div>
     </div>
 
@@ -170,7 +179,7 @@
 
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav" aria-label="التنقل السريع">
-      <a href="/dashboard.html" class="bottom-nav__item bottom-nav__item--active">
+      <a href="/dashboard.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
         <span data-icon="home" data-icon-size="20"></span>
         <span class="bottom-nav__label">الرئيسية</span>
       </a>
