@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T12:54:35.362Z
+> Auto-generated: 2026-04-21T14:45:41.307Z
 > Files in this part: 27
 
 ## Files
@@ -310,6 +310,15 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-primary);
+}
+
+.header__logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-inline-end: 0.4rem;
+  border-radius: var(--radius-sm);
 }
 
 .header__tagline {
@@ -642,7 +651,34 @@ select.form-input {
 .job-card__footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.job-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.job-card__actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.job-card__actions-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  opacity: 0.8;
+}
+
+.job-card__actions-secondary .btn {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
 }
 
 .job-card__workers {
@@ -695,10 +731,32 @@ select.form-input {
 
 /* ── Empty State ───────────────────────────────────────────── */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: var(--color-text-muted);
   padding: 2rem;
   font-size: 0.95rem;
+  gap: 0.5rem;
+}
+
+.empty-state__icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+  margin-block-end: 0.25rem;
+}
+
+.empty-state__text {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.empty-state__hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
 /* ── Footer ────────────────────────────────────────────────── */
@@ -764,21 +822,46 @@ select.form-input {
   padding: 0 4px;
 }
 
-/* ── Notification Panel ────────────────────────────────────── */
+/* ── Notification Overlay ──────────────────────────────── */
+.notification-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+}
+
+.notification-overlay--visible {
+  display: block;
+}
+
+/* ── Notification Drawer ───────────────────────────────── */
 .notification-panel {
   position: fixed;
-  top: 60px;
-  inset-inline-end: 1rem;
-  width: 360px;
-  max-height: 480px;
+  top: 0;
+  inset-inline-end: 0;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  height: 100dvh;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  border-inline-start: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
   z-index: 200;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--duration-slow, 0.3s) var(--ease-out, ease-out);
+  visibility: hidden;
+}
+
+[dir="rtl"] .notification-panel {
+  transform: translateX(-100%);
+}
+
+.notification-panel--open {
+  transform: translateX(0) !important;
+  visibility: visible;
 }
 
 .notification-panel__header {
@@ -787,6 +870,7 @@ select.form-input {
   align-items: center;
   padding: 1rem;
   border-block-end: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .notification-panel__header h3 {
@@ -794,10 +878,53 @@ select.form-input {
   font-weight: 600;
 }
 
+.notification-panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notification-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  transition: color var(--transition), background var(--transition);
+}
+
+.notification-panel__close:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
 .notification-panel__list {
   overflow-y: auto;
-  max-height: 400px;
+  flex: 1;
   padding: 0.5rem;
+}
+
+.notification-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+  gap: 0.75rem;
+}
+
+.notification-panel__empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+.notification-panel__empty p {
+  font-size: 0.95rem;
 }
 
 .notification-item {
@@ -1366,6 +1493,20 @@ select.form-input {
   cursor: wait;
 }
 
+/* ── Focus Visible ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .form-row {
@@ -1382,18 +1523,47 @@ select.form-input {
   }
 
   .header__inner {
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    text-align: start;
+    flex-wrap: nowrap;
+    justify-content: space-between;
   }
 
   .header__left {
-    width: 100%;
-    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .header__user,
+  .header__tagline {
+    display: none;
+  }
+
+  .header__logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .header__brand {
+    font-size: 1.2rem;
   }
 
   .job-card__header {
     flex-direction: column;
     gap: 0.3rem;
+  }
+
+  .job-card__actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .job-card__actions-primary,
+  .job-card__actions-secondary {
+    justify-content: flex-start;
+  }
+
+  .notification-panel {
+    max-width: 100%;
   }
 }
 
@@ -1479,11 +1649,18 @@ select.form-input {
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  opacity: 0.5;
+}
+
+.job-card:hover .report-btn,
+.report-btn:focus-visible {
+  opacity: 1;
 }
 
 .report-btn:hover {
   color: #ef4444;
   border-color: #ef4444;
+  opacity: 1;
 }
 
 .report-form {
@@ -3908,24 +4085,65 @@ var YawmiaIcons = (function () {
     }
   });
 
-  // ── Notifications ─────────────────────────────────────────
+  // ── Notifications (Drawer) ────────────────────────────────
   loadNotifications();
 
   var notificationBell = Yawmia.$id('notificationBell');
   var notificationPanel = Yawmia.$id('notificationPanel');
-  var releaseNotifTrap = null;
-  if (notificationBell && notificationPanel) {
+  var notificationOverlay = Yawmia.$id('notificationOverlay');
+  var btnCloseNotifPanel = Yawmia.$id('btnCloseNotifPanel');
+
+  function openNotifPanel() {
+    if (!notificationPanel || !notificationOverlay) return;
+    notificationOverlay.classList.add('notification-overlay--visible');
+    notificationPanel.classList.add('notification-panel--open');
+    loadNotifications();
+    // Render icons inside the drawer (close button)
+    if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
+    // Focus close button for accessibility
+    if (btnCloseNotifPanel) btnCloseNotifPanel.focus();
+  }
+
+  function closeNotifPanel() {
+    if (!notificationPanel || !notificationOverlay) return;
+    notificationPanel.classList.remove('notification-panel--open');
+    notificationOverlay.classList.remove('notification-overlay--visible');
+    // Return focus to bell
+    if (notificationBell) notificationBell.focus();
+  }
+
+  if (notificationBell) {
     notificationBell.addEventListener('click', function () {
-      notificationPanel.classList.toggle('hidden');
-      if (!notificationPanel.classList.contains('hidden')) {
-        loadNotifications();
-        releaseNotifTrap = YawmiaUtils.trapFocus(notificationPanel, function () {
-          notificationPanel.classList.add('hidden');
-          if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
-        });
+      if (notificationPanel && notificationPanel.classList.contains('notification-panel--open')) {
+        closeNotifPanel();
       } else {
-        if (releaseNotifTrap) { releaseNotifTrap(); releaseNotifTrap = null; }
+        openNotifPanel();
       }
+    });
+  }
+
+  // Overlay click → close
+  if (notificationOverlay) {
+    notificationOverlay.addEventListener('click', closeNotifPanel);
+  }
+
+  // Close button → close
+  if (btnCloseNotifPanel) {
+    btnCloseNotifPanel.addEventListener('click', closeNotifPanel);
+  }
+
+  // Escape key → close drawer
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.keyCode === 27) && notificationPanel && notificationPanel.classList.contains('notification-panel--open')) {
+      closeNotifPanel();
+    }
+  });
+
+  // Bottom nav notification button → open drawer
+  var bottomNavNotifBtn = Yawmia.$id('bottomNavNotif');
+  if (bottomNavNotifBtn) {
+    bottomNavNotifBtn.addEventListener('click', function () {
+      openNotifPanel();
     });
   }
 
@@ -3982,7 +4200,7 @@ var YawmiaIcons = (function () {
             ntfList.appendChild(item);
           });
         } else if (ntfList) {
-          ntfList.innerHTML = '<p class="empty-state">لا توجد إشعارات</p>';
+          ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>';
         }
       }
     } catch (err) { /* ignore */ }
@@ -4060,11 +4278,11 @@ var YawmiaIcons = (function () {
         });
         updatePagination(res.data);
       } else {
-        jobsList.innerHTML = '<p class="empty-state">لا توجد فرص متاحة حالياً</p>';
+        jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📋</span><p class="empty-state__text">لا توجد فرص متاحة حالياً</p><p class="empty-state__hint">جرّب تغيير الفلاتر أو المحافظة</p></div>';
         Yawmia.hide('paginationControls');
       }
     } catch (err) {
-      jobsList.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p></div>';
       Yawmia.hide('paginationControls');
     }
   }
@@ -4103,54 +4321,7 @@ var YawmiaIcons = (function () {
 
     var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
 
-    var footerButtons = '';
-    if (user.role === 'worker' && job.status === 'open') {
-      footerButtons = '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
-    }
-    if (user.role === 'employer' && job.employerId === user.id) {
-      if (job.status === 'open') {
-        footerButtons = '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
-      } else if (job.status === 'filled') {
-        footerButtons = '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
-      } else if (job.status === 'in_progress') {
-        footerButtons = '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
-      } else if (job.status === 'completed') {
-        footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
-      } else if (job.status === 'expired' || job.status === 'cancelled') {
-        footerButtons = '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
-      }
-    }
-    if (user.role === 'worker' && job.status === 'in_progress') {
-      footerButtons = '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>' +
-        '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
-    }
-    if (user.role === 'worker' && job.status === 'completed') {
-      footerButtons = '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
-    }
-
-    // Duplicate button for employer (any status except open)
-    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
-      footerButtons += ' <button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
-    }
-
-    // Messaging button for involved users (filled, in_progress, completed)
-    var messagingStatuses = ['filled', 'in_progress', 'completed'];
-    if (messagingStatuses.indexOf(job.status) !== -1) {
-      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
-      if (isInvolved) {
-        footerButtons += ' <button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
-      }
-    }
-
-    // Pending applications badge for employer
-    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
-      footerButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
-    }
-
-    // Report button (any authenticated user can report the employer)
-    if (job.employerId && job.employerId !== user.id) {
-      footerButtons += ' <button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
-    }
+    // Button building moved into card.innerHTML section below
 
     // Employer profile link
     var employerProfileLink = '';
@@ -4178,6 +4349,68 @@ var YawmiaIcons = (function () {
       job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
     }
 
+    // Separate primary and secondary buttons
+    var primaryButtons = '';
+    var secondaryButtons = '';
+
+    // Primary: apply, start, complete, cancel, renew, checkin/checkout
+    if (user.role === 'worker' && job.status === 'open') {
+      primaryButtons += '<button class="btn btn--primary btn--sm btn-apply" data-job-id="' + job.id + '">تقدّم</button>';
+    }
+    if (user.role === 'employer' && job.employerId === user.id) {
+      if (job.status === 'open') {
+        primaryButtons += '<button class="btn btn--danger btn--sm btn-cancel" data-job-id="' + job.id + '">إلغاء الفرصة</button>';
+      } else if (job.status === 'filled') {
+        primaryButtons += '<button class="btn btn--primary btn--sm btn-start" data-job-id="' + job.id + '">ابدأ التنفيذ</button>';
+      } else if (job.status === 'in_progress') {
+        primaryButtons += '<button class="btn btn--success btn--sm btn-complete" data-job-id="' + job.id + '">إنهاء الفرصة</button>';
+      } else if (job.status === 'completed') {
+        primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '">⭐ قيّم العمال</button>';
+      } else if (job.status === 'expired' || job.status === 'cancelled') {
+        primaryButtons += '<button class="btn btn-renew btn--sm" data-job-id="' + job.id + '">🔄 تجديد الفرصة</button>';
+      }
+    }
+    if (user.role === 'worker' && job.status === 'in_progress') {
+      primaryButtons += '<button class="btn btn-checkin btn--sm" data-job-id="' + job.id + '">📍 تسجيل حضور</button>';
+      primaryButtons += '<button class="btn btn-checkout btn--sm" data-job-id="' + job.id + '">🏁 تسجيل انصراف</button>';
+    }
+    if (user.role === 'worker' && job.status === 'completed') {
+      primaryButtons += '<button class="btn btn--warning btn--sm btn-rate" data-job-id="' + job.id + '" data-target="' + (job.employerId || '') + '">⭐ قيّم صاحب العمل</button>';
+    }
+
+    // Secondary: duplicate, messages, report, pending badge
+    var messagingStatuses = ['filled', 'in_progress', 'completed'];
+    if (user.role === 'employer' && job.employerId === user.id && job.status !== 'open') {
+      secondaryButtons += '<button class="btn btn--ghost btn--sm btn-duplicate" data-job-id="' + job.id + '">📋 نسخ الفرصة</button>';
+    }
+    if (messagingStatuses.indexOf(job.status) !== -1) {
+      var isInvolved = (user.role === 'employer' && job.employerId === user.id) || user.role === 'worker';
+      if (isInvolved) {
+        secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '">💬 رسائل</button>';
+      }
+    }
+    if (job.employerId && job.employerId !== user.id) {
+      secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '">🚩 بلّغ</button>';
+    }
+
+    // Pending applications badge for employer
+    if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
+      secondaryButtons += ' <span class="pending-badge">' + job.pendingApplicationsCount + ' طلب معلّق</span>';
+    }
+
+    // Inject pending count from enriched data if available
+    if (user.role === 'employer' && job.employerId === user.id && window._enrichedMyJobs && window._enrichedMyJobs[job.id] !== undefined) {
+      job.pendingApplicationsCount = window._enrichedMyJobs[job.id];
+    }
+
+    var actionsHtml = '';
+    if (primaryButtons || secondaryButtons) {
+      actionsHtml = '<div class="job-card__actions">';
+      if (primaryButtons) actionsHtml += '<div class="job-card__actions-primary">' + primaryButtons + '</div>';
+      if (secondaryButtons) actionsHtml += '<div class="job-card__actions-secondary">' + secondaryButtons + '</div>';
+      actionsHtml += '</div>';
+    }
+
     card.innerHTML =
       '<div class="job-card__header">' +
         '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
@@ -4198,7 +4431,7 @@ var YawmiaIcons = (function () {
       '<div class="job-card__footer">' +
         '<span class="job-card__workers">' + YawmiaIcons.get('workers', {size:14}) + ' ' + job.workersAccepted + '/' + job.workersNeeded + ' عامل</span>' +
         completedLabel +
-        footerButtons +
+        actionsHtml +
       '</div>';
 
     // Apply button handler
@@ -6259,10 +6492,22 @@ var YawmiaUtils = (function () {
     var html = '';
     for (var i = 0; i < count; i++) {
       html +=
-        '<div class="skeleton-card" style="margin-block-end: 1rem;">' +
-          '<div class="skeleton skeleton-text--lg" style="width: 55%;"></div>' +
-          '<div class="skeleton skeleton-text" style="width: 80%; margin-block-start: 0.75rem;"></div>' +
-          '<div class="skeleton skeleton-text--sm" style="width: 35%; margin-block-start: 0.5rem;"></div>' +
+        '<div class="skeleton-card" style="margin-block-end: 1rem; padding: 1.25rem;">' +
+          '<div style="display:flex;justify-content:space-between;margin-block-end:0.75rem;">' +
+            '<div class="skeleton skeleton-text--lg" style="width: 50%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:0.75rem;margin-block-end:0.75rem;">' +
+            '<div class="skeleton skeleton-text--sm" style="width: 25%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 15%;"></div>' +
+          '</div>' +
+          '<div class="skeleton skeleton-text" style="width: 90%;"></div>' +
+          '<div class="skeleton skeleton-text" style="width: 70%;"></div>' +
+          '<div style="display:flex;justify-content:space-between;margin-block-start:0.75rem;">' +
+            '<div class="skeleton skeleton-text--sm" style="width: 30%;"></div>' +
+            '<div class="skeleton skeleton-text--sm" style="width: 20%;"></div>' +
+          '</div>' +
         '</div>';
     }
     return html;
@@ -6378,7 +6623,7 @@ var YawmiaUtils = (function () {
       <nav aria-label="التنقل الرئيسي">
         <div class="container header__inner">
           <div class="header__right">
-            <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+            <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
           </div>
           <div class="header__left">
             <button class="notification-bell" id="notificationBell" title="الإشعارات" aria-label="الإشعارات">
@@ -6499,14 +6744,23 @@ var YawmiaUtils = (function () {
       </div>
     </main>
 
-    <!-- Notifications Panel -->
-    <div class="notification-panel hidden" id="notificationPanel" role="dialog" aria-label="الإشعارات">
+    <!-- Notification Overlay -->
+    <div class="notification-overlay" id="notificationOverlay"></div>
+
+    <!-- Notifications Drawer -->
+    <div class="notification-panel" id="notificationPanel" role="dialog" aria-modal="true" aria-label="الإشعارات">
       <div class="notification-panel__header">
         <h3>الإشعارات</h3>
-        <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+        <div class="notification-panel__header-actions">
+          <button class="btn btn--ghost btn--sm" id="btnMarkAllRead">تعليم الكل كمقروء</button>
+          <button class="notification-panel__close" id="btnCloseNotifPanel" aria-label="إغلاق"><span data-icon="close" data-icon-size="20"></span></button>
+        </div>
       </div>
       <div class="notification-panel__list" id="notificationList">
-        <p class="empty-state">لا توجد إشعارات</p>
+        <div class="notification-panel__empty">
+          <span class="notification-panel__empty-icon">🔔</span>
+          <p>لا توجد إشعارات</p>
+        </div>
       </div>
     </div>
 
@@ -6519,7 +6773,7 @@ var YawmiaUtils = (function () {
 
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav" aria-label="التنقل السريع">
-      <a href="/dashboard.html" class="bottom-nav__item bottom-nav__item--active">
+      <a href="/dashboard.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
         <span data-icon="home" data-icon-size="20"></span>
         <span class="bottom-nav__label">الرئيسية</span>
       </a>
@@ -6600,7 +6854,7 @@ var YawmiaUtils = (function () {
     <header class="header">
       <nav aria-label="التنقل الرئيسي">
         <div class="container header__inner">
-          <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+          <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
           <p class="header__tagline">شغلك قريب منّك</p>
         </div>
       </nav>
@@ -6864,7 +7118,7 @@ var YawmiaUtils = (function () {
         <div class="container header__inner">
           <div class="header__right">
             <a href="/dashboard.html" class="header__brand-link">
-              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+              <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
             </a>
           </div>
           <div class="header__left">
@@ -6990,7 +7244,7 @@ var YawmiaUtils = (function () {
         <span data-icon="bell" data-icon-size="20"></span>
         <span class="bottom-nav__label">إشعارات</span>
       </a>
-      <a href="/profile.html" class="bottom-nav__item bottom-nav__item--active">
+      <a href="/profile.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
         <span data-icon="user" data-icon-size="20"></span>
         <span class="bottom-nav__label">ملفي</span>
       </a>
@@ -7234,7 +7488,7 @@ self.addEventListener('notificationclick', (event) => {
         <div class="container header__inner">
           <div class="header__right">
             <a href="/" class="header__brand-link">
-              <h1 class="header__brand"><span data-icon="construction" data-icon-size="24"></span> يوميّة</h1>
+              <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
             </a>
           </div>
           <div class="header__left">
