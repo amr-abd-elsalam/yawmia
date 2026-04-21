@@ -33,7 +33,7 @@ describe('Phase 21 — Config & Version', () => {
 
   it('P21-02: Config has 34 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 34, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P21-03: CACHE section exists with correct fields', () => {
@@ -56,7 +56,7 @@ describe('Phase 21 — Config & Version', () => {
     assert.strictEqual(typeof config.LOGGING.filePath, 'string');
   });
 
-  it('P21-06: PWA cacheName is yawmia-v0.21.0', () => {
+  it('P21-06: PWA cacheName is yawmia-v0.22.0', () => {
     assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
   });
 });
@@ -297,7 +297,7 @@ describe('Phase 21 — Health Endpoint', () => {
 
   it('P21-30: health handler version is 0.21.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.21.0'"), 'version should be 0.22.0');
+    assert.ok(content.includes("version: '0.22.0'"), 'version should be 0.22.0');
   });
 });
 

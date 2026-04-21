@@ -40,7 +40,7 @@ describe('Phase 18 — Config & Version', () => {
     assert.strictEqual(pkg.version, '0.22.0');
   });
 
-  it('P18-02: PWA cacheName is yawmia-v0.21.0', () => {
+  it('P18-02: PWA cacheName is yawmia-v0.22.0', () => {
     assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
   });
 
@@ -48,7 +48,7 @@ describe('Phase 18 — Config & Version', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 61, `expected 70 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 70, `expected 70 routes, got ${routeMatches.length}`);
   });
 });
 

@@ -365,6 +365,6 @@ describe('Phase 16 — Version & Routes', () => {
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 61, `expected 70 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 70, `expected 70 routes, got ${routeMatches.length}`);
   });
 });
