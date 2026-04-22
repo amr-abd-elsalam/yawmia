@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
@@ -271,7 +271,7 @@ export async function disputePayment(paymentId, userId, reason) {
  */
 export async function findById(paymentId) {
   const paymentPath = getRecordPath('payments', paymentId);
-  return await readJSON(paymentPath);
+  return await safeReadJSON(paymentPath);
 }
 
 /**

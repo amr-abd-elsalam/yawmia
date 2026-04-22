@@ -26,7 +26,7 @@ import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
 import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
-import { enforceExpiredJobs } from './server/services/jobs.js';
+import { enforceExpiredJobs, checkExpiryWarnings } from './server/services/jobs.js';
 import { cleanExpiredOtps } from './server/services/auth.js';
 import { cleanOldNotifications } from './server/services/notifications.js';
 import { autoDetectNoShows } from './server/services/attendance.js';
@@ -36,6 +36,26 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Run Schema Migrations ────────────────────────────────────
+try {
+  const { runMigrations } = await import('./server/services/migration.js');
+  const migrationResult = await runMigrations();
+  if (migrationResult.applied > 0) {
+    logger.info(`Startup: applied ${migrationResult.applied} migration(s), schema now at v${migrationResult.current}`);
+  }
+} catch (err) {
+  logger.warn('Startup: migration error', { error: err.message });
+}
+
+// ── Build Search Index ───────────────────────────────────────
+try {
+  const { buildIndex } = await import('./server/services/searchIndex.js');
+  await buildIndex();
+  logger.info('Startup: search index built');
+} catch (err) {
+  logger.warn('Startup: search index build error', { error: err.message });
+}
 
 // ── Clean Stale .tmp Files (orphans from crashes) ────────────
 try {
@@ -137,6 +157,8 @@ try {
   if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
   const autoNoShows = await autoDetectNoShows();
   if (autoNoShows > 0) logger.info(`Startup: detected ${autoNoShows} auto no-shows`);
+  const expiryWarnings = await checkExpiryWarnings();
+  if (expiryWarnings > 0) logger.info(`Startup: sent ${expiryWarnings} expiry warning(s)`);
 } catch (err) {
   logger.warn('Startup cleanup error', { error: err.message });
 }
@@ -165,8 +187,24 @@ const cleanupTimer = setInterval(async () => {
     await cleanOldNotifications();
     await autoDetectNoShows();
 
+    // Expiry warnings (fire-and-forget)
+    try {
+      const { checkExpiryWarnings } = await import('./server/services/jobs.js');
+      const warnings = await checkExpiryWarnings();
+      if (warnings > 0) logger.info(`Periodic: sent ${warnings} expiry warning(s)`);
+    } catch (_) { /* non-fatal */ }
+
     // Index health check every 12 cycles (= 6 hours)
     cleanupCycleCount++;
+
+    // Search index rebuild every 2 cycles (= every hour)
+    if (cleanupCycleCount % 2 === 0) {
+      try {
+        const { buildIndex } = await import('./server/services/searchIndex.js');
+        await buildIndex();
+      } catch (_) { /* non-fatal */ }
+    }
+
     if (cleanupCycleCount % 12 === 0) {
       try {
         const { checkIndexHealth } = await import('./server/services/indexHealth.js');

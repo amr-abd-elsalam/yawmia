@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
 
@@ -79,7 +79,7 @@ export async function create(employerId, fields) {
  */
 export async function findById(jobId) {
   const jobPath = getRecordPath('jobs', jobId);
-  const job = await readJSON(jobPath);
+  const job = await safeReadJSON(jobPath);
   if (!job) return null;
   return await checkExpiry(job);
 }
@@ -141,15 +141,34 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (Arabic-normalized, case-insensitive)
+  // Text search on title + description (search index accelerated, Arabic-normalized)
   if (filters.search) {
-    const { normalizeArabic } = await import('./arabicNormalizer.js');
-    const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-    jobs = jobs.filter(j => {
-      const title = normalizeArabic((j.title || '').toLowerCase());
-      const desc = normalizeArabic((j.description || '').toLowerCase());
-      return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
-    });
+    let searchHandled = false;
+    if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
+      try {
+        const { search: searchIndexQuery } = await import('./searchIndex.js');
+        const { normalizeArabic } = await import('./arabicNormalizer.js');
+        const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
+        const matchedIds = searchIndexQuery(normalizedTerm, {
+          status: filters.status || 'open',
+          category: filters.category,
+          governorate: filters.governorate,
+        });
+        jobs = jobs.filter(j => matchedIds.includes(j.id));
+        searchHandled = true;
+      } catch (_) {
+        // Fallback to full scan below
+      }
+    }
+    if (!searchHandled) {
+      const { normalizeArabic } = await import('./arabicNormalizer.js');
+      const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
+      jobs = jobs.filter(j => {
+        const title = normalizeArabic((j.title || '').toLowerCase());
+        const desc = normalizeArabic((j.description || '').toLowerCase());
+        return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
+      });
+    }
   }
 
   // Sort (skip if already sorted by proximity)
@@ -614,4 +633,73 @@ export function renewJob(jobId, employerId) {
 
   return { ok: true, job };
   }); // end withLock
+}
+
+/**
+ * Check for jobs about to expire and send warning notifications
+ * Called in periodic cleanup (every 30 minutes)
+ * Sends one-time warning 24 hours before expiry
+ * Fire-and-forget per job — errors don't block others
+ * @returns {Promise<number>} count of warnings sent
+ */
+export async function checkExpiryWarnings() {
+  const jobsDir = getCollectionPath('jobs');
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(jobsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
+  const now = new Date();
+  const warningWindowMs = 24 * 60 * 60 * 1000; // 24 hours
+  let count = 0;
+
+  for (const file of jsonFiles) {
+    try {
+      const job = await readJSON(getCollectionPath('jobs') + '/' + file);
+      if (!job) continue;
+      if (job.status !== 'open') continue;
+      if (job.expiryWarningNotified) continue;
+      if (!job.expiresAt) continue;
+
+      const expiresAt = new Date(job.expiresAt);
+      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+
+      // Only warn if expiry is within 24 hours AND not already expired
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= warningWindowMs) {
+        // Set flag to prevent duplicate warnings
+        job.expiryWarningNotified = true;
+        const jobPath = getRecordPath('jobs', job.id);
+        await atomicWrite(jobPath, job);
+
+        // Get pending applicant IDs
+        let pendingWorkerIds = [];
+        try {
+          const { listByJob: listAppsByJob } = await import('./applications.js');
+          const apps = await listAppsByJob(job.id);
+          pendingWorkerIds = apps
+            .filter(a => a.status === 'pending')
+            .map(a => a.workerId);
+        } catch (_) { /* non-fatal */ }
+
+        // Emit event for notification system
+        eventBus.emit('job:expiry_warning', {
+          jobId: job.id,
+          employerId: job.employerId,
+          jobTitle: job.title,
+          pendingWorkerIds,
+        });
+
+        count++;
+      }
+    } catch (_) {
+      // Fire-and-forget per job — continue to next
+    }
+  }
+
+  return count;
 }

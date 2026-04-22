@@ -609,4 +609,33 @@ export function setupNotificationListeners() {
       }).catch(() => {});
     }
   });
+
+  // ── Job Expiry Warning Notifications ────────────────────────
+
+  // Employer + pending applicants get warned before job expires
+  eventBus.on('job:expiry_warning', async (data) => {
+    try {
+      // Notify employer
+      createNotification(
+        data.employerId,
+        'job_expiry_warning',
+        `فرصتك "${data.jobTitle}" هتنتهي خلال 24 ساعة — جدّدها أو أكملها`,
+        { jobId: data.jobId }
+      ).catch(() => {});
+
+      // Notify pending applicants
+      if (data.pendingWorkerIds && data.pendingWorkerIds.length > 0) {
+        for (const workerId of data.pendingWorkerIds) {
+          createNotification(
+            workerId,
+            'job_expiry_warning',
+            `الفرصة "${data.jobTitle}" هتنتهي قريب`,
+            { jobId: data.jobId }
+          ).catch(() => {});
+        }
+      }
+    } catch (_) {
+      // Fire-and-forget
+    }
+  });
 }

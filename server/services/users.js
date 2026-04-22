@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
 
 /**
  * Create a new user
@@ -67,7 +67,7 @@ export async function findByPhone(phone) {
  */
 export async function findById(userId) {
   const userPath = getRecordPath('users', userId);
-  return await readJSON(userPath);
+  return await safeReadJSON(userPath);
 }
 
 /**

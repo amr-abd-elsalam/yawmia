@@ -91,6 +91,16 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     return { ok: false, error: `الرسالة لا تتجاوز ${maxLen} حرف`, code: 'TEXT_TOO_LONG' };
   }
 
+  // 2b. Content filter check
+  if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkMessages) {
+    try {
+      const { isContentSafe } = await import('./contentFilter.js');
+      if (!isContentSafe(sanitized)) {
+        return { ok: false, error: 'الرسالة تحتوي على محتوى غير مسموح', code: 'CONTENT_BLOCKED' };
+      }
+    } catch (_) { /* content filter failure is non-blocking */ }
+  }
+
   // 3. Validate recipient
   if (!recipientId || typeof recipientId !== 'string') {
     return { ok: false, error: 'معرّف المستلم مطلوب', code: 'RECIPIENT_REQUIRED' };
@@ -189,6 +199,16 @@ export async function broadcastMessage(jobId, employerId, text) {
   const maxLen = config.MESSAGES.maxLengthChars || 500;
   if (sanitized.length > maxLen) {
     return { ok: false, error: `الرسالة لا تتجاوز ${maxLen} حرف`, code: 'TEXT_TOO_LONG' };
+  }
+
+  // 4b. Content filter check
+  if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkMessages) {
+    try {
+      const { isContentSafe } = await import('./contentFilter.js');
+      if (!isContentSafe(sanitized)) {
+        return { ok: false, error: 'الرسالة تحتوي على محتوى غير مسموح', code: 'CONTENT_BLOCKED' };
+      }
+    } catch (_) { /* content filter failure is non-blocking */ }
   }
 
   // 5. Daily limit

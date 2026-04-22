@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, deleteJSON, listJSON, getRecordPath, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, deleteJSON, listJSON, getRecordPath, getCollectionPath } from './database.js';
 
 /**
  * Create a new session
@@ -36,7 +36,7 @@ export async function verifySession(token) {
   if (!token || typeof token !== 'string') return null;
 
   const sessionPath = getRecordPath('sessions', token);
-  const session = await readJSON(sessionPath);
+  const session = await safeReadJSON(sessionPath);
 
   if (!session) return null;
 

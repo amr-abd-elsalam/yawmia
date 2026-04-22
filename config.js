@@ -430,7 +430,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.25.0',
+    cacheName: 'yawmia-v0.26.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -627,6 +627,36 @@ const config = {
     matchByCategory: true,                   // مطابقة حسب التخصص (مطلوب)
     matchByProximity: true,                  // مطابقة حسب القرب الجغرافي
     proximityRadiusKm: 50,                   // نطاق المطابقة الجغرافية (كم)
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 39. ترحيل البيانات (MIGRATION)
+  // ═══════════════════════════════════════════════════════════
+  MIGRATION: {
+    enabled: true,
+    dataFile: 'migration.json',              // ملف تتبع إصدار الـ schema
+    runOnStartup: true,                      // تشغيل الترحيل تلقائياً عند بدء السيرفر
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 40. فلترة المحتوى (CONTENT_FILTER)
+  // ═══════════════════════════════════════════════════════════
+  CONTENT_FILTER: {
+    enabled: true,
+    blockThreshold: 0.7,                     // حد المنع (0.0–1.0)
+    warnThreshold: 0.4,                      // حد التحذير (تسجيل فقط)
+    checkJobDescription: true,               // فحص وصف الفرص
+    checkMessages: true,                     // فحص الرسائل
+    checkReportReason: false,                // لا تفحص أسباب البلاغات (تحتاج وصف المخالفة)
+    logFlagged: true,                        // تسجيل المحتوى المرفوض في اللوج
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 41. فهرس البحث (SEARCH_INDEX)
+  // ═══════════════════════════════════════════════════════════
+  SEARCH_INDEX: {
+    enabled: true,
+    rebuildIntervalMs: 3600000,              // إعادة بناء الفهرس كل ساعة (مللي ثانية)
   },
 
 };

@@ -36,6 +36,25 @@ export async function handleCreateJob(req, res) {
 
   try {
     const sanitized = sanitizeFields(body, ['title', 'description']);
+
+    // Content filter check
+    if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkJobDescription) {
+      try {
+        const { checkContent } = await import('../services/contentFilter.js');
+        const combinedText = (sanitized.title || '') + ' ' + (sanitized.description || '');
+        const filterResult = checkContent(combinedText);
+        if (!filterResult.safe) {
+          return sendJSON(res, 400, {
+            error: 'المحتوى يحتوي على كلمات غير مسموحة أو أرقام تليفون. يُرجى تعديل النص.',
+            code: 'CONTENT_BLOCKED',
+            flaggedTerms: filterResult.flaggedTerms,
+          });
+        }
+      } catch (_) {
+        // Content filter failure is non-blocking — allow creation
+      }
+    }
+
     const job = await create(req.user.id, sanitized);
     return sendJSON(res, 201, { ok: true, job });
   } catch (err) {
