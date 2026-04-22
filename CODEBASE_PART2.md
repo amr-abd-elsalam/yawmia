@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.22.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-21T22:52:27.918Z
+# يوميّة (Yawmia) v0.23.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-22T05:15:25.283Z
 > Files in this part: 29
 
 ## Files
@@ -1119,6 +1119,11 @@ import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { sendOtpMessage } from './messaging.js';
 
+// ── OTP Hashing ──────────────────────────────────────────────
+function hashOtp(otp) {
+  return crypto.createHash('sha256').update(otp).digest('hex');
+}
+
 // ── Per-phone OTP rate limiting (in-memory) ──────────────────
 const phoneOtpTracker = new Map();
 const PHONE_OTP_WINDOW_MS = config.RATE_LIMIT.otpWindowMs;  // 5 minutes
@@ -1187,7 +1192,7 @@ export async function sendOtp(phone, role) {
 
   const otpData = {
     phone,
-    otp,
+    otpHash: hashOtp(otp),
     role,
     attempts: 0,
     createdAt: now.toISOString(),
@@ -1239,8 +1244,10 @@ export async function verifyOtp(phone, otp) {
     return { ok: false, error: 'تم تجاوز الحد الأقصى من المحاولات', code: 'OTP_MAX_ATTEMPTS' };
   }
 
-  // Check OTP
-  if (otpData.otp !== otp) {
+  // Check OTP (hashed comparison — backward compatible with old plain 'otp' field)
+  const inputHash = hashOtp(otp);
+  const storedHash = otpData.otpHash || (otpData.otp ? hashOtp(otpData.otp) : null);
+  if (!storedHash || storedHash !== inputHash) {
     otpData.attempts += 1;
     await atomicWrite(otpPath, otpData);
     return {
@@ -1869,11 +1876,16 @@ export async function deleteJSON(filePath) {
 
 /**
  * List all JSON files in a directory
+ * @param {string} dirPath
+ * @param {{ prefix?: string }} [options] — optional prefix filter for filenames
  */
-export async function listJSON(dirPath) {
+export async function listJSON(dirPath, options = {}) {
   try {
     const files = await readdir(dirPath);
-    const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    if (options.prefix) {
+      jsonFiles = jsonFiles.filter(f => f.startsWith(options.prefix));
+    }
     const results = [];
     for (const file of jsonFiles) {
       const data = await readJSON(join(dirPath, file));
@@ -1903,11 +1915,26 @@ export async function writeIndex(indexName, data) {
 }
 
 /**
+ * Validate a record ID for safe filesystem use.
+ * Allows: alphanumeric, underscore, hyphen (covers all ID formats + phone numbers).
+ * Rejects: path traversal (..), slashes, HTML/script, empty, null, too long.
+ * @param {*} id
+ * @returns {boolean}
+ */
+export function isValidId(id) {
+  if (!id || typeof id !== 'string') return false;
+  if (id.length > 100) return false;
+  if (id.includes('..')) return false;
+  return /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+/**
  * Get full path for a record
  */
 export function getRecordPath(collection, id) {
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
+  if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
   return join(BASE_PATH, dir, `${id}.json`);
 }
 
@@ -2281,6 +2308,7 @@ import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
 
@@ -2824,7 +2852,8 @@ export async function duplicateJob(jobId, employerId) {
  * Renew an expired or cancelled job
  * Requires: employer owns job, status in allowedFromStatuses, under max renewals
  */
-export async function renewJob(jobId, employerId) {
+export function renewJob(jobId, employerId) {
+  return withLock(`renew:${jobId}`, async () => {
   // 1. Feature flag check
   if (!config.JOB_RENEWAL || !config.JOB_RENEWAL.enabled) {
     return { ok: false, error: 'تجديد الفرص غير مفعّل حالياً', code: 'RENEWAL_DISABLED' };
@@ -2885,6 +2914,7 @@ export async function renewJob(jobId, employerId) {
   eventBus.emit('job:renewed', { jobId, employerId, jobTitle: job.title });
 
   return { ok: true, job };
+  }); // end withLock
 }
 ```
 

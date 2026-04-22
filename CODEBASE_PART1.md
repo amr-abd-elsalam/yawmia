@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.22.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-21T22:52:27.915Z
+# يوميّة (Yawmia) v0.23.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-22T05:15:25.279Z
 > Files in this part: 6
 
 ## Files
@@ -500,7 +500,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.22.0',
+    cacheName: 'yawmia-v0.23.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -728,7 +728,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -960,6 +960,7 @@ export { server, PORT, HOST };
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../config.js';
+import { isValidId } from './services/database.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
@@ -998,7 +999,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.22.0',
+        version: '0.23.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1065,7 +1066,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.22.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.23.0' });
     },
   },
 
@@ -1246,6 +1247,12 @@ export function createRouter() {
 
       // Attach params
       req.params = params;
+
+      // Validate URL parameters (path traversal prevention)
+      if (params.id && !isValidId(params.id)) {
+        sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID' });
+        return;
+      }
 
       // Run route-specific middleware then handler
       runMiddlewares(route.middlewares, req, res, () => {

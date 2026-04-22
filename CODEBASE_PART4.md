@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.22.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-21T22:52:27.931Z
+# يوميّة (Yawmia) v0.23.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-22T05:15:25.294Z
 > Files in this part: 28
 
 ## Files
@@ -5022,10 +5022,17 @@ var YawmiaIcons = (function () {
     Yawmia.populateCategories('jobCategory');
     Yawmia.populateGovernorates('jobGovernorate');
 
-    // Cost preview
+    // Cost preview — load fee percentage from config
     var workerInput = Yawmia.$id('jobWorkers');
     var wageInput = Yawmia.$id('jobWage');
     var durationInput = Yawmia.$id('jobDuration');
+    var feePercent = 15; // fallback default
+
+    Yawmia.loadConfig().then(function (cfg) {
+      if (cfg && cfg.FINANCIALS && typeof cfg.FINANCIALS.platformFeePercent === 'number') {
+        feePercent = cfg.FINANCIALS.platformFeePercent;
+      }
+    }).catch(function () { /* use fallback */ });
 
     function updateCost() {
       var workers = parseInt(workerInput ? workerInput.value : 0) || 0;
@@ -5034,7 +5041,7 @@ var YawmiaIcons = (function () {
 
       if (workers > 0 && wage > 0 && duration > 0) {
         var total = workers * wage * duration;
-        var fee = Math.round(total * 0.15);
+        var fee = Math.round(total * (feePercent / 100));
         Yawmia.$id('costTotal').textContent = total.toLocaleString('ar-EG') + ' جنيه';
         Yawmia.$id('costFee').textContent = fee.toLocaleString('ar-EG') + ' جنيه';
         Yawmia.show('costPreview');
@@ -8289,7 +8296,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.22.0';
+const CACHE_NAME = 'yawmia-v0.23.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

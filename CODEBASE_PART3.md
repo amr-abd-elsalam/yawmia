@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.22.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-21T22:52:27.926Z
+# يوميّة (Yawmia) v0.23.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-22T05:15:25.290Z
 > Files in this part: 20
 
 ## Files
@@ -2557,6 +2557,30 @@ export function rateLimitMiddleware(req, res, next) {
       res.end(JSON.stringify({
         error: 'تم تجاوز الحد المسموح من طلبات OTP. حاول بعد قليل.',
         code: 'OTP_RATE_LIMITED',
+      }));
+      return;
+    }
+  }
+
+  // Admin write-specific rate limiting (POST/PUT/PATCH/DELETE on /api/admin/*)
+  if (req.pathname.startsWith('/api/admin/') && method !== 'GET') {
+    const adminKey = `admin:${ip}`;
+    const adminWindowMs = 60000;    // 1 minute
+    const adminMaxRequests = 10;    // 10 write requests/min
+
+    let adminEntry = store.get(adminKey);
+    if (!adminEntry || now > adminEntry.resetAt) {
+      adminEntry = { count: 0, resetAt: now + adminWindowMs };
+      store.set(adminKey, adminEntry);
+    }
+
+    adminEntry.count++;
+
+    if (adminEntry.count > adminMaxRequests) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'تم تجاوز الحد المسموح من عمليات الأدمن. حاول بعد قليل.',
+        code: 'ADMIN_RATE_LIMITED',
       }));
       return;
     }
