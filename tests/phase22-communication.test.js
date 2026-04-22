@@ -25,9 +25,9 @@ describe('Phase 22 — Config', () => {
     assert.equal(config.PWA.cacheName, 'yawmia-v0.26.0');
   });
 
-  it('P22-02: has 38 config sections', () => {
+  it('P22-02: has 41 config sections', () => {
     const topLevelKeys = Object.keys(config);
-    assert.equal(topLevelKeys.length, 38);
+    assert.equal(topLevelKeys.length, 41);
   });
 
   it('P22-03: MESSAGES section exists with all required fields', () => {

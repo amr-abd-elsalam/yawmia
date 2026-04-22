@@ -146,16 +146,20 @@ export async function list(filters = {}) {
     let searchHandled = false;
     if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
       try {
-        const { search: searchIndexQuery } = await import('./searchIndex.js');
-        const { normalizeArabic } = await import('./arabicNormalizer.js');
-        const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-        const matchedIds = searchIndexQuery(normalizedTerm, {
-          status: filters.status || 'open',
-          category: filters.category,
-          governorate: filters.governorate,
-        });
-        jobs = jobs.filter(j => matchedIds.includes(j.id));
-        searchHandled = true;
+        const { search: searchIndexQuery, getStats: getSearchStats } = await import('./searchIndex.js');
+        const searchStats = getSearchStats();
+        // Only use index if it has been built (size > 0)
+        if (searchStats.size > 0) {
+          const { normalizeArabic } = await import('./arabicNormalizer.js');
+          const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
+          const matchedIds = searchIndexQuery(normalizedTerm, {
+            status: filters.status || 'open',
+            category: filters.category,
+            governorate: filters.governorate,
+          });
+          jobs = jobs.filter(j => matchedIds.includes(j.id));
+          searchHandled = true;
+        }
       } catch (_) {
         // Fallback to full scan below
       }
