@@ -94,7 +94,15 @@ async function getOtpForPhone(phone) {
   if (!data) {
     throw new Error(`OTP file not found for ${phone} at ${otpPath}`);
   }
-  return data.otp;
+  // Phase 27+ uses otpHash instead of plain otp — brute-force 4-digit OTP for testing
+  if (data.otp) return data.otp;  // legacy support
+  // Since OTP is hashed, we brute-force the 4-digit code for test purposes
+  const crypto = await import('node:crypto');
+  for (let i = 1000; i <= 9999; i++) {
+    const hash = crypto.createHash('sha256').update(String(i)).digest('hex');
+    if (hash === data.otpHash) return String(i);
+  }
+  throw new Error(`Could not resolve OTP for ${phone}`);
 }
 
 async function registerAndLogin(phone, role) {

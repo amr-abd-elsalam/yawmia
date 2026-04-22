@@ -32,6 +32,7 @@ after(async () => {
 // Dynamic imports so they use the patched env
 let generateOtp, sendOtp, verifyOtp;
 let db;
+let _crypto;
 
 before(async () => {
   // Import modules
@@ -40,7 +41,21 @@ before(async () => {
   sendOtp = authMod.sendOtp;
   verifyOtp = authMod.verifyOtp;
   db = await import('../server/services/database.js');
+  _crypto = await import('node:crypto');
 });
+
+// Helper: resolve OTP from hashed storage (Phase 27+ stores otpHash not plain otp)
+async function resolveOtp(phone) {
+  const otpPath = db.getRecordPath('otp', phone);
+  const data = await db.readJSON(otpPath);
+  if (!data) throw new Error('OTP not found for ' + phone);
+  if (data.otp) return data.otp; // legacy support
+  for (let i = 1000; i <= 9999; i++) {
+    const hash = _crypto.createHash('sha256').update(String(i)).digest('hex');
+    if (hash === data.otpHash) return String(i);
+  }
+  throw new Error('Could not resolve OTP for ' + phone);
+}
 
 describe('Auth Service', () => {
 
@@ -83,8 +98,8 @@ describe('Auth Service', () => {
       assert.ok(data);
       assert.strictEqual(data.phone, '01098765432');
       assert.strictEqual(data.role, 'employer');
-      assert.strictEqual(typeof data.otp, 'string');
-      assert.strictEqual(data.otp.length, 4);
+      assert.strictEqual(typeof data.otpHash, 'string');
+      assert.ok(data.otpHash.length > 0, 'otpHash should be non-empty');
       assert.strictEqual(data.attempts, 0);
     });
 
@@ -102,10 +117,9 @@ describe('Auth Service', () => {
   describe('verifyOtp', () => {
     it('A-07: verifies correct OTP and returns token', async () => {
       await sendOtp('01022222222', 'worker');
-      const otpPath = db.getRecordPath('otp', '01022222222');
-      const otpData = await db.readJSON(otpPath);
+      const otp = await resolveOtp('01022222222');
 
-      const result = await verifyOtp('01022222222', otpData.otp);
+      const result = await verifyOtp('01022222222', otp);
       assert.strictEqual(result.ok, true);
       assert.ok(result.token);
       assert.ok(result.token.startsWith('ses_'));
@@ -134,10 +148,9 @@ describe('Auth Service', () => {
 
     it('A-10: creates user on first verification', async () => {
       await sendOtp('01044444444', 'employer');
-      const otpPath = db.getRecordPath('otp', '01044444444');
-      const otpData = await db.readJSON(otpPath);
+      const otp = await resolveOtp('01044444444');
 
-      const result = await verifyOtp('01044444444', otpData.otp);
+      const result = await verifyOtp('01044444444', otp);
       assert.strictEqual(result.ok, true);
       assert.ok(result.user.id);
       assert.ok(result.user.id.startsWith('usr_'));
@@ -146,16 +159,14 @@ describe('Auth Service', () => {
     it('A-11: same phone second OTP reuses existing user', async () => {
       // First login
       await sendOtp('01055555555', 'worker');
-      let otpPath = db.getRecordPath('otp', '01055555555');
-      let otpData = await db.readJSON(otpPath);
-      const result1 = await verifyOtp('01055555555', otpData.otp);
+      const otp1 = await resolveOtp('01055555555');
+      const result1 = await verifyOtp('01055555555', otp1);
       const userId1 = result1.user.id;
 
       // Second login
       await sendOtp('01055555555', 'worker');
-      otpPath = db.getRecordPath('otp', '01055555555');
-      otpData = await db.readJSON(otpPath);
-      const result2 = await verifyOtp('01055555555', otpData.otp);
+      const otp2 = await resolveOtp('01055555555');
+      const result2 = await verifyOtp('01055555555', otp2);
       const userId2 = result2.user.id;
 
       assert.strictEqual(userId1, userId2, 'same phone should map to same user');
@@ -163,9 +174,8 @@ describe('Auth Service', () => {
 
     it('A-12: deletes OTP file after successful verification', async () => {
       await sendOtp('01066666666', 'worker');
-      const otpPath = db.getRecordPath('otp', '01066666666');
-      let otpData = await db.readJSON(otpPath);
-      await verifyOtp('01066666666', otpData.otp);
+      const otp = await resolveOtp('01066666666');
+      await verifyOtp('01066666666', otp);
 
       // OTP should be deleted
       const deletedOtp = await db.readJSON(otpPath);
@@ -220,9 +230,8 @@ describe('Auth Service', () => {
   describe('Session Creation', () => {
     it('A-16: session token starts with ses_', async () => {
       await sendOtp('01016161616', 'worker');
-      const otpPath = db.getRecordPath('otp', '01016161616');
-      const otpData = await db.readJSON(otpPath);
-      const result = await verifyOtp('01016161616', otpData.otp);
+      const otp = await resolveOtp('01016161616');
+      const result = await verifyOtp('01016161616', otp);
 
       assert.ok(result.token.startsWith('ses_'));
       assert.strictEqual(result.token.length, 4 + 32); // ses_ + 32 hex
@@ -230,9 +239,8 @@ describe('Auth Service', () => {
 
     it('A-17: session file is created', async () => {
       await sendOtp('01017171717', 'employer');
-      const otpPath = db.getRecordPath('otp', '01017171717');
-      const otpData = await db.readJSON(otpPath);
-      const result = await verifyOtp('01017171717', otpData.otp);
+      const otp = await resolveOtp('01017171717');
+      const result = await verifyOtp('01017171717', otp);
 
       const sessionPath = db.getRecordPath('sessions', result.token);
       const session = await db.readJSON(sessionPath);

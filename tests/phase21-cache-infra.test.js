@@ -28,7 +28,7 @@ describe('Phase 21 — Config & Version', () => {
   it('P21-01: package.json version is 0.21.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.23.0');
+    assert.strictEqual(pkg.version, '0.24.0');
   });
 
   it('P21-02: Config has 34 sections', () => {
@@ -57,7 +57,7 @@ describe('Phase 21 — Config & Version', () => {
   });
 
   it('P21-06: PWA cacheName is yawmia-v0.22.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.23.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
   });
 });
 
@@ -297,7 +297,7 @@ describe('Phase 21 — Health Endpoint', () => {
 
   it('P21-30: health handler version is 0.21.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.23.0'"), 'version should be 0.23.0');
+    assert.ok(content.includes("version: '0.24.0'"), 'version should be 0.24.0');
   });
 });
 

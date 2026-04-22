@@ -101,7 +101,7 @@ describe('Phase 14 — Config', () => {
   });
 
   it('P14-07: PWA cacheName updated to v0.21.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.22.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
   });
 });
 
@@ -384,6 +384,6 @@ describe('Phase 14 — Integration', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.22.0');
+    assert.strictEqual(pkg.version, '0.24.0');
   });
 });
