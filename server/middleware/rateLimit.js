@@ -87,6 +87,30 @@ export function rateLimitMiddleware(req, res, next) {
     }
   }
 
+  // Admin write-specific rate limiting (POST/PUT/PATCH/DELETE on /api/admin/*)
+  if (req.pathname.startsWith('/api/admin/') && method !== 'GET') {
+    const adminKey = `admin:${ip}`;
+    const adminWindowMs = 60000;    // 1 minute
+    const adminMaxRequests = 10;    // 10 write requests/min
+
+    let adminEntry = store.get(adminKey);
+    if (!adminEntry || now > adminEntry.resetAt) {
+      adminEntry = { count: 0, resetAt: now + adminWindowMs };
+      store.set(adminKey, adminEntry);
+    }
+
+    adminEntry.count++;
+
+    if (adminEntry.count > adminMaxRequests) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'تم تجاوز الحد المسموح من عمليات الأدمن. حاول بعد قليل.',
+        code: 'ADMIN_RATE_LIMITED',
+      }));
+      return;
+    }
+  }
+
   next();
 }
 

@@ -11,6 +11,11 @@ import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { sendOtpMessage } from './messaging.js';
 
+// ── OTP Hashing ──────────────────────────────────────────────
+function hashOtp(otp) {
+  return crypto.createHash('sha256').update(otp).digest('hex');
+}
+
 // ── Per-phone OTP rate limiting (in-memory) ──────────────────
 const phoneOtpTracker = new Map();
 const PHONE_OTP_WINDOW_MS = config.RATE_LIMIT.otpWindowMs;  // 5 minutes
@@ -79,7 +84,7 @@ export async function sendOtp(phone, role) {
 
   const otpData = {
     phone,
-    otp,
+    otpHash: hashOtp(otp),
     role,
     attempts: 0,
     createdAt: now.toISOString(),
@@ -131,8 +136,10 @@ export async function verifyOtp(phone, otp) {
     return { ok: false, error: 'تم تجاوز الحد الأقصى من المحاولات', code: 'OTP_MAX_ATTEMPTS' };
   }
 
-  // Check OTP
-  if (otpData.otp !== otp) {
+  // Check OTP (hashed comparison — backward compatible with old plain 'otp' field)
+  const inputHash = hashOtp(otp);
+  const storedHash = otpData.otpHash || (otpData.otp ? hashOtp(otpData.otp) : null);
+  if (!storedHash || storedHash !== inputHash) {
     otpData.attempts += 1;
     await atomicWrite(otpPath, otpData);
     return {

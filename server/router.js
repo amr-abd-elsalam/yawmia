@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../config.js';
+import { isValidId } from './services/database.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
@@ -41,7 +42,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.22.0',
+        version: '0.23.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -108,7 +109,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.22.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.23.0' });
     },
   },
 
@@ -289,6 +290,12 @@ export function createRouter() {
 
       // Attach params
       req.params = params;
+
+      // Validate URL parameters (path traversal prevention)
+      if (params.id && !isValidId(params.id)) {
+        sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID' });
+        return;
+      }
 
       // Run route-specific middleware then handler
       runMiddlewares(route.middlewares, req, res, () => {

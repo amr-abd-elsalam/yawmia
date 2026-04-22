@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
 
@@ -549,7 +550,8 @@ export async function duplicateJob(jobId, employerId) {
  * Renew an expired or cancelled job
  * Requires: employer owns job, status in allowedFromStatuses, under max renewals
  */
-export async function renewJob(jobId, employerId) {
+export function renewJob(jobId, employerId) {
+  return withLock(`renew:${jobId}`, async () => {
   // 1. Feature flag check
   if (!config.JOB_RENEWAL || !config.JOB_RENEWAL.enabled) {
     return { ok: false, error: 'تجديد الفرص غير مفعّل حالياً', code: 'RENEWAL_DISABLED' };
@@ -610,4 +612,5 @@ export async function renewJob(jobId, employerId) {
   eventBus.emit('job:renewed', { jobId, employerId, jobTitle: job.title });
 
   return { ok: true, job };
+  }); // end withLock
 }

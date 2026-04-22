@@ -769,10 +769,17 @@
     Yawmia.populateCategories('jobCategory');
     Yawmia.populateGovernorates('jobGovernorate');
 
-    // Cost preview
+    // Cost preview — load fee percentage from config
     var workerInput = Yawmia.$id('jobWorkers');
     var wageInput = Yawmia.$id('jobWage');
     var durationInput = Yawmia.$id('jobDuration');
+    var feePercent = 15; // fallback default
+
+    Yawmia.loadConfig().then(function (cfg) {
+      if (cfg && cfg.FINANCIALS && typeof cfg.FINANCIALS.platformFeePercent === 'number') {
+        feePercent = cfg.FINANCIALS.platformFeePercent;
+      }
+    }).catch(function () { /* use fallback */ });
 
     function updateCost() {
       var workers = parseInt(workerInput ? workerInput.value : 0) || 0;
@@ -781,7 +788,7 @@
 
       if (workers > 0 && wage > 0 && duration > 0) {
         var total = workers * wage * duration;
-        var fee = Math.round(total * 0.15);
+        var fee = Math.round(total * (feePercent / 100));
         Yawmia.$id('costTotal').textContent = total.toLocaleString('ar-EG') + ' جنيه';
         Yawmia.$id('costFee').textContent = fee.toLocaleString('ar-EG') + ' جنيه';
         Yawmia.show('costPreview');

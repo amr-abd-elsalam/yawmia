@@ -139,11 +139,16 @@ export async function deleteJSON(filePath) {
 
 /**
  * List all JSON files in a directory
+ * @param {string} dirPath
+ * @param {{ prefix?: string }} [options] — optional prefix filter for filenames
  */
-export async function listJSON(dirPath) {
+export async function listJSON(dirPath, options = {}) {
   try {
     const files = await readdir(dirPath);
-    const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    if (options.prefix) {
+      jsonFiles = jsonFiles.filter(f => f.startsWith(options.prefix));
+    }
     const results = [];
     for (const file of jsonFiles) {
       const data = await readJSON(join(dirPath, file));
@@ -173,11 +178,26 @@ export async function writeIndex(indexName, data) {
 }
 
 /**
+ * Validate a record ID for safe filesystem use.
+ * Allows: alphanumeric, underscore, hyphen (covers all ID formats + phone numbers).
+ * Rejects: path traversal (..), slashes, HTML/script, empty, null, too long.
+ * @param {*} id
+ * @returns {boolean}
+ */
+export function isValidId(id) {
+  if (!id || typeof id !== 'string') return false;
+  if (id.length > 100) return false;
+  if (id.includes('..')) return false;
+  return /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+/**
  * Get full path for a record
  */
 export function getRecordPath(collection, id) {
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
+  if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
   return join(BASE_PATH, dir, `${id}.json`);
 }
 
