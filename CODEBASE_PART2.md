@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.23.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-22T05:15:25.283Z
+# يوميّة (Yawmia) v0.24.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-22T06:54:30.070Z
 > Files in this part: 29
 
 ## Files
@@ -1284,6 +1284,7 @@ export async function verifyOtp(phone, otp) {
       role: user.role,
       name: user.name,
       governorate: user.governorate,
+      termsAcceptedAt: user.termsAcceptedAt || null,
     },
   };
 }

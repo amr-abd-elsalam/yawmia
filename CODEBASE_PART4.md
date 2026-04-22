@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.23.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-22T05:15:25.294Z
-> Files in this part: 28
+# يوميّة (Yawmia) v0.24.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-22T06:54:30.084Z
+> Files in this part: 29
 
 ## Files
 1. `frontend/404.html`
@@ -25,12 +25,13 @@
 20. `frontend/robots.txt`
 21. `frontend/sitemap.xml`
 22. `frontend/sw.js`
-23. `frontend/user.html`
-24. `scripts/backup.js`
-25. `scripts/benchmark.js`
-26. `scripts/bundle-for-review.js`
-27. `scripts/generate-vapid-keys.js`
-28. `scripts/repair-indexes.js`
+23. `frontend/terms.html`
+24. `frontend/user.html`
+25. `scripts/backup.js`
+26. `scripts/benchmark.js`
+27. `scripts/bundle-for-review.js`
+28. `scripts/generate-vapid-keys.js`
+29. `scripts/repair-indexes.js`
 
 ---
 
@@ -3846,6 +3847,71 @@ var Yawmia = (function () {
     }
   });
 
+  // ── API with Retry (Exponential Backoff) ──────────────────
+  async function apiWithRetry(method, path, body, retryOpts) {
+    var opts = retryOpts || {};
+    var maxRetries = typeof opts.maxRetries === 'number' ? opts.maxRetries : 3;
+    var baseDelayMs = typeof opts.baseDelayMs === 'number' ? opts.baseDelayMs : 1000;
+    var lastResult = null;
+
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        var result = await api(method, path, body);
+        // Don't retry on 4xx (client errors) — only retry on 5xx
+        if (result.status < 500) {
+          return result;
+        }
+        lastResult = result;
+      } catch (err) {
+        // Network error (fetch threw)
+        lastResult = { status: 0, data: { error: 'خطأ في الاتصال', code: 'NETWORK_ERROR' } };
+      }
+
+      // Don't wait after the last attempt
+      if (attempt < maxRetries) {
+        var delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise(function (resolve) { setTimeout(resolve, delay); });
+      }
+    }
+
+    return lastResult;
+  }
+
+  // ── Online/Offline Detection ──────────────────────────────
+  var offlineBanner = null;
+
+  function showOfflineBanner() {
+    if (offlineBanner) return;
+    offlineBanner = document.createElement('div');
+    offlineBanner.id = 'yawmia-offline-banner';
+    offlineBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:#fff;text-align:center;padding:0.6rem 1rem;font-size:0.9rem;font-weight:600;z-index:9999;font-family:inherit;direction:rtl;';
+    offlineBanner.textContent = '📡 أنت غير متصل بالإنترنت';
+    document.body.prepend(offlineBanner);
+  }
+
+  function hideOfflineBanner() {
+    if (offlineBanner && offlineBanner.parentNode) {
+      offlineBanner.parentNode.removeChild(offlineBanner);
+      offlineBanner = null;
+    }
+  }
+
+  window.addEventListener('offline', function () {
+    showOfflineBanner();
+  });
+
+  window.addEventListener('online', function () {
+    hideOfflineBanner();
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.success('تم استعادة الاتصال بالإنترنت');
+    }
+  });
+
+  // Check on page load
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    showOfflineBanner();
+  }
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -3870,6 +3936,7 @@ var Yawmia = (function () {
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
+    apiWithRetry: apiWithRetry,
   };
 })();
 ```
@@ -3956,6 +4023,9 @@ var Yawmia = (function () {
             setupProfileStep();
             var nameField = Yawmia.$id('nameInput');
             if (nameField) nameField.focus();
+          } else if (!res.data.user.termsAcceptedAt) {
+            // Terms not accepted → redirect to terms page
+            window.location.href = '/terms.html?accept=1';
           } else {
             window.location.href = '/dashboard.html';
           }
@@ -4509,7 +4579,14 @@ var YawmiaIcons = (function () {
           ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>';
         }
       }
-    } catch (err) { /* ignore */ }
+    } catch (err) {
+      var ntfListErr = Yawmia.$id('notificationList');
+      if (ntfListErr) {
+        ntfListErr.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">⚠️</span><p>خطأ في تحميل الإشعارات</p><button class="btn btn--ghost btn--sm" id="retryLoadNotifs" style="margin-top:0.5rem;">🔄 حاول مرة تانية</button></div>';
+        var retryNBtn = Yawmia.$id('retryLoadNotifs');
+        if (retryNBtn) retryNBtn.addEventListener('click', function () { loadNotifications(); });
+      }
+    }
   }
 
   // ── Pagination State ──────────────────────────────────────
@@ -4590,8 +4667,10 @@ var YawmiaIcons = (function () {
         Yawmia.hide('paginationControls');
       }
     } catch (err) {
-      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p></div>';
+      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p><button class="btn btn--primary btn--sm" id="retryLoadJobs" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
       Yawmia.hide('paginationControls');
+      var retryBtn = Yawmia.$id('retryLoadJobs');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadJobs(); });
     }
   }
 
@@ -6427,7 +6506,9 @@ var YawmiaModal = (function () {
         listEl.innerHTML = '<p class="empty-state">لا توجد طلبات بعد</p>';
       }
     } catch (err) {
-      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الطلبات</p>';
+      listEl.innerHTML = '<div class="empty-state"><p>خطأ في تحميل الطلبات</p><button class="btn btn--primary btn--sm" id="retryMyApps" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryBtn = Yawmia.$id('retryMyApps');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadMyApplications(); });
     }
   }
 
@@ -6518,7 +6599,9 @@ var YawmiaModal = (function () {
         listEl.innerHTML = '<p class="empty-state">لا توجد فرص منشورة بعد</p>';
       }
     } catch (err) {
-      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      listEl.innerHTML = '<div class="empty-state"><p>خطأ في تحميل الفرص</p><button class="btn btn--primary btn--sm" id="retryMyJobs" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryBtn = Yawmia.$id('retryMyJobs');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadMyJobs(); });
     }
   }
 
@@ -6562,7 +6645,9 @@ var YawmiaModal = (function () {
         renderRatingSummary(summaryArea, summaryRes.data);
       }
     } catch (err) {
-      if (summaryArea) summaryArea.innerHTML = '';
+      if (summaryArea) summaryArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل ملخص التقييمات</p><button class="btn btn--ghost btn--sm" id="retryRatingSummary" style="margin-top:0.5rem;">🔄 حاول مرة تانية</button></div>';
+      var retrySBtn = Yawmia.$id('retryRatingSummary');
+      if (retrySBtn) retrySBtn.addEventListener('click', function () { loadRatings(userId); });
     }
 
     // Load individual ratings
@@ -6574,7 +6659,9 @@ var YawmiaModal = (function () {
         if (listArea) listArea.innerHTML = '<p class="empty-state">لا توجد تقييمات تفصيلية بعد</p>';
       }
     } catch (err) {
-      if (listArea) listArea.innerHTML = '<p class="empty-state">خطأ في تحميل التقييمات</p>';
+      if (listArea) listArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل التقييمات</p><button class="btn btn--primary btn--sm" id="retryRatingsList" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryRBtn = Yawmia.$id('retryRatingsList');
+      if (retryRBtn) retryRBtn.addEventListener('click', function () { loadRatings(userId); });
     }
   }
 
@@ -6894,7 +6981,9 @@ var YawmiaModal = (function () {
       });
 
     } catch (err) {
-      listArea.innerHTML = '<p class="empty-state">خطأ في تحميل سجل الحضور</p>';
+      listArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل سجل الحضور</p><button class="btn btn--primary btn--sm" id="retryAttendance" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryABtn = Yawmia.$id('retryAttendance');
+      if (retryABtn) retryABtn.addEventListener('click', function () { loadAttendanceHistory(); });
     }
   }
 
@@ -8296,7 +8385,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.23.0';
+const CACHE_NAME = 'yawmia-v0.24.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -8324,6 +8413,7 @@ const STATIC_ASSETS = [
   '/sitemap.xml',
   '/404.html',
   '/offline.html',
+  '/terms.html',
 ];
 
 // ── Install: pre-cache static assets ──
@@ -8437,6 +8527,131 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+```
+
+---
+
+## `frontend/terms.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — شروط وأحكام الاستخدام</title>
+  <meta name="description" content="شروط وأحكام استخدام منصة يوميّة لتوظيف العمالة اليومية في مصر.">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
+  <div class="app">
+    <header class="header">
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <a href="/" class="header__brand-link">
+            <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
+          </a>
+          <p class="header__tagline">شروط وأحكام الاستخدام</p>
+        </div>
+      </nav>
+    </header>
+
+    <main class="main" id="main-content">
+      <div class="container">
+        <section class="card">
+          <h2 class="card__title">شروط وأحكام استخدام منصة يوميّة</h2>
+          <p class="card__desc">آخر تحديث: أبريل 2026 — الإصدار 1.0</p>
+
+          <article style="line-height:1.8;color:var(--color-text);">
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">1. القبول والموافقة</h3>
+            <p>باستخدامك لمنصة يوميّة، فأنت توافق على هذه الشروط والأحكام بالكامل. إذا كنت لا توافق على أي من هذه الشروط، يُرجى عدم استخدام المنصة. يحق لنا تعديل هذه الشروط في أي وقت، وسيتم إبلاغك بأي تغييرات جوهرية.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">2. طبيعة الخدمة</h3>
+            <p>يوميّة هي منصة وسيطة تربط بين أصحاب العمل والعمال اليوميين في مصر. المنصة لا تُعتبر صاحب عمل ولا تتحمل مسؤولية العلاقة التعاقدية بين الطرفين. المنصة توفر أدوات لنشر فرص العمل، التقديم عليها، تتبع الحضور، وإدارة المدفوعات.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">3. العمولة والرسوم</h3>
+            <p>تحصل المنصة على عمولة بنسبة 15% من إجمالي تكلفة العمالة المتفق عليها. هذه النسبة تشمل تكاليف تشغيل المنصة، خدمة العملاء، ونظام التعويضات. العمولة تُحسب تلقائياً عند إنشاء فرصة العمل ويتم عرضها بشفافية قبل النشر.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">4. سلوك المستخدمين</h3>
+            <p>يلتزم جميع المستخدمين بالآتي: تقديم معلومات صحيحة ودقيقة عند التسجيل، عدم استخدام المنصة لأي نشاط غير قانوني أو احتيالي، الالتزام بالحضور في المواعيد المتفق عليها، التعامل باحترام مع جميع الأطراف. يحق للمنصة تعليق أو حظر أي حساب ينتهك هذه القواعد.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">5. المدفوعات والتعويضات</h3>
+            <p>صاحب العمل مسؤول عن دفع الأجور المتفق عليها للعمال. المنصة توفر نظام تتبع للمدفوعات لكنها لا تتحمل مسؤولية التأخر في الدفع. في حالة إصابات العمل، يتم تطبيق نظام التعويضات المنصوص عليه بنسبة 75% من اليومية لمدة أقصاها 30 يوم. يمكن لأي طرف فتح نزاع خلال 7 أيام من إنهاء الفرصة.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">6. حذف الحساب والبيانات</h3>
+            <p>يحق لأي مستخدم طلب حذف حسابه في أي وقت من صفحة الملف الشخصي. عند الحذف، يتم إخفاء البيانات الشخصية فوراً وحذفها نهائياً خلال 90 يوم. لا يمكن استرجاع الحساب بعد الحذف.</p>
+
+            <h3 style="margin-block:1.25rem 0.5rem;font-size:1.1rem;color:var(--color-primary);">7. التعديل على الشروط</h3>
+            <p>يحق لمنصة يوميّة تعديل هذه الشروط في أي وقت. سيتم إبلاغ المستخدمين بأي تعديلات جوهرية عبر إشعارات المنصة. الاستمرار في استخدام المنصة بعد التعديل يُعتبر قبولاً للشروط المُعدّلة.</p>
+
+          </article>
+
+          <!-- Accept Button (conditional — only when ?accept=1 and user is logged in) -->
+          <div id="acceptSection" class="hidden" style="margin-block-start:2rem;text-align:center;">
+            <hr class="section-divider">
+            <p style="margin-block-end:1rem;font-size:0.95rem;color:var(--color-text-muted);">بالضغط على "أوافق" فأنت توافق على شروط وأحكام استخدام منصة يوميّة.</p>
+            <button class="btn btn--primary btn--full" id="btnAcceptTerms">أوافق على الشروط والأحكام</button>
+            <div class="message" id="termsMsg"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/assets/js/app.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var params = new URLSearchParams(window.location.search);
+    var shouldAccept = params.get('accept') === '1';
+
+    if (shouldAccept && Yawmia.isLoggedIn()) {
+      Yawmia.show('acceptSection');
+
+      var btnAccept = document.getElementById('btnAcceptTerms');
+      if (btnAccept) {
+        btnAccept.addEventListener('click', async function () {
+          Yawmia.setLoading(btnAccept, true);
+          try {
+            var res = await Yawmia.api('POST', '/api/auth/accept-terms');
+            if (res.data.ok) {
+              // Update stored user with termsAcceptedAt
+              var storedUser = Yawmia.getUser();
+              if (storedUser) {
+                storedUser.termsAcceptedAt = new Date().toISOString();
+                Yawmia.setAuth(Yawmia.getToken(), storedUser);
+              }
+              window.location.href = '/dashboard.html';
+            } else {
+              Yawmia.showMessage('termsMsg', res.data.error || 'خطأ في قبول الشروط', 'error');
+            }
+          } catch (err) {
+            Yawmia.showMessage('termsMsg', 'خطأ في الاتصال بالسيرفر', 'error');
+          } finally {
+            Yawmia.setLoading(btnAccept, false);
+          }
+        });
+      }
+    }
+  })();
+  </script>
+</body>
+</html>
 ```
 
 ---

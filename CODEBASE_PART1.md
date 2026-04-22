@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.23.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-22T05:15:25.279Z
+# يوميّة (Yawmia) v0.24.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-22T06:54:30.066Z
 > Files in this part: 6
 
 ## Files
@@ -500,7 +500,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.23.0',
+    cacheName: 'yawmia-v0.24.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -728,7 +728,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -776,6 +776,7 @@ import { securityMiddleware } from './server/middleware/security.js';
 import { requestIdMiddleware } from './server/middleware/requestId.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
+import { timingMiddleware } from './server/middleware/timing.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -852,6 +853,7 @@ function runMiddleware(middlewares, req, res, done) {
 }
 
 const globalMiddleware = [
+  timingMiddleware,
   corsMiddleware,
   securityMiddleware,
   requestIdMiddleware,
@@ -999,7 +1001,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.23.0',
+        version: '0.24.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1031,6 +1033,13 @@ const routes = [
         response.cache = cacheStats();
       } catch (_) {
         response.cache = { hits: 0, misses: 0, size: 0, hitRate: '0%' };
+      }
+      // Request metrics (non-blocking)
+      try {
+        const { getMetrics } = await import('./middleware/timing.js');
+        response.requestMetrics = getMetrics();
+      } catch (_) {
+        response.requestMetrics = { count: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, p99Ms: 0, errorRate: '0%' };
       }
       sendJSON(res, 200, response);
     },
@@ -1066,7 +1075,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.23.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.24.0' });
     },
   },
 
