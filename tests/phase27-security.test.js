@@ -253,24 +253,24 @@ describe('Phase 27 — listJSON Enhancement', () => {
 
 describe('Phase 27 — Version', () => {
 
-  it('P27-31: package.json version is 0.23.0', async () => {
+  it('P27-31: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 
-  it('P27-32: config PWA cacheName is yawmia-v0.24.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P27-32: config PWA cacheName is yawmia-v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 
-  it('P27-33: sw.js CACHE_NAME is yawmia-v0.24.0', async () => {
+  it('P27-33: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.24.0'"), 'sw.js cache name should be yawmia-v0.24.0');
+    assert.ok(content.includes("'yawmia-v0.25.0'"), 'sw.js cache name should be yawmia-v0.25.0');
   });
 
-  it('P27-34: health endpoint version is 0.24.0', async () => {
+  it('P27-34: health endpoint version is 0.25.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.24.0'"), 'router health version should be 0.24.0');
+    assert.ok(content.includes("version: '0.25.0'"), 'router health version should be 0.25.0');
   });
 });
 

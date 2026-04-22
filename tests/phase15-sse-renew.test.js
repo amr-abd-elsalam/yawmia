@@ -89,9 +89,9 @@ function createMockRes() {
 
 describe('Phase 15 — Config', () => {
 
-  it('P15-01: Config has 34 sections', () => {
+  it('P15-01: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 38, `expected 38 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P15-02: SSE section has correct fields', () => {
@@ -126,8 +126,8 @@ describe('Phase 15 — Config', () => {
     }, TypeError, 'should not allow mutation');
   });
 
-  it('P15-06: PWA cacheName updated to v0.21.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P15-06: PWA cacheName updated to v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 });
 
@@ -416,11 +416,11 @@ describe('Phase 15 — SSE Handler', () => {
 
 describe('Phase 15 — Version', () => {
 
-  it('P15-28: package.json version 0.19.0', async () => {
+  it('P15-28: package.json version 0.25.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 });
 

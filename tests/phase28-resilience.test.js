@@ -116,9 +116,9 @@ describe('Phase 28 — Health Endpoint', () => {
     assert.ok(content.includes('requestMetrics'), 'health handler should include requestMetrics');
   });
 
-  it('P28-13: health version is 0.24.0', async () => {
+  it('P28-13: health version is 0.25.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.24.0'"), 'health version should be 0.24.0');
+    assert.ok(content.includes("version: '0.25.0'"), 'health version should be 0.25.0');
   });
 });
 
@@ -260,9 +260,9 @@ describe('Phase 28 — Service Worker Cache', () => {
     assert.ok(content.includes('/terms.html'), 'STATIC_ASSETS should include /terms.html');
   });
 
-  it('P28-32: sw.js CACHE_NAME is yawmia-v0.24.0', async () => {
+  it('P28-32: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.24.0'"), 'cache name should be yawmia-v0.24.0');
+    assert.ok(content.includes("'yawmia-v0.25.0'"), 'cache name should be yawmia-v0.25.0');
   });
 });
 
@@ -272,14 +272,14 @@ describe('Phase 28 — Service Worker Cache', () => {
 
 describe('Phase 28 — Version', () => {
 
-  it('P28-33: package.json version is 0.24.0', async () => {
+  it('P28-33: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 
-  it('P28-34: config PWA cacheName is yawmia-v0.24.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P28-34: config PWA cacheName is yawmia-v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 });
 

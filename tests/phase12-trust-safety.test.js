@@ -55,9 +55,9 @@ async function createTestUser(role) {
 
 describe('Phase 12 — Config', () => {
 
-  it('P12-01: Config has 34 sections', () => {
+  it('P12-01: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 38, `expected 38 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P12-02: REPORTS section has all fields', () => {

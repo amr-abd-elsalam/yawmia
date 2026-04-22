@@ -95,15 +95,15 @@ describe('Phase 17 — Config', () => {
     assert.ok(Math.abs(sum - 1.0) < 0.001, `weights sum should be 1.0, got ${sum}`);
   });
 
-  it('P17-03: package.json version is 0.21.0', async () => {
+  it('P17-03: package.json version is 0.25.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 
-  it('P17-04: PWA cacheName is yawmia-v0.22.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P17-04: PWA cacheName is yawmia-v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 
   it('P17-05: ATTENDANCE.allowEmployerOverride is true', () => {
