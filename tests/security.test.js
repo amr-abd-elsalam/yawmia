@@ -124,10 +124,17 @@ describe('Security Headers & CORS', () => {
       body: JSON.stringify({ phone: '01012345678', role: 'employer' }),
     });
 
-    // Read OTP from file (same approach as integration-http.test.js)
+    // Read OTP from file — brute-force from hash (Phase 27+ stores otpHash)
     const otpPath = _db.getRecordPath('otp', '01012345678');
     const otpFile = await _db.readJSON(otpPath);
-    const otp = otpFile.otp;
+    let otp = otpFile.otp;
+    if (!otp && otpFile.otpHash) {
+      const crypto = await import('node:crypto');
+      for (let i = 1000; i <= 9999; i++) {
+        const hash = crypto.createHash('sha256').update(String(i)).digest('hex');
+        if (hash === otpFile.otpHash) { otp = String(i); break; }
+      }
+    }
 
     const verifyRes = await fetch(`${BASE}/api/auth/verify-otp`, {
       method: 'POST',

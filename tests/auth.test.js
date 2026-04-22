@@ -178,7 +178,8 @@ describe('Auth Service', () => {
       await verifyOtp('01066666666', otp);
 
       // OTP should be deleted
-      const deletedOtp = await db.readJSON(otpPath);
+      const otpPathCheck = db.getRecordPath('otp', '01066666666');
+      const deletedOtp = await db.readJSON(otpPathCheck);
       assert.strictEqual(deletedOtp, null, 'OTP should be deleted after verification');
     });
 
