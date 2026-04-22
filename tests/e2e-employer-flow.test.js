@@ -61,7 +61,14 @@ async function api(method, path, body, headers = {}) {
 
 async function getOtp(phone) {
   const data = await _db.readJSON(_db.getRecordPath('otp', phone));
-  return data ? data.otp : null;
+  if (!data) return null;
+  if (data.otp) return data.otp;
+  const crypto = await import('node:crypto');
+  for (let i = 1000; i <= 9999; i++) {
+    const hash = crypto.createHash('sha256').update(String(i)).digest('hex');
+    if (hash === data.otpHash) return String(i);
+  }
+  return null;
 }
 
 async function loginAs(phone, role) {

@@ -84,7 +84,14 @@ async function api(method, path, body, headers = {}) {
 async function getOtp(phone) {
   const otpPath = _db.getRecordPath('otp', phone);
   const data = await _db.readJSON(otpPath);
-  return data ? data.otp : null;
+  if (!data) return null;
+  if (data.otp) return data.otp;
+  const crypto = await import('node:crypto');
+  for (let i = 1000; i <= 9999; i++) {
+    const hash = crypto.createHash('sha256').update(String(i)).digest('hex');
+    if (hash === data.otpHash) return String(i);
+  }
+  return null;
 }
 
 async function loginAs(phone, role) {
@@ -297,7 +304,7 @@ describe('E2E Worker Flow', () => {
     const res = await api('GET', '/api/health');
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.data.status, 'ok');
-    assert.strictEqual(res.data.version, '0.22.0');
+    assert.strictEqual(res.data.version, '0.24.0');
     assert.ok(res.data.environment);
   });
 
@@ -305,6 +312,6 @@ describe('E2E Worker Flow', () => {
     const res = await api('GET', '/api/docs');
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.routes);
-    assert.strictEqual(res.data.total, 61);
+    assert.strictEqual(res.data.total, 70);
   });
 });
