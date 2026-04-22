@@ -86,7 +86,7 @@ describe('Config — Basic Structure', () => {
 
   it('T-12: config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 38, `expected 38 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 41, `expected 41 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('T-13: config has DATABASE section', () => {
