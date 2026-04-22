@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
+import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
 
 /**
@@ -28,6 +29,13 @@ export async function create(phone, role) {
     notificationPreferences: null,
     verificationStatus: 'unverified',
     verificationSubmittedAt: null,
+    availability: {
+      available: (config.WORKER_AVAILABILITY && config.WORKER_AVAILABILITY.defaultAvailable !== undefined)
+        ? config.WORKER_AVAILABILITY.defaultAvailable : true,
+      availableFrom: null,
+      availableUntil: null,
+      updatedAt: now,
+    },
     createdAt: now,
     updatedAt: now,
   };

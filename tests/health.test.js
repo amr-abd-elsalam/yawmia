@@ -84,9 +84,9 @@ describe('Config — Basic Structure', () => {
     assert.ok(config.FINANCIALS.maxCompensationDays > 0);
   });
 
-  it('T-12: config has 31 sections', () => {
+  it('T-12: config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 38, `expected 38 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('T-13: config has DATABASE section', () => {

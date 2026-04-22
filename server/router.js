@@ -42,7 +42,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.24.0',
+        version: '0.25.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -82,6 +82,13 @@ const routes = [
       } catch (_) {
         response.requestMetrics = { count: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, p99Ms: 0, errorRate: '0%' };
       }
+      // Index health (non-blocking)
+      try {
+        const { getHealthStatus } = await import('./services/indexHealth.js');
+        response.indexHealth = getHealthStatus();
+      } catch (_) {
+        response.indexHealth = { lastCheck: null, status: 'unknown', warnings: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -116,7 +123,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.24.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.25.0' });
     },
   },
 
@@ -278,6 +285,10 @@ function runMiddlewares(middlewares, req, res, done) {
 
 // Setup notification event listeners
 setupNotificationListeners();
+
+// Setup smart job matching
+import { setupJobMatching } from './services/jobMatcher.js';
+setupJobMatching();
 
 /**
  * Creates the router function

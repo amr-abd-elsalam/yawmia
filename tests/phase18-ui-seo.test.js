@@ -34,14 +34,14 @@ async function readFrontend(relativePath) {
 
 describe('Phase 18 — Config & Version', () => {
 
-  it('P18-01: package.json version is 0.21.0', async () => {
+  it('P18-01: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 
-  it('P18-02: PWA cacheName is yawmia-v0.22.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P18-02: PWA cacheName is yawmia-v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 
   it('P18-03: Router has 61 routes', async () => {

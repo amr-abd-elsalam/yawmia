@@ -35,14 +35,14 @@ async function readFrontend(relativePath) {
 
 describe('Phase 19 — Config & Version', () => {
 
-  it('P19-01: package.json version is 0.21.0', async () => {
+  it('P19-01: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.24.0');
+    assert.strictEqual(pkg.version, '0.25.0');
   });
 
-  it('P19-02: PWA cacheName is yawmia-v0.22.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.24.0');
+  it('P19-02: PWA cacheName is yawmia-v0.25.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.25.0');
   });
 
   it('P19-03: Router has 59 routes (unchanged)', async () => {
@@ -52,9 +52,9 @@ describe('Phase 19 — Config & Version', () => {
     assert.strictEqual(routeMatches.length, 70, `expected 70 routes, got ${routeMatches.length}`);
   });
 
-  it('P19-04: Config still has 33 sections', () => {
+  it('P19-04: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 36, `expected 36 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 38, `expected 38 config sections, got ${keys.length}`);
   });
 });
 
@@ -138,9 +138,9 @@ describe('Phase 19 — Service Worker', () => {
     assert.ok(content.includes('/assets/js/toast.js'), 'should cache toast.js');
   });
 
-  it('P19-17: sw.js CACHE_NAME is yawmia-v0.22.0', async () => {
+  it('P19-17: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFrontend('sw.js');
-    assert.ok(content.includes("'yawmia-v0.24.0'"), 'cache name should be yawmia-v0.24.0');
+    assert.ok(content.includes("'yawmia-v0.25.0'"), 'cache name should be yawmia-v0.25.0');
   });
 });
 

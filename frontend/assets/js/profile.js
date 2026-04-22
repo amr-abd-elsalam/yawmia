@@ -55,6 +55,11 @@
         renderNotificationPreferences(user);
         renderVerificationSection(user);
 
+        // Availability toggle (worker only)
+        if (user.role === 'worker') {
+          renderAvailabilityToggle(user);
+        }
+
         // Role-specific sections
         if (user.role === 'worker') {
           Yawmia.show('myApplicationsSection');
@@ -552,6 +557,70 @@
         } catch (err) {
           saveBtn.textContent = 'خطأ — حاول مرة تانية';
           saveBtn.disabled = false;
+        }
+      });
+    }
+  }
+
+  // ── Availability Toggle (Worker Only) ─────────────────────
+  function renderAvailabilityToggle(u) {
+    var container = Yawmia.$id('availability-section');
+    if (!container) return;
+
+    var availability = u.availability || {};
+    var isAvailable = availability.available !== false;
+
+    container.innerHTML =
+      '<section class="card">' +
+        '<h2 class="card__title">حالة الإتاحة</h2>' +
+        '<p class="card__desc">حدد إذا كنت متاح للعمل حالياً. صاحب العمل هيشوف حالتك والمنصة هتبعتلك فرص مناسبة لما تكون متاح.</p>' +
+        '<label class="pref-item" style="cursor:pointer;font-size:1.1rem;padding:0.75rem 0;">' +
+          '<input type="checkbox" id="availabilityToggle" ' + (isAvailable ? 'checked' : '') +
+          ' style="width:1.4rem;height:1.4rem;accent-color:var(--color-success);">' +
+          '<span id="availabilityLabel">' + (isAvailable ? '🟢 متاح للعمل' : '🔴 غير متاح حالياً') + '</span>' +
+        '</label>' +
+      '</section>';
+
+    var toggle = Yawmia.$id('availabilityToggle');
+    var label = Yawmia.$id('availabilityLabel');
+    if (toggle) {
+      toggle.addEventListener('change', async function () {
+        var newState = toggle.checked;
+        label.textContent = newState ? '🟢 متاح للعمل' : '🔴 غير متاح حالياً';
+        toggle.disabled = true;
+
+        try {
+          var res = await Yawmia.api('PUT', '/api/auth/profile', {
+            availability: { available: newState },
+          });
+          if (res.data.ok) {
+            // Update stored user
+            var storedUser = Yawmia.getUser();
+            if (storedUser) {
+              if (!storedUser.availability) storedUser.availability = {};
+              storedUser.availability.available = newState;
+              Yawmia.setAuth(Yawmia.getToken(), storedUser);
+            }
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success(newState ? 'أنت متاح للعمل الآن' : 'تم تعطيل الإتاحة');
+            }
+          } else {
+            // Revert on failure
+            toggle.checked = !newState;
+            label.textContent = !newState ? '🟢 متاح للعمل' : '🔴 غير متاح حالياً';
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.error(res.data.error || 'خطأ في تحديث الحالة');
+            }
+          }
+        } catch (err) {
+          // Revert on error
+          toggle.checked = !newState;
+          label.textContent = !newState ? '🟢 متاح للعمل' : '🔴 غير متاح حالياً';
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('خطأ في الاتصال بالسيرفر');
+          }
+        } finally {
+          toggle.disabled = false;
         }
       });
     }

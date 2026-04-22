@@ -430,7 +430,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.24.0',
+    cacheName: 'yawmia-v0.25.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -608,6 +608,25 @@ const config = {
       job_cancelled: true,                   // الفرصة اتلغت
       attendance_noshow: true,               // تسجيل غياب
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 37. إتاحة العامل (WORKER_AVAILABILITY)
+  // ═══════════════════════════════════════════════════════════
+  WORKER_AVAILABILITY: {
+    enabled: true,
+    defaultAvailable: true,                  // المستخدمين الجدد متاحين افتراضياً
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 38. المطابقة الذكية للفرص (JOB_MATCHING)
+  // ═══════════════════════════════════════════════════════════
+  JOB_MATCHING: {
+    enabled: true,
+    maxNotificationsPerJob: 50,              // أقصى عدد إشعارات لكل فرصة جديدة
+    matchByCategory: true,                   // مطابقة حسب التخصص (مطلوب)
+    matchByProximity: true,                  // مطابقة حسب القرب الجغرافي
+    proximityRadiusKm: 50,                   // نطاق المطابقة الجغرافية (كم)
   },
 
 };

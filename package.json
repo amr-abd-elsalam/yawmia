@@ -1,6 +1,6 @@
 {
   "name": "yawmia",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",

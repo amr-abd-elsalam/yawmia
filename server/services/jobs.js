@@ -141,13 +141,14 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (case-insensitive)
+  // Text search on title + description (Arabic-normalized, case-insensitive)
   if (filters.search) {
-    const term = filters.search.toLowerCase();
+    const { normalizeArabic } = await import('./arabicNormalizer.js');
+    const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
     jobs = jobs.filter(j => {
-      const title = (j.title || '').toLowerCase();
-      const desc = (j.description || '').toLowerCase();
-      return title.includes(term) || desc.includes(term);
+      const title = normalizeArabic((j.title || '').toLowerCase());
+      const desc = normalizeArabic((j.description || '').toLowerCase());
+      return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
     });
   }
 

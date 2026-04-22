@@ -141,8 +141,22 @@ try {
   logger.warn('Startup cleanup error', { error: err.message });
 }
 
+// ── Startup Index Health Check ────────────────────────────────
+try {
+  const { checkIndexHealth } = await import('./server/services/indexHealth.js');
+  const healthResult = await checkIndexHealth();
+  if (healthResult.warnings.length > 0) {
+    logger.warn(`Startup: index health check found ${healthResult.warnings.length} warning(s). Run: node scripts/repair-indexes.js`);
+  } else {
+    logger.info('Startup: index health check passed');
+  }
+} catch (err) {
+  logger.warn('Startup index health check error', { error: err.message });
+}
+
 // ── Periodic Cleanup (every 30 minutes) ───────────────────────
 const CLEANUP_INTERVAL = 30 * 60 * 1000;
+let cleanupCycleCount = 0;
 const cleanupTimer = setInterval(async () => {
   try {
     await cleanExpiredSessions();
@@ -150,6 +164,15 @@ const cleanupTimer = setInterval(async () => {
     await cleanExpiredOtps();
     await cleanOldNotifications();
     await autoDetectNoShows();
+
+    // Index health check every 12 cycles (= 6 hours)
+    cleanupCycleCount++;
+    if (cleanupCycleCount % 12 === 0) {
+      try {
+        const { checkIndexHealth } = await import('./server/services/indexHealth.js');
+        await checkIndexHealth();
+      } catch (_) { /* non-fatal */ }
+    }
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
   }
