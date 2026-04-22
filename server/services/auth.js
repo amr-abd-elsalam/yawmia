@@ -176,6 +176,7 @@ export async function verifyOtp(phone, otp) {
       role: user.role,
       name: user.name,
       governorate: user.governorate,
+      termsAcceptedAt: user.termsAcceptedAt || null,
     },
   };
 }

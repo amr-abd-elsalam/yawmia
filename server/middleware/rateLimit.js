@@ -88,7 +88,7 @@ export function rateLimitMiddleware(req, res, next) {
   }
 
   // Admin write-specific rate limiting (POST/PUT/PATCH/DELETE on /api/admin/*)
-  if (req.pathname.startsWith('/api/admin/') && method !== 'GET') {
+  if (req.pathname.startsWith('/api/admin/') && req.method !== 'GET') {
     const adminKey = `admin:${ip}`;
     const adminWindowMs = 60000;    // 1 minute
     const adminMaxRequests = 10;    // 10 write requests/min

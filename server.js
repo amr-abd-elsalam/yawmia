@@ -21,6 +21,7 @@ import { securityMiddleware } from './server/middleware/security.js';
 import { requestIdMiddleware } from './server/middleware/requestId.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
+import { timingMiddleware } from './server/middleware/timing.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -97,6 +98,7 @@ function runMiddleware(middlewares, req, res, done) {
 }
 
 const globalMiddleware = [
+  timingMiddleware,
   corsMiddleware,
   securityMiddleware,
   requestIdMiddleware,

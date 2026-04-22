@@ -272,7 +272,9 @@
         listEl.innerHTML = '<p class="empty-state">لا توجد طلبات بعد</p>';
       }
     } catch (err) {
-      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الطلبات</p>';
+      listEl.innerHTML = '<div class="empty-state"><p>خطأ في تحميل الطلبات</p><button class="btn btn--primary btn--sm" id="retryMyApps" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryBtn = Yawmia.$id('retryMyApps');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadMyApplications(); });
     }
   }
 
@@ -363,7 +365,9 @@
         listEl.innerHTML = '<p class="empty-state">لا توجد فرص منشورة بعد</p>';
       }
     } catch (err) {
-      listEl.innerHTML = '<p class="empty-state">خطأ في تحميل الفرص</p>';
+      listEl.innerHTML = '<div class="empty-state"><p>خطأ في تحميل الفرص</p><button class="btn btn--primary btn--sm" id="retryMyJobs" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryBtn = Yawmia.$id('retryMyJobs');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadMyJobs(); });
     }
   }
 
@@ -407,7 +411,9 @@
         renderRatingSummary(summaryArea, summaryRes.data);
       }
     } catch (err) {
-      if (summaryArea) summaryArea.innerHTML = '';
+      if (summaryArea) summaryArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل ملخص التقييمات</p><button class="btn btn--ghost btn--sm" id="retryRatingSummary" style="margin-top:0.5rem;">🔄 حاول مرة تانية</button></div>';
+      var retrySBtn = Yawmia.$id('retryRatingSummary');
+      if (retrySBtn) retrySBtn.addEventListener('click', function () { loadRatings(userId); });
     }
 
     // Load individual ratings
@@ -419,7 +425,9 @@
         if (listArea) listArea.innerHTML = '<p class="empty-state">لا توجد تقييمات تفصيلية بعد</p>';
       }
     } catch (err) {
-      if (listArea) listArea.innerHTML = '<p class="empty-state">خطأ في تحميل التقييمات</p>';
+      if (listArea) listArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل التقييمات</p><button class="btn btn--primary btn--sm" id="retryRatingsList" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryRBtn = Yawmia.$id('retryRatingsList');
+      if (retryRBtn) retryRBtn.addEventListener('click', function () { loadRatings(userId); });
     }
   }
 
@@ -739,7 +747,9 @@
       });
 
     } catch (err) {
-      listArea.innerHTML = '<p class="empty-state">خطأ في تحميل سجل الحضور</p>';
+      listArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل سجل الحضور</p><button class="btn btn--primary btn--sm" id="retryAttendance" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
+      var retryABtn = Yawmia.$id('retryAttendance');
+      if (retryABtn) retryABtn.addEventListener('click', function () { loadAttendanceHistory(); });
     }
   }
 

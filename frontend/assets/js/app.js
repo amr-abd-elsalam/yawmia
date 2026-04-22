@@ -321,6 +321,71 @@ var Yawmia = (function () {
     }
   });
 
+  // ── API with Retry (Exponential Backoff) ──────────────────
+  async function apiWithRetry(method, path, body, retryOpts) {
+    var opts = retryOpts || {};
+    var maxRetries = typeof opts.maxRetries === 'number' ? opts.maxRetries : 3;
+    var baseDelayMs = typeof opts.baseDelayMs === 'number' ? opts.baseDelayMs : 1000;
+    var lastResult = null;
+
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        var result = await api(method, path, body);
+        // Don't retry on 4xx (client errors) — only retry on 5xx
+        if (result.status < 500) {
+          return result;
+        }
+        lastResult = result;
+      } catch (err) {
+        // Network error (fetch threw)
+        lastResult = { status: 0, data: { error: 'خطأ في الاتصال', code: 'NETWORK_ERROR' } };
+      }
+
+      // Don't wait after the last attempt
+      if (attempt < maxRetries) {
+        var delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise(function (resolve) { setTimeout(resolve, delay); });
+      }
+    }
+
+    return lastResult;
+  }
+
+  // ── Online/Offline Detection ──────────────────────────────
+  var offlineBanner = null;
+
+  function showOfflineBanner() {
+    if (offlineBanner) return;
+    offlineBanner = document.createElement('div');
+    offlineBanner.id = 'yawmia-offline-banner';
+    offlineBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:#fff;text-align:center;padding:0.6rem 1rem;font-size:0.9rem;font-weight:600;z-index:9999;font-family:inherit;direction:rtl;';
+    offlineBanner.textContent = '📡 أنت غير متصل بالإنترنت';
+    document.body.prepend(offlineBanner);
+  }
+
+  function hideOfflineBanner() {
+    if (offlineBanner && offlineBanner.parentNode) {
+      offlineBanner.parentNode.removeChild(offlineBanner);
+      offlineBanner = null;
+    }
+  }
+
+  window.addEventListener('offline', function () {
+    showOfflineBanner();
+  });
+
+  window.addEventListener('online', function () {
+    hideOfflineBanner();
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.success('تم استعادة الاتصال بالإنترنت');
+    }
+  });
+
+  // Check on page load
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    showOfflineBanner();
+  }
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -345,5 +410,6 @@ var Yawmia = (function () {
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
+    apiWithRetry: apiWithRetry,
   };
 })();

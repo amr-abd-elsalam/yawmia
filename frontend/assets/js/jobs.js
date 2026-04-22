@@ -256,7 +256,14 @@
           ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>';
         }
       }
-    } catch (err) { /* ignore */ }
+    } catch (err) {
+      var ntfListErr = Yawmia.$id('notificationList');
+      if (ntfListErr) {
+        ntfListErr.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">⚠️</span><p>خطأ في تحميل الإشعارات</p><button class="btn btn--ghost btn--sm" id="retryLoadNotifs" style="margin-top:0.5rem;">🔄 حاول مرة تانية</button></div>';
+        var retryNBtn = Yawmia.$id('retryLoadNotifs');
+        if (retryNBtn) retryNBtn.addEventListener('click', function () { loadNotifications(); });
+      }
+    }
   }
 
   // ── Pagination State ──────────────────────────────────────
@@ -337,8 +344,10 @@
         Yawmia.hide('paginationControls');
       }
     } catch (err) {
-      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p></div>';
+      jobsList.innerHTML = '<div class="empty-state"><span class="empty-state__icon">⚠️</span><p class="empty-state__text">خطأ في تحميل الفرص</p><p class="empty-state__hint">تأكد من اتصالك بالإنترنت وحاول مرة تانية</p><button class="btn btn--primary btn--sm" id="retryLoadJobs" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
       Yawmia.hide('paginationControls');
+      var retryBtn = Yawmia.$id('retryLoadJobs');
+      if (retryBtn) retryBtn.addEventListener('click', function () { loadJobs(); });
     }
   }
 

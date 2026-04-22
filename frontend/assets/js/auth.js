@@ -75,6 +75,9 @@
             setupProfileStep();
             var nameField = Yawmia.$id('nameInput');
             if (nameField) nameField.focus();
+          } else if (!res.data.user.termsAcceptedAt) {
+            // Terms not accepted → redirect to terms page
+            window.location.href = '/terms.html?accept=1';
           } else {
             window.location.href = '/dashboard.html';
           }
