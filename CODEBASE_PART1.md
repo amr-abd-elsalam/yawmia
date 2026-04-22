@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.24.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-22T08:54:10.681Z
+# يوميّة (Yawmia) v0.25.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-22T14:20:29.832Z
 > Files in this part: 6
 
 ## Files
@@ -500,7 +500,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.24.0',
+    cacheName: 'yawmia-v0.25.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -680,6 +680,25 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 37. إتاحة العامل (WORKER_AVAILABILITY)
+  // ═══════════════════════════════════════════════════════════
+  WORKER_AVAILABILITY: {
+    enabled: true,
+    defaultAvailable: true,                  // المستخدمين الجدد متاحين افتراضياً
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 38. المطابقة الذكية للفرص (JOB_MATCHING)
+  // ═══════════════════════════════════════════════════════════
+  JOB_MATCHING: {
+    enabled: true,
+    maxNotificationsPerJob: 50,              // أقصى عدد إشعارات لكل فرصة جديدة
+    matchByCategory: true,                   // مطابقة حسب التخصص (مطلوب)
+    matchByProximity: true,                  // مطابقة حسب القرب الجغرافي
+    proximityRadiusKm: 50,                   // نطاق المطابقة الجغرافية (كم)
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -728,7 +747,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -896,8 +915,22 @@ try {
   logger.warn('Startup cleanup error', { error: err.message });
 }
 
+// ── Startup Index Health Check ────────────────────────────────
+try {
+  const { checkIndexHealth } = await import('./server/services/indexHealth.js');
+  const healthResult = await checkIndexHealth();
+  if (healthResult.warnings.length > 0) {
+    logger.warn(`Startup: index health check found ${healthResult.warnings.length} warning(s). Run: node scripts/repair-indexes.js`);
+  } else {
+    logger.info('Startup: index health check passed');
+  }
+} catch (err) {
+  logger.warn('Startup index health check error', { error: err.message });
+}
+
 // ── Periodic Cleanup (every 30 minutes) ───────────────────────
 const CLEANUP_INTERVAL = 30 * 60 * 1000;
+let cleanupCycleCount = 0;
 const cleanupTimer = setInterval(async () => {
   try {
     await cleanExpiredSessions();
@@ -905,6 +938,15 @@ const cleanupTimer = setInterval(async () => {
     await cleanExpiredOtps();
     await cleanOldNotifications();
     await autoDetectNoShows();
+
+    // Index health check every 12 cycles (= 6 hours)
+    cleanupCycleCount++;
+    if (cleanupCycleCount % 12 === 0) {
+      try {
+        const { checkIndexHealth } = await import('./server/services/indexHealth.js');
+        await checkIndexHealth();
+      } catch (_) { /* non-fatal */ }
+    }
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
   }
@@ -1001,7 +1043,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.24.0',
+        version: '0.25.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1041,6 +1083,13 @@ const routes = [
       } catch (_) {
         response.requestMetrics = { count: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, p99Ms: 0, errorRate: '0%' };
       }
+      // Index health (non-blocking)
+      try {
+        const { getHealthStatus } = await import('./services/indexHealth.js');
+        response.indexHealth = getHealthStatus();
+      } catch (_) {
+        response.indexHealth = { lastCheck: null, status: 'unknown', warnings: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1075,7 +1124,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.24.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.25.0' });
     },
   },
 
@@ -1237,6 +1286,10 @@ function runMiddlewares(middlewares, req, res, done) {
 
 // Setup notification event listeners
 setupNotificationListeners();
+
+// Setup smart job matching
+import { setupJobMatching } from './services/jobMatcher.js';
+setupJobMatching();
 
 /**
  * Creates the router function

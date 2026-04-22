@@ -1,37 +1,40 @@
-# يوميّة (Yawmia) v0.24.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-22T08:54:10.684Z
-> Files in this part: 29
+# يوميّة (Yawmia) v0.25.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-22T14:20:29.836Z
+> Files in this part: 32
 
 ## Files
 1. `server/services/applications.js`
-2. `server/services/attendance.js`
-3. `server/services/auditLog.js`
-4. `server/services/auth.js`
-5. `server/services/cache.js`
-6. `server/services/channels/sms.js`
-7. `server/services/channels/whatsapp.js`
-8. `server/services/database.js`
-9. `server/services/eventBus.js`
-10. `server/services/geo.js`
-11. `server/services/jobs.js`
-12. `server/services/logWriter.js`
-13. `server/services/logger.js`
-14. `server/services/messages.js`
-15. `server/services/messaging.js`
-16. `server/services/notificationMessenger.js`
-17. `server/services/notifications.js`
-18. `server/services/payments.js`
-19. `server/services/ratings.js`
-20. `server/services/reports.js`
-21. `server/services/resourceLock.js`
-22. `server/services/sanitizer.js`
-23. `server/services/sessions.js`
-24. `server/services/sseManager.js`
-25. `server/services/trust.js`
-26. `server/services/users.js`
-27. `server/services/validators.js`
-28. `server/services/verification.js`
-29. `server/services/webpush.js`
+2. `server/services/arabicNormalizer.js`
+3. `server/services/attendance.js`
+4. `server/services/auditLog.js`
+5. `server/services/auth.js`
+6. `server/services/cache.js`
+7. `server/services/channels/sms.js`
+8. `server/services/channels/whatsapp.js`
+9. `server/services/database.js`
+10. `server/services/eventBus.js`
+11. `server/services/geo.js`
+12. `server/services/indexHealth.js`
+13. `server/services/jobMatcher.js`
+14. `server/services/jobs.js`
+15. `server/services/logWriter.js`
+16. `server/services/logger.js`
+17. `server/services/messages.js`
+18. `server/services/messaging.js`
+19. `server/services/notificationMessenger.js`
+20. `server/services/notifications.js`
+21. `server/services/payments.js`
+22. `server/services/ratings.js`
+23. `server/services/reports.js`
+24. `server/services/resourceLock.js`
+25. `server/services/sanitizer.js`
+26. `server/services/sessions.js`
+27. `server/services/sseManager.js`
+28. `server/services/trust.js`
+29. `server/services/users.js`
+30. `server/services/validators.js`
+31. `server/services/verification.js`
+32. `server/services/webpush.js`
 
 ---
 
@@ -330,6 +333,80 @@ export async function withdraw(applicationId, workerId) {
   });
 
   return { ok: true, application };
+}
+```
+
+---
+
+## `server/services/arabicNormalizer.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/arabicNormalizer.js — Arabic Text Normalization
+// ═══════════════════════════════════════════════════════════════
+// Pure functions — zero dependencies, zero I/O.
+// Normalizes Arabic text for improved search matching:
+//   - Removes diacritics (tashkeel)
+//   - Normalizes hamza variants (أ إ آ ٱ → ا)
+//   - Normalizes taa marbuta (ة → ه)
+//   - Normalizes alef maksura (ى → ي)
+//   - Removes tatweel (kashida ـ)
+//   - Normalizes whitespace
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Normalize Arabic text for search matching.
+ * Handles common variations that should be treated as equivalent.
+ *
+ * @param {*} text — input text (any type, non-strings return '')
+ * @returns {string} normalized text
+ */
+export function normalizeArabic(text) {
+  if (!text || typeof text !== 'string') return '';
+
+  let normalized = text;
+
+  // Step 1: Remove Arabic diacritics (tashkeel)
+  // U+0610-U+061A: Arabic sign ranges
+  // U+064B-U+065F: Arabic fathatan through wavy hamza below
+  // U+0670: Arabic letter superscript alef
+  normalized = normalized.replace(/[\u0610-\u061A\u064B-\u065F\u0670]/g, '');
+
+  // Step 2: Normalize hamza variants → bare alef (ا)
+  // أ (U+0623) — alef with hamza above
+  // إ (U+0625) — alef with hamza below
+  // آ (U+0622) — alef with madda above
+  // ٱ (U+0671) — alef wasla
+  normalized = normalized.replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627');
+
+  // Step 3: Normalize taa marbuta → haa
+  // ة (U+0629) → ه (U+0647)
+  normalized = normalized.replace(/\u0629/g, '\u0647');
+
+  // Step 4: Normalize alef maksura → yaa
+  // ى (U+0649) → ي (U+064A)
+  normalized = normalized.replace(/\u0649/g, '\u064A');
+
+  // Step 5: Remove tatweel (kashida)
+  // ـ (U+0640)
+  normalized = normalized.replace(/\u0640/g, '');
+
+  // Step 6: Normalize whitespace (collapse multiple spaces)
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+
+  return normalized;
+}
+
+/**
+ * Check if a string contains Arabic characters.
+ * Tests for the Arabic Unicode block (U+0600-U+06FF).
+ *
+ * @param {*} text — input text
+ * @returns {boolean} true if text contains at least one Arabic character
+ */
+export function hasArabic(text) {
+  if (!text || typeof text !== 'string') return false;
+  return /[\u0600-\u06FF]/.test(text);
 }
 ```
 
@@ -2298,6 +2375,318 @@ export function getEgyptMidnight() {
 
 ---
 
+## `server/services/indexHealth.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/indexHealth.js — Index Integrity Monitor
+// ═══════════════════════════════════════════════════════════════
+// Sample-based health check: picks random records and verifies
+// their presence in the corresponding secondary index.
+// Warning-only — no auto-repair. Use repair-indexes.js for fixes.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+const SAMPLE_SIZE = 10;
+
+/** Cached health status */
+let cachedStatus = {
+  lastCheck: null,
+  status: 'unknown',
+  warnings: 0,
+  details: [],
+};
+
+/**
+ * Pick random elements from an array (Fisher-Yates partial shuffle).
+ * @param {Array} arr
+ * @param {number} count
+ * @returns {Array}
+ */
+function pickRandom(arr, count) {
+  if (!arr || arr.length === 0) return [];
+  const n = Math.min(count, arr.length);
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > copy.length - 1 - n && i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(copy.length - n);
+}
+
+/**
+ * Run sample-based index integrity check.
+ * Checks:
+ *   1. phone-index — sample users → verify phone→userId mapping
+ *   2. job-apps-index — sample applications → verify jobId→appId presence
+ *
+ * @returns {Promise<{ status: string, warnings: string[], checkedAt: string }>}
+ */
+export async function checkIndexHealth() {
+  const warnings = [];
+  const checkedAt = new Date().toISOString();
+
+  try {
+    const { readJSON, getRecordPath, getCollectionPath, listJSON, readSetIndex } = await import('./database.js');
+    const { join } = await import('node:path');
+    const basePath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+    // ── Check 1: phone-index ──────────────────────────────────
+    try {
+      const usersDir = getCollectionPath('users');
+      const allUsers = await listJSON(usersDir);
+      const users = allUsers.filter(u => u.id && u.id.startsWith('usr_') && u.phone);
+
+      if (users.length > 0) {
+        const sample = pickRandom(users, SAMPLE_SIZE);
+        const phoneIndexPath = join(basePath, config.DATABASE.indexFiles.phoneIndex);
+        const phoneIndex = await readJSON(phoneIndexPath) || {};
+
+        for (const user of sample) {
+          const indexedId = phoneIndex[user.phone];
+          if (indexedId !== user.id) {
+            warnings.push(`phone-index: phone ${user.phone} maps to ${indexedId || 'MISSING'}, expected ${user.id}`);
+          }
+        }
+      }
+    } catch (err) {
+      warnings.push(`phone-index check failed: ${err.message}`);
+    }
+
+    // ── Check 2: job-apps-index ───────────────────────────────
+    try {
+      const appsDir = getCollectionPath('applications');
+      const allApps = await listJSON(appsDir);
+      const apps = allApps.filter(a => a.id && a.id.startsWith('app_') && a.jobId);
+
+      if (apps.length > 0) {
+        const sample = pickRandom(apps, SAMPLE_SIZE);
+        const jobAppsIndex = await readSetIndex(config.DATABASE.indexFiles.jobAppsIndex);
+
+        for (const app of sample) {
+          const indexed = jobAppsIndex[app.jobId] || [];
+          if (!indexed.includes(app.id)) {
+            warnings.push(`job-apps-index: app ${app.id} not found under job ${app.jobId}`);
+          }
+        }
+      }
+    } catch (err) {
+      warnings.push(`job-apps-index check failed: ${err.message}`);
+    }
+
+  } catch (err) {
+    warnings.push(`Index health check error: ${err.message}`);
+  }
+
+  const status = warnings.length === 0 ? 'healthy' : 'warnings';
+
+  // Update cached status
+  cachedStatus = {
+    lastCheck: checkedAt,
+    status,
+    warnings: warnings.length,
+    details: warnings,
+  };
+
+  // Log warnings
+  if (warnings.length > 0) {
+    logger.warn('Index health check: warnings detected', {
+      count: warnings.length,
+      warnings: warnings.slice(0, 5), // Log first 5 only
+    });
+  }
+
+  return { status, warnings, checkedAt };
+}
+
+/**
+ * Get cached index health status (sync — for health endpoint).
+ * @returns {{ lastCheck: string|null, status: string, warnings: number }}
+ */
+export function getHealthStatus() {
+  return {
+    lastCheck: cachedStatus.lastCheck,
+    status: cachedStatus.status,
+    warnings: cachedStatus.warnings,
+  };
+}
+```
+
+---
+
+## `server/services/jobMatcher.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/jobMatcher.js — Smart Job-Worker Matching
+// ═══════════════════════════════════════════════════════════════
+// Listens to 'job:created' events and proactively notifies
+// matching workers based on category, proximity, and availability.
+// Fire-and-forget — NEVER blocks job creation flow.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+/**
+ * Match workers to a newly created job and send notifications.
+ * Fire-and-forget — all errors caught internally.
+ *
+ * Matching criteria (scored):
+ *   Category match (required): +2
+ *   Proximity match (within radius): +1
+ *   Governorate exact match: +1
+ *
+ * Filters:
+ *   - role === 'worker' && status === 'active'
+ *   - availability.available !== false
+ *   - worker.categories includes job.category
+ *   - worker is NOT the job employer
+ *
+ * @param {{ jobId: string, employerId: string }} data — event payload
+ */
+async function matchAndNotify(data) {
+  try {
+    // 1. Feature flag
+    if (!config.JOB_MATCHING || !config.JOB_MATCHING.enabled) return;
+
+    const { jobId, employerId } = data;
+    if (!jobId) return;
+
+    // 2. Load job
+    const { findById: findJob } = await import('./jobs.js');
+    const job = await findJob(jobId);
+    if (!job || job.status !== 'open') return;
+
+    // 3. Load all users
+    const { listAll: listAllUsers } = await import('./users.js');
+    const allUsers = await listAllUsers();
+
+    // 4. Load geo utilities
+    const { resolveCoordinates, haversineDistance } = await import('./geo.js');
+    const jobCoords = resolveCoordinates({
+      lat: job.lat,
+      lng: job.lng,
+      governorate: job.governorate,
+    });
+
+    const matchRadius = config.JOB_MATCHING.proximityRadiusKm || 50;
+
+    // 5. Filter and score workers
+    const matches = [];
+
+    for (const u of allUsers) {
+      // Must be active worker
+      if (u.role !== 'worker' || u.status !== 'active') continue;
+
+      // Must not be the employer who created the job
+      if (u.id === employerId) continue;
+
+      // Availability check — explicit false means unavailable
+      if (u.availability && u.availability.available === false) continue;
+
+      // Category match (required)
+      if (!config.JOB_MATCHING.matchByCategory) continue;
+      if (!u.categories || !Array.isArray(u.categories)) continue;
+      if (!u.categories.includes(job.category)) continue;
+
+      // Score: category match = +2 (already passed filter)
+      let score = 2;
+
+      // Governorate exact match = +1
+      if (u.governorate && u.governorate === job.governorate) {
+        score += 1;
+      }
+
+      // Proximity match = +1
+      if (config.JOB_MATCHING.matchByProximity && jobCoords) {
+        const workerCoords = resolveCoordinates({
+          lat: u.lat,
+          lng: u.lng,
+          governorate: u.governorate,
+        });
+        if (workerCoords) {
+          const distance = haversineDistance(
+            workerCoords.lat, workerCoords.lng,
+            jobCoords.lat, jobCoords.lng
+          );
+          if (distance <= matchRadius) {
+            score += 1;
+          }
+        }
+      }
+
+      matches.push({ user: u, score });
+    }
+
+    // 6. Sort by score descending
+    matches.sort((a, b) => b.score - a.score);
+
+    // 7. Limit to maxNotificationsPerJob
+    const maxNotifications = config.JOB_MATCHING.maxNotificationsPerJob || 50;
+    const toNotify = matches.slice(0, maxNotifications);
+
+    if (toNotify.length === 0) return;
+
+    // 8. Create notifications (fire-and-forget per worker)
+    const { createNotification } = await import('./notifications.js');
+    const message = `فرصة عمل جديدة قريبة منك: ${job.title} — ${job.dailyWage} جنيه/يوم`;
+
+    let notified = 0;
+    for (const match of toNotify) {
+      try {
+        await createNotification(
+          match.user.id,
+          'job_nearby',
+          message,
+          { jobId: job.id, category: job.category, governorate: job.governorate }
+        );
+        notified++;
+      } catch (_) {
+        // Fire-and-forget per worker — continue to next
+      }
+    }
+
+    if (notified > 0) {
+      logger.info('Job matching: notified workers', {
+        jobId,
+        matched: matches.length,
+        notified,
+        category: job.category,
+        governorate: job.governorate,
+      });
+    }
+  } catch (err) {
+    // NEVER propagate errors — fire-and-forget
+    logger.warn('Job matching error', { error: err.message, jobId: data?.jobId });
+  }
+}
+
+/**
+ * Setup EventBus listener for smart job matching.
+ * Registers 'job:created' listener if JOB_MATCHING.enabled is true.
+ * Must be called after setupNotificationListeners().
+ */
+export function setupJobMatching() {
+  if (!config.JOB_MATCHING || !config.JOB_MATCHING.enabled) {
+    logger.info('Job matching: disabled via config');
+    return;
+  }
+
+  eventBus.on('job:created', (data) => {
+    // Fire-and-forget — async but not awaited
+    matchAndNotify(data).catch(() => {});
+  });
+
+  logger.info('Job matching: enabled');
+}
+```
+
+---
+
 ## `server/services/jobs.js`
 
 ```javascript
@@ -2444,13 +2833,14 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (case-insensitive)
+  // Text search on title + description (Arabic-normalized, case-insensitive)
   if (filters.search) {
-    const term = filters.search.toLowerCase();
+    const { normalizeArabic } = await import('./arabicNormalizer.js');
+    const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
     jobs = jobs.filter(j => {
-      const title = (j.title || '').toLowerCase();
-      const desc = (j.description || '').toLowerCase();
-      return title.includes(term) || desc.includes(term);
+      const title = normalizeArabic((j.title || '').toLowerCase());
+      const desc = normalizeArabic((j.description || '').toLowerCase());
+      return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
     });
   }
 
@@ -6020,6 +6410,7 @@ export async function getUserTrustScore(userId) {
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
+import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
 
 /**
@@ -6045,6 +6436,13 @@ export async function create(phone, role) {
     notificationPreferences: null,
     verificationStatus: 'unverified',
     verificationSubmittedAt: null,
+    availability: {
+      available: (config.WORKER_AVAILABILITY && config.WORKER_AVAILABILITY.defaultAvailable !== undefined)
+        ? config.WORKER_AVAILABILITY.defaultAvailable : true,
+      availableFrom: null,
+      availableUntil: null,
+      updatedAt: now,
+    },
     createdAt: now,
     updatedAt: now,
   };

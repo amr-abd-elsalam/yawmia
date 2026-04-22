@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.24.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-22T08:54:10.692Z
+# يوميّة (Yawmia) v0.25.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-22T14:20:29.845Z
 > Files in this part: 21
 
 ## Files
@@ -670,6 +670,7 @@ export async function handleGetMe(req, res) {
       rating: user.rating,
       status: user.status,
       notificationPreferences: user.notificationPreferences || null,
+      availability: user.availability || null,
       createdAt: user.createdAt,
     },
   });
@@ -710,6 +711,20 @@ export async function handleUpdateProfile(req, res) {
       return sendJSON(res, 400, { error: lngResult.error, code: 'INVALID_LONGITUDE' });
     }
     updateFields.lng = lngResult.value;
+  }
+
+  // Handle availability update (workers only)
+  if (body.availability && typeof body.availability === 'object' && req.user.role === 'worker') {
+    const currentAvailability = req.user.availability || {};
+    const updatedAvailability = {
+      available: typeof body.availability.available === 'boolean'
+        ? body.availability.available
+        : (currentAvailability.available !== undefined ? currentAvailability.available : true),
+      availableFrom: body.availability.availableFrom || currentAvailability.availableFrom || null,
+      availableUntil: body.availability.availableUntil || currentAvailability.availableUntil || null,
+      updatedAt: new Date().toISOString(),
+    };
+    updateFields.availability = updatedAvailability;
   }
 
   // Handle notification preferences update
