@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.25.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-22T14:49:48.894Z
+# يوميّة (Yawmia) v0.26.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-22T16:27:06.376Z
 > Files in this part: 6
 
 ## Files
@@ -500,7 +500,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.25.0',
+    cacheName: 'yawmia-v0.26.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -699,6 +699,36 @@ const config = {
     proximityRadiusKm: 50,                   // نطاق المطابقة الجغرافية (كم)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 39. ترحيل البيانات (MIGRATION)
+  // ═══════════════════════════════════════════════════════════
+  MIGRATION: {
+    enabled: true,
+    dataFile: 'migration.json',              // ملف تتبع إصدار الـ schema
+    runOnStartup: true,                      // تشغيل الترحيل تلقائياً عند بدء السيرفر
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 40. فلترة المحتوى (CONTENT_FILTER)
+  // ═══════════════════════════════════════════════════════════
+  CONTENT_FILTER: {
+    enabled: true,
+    blockThreshold: 0.7,                     // حد المنع (0.0–1.0)
+    warnThreshold: 0.4,                      // حد التحذير (تسجيل فقط)
+    checkJobDescription: true,               // فحص وصف الفرص
+    checkMessages: true,                     // فحص الرسائل
+    checkReportReason: false,                // لا تفحص أسباب البلاغات (تحتاج وصف المخالفة)
+    logFlagged: true,                        // تسجيل المحتوى المرفوض في اللوج
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 41. فهرس البحث (SEARCH_INDEX)
+  // ═══════════════════════════════════════════════════════════
+  SEARCH_INDEX: {
+    enabled: true,
+    rebuildIntervalMs: 3600000,              // إعادة بناء الفهرس كل ساعة (مللي ثانية)
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -747,7 +777,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -800,7 +830,7 @@ import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
 import { cleanExpired as cleanExpiredSessions } from './server/services/sessions.js';
-import { enforceExpiredJobs } from './server/services/jobs.js';
+import { enforceExpiredJobs, checkExpiryWarnings } from './server/services/jobs.js';
 import { cleanExpiredOtps } from './server/services/auth.js';
 import { cleanOldNotifications } from './server/services/notifications.js';
 import { autoDetectNoShows } from './server/services/attendance.js';
@@ -810,6 +840,26 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ── Initialize Database Directories ──────────────────────────
 await initDatabase();
+
+// ── Run Schema Migrations ────────────────────────────────────
+try {
+  const { runMigrations } = await import('./server/services/migration.js');
+  const migrationResult = await runMigrations();
+  if (migrationResult.applied > 0) {
+    logger.info(`Startup: applied ${migrationResult.applied} migration(s), schema now at v${migrationResult.current}`);
+  }
+} catch (err) {
+  logger.warn('Startup: migration error', { error: err.message });
+}
+
+// ── Build Search Index ───────────────────────────────────────
+try {
+  const { buildIndex } = await import('./server/services/searchIndex.js');
+  await buildIndex();
+  logger.info('Startup: search index built');
+} catch (err) {
+  logger.warn('Startup: search index build error', { error: err.message });
+}
 
 // ── Clean Stale .tmp Files (orphans from crashes) ────────────
 try {
@@ -911,6 +961,8 @@ try {
   if (oldNotifs > 0) logger.info(`Startup: cleaned ${oldNotifs} old notifications`);
   const autoNoShows = await autoDetectNoShows();
   if (autoNoShows > 0) logger.info(`Startup: detected ${autoNoShows} auto no-shows`);
+  const expiryWarnings = await checkExpiryWarnings();
+  if (expiryWarnings > 0) logger.info(`Startup: sent ${expiryWarnings} expiry warning(s)`);
 } catch (err) {
   logger.warn('Startup cleanup error', { error: err.message });
 }
@@ -939,8 +991,24 @@ const cleanupTimer = setInterval(async () => {
     await cleanOldNotifications();
     await autoDetectNoShows();
 
+    // Expiry warnings (fire-and-forget)
+    try {
+      const { checkExpiryWarnings } = await import('./server/services/jobs.js');
+      const warnings = await checkExpiryWarnings();
+      if (warnings > 0) logger.info(`Periodic: sent ${warnings} expiry warning(s)`);
+    } catch (_) { /* non-fatal */ }
+
     // Index health check every 12 cycles (= 6 hours)
     cleanupCycleCount++;
+
+    // Search index rebuild every 2 cycles (= every hour)
+    if (cleanupCycleCount % 2 === 0) {
+      try {
+        const { buildIndex } = await import('./server/services/searchIndex.js');
+        await buildIndex();
+      } catch (_) { /* non-fatal */ }
+    }
+
     if (cleanupCycleCount % 12 === 0) {
       try {
         const { checkIndexHealth } = await import('./server/services/indexHealth.js');
@@ -1043,7 +1111,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.25.0',
+        version: '0.26.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1090,6 +1158,13 @@ const routes = [
       } catch (_) {
         response.indexHealth = { lastCheck: null, status: 'unknown', warnings: 0 };
       }
+      // Search index stats (non-blocking)
+      try {
+        const { getStats: searchIndexStats } = await import('./services/searchIndex.js');
+        response.searchIndex = searchIndexStats();
+      } catch (_) {
+        response.searchIndex = { size: 0, lastBuilt: null };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1124,7 +1199,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.25.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.26.0' });
     },
   },
 

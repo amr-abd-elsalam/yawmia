@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.25.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-22T14:49:48.912Z
-> Files in this part: 29
+# يوميّة (Yawmia) v0.26.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-22T16:27:06.392Z
+> Files in this part: 30
 
 ## Files
 1. `frontend/404.html`
@@ -31,7 +31,8 @@
 26. `scripts/benchmark.js`
 27. `scripts/bundle-for-review.js`
 28. `scripts/generate-vapid-keys.js`
-29. `scripts/repair-indexes.js`
+29. `scripts/migrate.js`
+30. `scripts/repair-indexes.js`
 
 ---
 
@@ -8457,7 +8458,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.25.0';
+const CACHE_NAME = 'yawmia-v0.26.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -9186,6 +9187,67 @@ console.log(`VAPID_PUBLIC_KEY=${publicKeyB64}`);
 console.log(`VAPID_PRIVATE_KEY=${privateKeyB64}`);
 console.log('\n⚠️  Keep VAPID_PRIVATE_KEY secret! Never commit it to git.');
 console.log('⚠️  If you regenerate keys, all existing push subscriptions will become invalid.\n');
+```
+
+---
+
+## `scripts/migrate.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/migrate.js — يوميّة: Schema Migration CLI
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/migrate.js [--dry-run]
+// Shows current schema version, lists pending migrations, runs them.
+// ═══════════════════════════════════════════════════════════════
+
+// Load env
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {
+  // dotenv not installed — use process.env directly
+}
+
+const DRY_RUN = process.argv.includes('--dry-run');
+
+async function main() {
+  console.log(`\n🔄 يوميّة Schema Migration${DRY_RUN ? ' (DRY RUN)' : ''}\n`);
+
+  // Initialize database directories first
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { getCurrentVersion, runMigrations } = await import('../server/services/migration.js');
+
+  const currentVersion = await getCurrentVersion();
+  console.log(`   Current schema version: v${currentVersion}`);
+
+  if (DRY_RUN) {
+    console.log('   Dry run mode — no changes will be made.\n');
+    // Just show current version
+    console.log('✅ Dry run complete.\n');
+    return;
+  }
+
+  try {
+    const result = await runMigrations();
+    if (result.applied > 0) {
+      console.log(`\n✅ Applied ${result.applied} migration(s). Schema now at v${result.current}.\n`);
+    } else {
+      console.log(`\n✅ No pending migrations. Schema is up to date at v${result.current}.\n`);
+    }
+  } catch (err) {
+    console.error(`\n❌ Migration failed: ${err.message}\n`);
+    process.exit(1);
+  }
+}
+
+main().catch(err => {
+  console.error('❌', err.message);
+  process.exit(1);
+});
 ```
 
 ---

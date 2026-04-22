@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.25.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-22T14:49:48.906Z
+# يوميّة (Yawmia) v0.26.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-22T16:27:06.388Z
 > Files in this part: 21
 
 ## Files
@@ -910,6 +910,25 @@ export async function handleCreateJob(req, res) {
 
   try {
     const sanitized = sanitizeFields(body, ['title', 'description']);
+
+    // Content filter check
+    if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkJobDescription) {
+      try {
+        const { checkContent } = await import('../services/contentFilter.js');
+        const combinedText = (sanitized.title || '') + ' ' + (sanitized.description || '');
+        const filterResult = checkContent(combinedText);
+        if (!filterResult.safe) {
+          return sendJSON(res, 400, {
+            error: 'المحتوى يحتوي على كلمات غير مسموحة أو أرقام تليفون. يُرجى تعديل النص.',
+            code: 'CONTENT_BLOCKED',
+            flaggedTerms: filterResult.flaggedTerms,
+          });
+        }
+      } catch (_) {
+        // Content filter failure is non-blocking — allow creation
+      }
+    }
+
     const job = await create(req.user.id, sanitized);
     return sendJSON(res, 201, { ok: true, job });
   } catch (err) {

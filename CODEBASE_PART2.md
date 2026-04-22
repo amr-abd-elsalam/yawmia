@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.25.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-22T14:49:48.897Z
-> Files in this part: 32
+# يوميّة (Yawmia) v0.26.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-22T16:27:06.378Z
+> Files in this part: 35
 
 ## Files
 1. `server/services/applications.js`
@@ -11,30 +11,33 @@
 6. `server/services/cache.js`
 7. `server/services/channels/sms.js`
 8. `server/services/channels/whatsapp.js`
-9. `server/services/database.js`
-10. `server/services/eventBus.js`
-11. `server/services/geo.js`
-12. `server/services/indexHealth.js`
-13. `server/services/jobMatcher.js`
-14. `server/services/jobs.js`
-15. `server/services/logWriter.js`
-16. `server/services/logger.js`
-17. `server/services/messages.js`
-18. `server/services/messaging.js`
-19. `server/services/notificationMessenger.js`
-20. `server/services/notifications.js`
-21. `server/services/payments.js`
-22. `server/services/ratings.js`
-23. `server/services/reports.js`
-24. `server/services/resourceLock.js`
-25. `server/services/sanitizer.js`
-26. `server/services/sessions.js`
-27. `server/services/sseManager.js`
-28. `server/services/trust.js`
-29. `server/services/users.js`
-30. `server/services/validators.js`
-31. `server/services/verification.js`
-32. `server/services/webpush.js`
+9. `server/services/contentFilter.js`
+10. `server/services/database.js`
+11. `server/services/eventBus.js`
+12. `server/services/geo.js`
+13. `server/services/indexHealth.js`
+14. `server/services/jobMatcher.js`
+15. `server/services/jobs.js`
+16. `server/services/logWriter.js`
+17. `server/services/logger.js`
+18. `server/services/messages.js`
+19. `server/services/messaging.js`
+20. `server/services/migration.js`
+21. `server/services/notificationMessenger.js`
+22. `server/services/notifications.js`
+23. `server/services/payments.js`
+24. `server/services/ratings.js`
+25. `server/services/reports.js`
+26. `server/services/resourceLock.js`
+27. `server/services/sanitizer.js`
+28. `server/services/searchIndex.js`
+29. `server/services/sessions.js`
+30. `server/services/sseManager.js`
+31. `server/services/trust.js`
+32. `server/services/users.js`
+33. `server/services/validators.js`
+34. `server/services/verification.js`
+35. `server/services/webpush.js`
 
 ---
 
@@ -1810,6 +1813,134 @@ export async function sendWhatsAppOtp(phone, otp) {
 
 ---
 
+## `server/services/contentFilter.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/contentFilter.js — Keyword Content Filtering
+// ═══════════════════════════════════════════════════════════════
+// Arabic-normalized blocklist matching + phone number detection.
+// Scoring: 0.0 (clean) → 1.0 (definitely unsafe).
+// Conservative — false positives worse than false negatives.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import { logger } from './logger.js';
+
+// ── Phone number detection regex (Egyptian format) ───────────
+// Matches: 01012345678, 01112345678, 01212345678, 01512345678
+// Also matches with dashes/spaces: 010-1234-5678, 010 1234 5678
+const PHONE_REGEX = /01[0125][\s\-]?\d{4}[\s\-]?\d{4}/;
+
+// ── Blocklist (pre-normalized Arabic terms) ──────────────────
+// Categories: harassment, fraud, contact_info bypass
+// Each term: { normalized: string, weight: number, category: string }
+const RAW_BLOCKLIST = [
+  // Harassment / offensive (weight 0.3–0.5)
+  { term: 'نصاب', weight: 0.4, category: 'fraud' },
+  { term: 'محتال', weight: 0.4, category: 'fraud' },
+  { term: 'نصب', weight: 0.35, category: 'fraud' },
+  { term: 'احتيال', weight: 0.4, category: 'fraud' },
+  { term: 'سرقه', weight: 0.35, category: 'fraud' },
+  { term: 'حرامي', weight: 0.35, category: 'fraud' },
+  { term: 'تحرش', weight: 0.5, category: 'harassment' },
+  { term: 'شتيمه', weight: 0.4, category: 'harassment' },
+  { term: 'سب', weight: 0.3, category: 'harassment' },
+  { term: 'ضرب', weight: 0.3, category: 'harassment' },
+  { term: 'تهديد', weight: 0.4, category: 'harassment' },
+  // Contact info bypass indicators (weight 0.5)
+  { term: 'واتساب', weight: 0.5, category: 'contact_info' },
+  { term: 'واتس', weight: 0.5, category: 'contact_info' },
+  { term: 'whatsapp', weight: 0.5, category: 'contact_info' },
+  { term: 'تليجرام', weight: 0.5, category: 'contact_info' },
+  { term: 'telegram', weight: 0.5, category: 'contact_info' },
+  { term: 'كلمني على', weight: 0.4, category: 'contact_info' },
+  { term: 'رقمي', weight: 0.3, category: 'contact_info' },
+];
+
+// Pre-normalize blocklist terms (once at module load)
+const BLOCKLIST = RAW_BLOCKLIST.map(entry => ({
+  normalized: normalizeArabic(entry.term.toLowerCase()),
+  weight: entry.weight,
+  category: entry.category,
+  original: entry.term,
+}));
+
+/**
+ * Check content for unsafe terms and phone numbers.
+ *
+ * @param {*} text — input text (any type, non-strings return safe)
+ * @returns {{ safe: boolean, score: number, flaggedTerms: string[] }}
+ *   safe: true if score < blockThreshold (or feature disabled)
+ *   score: 0.0 (clean) → 1.0 (definitely unsafe)
+ *   flaggedTerms: array of matched term labels
+ */
+export function checkContent(text) {
+  // Feature flag
+  if (!config.CONTENT_FILTER || !config.CONTENT_FILTER.enabled) {
+    return { safe: true, score: 0, flaggedTerms: [] };
+  }
+
+  // Null/empty/non-string → safe
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return { safe: true, score: 0, flaggedTerms: [] };
+  }
+
+  const blockThreshold = config.CONTENT_FILTER.blockThreshold;
+  const warnThreshold = config.CONTENT_FILTER.warnThreshold;
+
+  let score = 0;
+  const flaggedTerms = [];
+
+  // 1. Phone number detection (on raw text — numbers don't need normalization)
+  if (PHONE_REGEX.test(text)) {
+    score += 0.8;
+    flaggedTerms.push('رقم تليفون');
+  }
+
+  // 2. Blocklist matching (on normalized text)
+  const normalizedText = normalizeArabic(text.toLowerCase());
+
+  for (const entry of BLOCKLIST) {
+    if (normalizedText.includes(entry.normalized)) {
+      score += entry.weight;
+      flaggedTerms.push(entry.original);
+    }
+  }
+
+  // Cap score at 1.0
+  score = Math.min(score, 1.0);
+  score = Math.round(score * 100) / 100;
+
+  const safe = score < blockThreshold;
+
+  // Log flagged content
+  if (config.CONTENT_FILTER.logFlagged && score >= warnThreshold) {
+    logger.warn('Content filter flagged', {
+      score,
+      safe,
+      flaggedTerms,
+      textPreview: text.substring(0, 100),
+    });
+  }
+
+  return { safe, score, flaggedTerms };
+}
+
+/**
+ * Convenience: check if content is safe (boolean).
+ *
+ * @param {*} text
+ * @returns {boolean} true if safe
+ */
+export function isContentSafe(text) {
+  return checkContent(text).safe;
+}
+```
+
+---
+
 ## `server/services/database.js`
 
 ```javascript
@@ -2696,7 +2827,7 @@ export function setupJobMatching() {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
 
@@ -2771,7 +2902,7 @@ export async function create(employerId, fields) {
  */
 export async function findById(jobId) {
   const jobPath = getRecordPath('jobs', jobId);
-  const job = await readJSON(jobPath);
+  const job = await safeReadJSON(jobPath);
   if (!job) return null;
   return await checkExpiry(job);
 }
@@ -2833,15 +2964,34 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (Arabic-normalized, case-insensitive)
+  // Text search on title + description (search index accelerated, Arabic-normalized)
   if (filters.search) {
-    const { normalizeArabic } = await import('./arabicNormalizer.js');
-    const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-    jobs = jobs.filter(j => {
-      const title = normalizeArabic((j.title || '').toLowerCase());
-      const desc = normalizeArabic((j.description || '').toLowerCase());
-      return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
-    });
+    let searchHandled = false;
+    if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
+      try {
+        const { search: searchIndexQuery } = await import('./searchIndex.js');
+        const { normalizeArabic } = await import('./arabicNormalizer.js');
+        const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
+        const matchedIds = searchIndexQuery(normalizedTerm, {
+          status: filters.status || 'open',
+          category: filters.category,
+          governorate: filters.governorate,
+        });
+        jobs = jobs.filter(j => matchedIds.includes(j.id));
+        searchHandled = true;
+      } catch (_) {
+        // Fallback to full scan below
+      }
+    }
+    if (!searchHandled) {
+      const { normalizeArabic } = await import('./arabicNormalizer.js');
+      const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
+      jobs = jobs.filter(j => {
+        const title = normalizeArabic((j.title || '').toLowerCase());
+        const desc = normalizeArabic((j.description || '').toLowerCase());
+        return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
+      });
+    }
   }
 
   // Sort (skip if already sorted by proximity)
@@ -3307,6 +3457,75 @@ export function renewJob(jobId, employerId) {
   return { ok: true, job };
   }); // end withLock
 }
+
+/**
+ * Check for jobs about to expire and send warning notifications
+ * Called in periodic cleanup (every 30 minutes)
+ * Sends one-time warning 24 hours before expiry
+ * Fire-and-forget per job — errors don't block others
+ * @returns {Promise<number>} count of warnings sent
+ */
+export async function checkExpiryWarnings() {
+  const jobsDir = getCollectionPath('jobs');
+  let files;
+  try {
+    const { readdir } = await import('node:fs/promises');
+    files = await readdir(jobsDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
+  const now = new Date();
+  const warningWindowMs = 24 * 60 * 60 * 1000; // 24 hours
+  let count = 0;
+
+  for (const file of jsonFiles) {
+    try {
+      const job = await readJSON(getCollectionPath('jobs') + '/' + file);
+      if (!job) continue;
+      if (job.status !== 'open') continue;
+      if (job.expiryWarningNotified) continue;
+      if (!job.expiresAt) continue;
+
+      const expiresAt = new Date(job.expiresAt);
+      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+
+      // Only warn if expiry is within 24 hours AND not already expired
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= warningWindowMs) {
+        // Set flag to prevent duplicate warnings
+        job.expiryWarningNotified = true;
+        const jobPath = getRecordPath('jobs', job.id);
+        await atomicWrite(jobPath, job);
+
+        // Get pending applicant IDs
+        let pendingWorkerIds = [];
+        try {
+          const { listByJob: listAppsByJob } = await import('./applications.js');
+          const apps = await listAppsByJob(job.id);
+          pendingWorkerIds = apps
+            .filter(a => a.status === 'pending')
+            .map(a => a.workerId);
+        } catch (_) { /* non-fatal */ }
+
+        // Emit event for notification system
+        eventBus.emit('job:expiry_warning', {
+          jobId: job.id,
+          employerId: job.employerId,
+          jobTitle: job.title,
+          pendingWorkerIds,
+        });
+
+        count++;
+      }
+    } catch (_) {
+      // Fire-and-forget per job — continue to next
+    }
+  }
+
+  return count;
+}
 ```
 
 ---
@@ -3578,6 +3797,16 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     return { ok: false, error: `الرسالة لا تتجاوز ${maxLen} حرف`, code: 'TEXT_TOO_LONG' };
   }
 
+  // 2b. Content filter check
+  if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkMessages) {
+    try {
+      const { isContentSafe } = await import('./contentFilter.js');
+      if (!isContentSafe(sanitized)) {
+        return { ok: false, error: 'الرسالة تحتوي على محتوى غير مسموح', code: 'CONTENT_BLOCKED' };
+      }
+    } catch (_) { /* content filter failure is non-blocking */ }
+  }
+
   // 3. Validate recipient
   if (!recipientId || typeof recipientId !== 'string') {
     return { ok: false, error: 'معرّف المستلم مطلوب', code: 'RECIPIENT_REQUIRED' };
@@ -3676,6 +3905,16 @@ export async function broadcastMessage(jobId, employerId, text) {
   const maxLen = config.MESSAGES.maxLengthChars || 500;
   if (sanitized.length > maxLen) {
     return { ok: false, error: `الرسالة لا تتجاوز ${maxLen} حرف`, code: 'TEXT_TOO_LONG' };
+  }
+
+  // 4b. Content filter check
+  if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkMessages) {
+    try {
+      const { isContentSafe } = await import('./contentFilter.js');
+      if (!isContentSafe(sanitized)) {
+        return { ok: false, error: 'الرسالة تحتوي على محتوى غير مسموح', code: 'CONTENT_BLOCKED' };
+      }
+    } catch (_) { /* content filter failure is non-blocking */ }
   }
 
   // 5. Daily limit
@@ -4097,6 +4336,158 @@ export async function sendMessage(phone, message, options = {}) {
   // Fallback to mock
   console.log(`📩 NOTIFICATION [MOCK-FALLBACK] to ${phone}: ${message}`);
   return { ok: true, channel: 'mock', messageId: 'mock_fallback_' + Date.now() };
+}
+```
+
+---
+
+## `server/services/migration.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/migration.js — Schema Migration System
+// ═══════════════════════════════════════════════════════════════
+// Forward-only, idempotent migrations. No rollback.
+// Tracks state in data/migration.json.
+// Built-in migrations array — add new migrations at the end.
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import { atomicWrite, readJSON, getCollectionPath, listJSON, getRecordPath } from './database.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+/**
+ * Get migration state file path
+ * @returns {string}
+ */
+function getMigrationFilePath() {
+  const fileName = (config.MIGRATION && config.MIGRATION.dataFile) || 'migration.json';
+  return join(BASE_PATH, fileName);
+}
+
+/**
+ * Read current migration state
+ * @returns {Promise<{ version: number, appliedAt: string|null, migrations: object[] }>}
+ */
+async function readState() {
+  const filePath = getMigrationFilePath();
+  const state = await readJSON(filePath);
+  return state || { version: 0, appliedAt: null, migrations: [] };
+}
+
+/**
+ * Write migration state atomically
+ * @param {object} state
+ */
+async function writeState(state) {
+  const filePath = getMigrationFilePath();
+  await atomicWrite(filePath, state);
+}
+
+/**
+ * Get current schema version (0 = fresh system, no migrations applied)
+ * @returns {Promise<number>}
+ */
+export async function getCurrentVersion() {
+  const state = await readState();
+  return state.version;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Built-in Migrations
+// ═══════════════════════════════════════════════════════════════
+
+const builtInMigrations = [
+  {
+    version: 1,
+    name: 'Ensure availability field on all users',
+    up: async () => {
+      const usersDir = getCollectionPath('users');
+      const allUsers = await listJSON(usersDir);
+      const users = allUsers.filter(u => u.id && u.id.startsWith('usr_'));
+
+      let updated = 0;
+      const now = new Date().toISOString();
+
+      for (const user of users) {
+        if (!user.availability) {
+          user.availability = {
+            available: (config.WORKER_AVAILABILITY && config.WORKER_AVAILABILITY.defaultAvailable !== undefined)
+              ? config.WORKER_AVAILABILITY.defaultAvailable : true,
+            availableFrom: null,
+            availableUntil: null,
+            updatedAt: now,
+          };
+          const userPath = getRecordPath('users', user.id);
+          await atomicWrite(userPath, user);
+          updated++;
+        }
+      }
+
+      if (updated > 0) {
+        logger.info(`Migration v1: added availability to ${updated} users`);
+      }
+    },
+  },
+];
+
+/**
+ * Run all pending migrations in order
+ * Forward-only — stops on first failure
+ * Idempotent — skips already-applied migrations
+ *
+ * @returns {Promise<{ applied: number, current: number }>}
+ */
+export async function runMigrations() {
+  // Feature flag check
+  if (!config.MIGRATION || !config.MIGRATION.enabled) {
+    return { applied: 0, current: 0 };
+  }
+
+  const state = await readState();
+  const currentVersion = state.version;
+
+  // Filter pending migrations (higher version than current)
+  const pending = builtInMigrations
+    .filter(m => m.version > currentVersion)
+    .sort((a, b) => a.version - b.version);
+
+  if (pending.length === 0) {
+    return { applied: 0, current: currentVersion };
+  }
+
+  logger.info(`Migration: ${pending.length} pending migration(s) from v${currentVersion}`);
+
+  let applied = 0;
+
+  for (const migration of pending) {
+    try {
+      logger.info(`Migration: running v${migration.version} — ${migration.name}`);
+      await migration.up();
+
+      // Update state atomically after each successful migration
+      state.version = migration.version;
+      state.appliedAt = new Date().toISOString();
+      state.migrations.push({
+        version: migration.version,
+        name: migration.name,
+        appliedAt: new Date().toISOString(),
+      });
+      await writeState(state);
+
+      applied++;
+      logger.info(`Migration: v${migration.version} applied successfully`);
+    } catch (err) {
+      // Stop on first failure — no partial state
+      logger.error(`Migration: v${migration.version} FAILED — stopping`, { error: err.message });
+      throw err;
+    }
+  }
+
+  return { applied, current: state.version };
 }
 ```
 
@@ -4915,6 +5306,35 @@ export function setupNotificationListeners() {
       }).catch(() => {});
     }
   });
+
+  // ── Job Expiry Warning Notifications ────────────────────────
+
+  // Employer + pending applicants get warned before job expires
+  eventBus.on('job:expiry_warning', async (data) => {
+    try {
+      // Notify employer
+      createNotification(
+        data.employerId,
+        'job_expiry_warning',
+        `فرصتك "${data.jobTitle}" هتنتهي خلال 24 ساعة — جدّدها أو أكملها`,
+        { jobId: data.jobId }
+      ).catch(() => {});
+
+      // Notify pending applicants
+      if (data.pendingWorkerIds && data.pendingWorkerIds.length > 0) {
+        for (const workerId of data.pendingWorkerIds) {
+          createNotification(
+            workerId,
+            'job_expiry_warning',
+            `الفرصة "${data.jobTitle}" هتنتهي قريب`,
+            { jobId: data.jobId }
+          ).catch(() => {});
+        }
+      }
+    } catch (_) {
+      // Fire-and-forget
+    }
+  });
 }
 ```
 
@@ -4929,7 +5349,7 @@ export function setupNotificationListeners() {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
@@ -5196,7 +5616,7 @@ export async function disputePayment(paymentId, userId, reason) {
  */
 export async function findById(paymentId) {
   const paymentPath = getRecordPath('payments', paymentId);
-  return await readJSON(paymentPath);
+  return await safeReadJSON(paymentPath);
 }
 
 /**
@@ -5904,6 +6324,177 @@ export function sanitizeFields(obj, keys) {
 
 ---
 
+## `server/services/searchIndex.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/searchIndex.js — In-Memory Job Search Index
+// ═══════════════════════════════════════════════════════════════
+// Pre-normalized keyword index for fast text search.
+// Build on startup, incremental updates via EventBus.
+// Returns jobId[] — caller fetches full records.
+// ~200 bytes per job → 10K jobs ≈ 2MB.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+/**
+ * @type {Map<string, { normalizedTitle: string, normalizedDesc: string, status: string, category: string, governorate: string, dailyWage: number, createdAt: string }>}
+ */
+const index = new Map();
+
+/** @type {string|null} */
+let lastBuilt = null;
+
+/**
+ * Check if search index is enabled
+ * @returns {boolean}
+ */
+function isEnabled() {
+  return !!(config.SEARCH_INDEX && config.SEARCH_INDEX.enabled);
+}
+
+/**
+ * Build (or rebuild) the entire search index from disk.
+ * Async — reads all job files.
+ * Called at startup and periodically as a safety net.
+ *
+ * @returns {Promise<number>} number of jobs indexed
+ */
+export async function buildIndex() {
+  if (!isEnabled()) return 0;
+
+  const { listAll } = await import('./jobs.js');
+  const allJobs = await listAll();
+
+  index.clear();
+
+  for (const job of allJobs) {
+    indexJob(job);
+  }
+
+  lastBuilt = new Date().toISOString();
+  logger.info('Search index built', { size: index.size });
+
+  return index.size;
+}
+
+/**
+ * Add or update a single job in the index (sync).
+ * Called after job creation.
+ *
+ * @param {object} job — full job object
+ */
+export function addToIndex(job) {
+  if (!isEnabled()) return;
+  if (!job || !job.id) return;
+  indexJob(job);
+}
+
+/**
+ * Remove a job from the index (sync).
+ *
+ * @param {string} jobId
+ */
+export function removeFromIndex(jobId) {
+  if (!isEnabled()) return;
+  index.delete(jobId);
+}
+
+/**
+ * Update the status field of a job in the index (sync).
+ *
+ * @param {string} jobId
+ * @param {string} status
+ */
+export function updateStatus(jobId, status) {
+  if (!isEnabled()) return;
+  const entry = index.get(jobId);
+  if (entry) {
+    entry.status = status;
+  }
+}
+
+/**
+ * Search the index for jobs matching a normalized query string.
+ * Matches against normalizedTitle + normalizedDesc via includes().
+ *
+ * @param {string} normalizedQuery — pre-normalized search string
+ * @param {{ status?: string, category?: string, governorate?: string }} filters
+ * @returns {string[]} array of matching job IDs
+ */
+export function search(normalizedQuery, filters = {}) {
+  if (!isEnabled()) return [];
+  if (!normalizedQuery) return [];
+
+  const results = [];
+
+  for (const [jobId, entry] of index) {
+    // Apply filters
+    if (filters.status && entry.status !== filters.status) continue;
+    if (filters.category && entry.category !== filters.category) continue;
+    if (filters.governorate && entry.governorate !== filters.governorate) continue;
+
+    // Text match
+    if (entry.normalizedTitle.includes(normalizedQuery) ||
+        entry.normalizedDesc.includes(normalizedQuery)) {
+      results.push(jobId);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Get index statistics (sync).
+ *
+ * @returns {{ size: number, lastBuilt: string|null }}
+ */
+export function getStats() {
+  return {
+    size: index.size,
+    lastBuilt,
+  };
+}
+
+// ── Internal helper ──────────────────────────────────────────
+
+/**
+ * Index a single job (sync — normalizes once, stores in Map)
+ * @param {object} job
+ */
+function indexJob(job) {
+  index.set(job.id, {
+    normalizedTitle: normalizeArabic((job.title || '').toLowerCase()),
+    normalizedDesc: normalizeArabic((job.description || '').toLowerCase()),
+    status: job.status,
+    category: job.category,
+    governorate: job.governorate,
+    dailyWage: job.dailyWage,
+    createdAt: job.createdAt,
+  });
+}
+
+// ── EventBus integration ─────────────────────────────────────
+
+if (isEnabled()) {
+  eventBus.on('job:created', (data) => {
+    if (!data || !data.jobId) return;
+    // Fire-and-forget: load job and add to index
+    import('./jobs.js').then(({ findById }) => {
+      findById(data.jobId).then(job => {
+        if (job) addToIndex(job);
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+}
+```
+
+---
+
 ## `server/services/sessions.js`
 
 ```javascript
@@ -5913,7 +6504,7 @@ export function sanitizeFields(obj, keys) {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, deleteJSON, listJSON, getRecordPath, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, deleteJSON, listJSON, getRecordPath, getCollectionPath } from './database.js';
 
 /**
  * Create a new session
@@ -5945,7 +6536,7 @@ export async function verifySession(token) {
   if (!token || typeof token !== 'string') return null;
 
   const sessionPath = getRecordPath('sessions', token);
-  const session = await readJSON(sessionPath);
+  const session = await safeReadJSON(sessionPath);
 
   if (!session) return null;
 
@@ -6411,7 +7002,7 @@ export async function getUserTrustScore(userId) {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
 
 /**
  * Create a new user
@@ -6474,7 +7065,7 @@ export async function findByPhone(phone) {
  */
 export async function findById(userId) {
   const userPath = getRecordPath('users', userId);
-  return await readJSON(userPath);
+  return await safeReadJSON(userPath);
 }
 
 /**
