@@ -27,7 +27,7 @@ describe('Phase 22 — Config', () => {
 
   it('P22-02: has 41 config sections', () => {
     const topLevelKeys = Object.keys(config);
-    assert.equal(topLevelKeys.length, 43);
+    assert.equal(topLevelKeys.length, 45);
   });
 
   it('P22-03: MESSAGES section exists with all required fields', () => {

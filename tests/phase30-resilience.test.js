@@ -366,7 +366,7 @@ describe('Phase 30 — Expiry Warnings', () => {
 describe('Phase 30 — Version', () => {
   it('P30-59: package.json version is 0.27.0', async () => {
     const pkg = JSON.parse(await readSource('package.json'));
-    assert.equal(pkg.version, '0.27.0');
+    assert.equal(pkg.version, '0.28.0');
   });
 
   it('P30-60: config PWA cacheName is yawmia-v0.27.0', async () => {
