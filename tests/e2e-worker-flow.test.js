@@ -304,7 +304,7 @@ describe('E2E Worker Flow', () => {
     const res = await api('GET', '/api/health');
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.data.status, 'ok');
-    assert.strictEqual(res.data.version, '0.26.0');
+    assert.strictEqual(res.data.version, '0.27.0');
     assert.ok(res.data.environment);
   });
 
@@ -312,6 +312,6 @@ describe('E2E Worker Flow', () => {
     const res = await api('GET', '/api/docs');
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.routes);
-    assert.strictEqual(res.data.total, 70);
+    assert.strictEqual(res.data.total, 74);
   });
 });
