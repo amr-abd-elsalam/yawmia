@@ -7,10 +7,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { readdir, unlink, stat } from 'node:fs/promises';
+import { readdir, unlink, stat, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, deleteJSON } from './database.js';
+import { atomicWrite, readJSON, deleteJSON } from './database.js';
 import { logger } from './logger.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
@@ -113,8 +113,9 @@ export async function captureSnapshot() {
     dataSize,
   };
 
-  // Save to disk
-  const snapshotPath = getRecordPath('metrics', id);
+  // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
+  await mkdir(METRICS_DIR, { recursive: true });
+  const snapshotPath = join(METRICS_DIR, `${id}.json`);
   await atomicWrite(snapshotPath, snapshot);
 
   return snapshot;
@@ -242,7 +243,7 @@ export async function cleanOldSnapshots() {
       const filePath = join(METRICS_DIR, file);
       const data = await readJSON(filePath);
       if (data && data.timestamp && new Date(data.timestamp) < cutoff) {
-        await deleteJSON(filePath);
+        try { await unlink(filePath); } catch (_) {}
         cleaned++;
       }
     } catch (_) {

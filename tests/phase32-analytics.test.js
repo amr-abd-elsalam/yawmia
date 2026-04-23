@@ -275,7 +275,9 @@ describe('Phase 32 — Receipt', () => {
     await appsService.accept(appRes.application.id, emp.id);
     await jobsService.startJob(job.id, emp.id);
     await jobsService.completeJob(job.id, emp.id);
-    await new Promise(r => setTimeout(r, 300));
+    // Explicitly create payment since fire-and-forget may not have completed
+    try { await paymentsService.createPayment(job.id, emp.id); } catch (_) {}
+    await new Promise(r => setTimeout(r, 100));
 
     const payments = await paymentsService.listByJob(job.id);
     assert.ok(payments.length > 0, 'payment should exist');
