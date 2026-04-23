@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.28.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-23T15:18:43.516Z
+# يوميّة (Yawmia) v0.29.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-23T17:42:27.302Z
 > Files in this part: 40
 
 ## Files
@@ -6422,6 +6422,9 @@ export async function createNotification(userId, type, message, meta = {}) {
     // Fire-and-forget — don't break notification creation flow
   }
 
+  // Enforce max notifications per user (fire-and-forget)
+  enforceMaxNotifications(userId).catch(() => {});
+
   return notification;
 }
 
@@ -6601,6 +6604,66 @@ export async function cleanOldNotifications() {
   }
 
   return cleaned;
+}
+
+/**
+ * Enforce max notifications per user — delete oldest read notifications if exceeding limit.
+ * Fire-and-forget safe — NEVER throws.
+ * Only deletes READ notifications — unread are always protected.
+ * @param {string} userId
+ */
+async function enforceMaxNotifications(userId) {
+  try {
+    const maxPerUser = config.CLEANUP?.maxNotificationsPerUser;
+    if (!maxPerUser || maxPerUser <= 0) return;
+
+    // Get all notification IDs for user from index
+    const indexedIds = await getFromSetIndex(USER_NTF_INDEX, userId);
+    if (indexedIds.length <= maxPerUser) return;
+
+    // Load all notifications
+    const notifications = [];
+    for (const ntfId of indexedIds) {
+      const ntf = await readJSON(getRecordPath('notifications', ntfId));
+      if (ntf) notifications.push(ntf);
+    }
+
+    if (notifications.length <= maxPerUser) return;
+
+    // Sort oldest first
+    notifications.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    // Calculate excess
+    const excess = notifications.length - maxPerUser;
+
+    // Collect oldest READ notifications to delete
+    const toDelete = [];
+    for (const ntf of notifications) {
+      if (toDelete.length >= excess) break;
+      if (ntf.read) {
+        toDelete.push(ntf.id);
+      }
+    }
+
+    if (toDelete.length === 0) return;
+
+    // Delete files
+    for (const ntfId of toDelete) {
+      await deleteJSON(getRecordPath('notifications', ntfId));
+    }
+
+    // Batch update index — single read + single write
+    const deletedSet = new Set(toDelete);
+    const indexPath = USER_NTF_INDEX;
+    const index = await readSetIndex(indexPath);
+    if (index[userId]) {
+      index[userId] = index[userId].filter(id => !deletedSet.has(id));
+      if (index[userId].length === 0) delete index[userId];
+      await writeSetIndex(indexPath, index);
+    }
+  } catch (_) {
+    // Fire-and-forget — NEVER throws
+  }
 }
 
 /**
@@ -9101,8 +9164,12 @@ export function validateJobFields(body) {
   // workersNeeded
   if (body.workersNeeded == null || typeof body.workersNeeded !== 'number') {
     errors.push('عدد العمال المطلوبين لازم يكون رقم');
-  } else if (body.workersNeeded < config.JOBS.minWorkersPerJob || body.workersNeeded > config.JOBS.maxWorkersPerJob) {
-    errors.push(`عدد العمال لازم يكون بين ${config.JOBS.minWorkersPerJob} و ${config.JOBS.maxWorkersPerJob}`);
+  } else {
+    // Integer enforcement — silently truncate decimals
+    body.workersNeeded = Math.floor(body.workersNeeded);
+    if (body.workersNeeded < config.JOBS.minWorkersPerJob || body.workersNeeded > config.JOBS.maxWorkersPerJob) {
+      errors.push(`عدد العمال لازم يكون بين ${config.JOBS.minWorkersPerJob} و ${config.JOBS.maxWorkersPerJob}`);
+    }
   }
 
   // dailyWage
@@ -9116,13 +9183,24 @@ export function validateJobFields(body) {
   // startDate
   if (!body.startDate || typeof body.startDate !== 'string') {
     errors.push('تاريخ البدء مطلوب');
+  } else {
+    // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
+    const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const todayEgypt = egyptNow.toISOString().split('T')[0];
+    if (body.startDate < todayEgypt) {
+      errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+    }
   }
 
   // durationDays
   if (body.durationDays == null || typeof body.durationDays !== 'number') {
     errors.push('مدة العمل بالأيام مطلوبة');
-  } else if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
-    errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+  } else {
+    // Integer enforcement — silently truncate decimals
+    body.durationDays = Math.floor(body.durationDays);
+    if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+      errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+    }
   }
 
   // description (optional but validated if present)

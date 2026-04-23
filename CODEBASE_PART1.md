@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.28.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-23T15:18:43.513Z
+# يوميّة (Yawmia) v0.29.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-23T17:42:27.298Z
 > Files in this part: 6
 
 ## Files
@@ -503,7 +503,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.28.0',
+    cacheName: 'yawmia-v0.29.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -825,7 +825,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1199,7 +1199,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.28.0',
+        version: '0.29.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1287,7 +1287,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.28.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.29.0' });
     },
   },
 

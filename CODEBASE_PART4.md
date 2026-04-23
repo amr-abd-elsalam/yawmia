@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.28.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-23T15:18:43.533Z
-> Files in this part: 30
+# يوميّة (Yawmia) v0.29.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-23T17:42:27.318Z
+> Files in this part: 32
 
 ## Files
 1. `frontend/404.html`
@@ -11,28 +11,30 @@
 6. `frontend/assets/js/app.js`
 7. `frontend/assets/js/auth.js`
 8. `frontend/assets/js/icons.js`
-9. `frontend/assets/js/jobs.js`
-10. `frontend/assets/js/modal.js`
-11. `frontend/assets/js/profile.js`
-12. `frontend/assets/js/toast.js`
-13. `frontend/assets/js/user.js`
-14. `frontend/assets/js/utils.js`
-15. `frontend/dashboard.html`
-16. `frontend/index.html`
-17. `frontend/manifest.json`
-18. `frontend/offline.html`
-19. `frontend/profile.html`
-20. `frontend/robots.txt`
-21. `frontend/sitemap.xml`
-22. `frontend/sw.js`
-23. `frontend/terms.html`
-24. `frontend/user.html`
-25. `scripts/backup.js`
-26. `scripts/benchmark.js`
-27. `scripts/bundle-for-review.js`
-28. `scripts/generate-vapid-keys.js`
-29. `scripts/migrate.js`
-30. `scripts/repair-indexes.js`
+9. `frontend/assets/js/jobDetail.js`
+10. `frontend/assets/js/jobs.js`
+11. `frontend/assets/js/modal.js`
+12. `frontend/assets/js/profile.js`
+13. `frontend/assets/js/toast.js`
+14. `frontend/assets/js/user.js`
+15. `frontend/assets/js/utils.js`
+16. `frontend/dashboard.html`
+17. `frontend/index.html`
+18. `frontend/job.html`
+19. `frontend/manifest.json`
+20. `frontend/offline.html`
+21. `frontend/profile.html`
+22. `frontend/robots.txt`
+23. `frontend/sitemap.xml`
+24. `frontend/sw.js`
+25. `frontend/terms.html`
+26. `frontend/user.html`
+27. `scripts/backup.js`
+28. `scripts/benchmark.js`
+29. `scripts/bundle-for-review.js`
+30. `scripts/generate-vapid-keys.js`
+31. `scripts/migrate.js`
+32. `scripts/repair-indexes.js`
 
 ---
 
@@ -2986,6 +2988,123 @@ textarea:focus:not(:focus-visible) {
   .ym-modal-overlay.receipt-overlay h3 { color: #000 !important; }
 }
 
+/* ═══ Phase 33 — Job Detail Page ═══ */
+.job-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+}
+
+.job-detail__header-actions {
+  flex-shrink: 0;
+}
+
+.job-detail__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-block-end: 0.5rem;
+  color: var(--color-text);
+}
+
+.job-detail__section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-block-end: 0.75rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.job-detail__info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.job-detail__info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-detail__info-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.job-detail__info-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.job-detail__desc {
+  margin-block-end: 0.5rem;
+}
+
+.job-detail__desc p {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.job-detail__employer {
+  margin-block-end: 0.5rem;
+}
+
+.job-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 1rem;
+}
+
+.job-detail__payment {
+  margin-block-start: 0.5rem;
+}
+
+/* ═══ Phase 33 — Job Card Title Link ═══ */
+.job-card__title-link {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.job-card__title-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* ═══ Phase 33 — Share Button ═══ */
+.btn-share-wa {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .job-detail__info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .job-detail__header {
+    flex-direction: column;
+  }
+
+  .job-detail__title {
+    font-size: 1.25rem;
+  }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;
@@ -4173,6 +4292,34 @@ var Yawmia = (function () {
     showOfflineBanner();
   }
 
+  // ── Periodic State Refresh (every 5 min, tab-focused + online) ──
+  var STATE_REFRESH_INTERVAL = 5 * 60 * 1000;
+  var stateRefreshTimer = null;
+
+  function startStateRefresh() {
+    if (stateRefreshTimer) return;
+    if (!state.token) return;
+    stateRefreshTimer = setInterval(async function () {
+      if (!document.hasFocus()) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      try {
+        var res = await api('GET', '/api/auth/me');
+        if (res.status === 200 && res.data && res.data.ok) {
+          state.user = res.data.user;
+          localStorage.setItem('yawmia_user', JSON.stringify(res.data.user));
+          window.dispatchEvent(new CustomEvent('yawmia:user-refreshed', { detail: res.data.user }));
+        } else if (res.status === 403 || res.status === 401) {
+          logout();
+        }
+      } catch (_) { /* Network error — retry next interval */ }
+    }, STATE_REFRESH_INTERVAL);
+  }
+
+  // Auto-start if logged in
+  if (state.token) {
+    startStateRefresh();
+  }
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -4198,6 +4345,7 @@ var Yawmia = (function () {
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
     apiWithRetry: apiWithRetry,
+    startStateRefresh: startStateRefresh,
   };
 })();
 ```
@@ -4574,6 +4722,463 @@ var YawmiaIcons = (function () {
     renderAll: renderAll,
     list: list,
   };
+})();
+```
+
+---
+
+## `frontend/assets/js/jobDetail.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/jobDetail.js — Job Detail Page Module (IIFE)
+// Phase 33 — Shareable job detail page with full info + actions
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // ── Read job ID from URL ──────────────────────────────────
+  var params = new URLSearchParams(window.location.search);
+  var jobId = params.get('id');
+
+  if (!jobId) {
+    showError();
+    return;
+  }
+
+  // Show profile link if logged in
+  if (Yawmia.isLoggedIn()) {
+    var profileLink = Yawmia.$id('profileLink');
+    if (profileLink) profileLink.style.display = '';
+  }
+
+  // Render icons
+  if (typeof YawmiaIcons !== 'undefined') YawmiaIcons.renderAll();
+
+  // Load job
+  loadJob(jobId);
+
+  // ── Load Job ──────────────────────────────────────────────
+  async function loadJob(id) {
+    try {
+      var res = await Yawmia.api('GET', '/api/jobs/' + id);
+      if (res.status === 404 || !res.data || !res.data.ok || !res.data.job) {
+        showError();
+        return;
+      }
+
+      var job = res.data.job;
+      renderJob(job);
+
+      Yawmia.hide('jobLoading');
+      Yawmia.show('jobContent');
+
+      // Load employer profile (fire-and-forget enrichment)
+      loadEmployerProfile(job.employerId);
+
+      // Load payment info for completed jobs
+      if (job.status === 'completed') {
+        loadPaymentInfo(job.id);
+      }
+
+    } catch (err) {
+      showError();
+    }
+  }
+
+  // ── Render Job Details ────────────────────────────────────
+  function renderJob(job) {
+    // Title
+    var titleEl = Yawmia.$id('jobTitle');
+    if (titleEl) titleEl.textContent = job.title;
+
+    // Update page title
+    document.title = 'يوميّة — ' + job.title;
+
+    // Status badge
+    var statusEl = Yawmia.$id('jobStatusBadge');
+    if (statusEl) {
+      var statusLabel = YawmiaUtils.statusLabel(job.status);
+      statusEl.innerHTML = '<span class="badge badge--status badge--' + escapeHtml(job.status) + '">' + escapeHtml(statusLabel) + '</span>';
+    }
+
+    // Info grid
+    var gridEl = Yawmia.$id('jobInfoGrid');
+    if (gridEl) {
+      var items = [
+        { icon: 'briefcase', label: 'التخصص', value: job.category },
+        { icon: 'mapPin', label: 'المحافظة', value: job.governorate },
+        { icon: 'wallet', label: 'اليومية', value: job.dailyWage + ' جنيه/يوم' },
+        { icon: 'calendar', label: 'تاريخ البدء', value: job.startDate },
+        { icon: 'clock', label: 'المدة', value: job.durationDays + ' يوم' },
+        { icon: 'workers', label: 'العمال', value: job.workersAccepted + '/' + job.workersNeeded + ' عامل' },
+      ];
+
+      gridEl.innerHTML = '';
+      items.forEach(function (item) {
+        var div = document.createElement('div');
+        div.className = 'job-detail__info-item';
+        div.innerHTML =
+          '<span class="job-detail__info-label">' + YawmiaIcons.get(item.icon, { size: 16 }) + ' ' + escapeHtml(item.label) + '</span>' +
+          '<span class="job-detail__info-value">' + escapeHtml(item.value) + '</span>';
+        gridEl.appendChild(div);
+      });
+    }
+
+    // Description
+    if (job.description && job.description.trim()) {
+      var descSection = Yawmia.$id('jobDescSection');
+      var descEl = Yawmia.$id('jobDescription');
+      if (descSection && descEl) {
+        descEl.textContent = job.description;
+        Yawmia.show('jobDescSection');
+      }
+    }
+
+    // WhatsApp share button
+    var shareBtn = Yawmia.$id('btnShareWhatsApp');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        var jobUrl = window.location.origin + '/job.html?id=' + job.id;
+        var text = 'فرصة عمل على يوميّة: ' + job.title + ' — ' + job.dailyWage + ' جنيه/يوم 📍 ' + job.governorate + '\n' + jobUrl;
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      });
+    }
+
+    // Actions
+    renderActions(job);
+  }
+
+  // ── Render Action Buttons ─────────────────────────────────
+  function renderActions(job) {
+    var actionsEl = Yawmia.$id('jobActions');
+    if (!actionsEl) return;
+
+    var user = Yawmia.getUser();
+    var isLoggedIn = Yawmia.isLoggedIn();
+    var html = '';
+
+    if (!isLoggedIn) {
+      html = '<a href="/" class="btn btn--primary">سجّل دخولك عشان تتقدم</a>';
+      actionsEl.innerHTML = html;
+      return;
+    }
+
+    // Worker actions
+    if (user.role === 'worker') {
+      if (job.status === 'open') {
+        html += '<button class="btn btn--primary" id="btnApply">تقدّم لهذه الفرصة</button>';
+      }
+      if (job.status === 'in_progress') {
+        html += '<button class="btn btn-checkin" id="btnCheckIn">📍 تسجيل حضور</button>';
+        html += '<button class="btn btn-checkout" id="btnCheckOut">🏁 تسجيل انصراف</button>';
+      }
+      if (job.status === 'completed') {
+        html += '<button class="btn btn--warning" id="btnRateEmployer" data-target="' + escapeHtml(job.employerId) + '">⭐ قيّم صاحب العمل</button>';
+      }
+    }
+
+    // Employer actions (own job)
+    if (user.role === 'employer' && job.employerId === user.id) {
+      if (job.status === 'open') {
+        html += '<button class="btn btn--ghost" id="btnCancelJob" style="color:var(--color-error);border-color:var(--color-error);">إلغاء الفرصة</button>';
+      } else if (job.status === 'filled') {
+        html += '<button class="btn btn--primary" id="btnStartJob">ابدأ التنفيذ</button>';
+      } else if (job.status === 'in_progress') {
+        html += '<button class="btn btn--success" id="btnCompleteJob">إنهاء الفرصة</button>';
+      } else if (job.status === 'completed') {
+        html += '<button class="btn btn--warning" id="btnRateWorkers">⭐ قيّم العمال</button>';
+      } else if (job.status === 'expired' || job.status === 'cancelled') {
+        html += '<button class="btn btn-renew" id="btnRenewJob">🔄 تجديد الفرصة</button>';
+      }
+    }
+
+    actionsEl.innerHTML = html;
+
+    // ── Attach event handlers ──
+
+    // Apply
+    var applyBtn = Yawmia.$id('btnApply');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(applyBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/apply');
+          if (res.data.ok) {
+            applyBtn.textContent = 'تم التقديم ✓';
+            applyBtn.disabled = true;
+            applyBtn.classList.remove('btn--primary');
+            applyBtn.classList.add('btn--done');
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في التقديم');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(applyBtn, false);
+        }
+      });
+    }
+
+    // Start Job
+    var startBtn = Yawmia.$id('btnStartJob');
+    if (startBtn) {
+      startBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(startBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/start');
+          if (res.data.ok) {
+            window.location.reload();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في بدء الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(startBtn, false);
+        }
+      });
+    }
+
+    // Complete Job
+    var completeBtn = Yawmia.$id('btnCompleteJob');
+    if (completeBtn) {
+      completeBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(completeBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/complete');
+          if (res.data.ok) {
+            window.location.reload();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في إنهاء الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(completeBtn, false);
+        }
+      });
+    }
+
+    // Cancel Job
+    var cancelBtn = Yawmia.$id('btnCancelJob');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async function () {
+        var confirmed = await YawmiaModal.confirm({
+          title: 'إلغاء الفرصة',
+          message: 'متأكد إنك عايز تلغي هذه الفرصة؟ الطلبات المعلقة هتترفض تلقائياً.',
+          confirmText: 'إلغاء الفرصة',
+          cancelText: 'رجوع',
+          danger: true,
+        });
+        if (!confirmed) return;
+        Yawmia.setLoading(cancelBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/cancel');
+          if (res.data.ok) {
+            window.location.reload();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في إلغاء الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(cancelBtn, false);
+        }
+      });
+    }
+
+    // Renew Job
+    var renewBtn = Yawmia.$id('btnRenewJob');
+    if (renewBtn) {
+      renewBtn.addEventListener('click', async function () {
+        var confirmed = await YawmiaModal.confirm({
+          title: 'تجديد الفرصة',
+          message: 'هل تريد تجديد هذه الفرصة؟',
+          confirmText: 'تجديد',
+          cancelText: 'إلغاء',
+        });
+        if (!confirmed) return;
+        Yawmia.setLoading(renewBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/renew');
+          if (res.data.ok) {
+            window.location.reload();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في تجديد الفرصة');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(renewBtn, false);
+        }
+      });
+    }
+
+    // Check-in
+    var checkinBtn = Yawmia.$id('btnCheckIn');
+    if (checkinBtn) {
+      checkinBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+          YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
+          return;
+        }
+        Yawmia.setLoading(checkinBtn, true);
+        navigator.geolocation.getCurrentPosition(
+          async function (pos) {
+            try {
+              var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/checkin', {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+              });
+              if (res.data.ok) {
+                checkinBtn.textContent = 'تم الحضور ✓';
+                checkinBtn.disabled = true;
+                checkinBtn.classList.add('btn--done');
+              } else {
+                YawmiaToast.error(res.data.error || 'خطأ في تسجيل الحضور');
+              }
+            } catch (err) {
+              YawmiaToast.error('خطأ في الاتصال');
+            } finally {
+              Yawmia.setLoading(checkinBtn, false);
+            }
+          },
+          function () {
+            Yawmia.setLoading(checkinBtn, false);
+            YawmiaToast.error('فشل تحديد الموقع — تأكد من تفعيل GPS');
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+    }
+
+    // Check-out
+    var checkoutBtn = Yawmia.$id('btnCheckOut');
+    if (checkoutBtn) {
+      checkoutBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(checkoutBtn, true);
+        try {
+          var body = {};
+          if (navigator.geolocation) {
+            try {
+              var pos = await new Promise(function (resolve, reject) {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+              });
+              body.lat = pos.coords.latitude;
+              body.lng = pos.coords.longitude;
+            } catch (_) { /* GPS optional for check-out */ }
+          }
+          var res = await Yawmia.api('POST', '/api/jobs/' + job.id + '/checkout', body);
+          if (res.data.ok) {
+            checkoutBtn.textContent = 'تم الانصراف ✓';
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.add('btn--done');
+            if (res.data.attendance && res.data.attendance.hoursWorked != null) {
+              YawmiaToast.success('تم تسجيل الانصراف — ساعات العمل: ' + res.data.attendance.hoursWorked + ' ساعة');
+            }
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ في تسجيل الانصراف');
+          }
+        } catch (err) {
+          YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(checkoutBtn, false);
+        }
+      });
+    }
+
+    // Rate employer (worker) — simplified: redirect to dashboard where rating modal is available
+    var rateEmpBtn = Yawmia.$id('btnRateEmployer');
+    if (rateEmpBtn) {
+      rateEmpBtn.addEventListener('click', function () {
+        window.location.href = '/dashboard.html';
+      });
+    }
+
+    // Rate workers (employer) — redirect to dashboard where rating modal is available
+    var rateWrkBtn = Yawmia.$id('btnRateWorkers');
+    if (rateWrkBtn) {
+      rateWrkBtn.addEventListener('click', function () {
+        window.location.href = '/dashboard.html';
+      });
+    }
+  }
+
+  // ── Load Employer Profile ─────────────────────────────────
+  async function loadEmployerProfile(employerId) {
+    var container = Yawmia.$id('jobEmployerInfo');
+    if (!container || !employerId) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/users/' + employerId + '/public-profile');
+      if (res.data.ok && res.data.profile) {
+        var p = res.data.profile;
+        var ratingHtml = '';
+        if (p.rating && p.rating.count > 0) {
+          ratingHtml = '<span style="color:var(--color-warning);font-size:0.85rem;">⭐ ' + p.rating.avg + ' (' + p.rating.count + ' تقييم)</span>';
+        }
+
+        var verBadge = '';
+        if (p.verificationStatus === 'verified') {
+          verBadge = ' <span class="verification-badge verification-badge--verified">✓ محقق</span>';
+        }
+
+        container.innerHTML =
+          '<a href="/user.html?id=' + escapeHtml(employerId) + '" class="worker-link" style="font-weight:600;">' + escapeHtml(p.name || 'بدون اسم') + '</a>' +
+          verBadge +
+          (p.governorate ? '<span style="color:var(--color-text-muted);font-size:0.85rem;margin-inline-start:0.5rem;">📍 ' + escapeHtml(p.governorate) + '</span>' : '') +
+          (ratingHtml ? '<div style="margin-top:0.25rem;">' + ratingHtml + '</div>' : '');
+      } else {
+        container.innerHTML = '<span style="color:var(--color-text-muted);font-size:0.9rem;">صاحب العمل</span>';
+      }
+    } catch (_) {
+      container.innerHTML = '<span style="color:var(--color-text-muted);font-size:0.9rem;">صاحب العمل</span>';
+    }
+  }
+
+  // ── Load Payment Info ─────────────────────────────────────
+  async function loadPaymentInfo(jId) {
+    var section = Yawmia.$id('jobPaymentSection');
+    var container = Yawmia.$id('jobPaymentInfo');
+    if (!section || !container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/jobs/' + jId + '/payment');
+      if (res.data.ok && res.data.payment) {
+        var pay = res.data.payment;
+        var statusLabels = {
+          pending: 'في انتظار التأكيد',
+          employer_confirmed: 'تم تأكيد الدفع',
+          completed: 'مكتمل',
+          disputed: 'نزاع',
+        };
+        var badgeLabel = statusLabels[pay.status] || pay.status;
+
+        container.innerHTML =
+          '<div class="payment-info">' +
+            '<span class="payment-badge payment-badge--' + escapeHtml(pay.status) + '">' + escapeHtml(badgeLabel) + '</span>' +
+            '<span style="font-size:0.9rem;color:var(--color-text-muted);margin-inline-start:0.5rem;">' + pay.amount + ' جنيه</span>' +
+          '</div>';
+
+        Yawmia.show('jobPaymentSection');
+      }
+    } catch (_) {
+      // Payment may not exist — no error shown
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function showError() {
+    Yawmia.hide('jobLoading');
+    Yawmia.show('jobError');
+  }
+
+  function escapeHtml(str) {
+    return YawmiaUtils.escapeHtml(str);
+  }
+
 })();
 ```
 
@@ -5242,6 +5847,9 @@ var YawmiaIcons = (function () {
         secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '" aria-label="رسائل فرصة ' + escapeHtml(job.title) + '">💬 رسائل</button>';
       }
     }
+    // WhatsApp share button
+    secondaryButtons += '<button class="btn btn--ghost btn--sm btn-share-whatsapp" data-job-id="' + job.id + '" data-title="' + escapeHtml(job.title) + '" data-wage="' + job.dailyWage + '" data-gov="' + escapeHtml(job.governorate) + '" aria-label="شارك الفرصة عبر واتساب">📤 شارك</button>';
+
     if (job.employerId && job.employerId !== user.id) {
       secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '" aria-label="بلّغ عن مخالفة في فرصة ' + escapeHtml(job.title) + '">🚩 بلّغ</button>';
     }
@@ -5266,7 +5874,7 @@ var YawmiaIcons = (function () {
 
     card.innerHTML =
       '<div class="job-card__header">' +
-        '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
+        '<a href="/job.html?id=' + escapeHtml(job.id) + '" class="job-card__title-link">' + escapeHtml(job.title) + '</a>' +
         '<div class="job-card__header-right">' +
           statusBadge +
           distanceBadge +
@@ -5556,6 +6164,19 @@ var YawmiaIcons = (function () {
           }
         } catch (e) { /* ignore — payment may not exist */ }
       })();
+    }
+
+    // WhatsApp share button handler
+    var shareBtn = card.querySelector('.btn-share-whatsapp');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        var title = shareBtn.getAttribute('data-title');
+        var wage = shareBtn.getAttribute('data-wage');
+        var gov = shareBtn.getAttribute('data-gov');
+        var jobUrl = window.location.origin + '/job.html?id=' + shareBtn.getAttribute('data-job-id');
+        var text = 'فرصة عمل على يوميّة: ' + title + ' — ' + wage + ' جنيه/يوم 📍 ' + gov + '\n' + jobUrl;
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      });
     }
 
     // Report button handler
@@ -9016,6 +9637,165 @@ var YawmiaUtils = (function () {
 
 ---
 
+## `frontend/job.html`
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — تفاصيل فرصة عمل</title>
+  <meta name="description" content="شوف تفاصيل الفرصة وتقدّم دلوقتي على منصة يوميّة — شغلك قريب منّك.">
+  <meta property="og:title" content="يوميّة — تفاصيل فرصة عمل">
+  <meta property="og:description" content="شوف تفاصيل الفرصة وتقدّم دلوقتي على منصة يوميّة">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/job.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/job.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/" class="header__brand-link">
+              <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
+            <a href="/profile.html" class="btn btn--ghost btn--sm" id="profileLink" style="display:none;">ملفي</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main" id="main-content">
+      <div class="container">
+
+        <!-- Loading State -->
+        <div id="jobLoading">
+          <div class="card">
+            <div class="skeleton skeleton-text--lg" style="width:60%;margin-block-end:1rem;"></div>
+            <div class="skeleton skeleton-text" style="width:80%;"></div>
+            <div class="skeleton skeleton-text" style="width:50%;"></div>
+            <div class="skeleton skeleton-text" style="width:70%;"></div>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="jobError" class="hidden">
+          <div class="card">
+            <div class="empty-state">
+              <span class="empty-state__icon">🔍</span>
+              <p class="empty-state__text">الفرصة غير موجودة أو تم حذفها</p>
+              <a href="/dashboard.html" class="btn btn--primary btn--sm" style="margin-top:1rem;">الرجوع للفرص المتاحة</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Job Content -->
+        <div id="jobContent" class="hidden">
+
+          <!-- Job Detail Card -->
+          <section class="card" id="jobDetailCard">
+            <!-- Header: Title + Status + Share -->
+            <div class="job-detail__header">
+              <div>
+                <h2 class="job-detail__title" id="jobTitle"></h2>
+                <span id="jobStatusBadge"></span>
+              </div>
+              <div class="job-detail__header-actions">
+                <button class="btn btn--ghost btn--sm btn-share-wa" id="btnShareWhatsApp" aria-label="شارك عبر واتساب">📤 شارك عبر واتساب</button>
+              </div>
+            </div>
+
+            <!-- Info Grid -->
+            <div class="job-detail__info-grid" id="jobInfoGrid"></div>
+
+            <!-- Description -->
+            <div class="job-detail__desc hidden" id="jobDescSection">
+              <h3 class="job-detail__section-title">وصف الفرصة</h3>
+              <p id="jobDescription"></p>
+            </div>
+
+            <!-- Employer Info -->
+            <div class="job-detail__employer" id="jobEmployerSection">
+              <h3 class="job-detail__section-title">صاحب العمل</h3>
+              <div id="jobEmployerInfo">
+                <p style="color:var(--color-text-muted);font-size:0.9rem;">جاري التحميل...</p>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="job-detail__actions" id="jobActions"></div>
+
+            <!-- Payment Info (completed jobs) -->
+            <div class="job-detail__payment hidden" id="jobPaymentSection">
+              <h3 class="job-detail__section-title">معلومات الدفع</h3>
+              <div id="jobPaymentInfo"></div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="home" data-icon-size="20"></span>
+        <span class="bottom-nav__label">الرئيسية</span>
+      </a>
+      <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
+        <span data-icon="search" data-icon-size="20"></span>
+        <span class="bottom-nav__label">بحث</span>
+      </a>
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="bell" data-icon-size="20"></span>
+        <span class="bottom-nav__label">إشعارات</span>
+      </a>
+      <a href="/profile.html" class="bottom-nav__item">
+        <span data-icon="user" data-icon-size="20"></span>
+        <span class="bottom-nav__label">ملفي</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
+  <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/jobDetail.js"></script>
+</body>
+</html>
+```
+
+---
+
 ## `frontend/manifest.json`
 
 ```json
@@ -9305,6 +10085,12 @@ Sitemap: https://yowmia.com/sitemap.xml
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://yowmia.com/job.html</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://yowmia.com/profile.html</loc>
     <lastmod>2026-04-20</lastmod>
     <changefreq>weekly</changefreq>
@@ -9323,7 +10109,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.28.0';
+const CACHE_NAME = 'yawmia-v0.29.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -9343,6 +10129,8 @@ const STATIC_ASSETS = [
   '/assets/js/utils.js',
   '/assets/js/toast.js',
   '/assets/js/modal.js',
+  '/job.html',
+  '/assets/js/jobDetail.js',
   '/assets/css/tokens.css',
   '/assets/fonts/Cairo-Regular.woff2',
   '/assets/fonts/Cairo-SemiBold.woff2',

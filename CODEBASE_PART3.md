@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.28.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-23T15:18:43.528Z
+# يوميّة (Yawmia) v0.29.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-23T17:42:27.313Z
 > Files in this part: 23
 
 ## Files
@@ -1239,7 +1239,7 @@ export async function handleDeleteAccount(req, res) {
 
 import config from '../../config.js';
 import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob, duplicateJob } from '../services/jobs.js';
-import { validateJobFields } from '../services/validators.js';
+import { validateJobFields, validateLatitude, validateLongitude } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -1288,6 +1288,22 @@ export async function handleCreateJob(req, res) {
       } catch (_) {
         // Content filter failure is non-blocking — allow creation
       }
+    }
+
+    // Validate lat/lng if provided
+    if (sanitized.lat !== undefined && sanitized.lat !== null && sanitized.lat !== '') {
+      const latResult = validateLatitude(sanitized.lat);
+      if (!latResult.valid) {
+        return sendJSON(res, 400, { error: latResult.error, code: 'INVALID_LATITUDE' });
+      }
+      sanitized.lat = latResult.value;
+    }
+    if (sanitized.lng !== undefined && sanitized.lng !== null && sanitized.lng !== '') {
+      const lngResult = validateLongitude(sanitized.lng);
+      if (!lngResult.valid) {
+        return sendJSON(res, 400, { error: lngResult.error, code: 'INVALID_LONGITUDE' });
+      }
+      sanitized.lng = lngResult.value;
     }
 
     const job = await create(req.user.id, sanitized);
