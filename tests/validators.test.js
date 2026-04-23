@@ -122,7 +122,7 @@ describe('Validators', () => {
         governorate: 'fayoum',
         workersNeeded: 20,
         dailyWage: 250,
-        startDate: '2026-04-20',
+        startDate: '2027-01-15',
         durationDays: 3,
       });
       assert.deepStrictEqual(result, { valid: true });

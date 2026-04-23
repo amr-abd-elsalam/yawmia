@@ -37,7 +37,7 @@ const sampleJob = {
   governorate: 'fayoum',
   workersNeeded: 1,
   dailyWage: 250,
-  startDate: '2026-04-20',
+  startDate: '2027-01-15',
   durationDays: 3,
 };
 
