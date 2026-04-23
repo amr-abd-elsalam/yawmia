@@ -52,7 +52,7 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-05: DATABASE.dirs has 14 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.dirs).length, 15);
+    assert.equal(Object.keys(config.DATABASE.dirs).length, 16);
     assert.ok(config.DATABASE.dirs.messages);
     assert.ok(config.DATABASE.dirs.push_subscriptions);
   });
