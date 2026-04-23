@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.27.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-23T08:30:42.520Z
+# يوميّة (Yawmia) v0.28.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-23T13:27:35.542Z
 > Files in this part: 6
 
 ## Files
@@ -324,6 +324,7 @@ const config = {
       messages: 'messages',
       push_subscriptions: 'push_subscriptions',
       alerts: 'alerts',
+      metrics: 'metrics',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -502,7 +503,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.27.0',
+    cacheName: 'yawmia-v0.28.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -751,6 +752,31 @@ const config = {
     intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 44. المراقبة (MONITORING)
+  // ═══════════════════════════════════════════════════════════
+  MONITORING: {
+    enabled: true,
+    snapshotIntervalMs: 3600000,             // snapshot كل ساعة (مللي ثانية)
+    retentionDays: 30,                       // حذف snapshots أقدم من 30 يوم
+    thresholds: {
+      heapUsedMB: { warning: 256, critical: 512 },
+      errorRate: { warning: 5, critical: 15 },        // نسبة مئوية
+      p95Ms: { warning: 1000, critical: 3000 },       // مللي ثانية
+      cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 45. التحليلات (ANALYTICS)
+  // ═══════════════════════════════════════════════════════════
+  ANALYTICS: {
+    enabled: true,
+    cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
+    maxExportRows: 10000,                    // أقصى عدد صفوف في CSV export
+    receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -799,7 +825,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1036,6 +1062,13 @@ const cleanupTimer = setInterval(async () => {
         const { checkIndexHealth } = await import('./server/services/indexHealth.js');
         await checkIndexHealth();
       } catch (_) { /* non-fatal */ }
+
+      // Monitoring snapshot cleanup (every 6 hours — same as index health)
+      try {
+        const { cleanOldSnapshots } = await import('./server/services/monitor.js');
+        const cleanedSnapshots = await cleanOldSnapshots();
+        if (cleanedSnapshots > 0) logger.info(`Periodic: cleaned ${cleanedSnapshots} old monitoring snapshot(s)`);
+      } catch (_) { /* non-fatal */ }
     }
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
@@ -1055,6 +1088,23 @@ if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
     }
   }, config.ACTIVITY_SUMMARY.intervalCheckMs);
   if (summaryTimer.unref) summaryTimer.unref();
+}
+
+// ── Monitoring Snapshot Timer (separate — captures metrics every hour) ──
+if (config.MONITORING && config.MONITORING.enabled) {
+  const monitorTimer = setInterval(async () => {
+    try {
+      const { captureSnapshot, checkThresholds } = await import('./server/services/monitor.js');
+      const snapshot = await captureSnapshot();
+      const alerts = checkThresholds(snapshot);
+      if (alerts.length > 0) {
+        logger.warn('Monitoring threshold violation(s)', { count: alerts.length, alerts: alerts.slice(0, 3) });
+      }
+    } catch (err) {
+      logger.warn('Monitoring snapshot error', { error: err.message });
+    }
+  }, config.MONITORING.snapshotIntervalMs);
+  if (monitorTimer.unref) monitorTimer.unref();
 }
 
 // ── Start ─────────────────────────────────────────────────────
@@ -1124,6 +1174,7 @@ import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoS
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
 import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleAlert } from './handlers/alertsHandler.js';
+import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot } from './handlers/analyticsHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1148,7 +1199,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.27.0',
+        version: '0.28.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1236,7 +1287,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.27.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.28.0' });
     },
   },
 
@@ -1253,6 +1304,13 @@ const routes = [
   { method: 'DELETE', path: '/api/auth/account', middlewares: [requireAuth], handler: handleDeleteAccount },
   { method: 'POST', path: '/api/auth/verify-identity', middlewares: [requireAuth], handler: handleSubmitVerification },
   { method: 'GET', path: '/api/auth/verification-status', middlewares: [requireAuth], handler: handleGetVerificationStatus },
+
+  // ── Analytics Routes ──
+  { method: 'GET', path: '/api/analytics/employer', middlewares: [requireAuth, requireRole('employer')], handler: handleEmployerAnalytics },
+  { method: 'GET', path: '/api/analytics/worker', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerAnalytics },
+
+  // ── Employer Export Routes ──
+  { method: 'GET', path: '/api/employer/export/payments', middlewares: [requireAuth, requireRole('employer')], handler: handleEmployerExportPayments },
 
   // ── Job Routes ──
   { method: 'POST', path: '/api/jobs', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateJob },
@@ -1323,10 +1381,17 @@ const routes = [
   // ── Payment Routes ──
   { method: 'POST', path: '/api/jobs/:id/payment', middlewares: [requireAuth, requireRole('employer')], handler: handleCreatePayment },
   { method: 'GET', path: '/api/jobs/:id/payment', middlewares: [requireAuth], handler: handleGetJobPayment },
+  { method: 'GET', path: '/api/jobs/:id/receipt', middlewares: [requireAuth], handler: handleGetReceipt },
   { method: 'POST', path: '/api/payments/:id/confirm', middlewares: [requireAuth, requireRole('employer')], handler: handleConfirmPayment },
   { method: 'POST', path: '/api/payments/:id/dispute', middlewares: [requireAuth], handler: handleDisputePayment },
 
   // ── Admin Routes ──
+  { method: 'GET', path: '/api/admin/analytics', middlewares: [requireAdmin], handler: handlePlatformAnalytics },
+  { method: 'GET', path: '/api/admin/export/payments', middlewares: [requireAdmin], handler: handleExportPayments },
+  { method: 'GET', path: '/api/admin/export/jobs', middlewares: [requireAdmin], handler: handleExportJobs },
+  { method: 'GET', path: '/api/admin/export/users', middlewares: [requireAdmin], handler: handleExportUsers },
+  { method: 'GET', path: '/api/admin/monitoring', middlewares: [requireAdmin], handler: handleGetMonitoring },
+  { method: 'GET', path: '/api/admin/monitoring/latest', middlewares: [requireAdmin], handler: handleGetLatestSnapshot },
   { method: 'GET', path: '/api/admin/stats', middlewares: [requireAdmin], handler: handleAdminStats },
   { method: 'GET', path: '/api/admin/users', middlewares: [requireAdmin], handler: handleAdminUsers },
   { method: 'GET', path: '/api/admin/jobs', middlewares: [requireAdmin], handler: handleAdminJobs },

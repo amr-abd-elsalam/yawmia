@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.27.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-23T08:30:42.538Z
+# يوميّة (Yawmia) v0.28.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-23T13:27:35.561Z
 > Files in this part: 30
 
 ## Files
@@ -112,6 +112,21 @@
 
       <div class="admin-section">
         <div class="admin-section__header">
+          <h2>📊 التحليلات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadAnalytics()">تحديث</button>
+        </div>
+        <div id="analyticsGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('payments')">📥 تصدير المدفوعات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('jobs')">📥 تصدير الفرص</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('users')">📥 تصدير المستخدمين</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
           <h2>الماليات</h2>
           <button class="refresh-btn" onclick="AdminApp.loadFinancials()">تحديث</button>
         </div>
@@ -126,6 +141,16 @@
           <button class="refresh-btn" onclick="AdminApp.loadHealth()">تحديث</button>
         </div>
         <div id="healthInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>📡 المراقبة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMonitoring()">تحديث</button>
+        </div>
+        <div id="monitoringInfo">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
@@ -2935,6 +2960,32 @@ textarea:focus:not(:focus-visible) {
   padding: 0.3rem 0;
 }
 
+/* ═══ Phase 32 — Analytics Grid ═══ */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+/* ═══ Phase 32 — Period Selector ═══ */
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+/* ═══ Phase 32 — Print Styles ═══ */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .header, .footer, .bottom-nav, .skip-link, .btn, .ym-modal-actions,
+  .notification-panel, .notification-overlay { display: none !important; }
+  .ym-modal-overlay.receipt-overlay { position: static !important; background: transparent !important; padding: 0 !important; }
+  .ym-modal-overlay.receipt-overlay .ym-modal-card { border: none !important; box-shadow: none !important; max-width: 100% !important; background: #fff !important; color: #000 !important; }
+  .ym-modal-overlay.receipt-overlay .ym-modal-actions { display: none !important; }
+  .ym-modal-overlay.receipt-overlay h3 { color: #000 !important; }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;
@@ -3233,7 +3284,7 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications()]).catch(function () {});
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications(), loadAnalytics(), loadMonitoring()]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -3603,6 +3654,113 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadAnalytics() {
+    try {
+      var data = await api('/api/admin/analytics');
+      var container = document.getElementById('analyticsGrid');
+      if (!container) return;
+      var a = data.analytics || {};
+      var u = a.users || {};
+      var j = a.jobs || {};
+      var f = a.financials || {};
+
+      var cards = [
+        { value: u.newRegistrations || 0, label: 'مستخدمين جدد (30 يوم)' },
+        { value: j.created || 0, label: 'فرص جديدة' },
+        { value: j.completed || 0, label: 'فرص مكتملة' },
+        { value: (j.fillRate || 0) + '%', label: 'نسبة الامتلاء' },
+        { value: (f.platformRevenue || 0).toLocaleString('ar-EG'), label: 'إيرادات المنصة (جنيه)' },
+        { value: (f.totalVolume || 0).toLocaleString('ar-EG'), label: 'حجم الأعمال (جنيه)' },
+        { value: (f.disputeRate || 0) + '%', label: 'نسبة النزاعات' },
+        { value: (a.engagement || {}).avgApplicationsPerJob || 0, label: 'متوسط طلبات/فرصة' },
+      ];
+
+      container.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML =
+          '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+        container.appendChild(card);
+      });
+    } catch (err) {
+      var container = document.getElementById('analyticsGrid');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل التحليلات</p>';
+    }
+  }
+
+  async function loadMonitoring() {
+    try {
+      var data = await api('/api/admin/monitoring/latest');
+      var container = document.getElementById('monitoringInfo');
+      if (!container) return;
+      if (!data.snapshot) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد بيانات مراقبة بعد</p>';
+        return;
+      }
+      var s = data.snapshot;
+      var alerts = data.alerts || [];
+
+      var rows = [
+        { label: 'آخر تحديث', value: s.timestamp ? new Date(s.timestamp).toLocaleString('ar-EG') : '-' },
+        { label: 'Heap Used', value: (s.memory ? s.memory.heapUsedMB : 0) + ' MB' },
+        { label: 'RSS', value: (s.memory ? s.memory.rssMB : 0) + ' MB' },
+        { label: 'الطلبات', value: s.requests ? s.requests.count : 0 },
+        { label: 'P95', value: (s.requests ? s.requests.p95Ms : 0) + ' ms' },
+        { label: 'Error Rate', value: s.requests ? s.requests.errorRate : '0%' },
+        { label: 'Cache Hit Rate', value: s.cache ? s.cache.hitRate : '0%' },
+        { label: 'SSE Connections', value: s.connections ? s.connections.sse : 0 },
+      ];
+
+      container.innerHTML = '';
+
+      if (alerts.length > 0) {
+        var alertHtml = '<div style="margin-bottom:1rem;padding:0.75rem;background:var(--color-error-bg);border:1px solid var(--color-error);border-radius:var(--radius-sm);font-size:0.85rem;">';
+        alerts.forEach(function (a) {
+          alertHtml += '<div>⚠️ <strong>' + escapeHtml(a.level) + ':</strong> ' + escapeHtml(a.message) + '</div>';
+        });
+        alertHtml += '</div>';
+        container.innerHTML += alertHtml;
+      }
+
+      rows.forEach(function (r) {
+        var row = document.createElement('div');
+        row.className = 'health-row';
+        row.innerHTML =
+          '<span class="health-row__label">' + escapeHtml(r.label) + '</span>' +
+          '<span class="health-row__value">' + escapeHtml(String(r.value)) + '</span>';
+        container.appendChild(row);
+      });
+
+      // Data sizes
+      if (s.dataSize) {
+        var dsRow = document.createElement('div');
+        dsRow.className = 'health-row';
+        var dsValues = [];
+        Object.entries(s.dataSize).forEach(function (e) { dsValues.push(e[0] + ': ' + e[1]); });
+        dsRow.innerHTML = '<span class="health-row__label">ملفات البيانات</span><span class="health-row__value" style="font-size:0.75rem;">' + escapeHtml(dsValues.join(' | ')) + '</span>';
+        container.appendChild(dsRow);
+      }
+    } catch (err) {
+      var container = document.getElementById('monitoringInfo');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل بيانات المراقبة</p>';
+    }
+  }
+
+  function exportCSV(type) {
+    var url = API + '/api/admin/export/' + type;
+    // Open in new tab — browser handles download
+    var link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    // Add admin token as query param for auth (since it's a direct download, not fetch)
+    link.href = url + '?_token=' + encodeURIComponent(token);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -3615,6 +3773,9 @@ var AdminApp = (function () {
     reviewReport: reviewReport,
     loadVerifications: loadVerifications,
     reviewVerification: reviewVerification,
+    loadAnalytics: loadAnalytics,
+    loadMonitoring: loadMonitoring,
+    exportCSV: exportCSV,
   };
 })();
 ```
@@ -5326,6 +5487,11 @@ var YawmiaIcons = (function () {
               html += ' <button class="btn btn--ghost btn--sm btn-dispute-payment" data-pay-id="' + pay.id + '">فتح نزاع</button>';
             }
 
+            // Receipt button for completed/confirmed payments
+            if (pay.status === 'completed' || pay.status === 'employer_confirmed') {
+              html += ' <button class="btn btn--ghost btn--sm btn-receipt" data-job-id="' + job.id + '">📄 إيصال</button>';
+            }
+
             html += '</div>';
             paymentPlaceholder.innerHTML = html;
 
@@ -5345,6 +5511,23 @@ var YawmiaIcons = (function () {
                   YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(confirmBtn, false);
+                }
+              });
+            }
+
+            // Receipt button handler
+            var receiptBtn = paymentPlaceholder.querySelector('.btn-receipt');
+            if (receiptBtn) {
+              receiptBtn.addEventListener('click', async function () {
+                try {
+                  var rRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/receipt');
+                  if (rRes.data.ok && rRes.data.receipt) {
+                    showReceiptModal(rRes.data.receipt);
+                  } else {
+                    YawmiaToast.error(rRes.data.error || 'خطأ في جلب الإيصال');
+                  }
+                } catch (e) {
+                  YawmiaToast.error('خطأ في الاتصال');
                 }
               });
             }
@@ -6084,6 +6267,61 @@ var YawmiaIcons = (function () {
   // Override loadJobs to fetch enriched data for employers
   var originalLoadJobs = loadJobs;
 
+  // ── Receipt Modal ─────────────────────────────────────────
+  function showReceiptModal(receipt) {
+    var existing = document.querySelector('.ym-modal-overlay.receipt-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay receipt-overlay';
+
+    var workersHtml = '';
+    if (receipt.workers && receipt.workers.length > 0) {
+      workersHtml = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:0.75rem 0;"><thead><tr style="border-bottom:1px solid var(--color-border);"><th style="text-align:start;padding:0.4rem;">العامل</th><th style="text-align:start;padding:0.4rem;">اليومية</th><th style="text-align:start;padding:0.4rem;">الأيام</th><th style="text-align:start;padding:0.4rem;">الإجمالي</th></tr></thead><tbody>';
+      receipt.workers.forEach(function (w) {
+        workersHtml += '<tr style="border-bottom:1px solid var(--color-border);"><td style="padding:0.4rem;">' + escapeHtml(w.name) + '</td><td style="padding:0.4rem;">' + w.dailyWage + '</td><td style="padding:0.4rem;">' + w.daysWorked + '</td><td style="padding:0.4rem;">' + w.total + ' جنيه</td></tr>';
+      });
+      workersHtml += '</tbody></table>';
+    }
+
+    var attHtml = '';
+    if (receipt.attendance) {
+      attHtml = '<div style="font-size:0.8rem;color:var(--color-text-muted);margin:0.5rem 0;">الحضور: ' + receipt.attendance.attendedDays + ' يوم حضور | ' + receipt.attendance.noShows + ' غياب | نسبة ' + receipt.attendance.attendanceRate + '%</div>';
+    }
+
+    overlay.innerHTML =
+      '<div class="ym-modal-card" style="max-width:520px;" id="receiptCard">' +
+        '<div style="text-align:center;margin-bottom:1rem;">' +
+          '<h3 style="font-size:1.2rem;color:var(--color-primary);">إيصال — يوميّة</h3>' +
+          '<p style="font-size:0.8rem;color:var(--color-text-muted);">رقم: ' + escapeHtml(receipt.receiptNumber) + '</p>' +
+          '<p style="font-size:0.8rem;color:var(--color-text-muted);">' + new Date(receipt.date).toLocaleDateString('ar-EG') + '</p>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--color-border);padding-top:0.75rem;">' +
+          '<div style="font-size:0.9rem;"><strong>صاحب العمل:</strong> ' + escapeHtml(receipt.employer.name) + '</div>' +
+          '<div style="font-size:0.9rem;"><strong>الفرصة:</strong> ' + escapeHtml(receipt.job.title) + ' — ' + escapeHtml(receipt.job.governorate) + '</div>' +
+          '<div style="font-size:0.85rem;color:var(--color-text-muted);">' + receipt.job.durationDays + ' يوم | بدء ' + receipt.job.startDate + '</div>' +
+        '</div>' +
+        workersHtml +
+        '<div style="border-top:1px solid var(--color-border);padding-top:0.75rem;">' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.9rem;padding:0.3rem 0;"><span>إجمالي</span><span>' + receipt.subtotal + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--color-warning);padding:0.3rem 0;"><span>عمولة المنصة (' + receipt.feePercent + '%)</span><span>' + receipt.platformFee + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:0.3rem 0;"><span>صافي العمال</span><span>' + receipt.workerPayout + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--color-text-muted);padding:0.3rem 0;"><span>طريقة الدفع</span><span>' + escapeHtml(receipt.paymentMethod) + '</span></div>' +
+        '</div>' +
+        attHtml +
+        '<div class="ym-modal-actions" style="margin-top:1rem;">' +
+          '<button class="btn btn--primary btn--sm" id="btnPrintReceipt">🖨 طباعة</button>' +
+          '<button class="btn btn--ghost btn--sm" id="btnCloseReceipt">إغلاق</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btnCloseReceipt').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#btnPrintReceipt').addEventListener('click', function () { window.print(); });
+  }
+
   // ── Rating Modal ──────────────────────────────────────────
   function showRatingModal(job, prefilledTargetId) {
     // Remove existing modal if any
@@ -6595,6 +6833,13 @@ var YawmiaModal = (function () {
 
         // Job alerts management (all roles)
         loadMyAlerts();
+
+        // Analytics sections
+        if (user.role === 'employer') {
+          loadEmployerAnalytics();
+        } else if (user.role === 'worker') {
+          loadWorkerAnalytics();
+        }
 
         // Role-specific sections
         if (user.role === 'worker') {
@@ -7366,6 +7611,137 @@ var YawmiaModal = (function () {
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Employer Analytics ────────────────────────────────────
+  var analyticsPeriodDays = 30;
+
+  async function loadEmployerAnalytics() {
+    var container = Yawmia.$id('employer-analytics-section');
+    if (!container) return;
+
+    var from = new Date(Date.now() - analyticsPeriodDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    var to = new Date().toISOString().split('T')[0];
+
+    container.innerHTML = '<section class="card"><h2 class="card__title">📊 تحليلات نشاطك</h2>' +
+      '<div class="period-selector" id="empPeriodSelector"></div>' +
+      '<div id="empAnalyticsGrid" class="analytics-grid"><p class="empty-state">جاري التحميل...</p></div>' +
+      '<div id="empTopWorkers"></div>' +
+      '<div style="margin-top:1rem;"><button class="btn btn--ghost btn--sm" id="btnExportMyPayments">📥 تصدير مدفوعاتي CSV</button></div>' +
+      '</section>';
+
+    renderPeriodSelectorFor('empPeriodSelector', function (days) {
+      analyticsPeriodDays = days;
+      loadEmployerAnalytics();
+    });
+
+    try {
+      var res = await Yawmia.api('GET', '/api/analytics/employer?from=' + from + '&to=' + to);
+      if (res.data.ok) {
+        var a = res.data.analytics;
+        var grid = Yawmia.$id('empAnalyticsGrid');
+        if (grid) {
+          var cards = [
+            { value: a.jobs.total, label: 'فرص منشورة' },
+            { value: a.jobs.byStatus.completed || 0, label: 'فرص مكتملة' },
+            { value: a.financials.totalSpent.toLocaleString('ar-EG') + ' جنيه', label: 'إجمالي الإنفاق' },
+            { value: a.financials.totalPlatformFees.toLocaleString('ar-EG') + ' جنيه', label: 'عمولة المنصة' },
+            { value: a.workers.unique, label: 'عمال فريدين' },
+            { value: a.applications.acceptRate + '%', label: 'نسبة القبول' },
+            { value: a.attendance.attendanceRate + '%', label: 'نسبة الحضور' },
+            { value: a.financials.wageStats.avg + ' جنيه', label: 'متوسط اليومية' },
+          ];
+          grid.innerHTML = '';
+          cards.forEach(function (c) {
+            var card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div><div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+            grid.appendChild(card);
+          });
+        }
+        // Top workers
+        var topEl = Yawmia.$id('empTopWorkers');
+        if (topEl && a.workers.top && a.workers.top.length > 0) {
+          var html = '<h3 style="margin:1rem 0 0.5rem;font-size:0.95rem;">أفضل العمال</h3><table class="admin-table"><thead><tr><th>العامل</th><th>فرص</th><th>تقييم</th></tr></thead><tbody>';
+          a.workers.top.forEach(function (w) {
+            html += '<tr><td><a href="/user.html?id=' + escapeHtml(w.workerId) + '" class="worker-link">' + escapeHtml(w.name) + '</a></td><td>' + w.jobCount + '</td><td>⭐ ' + w.ratingAvg + '</td></tr>';
+          });
+          html += '</tbody></table>';
+          topEl.innerHTML = html;
+        }
+      }
+    } catch (err) {
+      var grid = Yawmia.$id('empAnalyticsGrid');
+      if (grid) grid.innerHTML = '<p class="empty-state">خطأ في تحميل التحليلات</p>';
+    }
+
+    var exportBtn = Yawmia.$id('btnExportMyPayments');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        window.open('/api/employer/export/payments?from=' + from + '&to=' + to, '_blank');
+      });
+    }
+  }
+
+  async function loadWorkerAnalytics() {
+    var container = Yawmia.$id('worker-analytics-section');
+    if (!container) return;
+
+    var from = new Date(Date.now() - analyticsPeriodDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    var to = new Date().toISOString().split('T')[0];
+
+    container.innerHTML = '<section class="card"><h2 class="card__title">📊 تحليلات نشاطك</h2>' +
+      '<div class="period-selector" id="wrkPeriodSelector"></div>' +
+      '<div id="wrkAnalyticsGrid" class="analytics-grid"><p class="empty-state">جاري التحميل...</p></div>' +
+      '</section>';
+
+    renderPeriodSelectorFor('wrkPeriodSelector', function (days) {
+      analyticsPeriodDays = days;
+      loadWorkerAnalytics();
+    });
+
+    try {
+      var res = await Yawmia.api('GET', '/api/analytics/worker?from=' + from + '&to=' + to);
+      if (res.data.ok) {
+        var a = res.data.analytics;
+        var grid = Yawmia.$id('wrkAnalyticsGrid');
+        if (grid) {
+          var trendIcon = a.ratings.trend === 'up' ? '📈' : (a.ratings.trend === 'down' ? '📉' : '➡️');
+          var cards = [
+            { value: a.earnings.total.toLocaleString('ar-EG') + ' جنيه', label: 'إجمالي الأرباح' },
+            { value: a.jobs.completed, label: 'فرص مكتملة' },
+            { value: a.applications.total, label: 'طلبات مقدّمة' },
+            { value: a.applications.completionRate + '%', label: 'نسبة الإكمال' },
+            { value: a.attendance.attendanceRate + '%', label: 'نسبة الحضور' },
+            { value: trendIcon + ' ' + a.ratings.count + ' تقييم', label: 'اتجاه التقييمات' },
+          ];
+          grid.innerHTML = '';
+          cards.forEach(function (c) {
+            var card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div><div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+            grid.appendChild(card);
+          });
+        }
+      }
+    } catch (err) {
+      var grid = Yawmia.$id('wrkAnalyticsGrid');
+      if (grid) grid.innerHTML = '<p class="empty-state">خطأ في تحميل التحليلات</p>';
+    }
+  }
+
+  function renderPeriodSelectorFor(containerId, onChange) {
+    var el = Yawmia.$id(containerId);
+    if (!el) return;
+    var periods = [{ days: 7, label: '7 أيام' }, { days: 30, label: '30 يوم' }, { days: 90, label: '90 يوم' }];
+    el.innerHTML = '';
+    periods.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.className = 'btn btn--ghost btn--sm' + (analyticsPeriodDays === p.days ? ' btn--primary' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () { onChange(p.days); });
+      el.appendChild(btn);
+    });
   }
 
   // ── Alerts Management ─────────────────────────────────────
@@ -8810,6 +9186,12 @@ var YawmiaUtils = (function () {
         <!-- Job Alerts Management -->
         <div id="alerts-section"></div>
 
+        <!-- Employer Analytics -->
+        <div id="employer-analytics-section"></div>
+
+        <!-- Worker Analytics -->
+        <div id="worker-analytics-section"></div>
+
         <!-- Attendance History (worker only) -->
         <section class="card hidden" id="attendanceHistorySection">
           <h2 class="card__title">📋 سجل الحضور</h2>
@@ -8941,7 +9323,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.27.0';
+const CACHE_NAME = 'yawmia-v0.28.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
