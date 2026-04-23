@@ -43,6 +43,9 @@ export async function createNotification(userId, type, message, meta = {}) {
     // Fire-and-forget — don't break notification creation flow
   }
 
+  // Enforce max notifications per user (fire-and-forget)
+  enforceMaxNotifications(userId).catch(() => {});
+
   return notification;
 }
 
@@ -222,6 +225,66 @@ export async function cleanOldNotifications() {
   }
 
   return cleaned;
+}
+
+/**
+ * Enforce max notifications per user — delete oldest read notifications if exceeding limit.
+ * Fire-and-forget safe — NEVER throws.
+ * Only deletes READ notifications — unread are always protected.
+ * @param {string} userId
+ */
+async function enforceMaxNotifications(userId) {
+  try {
+    const maxPerUser = config.CLEANUP?.maxNotificationsPerUser;
+    if (!maxPerUser || maxPerUser <= 0) return;
+
+    // Get all notification IDs for user from index
+    const indexedIds = await getFromSetIndex(USER_NTF_INDEX, userId);
+    if (indexedIds.length <= maxPerUser) return;
+
+    // Load all notifications
+    const notifications = [];
+    for (const ntfId of indexedIds) {
+      const ntf = await readJSON(getRecordPath('notifications', ntfId));
+      if (ntf) notifications.push(ntf);
+    }
+
+    if (notifications.length <= maxPerUser) return;
+
+    // Sort oldest first
+    notifications.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    // Calculate excess
+    const excess = notifications.length - maxPerUser;
+
+    // Collect oldest READ notifications to delete
+    const toDelete = [];
+    for (const ntf of notifications) {
+      if (toDelete.length >= excess) break;
+      if (ntf.read) {
+        toDelete.push(ntf.id);
+      }
+    }
+
+    if (toDelete.length === 0) return;
+
+    // Delete files
+    for (const ntfId of toDelete) {
+      await deleteJSON(getRecordPath('notifications', ntfId));
+    }
+
+    // Batch update index — single read + single write
+    const deletedSet = new Set(toDelete);
+    const indexPath = USER_NTF_INDEX;
+    const index = await readSetIndex(indexPath);
+    if (index[userId]) {
+      index[userId] = index[userId].filter(id => !deletedSet.has(id));
+      if (index[userId].length === 0) delete index[userId];
+      await writeSetIndex(indexPath, index);
+    }
+  } catch (_) {
+    // Fire-and-forget — NEVER throws
+  }
 }
 
 /**

@@ -658,6 +658,9 @@
         secondaryButtons += '<button class="btn btn--ghost btn--sm btn-messages" data-job-id="' + job.id + '" aria-label="رسائل فرصة ' + escapeHtml(job.title) + '">💬 رسائل</button>';
       }
     }
+    // WhatsApp share button
+    secondaryButtons += '<button class="btn btn--ghost btn--sm btn-share-whatsapp" data-job-id="' + job.id + '" data-title="' + escapeHtml(job.title) + '" data-wage="' + job.dailyWage + '" data-gov="' + escapeHtml(job.governorate) + '" aria-label="شارك الفرصة عبر واتساب">📤 شارك</button>';
+
     if (job.employerId && job.employerId !== user.id) {
       secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '" aria-label="بلّغ عن مخالفة في فرصة ' + escapeHtml(job.title) + '">🚩 بلّغ</button>';
     }
@@ -682,7 +685,7 @@
 
     card.innerHTML =
       '<div class="job-card__header">' +
-        '<span class="job-card__title">' + escapeHtml(job.title) + '</span>' +
+        '<a href="/job.html?id=' + escapeHtml(job.id) + '" class="job-card__title-link">' + escapeHtml(job.title) + '</a>' +
         '<div class="job-card__header-right">' +
           statusBadge +
           distanceBadge +
@@ -972,6 +975,19 @@
           }
         } catch (e) { /* ignore — payment may not exist */ }
       })();
+    }
+
+    // WhatsApp share button handler
+    var shareBtn = card.querySelector('.btn-share-whatsapp');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        var title = shareBtn.getAttribute('data-title');
+        var wage = shareBtn.getAttribute('data-wage');
+        var gov = shareBtn.getAttribute('data-gov');
+        var jobUrl = window.location.origin + '/job.html?id=' + shareBtn.getAttribute('data-job-id');
+        var text = 'فرصة عمل على يوميّة: ' + title + ' — ' + wage + ' جنيه/يوم 📍 ' + gov + '\n' + jobUrl;
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      });
     }
 
     // Report button handler

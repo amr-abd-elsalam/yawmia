@@ -2750,6 +2750,123 @@ textarea:focus:not(:focus-visible) {
   .ym-modal-overlay.receipt-overlay h3 { color: #000 !important; }
 }
 
+/* ═══ Phase 33 — Job Detail Page ═══ */
+.job-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+}
+
+.job-detail__header-actions {
+  flex-shrink: 0;
+}
+
+.job-detail__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-block-end: 0.5rem;
+  color: var(--color-text);
+}
+
+.job-detail__section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-block-end: 0.75rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.job-detail__info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.job-detail__info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.job-detail__info-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.job-detail__info-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.job-detail__desc {
+  margin-block-end: 0.5rem;
+}
+
+.job-detail__desc p {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.job-detail__employer {
+  margin-block-end: 0.5rem;
+}
+
+.job-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 1rem;
+}
+
+.job-detail__payment {
+  margin-block-start: 0.5rem;
+}
+
+/* ═══ Phase 33 — Job Card Title Link ═══ */
+.job-card__title-link {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.job-card__title-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* ═══ Phase 33 — Share Button ═══ */
+.btn-share-wa {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .job-detail__info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .job-detail__header {
+    flex-direction: column;
+  }
+
+  .job-detail__title {
+    font-size: 1.25rem;
+  }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;

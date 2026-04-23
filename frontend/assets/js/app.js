@@ -386,6 +386,34 @@ var Yawmia = (function () {
     showOfflineBanner();
   }
 
+  // ── Periodic State Refresh (every 5 min, tab-focused + online) ──
+  var STATE_REFRESH_INTERVAL = 5 * 60 * 1000;
+  var stateRefreshTimer = null;
+
+  function startStateRefresh() {
+    if (stateRefreshTimer) return;
+    if (!state.token) return;
+    stateRefreshTimer = setInterval(async function () {
+      if (!document.hasFocus()) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      try {
+        var res = await api('GET', '/api/auth/me');
+        if (res.status === 200 && res.data && res.data.ok) {
+          state.user = res.data.user;
+          localStorage.setItem('yawmia_user', JSON.stringify(res.data.user));
+          window.dispatchEvent(new CustomEvent('yawmia:user-refreshed', { detail: res.data.user }));
+        } else if (res.status === 403 || res.status === 401) {
+          logout();
+        }
+      } catch (_) { /* Network error — retry next interval */ }
+    }, STATE_REFRESH_INTERVAL);
+  }
+
+  // Auto-start if logged in
+  if (state.token) {
+    startStateRefresh();
+  }
+
   // ── Public API ────────────────────────────────────────────
   return {
     api: api,
@@ -411,5 +439,6 @@ var Yawmia = (function () {
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
     apiWithRetry: apiWithRetry,
+    startStateRefresh: startStateRefresh,
   };
 })();

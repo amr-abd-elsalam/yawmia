@@ -160,8 +160,12 @@ export function validateJobFields(body) {
   // workersNeeded
   if (body.workersNeeded == null || typeof body.workersNeeded !== 'number') {
     errors.push('عدد العمال المطلوبين لازم يكون رقم');
-  } else if (body.workersNeeded < config.JOBS.minWorkersPerJob || body.workersNeeded > config.JOBS.maxWorkersPerJob) {
-    errors.push(`عدد العمال لازم يكون بين ${config.JOBS.minWorkersPerJob} و ${config.JOBS.maxWorkersPerJob}`);
+  } else {
+    // Integer enforcement — silently truncate decimals
+    body.workersNeeded = Math.floor(body.workersNeeded);
+    if (body.workersNeeded < config.JOBS.minWorkersPerJob || body.workersNeeded > config.JOBS.maxWorkersPerJob) {
+      errors.push(`عدد العمال لازم يكون بين ${config.JOBS.minWorkersPerJob} و ${config.JOBS.maxWorkersPerJob}`);
+    }
   }
 
   // dailyWage
@@ -175,13 +179,24 @@ export function validateJobFields(body) {
   // startDate
   if (!body.startDate || typeof body.startDate !== 'string') {
     errors.push('تاريخ البدء مطلوب');
+  } else {
+    // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
+    const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const todayEgypt = egyptNow.toISOString().split('T')[0];
+    if (body.startDate < todayEgypt) {
+      errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+    }
   }
 
   // durationDays
   if (body.durationDays == null || typeof body.durationDays !== 'number') {
     errors.push('مدة العمل بالأيام مطلوبة');
-  } else if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
-    errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+  } else {
+    // Integer enforcement — silently truncate decimals
+    body.durationDays = Math.floor(body.durationDays);
+    if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+      errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+    }
   }
 
   // description (optional but validated if present)

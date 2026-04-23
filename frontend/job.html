@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوميّة — تفاصيل فرصة عمل</title>
+  <meta name="description" content="شوف تفاصيل الفرصة وتقدّم دلوقتي على منصة يوميّة — شغلك قريب منّك.">
+  <meta property="og:title" content="يوميّة — تفاصيل فرصة عمل">
+  <meta property="og:description" content="شوف تفاصيل الفرصة وتقدّم دلوقتي على منصة يوميّة">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yowmia.com/job.html">
+  <meta property="og:image" content="https://yowmia.com/assets/img/icon-512.png">
+  <meta property="og:locale" content="ar_EG">
+  <link rel="canonical" href="https://yowmia.com/job.html">
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <nav aria-label="التنقل الرئيسي">
+        <div class="container header__inner">
+          <div class="header__right">
+            <a href="/" class="header__brand-link">
+              <h1 class="header__brand"><img src="/assets/img/logo.png" alt="يوميّة" class="header__logo" width="32" height="32" onerror="this.style.display='none'"> يوميّة</h1>
+            </a>
+          </div>
+          <div class="header__left">
+            <a href="/dashboard.html" class="btn btn--ghost btn--sm">الرئيسية</a>
+            <a href="/profile.html" class="btn btn--ghost btn--sm" id="profileLink" style="display:none;">ملفي</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main" id="main-content">
+      <div class="container">
+
+        <!-- Loading State -->
+        <div id="jobLoading">
+          <div class="card">
+            <div class="skeleton skeleton-text--lg" style="width:60%;margin-block-end:1rem;"></div>
+            <div class="skeleton skeleton-text" style="width:80%;"></div>
+            <div class="skeleton skeleton-text" style="width:50%;"></div>
+            <div class="skeleton skeleton-text" style="width:70%;"></div>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="jobError" class="hidden">
+          <div class="card">
+            <div class="empty-state">
+              <span class="empty-state__icon">🔍</span>
+              <p class="empty-state__text">الفرصة غير موجودة أو تم حذفها</p>
+              <a href="/dashboard.html" class="btn btn--primary btn--sm" style="margin-top:1rem;">الرجوع للفرص المتاحة</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Job Content -->
+        <div id="jobContent" class="hidden">
+
+          <!-- Job Detail Card -->
+          <section class="card" id="jobDetailCard">
+            <!-- Header: Title + Status + Share -->
+            <div class="job-detail__header">
+              <div>
+                <h2 class="job-detail__title" id="jobTitle"></h2>
+                <span id="jobStatusBadge"></span>
+              </div>
+              <div class="job-detail__header-actions">
+                <button class="btn btn--ghost btn--sm btn-share-wa" id="btnShareWhatsApp" aria-label="شارك عبر واتساب">📤 شارك عبر واتساب</button>
+              </div>
+            </div>
+
+            <!-- Info Grid -->
+            <div class="job-detail__info-grid" id="jobInfoGrid"></div>
+
+            <!-- Description -->
+            <div class="job-detail__desc hidden" id="jobDescSection">
+              <h3 class="job-detail__section-title">وصف الفرصة</h3>
+              <p id="jobDescription"></p>
+            </div>
+
+            <!-- Employer Info -->
+            <div class="job-detail__employer" id="jobEmployerSection">
+              <h3 class="job-detail__section-title">صاحب العمل</h3>
+              <div id="jobEmployerInfo">
+                <p style="color:var(--color-text-muted);font-size:0.9rem;">جاري التحميل...</p>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="job-detail__actions" id="jobActions"></div>
+
+            <!-- Payment Info (completed jobs) -->
+            <div class="job-detail__payment hidden" id="jobPaymentSection">
+              <h3 class="job-detail__section-title">معلومات الدفع</h3>
+              <div id="jobPaymentInfo"></div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>يوميّة &copy; 2026 — جميع الحقوق محفوظة</p>
+      </div>
+    </footer>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" aria-label="التنقل السريع">
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="home" data-icon-size="20"></span>
+        <span class="bottom-nav__label">الرئيسية</span>
+      </a>
+      <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
+        <span data-icon="search" data-icon-size="20"></span>
+        <span class="bottom-nav__label">بحث</span>
+      </a>
+      <a href="/dashboard.html" class="bottom-nav__item">
+        <span data-icon="bell" data-icon-size="20"></span>
+        <span class="bottom-nav__label">إشعارات</span>
+      </a>
+      <a href="/profile.html" class="bottom-nav__item">
+        <span data-icon="user" data-icon-size="20"></span>
+        <span class="bottom-nav__label">ملفي</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="./assets/js/app.js"></script>
+  <script src="./assets/js/icons.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/toast.js"></script>
+  <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/jobDetail.js"></script>
+</body>
+</html>
