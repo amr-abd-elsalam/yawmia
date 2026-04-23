@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.26.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-22T17:09:55.855Z
+# يوميّة (Yawmia) v0.27.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-23T07:22:36.034Z
 > Files in this part: 6
 
 ## Files
@@ -323,6 +323,7 @@ const config = {
       audit: 'audit',
       messages: 'messages',
       push_subscriptions: 'push_subscriptions',
+      alerts: 'alerts',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -340,6 +341,7 @@ const config = {
       messageJobIndex: 'messages/job-index.json',
       messageUserIndex: 'messages/user-index.json',
       pushUserIndex: 'push_subscriptions/user-index.json',
+      userAlertsIndex: 'alerts/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -500,7 +502,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.26.0',
+    cacheName: 'yawmia-v0.27.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -729,6 +731,26 @@ const config = {
     rebuildIntervalMs: 3600000,              // إعادة بناء الفهرس كل ساعة (مللي ثانية)
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 42. تنبيهات الفرص (JOB_ALERTS)
+  // ═══════════════════════════════════════════════════════════
+  JOB_ALERTS: {
+    enabled: true,
+    maxAlertsPerUser: 5,                     // أقصى عدد تنبيهات لكل مستخدم
+    cooldownMinutes: 60,                     // مدة الانتظار بين إشعارين لنفس التنبيه (دقيقة)
+    matchOnCreation: true,                   // مطابقة التنبيهات عند إنشاء فرصة جديدة
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 43. ملخص النشاط الأسبوعي (ACTIVITY_SUMMARY)
+  // ═══════════════════════════════════════════════════════════
+  ACTIVITY_SUMMARY: {
+    enabled: true,
+    dayOfWeek: 0,                            // 0 = الأحد
+    hourEgypt: 10,                           // 10:00 صباحاً بتوقيت مصر
+    intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -777,7 +799,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1021,6 +1043,20 @@ const cleanupTimer = setInterval(async () => {
 }, CLEANUP_INTERVAL);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
+// ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
+if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
+  const summaryTimer = setInterval(async () => {
+    try {
+      const { sendWeeklySummaries } = await import('./server/services/activitySummary.js');
+      const sent = await sendWeeklySummaries();
+      if (sent > 0) logger.info(`Activity summary: sent ${sent} digest(s)`);
+    } catch (err) {
+      logger.warn('Activity summary error', { error: err.message });
+    }
+  }, config.ACTIVITY_SUMMARY.intervalCheckMs);
+  if (summaryTimer.unref) summaryTimer.unref();
+}
+
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);
@@ -1087,6 +1123,7 @@ import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
+import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleAlert } from './handlers/alertsHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1111,7 +1148,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.26.0',
+        version: '0.27.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1199,7 +1236,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.26.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.27.0' });
     },
   },
 
@@ -1272,6 +1309,12 @@ const routes = [
   // ── Push Subscription Routes ──
   { method: 'POST', path: '/api/push/subscribe', middlewares: [requireAuth], handler: handlePushSubscribe },
   { method: 'DELETE', path: '/api/push/subscribe', middlewares: [requireAuth], handler: handlePushUnsubscribe },
+
+  // ── Alert Routes ──
+  { method: 'POST', path: '/api/alerts', middlewares: [requireAuth], handler: handleCreateAlert },
+  { method: 'GET', path: '/api/alerts', middlewares: [requireAuth], handler: handleListMyAlerts },
+  { method: 'DELETE', path: '/api/alerts/:id', middlewares: [requireAuth], handler: handleDeleteAlert },
+  { method: 'PUT', path: '/api/alerts/:id', middlewares: [requireAuth], handler: handleToggleAlert },
 
   // ── Application Management Routes ──
   { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },
@@ -1365,6 +1408,9 @@ setupNotificationListeners();
 // Setup smart job matching
 import { setupJobMatching } from './services/jobMatcher.js';
 setupJobMatching();
+
+import { setupJobAlerts } from './services/jobAlerts.js';
+setupJobAlerts();
 
 /**
  * Creates the router function

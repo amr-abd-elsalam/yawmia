@@ -1,29 +1,30 @@
-# يوميّة (Yawmia) v0.26.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-22T17:09:55.869Z
-> Files in this part: 21
+# يوميّة (Yawmia) v0.27.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-23T07:22:36.048Z
+> Files in this part: 22
 
 ## Files
 1. `server/handlers/adminHandler.js`
-2. `server/handlers/applicationsHandler.js`
-3. `server/handlers/attendanceHandler.js`
-4. `server/handlers/authHandler.js`
-5. `server/handlers/jobsHandler.js`
-6. `server/handlers/messagesHandler.js`
-7. `server/handlers/notificationsHandler.js`
-8. `server/handlers/paymentsHandler.js`
-9. `server/handlers/pushHandler.js`
-10. `server/handlers/ratingsHandler.js`
-11. `server/handlers/reportsHandler.js`
-12. `server/handlers/sseHandler.js`
-13. `server/handlers/verificationHandler.js`
-14. `server/middleware/auth.js`
-15. `server/middleware/bodyParser.js`
-16. `server/middleware/cors.js`
-17. `server/middleware/rateLimit.js`
-18. `server/middleware/requestId.js`
-19. `server/middleware/security.js`
-20. `server/middleware/static.js`
-21. `server/middleware/timing.js`
+2. `server/handlers/alertsHandler.js`
+3. `server/handlers/applicationsHandler.js`
+4. `server/handlers/attendanceHandler.js`
+5. `server/handlers/authHandler.js`
+6. `server/handlers/jobsHandler.js`
+7. `server/handlers/messagesHandler.js`
+8. `server/handlers/notificationsHandler.js`
+9. `server/handlers/paymentsHandler.js`
+10. `server/handlers/pushHandler.js`
+11. `server/handlers/ratingsHandler.js`
+12. `server/handlers/reportsHandler.js`
+13. `server/handlers/sseHandler.js`
+14. `server/handlers/verificationHandler.js`
+15. `server/middleware/auth.js`
+16. `server/middleware/bodyParser.js`
+17. `server/middleware/cors.js`
+18. `server/middleware/rateLimit.js`
+19. `server/middleware/requestId.js`
+20. `server/middleware/security.js`
+21. `server/middleware/static.js`
+22. `server/middleware/timing.js`
 
 ---
 
@@ -168,6 +169,125 @@ export async function handleAdminUpdateUserStatus(req, res) {
     return sendJSON(res, 200, { ok: true, user });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في تحديث حالة المستخدم', code: 'UPDATE_USER_STATUS_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/alertsHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/alertsHandler.js — Job Alert API Handlers
+// ═══════════════════════════════════════════════════════════════
+
+import { createAlert, listByUser, deleteAlert, toggleAlert } from '../services/jobAlerts.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const ERROR_STATUS = {
+  ALERTS_DISABLED: 503,
+  NAME_REQUIRED: 400,
+  CRITERIA_REQUIRED: 400,
+  CATEGORIES_REQUIRED: 400,
+  INVALID_CATEGORY: 400,
+  INVALID_GOVERNORATE: 400,
+  INVALID_MIN_WAGE: 400,
+  INVALID_MAX_WAGE: 400,
+  INVALID_WAGE_RANGE: 400,
+  MAX_ALERTS_REACHED: 429,
+  ALERT_NOT_FOUND: 404,
+  NOT_ALERT_OWNER: 403,
+};
+
+function errorStatus(code) {
+  return ERROR_STATUS[code] || 400;
+}
+
+/**
+ * POST /api/alerts
+ * Create a new job alert
+ * Requires: requireAuth
+ */
+export async function handleCreateAlert(req, res) {
+  try {
+    const body = req.body || {};
+    const result = await createAlert(req.user.id, {
+      name: body.name,
+      criteria: body.criteria,
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, alert: result.alert });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/alerts
+ * List my job alerts
+ * Requires: requireAuth
+ */
+export async function handleListMyAlerts(req, res) {
+  try {
+    const alerts = await listByUser(req.user.id);
+    sendJSON(res, 200, { ok: true, alerts, count: alerts.length });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * DELETE /api/alerts/:id
+ * Delete a job alert
+ * Requires: requireAuth
+ */
+export async function handleDeleteAlert(req, res) {
+  try {
+    const alertId = req.params.id;
+    const result = await deleteAlert(alertId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * PUT /api/alerts/:id
+ * Toggle alert enabled/disabled
+ * Requires: requireAuth
+ */
+export async function handleToggleAlert(req, res) {
+  try {
+    const alertId = req.params.id;
+    const body = req.body || {};
+
+    if (typeof body.enabled !== 'boolean') {
+      return sendJSON(res, 400, { error: 'الحقل enabled مطلوب (true أو false)', code: 'ENABLED_REQUIRED' });
+    }
+
+    const result = await toggleAlert(alertId, req.user.id, body.enabled);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true, alert: result.alert });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
 }
 ```
@@ -951,6 +1071,11 @@ export async function handleListJobs(req, res) {
   if (req.query.lat) filters.lat = req.query.lat;
   if (req.query.lng) filters.lng = req.query.lng;
   if (req.query.radius) filters.radius = req.query.radius;
+  if (req.query.categories) filters.categories = req.query.categories;
+  if (req.query.minWage) filters.minWage = req.query.minWage;
+  if (req.query.maxWage) filters.maxWage = req.query.maxWage;
+  if (req.query.startDateFrom) filters.startDateFrom = req.query.startDateFrom;
+  if (req.query.startDateTo) filters.startDateTo = req.query.startDateTo;
 
   try {
     const allJobs = await list(filters);

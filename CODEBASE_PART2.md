@@ -1,43 +1,319 @@
-# يوميّة (Yawmia) v0.26.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-22T17:09:55.858Z
-> Files in this part: 35
+# يوميّة (Yawmia) v0.27.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-23T07:22:36.037Z
+> Files in this part: 37
 
 ## Files
-1. `server/services/applications.js`
-2. `server/services/arabicNormalizer.js`
-3. `server/services/attendance.js`
-4. `server/services/auditLog.js`
-5. `server/services/auth.js`
-6. `server/services/cache.js`
-7. `server/services/channels/sms.js`
-8. `server/services/channels/whatsapp.js`
-9. `server/services/contentFilter.js`
-10. `server/services/database.js`
-11. `server/services/eventBus.js`
-12. `server/services/geo.js`
-13. `server/services/indexHealth.js`
-14. `server/services/jobMatcher.js`
-15. `server/services/jobs.js`
-16. `server/services/logWriter.js`
-17. `server/services/logger.js`
-18. `server/services/messages.js`
-19. `server/services/messaging.js`
-20. `server/services/migration.js`
-21. `server/services/notificationMessenger.js`
-22. `server/services/notifications.js`
-23. `server/services/payments.js`
-24. `server/services/ratings.js`
-25. `server/services/reports.js`
-26. `server/services/resourceLock.js`
-27. `server/services/sanitizer.js`
-28. `server/services/searchIndex.js`
-29. `server/services/sessions.js`
-30. `server/services/sseManager.js`
-31. `server/services/trust.js`
-32. `server/services/users.js`
-33. `server/services/validators.js`
-34. `server/services/verification.js`
-35. `server/services/webpush.js`
+1. `server/services/activitySummary.js`
+2. `server/services/applications.js`
+3. `server/services/arabicNormalizer.js`
+4. `server/services/attendance.js`
+5. `server/services/auditLog.js`
+6. `server/services/auth.js`
+7. `server/services/cache.js`
+8. `server/services/channels/sms.js`
+9. `server/services/channels/whatsapp.js`
+10. `server/services/contentFilter.js`
+11. `server/services/database.js`
+12. `server/services/eventBus.js`
+13. `server/services/geo.js`
+14. `server/services/indexHealth.js`
+15. `server/services/jobAlerts.js`
+16. `server/services/jobMatcher.js`
+17. `server/services/jobs.js`
+18. `server/services/logWriter.js`
+19. `server/services/logger.js`
+20. `server/services/messages.js`
+21. `server/services/messaging.js`
+22. `server/services/migration.js`
+23. `server/services/notificationMessenger.js`
+24. `server/services/notifications.js`
+25. `server/services/payments.js`
+26. `server/services/ratings.js`
+27. `server/services/reports.js`
+28. `server/services/resourceLock.js`
+29. `server/services/sanitizer.js`
+30. `server/services/searchIndex.js`
+31. `server/services/sessions.js`
+32. `server/services/sseManager.js`
+33. `server/services/trust.js`
+34. `server/services/users.js`
+35. `server/services/validators.js`
+36. `server/services/verification.js`
+37. `server/services/webpush.js`
+
+---
+
+## `server/services/activitySummary.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/activitySummary.js — Weekly Activity Digest
+// ═══════════════════════════════════════════════════════════════
+// Generates and sends weekly activity summaries per user role.
+// Runs on configurable day+hour (default: Sunday 10AM Egypt time).
+// Fire-and-forget per user — NEVER throws.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+/** @type {string|null} last summary date string (Egypt timezone YYYY-MM-DD) */
+let lastSummaryDate = null;
+
+/**
+ * Get current date string in Egypt timezone (UTC+2) — YYYY-MM-DD
+ * @returns {string}
+ */
+function getEgyptDateString() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(egyptDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Get Egypt day of week (0=Sunday) and hour
+ * @returns {{ dayOfWeek: number, hour: number }}
+ */
+function getEgyptDayAndHour() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  return {
+    dayOfWeek: egyptDate.getUTCDay(),
+    hour: egyptDate.getUTCHours(),
+  };
+}
+
+/**
+ * Get last Sunday midnight in Egypt timezone as UTC Date
+ * @returns {Date}
+ */
+function getLastSundayMidnightEgypt() {
+  const { getEgyptMidnight } = require_geo();
+  const todayMidnight = getEgyptMidnight();
+  const egyptMs = todayMidnight.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const daysSinceSunday = egyptDate.getUTCDay(); // 0=Sunday
+  const sundayMidnightEgypt = new Date(todayMidnight.getTime() - (daysSinceSunday * 24 * 60 * 60 * 1000));
+  return sundayMidnightEgypt;
+}
+
+/** Lazy geo import to avoid circular deps */
+let _geo = null;
+function require_geo() {
+  if (!_geo) {
+    // Sync-safe: geo.js is pure math, no async
+    throw new Error('geo not loaded');
+  }
+  return _geo;
+}
+
+/**
+ * Generate activity summary for an employer
+ * @param {string} userId
+ * @returns {Promise<{ activeJobs: number, newApplicationsThisWeek: number, acceptedWorkersThisWeek: number, completedJobsThisWeek: number }>}
+ */
+export async function generateEmployerSummary(userId) {
+  const summary = { activeJobs: 0, newApplicationsThisWeek: 0, acceptedWorkersThisWeek: 0, completedJobsThisWeek: 0 };
+
+  try {
+    // Lazy load geo
+    if (!_geo) _geo = await import('./geo.js');
+    const weekStart = getLastSundayMidnightEgypt();
+
+    const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+    const employerJobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+
+    for (const jobId of employerJobIds) {
+      const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+      if (!job) continue;
+
+      // Active jobs: open, filled, in_progress
+      if (job.status === 'open' || job.status === 'filled' || job.status === 'in_progress') {
+        summary.activeJobs++;
+      }
+
+      // Completed this week
+      if (job.status === 'completed' && job.completedAt && new Date(job.completedAt) >= weekStart) {
+        summary.completedJobsThisWeek++;
+      }
+
+      // Applications this week
+      try {
+        const { listByJob } = await import('./applications.js');
+        const apps = await listByJob(jobId);
+        for (const app of apps) {
+          if (new Date(app.appliedAt) >= weekStart) {
+            summary.newApplicationsThisWeek++;
+          }
+          if (app.status === 'accepted' && app.respondedAt && new Date(app.respondedAt) >= weekStart) {
+            summary.acceptedWorkersThisWeek++;
+          }
+        }
+      } catch (_) { /* non-fatal */ }
+    }
+  } catch (err) {
+    logger.warn('generateEmployerSummary error', { userId, error: err.message });
+  }
+
+  return summary;
+}
+
+/**
+ * Generate activity summary for a worker
+ * @param {string} userId
+ * @returns {Promise<{ newJobsInArea: number, pendingApplications: number, newRatingsThisWeek: number }>}
+ */
+export async function generateWorkerSummary(userId) {
+  const summary = { newJobsInArea: 0, pendingApplications: 0, newRatingsThisWeek: 0 };
+
+  try {
+    // Lazy load geo
+    if (!_geo) _geo = await import('./geo.js');
+    const weekStart = getLastSundayMidnightEgypt();
+
+    // Get user for governorate + categories
+    const { findById: findUser } = await import('./users.js');
+    const user = await findUser(userId);
+    if (!user) return summary;
+
+    // New jobs in user's area + categories this week
+    try {
+      const { list: listJobs } = await import('./jobs.js');
+      const openJobs = await listJobs({ status: 'open' });
+      for (const job of openJobs) {
+        if (new Date(job.createdAt) < weekStart) continue;
+        // Match governorate
+        if (user.governorate && job.governorate !== user.governorate) continue;
+        // Match category
+        if (user.categories && user.categories.length > 0 && !user.categories.includes(job.category)) continue;
+        summary.newJobsInArea++;
+      }
+    } catch (_) { /* non-fatal */ }
+
+    // Pending applications
+    try {
+      const { listByWorker } = await import('./applications.js');
+      const apps = await listByWorker(userId);
+      summary.pendingApplications = apps.filter(a => a.status === 'pending').length;
+    } catch (_) { /* non-fatal */ }
+
+    // New ratings this week
+    try {
+      const { listByUser: listRatings } = await import('./ratings.js');
+      const ratingsResult = await listRatings(userId, { limit: 100, offset: 0 });
+      if (ratingsResult && ratingsResult.items) {
+        summary.newRatingsThisWeek = ratingsResult.items.filter(r =>
+          r.createdAt && new Date(r.createdAt) >= weekStart
+        ).length;
+      }
+    } catch (_) { /* non-fatal */ }
+  } catch (err) {
+    logger.warn('generateWorkerSummary error', { userId, error: err.message });
+  }
+
+  return summary;
+}
+
+/**
+ * Send weekly activity summaries to all active users
+ * Checks day+hour match, prevents re-runs, batched with yielding
+ * @returns {Promise<number>} count of summaries sent
+ */
+export async function sendWeeklySummaries() {
+  // 1. Feature flag
+  if (!config.ACTIVITY_SUMMARY || !config.ACTIVITY_SUMMARY.enabled) return 0;
+
+  // 2. Lazy load geo
+  if (!_geo) _geo = await import('./geo.js');
+
+  // 3. Check day + hour
+  const { dayOfWeek, hour } = getEgyptDayAndHour();
+  if (dayOfWeek !== config.ACTIVITY_SUMMARY.dayOfWeek) return 0;
+  if (hour !== config.ACTIVITY_SUMMARY.hourEgypt) return 0;
+
+  // 4. Prevent re-runs today
+  const today = getEgyptDateString();
+  if (lastSummaryDate === today) return 0;
+
+  // 5. Mark as ran
+  lastSummaryDate = today;
+
+  logger.info('Activity summary: starting weekly digest');
+
+  // 6. List all active users
+  const { listAll: listAllUsers } = await import('./users.js');
+  const allUsers = await listAllUsers();
+  const activeUsers = allUsers.filter(u => u.status === 'active');
+
+  if (activeUsers.length === 0) return 0;
+
+  const { createNotification } = await import('./notifications.js');
+  const BATCH_SIZE = 50;
+  let sent = 0;
+
+  for (let i = 0; i < activeUsers.length; i++) {
+    const user = activeUsers[i];
+
+    try {
+      if (user.role === 'employer') {
+        const summary = await generateEmployerSummary(user.id);
+
+        // Skip empty summaries
+        if (summary.activeJobs === 0 && summary.newApplicationsThisWeek === 0 &&
+            summary.acceptedWorkersThisWeek === 0 && summary.completedJobsThisWeek === 0) {
+          continue;
+        }
+
+        const parts = [];
+        if (summary.activeJobs > 0) parts.push(`${summary.activeJobs} فرص نشطة`);
+        if (summary.newApplicationsThisWeek > 0) parts.push(`${summary.newApplicationsThisWeek} طلبات جديدة`);
+        if (summary.acceptedWorkersThisWeek > 0) parts.push(`${summary.acceptedWorkersThisWeek} عمال مقبولين`);
+        if (summary.completedJobsThisWeek > 0) parts.push(`${summary.completedJobsThisWeek} فرص مكتملة`);
+
+        const message = `📊 ملخصك الأسبوعي: ${parts.join(' • ')}`;
+        await createNotification(user.id, 'activity_summary', message, { summary });
+        sent++;
+
+      } else if (user.role === 'worker') {
+        const summary = await generateWorkerSummary(user.id);
+
+        // Skip empty summaries
+        if (summary.newJobsInArea === 0 && summary.pendingApplications === 0 &&
+            summary.newRatingsThisWeek === 0) {
+          continue;
+        }
+
+        const parts = [];
+        if (summary.newJobsInArea > 0) parts.push(`${summary.newJobsInArea} فرص جديدة في منطقتك`);
+        if (summary.pendingApplications > 0) parts.push(`${summary.pendingApplications} طلبات معلقة`);
+        if (summary.newRatingsThisWeek > 0) parts.push(`${summary.newRatingsThisWeek} تقييمات جديدة`);
+
+        const message = `📊 ملخصك الأسبوعي: ${parts.join(' • ')}`;
+        await createNotification(user.id, 'activity_summary', message, { summary });
+        sent++;
+      }
+    } catch (_) {
+      // Fire-and-forget per user — continue to next
+    }
+
+    // Yield to event loop every BATCH_SIZE users
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  if (sent > 0) {
+    logger.info(`Activity summary: sent ${sent} digests`);
+  }
+
+  return sent;
+}
+```
 
 ---
 
@@ -2647,6 +2923,323 @@ export function getHealthStatus() {
 
 ---
 
+## `server/services/jobAlerts.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/jobAlerts.js — Job Alert Subscription System
+// ═══════════════════════════════════════════════════════════════
+// CRUD for user-defined job alerts with criteria-based matching.
+// Listens to 'job:created' events and notifies matching users.
+// Fire-and-forget — NEVER blocks job creation flow.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite, readJSON, deleteJSON, getRecordPath,
+  getCollectionPath, listJSON,
+  addToSetIndex, getFromSetIndex, removeFromSetIndex,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const USER_ALERTS_INDEX = config.DATABASE.indexFiles.userAlertsIndex;
+
+/**
+ * Generate alert record ID
+ */
+function generateId() {
+  return 'alt_' + crypto.randomBytes(6).toString('hex');
+}
+
+/**
+ * Create a new job alert
+ * @param {string} userId
+ * @param {{ name: string, criteria: { categories: string[], governorate?: string, minWage?: number, maxWage?: number } }} fields
+ * @returns {Promise<{ ok: boolean, alert?: object, error?: string, code?: string }>}
+ */
+export async function createAlert(userId, fields) {
+  // 1. Feature flag
+  if (!config.JOB_ALERTS || !config.JOB_ALERTS.enabled) {
+    return { ok: false, error: 'تنبيهات الفرص غير مفعّلة حالياً', code: 'ALERTS_DISABLED' };
+  }
+
+  const { name, criteria } = fields || {};
+
+  // 2. Validate name
+  if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    return { ok: false, error: 'اسم التنبيه مطلوب (حرفين على الأقل)', code: 'NAME_REQUIRED' };
+  }
+
+  // 3. Validate criteria object
+  if (!criteria || typeof criteria !== 'object') {
+    return { ok: false, error: 'معايير التنبيه مطلوبة', code: 'CRITERIA_REQUIRED' };
+  }
+
+  // 4. Validate categories (required, at least one)
+  if (!criteria.categories || !Array.isArray(criteria.categories) || criteria.categories.length === 0) {
+    return { ok: false, error: 'اختار تخصص واحد على الأقل', code: 'CATEGORIES_REQUIRED' };
+  }
+
+  // Validate each category ID
+  const validCategoryIds = new Set(config.LABOR_CATEGORIES.map(c => c.id));
+  for (const catId of criteria.categories) {
+    if (!validCategoryIds.has(catId)) {
+      return { ok: false, error: `التخصص "${catId}" غير موجود`, code: 'INVALID_CATEGORY' };
+    }
+  }
+
+  // 5. Validate governorate (optional)
+  if (criteria.governorate !== undefined && criteria.governorate !== null && criteria.governorate !== '') {
+    const validGovIds = new Set(config.REGIONS.governorates.map(g => g.id));
+    if (!validGovIds.has(criteria.governorate)) {
+      return { ok: false, error: 'المحافظة غير موجودة', code: 'INVALID_GOVERNORATE' };
+    }
+  }
+
+  // 6. Validate wage range (optional)
+  if (criteria.minWage !== undefined && criteria.minWage !== null) {
+    if (typeof criteria.minWage !== 'number' || isNaN(criteria.minWage) || criteria.minWage < 0) {
+      return { ok: false, error: 'الحد الأدنى للأجر لازم يكون رقم صحيح', code: 'INVALID_MIN_WAGE' };
+    }
+  }
+  if (criteria.maxWage !== undefined && criteria.maxWage !== null) {
+    if (typeof criteria.maxWage !== 'number' || isNaN(criteria.maxWage) || criteria.maxWage < 0) {
+      return { ok: false, error: 'الحد الأقصى للأجر لازم يكون رقم صحيح', code: 'INVALID_MAX_WAGE' };
+    }
+  }
+  if (criteria.minWage != null && criteria.maxWage != null && criteria.minWage > criteria.maxWage) {
+    return { ok: false, error: 'الحد الأدنى للأجر لازم يكون أقل من أو يساوي الحد الأقصى', code: 'INVALID_WAGE_RANGE' };
+  }
+
+  // 7. Enforce max alerts per user
+  const existingIds = await getFromSetIndex(USER_ALERTS_INDEX, userId);
+  if (existingIds.length >= config.JOB_ALERTS.maxAlertsPerUser) {
+    return { ok: false, error: `وصلت للحد الأقصى (${config.JOB_ALERTS.maxAlertsPerUser} تنبيهات)`, code: 'MAX_ALERTS_REACHED' };
+  }
+
+  // 8. Create alert record
+  const id = generateId();
+  const now = new Date().toISOString();
+
+  const alert = {
+    id,
+    userId,
+    name: name.trim(),
+    criteria: {
+      categories: criteria.categories,
+      governorate: criteria.governorate || null,
+      minWage: (criteria.minWage != null) ? criteria.minWage : null,
+      maxWage: (criteria.maxWage != null) ? criteria.maxWage : null,
+    },
+    enabled: true,
+    matchCount: 0,
+    lastMatchedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const alertPath = getRecordPath('alerts', id);
+  await atomicWrite(alertPath, alert);
+
+  // Update user-alerts index
+  await addToSetIndex(USER_ALERTS_INDEX, userId, id);
+
+  logger.info('Job alert created', { alertId: id, userId });
+
+  return { ok: true, alert };
+}
+
+/**
+ * List alerts for a user (index-accelerated, newest first)
+ * @param {string} userId
+ * @returns {Promise<object[]>}
+ */
+export async function listByUser(userId) {
+  const indexedIds = await getFromSetIndex(USER_ALERTS_INDEX, userId);
+
+  if (indexedIds.length > 0) {
+    const results = [];
+    for (const altId of indexedIds) {
+      const alert = await readJSON(getRecordPath('alerts', altId));
+      if (alert) results.push(alert);
+    }
+    results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return results;
+  }
+
+  // Fallback: full scan
+  const alertsDir = getCollectionPath('alerts');
+  const all = await listJSON(alertsDir);
+  return all
+    .filter(a => a.id && a.id.startsWith('alt_') && a.userId === userId)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+/**
+ * Delete an alert
+ * @param {string} alertId
+ * @param {string} userId — ownership check
+ * @returns {Promise<{ ok: boolean, error?: string, code?: string }>}
+ */
+export async function deleteAlert(alertId, userId) {
+  const alertPath = getRecordPath('alerts', alertId);
+  const alert = await readJSON(alertPath);
+
+  if (!alert) {
+    return { ok: false, error: 'التنبيه غير موجود', code: 'ALERT_NOT_FOUND' };
+  }
+
+  if (alert.userId !== userId) {
+    return { ok: false, error: 'مش مسموحلك تحذف هذا التنبيه', code: 'NOT_ALERT_OWNER' };
+  }
+
+  await deleteJSON(alertPath);
+  await removeFromSetIndex(USER_ALERTS_INDEX, userId, alertId);
+
+  logger.info('Job alert deleted', { alertId, userId });
+
+  return { ok: true };
+}
+
+/**
+ * Toggle alert enabled/disabled
+ * @param {string} alertId
+ * @param {string} userId — ownership check
+ * @param {boolean} enabled
+ * @returns {Promise<{ ok: boolean, alert?: object, error?: string, code?: string }>}
+ */
+export async function toggleAlert(alertId, userId, enabled) {
+  const alertPath = getRecordPath('alerts', alertId);
+  const alert = await readJSON(alertPath);
+
+  if (!alert) {
+    return { ok: false, error: 'التنبيه غير موجود', code: 'ALERT_NOT_FOUND' };
+  }
+
+  if (alert.userId !== userId) {
+    return { ok: false, error: 'مش مسموحلك تعدّل هذا التنبيه', code: 'NOT_ALERT_OWNER' };
+  }
+
+  alert.enabled = !!enabled;
+  alert.updatedAt = new Date().toISOString();
+
+  await atomicWrite(alertPath, alert);
+
+  return { ok: true, alert };
+}
+
+/**
+ * Match a newly created job against all enabled alerts
+ * Called by EventBus on 'job:created' — fire-and-forget
+ * @param {object} job — full job object
+ * @returns {Promise<number>} count of matched alerts
+ */
+export async function matchJobToAlerts(job) {
+  if (!config.JOB_ALERTS || !config.JOB_ALERTS.enabled || !config.JOB_ALERTS.matchOnCreation) {
+    return 0;
+  }
+
+  if (!job || !job.id || job.status !== 'open') return 0;
+
+  // Full scan of all alerts (acceptable — alerts are few)
+  const alertsDir = getCollectionPath('alerts');
+  let allAlerts;
+  try {
+    allAlerts = await listJSON(alertsDir);
+  } catch (_) {
+    return 0;
+  }
+
+  const enabledAlerts = allAlerts.filter(a => a.id && a.id.startsWith('alt_') && a.enabled);
+
+  if (enabledAlerts.length === 0) return 0;
+
+  const cooldownMs = (config.JOB_ALERTS.cooldownMinutes || 60) * 60 * 1000;
+  const now = Date.now();
+  let matchCount = 0;
+
+  for (const alert of enabledAlerts) {
+    try {
+      const criteria = alert.criteria;
+      if (!criteria || !criteria.categories || !Array.isArray(criteria.categories)) continue;
+
+      // Category match (required)
+      if (!criteria.categories.includes(job.category)) continue;
+
+      // Governorate match (optional — null means all governorates)
+      if (criteria.governorate && criteria.governorate !== job.governorate) continue;
+
+      // Wage range match (optional)
+      if (criteria.minWage != null && (job.dailyWage || 0) < criteria.minWage) continue;
+      if (criteria.maxWage != null && (job.dailyWage || 0) > criteria.maxWage) continue;
+
+      // Cooldown check
+      if (alert.lastMatchedAt) {
+        const lastMatched = new Date(alert.lastMatchedAt).getTime();
+        if (now - lastMatched < cooldownMs) continue;
+      }
+
+      // ── Match found — create notification ──
+      const { createNotification } = await import('./notifications.js');
+      const message = `🔔 فرصة مطابقة لتنبيه "${alert.name}": ${job.title} — ${job.dailyWage} جنيه/يوم`;
+
+      await createNotification(
+        alert.userId,
+        'job_alert_match',
+        message,
+        { jobId: job.id, alertId: alert.id, alertName: alert.name }
+      );
+
+      // Update alert stats
+      alert.matchCount = (alert.matchCount || 0) + 1;
+      alert.lastMatchedAt = new Date().toISOString();
+      alert.updatedAt = alert.lastMatchedAt;
+
+      const alertPath = getRecordPath('alerts', alert.id);
+      await atomicWrite(alertPath, alert);
+
+      matchCount++;
+    } catch (_) {
+      // Fire-and-forget per alert — continue to next
+    }
+  }
+
+  if (matchCount > 0) {
+    logger.info('Job alerts matched', { jobId: job.id, matchCount });
+  }
+
+  return matchCount;
+}
+
+/**
+ * Setup EventBus listener for job alert matching.
+ * Registers 'job:created' listener if JOB_ALERTS.enabled is true.
+ * Must be called after setupJobMatching().
+ */
+export function setupJobAlerts() {
+  if (!config.JOB_ALERTS || !config.JOB_ALERTS.enabled) {
+    logger.info('Job alerts: disabled via config');
+    return;
+  }
+
+  eventBus.on('job:created', (data) => {
+    if (!data || !data.jobId) return;
+    // Fire-and-forget: load job and match against alerts
+    import('./jobs.js').then(({ findById }) => {
+      findById(data.jobId).then(job => {
+        if (job) matchJobToAlerts(job).catch(() => {});
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  logger.info('Job alerts: enabled');
+}
+```
+
+---
+
 ## `server/services/jobMatcher.js`
 
 ```javascript
@@ -2943,6 +3536,30 @@ export async function list(filters = {}) {
       }
       return true;
     });
+  }
+
+  // ── Multi-category filter (comma-separated) ───────────────
+  if (filters.categories) {
+    const cats = filters.categories.split(',').map(c => c.trim()).filter(Boolean);
+    if (cats.length > 0) {
+      jobs = jobs.filter(j => cats.includes(j.category));
+    }
+  }
+
+  // ── Wage range filter ─────────────────────────────────────
+  if (filters.minWage !== undefined && !isNaN(Number(filters.minWage))) {
+    jobs = jobs.filter(j => (j.dailyWage || 0) >= Number(filters.minWage));
+  }
+  if (filters.maxWage !== undefined && !isNaN(Number(filters.maxWage))) {
+    jobs = jobs.filter(j => (j.dailyWage || 0) <= Number(filters.maxWage));
+  }
+
+  // ── Date range filter ─────────────────────────────────────
+  if (filters.startDateFrom) {
+    jobs = jobs.filter(j => j.startDate && j.startDate >= filters.startDateFrom);
+  }
+  if (filters.startDateTo) {
+    jobs = jobs.filter(j => j.startDate && j.startDate <= filters.startDateTo);
   }
 
   // ── Proximity filter (Haversine) ──────────────────────────

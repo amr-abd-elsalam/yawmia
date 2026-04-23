@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.26.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-22T17:09:55.875Z
+# يوميّة (Yawmia) v0.27.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-23T07:22:36.053Z
 > Files in this part: 30
 
 ## Files
@@ -2897,6 +2897,105 @@ textarea:focus:not(:focus-visible) {
 .jobs-list .job-card:nth-child(3) { animation-delay: 100ms; }
 .jobs-list .job-card:nth-child(4) { animation-delay: 150ms; }
 .jobs-list .job-card:nth-child(5) { animation-delay: 200ms; }
+
+/* ═══ Phase 31 — Advanced Filters Panel ═══ */
+.advanced-filters__inner {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+/* ═══ Phase 31 — First-Time Hints ═══ */
+.hints-list {
+  margin-block-start: 1rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--color-border);
+}
+
+.hints-list__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-block-end: 0.5rem;
+  color: var(--color-primary);
+}
+
+.hints-list__items {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hints-list__item {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  padding: 0.3rem 0;
+}
+
+/* ═══ Phase 31 — Alert Cards ═══ */
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alert-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.alert-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-card__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-block-end: 0.15rem;
+}
+
+.alert-criteria {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-end: 0.2rem;
+}
+
+.alert-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.alert-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.alert-create-form {
+  margin-block-end: 1rem;
+}
+
+@media (max-width: 600px) {
+  .alert-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .alert-card__actions {
+    justify-content: flex-start;
+  }
+}
 ```
 
 ---
@@ -4368,6 +4467,57 @@ var YawmiaIcons = (function () {
     }
   }
 
+  // ── First-Time User Hints ─────────────────────────────────
+  (function showFirstTimeHints() {
+    try {
+      if (localStorage.getItem('yawmia_hints_seen') === '1') return;
+    } catch (_) { /* localStorage unavailable — show hints every time */ }
+
+    var welcomeCard = Yawmia.$id('welcomeCard');
+    if (!welcomeCard) return;
+
+    var hints = [];
+    if (user.role === 'worker') {
+      hints = [
+        '📝 أكمل بياناتك في صفحة "ملفي" عشان أصحاب العمل يلاقوك بسهولة',
+        '📍 فعّل الموقع الجغرافي عشان تشوف الفرص القريبة منك',
+        '🔔 فعّل الإشعارات عشان توصلك الفرص الجديدة أول بأول',
+      ];
+    } else if (user.role === 'employer') {
+      hints = [
+        '📋 انشر فرصة عمل من النموذج أدناه — حدد التخصص والمحافظة واليومية',
+        '⭐ قيّم العمال بعد إنهاء الفرصة عشان تساعد أصحاب العمل التانيين',
+        '🔔 فعّل الإشعارات عشان توصلك الطلبات الجديدة فوراً',
+      ];
+    }
+
+    if (hints.length === 0) return;
+
+    var hintsDiv = document.createElement('div');
+    hintsDiv.className = 'hints-list';
+    hintsDiv.innerHTML = '<p class="hints-list__title">💡 نصائح للبداية:</p>';
+    var ul = document.createElement('ul');
+    ul.className = 'hints-list__items';
+    hints.forEach(function (hint) {
+      var li = document.createElement('li');
+      li.className = 'hints-list__item';
+      li.textContent = hint;
+      ul.appendChild(li);
+    });
+    hintsDiv.appendChild(ul);
+
+    var dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn btn--ghost btn--sm';
+    dismissBtn.textContent = 'فهمت ✓';
+    dismissBtn.addEventListener('click', function () {
+      hintsDiv.remove();
+      try { localStorage.setItem('yawmia_hints_seen', '1'); } catch (_) {}
+    });
+    hintsDiv.appendChild(dismissBtn);
+
+    welcomeCard.appendChild(hintsDiv);
+  })();
+
   // ── Panel Conflict Prevention ─────────────────────────────
   function closeOtherPanels(card, keepClass) {
     ['applications-panel', 'messaging-panel', 'attendance-panel', 'report-form'].forEach(function (cls) {
@@ -4424,7 +4574,134 @@ var YawmiaIcons = (function () {
       '<option value="wage_low">الأجر الأقل</option>';
     filtersDiv.insertBefore(sortLabel, btnFilter);
     filtersDiv.insertBefore(sortSelect, btnFilter);
+
+    // Advanced filters toggle button
+    var btnAdvanced = document.createElement('button');
+    btnAdvanced.className = 'btn btn--ghost btn--sm';
+    btnAdvanced.id = 'btnToggleAdvancedFilters';
+    btnAdvanced.textContent = 'فلاتر متقدمة ▾';
+    btnAdvanced.setAttribute('aria-expanded', 'false');
+    btnAdvanced.setAttribute('aria-controls', 'advancedFilters');
+    filtersDiv.insertBefore(btnAdvanced, btnFilter);
+
+    // Build advanced filters panel
+    var advPanel = Yawmia.$id('advancedFilters');
+    if (advPanel) {
+      Yawmia.loadConfig().then(function (cfg) {
+        if (!cfg) return;
+
+        var html = '<div class="advanced-filters__inner">';
+
+        // Multi-category checkboxes
+        html += '<div class="form-group"><label class="form-label">التخصصات (اختار أكثر من واحد)</label>';
+        html += '<div class="checkbox-grid" id="advCategoriesGrid">';
+        if (cfg.LABOR_CATEGORIES) {
+          cfg.LABOR_CATEGORIES.forEach(function (cat) {
+            html += '<label class="checkbox-label"><input type="checkbox" name="advCategories" value="' + YawmiaUtils.escapeHtml(cat.id) + '"><span>' + YawmiaUtils.escapeHtml(cat.icon + ' ' + cat.label) + '</span></label>';
+          });
+        }
+        html += '</div></div>';
+
+        // Wage range
+        html += '<div class="form-group"><label class="form-label">نطاق الأجر اليومي (جنيه)</label>';
+        html += '<div class="location-group">';
+        html += '<div class="form-group"><input type="number" id="advMinWage" class="form-input form-input--sm" placeholder="الحد الأدنى" min="0"></div>';
+        html += '<div class="form-group"><input type="number" id="advMaxWage" class="form-input form-input--sm" placeholder="الحد الأقصى" min="0"></div>';
+        html += '</div></div>';
+
+        // Date range
+        html += '<div class="form-group"><label class="form-label">نطاق تاريخ البدء</label>';
+        html += '<div class="location-group">';
+        html += '<div class="form-group"><input type="date" id="advDateFrom" class="form-input form-input--sm" dir="ltr"></div>';
+        html += '<div class="form-group"><input type="date" id="advDateTo" class="form-input form-input--sm" dir="ltr"></div>';
+        html += '</div></div>';
+
+        html += '</div>';
+        advPanel.innerHTML = html;
+
+        // Restore saved filters from sessionStorage
+        restoreAdvancedFilters();
+      }).catch(function () {});
+    }
+
+    // Toggle handler
+    btnAdvanced.addEventListener('click', function () {
+      if (!advPanel) return;
+      var isHidden = advPanel.classList.contains('hidden');
+      if (isHidden) {
+        advPanel.classList.remove('hidden');
+        btnAdvanced.textContent = 'فلاتر متقدمة ▴';
+        btnAdvanced.setAttribute('aria-expanded', 'true');
+      } else {
+        advPanel.classList.add('hidden');
+        btnAdvanced.textContent = 'فلاتر متقدمة ▾';
+        btnAdvanced.setAttribute('aria-expanded', 'false');
+      }
+    });
   })();
+
+  // ── Advanced Filter Persistence (sessionStorage) ──────────
+  function saveAdvancedFilters() {
+    try {
+      var state = {};
+      var checkedCats = document.querySelectorAll('input[name="advCategories"]:checked');
+      state.categories = Array.from(checkedCats).map(function (el) { return el.value; });
+      var minW = Yawmia.$id('advMinWage');
+      var maxW = Yawmia.$id('advMaxWage');
+      var dateFrom = Yawmia.$id('advDateFrom');
+      var dateTo = Yawmia.$id('advDateTo');
+      if (minW && minW.value) state.minWage = minW.value;
+      if (maxW && maxW.value) state.maxWage = maxW.value;
+      if (dateFrom && dateFrom.value) state.startDateFrom = dateFrom.value;
+      if (dateTo && dateTo.value) state.startDateTo = dateTo.value;
+      // Also save basic filters
+      var govSel = Yawmia.$id('filterGov');
+      var searchInp = Yawmia.$id('filterSearch');
+      var sortSel = Yawmia.$id('filterSort');
+      if (govSel && govSel.value) state.governorate = govSel.value;
+      if (searchInp && searchInp.value) state.search = searchInp.value;
+      if (sortSel && sortSel.value) state.sort = sortSel.value;
+      sessionStorage.setItem('yawmia_filters', JSON.stringify(state));
+    } catch (_) { /* sessionStorage unavailable */ }
+  }
+
+  function restoreAdvancedFilters() {
+    try {
+      var raw = sessionStorage.getItem('yawmia_filters');
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      if (!state) return;
+      // Restore categories
+      if (state.categories && Array.isArray(state.categories)) {
+        state.categories.forEach(function (catId) {
+          var cb = document.querySelector('input[name="advCategories"][value="' + catId + '"]');
+          if (cb) cb.checked = true;
+        });
+      }
+      var minW = Yawmia.$id('advMinWage');
+      var maxW = Yawmia.$id('advMaxWage');
+      var dateFrom = Yawmia.$id('advDateFrom');
+      var dateTo = Yawmia.$id('advDateTo');
+      if (minW && state.minWage) minW.value = state.minWage;
+      if (maxW && state.maxWage) maxW.value = state.maxWage;
+      if (dateFrom && state.startDateFrom) dateFrom.value = state.startDateFrom;
+      if (dateTo && state.startDateTo) dateTo.value = state.startDateTo;
+      // Restore basic filters
+      var govSel = Yawmia.$id('filterGov');
+      var searchInp = Yawmia.$id('filterSearch');
+      var sortSel = Yawmia.$id('filterSort');
+      if (govSel && state.governorate) govSel.value = state.governorate;
+      if (searchInp && state.search) searchInp.value = state.search;
+      if (sortSel && state.sort) sortSel.value = state.sort;
+      // If any advanced filter is set, open the panel
+      if (state.categories && state.categories.length > 0 || state.minWage || state.maxWage || state.startDateFrom || state.startDateTo) {
+        var advPanel = Yawmia.$id('advancedFilters');
+        var btnAdv = Yawmia.$id('btnToggleAdvancedFilters');
+        if (advPanel) advPanel.classList.remove('hidden');
+        if (btnAdv) { btnAdv.textContent = 'فلاتر متقدمة ▴'; btnAdv.setAttribute('aria-expanded', 'true'); }
+      }
+    } catch (_) { /* ignore */ }
+  }
 
   // ── SSE: Real-Time Notifications ──────────────────────────
   if (Yawmia.connectSSE) {
@@ -4647,11 +4924,32 @@ var YawmiaIcons = (function () {
       }).catch(function () {});
     }
 
+    // Gather advanced filter values
+    var advCategories = [];
+    var advChecked = document.querySelectorAll('input[name="advCategories"]:checked');
+    advChecked.forEach(function (el) { advCategories.push(el.value); });
+    var advMinWage = Yawmia.$id('advMinWage') ? Yawmia.$id('advMinWage').value.trim() : '';
+    var advMaxWage = Yawmia.$id('advMaxWage') ? Yawmia.$id('advMaxWage').value.trim() : '';
+    var advDateFrom = Yawmia.$id('advDateFrom') ? Yawmia.$id('advDateFrom').value : '';
+    var advDateTo = Yawmia.$id('advDateTo') ? Yawmia.$id('advDateTo').value : '';
+
+    // Save filter state to sessionStorage
+    saveAdvancedFilters();
+
     var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
-    if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
+    // Use multi-category if selected, otherwise fall back to single category dropdown
+    if (advCategories.length > 0) {
+      query += 'categories=' + encodeURIComponent(advCategories.join(',')) + '&';
+    } else if (cat) {
+      query += 'category=' + encodeURIComponent(cat) + '&';
+    }
     if (search) query += 'search=' + encodeURIComponent(search) + '&';
     if (sort) query += 'sort=' + encodeURIComponent(sort) + '&';
+    if (advMinWage) query += 'minWage=' + encodeURIComponent(advMinWage) + '&';
+    if (advMaxWage) query += 'maxWage=' + encodeURIComponent(advMaxWage) + '&';
+    if (advDateFrom) query += 'startDateFrom=' + encodeURIComponent(advDateFrom) + '&';
+    if (advDateTo) query += 'startDateTo=' + encodeURIComponent(advDateTo) + '&';
 
     try {
       var res = await Yawmia.api('GET', query);
@@ -6295,6 +6593,9 @@ var YawmiaModal = (function () {
           renderAvailabilityToggle(user);
         }
 
+        // Job alerts management (all roles)
+        loadMyAlerts();
+
         // Role-specific sections
         if (user.role === 'worker') {
           Yawmia.show('myApplicationsSection');
@@ -7065,6 +7366,184 @@ var YawmiaModal = (function () {
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Alerts Management ─────────────────────────────────────
+  async function loadMyAlerts() {
+    var container = Yawmia.$id('alerts-section');
+    if (!container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/alerts');
+      if (res.data.ok) {
+        renderAlertsSection(container, res.data.alerts || []);
+      } else {
+        container.innerHTML = '';
+      }
+    } catch (err) {
+      container.innerHTML = '';
+    }
+  }
+
+  function renderAlertsSection(container, alerts) {
+    var html = '<section class="card">' +
+      '<h2 class="card__title">🔔 تنبيهات الفرص</h2>' +
+      '<p class="card__desc">حدد معايير البحث وهنبعتلك إشعار لما فرصة مطابقة تتنشر.</p>';
+
+    // Create alert form
+    html += '<div class="alert-create-form" id="alertCreateForm">' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="alertName">اسم التنبيه</label>' +
+        '<input type="text" id="alertName" class="form-input form-input--sm" placeholder="مثال: زراعة في الجيزة">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">التخصصات (اختار واحد أو أكثر)</label>' +
+        '<div class="checkbox-grid" id="alertCategoriesGrid"></div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="alertGov">المحافظة (اختياري)</label>' +
+        '<select id="alertGov" class="form-input form-input--sm"><option value="">كل المحافظات</option></select>' +
+      '</div>' +
+      '<div class="location-group">' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="alertMinWage">أقل أجر (اختياري)</label>' +
+          '<input type="number" id="alertMinWage" class="form-input form-input--sm" placeholder="150" min="0">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="alertMaxWage">أعلى أجر (اختياري)</label>' +
+          '<input type="number" id="alertMaxWage" class="form-input form-input--sm" placeholder="1000" min="0">' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn--primary btn--sm" id="btnCreateAlert">إنشاء تنبيه</button>' +
+      '<div class="message" id="alertCreateMsg"></div>' +
+    '</div>';
+
+    // Existing alerts list
+    if (alerts.length > 0) {
+      html += '<hr class="section-divider">';
+      html += '<div class="alerts-list">';
+      alerts.forEach(function (alt) {
+        var criteria = alt.criteria || {};
+        var catsText = (criteria.categories || []).join('، ');
+        var govText = criteria.governorate || 'كل المحافظات';
+        var wageText = '';
+        if (criteria.minWage != null && criteria.maxWage != null) {
+          wageText = criteria.minWage + '-' + criteria.maxWage + ' جنيه';
+        } else if (criteria.minWage != null) {
+          wageText = 'من ' + criteria.minWage + ' جنيه';
+        } else if (criteria.maxWage != null) {
+          wageText = 'حتى ' + criteria.maxWage + ' جنيه';
+        }
+
+        html += '<div class="alert-card" data-alert-id="' + escapeHtml(alt.id) + '">' +
+          '<div class="alert-card__info">' +
+            '<div class="alert-card__name">' + escapeHtml(alt.name) + '</div>' +
+            '<div class="alert-criteria">' +
+              '<span>📂 ' + escapeHtml(catsText) + '</span>' +
+              '<span> • 📍 ' + escapeHtml(govText) + '</span>' +
+              (wageText ? '<span> • 💰 ' + escapeHtml(wageText) + '</span>' : '') +
+            '</div>' +
+            '<div class="alert-card__meta">' +
+              (alt.enabled ? '<span style="color:var(--color-success);">مفعّل</span>' : '<span style="color:var(--color-text-muted);">معطّل</span>') +
+              ' • ' + (alt.matchCount || 0) + ' مطابقات' +
+            '</div>' +
+          '</div>' +
+          '<div class="alert-card__actions">' +
+            '<button class="btn btn--ghost btn--sm btn-toggle-alert" data-alert-id="' + escapeHtml(alt.id) + '" data-enabled="' + (alt.enabled ? 'true' : 'false') + '">' + (alt.enabled ? '⏸ تعطيل' : '▶ تفعيل') + '</button>' +
+            '<button class="btn btn--ghost btn--sm btn-delete-alert" data-alert-id="' + escapeHtml(alt.id) + '" style="color:var(--color-error);border-color:var(--color-error);">🗑 حذف</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="empty-state" style="margin-top:1rem;">لا توجد تنبيهات بعد — أنشئ أول تنبيه!</p>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    // Populate dropdowns
+    Yawmia.populateCategoriesCheckboxes('alertCategoriesGrid');
+    Yawmia.populateGovernorates('alertGov');
+
+    // Create alert handler
+    var btnCreate = Yawmia.$id('btnCreateAlert');
+    if (btnCreate) {
+      btnCreate.addEventListener('click', async function () {
+        Yawmia.clearMessage('alertCreateMsg');
+        var name = (Yawmia.$id('alertName') || {}).value || '';
+        var govVal = (Yawmia.$id('alertGov') || {}).value || '';
+        var minW = (Yawmia.$id('alertMinWage') || {}).value;
+        var maxW = (Yawmia.$id('alertMaxWage') || {}).value;
+        var checkedCats = document.querySelectorAll('#alertCategoriesGrid input[name="categories"]:checked');
+        var categories = Array.from(checkedCats).map(function (el) { return el.value; });
+
+        if (!name.trim()) {
+          return Yawmia.showMessage('alertCreateMsg', 'اكتب اسم للتنبيه', 'error');
+        }
+        if (categories.length === 0) {
+          return Yawmia.showMessage('alertCreateMsg', 'اختار تخصص واحد على الأقل', 'error');
+        }
+
+        var criteria = { categories: categories };
+        if (govVal) criteria.governorate = govVal;
+        if (minW && !isNaN(parseInt(minW))) criteria.minWage = parseInt(minW);
+        if (maxW && !isNaN(parseInt(maxW))) criteria.maxWage = parseInt(maxW);
+
+        Yawmia.setLoading(btnCreate, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/alerts', { name: name.trim(), criteria: criteria });
+          if (res.data.ok) {
+            YawmiaToast.success('تم إنشاء التنبيه ✓');
+            loadMyAlerts();
+          } else {
+            Yawmia.showMessage('alertCreateMsg', res.data.error || 'خطأ في إنشاء التنبيه', 'error');
+          }
+        } catch (err) {
+          Yawmia.showMessage('alertCreateMsg', 'خطأ في الاتصال', 'error');
+        } finally {
+          Yawmia.setLoading(btnCreate, false);
+        }
+      });
+    }
+
+    // Toggle handlers
+    container.querySelectorAll('.btn-toggle-alert').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var alertId = btn.getAttribute('data-alert-id');
+        var currentEnabled = btn.getAttribute('data-enabled') === 'true';
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('PUT', '/api/alerts/' + alertId, { enabled: !currentEnabled });
+          if (res.data.ok) {
+            loadMyAlerts();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
+
+    // Delete handlers
+    container.querySelectorAll('.btn-delete-alert').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var alertId = btn.getAttribute('data-alert-id');
+        var confirmed = await YawmiaModal.confirm({ title: 'حذف التنبيه', message: 'متأكد إنك عايز تحذف هذا التنبيه؟', confirmText: 'حذف', cancelText: 'إلغاء', danger: true });
+        if (!confirmed) return;
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('DELETE', '/api/alerts/' + alertId);
+          if (res.data.ok) {
+            YawmiaToast.success('تم حذف التنبيه');
+            loadMyAlerts();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
   }
 
 })();
@@ -7871,6 +8350,7 @@ var YawmiaUtils = (function () {
               <button class="btn btn--sm btn--primary" id="btnFilterJobs">بحث</button>
             </div>
           </div>
+          <div id="advancedFilters" class="hidden" style="margin-block-end: 1rem;"></div>
           <div id="jobsList" class="jobs-list">
             <p class="empty-state">جاري تحميل الفرص...</p>
           </div>
@@ -8327,6 +8807,9 @@ var YawmiaUtils = (function () {
         <!-- Availability Toggle (worker only) -->
         <div id="availability-section"></div>
 
+        <!-- Job Alerts Management -->
+        <div id="alerts-section"></div>
+
         <!-- Attendance History (worker only) -->
         <section class="card hidden" id="attendanceHistorySection">
           <h2 class="card__title">📋 سجل الحضور</h2>
@@ -8458,7 +8941,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.26.0';
+const CACHE_NAME = 'yawmia-v0.27.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
