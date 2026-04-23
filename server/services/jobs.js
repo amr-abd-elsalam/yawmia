@@ -122,6 +122,30 @@ export async function list(filters = {}) {
     });
   }
 
+  // ── Multi-category filter (comma-separated) ───────────────
+  if (filters.categories) {
+    const cats = filters.categories.split(',').map(c => c.trim()).filter(Boolean);
+    if (cats.length > 0) {
+      jobs = jobs.filter(j => cats.includes(j.category));
+    }
+  }
+
+  // ── Wage range filter ─────────────────────────────────────
+  if (filters.minWage !== undefined && !isNaN(Number(filters.minWage))) {
+    jobs = jobs.filter(j => (j.dailyWage || 0) >= Number(filters.minWage));
+  }
+  if (filters.maxWage !== undefined && !isNaN(Number(filters.maxWage))) {
+    jobs = jobs.filter(j => (j.dailyWage || 0) <= Number(filters.maxWage));
+  }
+
+  // ── Date range filter ─────────────────────────────────────
+  if (filters.startDateFrom) {
+    jobs = jobs.filter(j => j.startDate && j.startDate >= filters.startDateFrom);
+  }
+  if (filters.startDateTo) {
+    jobs = jobs.filter(j => j.startDate && j.startDate <= filters.startDateTo);
+  }
+
   // ── Proximity filter (Haversine) ──────────────────────────
   if (filters.lat !== undefined && filters.lng !== undefined) {
     const { filterByProximity } = await import('./geo.js');

@@ -253,6 +253,7 @@ const config = {
       audit: 'audit',
       messages: 'messages',
       push_subscriptions: 'push_subscriptions',
+      alerts: 'alerts',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -270,6 +271,7 @@ const config = {
       messageJobIndex: 'messages/job-index.json',
       messageUserIndex: 'messages/user-index.json',
       pushUserIndex: 'push_subscriptions/user-index.json',
+      userAlertsIndex: 'alerts/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -430,7 +432,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.26.0',
+    cacheName: 'yawmia-v0.27.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -657,6 +659,26 @@ const config = {
   SEARCH_INDEX: {
     enabled: true,
     rebuildIntervalMs: 3600000,              // إعادة بناء الفهرس كل ساعة (مللي ثانية)
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 42. تنبيهات الفرص (JOB_ALERTS)
+  // ═══════════════════════════════════════════════════════════
+  JOB_ALERTS: {
+    enabled: true,
+    maxAlertsPerUser: 5,                     // أقصى عدد تنبيهات لكل مستخدم
+    cooldownMinutes: 60,                     // مدة الانتظار بين إشعارين لنفس التنبيه (دقيقة)
+    matchOnCreation: true,                   // مطابقة التنبيهات عند إنشاء فرصة جديدة
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 43. ملخص النشاط الأسبوعي (ACTIVITY_SUMMARY)
+  // ═══════════════════════════════════════════════════════════
+  ACTIVITY_SUMMARY: {
+    enabled: true,
+    dayOfWeek: 0,                            // 0 = الأحد
+    hourEgypt: 10,                           // 10:00 صباحاً بتوقيت مصر
+    intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
   },
 
 };

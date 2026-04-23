@@ -77,6 +77,11 @@ export async function handleListJobs(req, res) {
   if (req.query.lat) filters.lat = req.query.lat;
   if (req.query.lng) filters.lng = req.query.lng;
   if (req.query.radius) filters.radius = req.query.radius;
+  if (req.query.categories) filters.categories = req.query.categories;
+  if (req.query.minWage) filters.minWage = req.query.minWage;
+  if (req.query.maxWage) filters.maxWage = req.query.maxWage;
+  if (req.query.startDateFrom) filters.startDateFrom = req.query.startDateFrom;
+  if (req.query.startDateTo) filters.startDateTo = req.query.startDateTo;
 
   try {
     const allJobs = await list(filters);

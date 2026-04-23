@@ -217,6 +217,20 @@ const cleanupTimer = setInterval(async () => {
 }, CLEANUP_INTERVAL);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
+// ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
+if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
+  const summaryTimer = setInterval(async () => {
+    try {
+      const { sendWeeklySummaries } = await import('./server/services/activitySummary.js');
+      const sent = await sendWeeklySummaries();
+      if (sent > 0) logger.info(`Activity summary: sent ${sent} digest(s)`);
+    } catch (err) {
+      logger.warn('Activity summary error', { error: err.message });
+    }
+  }, config.ACTIVITY_SUMMARY.intervalCheckMs);
+  if (summaryTimer.unref) summaryTimer.unref();
+}
+
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);

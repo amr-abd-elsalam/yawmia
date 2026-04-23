@@ -60,6 +60,9 @@
           renderAvailabilityToggle(user);
         }
 
+        // Job alerts management (all roles)
+        loadMyAlerts();
+
         // Role-specific sections
         if (user.role === 'worker') {
           Yawmia.show('myApplicationsSection');
@@ -830,6 +833,184 @@
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Alerts Management ─────────────────────────────────────
+  async function loadMyAlerts() {
+    var container = Yawmia.$id('alerts-section');
+    if (!container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/alerts');
+      if (res.data.ok) {
+        renderAlertsSection(container, res.data.alerts || []);
+      } else {
+        container.innerHTML = '';
+      }
+    } catch (err) {
+      container.innerHTML = '';
+    }
+  }
+
+  function renderAlertsSection(container, alerts) {
+    var html = '<section class="card">' +
+      '<h2 class="card__title">🔔 تنبيهات الفرص</h2>' +
+      '<p class="card__desc">حدد معايير البحث وهنبعتلك إشعار لما فرصة مطابقة تتنشر.</p>';
+
+    // Create alert form
+    html += '<div class="alert-create-form" id="alertCreateForm">' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="alertName">اسم التنبيه</label>' +
+        '<input type="text" id="alertName" class="form-input form-input--sm" placeholder="مثال: زراعة في الجيزة">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">التخصصات (اختار واحد أو أكثر)</label>' +
+        '<div class="checkbox-grid" id="alertCategoriesGrid"></div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="alertGov">المحافظة (اختياري)</label>' +
+        '<select id="alertGov" class="form-input form-input--sm"><option value="">كل المحافظات</option></select>' +
+      '</div>' +
+      '<div class="location-group">' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="alertMinWage">أقل أجر (اختياري)</label>' +
+          '<input type="number" id="alertMinWage" class="form-input form-input--sm" placeholder="150" min="0">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="alertMaxWage">أعلى أجر (اختياري)</label>' +
+          '<input type="number" id="alertMaxWage" class="form-input form-input--sm" placeholder="1000" min="0">' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn--primary btn--sm" id="btnCreateAlert">إنشاء تنبيه</button>' +
+      '<div class="message" id="alertCreateMsg"></div>' +
+    '</div>';
+
+    // Existing alerts list
+    if (alerts.length > 0) {
+      html += '<hr class="section-divider">';
+      html += '<div class="alerts-list">';
+      alerts.forEach(function (alt) {
+        var criteria = alt.criteria || {};
+        var catsText = (criteria.categories || []).join('، ');
+        var govText = criteria.governorate || 'كل المحافظات';
+        var wageText = '';
+        if (criteria.minWage != null && criteria.maxWage != null) {
+          wageText = criteria.minWage + '-' + criteria.maxWage + ' جنيه';
+        } else if (criteria.minWage != null) {
+          wageText = 'من ' + criteria.minWage + ' جنيه';
+        } else if (criteria.maxWage != null) {
+          wageText = 'حتى ' + criteria.maxWage + ' جنيه';
+        }
+
+        html += '<div class="alert-card" data-alert-id="' + escapeHtml(alt.id) + '">' +
+          '<div class="alert-card__info">' +
+            '<div class="alert-card__name">' + escapeHtml(alt.name) + '</div>' +
+            '<div class="alert-criteria">' +
+              '<span>📂 ' + escapeHtml(catsText) + '</span>' +
+              '<span> • 📍 ' + escapeHtml(govText) + '</span>' +
+              (wageText ? '<span> • 💰 ' + escapeHtml(wageText) + '</span>' : '') +
+            '</div>' +
+            '<div class="alert-card__meta">' +
+              (alt.enabled ? '<span style="color:var(--color-success);">مفعّل</span>' : '<span style="color:var(--color-text-muted);">معطّل</span>') +
+              ' • ' + (alt.matchCount || 0) + ' مطابقات' +
+            '</div>' +
+          '</div>' +
+          '<div class="alert-card__actions">' +
+            '<button class="btn btn--ghost btn--sm btn-toggle-alert" data-alert-id="' + escapeHtml(alt.id) + '" data-enabled="' + (alt.enabled ? 'true' : 'false') + '">' + (alt.enabled ? '⏸ تعطيل' : '▶ تفعيل') + '</button>' +
+            '<button class="btn btn--ghost btn--sm btn-delete-alert" data-alert-id="' + escapeHtml(alt.id) + '" style="color:var(--color-error);border-color:var(--color-error);">🗑 حذف</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="empty-state" style="margin-top:1rem;">لا توجد تنبيهات بعد — أنشئ أول تنبيه!</p>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    // Populate dropdowns
+    Yawmia.populateCategoriesCheckboxes('alertCategoriesGrid');
+    Yawmia.populateGovernorates('alertGov');
+
+    // Create alert handler
+    var btnCreate = Yawmia.$id('btnCreateAlert');
+    if (btnCreate) {
+      btnCreate.addEventListener('click', async function () {
+        Yawmia.clearMessage('alertCreateMsg');
+        var name = (Yawmia.$id('alertName') || {}).value || '';
+        var govVal = (Yawmia.$id('alertGov') || {}).value || '';
+        var minW = (Yawmia.$id('alertMinWage') || {}).value;
+        var maxW = (Yawmia.$id('alertMaxWage') || {}).value;
+        var checkedCats = document.querySelectorAll('#alertCategoriesGrid input[name="categories"]:checked');
+        var categories = Array.from(checkedCats).map(function (el) { return el.value; });
+
+        if (!name.trim()) {
+          return Yawmia.showMessage('alertCreateMsg', 'اكتب اسم للتنبيه', 'error');
+        }
+        if (categories.length === 0) {
+          return Yawmia.showMessage('alertCreateMsg', 'اختار تخصص واحد على الأقل', 'error');
+        }
+
+        var criteria = { categories: categories };
+        if (govVal) criteria.governorate = govVal;
+        if (minW && !isNaN(parseInt(minW))) criteria.minWage = parseInt(minW);
+        if (maxW && !isNaN(parseInt(maxW))) criteria.maxWage = parseInt(maxW);
+
+        Yawmia.setLoading(btnCreate, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/alerts', { name: name.trim(), criteria: criteria });
+          if (res.data.ok) {
+            YawmiaToast.success('تم إنشاء التنبيه ✓');
+            loadMyAlerts();
+          } else {
+            Yawmia.showMessage('alertCreateMsg', res.data.error || 'خطأ في إنشاء التنبيه', 'error');
+          }
+        } catch (err) {
+          Yawmia.showMessage('alertCreateMsg', 'خطأ في الاتصال', 'error');
+        } finally {
+          Yawmia.setLoading(btnCreate, false);
+        }
+      });
+    }
+
+    // Toggle handlers
+    container.querySelectorAll('.btn-toggle-alert').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var alertId = btn.getAttribute('data-alert-id');
+        var currentEnabled = btn.getAttribute('data-enabled') === 'true';
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('PUT', '/api/alerts/' + alertId, { enabled: !currentEnabled });
+          if (res.data.ok) {
+            loadMyAlerts();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
+
+    // Delete handlers
+    container.querySelectorAll('.btn-delete-alert').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var alertId = btn.getAttribute('data-alert-id');
+        var confirmed = await YawmiaModal.confirm({ title: 'حذف التنبيه', message: 'متأكد إنك عايز تحذف هذا التنبيه؟', confirmText: 'حذف', cancelText: 'إلغاء', danger: true });
+        if (!confirmed) return;
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('DELETE', '/api/alerts/' + alertId);
+          if (res.data.ok) {
+            YawmiaToast.success('تم حذف التنبيه');
+            loadMyAlerts();
+          } else {
+            YawmiaToast.error(res.data.error || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
   }
 
 })();

@@ -308,9 +308,9 @@ describe('Phase 29 — Config', () => {
     assert.strictEqual(config.JOB_MATCHING.maxNotificationsPerJob, 50);
   });
 
-  it('P29-45: config has 38 sections total', () => {
+  it('P29-45: config has 43 sections total', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 41, `expected 41 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 43, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 
@@ -320,18 +320,18 @@ describe('Phase 29 — Config', () => {
 
 describe('Phase 29 — Version', () => {
 
-  it('P29-46: package.json version is 0.25.0', async () => {
+  it('P29-46: package.json version is 0.27.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.26.0');
+    assert.strictEqual(pkg.version, '0.27.0');
   });
 
-  it('P29-47: config PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.26.0');
+  it('P29-47: config PWA cacheName is yawmia-v0.27.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.27.0');
   });
 
-  it('P29-48: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
+  it('P29-48: sw.js CACHE_NAME is yawmia-v0.27.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.26.0'"), 'cache name should be yawmia-v0.25.0');
+    assert.ok(content.includes("'yawmia-v0.27.0'"), 'cache name should be yawmia-v0.27.0');
   });
 });

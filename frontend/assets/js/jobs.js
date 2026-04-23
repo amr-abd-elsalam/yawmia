@@ -44,6 +44,57 @@
     }
   }
 
+  // ── First-Time User Hints ─────────────────────────────────
+  (function showFirstTimeHints() {
+    try {
+      if (localStorage.getItem('yawmia_hints_seen') === '1') return;
+    } catch (_) { /* localStorage unavailable — show hints every time */ }
+
+    var welcomeCard = Yawmia.$id('welcomeCard');
+    if (!welcomeCard) return;
+
+    var hints = [];
+    if (user.role === 'worker') {
+      hints = [
+        '📝 أكمل بياناتك في صفحة "ملفي" عشان أصحاب العمل يلاقوك بسهولة',
+        '📍 فعّل الموقع الجغرافي عشان تشوف الفرص القريبة منك',
+        '🔔 فعّل الإشعارات عشان توصلك الفرص الجديدة أول بأول',
+      ];
+    } else if (user.role === 'employer') {
+      hints = [
+        '📋 انشر فرصة عمل من النموذج أدناه — حدد التخصص والمحافظة واليومية',
+        '⭐ قيّم العمال بعد إنهاء الفرصة عشان تساعد أصحاب العمل التانيين',
+        '🔔 فعّل الإشعارات عشان توصلك الطلبات الجديدة فوراً',
+      ];
+    }
+
+    if (hints.length === 0) return;
+
+    var hintsDiv = document.createElement('div');
+    hintsDiv.className = 'hints-list';
+    hintsDiv.innerHTML = '<p class="hints-list__title">💡 نصائح للبداية:</p>';
+    var ul = document.createElement('ul');
+    ul.className = 'hints-list__items';
+    hints.forEach(function (hint) {
+      var li = document.createElement('li');
+      li.className = 'hints-list__item';
+      li.textContent = hint;
+      ul.appendChild(li);
+    });
+    hintsDiv.appendChild(ul);
+
+    var dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn btn--ghost btn--sm';
+    dismissBtn.textContent = 'فهمت ✓';
+    dismissBtn.addEventListener('click', function () {
+      hintsDiv.remove();
+      try { localStorage.setItem('yawmia_hints_seen', '1'); } catch (_) {}
+    });
+    hintsDiv.appendChild(dismissBtn);
+
+    welcomeCard.appendChild(hintsDiv);
+  })();
+
   // ── Panel Conflict Prevention ─────────────────────────────
   function closeOtherPanels(card, keepClass) {
     ['applications-panel', 'messaging-panel', 'attendance-panel', 'report-form'].forEach(function (cls) {
@@ -100,7 +151,134 @@
       '<option value="wage_low">الأجر الأقل</option>';
     filtersDiv.insertBefore(sortLabel, btnFilter);
     filtersDiv.insertBefore(sortSelect, btnFilter);
+
+    // Advanced filters toggle button
+    var btnAdvanced = document.createElement('button');
+    btnAdvanced.className = 'btn btn--ghost btn--sm';
+    btnAdvanced.id = 'btnToggleAdvancedFilters';
+    btnAdvanced.textContent = 'فلاتر متقدمة ▾';
+    btnAdvanced.setAttribute('aria-expanded', 'false');
+    btnAdvanced.setAttribute('aria-controls', 'advancedFilters');
+    filtersDiv.insertBefore(btnAdvanced, btnFilter);
+
+    // Build advanced filters panel
+    var advPanel = Yawmia.$id('advancedFilters');
+    if (advPanel) {
+      Yawmia.loadConfig().then(function (cfg) {
+        if (!cfg) return;
+
+        var html = '<div class="advanced-filters__inner">';
+
+        // Multi-category checkboxes
+        html += '<div class="form-group"><label class="form-label">التخصصات (اختار أكثر من واحد)</label>';
+        html += '<div class="checkbox-grid" id="advCategoriesGrid">';
+        if (cfg.LABOR_CATEGORIES) {
+          cfg.LABOR_CATEGORIES.forEach(function (cat) {
+            html += '<label class="checkbox-label"><input type="checkbox" name="advCategories" value="' + YawmiaUtils.escapeHtml(cat.id) + '"><span>' + YawmiaUtils.escapeHtml(cat.icon + ' ' + cat.label) + '</span></label>';
+          });
+        }
+        html += '</div></div>';
+
+        // Wage range
+        html += '<div class="form-group"><label class="form-label">نطاق الأجر اليومي (جنيه)</label>';
+        html += '<div class="location-group">';
+        html += '<div class="form-group"><input type="number" id="advMinWage" class="form-input form-input--sm" placeholder="الحد الأدنى" min="0"></div>';
+        html += '<div class="form-group"><input type="number" id="advMaxWage" class="form-input form-input--sm" placeholder="الحد الأقصى" min="0"></div>';
+        html += '</div></div>';
+
+        // Date range
+        html += '<div class="form-group"><label class="form-label">نطاق تاريخ البدء</label>';
+        html += '<div class="location-group">';
+        html += '<div class="form-group"><input type="date" id="advDateFrom" class="form-input form-input--sm" dir="ltr"></div>';
+        html += '<div class="form-group"><input type="date" id="advDateTo" class="form-input form-input--sm" dir="ltr"></div>';
+        html += '</div></div>';
+
+        html += '</div>';
+        advPanel.innerHTML = html;
+
+        // Restore saved filters from sessionStorage
+        restoreAdvancedFilters();
+      }).catch(function () {});
+    }
+
+    // Toggle handler
+    btnAdvanced.addEventListener('click', function () {
+      if (!advPanel) return;
+      var isHidden = advPanel.classList.contains('hidden');
+      if (isHidden) {
+        advPanel.classList.remove('hidden');
+        btnAdvanced.textContent = 'فلاتر متقدمة ▴';
+        btnAdvanced.setAttribute('aria-expanded', 'true');
+      } else {
+        advPanel.classList.add('hidden');
+        btnAdvanced.textContent = 'فلاتر متقدمة ▾';
+        btnAdvanced.setAttribute('aria-expanded', 'false');
+      }
+    });
   })();
+
+  // ── Advanced Filter Persistence (sessionStorage) ──────────
+  function saveAdvancedFilters() {
+    try {
+      var state = {};
+      var checkedCats = document.querySelectorAll('input[name="advCategories"]:checked');
+      state.categories = Array.from(checkedCats).map(function (el) { return el.value; });
+      var minW = Yawmia.$id('advMinWage');
+      var maxW = Yawmia.$id('advMaxWage');
+      var dateFrom = Yawmia.$id('advDateFrom');
+      var dateTo = Yawmia.$id('advDateTo');
+      if (minW && minW.value) state.minWage = minW.value;
+      if (maxW && maxW.value) state.maxWage = maxW.value;
+      if (dateFrom && dateFrom.value) state.startDateFrom = dateFrom.value;
+      if (dateTo && dateTo.value) state.startDateTo = dateTo.value;
+      // Also save basic filters
+      var govSel = Yawmia.$id('filterGov');
+      var searchInp = Yawmia.$id('filterSearch');
+      var sortSel = Yawmia.$id('filterSort');
+      if (govSel && govSel.value) state.governorate = govSel.value;
+      if (searchInp && searchInp.value) state.search = searchInp.value;
+      if (sortSel && sortSel.value) state.sort = sortSel.value;
+      sessionStorage.setItem('yawmia_filters', JSON.stringify(state));
+    } catch (_) { /* sessionStorage unavailable */ }
+  }
+
+  function restoreAdvancedFilters() {
+    try {
+      var raw = sessionStorage.getItem('yawmia_filters');
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      if (!state) return;
+      // Restore categories
+      if (state.categories && Array.isArray(state.categories)) {
+        state.categories.forEach(function (catId) {
+          var cb = document.querySelector('input[name="advCategories"][value="' + catId + '"]');
+          if (cb) cb.checked = true;
+        });
+      }
+      var minW = Yawmia.$id('advMinWage');
+      var maxW = Yawmia.$id('advMaxWage');
+      var dateFrom = Yawmia.$id('advDateFrom');
+      var dateTo = Yawmia.$id('advDateTo');
+      if (minW && state.minWage) minW.value = state.minWage;
+      if (maxW && state.maxWage) maxW.value = state.maxWage;
+      if (dateFrom && state.startDateFrom) dateFrom.value = state.startDateFrom;
+      if (dateTo && state.startDateTo) dateTo.value = state.startDateTo;
+      // Restore basic filters
+      var govSel = Yawmia.$id('filterGov');
+      var searchInp = Yawmia.$id('filterSearch');
+      var sortSel = Yawmia.$id('filterSort');
+      if (govSel && state.governorate) govSel.value = state.governorate;
+      if (searchInp && state.search) searchInp.value = state.search;
+      if (sortSel && state.sort) sortSel.value = state.sort;
+      // If any advanced filter is set, open the panel
+      if (state.categories && state.categories.length > 0 || state.minWage || state.maxWage || state.startDateFrom || state.startDateTo) {
+        var advPanel = Yawmia.$id('advancedFilters');
+        var btnAdv = Yawmia.$id('btnToggleAdvancedFilters');
+        if (advPanel) advPanel.classList.remove('hidden');
+        if (btnAdv) { btnAdv.textContent = 'فلاتر متقدمة ▴'; btnAdv.setAttribute('aria-expanded', 'true'); }
+      }
+    } catch (_) { /* ignore */ }
+  }
 
   // ── SSE: Real-Time Notifications ──────────────────────────
   if (Yawmia.connectSSE) {
@@ -323,11 +501,32 @@
       }).catch(function () {});
     }
 
+    // Gather advanced filter values
+    var advCategories = [];
+    var advChecked = document.querySelectorAll('input[name="advCategories"]:checked');
+    advChecked.forEach(function (el) { advCategories.push(el.value); });
+    var advMinWage = Yawmia.$id('advMinWage') ? Yawmia.$id('advMinWage').value.trim() : '';
+    var advMaxWage = Yawmia.$id('advMaxWage') ? Yawmia.$id('advMaxWage').value.trim() : '';
+    var advDateFrom = Yawmia.$id('advDateFrom') ? Yawmia.$id('advDateFrom').value : '';
+    var advDateTo = Yawmia.$id('advDateTo') ? Yawmia.$id('advDateTo').value : '';
+
+    // Save filter state to sessionStorage
+    saveAdvancedFilters();
+
     var query = '/api/jobs?page=' + currentPage + '&limit=' + pageLimit + '&';
     if (gov) query += 'governorate=' + encodeURIComponent(gov) + '&';
-    if (cat) query += 'category=' + encodeURIComponent(cat) + '&';
+    // Use multi-category if selected, otherwise fall back to single category dropdown
+    if (advCategories.length > 0) {
+      query += 'categories=' + encodeURIComponent(advCategories.join(',')) + '&';
+    } else if (cat) {
+      query += 'category=' + encodeURIComponent(cat) + '&';
+    }
     if (search) query += 'search=' + encodeURIComponent(search) + '&';
     if (sort) query += 'sort=' + encodeURIComponent(sort) + '&';
+    if (advMinWage) query += 'minWage=' + encodeURIComponent(advMinWage) + '&';
+    if (advMaxWage) query += 'maxWage=' + encodeURIComponent(advMaxWage) + '&';
+    if (advDateFrom) query += 'startDateFrom=' + encodeURIComponent(advDateFrom) + '&';
+    if (advDateTo) query += 'startDateTo=' + encodeURIComponent(advDateTo) + '&';
 
     try {
       var res = await Yawmia.api('GET', query);
