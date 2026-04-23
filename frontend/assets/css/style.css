@@ -2867,6 +2867,28 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 34 — Profile Completeness ═══ */
+.profile-completeness__missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-block-start: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* ═══ Phase 34 — First Job Guidance ═══ */
+@keyframes first-job-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); border-color: var(--color-primary); }
+  50% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.3); border-color: var(--color-primary); }
+}
+
+.first-job-highlight {
+  border-color: var(--color-primary) !important;
+  animation: first-job-glow 2s ease-in-out 3;
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;

@@ -451,6 +451,14 @@
   // ── Load Jobs ─────────────────────────────────────────────
   loadJobs();
 
+  // ── Recent Jobs for Workers ───────────────────────────────
+  if (user.role === 'worker') {
+    loadRecentJobs();
+  }
+
+  // ── Smart Rating Prompt ───────────────────────────────────
+  checkPendingRatings();
+
   var btnFilterJobs = Yawmia.$id('btnFilterJobs');
   if (btnFilterJobs) {
     btnFilterJobs.addEventListener('click', function () {
@@ -1015,6 +1023,20 @@
     Yawmia.populateCategories('jobCategory');
     Yawmia.populateGovernorates('jobGovernorate');
 
+    // First-job guidance: highlight create form for new employers
+    (async function checkFirstJob() {
+      try {
+        var mineRes = await Yawmia.api('GET', '/api/jobs/mine?limit=1');
+        if (mineRes.data.ok && mineRes.data.total === 0) {
+          var formSection = Yawmia.$id('createJobSection');
+          if (formSection) {
+            formSection.classList.add('first-job-highlight');
+            formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      } catch (_) { /* non-blocking */ }
+    })();
+
     // Cost preview — load fee percentage from config
     var workerInput = Yawmia.$id('jobWorkers');
     var wageInput = Yawmia.$id('jobWage');
@@ -1154,6 +1176,12 @@
                 '<button class="btn btn--success btn--sm btn-accept-app" data-app-id="' + app.id + '">✓ قبول</button>' +
                 '<button class="btn btn--ghost btn--sm btn-reject-app" data-app-id="' + app.id + '" style="color:var(--color-error);border-color:var(--color-error);">✗ رفض</button>' +
               '</div>';
+          } else if (app.status === 'accepted') {
+            actionsHtml =
+              '<div class="app-review-card__actions">' +
+                '<span class="badge badge--status badge--' + app.status + '">' + escapeHtml(statusLabel) + '</span>' +
+                ' <button class="btn btn--ghost btn--sm btn-add-fav" data-worker-id="' + escapeHtml(app.workerId) + '">⭐ مفضّلة</button>' +
+              '</div>';
           } else {
             actionsHtml = '<div class="app-review-card__actions"><span class="badge badge--status badge--' + app.status + '">' + escapeHtml(statusLabel) + '</span></div>';
           }
@@ -1212,6 +1240,28 @@
                 }
               } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
               finally { Yawmia.setLoading(rejectBtn, false); }
+            });
+          }
+
+          // Favorite button handler (for accepted workers)
+          var favBtn = appCard.querySelector('.btn-add-fav');
+          if (favBtn) {
+            favBtn.addEventListener('click', async function () {
+              Yawmia.setLoading(favBtn, true);
+              try {
+                var r = await Yawmia.api('POST', '/api/favorites', { favoriteUserId: app.workerId });
+                if (r.data.ok) {
+                  favBtn.textContent = '⭐ تمت الإضافة';
+                  favBtn.disabled = true;
+                  favBtn.classList.add('btn--done');
+                } else if (r.data.code === 'ALREADY_FAVORITE') {
+                  favBtn.textContent = '⭐ موجود بالفعل';
+                  favBtn.disabled = true;
+                } else {
+                  YawmiaToast.error(r.data.error || 'خطأ');
+                }
+              } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+              finally { Yawmia.setLoading(favBtn, false); }
             });
           }
 
@@ -1450,6 +1500,55 @@
         if (listEl) listEl.innerHTML = '<p class="empty-state">خطأ في تحميل بيانات الحضور</p>';
       }
     })();
+  }
+
+  // ── Recent Jobs Section (Worker) ──────────────────────────
+  async function loadRecentJobs() {
+    var section = Yawmia.$id('recentJobsSection');
+    if (!section) return;
+    try {
+      var res = await Yawmia.api('GET', '/api/applications/mine');
+      if (!res.data.ok || !res.data.applications) return;
+      var accepted = res.data.applications.filter(function (a) {
+        return a.status === 'accepted' && a.job;
+      }).slice(0, 5);
+      if (accepted.length === 0) return;
+
+      Yawmia.show('recentJobsSection');
+      var listEl = Yawmia.$id('recentJobsList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      accepted.forEach(function (app) {
+        var j = app.job;
+        var statusLabels = { open: 'متاحة', filled: 'مكتملة العدد', in_progress: 'جاري التنفيذ', completed: 'مكتملة ✓', expired: 'منتهية', cancelled: 'ملغية' };
+        var card = document.createElement('div');
+        card.className = 'app-card';
+        card.innerHTML =
+          '<div class="app-card__info">' +
+            '<div class="app-card__title"><a href="/job.html?id=' + escapeHtml(j.id) + '" class="worker-link">' + escapeHtml(j.title) + '</a></div>' +
+            '<div class="app-card__meta">' + (j.dailyWage || 0) + ' جنيه/يوم • 📍 ' + escapeHtml(j.governorate || '') + '</div>' +
+          '</div>' +
+          '<span class="badge badge--status badge--' + (j.status || 'open') + '">' + escapeHtml(statusLabels[j.status] || j.status || '') + '</span>';
+        listEl.appendChild(card);
+      });
+    } catch (err) {
+      // Non-blocking — recent jobs section is optional
+    }
+  }
+
+  // ── Smart Rating Prompt ───────────────────────────────────
+  async function checkPendingRatings() {
+    try {
+      var res = await Yawmia.api('GET', '/api/ratings/pending');
+      if (!res.data.ok || !res.data.pending || res.data.pending.length === 0) return;
+      var first = res.data.pending[0];
+      // Show rating modal after 2 seconds
+      setTimeout(function () {
+        showRatingModal({ id: first.jobId, title: first.jobTitle, employerId: first.targetRole === 'employer' ? first.targetUserId : null }, first.targetUserId);
+      }, 2000);
+    } catch (err) {
+      // Non-blocking — rating prompt is optional
+    }
   }
 
   // ── Escape HTML — delegated to YawmiaUtils ───────────────

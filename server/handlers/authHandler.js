@@ -81,6 +81,16 @@ export async function handleVerifyOtp(req, res) {
  */
 export async function handleGetMe(req, res) {
   const user = req.user;
+
+  // Calculate profile completeness
+  let profileCompleteness = null;
+  try {
+    const { calculateCompleteness } = await import('../services/profileCompleteness.js');
+    profileCompleteness = calculateCompleteness(user);
+  } catch (_) {
+    // Non-blocking — completeness is optional enrichment
+  }
+
   return sendJSON(res, 200, {
     ok: true,
     user: {
@@ -97,6 +107,7 @@ export async function handleGetMe(req, res) {
       notificationPreferences: user.notificationPreferences || null,
       availability: user.availability || null,
       createdAt: user.createdAt,
+      profileCompleteness: profileCompleteness,
     },
   });
 }

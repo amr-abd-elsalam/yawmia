@@ -255,6 +255,7 @@ const config = {
       push_subscriptions: 'push_subscriptions',
       alerts: 'alerts',
       metrics: 'metrics',
+      favorites: 'favorites',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -273,6 +274,7 @@ const config = {
       messageUserIndex: 'messages/user-index.json',
       pushUserIndex: 'push_subscriptions/user-index.json',
       userAlertsIndex: 'alerts/user-index.json',
+      userFavoritesIndex: 'favorites/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -433,7 +435,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.29.0',
+    cacheName: 'yawmia-v0.30.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -705,6 +707,14 @@ const config = {
     cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
     maxExportRows: 10000,                    // أقصى عدد صفوف في CSV export
     receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 46. المفضّلة (FAVORITES)
+  // ═══════════════════════════════════════════════════════════
+  FAVORITES: {
+    enabled: true,
+    maxPerUser: 50,                          // أقصى عدد مفضّلة لكل صاحب عمل
   },
 
 };

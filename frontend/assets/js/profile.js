@@ -51,6 +51,7 @@
         // Update stored user
         Yawmia.setAuth(Yawmia.getToken(), user);
         renderProfile(user);
+        renderCompletenessBar(user);
         renderEditForm(user);
         renderNotificationPreferences(user);
         renderVerificationSection(user);
@@ -78,6 +79,7 @@
         } else if (user.role === 'employer') {
           Yawmia.show('myJobsSection');
           loadMyJobs();
+          loadMyFavorites();
         }
 
         // Load ratings
@@ -829,6 +831,123 @@
       listArea.innerHTML = '<div class="empty-state"><p>خطأ في تحميل سجل الحضور</p><button class="btn btn--primary btn--sm" id="retryAttendance" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button></div>';
       var retryABtn = Yawmia.$id('retryAttendance');
       if (retryABtn) retryABtn.addEventListener('click', function () { loadAttendanceHistory(); });
+    }
+  }
+
+  // ── Profile Completeness Bar ──────────────────────────────
+  function renderCompletenessBar(u) {
+    var container = Yawmia.$id('profileCard');
+    if (!container) return;
+
+    // Get completeness from the API response (added by handleGetMe)
+    var completeness = u.profileCompleteness;
+    if (!completeness || typeof completeness.score !== 'number') return;
+    if (completeness.score >= 80) return; // Don't show if good enough
+
+    var fieldLabels = {
+      name: 'الاسم',
+      governorate: 'المحافظة',
+      categories: 'التخصصات',
+      location: 'الموقع الجغرافي',
+      verification: 'التحقق من الهوية',
+      terms: 'قبول الشروط والأحكام',
+    };
+
+    var missingHtml = '';
+    if (completeness.missing && completeness.missing.length > 0) {
+      missingHtml = '<div class="profile-completeness__missing">';
+      missingHtml += '<span>الناقص: </span>';
+      missingHtml += completeness.missing.map(function (f) {
+        return '<span class="badge badge--worker" style="font-size:0.7rem;padding:0.1rem 0.4rem;">' + escapeHtml(fieldLabels[f] || f) + '</span>';
+      }).join(' ');
+      missingHtml += '</div>';
+    }
+
+    var barHtml =
+      '<div class="profile-completeness" style="margin-block-start:1rem;padding-block-start:1rem;border-block-start:1px solid var(--color-border);">' +
+        '<div class="profile-completeness__label" style="display:flex;justify-content:space-between;margin-block-end:0.4rem;font-size:0.85rem;">' +
+          '<span>اكتمال البروفايل</span>' +
+          '<span style="font-weight:600;color:var(--color-primary);">' + completeness.score + '%</span>' +
+        '</div>' +
+        '<div class="profile-completeness__bar" style="height:8px;background:var(--color-surface-2);border-radius:4px;overflow:hidden;">' +
+          '<div class="profile-completeness__fill" style="height:100%;background:var(--color-primary);border-radius:4px;width:' + completeness.score + '%;transition:width 0.4s ease;"></div>' +
+        '</div>' +
+        missingHtml +
+      '</div>';
+
+    container.insertAdjacentHTML('beforeend', barHtml);
+  }
+
+  // ── Employer Favorites ────────────────────────────────────
+  async function loadMyFavorites() {
+    if (user.role !== 'employer') return;
+
+    var container = Yawmia.$id('myJobsSection');
+    if (!container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/favorites');
+      if (!res.data.ok || !res.data.favorites || res.data.favorites.length === 0) return;
+
+      var section = document.createElement('section');
+      section.className = 'card';
+      section.style.marginBlockStart = '1.5rem';
+      section.innerHTML = '<h2 class="card__title">⭐ العمال المفضّلين</h2>';
+
+      var list = document.createElement('div');
+      list.className = 'favorites-list';
+      list.style.cssText = 'display:flex;flex-direction:column;gap:0.75rem;';
+
+      res.data.favorites.forEach(function (fav) {
+        var p = fav.targetProfile || {};
+        var ratingHtml = '';
+        if (p.rating && p.rating.count > 0) {
+          ratingHtml = ' • ⭐ ' + p.rating.avg;
+        }
+        var verBadge = p.verificationStatus === 'verified' ? ' <span class="verification-badge verification-badge--verified" style="font-size:0.7rem;">✓</span>' : '';
+
+        var card = document.createElement('div');
+        card.className = 'app-card';
+        card.innerHTML =
+          '<div class="app-card__info">' +
+            '<div class="app-card__title">' +
+              '<a href="/user.html?id=' + escapeHtml(p.id || fav.favoriteUserId) + '" class="worker-link">' + escapeHtml(p.name || 'بدون اسم') + '</a>' +
+              verBadge +
+            '</div>' +
+            '<div class="app-card__meta">' +
+              (p.governorate ? '📍 ' + escapeHtml(p.governorate) : '') +
+              ratingHtml +
+              (fav.note ? ' • ' + escapeHtml(fav.note) : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="app-card__actions">' +
+            '<button class="btn btn--ghost btn--sm btn-remove-fav" data-fav-id="' + escapeHtml(fav.id) + '" style="color:var(--color-error);border-color:var(--color-error);">إزالة</button>' +
+          '</div>';
+
+        var removeBtn = card.querySelector('.btn-remove-fav');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', async function () {
+            Yawmia.setLoading(removeBtn, true);
+            try {
+              var r = await Yawmia.api('DELETE', '/api/favorites/' + fav.id);
+              if (r.data.ok) {
+                card.remove();
+                if (list.children.length === 0) section.remove();
+              } else {
+                YawmiaToast.error(r.data.error || 'خطأ');
+              }
+            } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+            finally { Yawmia.setLoading(removeBtn, false); }
+          });
+        }
+
+        list.appendChild(card);
+      });
+
+      section.appendChild(list);
+      container.parentNode.insertBefore(section, container.nextSibling);
+    } catch (err) {
+      // Non-blocking — favorites section is optional
     }
   }
 

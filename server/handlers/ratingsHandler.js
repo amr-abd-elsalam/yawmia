@@ -2,7 +2,7 @@
 // server/handlers/ratingsHandler.js — Rating API Handlers
 // ═══════════════════════════════════════════════════════════════
 
-import { submitRating, listByJob, listByUser, getUserRatingSummary } from '../services/ratings.js';
+import { submitRating, listByJob, listByUser, getUserRatingSummary, getPendingRatings } from '../services/ratings.js';
 import { sanitizeText } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -82,6 +82,20 @@ export async function handleUserRatingSummary(req, res) {
     const userId = req.params.id;
     const summary = await getUserRatingSummary(userId);
     return sendJSON(res, 200, { ok: true, avg: summary.avg, count: summary.count, distribution: summary.distribution });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/ratings/pending
+ * Get pending ratings for the current user (max 3)
+ * Requires: requireAuth
+ */
+export async function handleGetPendingRatings(req, res) {
+  try {
+    const pending = await getPendingRatings(req.user.id);
+    return sendJSON(res, 200, { ok: true, pending });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }

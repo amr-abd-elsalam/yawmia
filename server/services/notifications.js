@@ -9,10 +9,34 @@ import { eventBus } from './eventBus.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
 
+// ── Notification Deduplication (in-memory) ───────────────────
+/** @type {Map<string, number>} dedupKey → timestamp */
+const recentNotifications = new Map();
+const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup stale dedup entries every 10 minutes
+const dedupCleanupTimer = setInterval(() => {
+  const cutoff = Date.now() - (DEDUP_WINDOW_MS * 2);
+  for (const [key, timestamp] of recentNotifications) {
+    if (timestamp < cutoff) {
+      recentNotifications.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
+if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
+
 /**
  * Create a notification
  */
 export async function createNotification(userId, type, message, meta = {}) {
+  // Dedup check: skip if same userId+type within window
+  const dedupKey = `${userId}:${type}`;
+  const lastSent = recentNotifications.get(dedupKey);
+  if (lastSent && (Date.now() - lastSent) < DEDUP_WINDOW_MS) {
+    return null;
+  }
+  recentNotifications.set(dedupKey, Date.now());
+
   const id = 'ntf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 

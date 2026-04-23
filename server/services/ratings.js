@@ -221,3 +221,76 @@ export async function getUserRatingSummary(userId) {
   return { avg, count, distribution };
 }
 
+/**
+ * Get pending ratings for a user (completed jobs they haven't rated yet)
+ * Returns max 3 items to avoid overwhelming the user
+ * @param {string} userId
+ * @returns {Promise<Array<{ jobId: string, jobTitle: string, targetUserId: string, targetRole: string }>>}
+ */
+export async function getPendingRatings(userId) {
+  const pending = [];
+  const MAX_PENDING = 3;
+
+  try {
+    const { findById: findUserById } = await import('./users.js');
+    const user = await findUserById(userId);
+    if (!user) return [];
+
+    if (user.role === 'worker') {
+      // Worker: find completed jobs where accepted, haven't rated employer
+      const { listByWorker } = await import('./applications.js');
+      const apps = await listByWorker(userId);
+      const acceptedApps = apps.filter(a => a.status === 'accepted');
+
+      for (const app of acceptedApps) {
+        if (pending.length >= MAX_PENDING) break;
+        const job = await findJobById(app.jobId);
+        if (!job || job.status !== 'completed') continue;
+
+        // Check if already rated employer for this job
+        const existing = await findByJobAndUsers(app.jobId, userId, job.employerId);
+        if (existing) continue;
+
+        pending.push({
+          jobId: job.id,
+          jobTitle: job.title,
+          targetUserId: job.employerId,
+          targetRole: 'employer',
+        });
+      }
+    } else if (user.role === 'employer') {
+      // Employer: find own completed jobs, check if rated accepted workers
+      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const employerJobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+
+      for (const jobId of employerJobIds) {
+        if (pending.length >= MAX_PENDING) break;
+        const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+        if (!job || job.status !== 'completed') continue;
+
+        // Get accepted workers
+        const jobApps = await listApplicationsByJob(jobId);
+        const acceptedWorkers = jobApps.filter(a => a.status === 'accepted');
+
+        for (const app of acceptedWorkers) {
+          if (pending.length >= MAX_PENDING) break;
+          const existing = await findByJobAndUsers(jobId, userId, app.workerId);
+          if (existing) continue;
+
+          pending.push({
+            jobId: job.id,
+            jobTitle: job.title,
+            targetUserId: app.workerId,
+            targetRole: 'worker',
+          });
+          break; // One per job for employers
+        }
+      }
+    }
+  } catch (err) {
+    // Non-blocking — return empty on error
+  }
+
+  return pending;
+}
+
