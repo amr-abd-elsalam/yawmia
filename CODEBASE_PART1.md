@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.27.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-23T08:13:53.280Z
+> Auto-generated: 2026-04-23T08:30:42.520Z
 > Files in this part: 6
 
 ## Files
