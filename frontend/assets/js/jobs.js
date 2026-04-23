@@ -903,6 +903,11 @@
               html += ' <button class="btn btn--ghost btn--sm btn-dispute-payment" data-pay-id="' + pay.id + '">فتح نزاع</button>';
             }
 
+            // Receipt button for completed/confirmed payments
+            if (pay.status === 'completed' || pay.status === 'employer_confirmed') {
+              html += ' <button class="btn btn--ghost btn--sm btn-receipt" data-job-id="' + job.id + '">📄 إيصال</button>';
+            }
+
             html += '</div>';
             paymentPlaceholder.innerHTML = html;
 
@@ -922,6 +927,23 @@
                   YawmiaToast.error('خطأ في الاتصال');
                 } finally {
                   Yawmia.setLoading(confirmBtn, false);
+                }
+              });
+            }
+
+            // Receipt button handler
+            var receiptBtn = paymentPlaceholder.querySelector('.btn-receipt');
+            if (receiptBtn) {
+              receiptBtn.addEventListener('click', async function () {
+                try {
+                  var rRes = await Yawmia.api('GET', '/api/jobs/' + job.id + '/receipt');
+                  if (rRes.data.ok && rRes.data.receipt) {
+                    showReceiptModal(rRes.data.receipt);
+                  } else {
+                    YawmiaToast.error(rRes.data.error || 'خطأ في جلب الإيصال');
+                  }
+                } catch (e) {
+                  YawmiaToast.error('خطأ في الاتصال');
                 }
               });
             }
@@ -1660,6 +1682,61 @@
   // ── Load jobs with enrichment for employer ─────────────────
   // Override loadJobs to fetch enriched data for employers
   var originalLoadJobs = loadJobs;
+
+  // ── Receipt Modal ─────────────────────────────────────────
+  function showReceiptModal(receipt) {
+    var existing = document.querySelector('.ym-modal-overlay.receipt-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay receipt-overlay';
+
+    var workersHtml = '';
+    if (receipt.workers && receipt.workers.length > 0) {
+      workersHtml = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:0.75rem 0;"><thead><tr style="border-bottom:1px solid var(--color-border);"><th style="text-align:start;padding:0.4rem;">العامل</th><th style="text-align:start;padding:0.4rem;">اليومية</th><th style="text-align:start;padding:0.4rem;">الأيام</th><th style="text-align:start;padding:0.4rem;">الإجمالي</th></tr></thead><tbody>';
+      receipt.workers.forEach(function (w) {
+        workersHtml += '<tr style="border-bottom:1px solid var(--color-border);"><td style="padding:0.4rem;">' + escapeHtml(w.name) + '</td><td style="padding:0.4rem;">' + w.dailyWage + '</td><td style="padding:0.4rem;">' + w.daysWorked + '</td><td style="padding:0.4rem;">' + w.total + ' جنيه</td></tr>';
+      });
+      workersHtml += '</tbody></table>';
+    }
+
+    var attHtml = '';
+    if (receipt.attendance) {
+      attHtml = '<div style="font-size:0.8rem;color:var(--color-text-muted);margin:0.5rem 0;">الحضور: ' + receipt.attendance.attendedDays + ' يوم حضور | ' + receipt.attendance.noShows + ' غياب | نسبة ' + receipt.attendance.attendanceRate + '%</div>';
+    }
+
+    overlay.innerHTML =
+      '<div class="ym-modal-card" style="max-width:520px;" id="receiptCard">' +
+        '<div style="text-align:center;margin-bottom:1rem;">' +
+          '<h3 style="font-size:1.2rem;color:var(--color-primary);">إيصال — يوميّة</h3>' +
+          '<p style="font-size:0.8rem;color:var(--color-text-muted);">رقم: ' + escapeHtml(receipt.receiptNumber) + '</p>' +
+          '<p style="font-size:0.8rem;color:var(--color-text-muted);">' + new Date(receipt.date).toLocaleDateString('ar-EG') + '</p>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--color-border);padding-top:0.75rem;">' +
+          '<div style="font-size:0.9rem;"><strong>صاحب العمل:</strong> ' + escapeHtml(receipt.employer.name) + '</div>' +
+          '<div style="font-size:0.9rem;"><strong>الفرصة:</strong> ' + escapeHtml(receipt.job.title) + ' — ' + escapeHtml(receipt.job.governorate) + '</div>' +
+          '<div style="font-size:0.85rem;color:var(--color-text-muted);">' + receipt.job.durationDays + ' يوم | بدء ' + receipt.job.startDate + '</div>' +
+        '</div>' +
+        workersHtml +
+        '<div style="border-top:1px solid var(--color-border);padding-top:0.75rem;">' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.9rem;padding:0.3rem 0;"><span>إجمالي</span><span>' + receipt.subtotal + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--color-warning);padding:0.3rem 0;"><span>عمولة المنصة (' + receipt.feePercent + '%)</span><span>' + receipt.platformFee + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:0.3rem 0;"><span>صافي العمال</span><span>' + receipt.workerPayout + ' جنيه</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--color-text-muted);padding:0.3rem 0;"><span>طريقة الدفع</span><span>' + escapeHtml(receipt.paymentMethod) + '</span></div>' +
+        '</div>' +
+        attHtml +
+        '<div class="ym-modal-actions" style="margin-top:1rem;">' +
+          '<button class="btn btn--primary btn--sm" id="btnPrintReceipt">🖨 طباعة</button>' +
+          '<button class="btn btn--ghost btn--sm" id="btnCloseReceipt">إغلاق</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btnCloseReceipt').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#btnPrintReceipt').addEventListener('click', function () { window.print(); });
+  }
 
   // ── Rating Modal ──────────────────────────────────────────
   function showRatingModal(job, prefilledTargetId) {

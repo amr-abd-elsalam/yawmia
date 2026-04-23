@@ -95,7 +95,7 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications()]).catch(function () {});
+      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications(), loadAnalytics(), loadMonitoring()]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -465,6 +465,113 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadAnalytics() {
+    try {
+      var data = await api('/api/admin/analytics');
+      var container = document.getElementById('analyticsGrid');
+      if (!container) return;
+      var a = data.analytics || {};
+      var u = a.users || {};
+      var j = a.jobs || {};
+      var f = a.financials || {};
+
+      var cards = [
+        { value: u.newRegistrations || 0, label: 'مستخدمين جدد (30 يوم)' },
+        { value: j.created || 0, label: 'فرص جديدة' },
+        { value: j.completed || 0, label: 'فرص مكتملة' },
+        { value: (j.fillRate || 0) + '%', label: 'نسبة الامتلاء' },
+        { value: (f.platformRevenue || 0).toLocaleString('ar-EG'), label: 'إيرادات المنصة (جنيه)' },
+        { value: (f.totalVolume || 0).toLocaleString('ar-EG'), label: 'حجم الأعمال (جنيه)' },
+        { value: (f.disputeRate || 0) + '%', label: 'نسبة النزاعات' },
+        { value: (a.engagement || {}).avgApplicationsPerJob || 0, label: 'متوسط طلبات/فرصة' },
+      ];
+
+      container.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML =
+          '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+        container.appendChild(card);
+      });
+    } catch (err) {
+      var container = document.getElementById('analyticsGrid');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل التحليلات</p>';
+    }
+  }
+
+  async function loadMonitoring() {
+    try {
+      var data = await api('/api/admin/monitoring/latest');
+      var container = document.getElementById('monitoringInfo');
+      if (!container) return;
+      if (!data.snapshot) {
+        container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد بيانات مراقبة بعد</p>';
+        return;
+      }
+      var s = data.snapshot;
+      var alerts = data.alerts || [];
+
+      var rows = [
+        { label: 'آخر تحديث', value: s.timestamp ? new Date(s.timestamp).toLocaleString('ar-EG') : '-' },
+        { label: 'Heap Used', value: (s.memory ? s.memory.heapUsedMB : 0) + ' MB' },
+        { label: 'RSS', value: (s.memory ? s.memory.rssMB : 0) + ' MB' },
+        { label: 'الطلبات', value: s.requests ? s.requests.count : 0 },
+        { label: 'P95', value: (s.requests ? s.requests.p95Ms : 0) + ' ms' },
+        { label: 'Error Rate', value: s.requests ? s.requests.errorRate : '0%' },
+        { label: 'Cache Hit Rate', value: s.cache ? s.cache.hitRate : '0%' },
+        { label: 'SSE Connections', value: s.connections ? s.connections.sse : 0 },
+      ];
+
+      container.innerHTML = '';
+
+      if (alerts.length > 0) {
+        var alertHtml = '<div style="margin-bottom:1rem;padding:0.75rem;background:var(--color-error-bg);border:1px solid var(--color-error);border-radius:var(--radius-sm);font-size:0.85rem;">';
+        alerts.forEach(function (a) {
+          alertHtml += '<div>⚠️ <strong>' + escapeHtml(a.level) + ':</strong> ' + escapeHtml(a.message) + '</div>';
+        });
+        alertHtml += '</div>';
+        container.innerHTML += alertHtml;
+      }
+
+      rows.forEach(function (r) {
+        var row = document.createElement('div');
+        row.className = 'health-row';
+        row.innerHTML =
+          '<span class="health-row__label">' + escapeHtml(r.label) + '</span>' +
+          '<span class="health-row__value">' + escapeHtml(String(r.value)) + '</span>';
+        container.appendChild(row);
+      });
+
+      // Data sizes
+      if (s.dataSize) {
+        var dsRow = document.createElement('div');
+        dsRow.className = 'health-row';
+        var dsValues = [];
+        Object.entries(s.dataSize).forEach(function (e) { dsValues.push(e[0] + ': ' + e[1]); });
+        dsRow.innerHTML = '<span class="health-row__label">ملفات البيانات</span><span class="health-row__value" style="font-size:0.75rem;">' + escapeHtml(dsValues.join(' | ')) + '</span>';
+        container.appendChild(dsRow);
+      }
+    } catch (err) {
+      var container = document.getElementById('monitoringInfo');
+      if (container) container.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل بيانات المراقبة</p>';
+    }
+  }
+
+  function exportCSV(type) {
+    var url = API + '/api/admin/export/' + type;
+    // Open in new tab — browser handles download
+    var link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    // Add admin token as query param for auth (since it's a direct download, not fetch)
+    link.href = url + '?_token=' + encodeURIComponent(token);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -477,5 +584,8 @@ var AdminApp = (function () {
     reviewReport: reviewReport,
     loadVerifications: loadVerifications,
     reviewVerification: reviewVerification,
+    loadAnalytics: loadAnalytics,
+    loadMonitoring: loadMonitoring,
+    exportCSV: exportCSV,
   };
 })();

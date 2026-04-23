@@ -63,6 +63,13 @@
         // Job alerts management (all roles)
         loadMyAlerts();
 
+        // Analytics sections
+        if (user.role === 'employer') {
+          loadEmployerAnalytics();
+        } else if (user.role === 'worker') {
+          loadWorkerAnalytics();
+        }
+
         // Role-specific sections
         if (user.role === 'worker') {
           Yawmia.show('myApplicationsSection');
@@ -833,6 +840,137 @@
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Employer Analytics ────────────────────────────────────
+  var analyticsPeriodDays = 30;
+
+  async function loadEmployerAnalytics() {
+    var container = Yawmia.$id('employer-analytics-section');
+    if (!container) return;
+
+    var from = new Date(Date.now() - analyticsPeriodDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    var to = new Date().toISOString().split('T')[0];
+
+    container.innerHTML = '<section class="card"><h2 class="card__title">📊 تحليلات نشاطك</h2>' +
+      '<div class="period-selector" id="empPeriodSelector"></div>' +
+      '<div id="empAnalyticsGrid" class="analytics-grid"><p class="empty-state">جاري التحميل...</p></div>' +
+      '<div id="empTopWorkers"></div>' +
+      '<div style="margin-top:1rem;"><button class="btn btn--ghost btn--sm" id="btnExportMyPayments">📥 تصدير مدفوعاتي CSV</button></div>' +
+      '</section>';
+
+    renderPeriodSelectorFor('empPeriodSelector', function (days) {
+      analyticsPeriodDays = days;
+      loadEmployerAnalytics();
+    });
+
+    try {
+      var res = await Yawmia.api('GET', '/api/analytics/employer?from=' + from + '&to=' + to);
+      if (res.data.ok) {
+        var a = res.data.analytics;
+        var grid = Yawmia.$id('empAnalyticsGrid');
+        if (grid) {
+          var cards = [
+            { value: a.jobs.total, label: 'فرص منشورة' },
+            { value: a.jobs.byStatus.completed || 0, label: 'فرص مكتملة' },
+            { value: a.financials.totalSpent.toLocaleString('ar-EG') + ' جنيه', label: 'إجمالي الإنفاق' },
+            { value: a.financials.totalPlatformFees.toLocaleString('ar-EG') + ' جنيه', label: 'عمولة المنصة' },
+            { value: a.workers.unique, label: 'عمال فريدين' },
+            { value: a.applications.acceptRate + '%', label: 'نسبة القبول' },
+            { value: a.attendance.attendanceRate + '%', label: 'نسبة الحضور' },
+            { value: a.financials.wageStats.avg + ' جنيه', label: 'متوسط اليومية' },
+          ];
+          grid.innerHTML = '';
+          cards.forEach(function (c) {
+            var card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div><div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+            grid.appendChild(card);
+          });
+        }
+        // Top workers
+        var topEl = Yawmia.$id('empTopWorkers');
+        if (topEl && a.workers.top && a.workers.top.length > 0) {
+          var html = '<h3 style="margin:1rem 0 0.5rem;font-size:0.95rem;">أفضل العمال</h3><table class="admin-table"><thead><tr><th>العامل</th><th>فرص</th><th>تقييم</th></tr></thead><tbody>';
+          a.workers.top.forEach(function (w) {
+            html += '<tr><td><a href="/user.html?id=' + escapeHtml(w.workerId) + '" class="worker-link">' + escapeHtml(w.name) + '</a></td><td>' + w.jobCount + '</td><td>⭐ ' + w.ratingAvg + '</td></tr>';
+          });
+          html += '</tbody></table>';
+          topEl.innerHTML = html;
+        }
+      }
+    } catch (err) {
+      var grid = Yawmia.$id('empAnalyticsGrid');
+      if (grid) grid.innerHTML = '<p class="empty-state">خطأ في تحميل التحليلات</p>';
+    }
+
+    var exportBtn = Yawmia.$id('btnExportMyPayments');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        window.open('/api/employer/export/payments?from=' + from + '&to=' + to, '_blank');
+      });
+    }
+  }
+
+  async function loadWorkerAnalytics() {
+    var container = Yawmia.$id('worker-analytics-section');
+    if (!container) return;
+
+    var from = new Date(Date.now() - analyticsPeriodDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    var to = new Date().toISOString().split('T')[0];
+
+    container.innerHTML = '<section class="card"><h2 class="card__title">📊 تحليلات نشاطك</h2>' +
+      '<div class="period-selector" id="wrkPeriodSelector"></div>' +
+      '<div id="wrkAnalyticsGrid" class="analytics-grid"><p class="empty-state">جاري التحميل...</p></div>' +
+      '</section>';
+
+    renderPeriodSelectorFor('wrkPeriodSelector', function (days) {
+      analyticsPeriodDays = days;
+      loadWorkerAnalytics();
+    });
+
+    try {
+      var res = await Yawmia.api('GET', '/api/analytics/worker?from=' + from + '&to=' + to);
+      if (res.data.ok) {
+        var a = res.data.analytics;
+        var grid = Yawmia.$id('wrkAnalyticsGrid');
+        if (grid) {
+          var trendIcon = a.ratings.trend === 'up' ? '📈' : (a.ratings.trend === 'down' ? '📉' : '➡️');
+          var cards = [
+            { value: a.earnings.total.toLocaleString('ar-EG') + ' جنيه', label: 'إجمالي الأرباح' },
+            { value: a.jobs.completed, label: 'فرص مكتملة' },
+            { value: a.applications.total, label: 'طلبات مقدّمة' },
+            { value: a.applications.completionRate + '%', label: 'نسبة الإكمال' },
+            { value: a.attendance.attendanceRate + '%', label: 'نسبة الحضور' },
+            { value: trendIcon + ' ' + a.ratings.count + ' تقييم', label: 'اتجاه التقييمات' },
+          ];
+          grid.innerHTML = '';
+          cards.forEach(function (c) {
+            var card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div><div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+            grid.appendChild(card);
+          });
+        }
+      }
+    } catch (err) {
+      var grid = Yawmia.$id('wrkAnalyticsGrid');
+      if (grid) grid.innerHTML = '<p class="empty-state">خطأ في تحميل التحليلات</p>';
+    }
+  }
+
+  function renderPeriodSelectorFor(containerId, onChange) {
+    var el = Yawmia.$id(containerId);
+    if (!el) return;
+    var periods = [{ days: 7, label: '7 أيام' }, { days: 30, label: '30 يوم' }, { days: 90, label: '90 يوم' }];
+    el.innerHTML = '';
+    periods.forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.className = 'btn btn--ghost btn--sm' + (analyticsPeriodDays === p.days ? ' btn--primary' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', function () { onChange(p.days); });
+      el.appendChild(btn);
+    });
   }
 
   // ── Alerts Management ─────────────────────────────────────

@@ -210,6 +210,13 @@ const cleanupTimer = setInterval(async () => {
         const { checkIndexHealth } = await import('./server/services/indexHealth.js');
         await checkIndexHealth();
       } catch (_) { /* non-fatal */ }
+
+      // Monitoring snapshot cleanup (every 6 hours — same as index health)
+      try {
+        const { cleanOldSnapshots } = await import('./server/services/monitor.js');
+        const cleanedSnapshots = await cleanOldSnapshots();
+        if (cleanedSnapshots > 0) logger.info(`Periodic: cleaned ${cleanedSnapshots} old monitoring snapshot(s)`);
+      } catch (_) { /* non-fatal */ }
     }
   } catch (err) {
     logger.warn('Periodic cleanup error', { error: err.message });
@@ -229,6 +236,23 @@ if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
     }
   }, config.ACTIVITY_SUMMARY.intervalCheckMs);
   if (summaryTimer.unref) summaryTimer.unref();
+}
+
+// ── Monitoring Snapshot Timer (separate — captures metrics every hour) ──
+if (config.MONITORING && config.MONITORING.enabled) {
+  const monitorTimer = setInterval(async () => {
+    try {
+      const { captureSnapshot, checkThresholds } = await import('./server/services/monitor.js');
+      const snapshot = await captureSnapshot();
+      const alerts = checkThresholds(snapshot);
+      if (alerts.length > 0) {
+        logger.warn('Monitoring threshold violation(s)', { count: alerts.length, alerts: alerts.slice(0, 3) });
+      }
+    } catch (err) {
+      logger.warn('Monitoring snapshot error', { error: err.message });
+    }
+  }, config.MONITORING.snapshotIntervalMs);
+  if (monitorTimer.unref) monitorTimer.unref();
 }
 
 // ── Start ─────────────────────────────────────────────────────

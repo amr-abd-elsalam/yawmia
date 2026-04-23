@@ -2724,6 +2724,32 @@ textarea:focus:not(:focus-visible) {
   padding: 0.3rem 0;
 }
 
+/* ═══ Phase 32 — Analytics Grid ═══ */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+/* ═══ Phase 32 — Period Selector ═══ */
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+/* ═══ Phase 32 — Print Styles ═══ */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .header, .footer, .bottom-nav, .skip-link, .btn, .ym-modal-actions,
+  .notification-panel, .notification-overlay { display: none !important; }
+  .ym-modal-overlay.receipt-overlay { position: static !important; background: transparent !important; padding: 0 !important; }
+  .ym-modal-overlay.receipt-overlay .ym-modal-card { border: none !important; box-shadow: none !important; max-width: 100% !important; background: #fff !important; color: #000 !important; }
+  .ym-modal-overlay.receipt-overlay .ym-modal-actions { display: none !important; }
+  .ym-modal-overlay.receipt-overlay h3 { color: #000 !important; }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;

@@ -36,6 +36,21 @@
 
       <div class="admin-section">
         <div class="admin-section__header">
+          <h2>📊 التحليلات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadAnalytics()">تحديث</button>
+        </div>
+        <div id="analyticsGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('payments')">📥 تصدير المدفوعات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('jobs')">📥 تصدير الفرص</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportCSV('users')">📥 تصدير المستخدمين</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
           <h2>الماليات</h2>
           <button class="refresh-btn" onclick="AdminApp.loadFinancials()">تحديث</button>
         </div>
@@ -50,6 +65,16 @@
           <button class="refresh-btn" onclick="AdminApp.loadHealth()">تحديث</button>
         </div>
         <div id="healthInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section__header">
+          <h2>📡 المراقبة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMonitoring()">تحديث</button>
+        </div>
+        <div id="monitoringInfo">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>

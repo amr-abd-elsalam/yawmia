@@ -254,6 +254,7 @@ const config = {
       messages: 'messages',
       push_subscriptions: 'push_subscriptions',
       alerts: 'alerts',
+      metrics: 'metrics',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -432,7 +433,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.27.0',
+    cacheName: 'yawmia-v0.28.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -679,6 +680,31 @@ const config = {
     dayOfWeek: 0,                            // 0 = الأحد
     hourEgypt: 10,                           // 10:00 صباحاً بتوقيت مصر
     intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 44. المراقبة (MONITORING)
+  // ═══════════════════════════════════════════════════════════
+  MONITORING: {
+    enabled: true,
+    snapshotIntervalMs: 3600000,             // snapshot كل ساعة (مللي ثانية)
+    retentionDays: 30,                       // حذف snapshots أقدم من 30 يوم
+    thresholds: {
+      heapUsedMB: { warning: 256, critical: 512 },
+      errorRate: { warning: 5, critical: 15 },        // نسبة مئوية
+      p95Ms: { warning: 1000, critical: 3000 },       // مللي ثانية
+      cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 45. التحليلات (ANALYTICS)
+  // ═══════════════════════════════════════════════════════════
+  ANALYTICS: {
+    enabled: true,
+    cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
+    maxExportRows: 10000,                    // أقصى عدد صفوف في CSV export
+    receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
   },
 
 };
