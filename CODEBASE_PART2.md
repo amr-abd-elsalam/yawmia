@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.28.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-23T13:27:35.545Z
+> Auto-generated: 2026-04-23T13:39:04.926Z
 > Files in this part: 40
 
 ## Files
@@ -5925,10 +5925,10 @@ export async function runMigrations() {
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { readdir, unlink, stat } from 'node:fs/promises';
+import { readdir, unlink, stat, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, deleteJSON } from './database.js';
+import { atomicWrite, readJSON, deleteJSON } from './database.js';
 import { logger } from './logger.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
@@ -6031,8 +6031,9 @@ export async function captureSnapshot() {
     dataSize,
   };
 
-  // Save to disk
-  const snapshotPath = getRecordPath('metrics', id);
+  // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
+  await mkdir(METRICS_DIR, { recursive: true });
+  const snapshotPath = join(METRICS_DIR, `${id}.json`);
   await atomicWrite(snapshotPath, snapshot);
 
   return snapshot;
@@ -6160,7 +6161,7 @@ export async function cleanOldSnapshots() {
       const filePath = join(METRICS_DIR, file);
       const data = await readJSON(filePath);
       if (data && data.timestamp && new Date(data.timestamp) < cutoff) {
-        await deleteJSON(filePath);
+        try { await unlink(filePath); } catch (_) {}
         cleaned++;
       }
     } catch (_) {
