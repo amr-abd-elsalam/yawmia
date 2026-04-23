@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.29.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-23T18:45:15.173Z
+# يوميّة (Yawmia) v0.30.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-23T22:09:08.685Z
 > Files in this part: 6
 
 ## Files
@@ -325,6 +325,7 @@ const config = {
       push_subscriptions: 'push_subscriptions',
       alerts: 'alerts',
       metrics: 'metrics',
+      favorites: 'favorites',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -343,6 +344,7 @@ const config = {
       messageUserIndex: 'messages/user-index.json',
       pushUserIndex: 'push_subscriptions/user-index.json',
       userAlertsIndex: 'alerts/user-index.json',
+      userFavoritesIndex: 'favorites/user-index.json',
     },
     encoding: 'utf-8',
   },
@@ -503,7 +505,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.29.0',
+    cacheName: 'yawmia-v0.30.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -777,6 +779,14 @@ const config = {
     receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
   },
 
+  // ═══════════════════════════════════════════════════════════
+  // 46. المفضّلة (FAVORITES)
+  // ═══════════════════════════════════════════════════════════
+  FAVORITES: {
+    enabled: true,
+    maxPerUser: 50,                          // أقصى عدد مفضّلة لكل صاحب عمل
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -825,7 +835,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1165,7 +1175,7 @@ import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCo
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
-import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary } from './handlers/ratingsHandler.js';
+import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
@@ -1174,6 +1184,7 @@ import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoS
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
 import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleAlert } from './handlers/alertsHandler.js';
+import { handleAddFavorite, handleRemoveFavorite, handleListFavorites, handleCheckFavorite } from './handlers/favoritesHandler.js';
 import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot } from './handlers/analyticsHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
@@ -1199,7 +1210,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.29.0',
+        version: '0.30.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1287,7 +1298,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.29.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.30.0' });
     },
   },
 
@@ -1373,6 +1384,15 @@ const routes = [
   { method: 'GET', path: '/api/alerts', middlewares: [requireAuth], handler: handleListMyAlerts },
   { method: 'DELETE', path: '/api/alerts/:id', middlewares: [requireAuth], handler: handleDeleteAlert },
   { method: 'PUT', path: '/api/alerts/:id', middlewares: [requireAuth], handler: handleToggleAlert },
+
+  // ── Favorite Routes ──
+  { method: 'POST', path: '/api/favorites', middlewares: [requireAuth, requireRole('employer')], handler: handleAddFavorite },
+  { method: 'GET', path: '/api/favorites', middlewares: [requireAuth, requireRole('employer')], handler: handleListFavorites },
+  { method: 'GET', path: '/api/favorites/check/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleCheckFavorite },
+  { method: 'DELETE', path: '/api/favorites/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleRemoveFavorite },
+
+  // ── Rating Pending Route ──
+  { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
 
   // ── Application Management Routes ──
   { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },

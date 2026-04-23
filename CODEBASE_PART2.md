@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.29.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-23T18:45:15.176Z
-> Files in this part: 40
+# يوميّة (Yawmia) v0.30.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-23T22:09:08.688Z
+> Files in this part: 42
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -16,33 +16,35 @@
 11. `server/services/contentFilter.js`
 12. `server/services/database.js`
 13. `server/services/eventBus.js`
-14. `server/services/financialExport.js`
-15. `server/services/geo.js`
-16. `server/services/indexHealth.js`
-17. `server/services/jobAlerts.js`
-18. `server/services/jobMatcher.js`
-19. `server/services/jobs.js`
-20. `server/services/logWriter.js`
-21. `server/services/logger.js`
-22. `server/services/messages.js`
-23. `server/services/messaging.js`
-24. `server/services/migration.js`
-25. `server/services/monitor.js`
-26. `server/services/notificationMessenger.js`
-27. `server/services/notifications.js`
-28. `server/services/payments.js`
-29. `server/services/ratings.js`
-30. `server/services/reports.js`
-31. `server/services/resourceLock.js`
-32. `server/services/sanitizer.js`
-33. `server/services/searchIndex.js`
-34. `server/services/sessions.js`
-35. `server/services/sseManager.js`
-36. `server/services/trust.js`
-37. `server/services/users.js`
-38. `server/services/validators.js`
-39. `server/services/verification.js`
-40. `server/services/webpush.js`
+14. `server/services/favorites.js`
+15. `server/services/financialExport.js`
+16. `server/services/geo.js`
+17. `server/services/indexHealth.js`
+18. `server/services/jobAlerts.js`
+19. `server/services/jobMatcher.js`
+20. `server/services/jobs.js`
+21. `server/services/logWriter.js`
+22. `server/services/logger.js`
+23. `server/services/messages.js`
+24. `server/services/messaging.js`
+25. `server/services/migration.js`
+26. `server/services/monitor.js`
+27. `server/services/notificationMessenger.js`
+28. `server/services/notifications.js`
+29. `server/services/payments.js`
+30. `server/services/profileCompleteness.js`
+31. `server/services/ratings.js`
+32. `server/services/reports.js`
+33. `server/services/resourceLock.js`
+34. `server/services/sanitizer.js`
+35. `server/services/searchIndex.js`
+36. `server/services/sessions.js`
+37. `server/services/sseManager.js`
+38. `server/services/trust.js`
+39. `server/services/users.js`
+40. `server/services/validators.js`
+41. `server/services/verification.js`
+42. `server/services/webpush.js`
 
 ---
 
@@ -3123,6 +3125,211 @@ class EventBus {
 
 // Singleton
 export const eventBus = new EventBus();
+```
+
+---
+
+## `server/services/favorites.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/favorites.js — Employer Favorite Workers System
+// ═══════════════════════════════════════════════════════════════
+// CRUD for employer → worker favorites with secondary index.
+// Enriched with worker public profile on list.
+// Employer-only feature (enforced at handler level).
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite, readJSON, deleteJSON, getRecordPath,
+  getCollectionPath, listJSON,
+  addToSetIndex, getFromSetIndex, removeFromSetIndex,
+} from './database.js';
+import { logger } from './logger.js';
+
+const USER_FAVORITES_INDEX = config.DATABASE.indexFiles.userFavoritesIndex;
+
+/**
+ * Generate favorite record ID
+ */
+function generateId() {
+  return 'fav_' + crypto.randomBytes(6).toString('hex');
+}
+
+/**
+ * Add a worker to employer's favorites
+ * @param {string} userId — employer ID
+ * @param {string} favoriteUserId — worker ID to favorite
+ * @param {string} [note] — optional note
+ * @returns {Promise<{ ok: boolean, favorite?: object, error?: string, code?: string }>}
+ */
+export async function addFavorite(userId, favoriteUserId, note) {
+  // 1. Feature flag
+  if (!config.FAVORITES || !config.FAVORITES.enabled) {
+    return { ok: false, error: 'خدمة المفضّلة غير مفعّلة', code: 'FAVORITES_DISABLED' };
+  }
+
+  // 2. Validate favoriteUserId
+  if (!favoriteUserId || typeof favoriteUserId !== 'string') {
+    return { ok: false, error: 'معرّف المستخدم المطلوب مطلوب', code: 'FAVORITE_USER_REQUIRED' };
+  }
+
+  // 3. Cannot favorite self
+  if (userId === favoriteUserId) {
+    return { ok: false, error: 'لا يمكنك إضافة نفسك للمفضّلة', code: 'CANNOT_FAVORITE_SELF' };
+  }
+
+  // 4. Target user exists
+  const { findById } = await import('./users.js');
+  const targetUser = await findById(favoriteUserId);
+  if (!targetUser) {
+    return { ok: false, error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' };
+  }
+
+  // 5. Check duplicate
+  const existingIds = await getFromSetIndex(USER_FAVORITES_INDEX, userId);
+  for (const favId of existingIds) {
+    const existing = await readJSON(getRecordPath('favorites', favId));
+    if (existing && existing.favoriteUserId === favoriteUserId) {
+      return { ok: false, error: 'هذا المستخدم موجود في المفضّلة بالفعل', code: 'ALREADY_FAVORITE' };
+    }
+  }
+
+  // 6. Max limit
+  if (existingIds.length >= config.FAVORITES.maxPerUser) {
+    return { ok: false, error: `وصلت للحد الأقصى (${config.FAVORITES.maxPerUser} مفضّلة)`, code: 'MAX_FAVORITES_REACHED' };
+  }
+
+  // 7. Create record
+  const id = generateId();
+  const now = new Date().toISOString();
+
+  const favorite = {
+    id,
+    userId,
+    favoriteUserId,
+    note: (note && typeof note === 'string') ? note.trim().substring(0, 200) : null,
+    createdAt: now,
+  };
+
+  const favPath = getRecordPath('favorites', id);
+  await atomicWrite(favPath, favorite);
+
+  // Update index
+  await addToSetIndex(USER_FAVORITES_INDEX, userId, id);
+
+  logger.info('Favorite added', { favoriteId: id, userId, favoriteUserId });
+
+  return { ok: true, favorite };
+}
+
+/**
+ * Remove a favorite
+ * @param {string} favoriteId
+ * @param {string} userId — ownership check
+ * @returns {Promise<{ ok: boolean, error?: string, code?: string }>}
+ */
+export async function removeFavorite(favoriteId, userId) {
+  const favPath = getRecordPath('favorites', favoriteId);
+  const favorite = await readJSON(favPath);
+
+  if (!favorite) {
+    return { ok: false, error: 'المفضّلة غير موجودة', code: 'FAVORITE_NOT_FOUND' };
+  }
+
+  if (favorite.userId !== userId) {
+    return { ok: false, error: 'مش مسموحلك تحذف هذه المفضّلة', code: 'NOT_FAVORITE_OWNER' };
+  }
+
+  await deleteJSON(favPath);
+  await removeFromSetIndex(USER_FAVORITES_INDEX, userId, favoriteId);
+
+  logger.info('Favorite removed', { favoriteId, userId });
+
+  return { ok: true };
+}
+
+/**
+ * List favorites for a user (enriched with target user profile)
+ * @param {string} userId
+ * @returns {Promise<object[]>}
+ */
+export async function listFavorites(userId) {
+  const indexedIds = await getFromSetIndex(USER_FAVORITES_INDEX, userId);
+
+  let favorites = [];
+
+  if (indexedIds.length > 0) {
+    for (const favId of indexedIds) {
+      const fav = await readJSON(getRecordPath('favorites', favId));
+      if (fav) favorites.push(fav);
+    }
+  } else {
+    // Fallback: full scan
+    const favsDir = getCollectionPath('favorites');
+    const all = await listJSON(favsDir);
+    favorites = all.filter(f => f.id && f.id.startsWith('fav_') && f.userId === userId);
+  }
+
+  // Sort newest first
+  favorites.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // Enrich with target user public profile
+  const { findById } = await import('./users.js');
+  const enriched = [];
+
+  for (const fav of favorites) {
+    let targetProfile = null;
+    try {
+      const user = await findById(fav.favoriteUserId);
+      if (user) {
+        targetProfile = {
+          id: user.id,
+          name: user.name || 'بدون اسم',
+          governorate: user.governorate || '',
+          categories: user.categories || [],
+          rating: user.rating || { avg: 0, count: 0 },
+          verificationStatus: user.verificationStatus || 'unverified',
+        };
+      }
+    } catch (_) {
+      // Non-blocking — missing user → null profile
+    }
+
+    enriched.push({
+      ...fav,
+      targetProfile: targetProfile || {
+        id: fav.favoriteUserId,
+        name: 'مستخدم محذوف',
+        governorate: '',
+        categories: [],
+        rating: { avg: 0, count: 0 },
+        verificationStatus: 'unverified',
+      },
+    });
+  }
+
+  return enriched;
+}
+
+/**
+ * Check if a user is in the employer's favorites
+ * @param {string} userId — employer ID
+ * @param {string} favoriteUserId — target user ID
+ * @returns {Promise<boolean>}
+ */
+export async function isFavorite(userId, favoriteUserId) {
+  const indexedIds = await getFromSetIndex(USER_FAVORITES_INDEX, userId);
+
+  for (const favId of indexedIds) {
+    const fav = await readJSON(getRecordPath('favorites', favId));
+    if (fav && fav.favoriteUserId === favoriteUserId) return true;
+  }
+
+  return false;
+}
 ```
 
 ---
@@ -6388,10 +6595,34 @@ import { eventBus } from './eventBus.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
 
+// ── Notification Deduplication (in-memory) ───────────────────
+/** @type {Map<string, number>} dedupKey → timestamp */
+const recentNotifications = new Map();
+const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup stale dedup entries every 10 minutes
+const dedupCleanupTimer = setInterval(() => {
+  const cutoff = Date.now() - (DEDUP_WINDOW_MS * 2);
+  for (const [key, timestamp] of recentNotifications) {
+    if (timestamp < cutoff) {
+      recentNotifications.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
+if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
+
 /**
  * Create a notification
  */
 export async function createNotification(userId, type, message, meta = {}) {
+  // Dedup check: skip if same userId+type within window
+  const dedupKey = `${userId}:${type}`;
+  const lastSent = recentNotifications.get(dedupKey);
+  if (lastSent && (Date.now() - lastSent) < DEDUP_WINDOW_MS) {
+    return null;
+  }
+  recentNotifications.set(dedupKey, Date.now());
+
   const id = 'ntf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
@@ -7463,6 +7694,105 @@ export async function countByStatus() {
 
 ---
 
+## `server/services/profileCompleteness.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/profileCompleteness.js — Profile Completeness Score
+// ═══════════════════════════════════════════════════════════════
+// Pure function — zero I/O, zero async, zero database access.
+// Weights: name(20) + governorate(20) + categories(20) + location(15) + verification(15) + terms(10) = 100
+// ═══════════════════════════════════════════════════════════════
+
+const FIELD_LABELS = {
+  name: 'الاسم',
+  governorate: 'المحافظة',
+  categories: 'التخصصات',
+  location: 'الموقع الجغرافي',
+  verification: 'التحقق من الهوية',
+  terms: 'قبول الشروط والأحكام',
+};
+
+/**
+ * Calculate profile completeness score.
+ * Pure sync function — no I/O, no imports needed beyond this file.
+ *
+ * @param {object} user — user object from database
+ * @returns {{ score: number, missing: string[], complete: boolean }}
+ *   score: 0–100 integer
+ *   missing: array of field keys that are incomplete
+ *   complete: true if score >= 100
+ */
+export function calculateCompleteness(user) {
+  if (!user) return { score: 0, missing: Object.keys(FIELD_LABELS), complete: false };
+
+  const missing = [];
+  let score = 0;
+
+  // Name (20%)
+  if (user.name && typeof user.name === 'string' && user.name.trim().length >= 2) {
+    score += 20;
+  } else {
+    missing.push('name');
+  }
+
+  // Governorate (20%)
+  if (user.governorate && typeof user.governorate === 'string' && user.governorate.trim().length > 0) {
+    score += 20;
+  } else {
+    missing.push('governorate');
+  }
+
+  // Categories (20%) — workers need at least one, employers always pass
+  if (user.role === 'employer') {
+    score += 20;
+  } else if (user.categories && Array.isArray(user.categories) && user.categories.length > 0) {
+    score += 20;
+  } else {
+    missing.push('categories');
+  }
+
+  // Location — lat/lng (15%)
+  if (typeof user.lat === 'number' && typeof user.lng === 'number') {
+    score += 15;
+  } else {
+    missing.push('location');
+  }
+
+  // Verification (15%)
+  if (user.verificationStatus === 'verified') {
+    score += 15;
+  } else {
+    missing.push('verification');
+  }
+
+  // Terms accepted (10%)
+  if (user.termsAcceptedAt) {
+    score += 10;
+  } else {
+    missing.push('terms');
+  }
+
+  return {
+    score,
+    missing,
+    complete: score >= 100,
+  };
+}
+
+/**
+ * Get Arabic label for a field key.
+ * Used by frontend to display human-readable missing field names.
+ * @param {string} fieldKey
+ * @returns {string}
+ */
+export function getFieldLabel(fieldKey) {
+  return FIELD_LABELS[fieldKey] || fieldKey;
+}
+```
+
+---
+
 ## `server/services/ratings.js`
 
 ```javascript
@@ -7687,6 +8017,79 @@ export async function getUserRatingSummary(userId) {
   const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
 
   return { avg, count, distribution };
+}
+
+/**
+ * Get pending ratings for a user (completed jobs they haven't rated yet)
+ * Returns max 3 items to avoid overwhelming the user
+ * @param {string} userId
+ * @returns {Promise<Array<{ jobId: string, jobTitle: string, targetUserId: string, targetRole: string }>>}
+ */
+export async function getPendingRatings(userId) {
+  const pending = [];
+  const MAX_PENDING = 3;
+
+  try {
+    const { findById: findUserById } = await import('./users.js');
+    const user = await findUserById(userId);
+    if (!user) return [];
+
+    if (user.role === 'worker') {
+      // Worker: find completed jobs where accepted, haven't rated employer
+      const { listByWorker } = await import('./applications.js');
+      const apps = await listByWorker(userId);
+      const acceptedApps = apps.filter(a => a.status === 'accepted');
+
+      for (const app of acceptedApps) {
+        if (pending.length >= MAX_PENDING) break;
+        const job = await findJobById(app.jobId);
+        if (!job || job.status !== 'completed') continue;
+
+        // Check if already rated employer for this job
+        const existing = await findByJobAndUsers(app.jobId, userId, job.employerId);
+        if (existing) continue;
+
+        pending.push({
+          jobId: job.id,
+          jobTitle: job.title,
+          targetUserId: job.employerId,
+          targetRole: 'employer',
+        });
+      }
+    } else if (user.role === 'employer') {
+      // Employer: find own completed jobs, check if rated accepted workers
+      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const employerJobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+
+      for (const jobId of employerJobIds) {
+        if (pending.length >= MAX_PENDING) break;
+        const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+        if (!job || job.status !== 'completed') continue;
+
+        // Get accepted workers
+        const jobApps = await listApplicationsByJob(jobId);
+        const acceptedWorkers = jobApps.filter(a => a.status === 'accepted');
+
+        for (const app of acceptedWorkers) {
+          if (pending.length >= MAX_PENDING) break;
+          const existing = await findByJobAndUsers(jobId, userId, app.workerId);
+          if (existing) continue;
+
+          pending.push({
+            jobId: job.id,
+            jobTitle: job.title,
+            targetUserId: app.workerId,
+            targetRole: 'worker',
+          });
+          break; // One per job for employers
+        }
+      }
+    }
+  } catch (err) {
+    // Non-blocking — return empty on error
+  }
+
+  return pending;
 }
 ```
 

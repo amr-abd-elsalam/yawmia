@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.29.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-23T18:45:15.188Z
-> Files in this part: 23
+# يوميّة (Yawmia) v0.30.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-23T22:09:08.698Z
+> Files in this part: 24
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -9,23 +9,24 @@
 4. `server/handlers/applicationsHandler.js`
 5. `server/handlers/attendanceHandler.js`
 6. `server/handlers/authHandler.js`
-7. `server/handlers/jobsHandler.js`
-8. `server/handlers/messagesHandler.js`
-9. `server/handlers/notificationsHandler.js`
-10. `server/handlers/paymentsHandler.js`
-11. `server/handlers/pushHandler.js`
-12. `server/handlers/ratingsHandler.js`
-13. `server/handlers/reportsHandler.js`
-14. `server/handlers/sseHandler.js`
-15. `server/handlers/verificationHandler.js`
-16. `server/middleware/auth.js`
-17. `server/middleware/bodyParser.js`
-18. `server/middleware/cors.js`
-19. `server/middleware/rateLimit.js`
-20. `server/middleware/requestId.js`
-21. `server/middleware/security.js`
-22. `server/middleware/static.js`
-23. `server/middleware/timing.js`
+7. `server/handlers/favoritesHandler.js`
+8. `server/handlers/jobsHandler.js`
+9. `server/handlers/messagesHandler.js`
+10. `server/handlers/notificationsHandler.js`
+11. `server/handlers/paymentsHandler.js`
+12. `server/handlers/pushHandler.js`
+13. `server/handlers/ratingsHandler.js`
+14. `server/handlers/reportsHandler.js`
+15. `server/handlers/sseHandler.js`
+16. `server/handlers/verificationHandler.js`
+17. `server/middleware/auth.js`
+18. `server/middleware/bodyParser.js`
+19. `server/middleware/cors.js`
+20. `server/middleware/rateLimit.js`
+21. `server/middleware/requestId.js`
+22. `server/middleware/security.js`
+23. `server/middleware/static.js`
+24. `server/middleware/timing.js`
 
 ---
 
@@ -1017,6 +1018,16 @@ export async function handleVerifyOtp(req, res) {
  */
 export async function handleGetMe(req, res) {
   const user = req.user;
+
+  // Calculate profile completeness
+  let profileCompleteness = null;
+  try {
+    const { calculateCompleteness } = await import('../services/profileCompleteness.js');
+    profileCompleteness = calculateCompleteness(user);
+  } catch (_) {
+    // Non-blocking — completeness is optional enrichment
+  }
+
   return sendJSON(res, 200, {
     ok: true,
     user: {
@@ -1033,6 +1044,7 @@ export async function handleGetMe(req, res) {
       notificationPreferences: user.notificationPreferences || null,
       availability: user.availability || null,
       createdAt: user.createdAt,
+      profileCompleteness: profileCompleteness,
     },
   });
 }
@@ -1224,6 +1236,107 @@ export async function handleDeleteAccount(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في حذف الحساب', code: 'DELETE_ACCOUNT_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/favoritesHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/favoritesHandler.js — Favorites API Handlers
+// ═══════════════════════════════════════════════════════════════
+
+import { addFavorite, removeFavorite, listFavorites, isFavorite } from '../services/favorites.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const ERROR_STATUS = {
+  FAVORITES_DISABLED: 503,
+  FAVORITE_USER_REQUIRED: 400,
+  CANNOT_FAVORITE_SELF: 400,
+  USER_NOT_FOUND: 404,
+  ALREADY_FAVORITE: 409,
+  MAX_FAVORITES_REACHED: 429,
+  FAVORITE_NOT_FOUND: 404,
+  NOT_FAVORITE_OWNER: 403,
+};
+
+function errorStatus(code) {
+  return ERROR_STATUS[code] || 400;
+}
+
+/**
+ * POST /api/favorites
+ * Add a worker to favorites
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleAddFavorite(req, res) {
+  try {
+    const body = req.body || {};
+    const result = await addFavorite(req.user.id, body.favoriteUserId, body.note);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, favorite: result.favorite });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * DELETE /api/favorites/:id
+ * Remove a favorite
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleRemoveFavorite(req, res) {
+  try {
+    const favoriteId = req.params.id;
+    const result = await removeFavorite(favoriteId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/favorites
+ * List favorites with enrichment
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleListFavorites(req, res) {
+  try {
+    const favorites = await listFavorites(req.user.id);
+    sendJSON(res, 200, { ok: true, favorites, count: favorites.length });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/favorites/check/:userId
+ * Check if a user is favorited
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleCheckFavorite(req, res) {
+  try {
+    const targetUserId = req.params.id;
+    const result = await isFavorite(req.user.id, targetUserId);
+    sendJSON(res, 200, { ok: true, isFavorite: result });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
 }
 ```
@@ -2123,7 +2236,7 @@ export async function handlePushUnsubscribe(req, res) {
 // server/handlers/ratingsHandler.js — Rating API Handlers
 // ═══════════════════════════════════════════════════════════════
 
-import { submitRating, listByJob, listByUser, getUserRatingSummary } from '../services/ratings.js';
+import { submitRating, listByJob, listByUser, getUserRatingSummary, getPendingRatings } from '../services/ratings.js';
 import { sanitizeText } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -2203,6 +2316,20 @@ export async function handleUserRatingSummary(req, res) {
     const userId = req.params.id;
     const summary = await getUserRatingSummary(userId);
     return sendJSON(res, 200, { ok: true, avg: summary.avg, count: summary.count, distribution: summary.distribution });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/ratings/pending
+ * Get pending ratings for the current user (max 3)
+ * Requires: requireAuth
+ */
+export async function handleGetPendingRatings(req, res) {
+  try {
+    const pending = await getPendingRatings(req.user.id);
+    return sendJSON(res, 200, { ok: true, pending });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
   }
