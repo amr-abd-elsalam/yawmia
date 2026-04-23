@@ -462,7 +462,7 @@ describe('Phase 33 — Error Enforcement', () => {
     assert.strictEqual(res.code, 'JOB_NOT_OPEN');
   });
 
-  it('P33-23: Past startDate rejected by validators', () => {
+  it('P33-23: Past startDate rejected by validators', async () => {
     const { validateJobFields } = await import('../server/services/validators.js');
     const body = {
       title: 'فرصة قديمة', category: 'farming', governorate: 'cairo',
@@ -565,8 +565,8 @@ describe('Phase 33 — Concurrent Operations', () => {
 
 describe('Phase 33 — Input Validation Hardening', () => {
 
-  it('P33-28: startDate in past is rejected', () => {
-    const { validateJobFields } = require_validators();
+  it('P33-28: startDate in past is rejected', async () => {
+    const { validateJobFields } = await import('../server/services/validators.js');
     const body = {
       title: 'فرصة ماضية', category: 'farming', governorate: 'cairo',
       workersNeeded: 1, dailyWage: 200, startDate: '2023-01-01', durationDays: 1,
@@ -576,8 +576,8 @@ describe('Phase 33 — Input Validation Hardening', () => {
     assert.ok(result.errors.some(e => e.includes('النهارده')));
   });
 
-  it('P33-29: Non-integer workersNeeded (1.5) → floored to 1', () => {
-    const { validateJobFields } = require_validators();
+  it('P33-29: Non-integer workersNeeded (1.5) → floored to 1', async () => {
+    const { validateJobFields } = await import('../server/services/validators.js');
     const body = {
       title: 'فرصة عدد كسري', category: 'farming', governorate: 'cairo',
       workersNeeded: 1.5, dailyWage: 200, startDate: futureDate(1), durationDays: 1,
@@ -587,8 +587,8 @@ describe('Phase 33 — Input Validation Hardening', () => {
     assert.strictEqual(body.workersNeeded, 1);
   });
 
-  it('P33-30: Non-integer durationDays (2.7) → floored to 2', () => {
-    const { validateJobFields } = require_validators();
+  it('P33-30: Non-integer durationDays (2.7) → floored to 2', async () => {
+    const { validateJobFields } = await import('../server/services/validators.js');
     const body = {
       title: 'فرصة مدة كسرية', category: 'farming', governorate: 'cairo',
       workersNeeded: 3, dailyWage: 200, startDate: futureDate(1), durationDays: 2.7,
@@ -598,27 +598,6 @@ describe('Phase 33 — Input Validation Hardening', () => {
     assert.strictEqual(body.durationDays, 2);
   });
 });
-
-// Lazy validators import (already loaded via before())
-function require_validators() {
-  // Use dynamic import sync trick — validators is already cached
-  return { validateJobFields: (body) => {
-    const { validateJobFields } = require_validators_sync();
-    return validateJobFields(body);
-  }};
-}
-// Actually, since we can't sync import ESM, use the before() loaded modules
-// Workaround: import in before and store
-
-let validatorsModule;
-before(async () => {
-  validatorsModule = await import('../server/services/validators.js');
-});
-
-// Override require_validators to use cached module
-function require_validators() {
-  return validatorsModule;
-}
 
 // ══════════════════════════════════════════════════════════════
 // Notification Max Enforcement
