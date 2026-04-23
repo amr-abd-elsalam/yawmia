@@ -52,13 +52,13 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-05: DATABASE.dirs has 14 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.dirs).length, 14);
+    assert.equal(Object.keys(config.DATABASE.dirs).length, 15);
     assert.ok(config.DATABASE.dirs.messages);
     assert.ok(config.DATABASE.dirs.push_subscriptions);
   });
 
   it('P22-06: DATABASE.indexFiles has 15 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 15);
+    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 16);
     assert.ok(config.DATABASE.indexFiles.messageJobIndex);
     assert.ok(config.DATABASE.indexFiles.messageUserIndex);
     assert.ok(config.DATABASE.indexFiles.pushUserIndex);

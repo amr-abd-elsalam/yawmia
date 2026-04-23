@@ -118,12 +118,12 @@ describe('Phase 16 — Config', () => {
   });
 
   it('P16-05: DATABASE has 12 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 14);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 15);
     assert.ok(config.DATABASE.dirs.attendance);
   });
 
   it('P16-06: DATABASE has 12 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 15);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 16);
   });
 
   it('P16-07: jobAttendanceIndex path exists', () => {
