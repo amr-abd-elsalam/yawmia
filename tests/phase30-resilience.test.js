@@ -371,18 +371,18 @@ describe('Phase 30 — Version', () => {
 
   it('P30-60: config PWA cacheName is yawmia-v0.27.0', async () => {
     const config = (await import('../config.js')).default;
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.27.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.28.0');
   });
 
   it('P30-61: sw.js CACHE_NAME is yawmia-v0.27.0', async () => {
     const src = await readSource('frontend/sw.js');
-    assert.ok(src.includes("'yawmia-v0.27.0'"), 'sw.js should use v0.27.0 cache name');
+    assert.ok(src.includes("'yawmia-v0.28.0'"), 'sw.js should use v0.27.0 cache name');
   });
 
   it('P30-62: config has 43 sections', async () => {
     const config = (await import('../config.js')).default;
     // Count top-level keys (sections)
     const keys = Object.keys(config);
-    assert.equal(keys.length, 43, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.equal(keys.length, 45, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });

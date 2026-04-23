@@ -22,7 +22,7 @@ const config = (await import('../config.js')).default;
 
 describe('Phase 22 — Config', () => {
   it('P22-01: version is 0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.27.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.28.0');
   });
 
   it('P22-02: has 41 config sections', () => {
@@ -65,7 +65,7 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-07: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.27.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.28.0');
   });
 });
 
