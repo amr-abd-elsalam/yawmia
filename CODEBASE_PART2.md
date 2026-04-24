@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.31.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-24T12:09:11.403Z
+> Auto-generated: 2026-04-24T12:18:08.143Z
 > Files in this part: 45
 
 ## Files
@@ -2816,7 +2816,8 @@ const URL_REGEX = /https?:\/\/[^\s]+|www\.[^\s]+/i;
 // ── Arabic-Indic digit phone detection ───────────────────────
 // Matches Egyptian phone in Arabic-Indic digits: ٠١٠١٢٣٤٥٦٧٨
 // Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩ (U+0660-U+0669)
-const ARABIC_PHONE_REGEX = /[\u0660-\u0661][\u0660-\u0669][\u0660-\u0669][\u0660-\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
+// Pattern: ٠١[٠١٢٥]XXXXXXXX (11 Arabic-Indic digits, mirrors 01[0125]XXXXXXXX)
+const ARABIC_PHONE_REGEX = /\u0660\u0661[\u0660\u0661\u0662\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
 
 // ── Blocklist (pre-normalized Arabic terms) ──────────────────
 // Categories: harassment, fraud, contact_info bypass
@@ -3135,7 +3136,7 @@ export async function listJSON(dirPath, options = {}) {
  */
 export async function paginatedListJSON(dirPath, options = {}) {
   const skip = Math.max(0, options.skip || 0);
-  const limit = Math.max(0, options.limit || 20);
+  const limit = Math.max(0, typeof options.limit === 'number' ? options.limit : 20);
   const prefix = options.prefix || '';
   const sortDir = options.sortDir || 'desc';
 
