@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.30.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-24T09:45:40.188Z
-> Files in this part: 42
+# يوميّة (Yawmia) v0.31.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-24T12:09:11.403Z
+> Files in this part: 45
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -10,41 +10,44 @@
 5. `server/services/attendance.js`
 6. `server/services/auditLog.js`
 7. `server/services/auth.js`
-8. `server/services/cache.js`
-9. `server/services/channels/sms.js`
-10. `server/services/channels/whatsapp.js`
-11. `server/services/contentFilter.js`
-12. `server/services/database.js`
-13. `server/services/eventBus.js`
-14. `server/services/favorites.js`
-15. `server/services/financialExport.js`
-16. `server/services/geo.js`
-17. `server/services/indexHealth.js`
-18. `server/services/jobAlerts.js`
-19. `server/services/jobMatcher.js`
-20. `server/services/jobs.js`
-21. `server/services/logWriter.js`
-22. `server/services/logger.js`
-23. `server/services/messages.js`
-24. `server/services/messaging.js`
-25. `server/services/migration.js`
-26. `server/services/monitor.js`
-27. `server/services/notificationMessenger.js`
-28. `server/services/notifications.js`
-29. `server/services/payments.js`
-30. `server/services/profileCompleteness.js`
-31. `server/services/ratings.js`
-32. `server/services/reports.js`
-33. `server/services/resourceLock.js`
-34. `server/services/sanitizer.js`
-35. `server/services/searchIndex.js`
-36. `server/services/sessions.js`
-37. `server/services/sseManager.js`
-38. `server/services/trust.js`
-39. `server/services/users.js`
-40. `server/services/validators.js`
-41. `server/services/verification.js`
-42. `server/services/webpush.js`
+8. `server/services/backupScheduler.js`
+9. `server/services/cache.js`
+10. `server/services/channels/sms.js`
+11. `server/services/channels/whatsapp.js`
+12. `server/services/contentFilter.js`
+13. `server/services/database.js`
+14. `server/services/errorAggregator.js`
+15. `server/services/eventBus.js`
+16. `server/services/eventReplayBuffer.js`
+17. `server/services/favorites.js`
+18. `server/services/financialExport.js`
+19. `server/services/geo.js`
+20. `server/services/indexHealth.js`
+21. `server/services/jobAlerts.js`
+22. `server/services/jobMatcher.js`
+23. `server/services/jobs.js`
+24. `server/services/logWriter.js`
+25. `server/services/logger.js`
+26. `server/services/messages.js`
+27. `server/services/messaging.js`
+28. `server/services/migration.js`
+29. `server/services/monitor.js`
+30. `server/services/notificationMessenger.js`
+31. `server/services/notifications.js`
+32. `server/services/payments.js`
+33. `server/services/profileCompleteness.js`
+34. `server/services/ratings.js`
+35. `server/services/reports.js`
+36. `server/services/resourceLock.js`
+37. `server/services/sanitizer.js`
+38. `server/services/searchIndex.js`
+39. `server/services/sessions.js`
+40. `server/services/sseManager.js`
+41. `server/services/trust.js`
+42. `server/services/users.js`
+43. `server/services/validators.js`
+44. `server/services/verification.js`
+45. `server/services/webpush.js`
 
 ---
 
@@ -2081,7 +2084,7 @@ export async function sendOtp(phone, role) {
 /**
  * Verify OTP and create session
  */
-export async function verifyOtp(phone, otp) {
+export async function verifyOtp(phone, otp, metadata) {
   const otpPath = getRecordPath('otp', phone);
   const otpData = await readJSON(otpPath);
 
@@ -2125,8 +2128,8 @@ export async function verifyOtp(phone, otp) {
     eventBus.emit('user:created', { userId: user.id, phone, role: otpData.role });
   }
 
-  // Create session
-  const session = await createSession(user.id, user.role);
+  // Create session (with optional metadata for IP/userAgent tracking)
+  const session = await createSession(user.id, user.role, metadata || undefined);
 
   eventBus.emit('session:created', { userId: user.id, token: session.token });
 
@@ -2165,6 +2168,202 @@ export async function cleanExpiredOtps() {
   }
 
   return cleaned;
+}
+```
+
+---
+
+## `server/services/backupScheduler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/backupScheduler.js — Automated Backup Scheduler
+// ═══════════════════════════════════════════════════════════════
+// Config-driven daily backup at configured hour (Egypt timezone).
+// Integrity verification, retention policy, fire-and-forget.
+// Follows activitySummary.js timer pattern.
+// ═══════════════════════════════════════════════════════════════
+
+import { cp, readdir, readFile, rm, mkdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+/** @type {string|null} last backup date string (Egypt timezone YYYY-MM-DD) */
+let lastBackupDate = null;
+
+/** @type {{ lastDate: string|null, lastResult: object|null }} */
+let lastBackupInfo = { lastDate: null, lastResult: null };
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+/**
+ * Get current date string + hour in Egypt timezone (UTC+2)
+ * @returns {{ dateStr: string, hour: number }}
+ */
+function getEgyptDateAndHour() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(egyptDate.getUTCDate()).padStart(2, '0');
+  return {
+    dateStr: `${y}-${m}-${d}`,
+    hour: egyptDate.getUTCHours(),
+  };
+}
+
+/**
+ * Verify integrity of backup by parsing each JSON file
+ * @param {string} backupDir
+ * @returns {Promise<{ valid: boolean, total: number, errors: number }>}
+ */
+async function verifyBackupIntegrity(backupDir) {
+  let total = 0;
+  let errors = 0;
+
+  async function scanDir(dir) {
+    try {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await scanDir(fullPath);
+        } else if (entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+          total++;
+          try {
+            const raw = await readFile(fullPath, 'utf-8');
+            JSON.parse(raw);
+          } catch (_) {
+            errors++;
+            logger.warn('Backup integrity: corrupted file', { file: fullPath });
+          }
+        }
+      }
+    } catch (_) {
+      // Directory read error — non-fatal
+    }
+  }
+
+  await scanDir(backupDir);
+  return { valid: errors === 0, total, errors };
+}
+
+/**
+ * Enforce retention policy — keep only the last N backups, delete the rest.
+ * @param {string} targetDir
+ * @param {number} retentionCount
+ * @returns {Promise<number>} count of deleted backups
+ */
+async function enforceRetention(targetDir, retentionCount) {
+  let deleted = 0;
+  try {
+    const entries = await readdir(targetDir);
+    const backupDirs = entries
+      .filter(e => e.startsWith('yawmia-backup-'))
+      .sort(); // ascending by timestamp
+
+    if (backupDirs.length <= retentionCount) return 0;
+
+    const toDelete = backupDirs.slice(0, backupDirs.length - retentionCount);
+    for (const dir of toDelete) {
+      try {
+        await rm(join(targetDir, dir), { recursive: true, force: true });
+        deleted++;
+      } catch (_) {
+        // Individual deletion failure — non-fatal
+      }
+    }
+  } catch (_) {
+    // Non-fatal
+  }
+  return deleted;
+}
+
+/**
+ * Check if backup should run, and run it if so.
+ * Called by hourly timer — acts only at configured hour.
+ * Prevents re-run on same date.
+ * Fire-and-forget safe — NEVER throws.
+ *
+ * @returns {Promise<{ backed: boolean, verified?: boolean, cleaned?: number }>}
+ */
+export async function checkAndRunBackup() {
+  try {
+    // 1. Feature flag
+    if (!config.BACKUP || !config.BACKUP.enabled) {
+      return { backed: false };
+    }
+
+    // 2. Check hour
+    const { dateStr, hour } = getEgyptDateAndHour();
+    if (hour !== config.BACKUP.hourEgypt) {
+      return { backed: false };
+    }
+
+    // 3. Prevent re-run same day
+    if (lastBackupDate === dateStr) {
+      return { backed: false };
+    }
+
+    // 4. Mark as ran
+    lastBackupDate = dateStr;
+
+    logger.info('Backup: starting daily backup');
+
+    // 5. Create backup directory
+    const targetDir = config.BACKUP.targetDir || './backups';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupDir = join(targetDir, `yawmia-backup-${timestamp}`);
+
+    await mkdir(backupDir, { recursive: true });
+
+    // 6. Check source exists
+    try {
+      await stat(DATA_DIR);
+    } catch (_) {
+      logger.warn('Backup: data directory not found', { path: DATA_DIR });
+      return { backed: false };
+    }
+
+    // 7. Copy data
+    await cp(DATA_DIR, backupDir, { recursive: true });
+
+    // 8. Optional integrity check
+    let verified = undefined;
+    if (config.BACKUP.verifyIntegrity) {
+      const integrity = await verifyBackupIntegrity(backupDir);
+      verified = integrity.valid;
+      logger.info('Backup: integrity check', {
+        total: integrity.total,
+        errors: integrity.errors,
+        valid: integrity.valid,
+      });
+    }
+
+    // 9. Retention enforcement
+    const cleaned = await enforceRetention(targetDir, config.BACKUP.retentionCount || 7);
+
+    const result = { backed: true, verified, cleaned };
+    lastBackupInfo = { lastDate: dateStr, lastResult: result };
+
+    logger.info('Backup: completed', result);
+
+    return result;
+  } catch (err) {
+    // NEVER throw — fire-and-forget safe
+    logger.error('Backup: failed', { error: err.message });
+    return { backed: false };
+  }
+}
+
+/**
+ * Get last backup info (for health/admin dashboard).
+ * @returns {{ lastDate: string|null, lastResult: object|null }}
+ */
+export function getLastBackupInfo() {
+  return { ...lastBackupInfo };
 }
 ```
 
@@ -2610,6 +2809,15 @@ import { logger } from './logger.js';
 // Also matches with dashes/spaces: 010-1234-5678, 010 1234 5678
 const PHONE_REGEX = /01[0125][\s\-]?\d{4}[\s\-]?\d{4}/;
 
+// ── URL detection regex ──────────────────────────────────────
+// Matches: http://... https://... www.something...
+const URL_REGEX = /https?:\/\/[^\s]+|www\.[^\s]+/i;
+
+// ── Arabic-Indic digit phone detection ───────────────────────
+// Matches Egyptian phone in Arabic-Indic digits: ٠١٠١٢٣٤٥٦٧٨
+// Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩ (U+0660-U+0669)
+const ARABIC_PHONE_REGEX = /[\u0660-\u0661][\u0660-\u0669][\u0660-\u0669][\u0660-\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
+
 // ── Blocklist (pre-normalized Arabic terms) ──────────────────
 // Categories: harassment, fraud, contact_info bypass
 // Each term: { normalized: string, weight: number, category: string }
@@ -2634,6 +2842,28 @@ const RAW_BLOCKLIST = [
   { term: 'telegram', weight: 0.5, category: 'contact_info' },
   { term: 'كلمني على', weight: 0.4, category: 'contact_info' },
   { term: 'رقمي', weight: 0.3, category: 'contact_info' },
+  // Egyptian dialect — WhatsApp variations
+  { term: 'واتس اب', weight: 0.5, category: 'contact_info' },
+  { term: 'واتسب', weight: 0.5, category: 'contact_info' },
+  { term: 'whats app', weight: 0.5, category: 'contact_info' },
+  { term: 'وتساب', weight: 0.5, category: 'contact_info' },
+  { term: 'الواتس', weight: 0.5, category: 'contact_info' },
+  // Direct contact bypass
+  { term: 'ابعتلي', weight: 0.4, category: 'contact_info' },
+  { term: 'ابعتلى', weight: 0.4, category: 'contact_info' },
+  { term: 'رقم التليفون', weight: 0.4, category: 'contact_info' },
+  { term: 'رقم الموبايل', weight: 0.4, category: 'contact_info' },
+  { term: 'موبايلي', weight: 0.3, category: 'contact_info' },
+  { term: 'تليفوني', weight: 0.3, category: 'contact_info' },
+  { term: 'نمرتي', weight: 0.3, category: 'contact_info' },
+  { term: 'كلمني واتس', weight: 0.5, category: 'contact_info' },
+  { term: 'راسلني', weight: 0.3, category: 'contact_info' },
+  // Additional harassment/fraud
+  { term: 'كداب', weight: 0.35, category: 'fraud' },
+  { term: 'غشاش', weight: 0.35, category: 'fraud' },
+  { term: 'لص', weight: 0.35, category: 'fraud' },
+  { term: 'خاين', weight: 0.3, category: 'harassment' },
+  { term: 'قليل الادب', weight: 0.4, category: 'harassment' },
 ];
 
 // Pre-normalize blocklist terms (once at module load)
@@ -2674,6 +2904,18 @@ export function checkContent(text) {
   if (PHONE_REGEX.test(text)) {
     score += 0.8;
     flaggedTerms.push('رقم تليفون');
+  }
+
+  // 1b. URL detection (on raw text)
+  if (URL_REGEX.test(text)) {
+    score += 0.7;
+    flaggedTerms.push('رابط خارجي');
+  }
+
+  // 1c. Arabic-Indic digit phone detection (٠١٠١٢٣٤٥٦٧٨)
+  if (ARABIC_PHONE_REGEX.test(text)) {
+    score += 0.8;
+    flaggedTerms.push('رقم تليفون (أرقام عربية)');
   }
 
   // 2. Blocklist matching (on normalized text)
@@ -2885,6 +3127,51 @@ export async function listJSON(dirPath, options = {}) {
 }
 
 /**
+ * Paginated list of JSON files in a directory.
+ * Reads ONLY the requested slice — O(k) disk reads instead of O(n).
+ * @param {string} dirPath
+ * @param {{ skip?: number, limit?: number, prefix?: string, sortDir?: 'asc'|'desc' }} [options]
+ * @returns {Promise<{ items: object[], total: number }>}
+ */
+export async function paginatedListJSON(dirPath, options = {}) {
+  const skip = Math.max(0, options.skip || 0);
+  const limit = Math.max(0, options.limit || 20);
+  const prefix = options.prefix || '';
+  const sortDir = options.sortDir || 'desc';
+
+  try {
+    const files = await readdir(dirPath);
+    let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    if (prefix) {
+      jsonFiles = jsonFiles.filter(f => f.startsWith(prefix));
+    }
+
+    // Sort by filename (lexicographic — crypto hex IDs are roughly chronological)
+    jsonFiles.sort();
+    if (sortDir === 'desc') {
+      jsonFiles.reverse();
+    }
+
+    const total = jsonFiles.length;
+
+    // Slice to requested page
+    const sliced = jsonFiles.slice(skip, skip + limit);
+
+    // Read only sliced files
+    const items = [];
+    for (const file of sliced) {
+      const data = await readJSON(join(dirPath, file));
+      if (data) items.push(data);
+    }
+
+    return { items, total };
+  } catch (err) {
+    if (err.code === 'ENOENT') return { items: [], total: 0 };
+    throw err;
+  }
+}
+
+/**
  * Read or create an index file
  */
 export async function readIndex(indexName) {
@@ -3058,6 +3345,127 @@ export async function cleanStaleTmpFiles() {
 
 ---
 
+## `server/services/errorAggregator.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/errorAggregator.js — Per-Endpoint Error Counting
+// ═══════════════════════════════════════════════════════════════
+// In-memory Map: endpoint+hour → { count, lastError, lastTimestamp }.
+// 24-hour retention. Hourly cleanup. No file persistence.
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @type {Map<string, { count: number, lastError: string, lastTimestamp: string }>}
+ * Key format: `${endpoint}::${hourKey}` where hourKey = YYYY-MM-DDTHH
+ */
+const counters = new Map();
+
+/**
+ * Get current hour key (UTC-based for simplicity)
+ * @returns {string} e.g. '2026-04-24T09'
+ */
+function getHourKey() {
+  return new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+}
+
+/**
+ * Record an error for an endpoint.
+ * @param {string} endpoint — e.g. '/api/jobs'
+ * @param {number} statusCode — HTTP status code
+ * @param {string} errorMessage — error message
+ */
+export function recordError(endpoint, statusCode, errorMessage) {
+  const hourKey = getHourKey();
+  const key = `${endpoint}::${hourKey}`;
+
+  const entry = counters.get(key);
+  if (entry) {
+    entry.count++;
+    entry.lastError = errorMessage || 'Unknown error';
+    entry.lastTimestamp = new Date().toISOString();
+    entry.statusCode = statusCode;
+  } else {
+    counters.set(key, {
+      count: 1,
+      endpoint,
+      hourKey,
+      statusCode,
+      lastError: errorMessage || 'Unknown error',
+      lastTimestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Get error summary for the last 24 hours.
+ * Aggregated by endpoint (summing across hours).
+ * Sorted by total count descending.
+ *
+ * @returns {{ totalErrors: number, endpoints: Array<{ endpoint: string, count: number, lastError: string, lastTimestamp: string }> }}
+ */
+export function getErrorSummary() {
+  // Aggregate by endpoint across all hour slots
+  /** @type {Map<string, { count: number, lastError: string, lastTimestamp: string }>} */
+  const aggregated = new Map();
+  let totalErrors = 0;
+
+  for (const [, entry] of counters) {
+    totalErrors += entry.count;
+    const existing = aggregated.get(entry.endpoint);
+    if (existing) {
+      existing.count += entry.count;
+      // Keep the most recent error
+      if (entry.lastTimestamp > existing.lastTimestamp) {
+        existing.lastError = entry.lastError;
+        existing.lastTimestamp = entry.lastTimestamp;
+      }
+    } else {
+      aggregated.set(entry.endpoint, {
+        endpoint: entry.endpoint,
+        count: entry.count,
+        lastError: entry.lastError,
+        lastTimestamp: entry.lastTimestamp,
+      });
+    }
+  }
+
+  // Sort by count descending
+  const endpoints = Array.from(aggregated.values())
+    .sort((a, b) => b.count - a.count);
+
+  return { totalErrors, endpoints };
+}
+
+/**
+ * Remove entries older than 24 hours.
+ */
+export function cleanup() {
+  const now = new Date();
+  const cutoffHour = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    .toISOString().slice(0, 13);
+
+  for (const [key, entry] of counters) {
+    if (entry.hourKey < cutoffHour) {
+      counters.delete(key);
+    }
+  }
+}
+
+/**
+ * Clear all counters (for testing).
+ */
+export function clear() {
+  counters.clear();
+}
+
+// ── Cleanup Timer (hourly, unref'd) ─────────────────────────
+const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);
+if (cleanupTimer.unref) cleanupTimer.unref();
+```
+
+---
+
 ## `server/services/eventBus.js`
 
 ```javascript
@@ -3125,6 +3533,146 @@ class EventBus {
 
 // Singleton
 export const eventBus = new EventBus();
+```
+
+---
+
+## `server/services/eventReplayBuffer.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/eventReplayBuffer.js — SSE Event Replay Buffer
+// ═══════════════════════════════════════════════════════════════
+// In-memory ring buffer per user. Stores last N events with TTL.
+// On reconnect with last-event-id, replays missed events.
+// Memory estimate: 100 events × ~500 bytes × N users ≈ 50KB per user.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+/** @type {Map<string, Array<{ id: string, event: string, data: *, timestamp: number }>>} */
+const buffers = new Map();
+
+/**
+ * Check if replay buffer is enabled
+ * @returns {boolean}
+ */
+function isEnabled() {
+  return !!(config.SSE_REPLAY && config.SSE_REPLAY.enabled);
+}
+
+/**
+ * Add an event to the user's replay buffer.
+ * Evicts oldest if over maxEventsPerUser.
+ * No-op if disabled or eventId is falsy.
+ *
+ * @param {string} userId
+ * @param {string} eventId — unique event identifier (e.g. ntf_xxx)
+ * @param {string} eventType — SSE event name (e.g. 'notification')
+ * @param {*} data — JSON-serializable payload
+ */
+export function addEvent(userId, eventId, eventType, data) {
+  if (!isEnabled()) return;
+  if (!userId || !eventId) return;
+
+  if (!buffers.has(userId)) {
+    buffers.set(userId, []);
+  }
+
+  const buffer = buffers.get(userId);
+  const maxEvents = config.SSE_REPLAY.maxEventsPerUser;
+
+  buffer.push({
+    id: eventId,
+    event: eventType,
+    data,
+    timestamp: Date.now(),
+  });
+
+  // Evict oldest if over limit
+  while (buffer.length > maxEvents) {
+    buffer.shift();
+  }
+}
+
+/**
+ * Get events after the given lastEventId for a user.
+ * Returns empty array if:
+ *   - disabled
+ *   - lastEventId is null/undefined (fresh connection — no replay)
+ *   - lastEventId not found in buffer (too old or unknown)
+ *   - no buffered events
+ *
+ * @param {string} userId
+ * @param {string|null} lastEventId
+ * @returns {Array<{ id: string, event: string, data: * }>}
+ */
+export function getEventsSince(userId, lastEventId) {
+  if (!isEnabled()) return [];
+  if (!userId || !lastEventId) return [];
+
+  const buffer = buffers.get(userId);
+  if (!buffer || buffer.length === 0) return [];
+
+  // Find the index of lastEventId
+  const idx = buffer.findIndex(e => e.id === lastEventId);
+  if (idx === -1) return []; // ID not found — too old or unknown
+
+  // Return events AFTER the found index
+  return buffer.slice(idx + 1).map(e => ({
+    id: e.id,
+    event: e.event,
+    data: e.data,
+  }));
+}
+
+/**
+ * Remove events older than maxEventAgeMs.
+ * Remove users with empty buffers.
+ */
+export function cleanup() {
+  if (!isEnabled()) return;
+
+  const maxAge = config.SSE_REPLAY.maxEventAgeMs;
+  const cutoff = Date.now() - maxAge;
+
+  for (const [userId, buffer] of buffers) {
+    // Remove old events from the beginning (they're in chronological order)
+    while (buffer.length > 0 && buffer[0].timestamp < cutoff) {
+      buffer.shift();
+    }
+    // Remove user entry if buffer is empty
+    if (buffer.length === 0) {
+      buffers.delete(userId);
+    }
+  }
+}
+
+/**
+ * Get buffer statistics.
+ * @returns {{ totalUsers: number, totalEvents: number }}
+ */
+export function getStats() {
+  let totalEvents = 0;
+  for (const [, buffer] of buffers) {
+    totalEvents += buffer.length;
+  }
+  return { totalUsers: buffers.size, totalEvents };
+}
+
+/**
+ * Clear all buffers (for testing).
+ */
+export function clear() {
+  buffers.clear();
+}
+
+// ── Cleanup Timer (unref'd — doesn't prevent process exit) ───
+const cleanupIntervalMs = (config.SSE_REPLAY && config.SSE_REPLAY.cleanupIntervalMs) || 600000;
+if (isEnabled()) {
+  const cleanupTimer = setInterval(cleanup, cleanupIntervalMs);
+  if (cleanupTimer.unref) cleanupTimer.unref();
+}
 ```
 
 ---
@@ -8657,7 +9205,7 @@ import { atomicWrite, readJSON, safeReadJSON, deleteJSON, listJSON, getRecordPat
 /**
  * Create a new session
  */
-export async function createSession(userId, role) {
+export async function createSession(userId, role, metadata) {
   const token = 'ses_' + crypto.randomBytes(16).toString('hex');
   const now = new Date();
   const expiresAt = new Date(now.getTime() + config.SESSIONS.ttlDays * 24 * 60 * 60 * 1000);
@@ -8670,10 +9218,38 @@ export async function createSession(userId, role) {
     expiresAt: expiresAt.toISOString(),
   };
 
+  // Add metadata if tracking is enabled and metadata is provided
+  if (config.SESSIONS.trackMetadata && metadata) {
+    session.ip = metadata.ip || null;
+    session.userAgent = metadata.userAgent || null;
+  }
+
   const sessionPath = getRecordPath('sessions', token);
   await atomicWrite(sessionPath, session);
 
   return session;
+}
+
+/**
+ * Rotate a session token — creates new session, destroys old.
+ * New session is created FIRST to prevent auth failure window.
+ * Graceful: if oldToken doesn't exist, just creates new.
+ * @param {string} oldToken
+ * @param {string} userId
+ * @param {string} role
+ * @param {object} [metadata] — { ip, userAgent }
+ * @returns {Promise<object>} new session
+ */
+export async function rotateSession(oldToken, userId, role, metadata) {
+  // Create new session first (no auth gap)
+  const newSession = await createSession(userId, role, metadata);
+
+  // Destroy old session (fire-and-forget)
+  if (oldToken) {
+    await destroySession(oldToken).catch(() => {});
+  }
+
+  return newSession;
 }
 
 /**
@@ -8849,7 +9425,17 @@ export function addConnection(userId, res, lastEventId) {
  */
 export function sendToUser(userId, eventType, data, eventId) {
   const userConns = connections.get(userId);
-  if (!userConns || userConns.size === 0) return;
+  if (!userConns || userConns.size === 0) {
+    // Still buffer the event even if no active connections (for replay on reconnect)
+    if (eventId) {
+      try {
+        import('./eventReplayBuffer.js').then(({ addEvent }) => {
+          addEvent(userId, eventId, eventType, data);
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    }
+    return;
+  }
 
   const msg = formatSSE(eventType, data, eventId);
 
@@ -8861,6 +9447,15 @@ export function sendToUser(userId, eventType, data, eventId) {
     } catch (_) {
       // Ignore write errors on dead connections
     }
+  }
+
+  // Buffer event for replay on reconnect (fire-and-forget)
+  if (eventId) {
+    try {
+      import('./eventReplayBuffer.js').then(({ addEvent }) => {
+        addEvent(userId, eventId, eventType, data);
+      }).catch(() => {});
+    } catch (_) { /* non-fatal */ }
   }
 }
 

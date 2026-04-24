@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.30.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-24T09:45:40.199Z
+# يوميّة (Yawmia) v0.31.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-24T12:09:11.416Z
 > Files in this part: 24
 
 ## Files
@@ -532,6 +532,19 @@ export async function handleGetLatestSnapshot(req, res) {
     sendJSON(res, 500, { error: 'خطأ في جلب آخر snapshot', code: 'MONITORING_ERROR' });
   }
 }
+
+/**
+ * GET /api/admin/errors
+ */
+export async function handleGetErrors(req, res) {
+  try {
+    const { getErrorSummary } = await import('../services/errorAggregator.js');
+    const summary = getErrorSummary();
+    sendJSON(res, 200, { ok: true, ...summary });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب ملخص الأخطاء', code: 'ERROR_SUMMARY_ERROR' });
+  }
+}
 ```
 
 ---
@@ -1002,8 +1015,13 @@ export async function handleVerifyOtp(req, res) {
   }
 
   try {
-    const result = await verifyOtp(phone, otp);
-    if (!result.ok) {
+    // Extract metadata for session tracking
+    const sessionMetadata = {
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      userAgent: req.headers['user-agent'] || '',
+    };
+    const result = await verifyOtp(phone, otp, sessionMetadata);
+    if (result.ok) {
       return sendJSON(res, 401, result);
     }
     return sendJSON(res, 200, result);
@@ -2600,6 +2618,23 @@ export async function handleNotificationStream(req, res) {
   // ── Register connection ──
   const lastEventId = req.headers['last-event-id'] || null;
   addConnection(user.id, res, lastEventId);
+
+  // ── Replay missed events (if reconnecting with last-event-id) ──
+  if (lastEventId) {
+    try {
+      const { getEventsSince } = await import('../services/eventReplayBuffer.js');
+      const missedEvents = getEventsSince(user.id, lastEventId);
+      for (const evt of missedEvents) {
+        try {
+          if (!res.writableEnded && !res.destroyed) {
+            res.write(formatSSE(evt.event, evt.data, evt.id));
+          }
+        } catch (_) { /* ignore write errors */ }
+      }
+    } catch (_) {
+      // Replay buffer unavailable — degrade gracefully
+    }
+  }
 }
 ```
 
@@ -3079,6 +3114,7 @@ export function rateLimitMiddleware(req, res, next) {
       error: config.RATE_LIMIT.message,
       code: 'RATE_LIMITED',
     }));
+    recordViolation(ip);
     return;
   }
 
@@ -3102,6 +3138,7 @@ export function rateLimitMiddleware(req, res, next) {
         error: 'تم تجاوز الحد المسموح من طلبات OTP. حاول بعد قليل.',
         code: 'OTP_RATE_LIMITED',
       }));
+      recordViolation(ip);
       return;
     }
   }
@@ -3126,11 +3163,91 @@ export function rateLimitMiddleware(req, res, next) {
         error: 'تم تجاوز الحد المسموح من عمليات الأدمن. حاول بعد قليل.',
         code: 'ADMIN_RATE_LIMITED',
       }));
+      recordViolation(ip);
       return;
     }
   }
 
+  // ── Per-user rate limiting (authenticated endpoints only) ──
+  if (config.RATE_LIMIT.perUserEnabled && req.user && req.user.id) {
+    const userId = req.user.id;
+    const userKey = `user:${userId}`;
+    const userWindowMs = config.RATE_LIMIT.perUserWindowMs;
+    const userMaxRequests = config.RATE_LIMIT.perUserMaxRequests;
+
+    let userEntry = store.get(userKey);
+    if (!userEntry || now > userEntry.resetAt) {
+      userEntry = { count: 0, resetAt: now + userWindowMs };
+      store.set(userKey, userEntry);
+    }
+
+    userEntry.count++;
+
+    // Set per-user rate limit header
+    res.setHeader('X-RateLimit-User-Remaining', String(Math.max(0, userMaxRequests - userEntry.count)));
+
+    if (userEntry.count > userMaxRequests) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: config.RATE_LIMIT.message,
+        code: 'USER_RATE_LIMITED',
+      }));
+      recordViolation(ip);
+      return;
+    }
+  }
+
+  // ── Penalty check (IP-based — prevents account-switching evasion) ──
+  const penaltyKey = `penalty:${ip}`;
+  const penaltyEntry = store.get(penaltyKey);
+  if (penaltyEntry && now < penaltyEntry.cooldownUntil) {
+    const retryAfter = Math.ceil((penaltyEntry.cooldownUntil - now) / 1000);
+    res.writeHead(429, {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+    });
+    res.end(JSON.stringify({
+      error: 'تم حظرك مؤقتاً بسبب تجاوز الحد المسموح بشكل متكرر. حاول بعد ' + retryAfter + ' ثانية.',
+      code: 'PENALTY_COOLDOWN',
+    }));
+    return;
+  }
+
   next();
+}
+
+/**
+ * Record a rate limit violation for penalty tracking.
+ * @param {string} ip
+ */
+function recordViolation(ip) {
+  const now = Date.now();
+  const violationKey = `violations:${ip}`;
+  const penaltyWindowMs = config.RATE_LIMIT.penaltyWindowMs;
+  const penaltyThreshold = config.RATE_LIMIT.penaltyThreshold;
+  const penaltyCooldownMs = config.RATE_LIMIT.penaltyCooldownMs;
+
+  let violations = store.get(violationKey);
+  if (!violations || now > violations.resetAt) {
+    violations = { timestamps: [], resetAt: now + penaltyWindowMs };
+    store.set(violationKey, violations);
+  }
+
+  violations.timestamps.push(now);
+
+  // Clean old timestamps within window
+  violations.timestamps = violations.timestamps.filter(ts => now - ts < penaltyWindowMs);
+
+  // Check if threshold reached
+  if (violations.timestamps.length >= penaltyThreshold) {
+    const penaltyKey = `penalty:${ip}`;
+    store.set(penaltyKey, {
+      cooldownUntil: now + penaltyCooldownMs,
+      resetAt: now + penaltyCooldownMs + 60000, // cleanup margin
+    });
+    // Reset violation counter
+    store.delete(violationKey);
+  }
 }
 
 /**
