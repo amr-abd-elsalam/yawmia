@@ -312,6 +312,6 @@ describe('E2E Worker Flow', () => {
     const res = await api('GET', '/api/docs');
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.routes);
-    assert.strictEqual(res.data.total, 90);
+    assert.strictEqual(res.data.total, 92);
   });
 });
