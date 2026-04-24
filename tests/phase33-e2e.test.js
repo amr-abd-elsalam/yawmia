@@ -613,7 +613,7 @@ describe('Phase 33 — Notification Max Enforcement', () => {
 
     // Create 10 read notifications manually (to keep test fast)
     for (let i = 0; i < 10; i++) {
-      const ntf = await ntfService.createNotification(userId, 'test', 'msg ' + i, {});
+      const ntf = await ntfService.createNotification(userId, 'test_max_' + i, 'msg ' + i, {});
       // Mark as read
       const ntfPath = db.getRecordPath('notifications', ntf.id);
       const data = await db.readJSON(ntfPath);
@@ -639,7 +639,7 @@ describe('Phase 33 — Notification Max Enforcement', () => {
 
     // Create 5 unread notifications
     for (let i = 0; i < 5; i++) {
-      await ntfService.createNotification(userId, 'test', 'unread msg ' + i, {});
+      await ntfService.createNotification(userId, 'test_unread_' + i, 'unread msg ' + i, {});
     }
 
     // All should still be there (unread are protected)

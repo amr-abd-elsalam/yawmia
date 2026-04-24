@@ -97,7 +97,7 @@ describe('Phase 14 — Config', () => {
   it('P14-06: DATABASE.indexFiles includes userVerificationIndex', () => {
     assert.ok(config.DATABASE.indexFiles.userVerificationIndex);
     assert.strictEqual(config.DATABASE.indexFiles.userVerificationIndex, 'verifications/user-index.json');
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 17);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 18);
   });
 
   it('P14-07: PWA cacheName updated to v0.25.0', () => {

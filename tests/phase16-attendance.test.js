@@ -123,7 +123,7 @@ describe('Phase 16 — Config', () => {
   });
 
   it('P16-06: DATABASE has 12 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 17);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 18);
   });
 
   it('P16-07: jobAttendanceIndex path exists', () => {

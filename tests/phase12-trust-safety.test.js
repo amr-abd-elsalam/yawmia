@@ -84,7 +84,7 @@ describe('Phase 12 — Config', () => {
   });
 
   it('P12-05: DATABASE has 12 indexFiles', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 17);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 18);
     assert.ok(config.DATABASE.indexFiles.targetReportsIndex);
     assert.ok(config.DATABASE.indexFiles.reporterReportsIndex);
   });
