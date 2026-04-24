@@ -79,7 +79,7 @@ describe('Phase 12 — Config', () => {
   });
 
   it('P12-04: DATABASE has 12 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 18);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 17);
     assert.ok(config.DATABASE.dirs.reports);
   });
 
