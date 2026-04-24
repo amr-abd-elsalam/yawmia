@@ -260,9 +260,9 @@ describe('Phase 28 — Service Worker Cache', () => {
     assert.ok(content.includes('/terms.html'), 'STATIC_ASSETS should include /terms.html');
   });
 
-  it('P28-32: sw.js CACHE_NAME is yawmia-v0.29.0', async () => {
+  it('P28-32: sw.js CACHE_NAME is yawmia-v0.30.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.29.0'"), 'cache name should be yawmia-v0.29.0');
+    assert.ok(content.includes("'yawmia-v0.30.0'"), 'cache name should be yawmia-v0.30.0');
   });
 });
 
@@ -278,7 +278,7 @@ describe('Phase 28 — Version', () => {
     assert.strictEqual(pkg.version, '0.30.0');
   });
 
-  it('P28-34: config PWA cacheName is yawmia-v0.29.0', () => {
+  it('P28-34: config PWA cacheName is yawmia-v0.30.0', () => {
     assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 });

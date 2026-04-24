@@ -269,6 +269,6 @@ describe('Phase 20 — File Existence', () => {
 
   it('P20-25: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.29.0'"), 'cache name should be yawmia-v0.29.0');
+    assert.ok(content.includes("'yawmia-v0.30.0'"), 'cache name should be yawmia-v0.30.0');
   });
 });

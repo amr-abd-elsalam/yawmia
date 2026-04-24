@@ -140,7 +140,7 @@ describe('Phase 19 — Service Worker', () => {
 
   it('P19-17: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFrontend('sw.js');
-    assert.ok(content.includes("'yawmia-v0.29.0'"), 'cache name should be yawmia-v0.25.0');
+    assert.ok(content.includes("'yawmia-v0.30.0'"), 'cache name should be yawmia-v0.25.0');
   });
 });
 
