@@ -64,11 +64,14 @@
     // Update page title
     document.title = 'يوميّة — ' + job.title;
 
-    // Status badge
+    // Status badge + urgency badge
     var statusEl = Yawmia.$id('jobStatusBadge');
     if (statusEl) {
       var statusLabel = YawmiaUtils.statusLabel(job.status);
-      statusEl.innerHTML = '<span class="badge badge--status badge--' + escapeHtml(job.status) + '">' + escapeHtml(statusLabel) + '</span>';
+      var urgBadge = '';
+      if (job.urgency === 'immediate') urgBadge = '<span class="badge badge--immediate">🔥 فوري</span> ';
+      else if (job.urgency === 'urgent') urgBadge = '<span class="badge badge--urgent">⚡ عاجل</span> ';
+      statusEl.innerHTML = urgBadge + '<span class="badge badge--status badge--' + escapeHtml(job.status) + '">' + escapeHtml(statusLabel) + '</span>';
     }
 
     // Info grid
@@ -162,7 +165,20 @@
       }
     }
 
+    // Report button (for non-owners)
+    if (isLoggedIn && job.employerId !== userId) {
+      html += '<button class="btn report-btn btn--sm" id="btnReportJob">🚩 بلّغ عن مخالفة</button>';
+    }
+
     actionsEl.innerHTML = html;
+
+    // Report button handler
+    var reportJobBtn = Yawmia.$id('btnReportJob');
+    if (reportJobBtn) {
+      reportJobBtn.addEventListener('click', function () {
+        showReportFormOnDetail(job);
+      });
+    }
 
     // ── Attach event handlers ──
 
@@ -445,6 +461,57 @@
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Report Form on Detail Page ────────────────────────────
+  function showReportFormOnDetail(job) {
+    var existing = document.querySelector('.report-form');
+    if (existing) { existing.remove(); return; }
+
+    var actionsEl = Yawmia.$id('jobActions');
+    if (!actionsEl) return;
+
+    var form = document.createElement('div');
+    form.className = 'report-form';
+    form.innerHTML =
+      '<select class="report-type-select">' +
+        '<option value="">اختر نوع البلاغ...</option>' +
+        '<option value="fraud">نصب أو احتيال</option>' +
+        '<option value="no_show">عدم حضور</option>' +
+        '<option value="harassment">إساءة أو تحرش</option>' +
+        '<option value="quality">جودة عمل سيئة</option>' +
+        '<option value="payment_issue">مشكلة في الدفع</option>' +
+        '<option value="other">أخرى</option>' +
+      '</select>' +
+      '<textarea placeholder="اكتب سبب البلاغ (10 حروف على الأقل)..." maxlength="500"></textarea>' +
+      '<div style="display:flex;gap:0.5rem;">' +
+        '<button class="btn btn--primary btn--sm btn-submit-report">إرسال البلاغ</button>' +
+        '<button class="btn btn--ghost btn--sm btn-cancel-report">إلغاء</button>' +
+      '</div>' +
+      '<div class="report-form-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>';
+
+    actionsEl.appendChild(form);
+
+    form.querySelector('.btn-cancel-report').addEventListener('click', function () { form.remove(); });
+    form.querySelector('.btn-submit-report').addEventListener('click', async function () {
+      var type = form.querySelector('.report-type-select').value;
+      var reason = form.querySelector('textarea').value.trim();
+      var msgEl = form.querySelector('.report-form-msg');
+      if (!type) { msgEl.textContent = 'اختر نوع البلاغ'; msgEl.style.color = 'var(--color-error)'; return; }
+      if (reason.length < 10) { msgEl.textContent = 'السبب لازم يكون 10 حروف على الأقل'; msgEl.style.color = 'var(--color-error)'; return; }
+      var submitBtn = form.querySelector('.btn-submit-report');
+      Yawmia.setLoading(submitBtn, true);
+      try {
+        var res = await Yawmia.api('POST', '/api/reports', { targetId: job.employerId, type: type, reason: reason, jobId: job.id });
+        if (res.data.ok) {
+          msgEl.textContent = 'تم إرسال البلاغ بنجاح ✓'; msgEl.style.color = 'var(--color-success)';
+          setTimeout(function () { form.remove(); }, 2000);
+        } else {
+          msgEl.textContent = res.data.error || 'خطأ في إرسال البلاغ'; msgEl.style.color = 'var(--color-error)';
+        }
+      } catch (err) { msgEl.textContent = 'خطأ في الاتصال'; msgEl.style.color = 'var(--color-error)'; }
+      finally { Yawmia.setLoading(submitBtn, false); }
+    });
   }
 
 })();

@@ -90,6 +90,23 @@ export function validateDailyWage(wage) {
 }
 
 /**
+ * Validate urgency level
+ * @returns {{ valid: boolean, error?: string }}
+ */
+export function validateUrgency(urgency) {
+  if (urgency === undefined || urgency === null) {
+    return { valid: true }; // defaults to 'normal'
+  }
+  if (typeof urgency !== 'string') {
+    return { valid: false, error: 'مستوى الاستعجال لازم يكون نص' };
+  }
+  if (!config.URGENCY || !config.URGENCY.levels || !config.URGENCY.levels.includes(urgency)) {
+    return { valid: false, error: 'مستوى الاستعجال غير صحيح' };
+  }
+  return { valid: true };
+}
+
+/**
  * Validate profile fields (name, governorate, categories)
  */
 export function validateProfileFields(body, role) {
@@ -176,26 +193,45 @@ export function validateJobFields(body) {
     if (!wageResult.valid) errors.push(wageResult.error);
   }
 
-  // startDate
-  if (!body.startDate || typeof body.startDate !== 'string') {
-    errors.push('تاريخ البدء مطلوب');
-  } else {
-    // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
-    const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const todayEgypt = egyptNow.toISOString().split('T')[0];
-    if (body.startDate < todayEgypt) {
-      errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+  // urgency (optional — defaults to 'normal')
+  if (body.urgency !== undefined && body.urgency !== null) {
+    const urgencyResult = validateUrgency(body.urgency);
+    if (!urgencyResult.valid) errors.push(urgencyResult.error);
+  }
+
+  const isImmediate = body.urgency === 'immediate';
+
+  // startDate — immediate jobs skip this validation (auto-calculated)
+  if (!isImmediate) {
+    if (!body.startDate || typeof body.startDate !== 'string') {
+      errors.push('تاريخ البدء مطلوب');
+    } else {
+      // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
+      const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const todayEgypt = egyptNow.toISOString().split('T')[0];
+      if (body.startDate < todayEgypt) {
+        errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+      }
     }
   }
 
-  // durationDays
-  if (body.durationDays == null || typeof body.durationDays !== 'number') {
-    errors.push('مدة العمل بالأيام مطلوبة');
+  // durationDays — immediate jobs default to 1 if not provided
+  if (!isImmediate) {
+    if (body.durationDays == null || typeof body.durationDays !== 'number') {
+      errors.push('مدة العمل بالأيام مطلوبة');
+    } else {
+      body.durationDays = Math.floor(body.durationDays);
+      if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+        errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+      }
+    }
   } else {
-    // Integer enforcement — silently truncate decimals
-    body.durationDays = Math.floor(body.durationDays);
-    if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
-      errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+    // Immediate: default to 1 if missing, validate if provided
+    if (body.durationDays != null && typeof body.durationDays === 'number') {
+      body.durationDays = Math.floor(body.durationDays);
+      if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+        errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+      }
     }
   }
 

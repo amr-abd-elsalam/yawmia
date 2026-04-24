@@ -2889,6 +2889,33 @@ textarea:focus:not(:focus-visible) {
   animation: first-job-glow 2s ease-in-out 3;
 }
 
+/* ═══ Phase 36 — Urgency Badges ═══ */
+.badge--immediate {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  animation: urgency-pulse 2s ease-in-out infinite;
+}
+
+.badge--urgent {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+@keyframes urgency-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;

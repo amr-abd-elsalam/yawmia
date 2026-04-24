@@ -25,8 +25,30 @@ export function calculateFees(workersNeeded, dailyWage, durationDays) {
 export async function create(employerId, fields) {
   const id = 'job_' + crypto.randomBytes(6).toString('hex');
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + config.JOBS.expiryHours * 60 * 60 * 1000);
-  const { totalCost, platformFee } = calculateFees(fields.workersNeeded, fields.dailyWage, fields.durationDays);
+  const urgency = fields.urgency || (config.URGENCY ? config.URGENCY.defaultLevel : 'normal');
+
+  // Adaptive expiry based on urgency
+  let expiryHours = config.JOBS.expiryHours; // default 72h (normal)
+  if (config.URGENCY && config.URGENCY.enabled) {
+    if (urgency === 'immediate') expiryHours = config.URGENCY.immediateExpiryHours;
+    else if (urgency === 'urgent') expiryHours = config.URGENCY.urgentExpiryHours;
+  }
+  const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
+
+  // Immediate jobs: auto-calculate startDate + default durationDays
+  let startDate = fields.startDate;
+  let durationDays = fields.durationDays;
+  if (urgency === 'immediate') {
+    if (!startDate) {
+      const egyptNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      startDate = egyptNow.toISOString().split('T')[0];
+    }
+    if (!durationDays || typeof durationDays !== 'number') {
+      durationDays = 1;
+    }
+  }
+
+  const { totalCost, platformFee } = calculateFees(fields.workersNeeded, fields.dailyWage, durationDays);
 
   const job = {
     id,
@@ -40,11 +62,12 @@ export async function create(employerId, fields) {
     workersNeeded: fields.workersNeeded,
     workersAccepted: 0,
     dailyWage: fields.dailyWage,
-    startDate: fields.startDate,
-    durationDays: fields.durationDays,
+    startDate,
+    durationDays,
     description: (fields.description || '').trim(),
     totalCost,
     platformFee,
+    urgency,
     status: 'open',
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
@@ -62,6 +85,7 @@ export async function create(employerId, fields) {
     category: job.category,
     governorate: job.governorate,
     status: job.status,
+    urgency: job.urgency || 'normal',
     createdAt: job.createdAt,
   };
   await writeIndex('jobsIndex', jobsIndex);
@@ -100,6 +124,9 @@ export async function list(filters = {}) {
   }
   if (filters.category) {
     jobs = jobs.filter(j => j.category === filters.category);
+  }
+  if (filters.urgency) {
+    jobs = jobs.filter(j => (j.urgency || 'normal') === filters.urgency);
   }
   if (filters.status) {
     jobs = jobs.filter(j => j.status === filters.status);
@@ -202,13 +229,19 @@ export async function list(filters = {}) {
   // Sort (skip if already sorted by proximity)
   if (!filters._proximitySorted) {
     const sort = filters.sort || 'newest';
+    const urgencyOrder = { immediate: 0, urgent: 1, normal: 2 };
     if (sort === 'wage_high') {
       jobs.sort((a, b) => (b.dailyWage || 0) - (a.dailyWage || 0));
     } else if (sort === 'wage_low') {
       jobs.sort((a, b) => (a.dailyWage || 0) - (b.dailyWage || 0));
     } else {
-      // Default: newest first
-      jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // Default: urgency-first, then newest
+      jobs.sort((a, b) => {
+        const ua = urgencyOrder[a.urgency || 'normal'] ?? 2;
+        const ub = urgencyOrder[b.urgency || 'normal'] ?? 2;
+        if (ua !== ub) return ua - ub;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
     }
   }
 

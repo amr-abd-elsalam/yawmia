@@ -254,6 +254,102 @@ export async function countByStatus() {
 }
 
 /**
+ * Worker confirms acceptance (two-phase acceptance)
+ * @param {string} applicationId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, error?: string, code?: string }>}
+ */
+export function workerConfirm(applicationId, workerId) {
+  return withLock(`confirm:${applicationId}`, async () => {
+    const application = await findById(applicationId);
+    if (!application) {
+      return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+    }
+    if (application.workerId !== workerId) {
+      return { ok: false, error: 'مش مسموحلك تأكد هذا الطلب', code: 'NOT_APPLICATION_OWNER' };
+    }
+    if (application.status !== 'accepted') {
+      return { ok: false, error: 'الطلب مش في حالة مقبول', code: 'INVALID_STATUS' };
+    }
+
+    // Deadline check
+    if (application.respondedAt && config.JOBS.workerConfirmationTimeoutHours) {
+      const deadline = new Date(new Date(application.respondedAt).getTime() + config.JOBS.workerConfirmationTimeoutHours * 60 * 60 * 1000);
+      if (new Date() > deadline) {
+        return { ok: false, error: 'انتهت مهلة التأكيد', code: 'DEADLINE_PASSED' };
+      }
+    }
+
+    application.status = 'worker_confirmed';
+    application.workerConfirmedAt = new Date().toISOString();
+    const appPath = getRecordPath('applications', applicationId);
+    await atomicWrite(appPath, application);
+
+    eventBus.emit('application:worker_confirmed', {
+      applicationId,
+      jobId: application.jobId,
+      workerId,
+    });
+
+    return { ok: true, application };
+  });
+}
+
+/**
+ * Worker declines acceptance (two-phase acceptance)
+ * @param {string} applicationId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, error?: string, code?: string }>}
+ */
+export function workerDecline(applicationId, workerId) {
+  return withLock(`decline:${applicationId}`, async () => {
+    const application = await findById(applicationId);
+    if (!application) {
+      return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+    }
+    if (application.workerId !== workerId) {
+      return { ok: false, error: 'مش مسموحلك ترفض هذا الطلب', code: 'NOT_APPLICATION_OWNER' };
+    }
+    if (application.status !== 'accepted') {
+      return { ok: false, error: 'الطلب مش في حالة مقبول', code: 'INVALID_STATUS' };
+    }
+
+    application.status = 'worker_declined';
+    application.workerDeclinedAt = new Date().toISOString();
+    const appPath = getRecordPath('applications', applicationId);
+    await atomicWrite(appPath, application);
+
+    // Decrement workersAccepted on the job
+    const job = await findJobById(application.jobId);
+    if (job && job.workersAccepted > 0) {
+      job.workersAccepted -= 1;
+      // Revert job status from filled → open if needed
+      if (job.status === 'filled' && job.workersAccepted < job.workersNeeded) {
+        job.status = 'open';
+        // Update jobs index
+        const { readIndex, writeIndex } = await import('./database.js');
+        const jobsIndex = await readIndex('jobsIndex');
+        if (jobsIndex[job.id]) {
+          jobsIndex[job.id].status = 'open';
+          await writeIndex('jobsIndex', jobsIndex);
+        }
+      }
+      const jobPath = getRecordPath('jobs', job.id);
+      await atomicWrite(jobPath, job);
+    }
+
+    eventBus.emit('application:worker_declined', {
+      applicationId,
+      jobId: application.jobId,
+      workerId,
+      employerId: job ? job.employerId : null,
+    });
+
+    return { ok: true, application };
+  });
+}
+
+/**
  * Withdraw a pending application (worker action)
  * @param {string} applicationId
  * @param {string} workerId - the requesting worker's ID (ownership check)

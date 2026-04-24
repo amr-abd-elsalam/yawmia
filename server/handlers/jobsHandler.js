@@ -4,7 +4,7 @@
 
 import config from '../../config.js';
 import { create, findById, list, listAll, startJob, completeJob, cancelJob, countTodayByEmployer, renewJob, duplicateJob } from '../services/jobs.js';
-import { validateJobFields, validateLatitude, validateLongitude } from '../services/validators.js';
+import { validateJobFields, validateLatitude, validateLongitude, validateUrgency } from '../services/validators.js';
 import { sanitizeFields } from '../services/sanitizer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -71,6 +71,26 @@ export async function handleCreateJob(req, res) {
       sanitized.lng = lngResult.value;
     }
 
+    // Urgency handling
+    if (body.urgency) {
+      const urgResult = validateUrgency(body.urgency);
+      if (!urgResult.valid) {
+        return sendJSON(res, 400, { error: urgResult.error, code: 'INVALID_URGENCY' });
+      }
+      sanitized.urgency = body.urgency;
+    }
+
+    // Immediate jobs: auto-set startDate + default durationDays
+    if (body.urgency === 'immediate') {
+      if (!sanitized.startDate) {
+        const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+        sanitized.startDate = egyptNow.toISOString().split('T')[0];
+      }
+      if (!sanitized.durationDays || typeof sanitized.durationDays !== 'number') {
+        sanitized.durationDays = 1;
+      }
+    }
+
     const job = await create(req.user.id, sanitized);
     return sendJSON(res, 201, { ok: true, job });
   } catch (err) {
@@ -98,6 +118,7 @@ export async function handleListJobs(req, res) {
   if (req.query.maxWage) filters.maxWage = req.query.maxWage;
   if (req.query.startDateFrom) filters.startDateFrom = req.query.startDateFrom;
   if (req.query.startDateTo) filters.startDateTo = req.query.startDateTo;
+  if (req.query.urgency) filters.urgency = req.query.urgency;
 
   try {
     const allJobs = await list(filters);

@@ -126,6 +126,8 @@ const config = {
     expiryHours: 72,               // الفرصة تنتهي بعد 72 ساعة لو مش مكتملة
     autoMatchByLocation: true,     // مطابقة تلقائية حسب الموقع الجغرافي
     maxDistanceKm: 30,             // أقصى مسافة للمطابقة التلقائية (كم)
+    workerConfirmationRequired: true, // العامل لازم يأكد بعد القبول
+    workerConfirmationTimeoutHours: 4, // مهلة تأكيد العامل (4 ساعات)
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -443,7 +445,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.31.0',
+    cacheName: 'yawmia-v0.32.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -735,15 +737,27 @@ const config = {
     cleanupIntervalMs: 10 * 60 * 1000,       // تنظيف كل 10 دقائق
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 48. النسخ الاحتياطي التلقائي (BACKUP)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   BACKUP: {
     enabled: false,                          // false by default — enable in production
     hourEgypt: 3,                            // 3 صباحاً بتوقيت مصر
     retentionCount: 7,                       // الاحتفاظ بآخر 7 نسخ
     targetDir: './backups',
     verifyIntegrity: true,                   // فحص سلامة الملفات بعد النسخ
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 49. نموذج الاستعجال (URGENCY)
+  // ═══════════════════════════════════════════════════════════════
+  URGENCY: {
+    enabled: true,
+    levels: ['normal', 'urgent', 'immediate'],
+    defaultLevel: 'normal',
+    immediateExpiryHours: 6,                 // الفرص الفورية تنتهي بعد 6 ساعات
+    urgentExpiryHours: 24,                   // الفرص العاجلة تنتهي بعد 24 ساعة
+    immediateStartWindowMinutes: 30,         // نافذة البدء للفرص الفورية (دقيقة)
   },
 
 };

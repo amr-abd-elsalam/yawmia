@@ -84,6 +84,24 @@
             </select>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">مستوى الاستعجال</label>
+            <div class="radio-group" style="flex-direction:row;flex-wrap:wrap;">
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="normal" checked>
+                <span>📅 عادي</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="urgent">
+                <span>⚡ عاجل (24 ساعة)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="immediate">
+                <span>🔥 فوري (6 ساعات)</span>
+              </label>
+            </div>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="jobWorkers">عدد العمال</label>
@@ -129,6 +147,11 @@
 
         <!-- Job Listings -->
         <section class="card" id="jobsSection">
+          <div class="quick-filters" id="quickFilters" style="display:flex;gap:0.5rem;margin-block-end:1rem;flex-wrap:wrap;">
+            <button class="btn btn--sm btn--primary quick-filter active" data-urgency="">الكل</button>
+            <button class="btn btn--sm btn--ghost quick-filter" data-urgency="immediate">🔥 فوري</button>
+            <button class="btn btn--sm btn--ghost quick-filter" data-urgency="urgent">⚡ عاجل</button>
+          </div>
           <div class="section-header">
             <h2 class="card__title">الفرص المتاحة</h2>
             <div class="filters">

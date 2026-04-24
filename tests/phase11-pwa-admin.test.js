@@ -43,9 +43,9 @@ after(() => {
 
 describe('Phase 11 — Config', () => {
 
-  it('P11-01: Config has 48 sections', () => {
+  it('P11-01: Config has 49 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 48, `expected 48 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 49, `expected 49 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P11-02: PWA section exists with correct fields', () => {
@@ -145,7 +145,7 @@ describe('Phase 11 — PWA Files', () => {
   it('P11-13: sw.js exists and contains cache name', async () => {
     const swPath = resolve('frontend/sw.js');
     const content = await readFile(swPath, 'utf-8');
-    assert.ok(content.includes('yawmia-v0.31.0'), 'sw.js should contain cache name yawmia-v0.31.0');
+    assert.ok(content.includes('yawmia-v0.32.0'), 'sw.js should contain cache name yawmia-v0.32.0');
   });
 
   it('P11-14: sw.js contains STATIC_ASSETS array', async () => {
@@ -230,14 +230,14 @@ describe('Phase 11 — OTP Rate Limit Status Code', () => {
 
 describe('Phase 11 — Version', () => {
 
-  it('P11-19: package.json version is 0.31.0', async () => {
+  it('P11-19: package.json version is 0.32.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.31.0');
+    assert.strictEqual(pkg.version, '0.32.0');
   });
 
   it('P11-20: Config cacheName matches version', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 });

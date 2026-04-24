@@ -7,7 +7,7 @@ import { isValidId } from './services/database.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
-import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
+import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication, handleWorkerConfirm, handleWorkerDecline } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
@@ -45,7 +45,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.31.0',
+        version: '0.32.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -232,6 +232,8 @@ const routes = [
   // ── Application Management Routes ──
   { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },
   { method: 'POST', path: '/api/applications/:id/withdraw', middlewares: [requireAuth, requireRole('worker')], handler: handleWithdrawApplication },
+  { method: 'POST', path: '/api/applications/:id/confirm', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerConfirm },
+  { method: 'POST', path: '/api/applications/:id/decline', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerDecline },
 
   // ── Payment Routes ──
   { method: 'POST', path: '/api/jobs/:id/payment', middlewares: [requireAuth, requireRole('employer')], handler: handleCreatePayment },

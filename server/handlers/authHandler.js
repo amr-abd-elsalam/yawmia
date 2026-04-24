@@ -71,7 +71,7 @@ export async function handleVerifyOtp(req, res) {
       userAgent: req.headers['user-agent'] || '',
     };
     const result = await verifyOtp(phone, otp, sessionMetadata);
-    if (result.ok) {
+    if (!result.ok) {
       return sendJSON(res, 401, result);
     }
     return sendJSON(res, 200, result);

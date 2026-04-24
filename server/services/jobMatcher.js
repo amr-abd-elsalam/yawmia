@@ -80,6 +80,10 @@ async function matchAndNotify(data) {
         score += 1;
       }
 
+      // Urgency bonus
+      if (job.urgency === 'immediate') score += 3;
+      else if (job.urgency === 'urgent') score += 1;
+
       // Proximity match = +1
       if (config.JOB_MATCHING.matchByProximity && jobCoords) {
         const workerCoords = resolveCoordinates({

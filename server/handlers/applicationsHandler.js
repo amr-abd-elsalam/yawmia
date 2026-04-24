@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
-import { apply, accept, reject, listByJob, listByWorker, withdraw, countTodayByWorker } from '../services/applications.js';
+import { apply, accept, reject, listByJob, listByWorker, withdraw, countTodayByWorker, workerConfirm, workerDecline } from '../services/applications.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -190,5 +190,47 @@ export async function handleWithdrawApplication(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في سحب الطلب', code: 'WITHDRAW_ERROR' });
+  }
+}
+
+/**
+ * POST /api/applications/:id/confirm
+ * Worker confirms acceptance (two-phase)
+ * Requires: auth (worker)
+ */
+export async function handleWorkerConfirm(req, res) {
+  const applicationId = req.params.id;
+
+  try {
+    const result = await workerConfirm(applicationId, req.user.id);
+    if (!result.ok) {
+      const statusMap = { APPLICATION_NOT_FOUND: 404, NOT_APPLICATION_OWNER: 403, INVALID_STATUS: 400, DEADLINE_PASSED: 400 };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 200, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تأكيد الطلب', code: 'CONFIRM_ERROR' });
+  }
+}
+
+/**
+ * POST /api/applications/:id/decline
+ * Worker declines acceptance (two-phase)
+ * Requires: auth (worker)
+ */
+export async function handleWorkerDecline(req, res) {
+  const applicationId = req.params.id;
+
+  try {
+    const result = await workerDecline(applicationId, req.user.id);
+    if (!result.ok) {
+      const statusMap = { APPLICATION_NOT_FOUND: 404, NOT_APPLICATION_OWNER: 403, INVALID_STATUS: 400 };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, result);
+    }
+    return sendJSON(res, 200, result);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في رفض الطلب', code: 'DECLINE_ERROR' });
   }
 }
