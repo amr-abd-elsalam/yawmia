@@ -162,6 +162,51 @@ export async function listJSON(dirPath, options = {}) {
 }
 
 /**
+ * Paginated list of JSON files in a directory.
+ * Reads ONLY the requested slice — O(k) disk reads instead of O(n).
+ * @param {string} dirPath
+ * @param {{ skip?: number, limit?: number, prefix?: string, sortDir?: 'asc'|'desc' }} [options]
+ * @returns {Promise<{ items: object[], total: number }>}
+ */
+export async function paginatedListJSON(dirPath, options = {}) {
+  const skip = Math.max(0, options.skip || 0);
+  const limit = Math.max(0, options.limit || 20);
+  const prefix = options.prefix || '';
+  const sortDir = options.sortDir || 'desc';
+
+  try {
+    const files = await readdir(dirPath);
+    let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+    if (prefix) {
+      jsonFiles = jsonFiles.filter(f => f.startsWith(prefix));
+    }
+
+    // Sort by filename (lexicographic — crypto hex IDs are roughly chronological)
+    jsonFiles.sort();
+    if (sortDir === 'desc') {
+      jsonFiles.reverse();
+    }
+
+    const total = jsonFiles.length;
+
+    // Slice to requested page
+    const sliced = jsonFiles.slice(skip, skip + limit);
+
+    // Read only sliced files
+    const items = [];
+    for (const file of sliced) {
+      const data = await readJSON(join(dirPath, file));
+      if (data) items.push(data);
+    }
+
+    return { items, total };
+  } catch (err) {
+    if (err.code === 'ENOENT') return { items: [], total: 0 };
+    throw err;
+  }
+}
+
+/**
  * Read or create an index file
  */
 export async function readIndex(indexName) {

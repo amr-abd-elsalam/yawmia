@@ -116,7 +116,7 @@ export async function sendOtp(phone, role) {
 /**
  * Verify OTP and create session
  */
-export async function verifyOtp(phone, otp) {
+export async function verifyOtp(phone, otp, metadata) {
   const otpPath = getRecordPath('otp', phone);
   const otpData = await readJSON(otpPath);
 
@@ -160,8 +160,8 @@ export async function verifyOtp(phone, otp) {
     eventBus.emit('user:created', { userId: user.id, phone, role: otpData.role });
   }
 
-  // Create session
-  const session = await createSession(user.id, user.role);
+  // Create session (with optional metadata for IP/userAgent tracking)
+  const session = await createSession(user.id, user.role, metadata || undefined);
 
   eventBus.emit('session:created', { userId: user.id, token: session.token });
 

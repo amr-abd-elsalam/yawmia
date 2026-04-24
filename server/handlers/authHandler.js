@@ -65,8 +65,13 @@ export async function handleVerifyOtp(req, res) {
   }
 
   try {
-    const result = await verifyOtp(phone, otp);
-    if (!result.ok) {
+    // Extract metadata for session tracking
+    const sessionMetadata = {
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      userAgent: req.headers['user-agent'] || '',
+    };
+    const result = await verifyOtp(phone, otp, sessionMetadata);
+    if (result.ok) {
       return sendJSON(res, 401, result);
     }
     return sendJSON(res, 200, result);

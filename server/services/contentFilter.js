@@ -15,6 +15,15 @@ import { logger } from './logger.js';
 // Also matches with dashes/spaces: 010-1234-5678, 010 1234 5678
 const PHONE_REGEX = /01[0125][\s\-]?\d{4}[\s\-]?\d{4}/;
 
+// ── URL detection regex ──────────────────────────────────────
+// Matches: http://... https://... www.something...
+const URL_REGEX = /https?:\/\/[^\s]+|www\.[^\s]+/i;
+
+// ── Arabic-Indic digit phone detection ───────────────────────
+// Matches Egyptian phone in Arabic-Indic digits: ٠١٠١٢٣٤٥٦٧٨
+// Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩ (U+0660-U+0669)
+const ARABIC_PHONE_REGEX = /[\u0660-\u0661][\u0660-\u0669][\u0660-\u0669][\u0660-\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
+
 // ── Blocklist (pre-normalized Arabic terms) ──────────────────
 // Categories: harassment, fraud, contact_info bypass
 // Each term: { normalized: string, weight: number, category: string }
@@ -39,6 +48,28 @@ const RAW_BLOCKLIST = [
   { term: 'telegram', weight: 0.5, category: 'contact_info' },
   { term: 'كلمني على', weight: 0.4, category: 'contact_info' },
   { term: 'رقمي', weight: 0.3, category: 'contact_info' },
+  // Egyptian dialect — WhatsApp variations
+  { term: 'واتس اب', weight: 0.5, category: 'contact_info' },
+  { term: 'واتسب', weight: 0.5, category: 'contact_info' },
+  { term: 'whats app', weight: 0.5, category: 'contact_info' },
+  { term: 'وتساب', weight: 0.5, category: 'contact_info' },
+  { term: 'الواتس', weight: 0.5, category: 'contact_info' },
+  // Direct contact bypass
+  { term: 'ابعتلي', weight: 0.4, category: 'contact_info' },
+  { term: 'ابعتلى', weight: 0.4, category: 'contact_info' },
+  { term: 'رقم التليفون', weight: 0.4, category: 'contact_info' },
+  { term: 'رقم الموبايل', weight: 0.4, category: 'contact_info' },
+  { term: 'موبايلي', weight: 0.3, category: 'contact_info' },
+  { term: 'تليفوني', weight: 0.3, category: 'contact_info' },
+  { term: 'نمرتي', weight: 0.3, category: 'contact_info' },
+  { term: 'كلمني واتس', weight: 0.5, category: 'contact_info' },
+  { term: 'راسلني', weight: 0.3, category: 'contact_info' },
+  // Additional harassment/fraud
+  { term: 'كداب', weight: 0.35, category: 'fraud' },
+  { term: 'غشاش', weight: 0.35, category: 'fraud' },
+  { term: 'لص', weight: 0.35, category: 'fraud' },
+  { term: 'خاين', weight: 0.3, category: 'harassment' },
+  { term: 'قليل الادب', weight: 0.4, category: 'harassment' },
 ];
 
 // Pre-normalize blocklist terms (once at module load)
@@ -79,6 +110,18 @@ export function checkContent(text) {
   if (PHONE_REGEX.test(text)) {
     score += 0.8;
     flaggedTerms.push('رقم تليفون');
+  }
+
+  // 1b. URL detection (on raw text)
+  if (URL_REGEX.test(text)) {
+    score += 0.7;
+    flaggedTerms.push('رابط خارجي');
+  }
+
+  // 1c. Arabic-Indic digit phone detection (٠١٠١٢٣٤٥٦٧٨)
+  if (ARABIC_PHONE_REGEX.test(text)) {
+    score += 0.8;
+    flaggedTerms.push('رقم تليفون (أرقام عربية)');
   }
 
   // 2. Blocklist matching (on normalized text)

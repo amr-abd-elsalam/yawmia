@@ -255,6 +255,19 @@ if (config.MONITORING && config.MONITORING.enabled) {
   if (monitorTimer.unref) monitorTimer.unref();
 }
 
+// ── Backup Scheduler Timer (separate — checks hourly if backup is due) ──
+if (config.BACKUP && config.BACKUP.enabled) {
+  const backupTimer = setInterval(async () => {
+    try {
+      const { checkAndRunBackup } = await import('./server/services/backupScheduler.js');
+      await checkAndRunBackup();
+    } catch (err) {
+      logger.warn('Backup scheduler error', { error: err.message });
+    }
+  }, 60 * 60 * 1000); // Check every hour
+  if (backupTimer.unref) backupTimer.unref();
+}
+
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);

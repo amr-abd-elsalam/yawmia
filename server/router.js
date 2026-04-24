@@ -20,7 +20,7 @@ import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handl
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
 import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleAlert } from './handlers/alertsHandler.js';
 import { handleAddFavorite, handleRemoveFavorite, handleListFavorites, handleCheckFavorite } from './handlers/favoritesHandler.js';
-import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot } from './handlers/analyticsHandler.js';
+import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot, handleGetErrors } from './handlers/analyticsHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -45,7 +45,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.30.0',
+        version: '0.31.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -133,7 +133,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.30.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.31.0' });
     },
   },
 
@@ -247,6 +247,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/export/users', middlewares: [requireAdmin], handler: handleExportUsers },
   { method: 'GET', path: '/api/admin/monitoring', middlewares: [requireAdmin], handler: handleGetMonitoring },
   { method: 'GET', path: '/api/admin/monitoring/latest', middlewares: [requireAdmin], handler: handleGetLatestSnapshot },
+  { method: 'GET', path: '/api/admin/errors', middlewares: [requireAdmin], handler: handleGetErrors },
   { method: 'GET', path: '/api/admin/stats', middlewares: [requireAdmin], handler: handleAdminStats },
   { method: 'GET', path: '/api/admin/users', middlewares: [requireAdmin], handler: handleAdminUsers },
   { method: 'GET', path: '/api/admin/jobs', middlewares: [requireAdmin], handler: handleAdminJobs },
@@ -364,6 +365,12 @@ export function createRouter() {
           if (!res.writableEnded) {
             sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
           }
+          // Record error for aggregation (fire-and-forget)
+          try {
+            import('./services/errorAggregator.js').then(({ recordError }) => {
+              recordError(pathname, 500, err.message);
+            }).catch(() => {});
+          } catch (_) { /* non-fatal */ }
         }).finally(() => {
           const duration = Date.now() - startTime;
           logger.request(req, res.statusCode, duration);

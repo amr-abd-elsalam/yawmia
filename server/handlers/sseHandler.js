@@ -96,4 +96,21 @@ export async function handleNotificationStream(req, res) {
   // ── Register connection ──
   const lastEventId = req.headers['last-event-id'] || null;
   addConnection(user.id, res, lastEventId);
+
+  // ── Replay missed events (if reconnecting with last-event-id) ──
+  if (lastEventId) {
+    try {
+      const { getEventsSince } = await import('../services/eventReplayBuffer.js');
+      const missedEvents = getEventsSince(user.id, lastEventId);
+      for (const evt of missedEvents) {
+        try {
+          if (!res.writableEnded && !res.destroyed) {
+            res.write(formatSSE(evt.event, evt.data, evt.id));
+          }
+        } catch (_) { /* ignore write errors */ }
+      }
+    } catch (_) {
+      // Replay buffer unavailable — degrade gracefully
+    }
+  }
 }

@@ -231,3 +231,16 @@ export async function handleGetLatestSnapshot(req, res) {
     sendJSON(res, 500, { error: 'خطأ في جلب آخر snapshot', code: 'MONITORING_ERROR' });
   }
 }
+
+/**
+ * GET /api/admin/errors
+ */
+export async function handleGetErrors(req, res) {
+  try {
+    const { getErrorSummary } = await import('../services/errorAggregator.js');
+    const summary = getErrorSummary();
+    sendJSON(res, 200, { ok: true, ...summary });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب ملخص الأخطاء', code: 'ERROR_SUMMARY_ERROR' });
+  }
+}

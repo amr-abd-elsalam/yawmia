@@ -77,7 +77,17 @@ export function addConnection(userId, res, lastEventId) {
  */
 export function sendToUser(userId, eventType, data, eventId) {
   const userConns = connections.get(userId);
-  if (!userConns || userConns.size === 0) return;
+  if (!userConns || userConns.size === 0) {
+    // Still buffer the event even if no active connections (for replay on reconnect)
+    if (eventId) {
+      try {
+        import('./eventReplayBuffer.js').then(({ addEvent }) => {
+          addEvent(userId, eventId, eventType, data);
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    }
+    return;
+  }
 
   const msg = formatSSE(eventType, data, eventId);
 
@@ -89,6 +99,15 @@ export function sendToUser(userId, eventType, data, eventId) {
     } catch (_) {
       // Ignore write errors on dead connections
     }
+  }
+
+  // Buffer event for replay on reconnect (fire-and-forget)
+  if (eventId) {
+    try {
+      import('./eventReplayBuffer.js').then(({ addEvent }) => {
+        addEvent(userId, eventId, eventType, data);
+      }).catch(() => {});
+    } catch (_) { /* non-fatal */ }
   }
 }
 

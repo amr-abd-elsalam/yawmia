@@ -185,6 +185,8 @@ const config = {
     enabled: true,
     ttlDays: 30,
     maxSessions: 50000,
+    rotateOnAuth: true,                      // تدوير التوكن بعد التحقق
+    trackMetadata: true,                     // تتبع IP و user-agent
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -303,6 +305,12 @@ const config = {
     otpMaxRequests: 5,                   // أقصى طلبات OTP في النافذة
     otpWindowMs: 300000,                 // نافذة OTP (5 دقائق)
     message: 'تم تجاوز الحد المسموح من الطلبات. حاول بعد قليل.',
+    perUserEnabled: true,                    // تحديد معدل لكل مستخدم
+    perUserMaxRequests: 60,                  // أقصى طلبات لكل مستخدم في الدقيقة
+    perUserWindowMs: 60000,                  // نافذة المستخدم (1 دقيقة)
+    penaltyThreshold: 3,                     // عدد المخالفات قبل العقوبة
+    penaltyWindowMs: 600000,                 // نافذة المخالفات (10 دقائق)
+    penaltyCooldownMs: 300000,               // مدة العقوبة (5 دقائق)
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -435,7 +443,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.30.0',
+    cacheName: 'yawmia-v0.31.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -715,6 +723,27 @@ const config = {
   FAVORITES: {
     enabled: true,
     maxPerUser: 50,                          // أقصى عدد مفضّلة لكل صاحب عمل
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 47. إعادة تشغيل أحداث SSE (SSE_REPLAY)
+  // ═══════════════════════════════════════════════════════════
+  SSE_REPLAY: {
+    enabled: true,
+    maxEventsPerUser: 100,                   // أقصى عدد أحداث مخزّنة لكل مستخدم
+    maxEventAgeMs: 30 * 60 * 1000,           // أقصى عمر حدث (30 دقيقة)
+    cleanupIntervalMs: 10 * 60 * 1000,       // تنظيف كل 10 دقائق
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // 48. النسخ الاحتياطي التلقائي (BACKUP)
+  // ═══════════════════════════════════════════════════════════
+  BACKUP: {
+    enabled: false,                          // false by default — enable in production
+    hourEgypt: 3,                            // 3 صباحاً بتوقيت مصر
+    retentionCount: 7,                       // الاحتفاظ بآخر 7 نسخ
+    targetDir: './backups',
+    verifyIntegrity: true,                   // فحص سلامة الملفات بعد النسخ
   },
 
 };

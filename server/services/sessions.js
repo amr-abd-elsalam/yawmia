@@ -9,7 +9,7 @@ import { atomicWrite, readJSON, safeReadJSON, deleteJSON, listJSON, getRecordPat
 /**
  * Create a new session
  */
-export async function createSession(userId, role) {
+export async function createSession(userId, role, metadata) {
   const token = 'ses_' + crypto.randomBytes(16).toString('hex');
   const now = new Date();
   const expiresAt = new Date(now.getTime() + config.SESSIONS.ttlDays * 24 * 60 * 60 * 1000);
@@ -22,10 +22,38 @@ export async function createSession(userId, role) {
     expiresAt: expiresAt.toISOString(),
   };
 
+  // Add metadata if tracking is enabled and metadata is provided
+  if (config.SESSIONS.trackMetadata && metadata) {
+    session.ip = metadata.ip || null;
+    session.userAgent = metadata.userAgent || null;
+  }
+
   const sessionPath = getRecordPath('sessions', token);
   await atomicWrite(sessionPath, session);
 
   return session;
+}
+
+/**
+ * Rotate a session token — creates new session, destroys old.
+ * New session is created FIRST to prevent auth failure window.
+ * Graceful: if oldToken doesn't exist, just creates new.
+ * @param {string} oldToken
+ * @param {string} userId
+ * @param {string} role
+ * @param {object} [metadata] — { ip, userAgent }
+ * @returns {Promise<object>} new session
+ */
+export async function rotateSession(oldToken, userId, role, metadata) {
+  // Create new session first (no auth gap)
+  const newSession = await createSession(userId, role, metadata);
+
+  // Destroy old session (fire-and-forget)
+  if (oldToken) {
+    await destroySession(oldToken).catch(() => {});
+  }
+
+  return newSession;
 }
 
 /**

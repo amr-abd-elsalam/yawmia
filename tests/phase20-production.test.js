@@ -32,19 +32,19 @@ async function fileExists(path) {
 
 describe('Phase 20 — Config & Version', () => {
 
-  it('P20-01: package.json version is 0.25.0', async () => {
+  it('P20-01: package.json version is 0.31.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.30.0');
+    assert.strictEqual(pkg.version, '0.31.0');
   });
 
-  it('P20-02: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
+  it('P20-02: PWA cacheName is yawmia-v0.31.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
   });
 
-  it('P20-03: Config has 38 sections', () => {
+  it('P20-03: Config has 48 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 46, `expected 43 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 48, `expected 48 config sections, got ${keys.length}`);
   });
 
   it('P20-04: ENV section exists with correct fields', () => {
@@ -67,11 +67,11 @@ describe('Phase 20 — Config & Version', () => {
     assert.strictEqual(config.DATABASE.dirs.audit, 'audit');
   });
 
-  it('P20-07: Router has 62 routes', async () => {
+  it('P20-07: Router has 90 routes', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 89, `expected 74 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 90, `expected 90 routes, got ${routeMatches.length}`);
   });
 });
 
@@ -235,9 +235,9 @@ describe('Phase 20 — Health & Docs (Source Check)', () => {
     assert.ok(content.includes("environment:"), 'health should include environment');
   });
 
-  it('P20-20: health handler version is 0.25.0', async () => {
+  it('P20-20: health handler version is 0.31.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.30.0'"), 'version should be 0.29.0');
+    assert.ok(content.includes("version: '0.31.0'"), 'version should be 0.31.0');
   });
 
   it('P20-21: /api/docs route exists', async () => {
@@ -267,8 +267,8 @@ describe('Phase 20 — File Existence', () => {
     assert.ok(await fileExists('server/services/auditLog.js'));
   });
 
-  it('P20-25: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
+  it('P20-25: sw.js CACHE_NAME is yawmia-v0.31.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.30.0'"), 'cache name should be yawmia-v0.30.0');
+    assert.ok(content.includes("'yawmia-v0.31.0'"), 'cache name should be yawmia-v0.31.0');
   });
 });
