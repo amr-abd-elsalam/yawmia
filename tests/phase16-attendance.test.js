@@ -86,7 +86,7 @@ describe('Phase 16 — Config', () => {
 
   it('P16-01: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 46, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 48, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P16-02: ATTENDANCE section has correct fields', () => {
@@ -353,11 +353,11 @@ describe('Phase 16 — Version & Routes', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.30.0');
+    assert.strictEqual(pkg.version, '0.31.0');
   });
 
   it('P16-36: PWA cacheName v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
   });
 
   it('P16-37: Router has 61 routes', async () => {
@@ -365,6 +365,6 @@ describe('Phase 16 — Version & Routes', () => {
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 89, `expected 74 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 90, `expected 74 routes, got ${routeMatches.length}`);
   });
 });
