@@ -58,7 +58,7 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-06: DATABASE.indexFiles has 15 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 18);
+    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 17);
     assert.ok(config.DATABASE.indexFiles.messageJobIndex);
     assert.ok(config.DATABASE.indexFiles.messageUserIndex);
     assert.ok(config.DATABASE.indexFiles.pushUserIndex);
