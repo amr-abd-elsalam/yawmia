@@ -665,7 +665,7 @@ describe('Phase 33 — Version & Config', () => {
   it('P33-33: package.json version is 0.29.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.31.0');
+    assert.strictEqual(pkg.version, '0.32.0');
   });
 
   it('P33-34: sw.js CACHE_NAME is yawmia-v0.31.0', async () => {

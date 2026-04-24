@@ -73,7 +73,7 @@ describe('Phase 32 — Config', () => {
 
   it('P32-62: config total sections = 45', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 48, `expected 45, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 49, `expected 45, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 
@@ -85,7 +85,7 @@ describe('Phase 32 — Version', () => {
   it('P32-63: package.json version is 0.28.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.31.0');
+    assert.strictEqual(pkg.version, '0.32.0');
   });
 
   it('P32-64: sw.js CACHE_NAME is yawmia-v0.31.0', async () => {
@@ -422,7 +422,7 @@ describe('Phase 32 — Routes', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches);
-    assert.strictEqual(routeMatches.length, 90, `expected 84 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 92, `expected 84 routes, got ${routeMatches.length}`);
   });
 });
 

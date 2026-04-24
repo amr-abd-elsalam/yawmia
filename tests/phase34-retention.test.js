@@ -363,7 +363,7 @@ describe('Phase 34 — Version & Config', () => {
   it('P34-28: package.json version is 0.31.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.31.0');
+    assert.strictEqual(pkg.version, '0.32.0');
   });
 
   it('P34-29: FAVORITES section exists in config', () => {
@@ -382,6 +382,6 @@ describe('Phase 34 — Version & Config', () => {
 
   it('P34-32: Config has 46 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 48, `expected 46 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 49, `expected 46 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });

@@ -366,7 +366,7 @@ describe('Phase 30 — Expiry Warnings', () => {
 describe('Phase 30 — Version', () => {
   it('P30-59: package.json version is 0.27.0', async () => {
     const pkg = JSON.parse(await readSource('package.json'));
-    assert.equal(pkg.version, '0.31.0');
+    assert.equal(pkg.version, '0.32.0');
   });
 
   it('P30-60: config PWA cacheName is yawmia-v0.27.0', async () => {
@@ -383,6 +383,6 @@ describe('Phase 30 — Version', () => {
     const config = (await import('../config.js')).default;
     // Count top-level keys (sections)
     const keys = Object.keys(config);
-    assert.equal(keys.length, 48, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.equal(keys.length, 49, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });

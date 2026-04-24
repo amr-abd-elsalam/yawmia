@@ -506,7 +506,7 @@ describe('Phase 31 — Version', () => {
 
   it('P31-45: package.json version is 0.27.0', async () => {
     const pkg = JSON.parse(await readSource('package.json'));
-    assert.strictEqual(pkg.version, '0.31.0');
+    assert.strictEqual(pkg.version, '0.32.0');
   });
 
   it('P31-46: sw.js CACHE_NAME is yawmia-v0.27.0', async () => {
@@ -520,7 +520,7 @@ describe('Phase 31 — Version', () => {
 
   it('P31-48: config has 43 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 48, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 49, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 
