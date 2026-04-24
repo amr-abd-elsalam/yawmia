@@ -170,7 +170,7 @@ export async function listJSON(dirPath, options = {}) {
  */
 export async function paginatedListJSON(dirPath, options = {}) {
   const skip = Math.max(0, options.skip || 0);
-  const limit = Math.max(0, options.limit || 20);
+  const limit = Math.max(0, typeof options.limit === 'number' ? options.limit : 20);
   const prefix = options.prefix || '';
   const sortDir = options.sortDir || 'desc';
 

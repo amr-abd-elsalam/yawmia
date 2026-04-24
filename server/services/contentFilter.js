@@ -22,7 +22,8 @@ const URL_REGEX = /https?:\/\/[^\s]+|www\.[^\s]+/i;
 // ── Arabic-Indic digit phone detection ───────────────────────
 // Matches Egyptian phone in Arabic-Indic digits: ٠١٠١٢٣٤٥٦٧٨
 // Arabic-Indic digits: ٠١٢٣٤٥٦٧٨٩ (U+0660-U+0669)
-const ARABIC_PHONE_REGEX = /[\u0660-\u0661][\u0660-\u0669][\u0660-\u0669][\u0660-\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
+// Pattern: ٠١[٠١٢٥]XXXXXXXX (11 Arabic-Indic digits, mirrors 01[0125]XXXXXXXX)
+const ARABIC_PHONE_REGEX = /\u0660\u0661[\u0660\u0661\u0662\u0665][\s\-]?[\u0660-\u0669]{4}[\s\-]?[\u0660-\u0669]{4}/;
 
 // ── Blocklist (pre-normalized Arabic terms) ──────────────────
 // Categories: harassment, fraud, contact_info bypass
