@@ -103,7 +103,7 @@ describe('Phase 17 — Config', () => {
   });
 
   it('P17-04: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
   it('P17-05: ATTENDANCE.allowEmployerOverride is true', () => {

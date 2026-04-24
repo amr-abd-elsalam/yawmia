@@ -511,11 +511,11 @@ describe('Phase 31 — Version', () => {
 
   it('P31-46: sw.js CACHE_NAME is yawmia-v0.27.0', async () => {
     const src = await readSource('frontend/sw.js');
-    assert.ok(src.includes("'yawmia-v0.31.0'"), 'sw.js should use v0.27.0 cache name');
+    assert.ok(src.includes("'yawmia-v0.32.0'"), 'sw.js should use v0.27.0 cache name');
   });
 
   it('P31-47: config PWA cacheName is yawmia-v0.27.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
   it('P31-48: config has 43 sections', () => {

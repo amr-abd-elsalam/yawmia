@@ -259,13 +259,13 @@ describe('Phase 27 — Version', () => {
     assert.strictEqual(pkg.version, '0.32.0');
   });
 
-  it('P27-32: config PWA cacheName is yawmia-v0.31.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+  it('P27-32: config PWA cacheName is yawmia-v0.32.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
-  it('P27-33: sw.js CACHE_NAME is yawmia-v0.31.0', async () => {
+  it('P27-33: sw.js CACHE_NAME is yawmia-v0.32.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.31.0'"), 'sw.js cache name should be yawmia-v0.31.0');
+    assert.ok(content.includes("'yawmia-v0.32.0'"), 'sw.js cache name should be yawmia-v0.32.0');
   });
 
   it('P27-34: health endpoint version is 0.28.0', async () => {

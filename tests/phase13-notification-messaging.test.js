@@ -71,7 +71,7 @@ describe('Phase 13 — Config', () => {
   });
 
   it('P13-04: PWA cacheName updated to v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
   it('P13-05: criticalEvents has 6 entries — 4 true + 2 false', () => {

@@ -57,7 +57,7 @@ describe('Phase 21 — Config & Version', () => {
   });
 
   it('P21-06: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 });
 

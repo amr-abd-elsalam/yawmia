@@ -357,7 +357,7 @@ describe('Phase 16 — Version & Routes', () => {
   });
 
   it('P16-36: PWA cacheName v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
   it('P16-37: Router has 61 routes', async () => {

@@ -40,8 +40,8 @@ describe('Phase 18 — Config & Version', () => {
     assert.strictEqual(pkg.version, '0.32.0');
   });
 
-  it('P18-02: PWA cacheName is yawmia-v0.31.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.31.0');
+  it('P18-02: PWA cacheName is yawmia-v0.32.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
   });
 
   it('P18-03: Router has 89 routes', async () => {
