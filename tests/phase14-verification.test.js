@@ -59,7 +59,7 @@ describe('Phase 14 — Config', () => {
 
   it('P14-01: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 45, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 46, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P14-02: VERIFICATION section has correct fields', () => {
@@ -91,17 +91,17 @@ describe('Phase 14 — Config', () => {
 
   it('P14-05: DATABASE.dirs includes verifications', () => {
     assert.strictEqual(config.DATABASE.dirs.verifications, 'verifications');
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 16);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 18);
   });
 
   it('P14-06: DATABASE.indexFiles includes userVerificationIndex', () => {
     assert.ok(config.DATABASE.indexFiles.userVerificationIndex);
     assert.strictEqual(config.DATABASE.indexFiles.userVerificationIndex, 'verifications/user-index.json');
-    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 16);
+    assert.strictEqual(Object.keys(config.DATABASE.indexFiles).length, 17);
   });
 
   it('P14-07: PWA cacheName updated to v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 });
 
@@ -384,6 +384,6 @@ describe('Phase 14 — Integration', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.29.0');
+    assert.strictEqual(pkg.version, '0.30.0');
   });
 });

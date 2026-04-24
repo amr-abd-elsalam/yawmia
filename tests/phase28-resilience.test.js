@@ -118,7 +118,7 @@ describe('Phase 28 — Health Endpoint', () => {
 
   it('P28-13: health version is 0.28.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.29.0'"), 'health version should be 0.28.0');
+    assert.ok(content.includes("version: '0.30.0'"), 'health version should be 0.28.0');
   });
 });
 
@@ -275,11 +275,11 @@ describe('Phase 28 — Version', () => {
   it('P28-33: package.json version is 0.28.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.29.0');
+    assert.strictEqual(pkg.version, '0.30.0');
   });
 
   it('P28-34: config PWA cacheName is yawmia-v0.29.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 });
 
@@ -293,7 +293,7 @@ describe('Phase 28 — Route Count', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 84, `expected 84 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 89, `expected 84 routes, got ${routeMatches.length}`);
   });
 });
 

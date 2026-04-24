@@ -310,7 +310,7 @@ describe('Phase 29 — Config', () => {
 
   it('P29-45: config has 43 sections total', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 45, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 46, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 
@@ -323,11 +323,11 @@ describe('Phase 29 — Version', () => {
   it('P29-46: package.json version is 0.27.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.29.0');
+    assert.strictEqual(pkg.version, '0.30.0');
   });
 
   it('P29-47: config PWA cacheName is yawmia-v0.27.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 
   it('P29-48: sw.js CACHE_NAME is yawmia-v0.27.0', async () => {

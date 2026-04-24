@@ -99,11 +99,11 @@ describe('Phase 17 — Config', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.29.0');
+    assert.strictEqual(pkg.version, '0.30.0');
   });
 
   it('P17-04: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 
   it('P17-05: ATTENDANCE.allowEmployerOverride is true', () => {
@@ -359,7 +359,7 @@ describe('Phase 17 — Routes', () => {
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 84, `expected 74 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 89, `expected 74 routes, got ${routeMatches.length}`);
   });
 });
 

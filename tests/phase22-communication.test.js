@@ -22,7 +22,7 @@ const config = (await import('../config.js')).default;
 
 describe('Phase 22 — Config', () => {
   it('P22-01: version is 0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 
   it('P22-02: has 41 config sections', () => {
@@ -52,20 +52,20 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-05: DATABASE.dirs has 14 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.dirs).length, 16);
+    assert.equal(Object.keys(config.DATABASE.dirs).length, 18);
     assert.ok(config.DATABASE.dirs.messages);
     assert.ok(config.DATABASE.dirs.push_subscriptions);
   });
 
   it('P22-06: DATABASE.indexFiles has 15 entries', () => {
-    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 16);
+    assert.equal(Object.keys(config.DATABASE.indexFiles).length, 17);
     assert.ok(config.DATABASE.indexFiles.messageJobIndex);
     assert.ok(config.DATABASE.indexFiles.messageUserIndex);
     assert.ok(config.DATABASE.indexFiles.pushUserIndex);
   });
 
   it('P22-07: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.29.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.30.0');
   });
 });
 
