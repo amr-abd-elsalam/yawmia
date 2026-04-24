@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.31.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-24T14:51:33.765Z
+# يوميّة (Yawmia) v0.32.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-24T17:12:48.429Z
 > Files in this part: 6
 
 ## Files
@@ -196,6 +196,8 @@ const config = {
     expiryHours: 72,               // الفرصة تنتهي بعد 72 ساعة لو مش مكتملة
     autoMatchByLocation: true,     // مطابقة تلقائية حسب الموقع الجغرافي
     maxDistanceKm: 30,             // أقصى مسافة للمطابقة التلقائية (كم)
+    workerConfirmationRequired: true, // العامل لازم يأكد بعد القبول
+    workerConfirmationTimeoutHours: 4, // مهلة تأكيد العامل (4 ساعات)
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -513,7 +515,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.31.0',
+    cacheName: 'yawmia-v0.32.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -805,15 +807,27 @@ const config = {
     cleanupIntervalMs: 10 * 60 * 1000,       // تنظيف كل 10 دقائق
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 48. النسخ الاحتياطي التلقائي (BACKUP)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   BACKUP: {
     enabled: false,                          // false by default — enable in production
     hourEgypt: 3,                            // 3 صباحاً بتوقيت مصر
     retentionCount: 7,                       // الاحتفاظ بآخر 7 نسخ
     targetDir: './backups',
     verifyIntegrity: true,                   // فحص سلامة الملفات بعد النسخ
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 49. نموذج الاستعجال (URGENCY)
+  // ═══════════════════════════════════════════════════════════════
+  URGENCY: {
+    enabled: true,
+    levels: ['normal', 'urgent', 'immediate'],
+    defaultLevel: 'normal',
+    immediateExpiryHours: 6,                 // الفرص الفورية تنتهي بعد 6 ساعات
+    urgentExpiryHours: 24,                   // الفرص العاجلة تنتهي بعد 24 ساعة
+    immediateStartWindowMinutes: 30,         // نافذة البدء للفرص الفورية (دقيقة)
   },
 
 };
@@ -864,7 +878,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1214,7 +1228,7 @@ import { isValidId } from './services/database.js';
 import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
-import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication } from './handlers/applicationsHandler.js';
+import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication, handleWorkerConfirm, handleWorkerDecline } from './handlers/applicationsHandler.js';
 import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
@@ -1252,7 +1266,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.31.0',
+        version: '0.32.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1439,6 +1453,8 @@ const routes = [
   // ── Application Management Routes ──
   { method: 'GET', path: '/api/applications/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyApplications },
   { method: 'POST', path: '/api/applications/:id/withdraw', middlewares: [requireAuth, requireRole('worker')], handler: handleWithdrawApplication },
+  { method: 'POST', path: '/api/applications/:id/confirm', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerConfirm },
+  { method: 'POST', path: '/api/applications/:id/decline', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerDecline },
 
   // ── Payment Routes ──
   { method: 'POST', path: '/api/jobs/:id/payment', middlewares: [requireAuth, requireRole('employer')], handler: handleCreatePayment },

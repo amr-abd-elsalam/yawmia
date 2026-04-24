@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.31.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-24T14:51:33.768Z
+# يوميّة (Yawmia) v0.32.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-24T17:12:48.432Z
 > Files in this part: 45
 
 ## Files
@@ -1077,6 +1077,102 @@ export async function countByStatus() {
     if (counts[app.status] !== undefined) counts[app.status]++;
   }
   return counts;
+}
+
+/**
+ * Worker confirms acceptance (two-phase acceptance)
+ * @param {string} applicationId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, error?: string, code?: string }>}
+ */
+export function workerConfirm(applicationId, workerId) {
+  return withLock(`confirm:${applicationId}`, async () => {
+    const application = await findById(applicationId);
+    if (!application) {
+      return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+    }
+    if (application.workerId !== workerId) {
+      return { ok: false, error: 'مش مسموحلك تأكد هذا الطلب', code: 'NOT_APPLICATION_OWNER' };
+    }
+    if (application.status !== 'accepted') {
+      return { ok: false, error: 'الطلب مش في حالة مقبول', code: 'INVALID_STATUS' };
+    }
+
+    // Deadline check
+    if (application.respondedAt && config.JOBS.workerConfirmationTimeoutHours) {
+      const deadline = new Date(new Date(application.respondedAt).getTime() + config.JOBS.workerConfirmationTimeoutHours * 60 * 60 * 1000);
+      if (new Date() > deadline) {
+        return { ok: false, error: 'انتهت مهلة التأكيد', code: 'DEADLINE_PASSED' };
+      }
+    }
+
+    application.status = 'worker_confirmed';
+    application.workerConfirmedAt = new Date().toISOString();
+    const appPath = getRecordPath('applications', applicationId);
+    await atomicWrite(appPath, application);
+
+    eventBus.emit('application:worker_confirmed', {
+      applicationId,
+      jobId: application.jobId,
+      workerId,
+    });
+
+    return { ok: true, application };
+  });
+}
+
+/**
+ * Worker declines acceptance (two-phase acceptance)
+ * @param {string} applicationId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, error?: string, code?: string }>}
+ */
+export function workerDecline(applicationId, workerId) {
+  return withLock(`decline:${applicationId}`, async () => {
+    const application = await findById(applicationId);
+    if (!application) {
+      return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+    }
+    if (application.workerId !== workerId) {
+      return { ok: false, error: 'مش مسموحلك ترفض هذا الطلب', code: 'NOT_APPLICATION_OWNER' };
+    }
+    if (application.status !== 'accepted') {
+      return { ok: false, error: 'الطلب مش في حالة مقبول', code: 'INVALID_STATUS' };
+    }
+
+    application.status = 'worker_declined';
+    application.workerDeclinedAt = new Date().toISOString();
+    const appPath = getRecordPath('applications', applicationId);
+    await atomicWrite(appPath, application);
+
+    // Decrement workersAccepted on the job
+    const job = await findJobById(application.jobId);
+    if (job && job.workersAccepted > 0) {
+      job.workersAccepted -= 1;
+      // Revert job status from filled → open if needed
+      if (job.status === 'filled' && job.workersAccepted < job.workersNeeded) {
+        job.status = 'open';
+        // Update jobs index
+        const { readIndex, writeIndex } = await import('./database.js');
+        const jobsIndex = await readIndex('jobsIndex');
+        if (jobsIndex[job.id]) {
+          jobsIndex[job.id].status = 'open';
+          await writeIndex('jobsIndex', jobsIndex);
+        }
+      }
+      const jobPath = getRecordPath('jobs', job.id);
+      await atomicWrite(jobPath, job);
+    }
+
+    eventBus.emit('application:worker_declined', {
+      applicationId,
+      jobId: application.jobId,
+      workerId,
+      employerId: job ? job.employerId : null,
+    });
+
+    return { ok: true, application };
+  });
 }
 
 /**
@@ -4880,6 +4976,10 @@ async function matchAndNotify(data) {
         score += 1;
       }
 
+      // Urgency bonus
+      if (job.urgency === 'immediate') score += 3;
+      else if (job.urgency === 'urgent') score += 1;
+
       // Proximity match = +1
       if (config.JOB_MATCHING.matchByProximity && jobCoords) {
         const workerCoords = resolveCoordinates({
@@ -4996,8 +5096,30 @@ export function calculateFees(workersNeeded, dailyWage, durationDays) {
 export async function create(employerId, fields) {
   const id = 'job_' + crypto.randomBytes(6).toString('hex');
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + config.JOBS.expiryHours * 60 * 60 * 1000);
-  const { totalCost, platformFee } = calculateFees(fields.workersNeeded, fields.dailyWage, fields.durationDays);
+  const urgency = fields.urgency || (config.URGENCY ? config.URGENCY.defaultLevel : 'normal');
+
+  // Adaptive expiry based on urgency
+  let expiryHours = config.JOBS.expiryHours; // default 72h (normal)
+  if (config.URGENCY && config.URGENCY.enabled) {
+    if (urgency === 'immediate') expiryHours = config.URGENCY.immediateExpiryHours;
+    else if (urgency === 'urgent') expiryHours = config.URGENCY.urgentExpiryHours;
+  }
+  const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
+
+  // Immediate jobs: auto-calculate startDate + default durationDays
+  let startDate = fields.startDate;
+  let durationDays = fields.durationDays;
+  if (urgency === 'immediate') {
+    if (!startDate) {
+      const egyptNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      startDate = egyptNow.toISOString().split('T')[0];
+    }
+    if (!durationDays || typeof durationDays !== 'number') {
+      durationDays = 1;
+    }
+  }
+
+  const { totalCost, platformFee } = calculateFees(fields.workersNeeded, fields.dailyWage, durationDays);
 
   const job = {
     id,
@@ -5011,11 +5133,12 @@ export async function create(employerId, fields) {
     workersNeeded: fields.workersNeeded,
     workersAccepted: 0,
     dailyWage: fields.dailyWage,
-    startDate: fields.startDate,
-    durationDays: fields.durationDays,
+    startDate,
+    durationDays,
     description: (fields.description || '').trim(),
     totalCost,
     platformFee,
+    urgency,
     status: 'open',
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
@@ -5033,6 +5156,7 @@ export async function create(employerId, fields) {
     category: job.category,
     governorate: job.governorate,
     status: job.status,
+    urgency: job.urgency || 'normal',
     createdAt: job.createdAt,
   };
   await writeIndex('jobsIndex', jobsIndex);
@@ -5071,6 +5195,9 @@ export async function list(filters = {}) {
   }
   if (filters.category) {
     jobs = jobs.filter(j => j.category === filters.category);
+  }
+  if (filters.urgency) {
+    jobs = jobs.filter(j => (j.urgency || 'normal') === filters.urgency);
   }
   if (filters.status) {
     jobs = jobs.filter(j => j.status === filters.status);
@@ -5173,13 +5300,19 @@ export async function list(filters = {}) {
   // Sort (skip if already sorted by proximity)
   if (!filters._proximitySorted) {
     const sort = filters.sort || 'newest';
+    const urgencyOrder = { immediate: 0, urgent: 1, normal: 2 };
     if (sort === 'wage_high') {
       jobs.sort((a, b) => (b.dailyWage || 0) - (a.dailyWage || 0));
     } else if (sort === 'wage_low') {
       jobs.sort((a, b) => (a.dailyWage || 0) - (b.dailyWage || 0));
     } else {
-      // Default: newest first
-      jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // Default: urgency-first, then newest
+      jobs.sort((a, b) => {
+        const ua = urgencyOrder[a.urgency || 'normal'] ?? 2;
+        const ub = urgencyOrder[b.urgency || 'normal'] ?? 2;
+        if (ua !== ub) return ua - ub;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
     }
   }
 
@@ -10093,6 +10226,23 @@ export function validateDailyWage(wage) {
 }
 
 /**
+ * Validate urgency level
+ * @returns {{ valid: boolean, error?: string }}
+ */
+export function validateUrgency(urgency) {
+  if (urgency === undefined || urgency === null) {
+    return { valid: true }; // defaults to 'normal'
+  }
+  if (typeof urgency !== 'string') {
+    return { valid: false, error: 'مستوى الاستعجال لازم يكون نص' };
+  }
+  if (!config.URGENCY || !config.URGENCY.levels || !config.URGENCY.levels.includes(urgency)) {
+    return { valid: false, error: 'مستوى الاستعجال غير صحيح' };
+  }
+  return { valid: true };
+}
+
+/**
  * Validate profile fields (name, governorate, categories)
  */
 export function validateProfileFields(body, role) {
@@ -10179,26 +10329,45 @@ export function validateJobFields(body) {
     if (!wageResult.valid) errors.push(wageResult.error);
   }
 
-  // startDate
-  if (!body.startDate || typeof body.startDate !== 'string') {
-    errors.push('تاريخ البدء مطلوب');
-  } else {
-    // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
-    const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const todayEgypt = egyptNow.toISOString().split('T')[0];
-    if (body.startDate < todayEgypt) {
-      errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+  // urgency (optional — defaults to 'normal')
+  if (body.urgency !== undefined && body.urgency !== null) {
+    const urgencyResult = validateUrgency(body.urgency);
+    if (!urgencyResult.valid) errors.push(urgencyResult.error);
+  }
+
+  const isImmediate = body.urgency === 'immediate';
+
+  // startDate — immediate jobs skip this validation (auto-calculated)
+  if (!isImmediate) {
+    if (!body.startDate || typeof body.startDate !== 'string') {
+      errors.push('تاريخ البدء مطلوب');
+    } else {
+      // Validate startDate is today or future (Egypt timezone approximation: UTC+2)
+      const egyptNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const todayEgypt = egyptNow.toISOString().split('T')[0];
+      if (body.startDate < todayEgypt) {
+        errors.push('تاريخ البدء لازم يكون النهارده أو بعد كده');
+      }
     }
   }
 
-  // durationDays
-  if (body.durationDays == null || typeof body.durationDays !== 'number') {
-    errors.push('مدة العمل بالأيام مطلوبة');
+  // durationDays — immediate jobs default to 1 if not provided
+  if (!isImmediate) {
+    if (body.durationDays == null || typeof body.durationDays !== 'number') {
+      errors.push('مدة العمل بالأيام مطلوبة');
+    } else {
+      body.durationDays = Math.floor(body.durationDays);
+      if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+        errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+      }
+    }
   } else {
-    // Integer enforcement — silently truncate decimals
-    body.durationDays = Math.floor(body.durationDays);
-    if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
-      errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+    // Immediate: default to 1 if missing, validate if provided
+    if (body.durationDays != null && typeof body.durationDays === 'number') {
+      body.durationDays = Math.floor(body.durationDays);
+      if (body.durationDays < config.VALIDATION.minDurationDays || body.durationDays > config.VALIDATION.maxDurationDays) {
+        errors.push(`مدة العمل لازم تكون بين ${config.VALIDATION.minDurationDays} و ${config.VALIDATION.maxDurationDays} يوم`);
+      }
     }
   }
 

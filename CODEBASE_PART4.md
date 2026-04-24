@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.31.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-24T14:51:33.788Z
+# يوميّة (Yawmia) v0.32.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-24T17:12:48.449Z
 > Files in this part: 32
 
 ## Files
@@ -3127,6 +3127,33 @@ textarea:focus:not(:focus-visible) {
   animation: first-job-glow 2s ease-in-out 3;
 }
 
+/* ═══ Phase 36 — Urgency Badges ═══ */
+.badge--immediate {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  animation: urgency-pulse 2s ease-in-out infinite;
+}
+
+.badge--urgent {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+@keyframes urgency-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 /* ═══ Phase 31 — Alert Cards ═══ */
 .alerts-list {
   display: flex;
@@ -4818,11 +4845,14 @@ var YawmiaIcons = (function () {
     // Update page title
     document.title = 'يوميّة — ' + job.title;
 
-    // Status badge
+    // Status badge + urgency badge
     var statusEl = Yawmia.$id('jobStatusBadge');
     if (statusEl) {
       var statusLabel = YawmiaUtils.statusLabel(job.status);
-      statusEl.innerHTML = '<span class="badge badge--status badge--' + escapeHtml(job.status) + '">' + escapeHtml(statusLabel) + '</span>';
+      var urgBadge = '';
+      if (job.urgency === 'immediate') urgBadge = '<span class="badge badge--immediate">🔥 فوري</span> ';
+      else if (job.urgency === 'urgent') urgBadge = '<span class="badge badge--urgent">⚡ عاجل</span> ';
+      statusEl.innerHTML = urgBadge + '<span class="badge badge--status badge--' + escapeHtml(job.status) + '">' + escapeHtml(statusLabel) + '</span>';
     }
 
     // Info grid
@@ -4916,7 +4946,20 @@ var YawmiaIcons = (function () {
       }
     }
 
+    // Report button (for non-owners)
+    if (isLoggedIn && job.employerId !== userId) {
+      html += '<button class="btn report-btn btn--sm" id="btnReportJob">🚩 بلّغ عن مخالفة</button>';
+    }
+
     actionsEl.innerHTML = html;
+
+    // Report button handler
+    var reportJobBtn = Yawmia.$id('btnReportJob');
+    if (reportJobBtn) {
+      reportJobBtn.addEventListener('click', function () {
+        showReportFormOnDetail(job);
+      });
+    }
 
     // ── Attach event handlers ──
 
@@ -5199,6 +5242,57 @@ var YawmiaIcons = (function () {
 
   function escapeHtml(str) {
     return YawmiaUtils.escapeHtml(str);
+  }
+
+  // ── Report Form on Detail Page ────────────────────────────
+  function showReportFormOnDetail(job) {
+    var existing = document.querySelector('.report-form');
+    if (existing) { existing.remove(); return; }
+
+    var actionsEl = Yawmia.$id('jobActions');
+    if (!actionsEl) return;
+
+    var form = document.createElement('div');
+    form.className = 'report-form';
+    form.innerHTML =
+      '<select class="report-type-select">' +
+        '<option value="">اختر نوع البلاغ...</option>' +
+        '<option value="fraud">نصب أو احتيال</option>' +
+        '<option value="no_show">عدم حضور</option>' +
+        '<option value="harassment">إساءة أو تحرش</option>' +
+        '<option value="quality">جودة عمل سيئة</option>' +
+        '<option value="payment_issue">مشكلة في الدفع</option>' +
+        '<option value="other">أخرى</option>' +
+      '</select>' +
+      '<textarea placeholder="اكتب سبب البلاغ (10 حروف على الأقل)..." maxlength="500"></textarea>' +
+      '<div style="display:flex;gap:0.5rem;">' +
+        '<button class="btn btn--primary btn--sm btn-submit-report">إرسال البلاغ</button>' +
+        '<button class="btn btn--ghost btn--sm btn-cancel-report">إلغاء</button>' +
+      '</div>' +
+      '<div class="report-form-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>';
+
+    actionsEl.appendChild(form);
+
+    form.querySelector('.btn-cancel-report').addEventListener('click', function () { form.remove(); });
+    form.querySelector('.btn-submit-report').addEventListener('click', async function () {
+      var type = form.querySelector('.report-type-select').value;
+      var reason = form.querySelector('textarea').value.trim();
+      var msgEl = form.querySelector('.report-form-msg');
+      if (!type) { msgEl.textContent = 'اختر نوع البلاغ'; msgEl.style.color = 'var(--color-error)'; return; }
+      if (reason.length < 10) { msgEl.textContent = 'السبب لازم يكون 10 حروف على الأقل'; msgEl.style.color = 'var(--color-error)'; return; }
+      var submitBtn = form.querySelector('.btn-submit-report');
+      Yawmia.setLoading(submitBtn, true);
+      try {
+        var res = await Yawmia.api('POST', '/api/reports', { targetId: job.employerId, type: type, reason: reason, jobId: job.id });
+        if (res.data.ok) {
+          msgEl.textContent = 'تم إرسال البلاغ بنجاح ✓'; msgEl.style.color = 'var(--color-success)';
+          setTimeout(function () { form.remove(); }, 2000);
+        } else {
+          msgEl.textContent = res.data.error || 'خطأ في إرسال البلاغ'; msgEl.style.color = 'var(--color-error)';
+        }
+      } catch (err) { msgEl.textContent = 'خطأ في الاتصال'; msgEl.style.color = 'var(--color-error)'; }
+      finally { Yawmia.setLoading(submitBtn, false); }
+    });
   }
 
 })();
@@ -5678,6 +5772,18 @@ var YawmiaIcons = (function () {
     });
   }
 
+  // Quick-filter buttons
+  var quickFilterBtns = document.querySelectorAll('.quick-filter');
+  quickFilterBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      quickFilterBtns.forEach(function (b) { b.classList.remove('active', 'btn--primary'); b.classList.add('btn--ghost'); });
+      btn.classList.add('active', 'btn--primary');
+      btn.classList.remove('btn--ghost');
+      currentPage = 1;
+      loadJobs();
+    });
+  });
+
   var btnPrevPage = Yawmia.$id('btnPrevPage');
   var btnNextPage = Yawmia.$id('btnNextPage');
   if (btnPrevPage) {
@@ -5747,6 +5853,11 @@ var YawmiaIcons = (function () {
     if (advDateFrom) query += 'startDateFrom=' + encodeURIComponent(advDateFrom) + '&';
     if (advDateTo) query += 'startDateTo=' + encodeURIComponent(advDateTo) + '&';
 
+    // Quick-filter urgency
+    var activeQuickFilter = document.querySelector('.quick-filter.active');
+    var urgencyFilter = activeQuickFilter ? activeQuickFilter.getAttribute('data-urgency') : '';
+    if (urgencyFilter) query += 'urgency=' + encodeURIComponent(urgencyFilter) + '&';
+
     try {
       var res = await Yawmia.api('GET', query);
       if (res.data.ok && res.data.jobs.length > 0) {
@@ -5802,6 +5913,13 @@ var YawmiaIcons = (function () {
     card.setAttribute('data-status', job.status);
 
     var statusBadge = '<span class="badge badge--status badge--' + job.status + '">' + getStatusLabel(job.status) + '</span>';
+
+    var urgencyBadge = '';
+    if (job.urgency === 'immediate') {
+      urgencyBadge = '<span class="badge badge--immediate">🔥 فوري</span>';
+    } else if (job.urgency === 'urgent') {
+      urgencyBadge = '<span class="badge badge--urgent">⚡ عاجل</span>';
+    }
 
     // Button building moved into card.innerHTML section below
 
@@ -5880,9 +5998,7 @@ var YawmiaIcons = (function () {
     // WhatsApp share button
     secondaryButtons += '<button class="btn btn--ghost btn--sm btn-share-whatsapp" data-job-id="' + job.id + '" data-title="' + escapeHtml(job.title) + '" data-wage="' + job.dailyWage + '" data-gov="' + escapeHtml(job.governorate) + '" aria-label="شارك الفرصة عبر واتساب">📤 شارك</button>';
 
-    if (job.employerId && job.employerId !== user.id) {
-      secondaryButtons += '<button class="btn report-btn btn--sm btn-report" data-job-id="' + job.id + '" data-target="' + escapeHtml(job.employerId) + '" aria-label="بلّغ عن مخالفة في فرصة ' + escapeHtml(job.title) + '">🚩 بلّغ</button>';
-    }
+    // Report button removed from cards — available in job detail page only
 
     // Pending applications badge for employer
     if (user.role === 'employer' && job.employerId === user.id && typeof job.pendingApplicationsCount === 'number' && job.pendingApplicationsCount > 0) {
@@ -5906,6 +6022,7 @@ var YawmiaIcons = (function () {
       '<div class="job-card__header">' +
         '<a href="/job.html?id=' + escapeHtml(job.id) + '" class="job-card__title-link">' + escapeHtml(job.title) + '</a>' +
         '<div class="job-card__header-right">' +
+          urgencyBadge +
           statusBadge +
           distanceBadge +
           '<span class="job-card__wage">' + job.dailyWage + ' جنيه/يوم</span>' +
@@ -6209,13 +6326,7 @@ var YawmiaIcons = (function () {
       });
     }
 
-    // Report button handler
-    var reportBtn = card.querySelector('.btn-report');
-    if (reportBtn) {
-      reportBtn.addEventListener('click', function () {
-        showReportForm(card, job.id, reportBtn.getAttribute('data-target'));
-      });
-    }
+    // Report button removed from cards — available in job detail page only
 
     // Rate button handler
     var rateBtn = card.querySelector('.btn-rate');
@@ -6281,10 +6392,28 @@ var YawmiaIcons = (function () {
     if (durationInput) durationInput.addEventListener('input', updateCost);
 
     // Submit Job
+    // Urgency radio change handler
+    var urgencyRadios = document.querySelectorAll('input[name="jobUrgency"]');
+    urgencyRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        var startDateGroup = Yawmia.$id('jobStartDate') ? Yawmia.$id('jobStartDate').closest('.form-group') : null;
+        var durationInput = Yawmia.$id('jobDuration');
+        if (radio.value === 'immediate') {
+          if (startDateGroup) startDateGroup.style.display = 'none';
+          if (durationInput) { durationInput.value = '1'; }
+        } else {
+          if (startDateGroup) startDateGroup.style.display = '';
+        }
+      });
+    });
+
     var btnCreateJob = Yawmia.$id('btnCreateJob');
     if (btnCreateJob) {
       btnCreateJob.addEventListener('click', async function () {
         Yawmia.clearMessage('createJobError');
+
+        var urgencyEl = document.querySelector('input[name="jobUrgency"]:checked');
+        var urgency = urgencyEl ? urgencyEl.value : 'normal';
 
         var body = {
           title: (Yawmia.$id('jobTitle') || {}).value || '',
@@ -6295,6 +6424,7 @@ var YawmiaIcons = (function () {
           startDate: (Yawmia.$id('jobStartDate') || {}).value || '',
           durationDays: parseInt((Yawmia.$id('jobDuration') || {}).value) || 0,
           description: (Yawmia.$id('jobDescription') || {}).value || '',
+          urgency: urgency,
         };
 
         Yawmia.setLoading(btnCreateJob, true);
@@ -9536,6 +9666,24 @@ var YawmiaUtils = (function () {
             </select>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">مستوى الاستعجال</label>
+            <div class="radio-group" style="flex-direction:row;flex-wrap:wrap;">
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="normal" checked>
+                <span>📅 عادي</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="urgent">
+                <span>⚡ عاجل (24 ساعة)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="jobUrgency" value="immediate">
+                <span>🔥 فوري (6 ساعات)</span>
+              </label>
+            </div>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="jobWorkers">عدد العمال</label>
@@ -9581,6 +9729,11 @@ var YawmiaUtils = (function () {
 
         <!-- Job Listings -->
         <section class="card" id="jobsSection">
+          <div class="quick-filters" id="quickFilters" style="display:flex;gap:0.5rem;margin-block-end:1rem;flex-wrap:wrap;">
+            <button class="btn btn--sm btn--primary quick-filter active" data-urgency="">الكل</button>
+            <button class="btn btn--sm btn--ghost quick-filter" data-urgency="immediate">🔥 فوري</button>
+            <button class="btn btn--sm btn--ghost quick-filter" data-urgency="urgent">⚡ عاجل</button>
+          </div>
           <div class="section-header">
             <h2 class="card__title">الفرص المتاحة</h2>
             <div class="filters">
@@ -10355,7 +10508,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.31.0';
+const CACHE_NAME = 'yawmia-v0.32.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
