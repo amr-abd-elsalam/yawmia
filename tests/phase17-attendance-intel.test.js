@@ -432,7 +432,7 @@ describe('Phase 17 — Lock Integration', () => {
   it('P17-32: accept() uses withLock', async () => {
     const appPath = resolve('server/services/applications.js');
     const content = await readFile(appPath, 'utf-8');
-    assert.ok(content.includes("withLock(`accept:"), 'accept() should use withLock');
+    assert.ok(content.includes("withLock(`accept-job:"), 'accept() should use withLock');
   });
 
   it('P17-33: checkIn() uses withLock', async () => {
