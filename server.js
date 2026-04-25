@@ -57,6 +57,15 @@ try {
   logger.warn('Startup: search index build error', { error: err.message });
 }
 
+// ── Build Query Index ────────────────────────────────────────
+try {
+  const { buildAllIndexes } = await import('./server/services/queryIndex.js');
+  const qiCount = await buildAllIndexes();
+  if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+} catch (err) {
+  logger.warn('Startup: query index build error', { error: err.message });
+}
+
 // ── Clean Stale .tmp Files (orphans from crashes) ────────────
 try {
   const { cleanStaleTmpFiles } = await import('./server/services/database.js');
@@ -197,11 +206,15 @@ const cleanupTimer = setInterval(async () => {
     // Index health check every 12 cycles (= 6 hours)
     cleanupCycleCount++;
 
-    // Search index rebuild every 2 cycles (= every hour)
+    // Search index + query index rebuild every 2 cycles (= every hour)
     if (cleanupCycleCount % 2 === 0) {
       try {
         const { buildIndex } = await import('./server/services/searchIndex.js');
         await buildIndex();
+      } catch (_) { /* non-fatal */ }
+      try {
+        const { buildAllIndexes } = await import('./server/services/queryIndex.js');
+        await buildAllIndexes();
       } catch (_) { /* non-fatal */ }
     }
 

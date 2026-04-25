@@ -217,6 +217,38 @@ export async function softDelete(userId) {
     await writeIndex('phoneIndex', phoneIndex);
   }
 
+  // Cascade: cancel open jobs (employer) — fire-and-forget
+  if (user.role === 'employer') {
+    try {
+      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const { cancelJob } = await import('./jobs.js');
+      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      for (const jobId of jobIds) {
+        try {
+          const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+          if (job && job.status === 'open') {
+            await cancelJob(jobId, userId);
+          }
+        } catch (_) { /* fire-and-forget per job */ }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
+  }
+
+  // Cascade: withdraw pending applications (worker) — fire-and-forget
+  if (user.role === 'worker') {
+    try {
+      const { listByWorker, withdraw } = await import('./applications.js');
+      const apps = await listByWorker(userId);
+      for (const app of apps) {
+        if (app.status === 'pending') {
+          try {
+            await withdraw(app.id, userId);
+          } catch (_) { /* fire-and-forget per app */ }
+        }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
+  }
+
   return updatedUser;
 }
 

@@ -59,9 +59,21 @@ export function apply(jobId, workerId) {
 
 /**
  * Accept a worker application
+ * Lock is per-jobId (not per-applicationId) to prevent over-acceptance
+ * when multiple accept operations run concurrently on the same job.
  */
-export function accept(applicationId, employerId) {
-  return withLock(`accept:${applicationId}`, async () => {
+export async function accept(applicationId, employerId) {
+  // Step 1: Pre-lock read — get jobId for lock key (read-only, safe outside lock)
+  const preRead = await findById(applicationId);
+  if (!preRead) {
+    return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+  }
+
+  const jobId = preRead.jobId;
+
+  // Step 2: Lock per-jobId — serializes ALL accept operations on the SAME job
+  return withLock(`accept-job:${jobId}`, async () => {
+  // Step 3: Re-read application inside lock (may have changed concurrently)
   const application = await findById(applicationId);
   if (!application) {
     return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };

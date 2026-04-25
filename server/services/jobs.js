@@ -113,11 +113,39 @@ export async function findById(jobId) {
  * @param {{ governorate?: string, category?: string, status?: string }} filters
  */
 export async function list(filters = {}) {
-  const jobsDir = getCollectionPath('jobs');
-  const allJobs = await listJSON(jobsDir);
+  let jobs;
 
-  // Filter out index.json (not a job record)
-  let jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  // Try query index for first-pass filtering (reduces disk I/O)
+  let usedQueryIndex = false;
+  if (config.QUERY_INDEX && config.QUERY_INDEX.enabled) {
+    try {
+      const { queryJobs, getStats: qiStats } = await import('./queryIndex.js');
+      const stats = qiStats();
+      if (stats.totalJobs > 0) {
+        const matchedIds = queryJobs({
+          status: filters.status || undefined,
+          governorate: filters.governorate || undefined,
+          category: filters.category || undefined,
+          categories: filters.categories || undefined,
+          urgency: filters.urgency || undefined,
+        });
+        const results = [];
+        for (const id of matchedIds) {
+          const job = await readJSON(getRecordPath('jobs', id));
+          if (job) results.push(job);
+        }
+        jobs = results;
+        usedQueryIndex = true;
+      }
+    } catch (_) { /* fallback to full scan */ }
+  }
+
+  if (!usedQueryIndex) {
+    const jobsDir = getCollectionPath('jobs');
+    const allJobs = await listJSON(jobsDir);
+    // Filter out index.json (not a job record)
+    jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  }
 
   if (filters.governorate) {
     jobs = jobs.filter(j => j.governorate === filters.governorate);

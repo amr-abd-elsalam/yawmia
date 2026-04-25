@@ -29,8 +29,9 @@ if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
  * Create a notification
  */
 export async function createNotification(userId, type, message, meta = {}) {
-  // Dedup check: skip if same userId+type within window
-  const dedupKey = `${userId}:${type}`;
+  // Dedup check: skip if same userId+type+context within window
+  const contextId = (meta && (meta.jobId || meta.applicationId || meta.paymentId || meta.reportId)) || '';
+  const dedupKey = `${userId}:${type}:${contextId}`;
   const lastSent = recentNotifications.get(dedupKey);
   if (lastSent && (Date.now() - lastSent) < DEDUP_WINDOW_MS) {
     return null;

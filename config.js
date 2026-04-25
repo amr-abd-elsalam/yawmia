@@ -445,7 +445,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.32.0',
+    cacheName: 'yawmia-v0.33.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -560,6 +560,7 @@ const config = {
     requireGpsForCheckIn: true,              // GPS مطلوب لتسجيل الحضور
     requireGpsForCheckOut: false,            // GPS اختياري لتسجيل الانصراف
     maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
+    defaultStartHour: 8,                     // ساعة البدء الافتراضية (8 صباحاً) — تُستخدم لحساب الغياب التلقائي
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -758,6 +759,15 @@ const config = {
     immediateExpiryHours: 6,                 // الفرص الفورية تنتهي بعد 6 ساعات
     urgentExpiryHours: 24,                   // الفرص العاجلة تنتهي بعد 24 ساعة
     immediateStartWindowMinutes: 30,         // نافذة البدء للفرص الفورية (دقيقة)
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 50. فهرس الاستعلام السريع (QUERY_INDEX)
+  // ═══════════════════════════════════════════════════════════════
+  QUERY_INDEX: {
+    enabled: true,
+    rebuildOnStartup: true,                  // إعادة بناء الفهرس عند بدء السيرفر
+    incrementalUpdates: true,                // تحديثات تزايدية عبر EventBus
   },
 
 };

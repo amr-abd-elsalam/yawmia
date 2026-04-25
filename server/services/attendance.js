@@ -621,28 +621,31 @@ export async function autoDetectNoShows() {
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) return 0;
   if (!config.ATTENDANCE.autoNoShowAfterHours || config.ATTENDANCE.autoNoShowAfterHours <= 0) return 0;
 
-  // 2. Calculate cutoff time
+  // 2. Calculate base values
   const { getEgyptMidnight } = await import('./geo.js');
   const todayMidnight = getEgyptMidnight();
-  const cutoffMs = config.ATTENDANCE.autoNoShowAfterHours * 60 * 60 * 1000;
-  const cutoffTime = new Date(todayMidnight.getTime() + cutoffMs);
+  const thresholdHours = config.ATTENDANCE.autoNoShowAfterHours;
+  const defaultStartHour = config.ATTENDANCE.defaultStartHour || 8;
   const now = new Date();
 
-  // 3. Too early — don't mark anyone yet
-  if (now < cutoffTime) return 0;
-
-  // 4. Get all in_progress jobs
+  // 3. Get all in_progress jobs
   const { listAll: listAllJobs } = await import('./jobs.js');
   const allJobs = await listAllJobs();
   const inProgressJobs = allJobs.filter(j => j.status === 'in_progress');
 
   if (inProgressJobs.length === 0) return 0;
 
-  // 5. For each in_progress job, check accepted workers
+  // 4. For each in_progress job, check accepted workers (per-job cutoff)
   const { listByJob: listAppsByJob } = await import('./applications.js');
   let count = 0;
 
   for (const job of inProgressJobs) {
+    // Per-job cutoff: todayMidnight + jobStartHour + thresholdHours
+    const jobStartHour = job.startHour || defaultStartHour;
+    const jobCutoffTime = new Date(todayMidnight.getTime() + (jobStartHour + thresholdHours) * 60 * 60 * 1000);
+
+    // Too early for THIS job — skip
+    if (now < jobCutoffTime) continue;
     try {
       const apps = await listAppsByJob(job.id);
       const acceptedWorkers = apps.filter(a => a.status === 'accepted');
