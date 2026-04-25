@@ -32,13 +32,13 @@ async function fileExists(path) {
 
 describe('Phase 20 — Config & Version', () => {
 
-  it('P20-01: package.json version is 0.33.0', async () => {
+  it('P20-01: package.json version is 0.34.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
     assert.strictEqual(pkg.version, '0.34.0');
   });
 
-  it('P20-02: PWA cacheName is yawmia-v0.33.0', () => {
+  it('P20-02: PWA cacheName is yawmia-v0.34.0', () => {
     assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
   });
 
@@ -235,7 +235,7 @@ describe('Phase 20 — Health & Docs (Source Check)', () => {
     assert.ok(content.includes("environment:"), 'health should include environment');
   });
 
-  it('P20-20: health handler version is 0.33.0', async () => {
+  it('P20-20: health handler version is 0.34.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     assert.ok(content.includes("version: '0.34.0'"), 'version should be 0.34.0');
   });
@@ -267,7 +267,7 @@ describe('Phase 20 — File Existence', () => {
     assert.ok(await fileExists('server/services/auditLog.js'));
   });
 
-  it('P20-25: sw.js CACHE_NAME is yawmia-v0.33.0', async () => {
+  it('P20-25: sw.js CACHE_NAME is yawmia-v0.34.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
     assert.ok(content.includes("'yawmia-v0.34.0'"), 'cache name should be yawmia-v0.34.0');
   });

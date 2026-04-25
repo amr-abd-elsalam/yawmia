@@ -38,11 +38,11 @@ describe('Phase 19 — Config & Version', () => {
   it('P19-01: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.33.0');
+    assert.strictEqual(pkg.version, '0.34.0');
   });
 
   it('P19-02: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
   });
 
   it('P19-03: Router has 59 routes (unchanged)', async () => {
@@ -140,7 +140,7 @@ describe('Phase 19 — Service Worker', () => {
 
   it('P19-17: sw.js CACHE_NAME is yawmia-v0.25.0', async () => {
     const content = await readFrontend('sw.js');
-    assert.ok(content.includes("'yawmia-v0.33.0'"), 'cache name should be yawmia-v0.25.0');
+    assert.ok(content.includes("'yawmia-v0.34.0'"), 'cache name should be yawmia-v0.25.0');
   });
 });
 

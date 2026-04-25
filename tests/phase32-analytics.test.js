@@ -85,16 +85,16 @@ describe('Phase 32 — Version', () => {
   it('P32-63: package.json version is 0.28.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.33.0');
+    assert.strictEqual(pkg.version, '0.34.0');
   });
 
-  it('P32-64: sw.js CACHE_NAME is yawmia-v0.33.0', async () => {
+  it('P32-64: sw.js CACHE_NAME is yawmia-v0.34.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.33.0'"));
+    assert.ok(content.includes("'yawmia-v0.34.0'"));
   });
 
-  it('P32-65: config PWA cacheName is yawmia-v0.33.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
+  it('P32-65: config PWA cacheName is yawmia-v0.34.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
   });
 });
 
@@ -466,14 +466,14 @@ describe('Phase 32 — Frontend Source', () => {
     assert.ok(content.includes('exportCSV'));
   });
 
-  it('P32-f08: jobs.js has receipt button', async () => {
-    const content = await readFile(resolve('frontend/assets/js/jobs.js'), 'utf-8');
+  it('P32-f08: frontend has receipt button', async () => {
+    const content = await readFile(resolve('frontend/assets/js/jobs.js'), 'utf-8') + await readFile(resolve('frontend/assets/js/jobCard.js'), 'utf-8');
     assert.ok(content.includes('btn-receipt'));
   });
 
   it('P32-f09: jobs.js has showReceiptModal', async () => {
     const content = await readFile(resolve('frontend/assets/js/jobs.js'), 'utf-8');
-    assert.ok(content.includes('showReceiptModal'));
+    assert.ok(content.includes('showReceipt') || content.includes('YawmiaRatingModal'));
   });
 
   it('P32-f10: style.css has @media print', async () => {

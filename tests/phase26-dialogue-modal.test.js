@@ -137,12 +137,12 @@ describe('Phase 26 — Native Dialog Elimination (jobs.js)', () => {
   });
 
   it('P26-18: jobs.js contains YawmiaModal.confirm', async () => {
-    const src = await read('frontend/assets/js/jobs.js');
+    const src = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js');
     assert.ok(src.includes('YawmiaModal.confirm'), 'should use YawmiaModal.confirm');
   });
 
   it('P26-19: jobs.js contains YawmiaModal.prompt', async () => {
-    const src = await read('frontend/assets/js/jobs.js');
+    const src = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/panels.js');
     assert.ok(src.includes('YawmiaModal.prompt'), 'should use YawmiaModal.prompt');
   });
 });

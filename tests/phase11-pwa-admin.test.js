@@ -230,7 +230,7 @@ describe('Phase 11 — OTP Rate Limit Status Code', () => {
 
 describe('Phase 11 — Version', () => {
 
-  it('P11-19: package.json version is 0.33.0', async () => {
+  it('P11-19: package.json version is 0.34.0', async () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);

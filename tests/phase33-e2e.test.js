@@ -665,15 +665,15 @@ describe('Phase 33 — Version & Config', () => {
   it('P33-33: package.json version is 0.29.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.33.0');
+    assert.strictEqual(pkg.version, '0.34.0');
   });
 
-  it('P33-34: sw.js CACHE_NAME is yawmia-v0.33.0', async () => {
+  it('P33-34: sw.js CACHE_NAME is yawmia-v0.34.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.33.0'"), 'sw.js should have cache name yawmia-v0.33.0');
+    assert.ok(content.includes("'yawmia-v0.34.0'"), 'sw.js should have cache name yawmia-v0.34.0');
   });
 
-  it('P33-35: config PWA cacheName is yawmia-v0.33.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
+  it('P33-35: config PWA cacheName is yawmia-v0.34.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
   });
 });

@@ -61,7 +61,7 @@ describe('Phase 25 — CSS Accessibility', async () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('Phase 25 — Dynamic Button ARIA', async () => {
-  const js = await read('frontend/assets/js/jobs.js');
+  const js = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/ratingModal.js');
 
   it('P25-08: btn-apply has aria-label in HTML string', () => {
     assert.ok(js.includes('btn-apply') && js.match(/btn-apply[^>]*aria-label=/), 'btn-apply missing aria-label');
@@ -117,7 +117,7 @@ describe('Phase 25 — Dynamic Button ARIA', async () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('Phase 25 — Rating Stars Accessibility', async () => {
-  const js = await read('frontend/assets/js/jobs.js');
+  const js = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/ratingModal.js');
 
   it('P25-20: rating stars container has role="radiogroup"', () => {
     assert.ok(js.includes('role="radiogroup"'), 'role="radiogroup" not found');
@@ -145,7 +145,7 @@ describe('Phase 25 — Rating Stars Accessibility', async () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('Phase 25 — Panel ARIA', async () => {
-  const js = await read('frontend/assets/js/jobs.js');
+  const js = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/ratingModal.js');
 
   it('P25-25: toggleApplicationsPanel sets role on panel', () => {
     assert.ok(js.includes("'applications-panel'") && js.includes("'role', 'region'"), 'applications-panel missing role="region"');
@@ -161,7 +161,7 @@ describe('Phase 25 — Panel ARIA', async () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('Phase 25 — Notification Drawer', async () => {
-  const js = await read('frontend/assets/js/jobs.js');
+  const js = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/ratingModal.js');
 
   it('P25-27: openNotifPanel sets body.style.overflow', () => {
     assert.ok(js.includes("document.body.style.overflow = 'hidden'"), 'scroll lock not found in openNotifPanel');
@@ -181,7 +181,7 @@ describe('Phase 25 — Notification Drawer', async () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe('Phase 25 — aria-live + Search', async () => {
-  const js = await read('frontend/assets/js/jobs.js');
+  const js = await read('frontend/assets/js/jobs.js') + await read('frontend/assets/js/panels.js') + await read('frontend/assets/js/jobCard.js') + await read('frontend/assets/js/ratingModal.js');
 
   it('P25-30: jobs.js references jobsLiveRegion for aria-live', () => {
     assert.ok(js.includes('jobsLiveRegion'), 'jobsLiveRegion reference not found');
