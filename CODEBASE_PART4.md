@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.32.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-24T20:24:30.866Z
+# يوميّة (Yawmia) v0.33.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-25T04:51:45.156Z
 > Files in this part: 32
 
 ## Files
@@ -10508,7 +10508,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.32.0';
+const CACHE_NAME = 'yawmia-v0.33.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

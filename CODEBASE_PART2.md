@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.32.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-24T20:24:30.850Z
-> Files in this part: 45
+# يوميّة (Yawmia) v0.33.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-25T04:51:45.137Z
+> Files in this part: 46
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -36,18 +36,19 @@
 31. `server/services/notifications.js`
 32. `server/services/payments.js`
 33. `server/services/profileCompleteness.js`
-34. `server/services/ratings.js`
-35. `server/services/reports.js`
-36. `server/services/resourceLock.js`
-37. `server/services/sanitizer.js`
-38. `server/services/searchIndex.js`
-39. `server/services/sessions.js`
-40. `server/services/sseManager.js`
-41. `server/services/trust.js`
-42. `server/services/users.js`
-43. `server/services/validators.js`
-44. `server/services/verification.js`
-45. `server/services/webpush.js`
+34. `server/services/queryIndex.js`
+35. `server/services/ratings.js`
+36. `server/services/reports.js`
+37. `server/services/resourceLock.js`
+38. `server/services/sanitizer.js`
+39. `server/services/searchIndex.js`
+40. `server/services/sessions.js`
+41. `server/services/sseManager.js`
+42. `server/services/trust.js`
+43. `server/services/users.js`
+44. `server/services/validators.js`
+45. `server/services/verification.js`
+46. `server/services/webpush.js`
 
 ---
 
@@ -885,9 +886,21 @@ export function apply(jobId, workerId) {
 
 /**
  * Accept a worker application
+ * Lock is per-jobId (not per-applicationId) to prevent over-acceptance
+ * when multiple accept operations run concurrently on the same job.
  */
-export function accept(applicationId, employerId) {
-  return withLock(`accept:${applicationId}`, async () => {
+export async function accept(applicationId, employerId) {
+  // Step 1: Pre-lock read — get jobId for lock key (read-only, safe outside lock)
+  const preRead = await findById(applicationId);
+  if (!preRead) {
+    return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
+  }
+
+  const jobId = preRead.jobId;
+
+  // Step 2: Lock per-jobId — serializes ALL accept operations on the SAME job
+  return withLock(`accept-job:${jobId}`, async () => {
+  // Step 3: Re-read application inside lock (may have changed concurrently)
   const application = await findById(applicationId);
   if (!application) {
     return { ok: false, error: 'الطلب غير موجود', code: 'APPLICATION_NOT_FOUND' };
@@ -1917,28 +1930,31 @@ export async function autoDetectNoShows() {
   if (!config.ATTENDANCE || !config.ATTENDANCE.enabled) return 0;
   if (!config.ATTENDANCE.autoNoShowAfterHours || config.ATTENDANCE.autoNoShowAfterHours <= 0) return 0;
 
-  // 2. Calculate cutoff time
+  // 2. Calculate base values
   const { getEgyptMidnight } = await import('./geo.js');
   const todayMidnight = getEgyptMidnight();
-  const cutoffMs = config.ATTENDANCE.autoNoShowAfterHours * 60 * 60 * 1000;
-  const cutoffTime = new Date(todayMidnight.getTime() + cutoffMs);
+  const thresholdHours = config.ATTENDANCE.autoNoShowAfterHours;
+  const defaultStartHour = config.ATTENDANCE.defaultStartHour || 8;
   const now = new Date();
 
-  // 3. Too early — don't mark anyone yet
-  if (now < cutoffTime) return 0;
-
-  // 4. Get all in_progress jobs
+  // 3. Get all in_progress jobs
   const { listAll: listAllJobs } = await import('./jobs.js');
   const allJobs = await listAllJobs();
   const inProgressJobs = allJobs.filter(j => j.status === 'in_progress');
 
   if (inProgressJobs.length === 0) return 0;
 
-  // 5. For each in_progress job, check accepted workers
+  // 4. For each in_progress job, check accepted workers (per-job cutoff)
   const { listByJob: listAppsByJob } = await import('./applications.js');
   let count = 0;
 
   for (const job of inProgressJobs) {
+    // Per-job cutoff: todayMidnight + jobStartHour + thresholdHours
+    const jobStartHour = job.startHour || defaultStartHour;
+    const jobCutoffTime = new Date(todayMidnight.getTime() + (jobStartHour + thresholdHours) * 60 * 60 * 1000);
+
+    // Too early for THIS job — skip
+    if (now < jobCutoffTime) continue;
     try {
       const apps = await listAppsByJob(job.id);
       const acceptedWorkers = apps.filter(a => a.status === 'accepted');
@@ -5184,11 +5200,39 @@ export async function findById(jobId) {
  * @param {{ governorate?: string, category?: string, status?: string }} filters
  */
 export async function list(filters = {}) {
-  const jobsDir = getCollectionPath('jobs');
-  const allJobs = await listJSON(jobsDir);
+  let jobs;
 
-  // Filter out index.json (not a job record)
-  let jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  // Try query index for first-pass filtering (reduces disk I/O)
+  let usedQueryIndex = false;
+  if (config.QUERY_INDEX && config.QUERY_INDEX.enabled) {
+    try {
+      const { queryJobs, getStats: qiStats } = await import('./queryIndex.js');
+      const stats = qiStats();
+      if (stats.totalJobs > 0) {
+        const matchedIds = queryJobs({
+          status: filters.status || undefined,
+          governorate: filters.governorate || undefined,
+          category: filters.category || undefined,
+          categories: filters.categories || undefined,
+          urgency: filters.urgency || undefined,
+        });
+        const results = [];
+        for (const id of matchedIds) {
+          const job = await readJSON(getRecordPath('jobs', id));
+          if (job) results.push(job);
+        }
+        jobs = results;
+        usedQueryIndex = true;
+      }
+    } catch (_) { /* fallback to full scan */ }
+  }
+
+  if (!usedQueryIndex) {
+    const jobsDir = getCollectionPath('jobs');
+    const allJobs = await listJSON(jobsDir);
+    // Filter out index.json (not a job record)
+    jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  }
 
   if (filters.governorate) {
     jobs = jobs.filter(j => j.governorate === filters.governorate);
@@ -7297,8 +7341,9 @@ if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
  * Create a notification
  */
 export async function createNotification(userId, type, message, meta = {}) {
-  // Dedup check: skip if same userId+type within window
-  const dedupKey = `${userId}:${type}`;
+  // Dedup check: skip if same userId+type+context within window
+  const contextId = (meta && (meta.jobId || meta.applicationId || meta.paymentId || meta.reportId)) || '';
+  const dedupKey = `${userId}:${type}:${contextId}`;
   const lastSent = recentNotifications.get(dedupKey);
   if (lastSent && (Date.now() - lastSent) < DEDUP_WINDOW_MS) {
     return null;
@@ -8470,6 +8515,306 @@ export function calculateCompleteness(user) {
  */
 export function getFieldLabel(fieldKey) {
   return FIELD_LABELS[fieldKey] || fieldKey;
+}
+```
+
+---
+
+## `server/services/queryIndex.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/queryIndex.js — In-Memory Materialized Views
+// ═══════════════════════════════════════════════════════════════
+// Map/Set-based indexes for O(1) multi-criteria job queries.
+// Full rebuild at startup, incremental updates via EventBus.
+// READ acceleration only — all writes still go to disk.
+// Falls back gracefully if disabled or empty.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+// ── Data Structures ──────────────────────────────────────────
+
+/** @type {Map<string, Set<string>>} status → Set of jobIds */
+const jobsByStatus = new Map();
+
+/** @type {Map<string, Set<string>>} governorate → Set of jobIds */
+const jobsByGov = new Map();
+
+/** @type {Map<string, Set<string>>} category → Set of jobIds */
+const jobsByCategory = new Map();
+
+/** @type {Map<string, Set<string>>} urgency → Set of jobIds */
+const jobsByUrgency = new Map();
+
+/** @type {Map<string, object>} jobId → summary object */
+const jobsById = new Map();
+
+/** @type {string|null} */
+let lastBuilt = null;
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function isEnabled() {
+  return !!(config.QUERY_INDEX && config.QUERY_INDEX.enabled);
+}
+
+function addToMap(map, key, jobId) {
+  if (!key) return;
+  if (!map.has(key)) map.set(key, new Set());
+  map.get(key).add(jobId);
+}
+
+function removeFromMap(map, key, jobId) {
+  if (!key) return;
+  const set = map.get(key);
+  if (set) {
+    set.delete(jobId);
+    if (set.size === 0) map.delete(key);
+  }
+}
+
+function intersect(setA, setB) {
+  if (!setA) return new Set();
+  if (!setB) return new Set();
+  const result = new Set();
+  // Iterate over smaller set for efficiency
+  const [smaller, larger] = setA.size <= setB.size ? [setA, setB] : [setB, setA];
+  for (const item of smaller) {
+    if (larger.has(item)) result.add(item);
+  }
+  return result;
+}
+
+// ── Core Operations ──────────────────────────────────────────
+
+/**
+ * Add a job to all indexes (sync).
+ * @param {object} job — full or summary job object
+ */
+export function onJobCreated(job) {
+  if (!isEnabled() || !job || !job.id) return;
+
+  const summary = {
+    id: job.id,
+    status: job.status,
+    governorate: job.governorate,
+    category: job.category,
+    urgency: job.urgency || 'normal',
+    dailyWage: job.dailyWage,
+    createdAt: job.createdAt,
+    expiresAt: job.expiresAt,
+    employerId: job.employerId,
+  };
+
+  jobsById.set(job.id, summary);
+  addToMap(jobsByStatus, summary.status, job.id);
+  addToMap(jobsByGov, summary.governorate, job.id);
+  addToMap(jobsByCategory, summary.category, job.id);
+  addToMap(jobsByUrgency, summary.urgency, job.id);
+}
+
+/**
+ * Update a job's status in the indexes (sync).
+ * @param {string} jobId
+ * @param {string} oldStatus
+ * @param {string} newStatus
+ */
+export function onJobStatusChanged(jobId, oldStatus, newStatus) {
+  if (!isEnabled() || !jobId) return;
+
+  removeFromMap(jobsByStatus, oldStatus, jobId);
+  addToMap(jobsByStatus, newStatus, jobId);
+
+  const summary = jobsById.get(jobId);
+  if (summary) {
+    summary.status = newStatus;
+  }
+}
+
+/**
+ * Remove a job from all indexes (sync).
+ * @param {string} jobId
+ */
+export function onJobRemoved(jobId) {
+  if (!isEnabled() || !jobId) return;
+
+  const summary = jobsById.get(jobId);
+  if (!summary) return;
+
+  removeFromMap(jobsByStatus, summary.status, jobId);
+  removeFromMap(jobsByGov, summary.governorate, jobId);
+  removeFromMap(jobsByCategory, summary.category, jobId);
+  removeFromMap(jobsByUrgency, summary.urgency, jobId);
+  jobsById.delete(jobId);
+}
+
+/**
+ * Full rebuild from disk. Clears all indexes and repopulates.
+ * @returns {Promise<number>} number of jobs indexed
+ */
+export async function buildAllIndexes() {
+  if (!isEnabled()) return 0;
+
+  // Clear all maps
+  jobsByStatus.clear();
+  jobsByGov.clear();
+  jobsByCategory.clear();
+  jobsByUrgency.clear();
+  jobsById.clear();
+
+  try {
+    const { listAll } = await import('./jobs.js');
+    const allJobs = await listAll();
+
+    for (const job of allJobs) {
+      onJobCreated(job);
+    }
+
+    lastBuilt = new Date().toISOString();
+    return allJobs.length;
+  } catch (err) {
+    logger.warn('queryIndex buildAllIndexes error', { error: err.message });
+    return 0;
+  }
+}
+
+/**
+ * Query jobs using Set intersection for multi-criteria filtering.
+ * Returns array of matching jobIds.
+ *
+ * @param {{ status?: string, governorate?: string, category?: string, categories?: string, urgency?: string }} filters
+ * @returns {string[]}
+ */
+export function queryJobs(filters = {}) {
+  if (!isEnabled()) return [];
+
+  const status = filters.status || 'open';
+
+  // Start with status Set as base
+  let result = jobsByStatus.get(status);
+  if (!result || result.size === 0) return [];
+
+  // Copy to avoid mutating the source Set
+  result = new Set(result);
+
+  // Intersect with governorate
+  if (filters.governorate) {
+    const govSet = jobsByGov.get(filters.governorate);
+    if (!govSet || govSet.size === 0) return [];
+    result = intersect(result, govSet);
+  }
+
+  // Intersect with category (single)
+  if (filters.category) {
+    const catSet = jobsByCategory.get(filters.category);
+    if (!catSet || catSet.size === 0) return [];
+    result = intersect(result, catSet);
+  }
+
+  // Multi-category: union of category Sets, then intersect
+  if (filters.categories) {
+    const cats = filters.categories.split(',').map(c => c.trim()).filter(Boolean);
+    if (cats.length > 0) {
+      const catUnion = new Set();
+      for (const cat of cats) {
+        const catSet = jobsByCategory.get(cat);
+        if (catSet) {
+          for (const id of catSet) catUnion.add(id);
+        }
+      }
+      if (catUnion.size === 0) return [];
+      result = intersect(result, catUnion);
+    }
+  }
+
+  // Intersect with urgency
+  if (filters.urgency) {
+    const urgSet = jobsByUrgency.get(filters.urgency);
+    if (!urgSet || urgSet.size === 0) return [];
+    result = intersect(result, urgSet);
+  }
+
+  return Array.from(result);
+}
+
+/**
+ * Get index statistics (sync).
+ * @returns {{ totalJobs: number, lastBuilt: string|null, byStatus: object, byGovernorate: number, byCategory: number }}
+ */
+export function getStats() {
+  const byStatus = {};
+  for (const [status, set] of jobsByStatus) {
+    byStatus[status] = set.size;
+  }
+
+  return {
+    totalJobs: jobsById.size,
+    lastBuilt,
+    byStatus,
+    byGovernorate: jobsByGov.size,
+    byCategory: jobsByCategory.size,
+  };
+}
+
+/**
+ * Clear all indexes (for testing).
+ */
+export function clear() {
+  jobsByStatus.clear();
+  jobsByGov.clear();
+  jobsByCategory.clear();
+  jobsByUrgency.clear();
+  jobsById.clear();
+  lastBuilt = null;
+}
+
+// ── EventBus Integration ─────────────────────────────────────
+
+if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
+  // Job created → add to 'open'
+  eventBus.on('job:created', (data) => {
+    if (!data || !data.jobId) return;
+    import('./jobs.js').then(({ findById }) => {
+      findById(data.jobId).then(job => {
+        if (job) onJobCreated(job);
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  // Job filled (from applications.js accept)
+  eventBus.on('job:filled', (data) => {
+    if (data && data.jobId) onJobStatusChanged(data.jobId, 'open', 'filled');
+  });
+
+  // Job started
+  eventBus.on('job:started', (data) => {
+    if (data && data.jobId) onJobStatusChanged(data.jobId, 'filled', 'in_progress');
+  });
+
+  // Job completed
+  eventBus.on('job:completed', (data) => {
+    if (data && data.jobId) onJobStatusChanged(data.jobId, 'in_progress', 'completed');
+  });
+
+  // Job cancelled
+  eventBus.on('job:cancelled', (data) => {
+    if (data && data.jobId) onJobStatusChanged(data.jobId, 'open', 'cancelled');
+  });
+
+  // Job renewed
+  eventBus.on('job:renewed', (data) => {
+    if (data && data.jobId) {
+      // Could be from 'expired' or 'cancelled' — remove old status, add 'open'
+      const summary = jobsById.get(data.jobId);
+      if (summary) {
+        onJobStatusChanged(data.jobId, summary.status, 'open');
+      }
+    }
+  });
 }
 ```
 
@@ -10090,6 +10435,38 @@ export async function softDelete(userId) {
   if (phoneIndex[user.phone]) {
     delete phoneIndex[user.phone];
     await writeIndex('phoneIndex', phoneIndex);
+  }
+
+  // Cascade: cancel open jobs (employer) — fire-and-forget
+  if (user.role === 'employer') {
+    try {
+      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const { cancelJob } = await import('./jobs.js');
+      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      for (const jobId of jobIds) {
+        try {
+          const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+          if (job && job.status === 'open') {
+            await cancelJob(jobId, userId);
+          }
+        } catch (_) { /* fire-and-forget per job */ }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
+  }
+
+  // Cascade: withdraw pending applications (worker) — fire-and-forget
+  if (user.role === 'worker') {
+    try {
+      const { listByWorker, withdraw } = await import('./applications.js');
+      const apps = await listByWorker(userId);
+      for (const app of apps) {
+        if (app.status === 'pending') {
+          try {
+            await withdraw(app.id, userId);
+          } catch (_) { /* fire-and-forget per app */ }
+        }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
   }
 
   return updatedUser;

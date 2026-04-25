@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.32.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-24T20:24:30.847Z
+# يوميّة (Yawmia) v0.33.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-25T04:51:45.133Z
 > Files in this part: 6
 
 ## Files
@@ -515,7 +515,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.32.0',
+    cacheName: 'yawmia-v0.33.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -630,6 +630,7 @@ const config = {
     requireGpsForCheckIn: true,              // GPS مطلوب لتسجيل الحضور
     requireGpsForCheckOut: false,            // GPS اختياري لتسجيل الانصراف
     maxCheckInDistanceOverrideKm: 2,         // أقصى مسافة حتى مع override (شبكة أمان)
+    defaultStartHour: 8,                     // ساعة البدء الافتراضية (8 صباحاً) — تُستخدم لحساب الغياب التلقائي
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -830,6 +831,15 @@ const config = {
     immediateStartWindowMinutes: 30,         // نافذة البدء للفرص الفورية (دقيقة)
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 50. فهرس الاستعلام السريع (QUERY_INDEX)
+  // ═══════════════════════════════════════════════════════════════
+  QUERY_INDEX: {
+    enabled: true,
+    rebuildOnStartup: true,                  // إعادة بناء الفهرس عند بدء السيرفر
+    incrementalUpdates: true,                // تحديثات تزايدية عبر EventBus
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -878,7 +888,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -960,6 +970,15 @@ try {
   logger.info('Startup: search index built');
 } catch (err) {
   logger.warn('Startup: search index build error', { error: err.message });
+}
+
+// ── Build Query Index ────────────────────────────────────────
+try {
+  const { buildAllIndexes } = await import('./server/services/queryIndex.js');
+  const qiCount = await buildAllIndexes();
+  if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+} catch (err) {
+  logger.warn('Startup: query index build error', { error: err.message });
 }
 
 // ── Clean Stale .tmp Files (orphans from crashes) ────────────
@@ -1102,11 +1121,15 @@ const cleanupTimer = setInterval(async () => {
     // Index health check every 12 cycles (= 6 hours)
     cleanupCycleCount++;
 
-    // Search index rebuild every 2 cycles (= every hour)
+    // Search index + query index rebuild every 2 cycles (= every hour)
     if (cleanupCycleCount % 2 === 0) {
       try {
         const { buildIndex } = await import('./server/services/searchIndex.js');
         await buildIndex();
+      } catch (_) { /* non-fatal */ }
+      try {
+        const { buildAllIndexes } = await import('./server/services/queryIndex.js');
+        await buildAllIndexes();
       } catch (_) { /* non-fatal */ }
     }
 
@@ -1266,7 +1289,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.32.0',
+        version: '0.33.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1354,7 +1377,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.31.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.33.0' });
     },
   },
 
