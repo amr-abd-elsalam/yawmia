@@ -48,20 +48,32 @@ try {
   logger.warn('Startup: migration error', { error: err.message });
 }
 
-// ── Build Search Index ───────────────────────────────────────
+// ── Build Search Index (conditional — skip if recently built) ─
 try {
-  const { buildIndex } = await import('./server/services/searchIndex.js');
-  await buildIndex();
-  logger.info('Startup: search index built');
+  const searchIdx = await import('./server/services/searchIndex.js');
+  const searchStats = searchIdx.getStats();
+  const SKIP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  if (searchStats.lastBuilt && (Date.now() - new Date(searchStats.lastBuilt).getTime()) < SKIP_THRESHOLD_MS) {
+    logger.info('Startup: search index fresh — skipping rebuild');
+  } else {
+    await searchIdx.buildIndex();
+    logger.info('Startup: search index built');
+  }
 } catch (err) {
   logger.warn('Startup: search index build error', { error: err.message });
 }
 
-// ── Build Query Index ────────────────────────────────────────
+// ── Build Query Index (conditional — skip if recently built) ─
 try {
-  const { buildAllIndexes } = await import('./server/services/queryIndex.js');
-  const qiCount = await buildAllIndexes();
-  if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+  const queryIdx = await import('./server/services/queryIndex.js');
+  const queryStats = queryIdx.getStats();
+  const SKIP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  if (queryStats.lastBuilt && (Date.now() - new Date(queryStats.lastBuilt).getTime()) < SKIP_THRESHOLD_MS) {
+    logger.info('Startup: query index fresh — skipping rebuild');
+  } else {
+    const qiCount = await queryIdx.buildAllIndexes();
+    if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+  }
 } catch (err) {
   logger.warn('Startup: query index build error', { error: err.message });
 }

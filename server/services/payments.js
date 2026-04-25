@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
@@ -111,8 +111,8 @@ export async function createPayment(jobId, employerId, options = {}) {
     attendanceBreakdown,
   };
 
-  // Save payment file
-  const paymentPath = getRecordPath('payments', id);
+  // Save payment file (write to current month shard)
+  const paymentPath = getWriteRecordPath('payments', id);
   await atomicWrite(paymentPath, payment);
 
   // Update job-payments index

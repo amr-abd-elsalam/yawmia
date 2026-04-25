@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { join } from 'node:path';
+import { readdir, rename as renameFile, readFile as readFileRaw, mkdir } from 'node:fs/promises';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getCollectionPath, listJSON, getRecordPath } from './database.js';
 import { logger } from './logger.js';
@@ -83,6 +84,144 @@ const builtInMigrations = [
 
       if (updated > 0) {
         logger.info(`Migration v1: added availability to ${updated} users`);
+      }
+    },
+  },
+  {
+    version: 2,
+    name: 'Shard high-volume collections + extract verification images',
+    up: async () => {
+      const BATCH_SIZE = 100;
+      const shardedCollections = (config.SHARDING && config.SHARDING.enabled)
+        ? (config.SHARDING.collections || [])
+        : [];
+
+      if (shardedCollections.length === 0) {
+        logger.info('Migration v2: sharding disabled — skipping file moves');
+      }
+
+      // Part 1: Move flat files to monthly shard subdirectories
+      for (const collection of shardedCollections) {
+        const dir = config.DATABASE.dirs[collection];
+        if (!dir) continue;
+        const collectionPath = join(BASE_PATH, dir);
+
+        let files;
+        try {
+          files = await readdir(collectionPath);
+        } catch { continue; }
+
+        // Get prefix for this collection's records
+        const prefixMap = {
+          jobs: 'job_', applications: 'app_', notifications: 'ntf_',
+          attendance: 'att_', messages: 'msg_', ratings: 'rtg_', payments: 'pay_',
+        };
+        const prefix = prefixMap[collection] || '';
+        const recordFiles = files.filter(f =>
+          f.startsWith(prefix) && f.endsWith('.json') && !f.endsWith('.tmp')
+        );
+
+        let moved = 0;
+        for (let i = 0; i < recordFiles.length; i++) {
+          const fileName = recordFiles[i];
+          const sourcePath = join(collectionPath, fileName);
+
+          try {
+            const raw = await readFileRaw(sourcePath, 'utf-8');
+            const record = JSON.parse(raw);
+            const createdAt = record.createdAt || record.appliedAt || new Date().toISOString();
+            const date = new Date(createdAt);
+            const egyptMs = date.getTime() + (2 * 60 * 60 * 1000);
+            const egyptDate = new Date(egyptMs);
+            const shard = `${egyptDate.getUTCFullYear()}-${String(egyptDate.getUTCMonth() + 1).padStart(2, '0')}`;
+
+            const shardDir = join(collectionPath, shard);
+            await mkdir(shardDir, { recursive: true });
+            const destPath = join(shardDir, fileName);
+
+            // Only move if dest doesn't already exist
+            try {
+              await readFileRaw(destPath);
+              // Already exists in shard — skip (idempotent)
+            } catch {
+              await renameFile(sourcePath, destPath);
+              moved++;
+            }
+          } catch {
+            // Skip individual file errors — non-fatal
+          }
+
+          // Yield every BATCH_SIZE files
+          if ((i + 1) % BATCH_SIZE === 0) {
+            await new Promise(resolve => setImmediate(resolve));
+          }
+        }
+
+        if (moved > 0) {
+          logger.info(`Migration v2: moved ${moved} ${collection} files to shards`);
+        }
+      }
+
+      // Part 2: Extract verification images to imageStore
+      if (config.IMAGE_STORAGE && config.IMAGE_STORAGE.enabled) {
+        try {
+          const { storeImage } = await import('./imageStore.js');
+          const vrfDir = getCollectionPath('verifications');
+          const allVrfs = await listJSON(vrfDir);
+          const vrfs = allVrfs.filter(v => v.id && v.id.startsWith('vrf_'));
+          let extracted = 0;
+
+          for (let i = 0; i < vrfs.length; i++) {
+            const vrf = vrfs[i];
+            let changed = false;
+
+            // Extract nationalIdImage
+            if (vrf.nationalIdImage && !vrf.nationalIdImageRef) {
+              try {
+                const result = await storeImage(vrf.nationalIdImage, {
+                  uploadedBy: vrf.userId,
+                  purpose: 'national_id',
+                });
+                if (result.ok) {
+                  vrf.nationalIdImageRef = result.imageRef;
+                  vrf.nationalIdImage = null;
+                  changed = true;
+                }
+              } catch { /* non-fatal */ }
+            }
+
+            // Extract selfieImage
+            if (vrf.selfieImage && !vrf.selfieImageRef) {
+              try {
+                const result = await storeImage(vrf.selfieImage, {
+                  uploadedBy: vrf.userId,
+                  purpose: 'selfie',
+                });
+                if (result.ok) {
+                  vrf.selfieImageRef = result.imageRef;
+                  vrf.selfieImage = null;
+                  changed = true;
+                }
+              } catch { /* non-fatal */ }
+            }
+
+            if (changed) {
+              const vrfPath = getRecordPath('verifications', vrf.id);
+              await atomicWrite(vrfPath, vrf);
+              extracted++;
+            }
+
+            if ((i + 1) % BATCH_SIZE === 0) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
+          }
+
+          if (extracted > 0) {
+            logger.info(`Migration v2: extracted images from ${extracted} verification records`);
+          }
+        } catch (err) {
+          logger.warn('Migration v2: image extraction error (non-fatal)', { error: err.message });
+        }
       }
     },
   },

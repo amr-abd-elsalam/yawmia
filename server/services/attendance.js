@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import {
-  atomicWrite, readJSON, getRecordPath, getCollectionPath,
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath, getCollectionPath,
   listJSON, addToSetIndex, getFromSetIndex,
 } from './database.js';
 import { eventBus } from './eventBus.js';
@@ -172,7 +172,7 @@ export function checkIn(jobId, workerId, coords = {}) {
     createdAt: now.toISOString(),
   };
 
-  await atomicWrite(getRecordPath('attendance', id), attendance);
+  await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
   // Update indexes
   await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
@@ -361,7 +361,7 @@ export function reportNoShow(jobId, workerId, reportedBy) {
     createdAt: now.toISOString(),
   };
 
-  await atomicWrite(getRecordPath('attendance', id), attendance);
+  await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
   // Update indexes
   await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
@@ -471,7 +471,7 @@ export function employerCheckIn(jobId, workerId, employerId) {
       createdAt: now.toISOString(),
     };
 
-    await atomicWrite(getRecordPath('attendance', id), attendance);
+    await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
     // Update indexes
     await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);

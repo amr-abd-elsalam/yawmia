@@ -30,19 +30,23 @@ async function atomicWrite(filePath, data) {
 }
 
 async function listRecords(dir, prefix) {
+  const results = [];
   try {
-    const files = await readdir(dir);
-    const results = [];
-    for (const f of files) {
-      if (f.startsWith(prefix) && f.endsWith('.json')) {
-        const data = await readJSON(join(dir, f));
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && /^\d{4}-\d{2}$/.test(entry.name)) {
+        // Recurse into shard subdirectories
+        const shardResults = await listRecords(join(dir, entry.name), prefix);
+        results.push(...shardResults);
+      } else if (entry.isFile() && entry.name.startsWith(prefix) && entry.name.endsWith('.json')) {
+        const data = await readJSON(join(dir, entry.name));
         if (data) results.push(data);
       }
     }
-    return results;
   } catch {
-    return [];
+    // ENOENT or similar — return empty
   }
+  return results;
 }
 
 async function repair() {

@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, deleteJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex } from './database.js';
+import { atomicWrite, readJSON, deleteJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
@@ -52,7 +52,7 @@ export async function createNotification(userId, type, message, meta = {}) {
     readAt: null,
   };
 
-  const ntfPath = getRecordPath('notifications', id);
+  const ntfPath = getWriteRecordPath('notifications', id);
   await atomicWrite(ntfPath, notification);
 
   // Update secondary index
@@ -204,27 +204,23 @@ export async function cleanOldNotifications() {
   const cutoff = new Date(Date.now() - ttlDays * 24 * 60 * 60 * 1000);
   const ntfDir = getCollectionPath('notifications');
 
-  let files;
+  let allNtfFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(ntfDir);
+    allNtfFiles = await walkCollectionFiles(ntfDir, 'ntf_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ntf_'));
   let cleaned = 0;
   const affectedUsers = new Set();
   const cleanedIds = new Set();
   const BATCH_SIZE = 100;
-  const { join: joinPath } = await import('node:path');
 
-  for (let i = 0; i < jsonFiles.length; i++) {
-    const ntf = await readJSON(joinPath(ntfDir, jsonFiles[i]));
+  for (let i = 0; i < allNtfFiles.length; i++) {
+    const ntf = await readJSON(allNtfFiles[i].filePath);
     if (ntf && ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
-      const ntfPath = getRecordPath('notifications', ntf.id);
-      await deleteJSON(ntfPath);
+      await deleteJSON(allNtfFiles[i].filePath);
       if (ntf.userId) affectedUsers.add(ntf.userId);
       cleanedIds.add(ntf.id);
       cleaned++;

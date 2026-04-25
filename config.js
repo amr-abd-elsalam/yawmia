@@ -260,6 +260,7 @@ const config = {
       alerts: 'alerts',
       metrics: 'metrics',
       favorites: 'favorites',
+      images: 'images',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -445,7 +446,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.34.0',
+    cacheName: 'yawmia-v0.35.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -768,6 +769,29 @@ const config = {
     enabled: true,
     rebuildOnStartup: true,                  // إعادة بناء الفهرس عند بدء السيرفر
     incrementalUpdates: true,                // تحديثات تزايدية عبر EventBus
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 51. تقسيم البيانات (SHARDING)
+  // ═══════════════════════════════════════════════════════════════
+  SHARDING: {
+    enabled: true,
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments'],
+    strategy: 'monthly',                     // YYYY-MM subdirectories
+    readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
+    locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 52. تخزين الصور (IMAGE_STORAGE)
+  // ═══════════════════════════════════════════════════════════════
+  IMAGE_STORAGE: {
+    enabled: true,
+    basePath: './data/images',
+    maxSizeBytes: 2 * 1024 * 1024,           // 2MB max per image
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    hashAlgorithm: 'sha256',
+    bucketPrefixLength: 2,                   // أول حرفين من الـ hash كـ directory bucketing
   },
 
 };

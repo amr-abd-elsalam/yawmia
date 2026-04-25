@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath } from './database.js';
 import { findById as findJobById } from './jobs.js';
 import { findById as findUserById, update as updateUser } from './users.js';
 import { listByJob as listApplicationsByJob } from './applications.js';
@@ -132,7 +132,7 @@ export async function submitRating(jobId, fromUserId, { toUserId, stars, comment
     createdAt: now,
   };
 
-  const ratingPath = getRecordPath('ratings', id);
+  const ratingPath = getWriteRecordPath('ratings', id);
   await atomicWrite(ratingPath, rating);
 
   // Update target user aggregate rating

@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
 
@@ -73,8 +73,8 @@ export async function create(employerId, fields) {
     expiresAt: expiresAt.toISOString(),
   };
 
-  // Save job file
-  const jobPath = getRecordPath('jobs', id);
+  // Save job file (write to current month shard)
+  const jobPath = getWriteRecordPath('jobs', id);
   await atomicWrite(jobPath, job);
 
   // Update jobs index
@@ -441,16 +441,16 @@ async function rejectPendingApplications(jobId, jobTitle) {
  */
 export async function enforceExpiredJobs() {
   const jobsDir = getCollectionPath('jobs');
-  let files;
+  let allFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(jobsDir);
+    allFiles = await walkCollectionFiles(jobsDir, 'job_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
+  // Compatibility: map to the format used below
+  const jsonFiles = allFiles;
   let count = 0;
   const now = new Date();
   const expiredJobIds = [];
@@ -458,7 +458,7 @@ export async function enforceExpiredJobs() {
   const BATCH_SIZE = 100;
 
   for (let i = 0; i < jsonFiles.length; i++) {
-    const job = await readJSON(getCollectionPath('jobs') + '/' + jsonFiles[i]);
+    const job = await readJSON(jsonFiles[i].filePath);
     if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
@@ -733,23 +733,21 @@ export function renewJob(jobId, employerId) {
  */
 export async function checkExpiryWarnings() {
   const jobsDir = getCollectionPath('jobs');
-  let files;
+  let allJobFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(jobsDir);
+    allJobFiles = await walkCollectionFiles(jobsDir, 'job_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
   const now = new Date();
   const warningWindowMs = 24 * 60 * 60 * 1000; // 24 hours
   let count = 0;
 
-  for (const file of jsonFiles) {
+  for (const entry of allJobFiles) {
     try {
-      const job = await readJSON(getCollectionPath('jobs') + '/' + file);
+      const job = await readJSON(entry.filePath);
       if (!job) continue;
       if (job.status !== 'open') continue;
       if (job.expiryWarningNotified) continue;

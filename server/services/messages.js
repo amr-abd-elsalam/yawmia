@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import {
-  atomicWrite, readJSON, getRecordPath, getCollectionPath,
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath, getCollectionPath,
   listJSON, addToSetIndex, getFromSetIndex,
 } from './database.js';
 import { eventBus } from './eventBus.js';
@@ -143,7 +143,7 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     createdAt: now,
   };
 
-  const msgPath = getRecordPath('messages', id);
+  const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
 
   // 9. Update secondary indexes
@@ -245,7 +245,7 @@ export async function broadcastMessage(jobId, employerId, text) {
     createdAt: now,
   };
 
-  const msgPath = getRecordPath('messages', id);
+  const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
 
   // 8. Update job index

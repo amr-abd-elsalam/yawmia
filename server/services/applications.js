@@ -4,7 +4,7 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { findById as findJobById, incrementAccepted } from './jobs.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
@@ -44,7 +44,7 @@ export function apply(jobId, workerId) {
     respondedAt: null,
   };
 
-  const appPath = getRecordPath('applications', id);
+  const appPath = getWriteRecordPath('applications', id);
   await atomicWrite(appPath, application);
 
   // Update secondary indexes

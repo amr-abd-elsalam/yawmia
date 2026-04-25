@@ -79,15 +79,38 @@ export async function submitVerification(userId, { nationalIdImage, selfieImage 
     // Non-blocking: allow on count failure
   }
 
-  // 9. Create verification record
+  // 9. Store images in imageStore (if enabled) or fallback to inline base64
+  let nationalIdImageRef = null;
+  let selfieImageRef = null;
+
+  try {
+    const { storeImage } = await import('./imageStore.js');
+    const imgResult = await storeImage(nationalIdImage, { uploadedBy: userId, purpose: 'national_id' });
+    if (imgResult.ok) {
+      nationalIdImageRef = imgResult.imageRef;
+    }
+    if (selfieImage && typeof selfieImage === 'string') {
+      const selfieResult = await storeImage(selfieImage, { uploadedBy: userId, purpose: 'selfie' });
+      if (selfieResult.ok) {
+        selfieImageRef = selfieResult.imageRef;
+      }
+    }
+  } catch (_) {
+    // Image store unavailable — fallback to inline base64 (backward compat)
+  }
+
+  // 10. Create verification record
   const id = 'vrf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
   const verification = {
     id,
     userId,
-    nationalIdImage,
-    selfieImage: selfieImage || null,
+    // Use imageRef if available, fallback to inline base64 for backward compat
+    nationalIdImageRef: nationalIdImageRef || null,
+    nationalIdImage: nationalIdImageRef ? null : nationalIdImage,
+    selfieImageRef: selfieImageRef || null,
+    selfieImage: (selfieImageRef || !selfieImage) ? null : selfieImage,
     status: 'pending',
     adminNotes: null,
     reviewedAt: null,
