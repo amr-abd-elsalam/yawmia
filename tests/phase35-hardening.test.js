@@ -462,10 +462,10 @@ describe('Phase 35 — Backup Scheduler', () => {
 
 describe('Phase 35 — Version & Config', () => {
 
-  it('P35-72: package.json version === 0.34.0', async () => {
+  it('P35-72: package.json version === 0.35.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.34.0');
+    assert.strictEqual(pkg.version, '0.35.0');
   });
 
   it('P35-73: SSE_REPLAY section exists', () => {
@@ -495,28 +495,28 @@ describe('Phase 35 — Version & Config', () => {
 
   it('P35-77: Config sections count === 49', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 50, `expected 48 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 52, `expected 48 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
-  it('P35-78: PWA.cacheName === yawmia-v0.34.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
+  it('P35-78: PWA.cacheName === yawmia-v0.35.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.35.0');
   });
 
-  it('P35-79: sw.js CACHE_NAME === yawmia-v0.34.0', async () => {
+  it('P35-79: sw.js CACHE_NAME === yawmia-v0.35.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.34.0'"));
+    assert.ok(content.includes("'yawmia-v0.35.0'"));
   });
 
-  it('P35-80: router.js version === 0.34.0', async () => {
+  it('P35-80: router.js version === 0.35.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.34.0'"));
+    assert.ok(content.includes("version: '0.35.0'"));
   });
 
   it('P35-81: router.js has 92 routes', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches);
-    assert.strictEqual(routeMatches.length, 92);
+    assert.strictEqual(routeMatches.length, 93);
   });
 
   it('P35-82: /api/admin/errors route exists in router', async () => {

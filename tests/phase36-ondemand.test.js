@@ -131,7 +131,7 @@ describe('Phase 36 — Urgency Config', () => {
 
   it('P36-12: Config section count === 49', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 50, `expected 49, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 52, `expected 49, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 
@@ -513,31 +513,31 @@ describe('Phase 36 — Worker Confirmation', () => {
 
 describe('Phase 36 — Version & Routes', () => {
 
-  it('P36-56: package.json version === 0.34.0', async () => {
+  it('P36-56: package.json version === 0.35.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.34.0');
+    assert.strictEqual(pkg.version, '0.35.0');
   });
 
-  it('P36-57: PWA.cacheName === yawmia-v0.34.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
+  it('P36-57: PWA.cacheName === yawmia-v0.35.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.35.0');
   });
 
-  it('P36-58: sw.js CACHE_NAME === yawmia-v0.34.0', async () => {
+  it('P36-58: sw.js CACHE_NAME === yawmia-v0.35.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.34.0'"));
+    assert.ok(content.includes("'yawmia-v0.35.0'"));
   });
 
-  it('P36-59: router.js version === 0.34.0', async () => {
+  it('P36-59: router.js version === 0.35.0', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
-    assert.ok(content.includes("version: '0.34.0'"));
+    assert.ok(content.includes("version: '0.35.0'"));
   });
 
   it('P36-60: Total routes === 92', async () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches);
-    assert.strictEqual(routeMatches.length, 92, `expected 92 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 93, `expected 92 routes, got ${routeMatches.length}`);
   });
 });
 

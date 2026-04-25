@@ -22,12 +22,12 @@ const config = (await import('../config.js')).default;
 
 describe('Phase 22 — Config', () => {
   it('P22-01: version is 0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.34.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.35.0');
   });
 
   it('P22-02: has 41 config sections', () => {
     const topLevelKeys = Object.keys(config);
-    assert.equal(topLevelKeys.length, 50);
+    assert.equal(topLevelKeys.length, 52);
   });
 
   it('P22-03: MESSAGES section exists with all required fields', () => {
@@ -65,7 +65,7 @@ describe('Phase 22 — Config', () => {
   });
 
   it('P22-07: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.equal(config.PWA.cacheName, 'yawmia-v0.34.0');
+    assert.equal(config.PWA.cacheName, 'yawmia-v0.35.0');
   });
 });
 
