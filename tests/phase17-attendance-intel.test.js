@@ -99,11 +99,11 @@ describe('Phase 17 — Config', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.33.0');
+    assert.strictEqual(pkg.version, '0.34.0');
   });
 
   it('P17-04: PWA cacheName is yawmia-v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.34.0');
   });
 
   it('P17-05: ATTENDANCE.allowEmployerOverride is true', () => {
