@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.34.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-25T19:06:02.687Z
+# يوميّة (Yawmia) v0.35.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-25T20:57:08.821Z
 > Files in this part: 6
 
 ## Files
@@ -330,6 +330,7 @@ const config = {
       alerts: 'alerts',
       metrics: 'metrics',
       favorites: 'favorites',
+      images: 'images',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -515,7 +516,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.34.0',
+    cacheName: 'yawmia-v0.35.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -840,6 +841,29 @@ const config = {
     incrementalUpdates: true,                // تحديثات تزايدية عبر EventBus
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 51. تقسيم البيانات (SHARDING)
+  // ═══════════════════════════════════════════════════════════════
+  SHARDING: {
+    enabled: true,
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments'],
+    strategy: 'monthly',                     // YYYY-MM subdirectories
+    readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
+    locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 52. تخزين الصور (IMAGE_STORAGE)
+  // ═══════════════════════════════════════════════════════════════
+  IMAGE_STORAGE: {
+    enabled: true,
+    basePath: './data/images',
+    maxSizeBytes: 2 * 1024 * 1024,           // 2MB max per image
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    hashAlgorithm: 'sha256',
+    bucketPrefixLength: 2,                   // أول حرفين من الـ hash كـ directory bucketing
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -888,7 +912,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -963,20 +987,32 @@ try {
   logger.warn('Startup: migration error', { error: err.message });
 }
 
-// ── Build Search Index ───────────────────────────────────────
+// ── Build Search Index (conditional — skip if recently built) ─
 try {
-  const { buildIndex } = await import('./server/services/searchIndex.js');
-  await buildIndex();
-  logger.info('Startup: search index built');
+  const searchIdx = await import('./server/services/searchIndex.js');
+  const searchStats = searchIdx.getStats();
+  const SKIP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  if (searchStats.lastBuilt && (Date.now() - new Date(searchStats.lastBuilt).getTime()) < SKIP_THRESHOLD_MS) {
+    logger.info('Startup: search index fresh — skipping rebuild');
+  } else {
+    await searchIdx.buildIndex();
+    logger.info('Startup: search index built');
+  }
 } catch (err) {
   logger.warn('Startup: search index build error', { error: err.message });
 }
 
-// ── Build Query Index ────────────────────────────────────────
+// ── Build Query Index (conditional — skip if recently built) ─
 try {
-  const { buildAllIndexes } = await import('./server/services/queryIndex.js');
-  const qiCount = await buildAllIndexes();
-  if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+  const queryIdx = await import('./server/services/queryIndex.js');
+  const queryStats = queryIdx.getStats();
+  const SKIP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  if (queryStats.lastBuilt && (Date.now() - new Date(queryStats.lastBuilt).getTime()) < SKIP_THRESHOLD_MS) {
+    logger.info('Startup: query index fresh — skipping rebuild');
+  } else {
+    const qiCount = await queryIdx.buildAllIndexes();
+    if (qiCount > 0) logger.info(`Startup: query index built (${qiCount} jobs)`);
+  }
 } catch (err) {
   logger.warn('Startup: query index build error', { error: err.message });
 }
@@ -1265,6 +1301,7 @@ import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandl
 import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleAlert } from './handlers/alertsHandler.js';
 import { handleAddFavorite, handleRemoveFavorite, handleListFavorites, handleCheckFavorite } from './handlers/favoritesHandler.js';
 import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot, handleGetErrors } from './handlers/analyticsHandler.js';
+import { handleGetImage } from './handlers/imageHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1289,7 +1326,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.34.0',
+        version: '0.35.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1377,7 +1414,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.34.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.35.0' });
     },
   },
 
@@ -1469,6 +1506,9 @@ const routes = [
   { method: 'GET', path: '/api/favorites', middlewares: [requireAuth, requireRole('employer')], handler: handleListFavorites },
   { method: 'GET', path: '/api/favorites/check/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleCheckFavorite },
   { method: 'DELETE', path: '/api/favorites/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleRemoveFavorite },
+
+  // ── Image Route ──
+  { method: 'GET', path: '/api/images/:id', middlewares: [requireAuth], handler: handleGetImage },
 
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },

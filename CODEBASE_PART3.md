@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.34.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-25T19:06:02.706Z
-> Files in this part: 24
+# يوميّة (Yawmia) v0.35.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-25T20:57:08.841Z
+> Files in this part: 25
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -10,23 +10,24 @@
 5. `server/handlers/attendanceHandler.js`
 6. `server/handlers/authHandler.js`
 7. `server/handlers/favoritesHandler.js`
-8. `server/handlers/jobsHandler.js`
-9. `server/handlers/messagesHandler.js`
-10. `server/handlers/notificationsHandler.js`
-11. `server/handlers/paymentsHandler.js`
-12. `server/handlers/pushHandler.js`
-13. `server/handlers/ratingsHandler.js`
-14. `server/handlers/reportsHandler.js`
-15. `server/handlers/sseHandler.js`
-16. `server/handlers/verificationHandler.js`
-17. `server/middleware/auth.js`
-18. `server/middleware/bodyParser.js`
-19. `server/middleware/cors.js`
-20. `server/middleware/rateLimit.js`
-21. `server/middleware/requestId.js`
-22. `server/middleware/security.js`
-23. `server/middleware/static.js`
-24. `server/middleware/timing.js`
+8. `server/handlers/imageHandler.js`
+9. `server/handlers/jobsHandler.js`
+10. `server/handlers/messagesHandler.js`
+11. `server/handlers/notificationsHandler.js`
+12. `server/handlers/paymentsHandler.js`
+13. `server/handlers/pushHandler.js`
+14. `server/handlers/ratingsHandler.js`
+15. `server/handlers/reportsHandler.js`
+16. `server/handlers/sseHandler.js`
+17. `server/handlers/verificationHandler.js`
+18. `server/middleware/auth.js`
+19. `server/middleware/bodyParser.js`
+20. `server/middleware/cors.js`
+21. `server/middleware/rateLimit.js`
+22. `server/middleware/requestId.js`
+23. `server/middleware/security.js`
+24. `server/middleware/static.js`
+25. `server/middleware/timing.js`
 
 ---
 
@@ -1397,6 +1398,53 @@ export async function handleCheckFavorite(req, res) {
     sendJSON(res, 200, { ok: true, isFavorite: result });
   } catch (err) {
     sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/imageHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/imageHandler.js — Image Serving Endpoint
+// ═══════════════════════════════════════════════════════════════
+
+import { getImage } from '../services/imageStore.js';
+
+/**
+ * GET /api/images/:ref
+ * Serves a stored image as binary with correct Content-Type
+ * Requires: requireAuth
+ */
+export async function handleGetImage(req, res) {
+  const imageRef = req.params.id; // router uses :id param
+
+  if (!imageRef || !imageRef.startsWith('img_')) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'معرّف الصورة غير صالح', code: 'INVALID_IMAGE_REF' }));
+    return;
+  }
+
+  try {
+    const result = await getImage(imageRef);
+
+    if (!result || !result.ok) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'الصورة غير موجودة', code: 'IMAGE_NOT_FOUND' }));
+      return;
+    }
+
+    res.writeHead(200, {
+      'Content-Type': result.contentType,
+      'Content-Length': result.buffer.length,
+      'Cache-Control': 'private, max-age=86400',
+    });
+    res.end(result.buffer);
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'خطأ في جلب الصورة', code: 'IMAGE_ERROR' }));
   }
 }
 ```

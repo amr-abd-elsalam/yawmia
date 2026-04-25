@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.34.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-25T19:06:02.691Z
-> Files in this part: 46
+# يوميّة (Yawmia) v0.35.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-25T20:57:08.825Z
+> Files in this part: 47
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -22,33 +22,34 @@
 17. `server/services/favorites.js`
 18. `server/services/financialExport.js`
 19. `server/services/geo.js`
-20. `server/services/indexHealth.js`
-21. `server/services/jobAlerts.js`
-22. `server/services/jobMatcher.js`
-23. `server/services/jobs.js`
-24. `server/services/logWriter.js`
-25. `server/services/logger.js`
-26. `server/services/messages.js`
-27. `server/services/messaging.js`
-28. `server/services/migration.js`
-29. `server/services/monitor.js`
-30. `server/services/notificationMessenger.js`
-31. `server/services/notifications.js`
-32. `server/services/payments.js`
-33. `server/services/profileCompleteness.js`
-34. `server/services/queryIndex.js`
-35. `server/services/ratings.js`
-36. `server/services/reports.js`
-37. `server/services/resourceLock.js`
-38. `server/services/sanitizer.js`
-39. `server/services/searchIndex.js`
-40. `server/services/sessions.js`
-41. `server/services/sseManager.js`
-42. `server/services/trust.js`
-43. `server/services/users.js`
-44. `server/services/validators.js`
-45. `server/services/verification.js`
-46. `server/services/webpush.js`
+20. `server/services/imageStore.js`
+21. `server/services/indexHealth.js`
+22. `server/services/jobAlerts.js`
+23. `server/services/jobMatcher.js`
+24. `server/services/jobs.js`
+25. `server/services/logWriter.js`
+26. `server/services/logger.js`
+27. `server/services/messages.js`
+28. `server/services/messaging.js`
+29. `server/services/migration.js`
+30. `server/services/monitor.js`
+31. `server/services/notificationMessenger.js`
+32. `server/services/notifications.js`
+33. `server/services/payments.js`
+34. `server/services/profileCompleteness.js`
+35. `server/services/queryIndex.js`
+36. `server/services/ratings.js`
+37. `server/services/reports.js`
+38. `server/services/resourceLock.js`
+39. `server/services/sanitizer.js`
+40. `server/services/searchIndex.js`
+41. `server/services/sessions.js`
+42. `server/services/sseManager.js`
+43. `server/services/trust.js`
+44. `server/services/users.js`
+45. `server/services/validators.js`
+46. `server/services/verification.js`
+47. `server/services/webpush.js`
 
 ---
 
@@ -831,7 +832,7 @@ function emptyPlatformAnalytics() {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { findById as findJobById, incrementAccepted } from './jobs.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
@@ -871,7 +872,7 @@ export function apply(jobId, workerId) {
     respondedAt: null,
   };
 
-  const appPath = getRecordPath('applications', id);
+  const appPath = getWriteRecordPath('applications', id);
   await atomicWrite(appPath, application);
 
   // Update secondary indexes
@@ -1314,7 +1315,7 @@ export function hasArabic(text) {
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import {
-  atomicWrite, readJSON, getRecordPath, getCollectionPath,
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath, getCollectionPath,
   listJSON, addToSetIndex, getFromSetIndex,
 } from './database.js';
 import { eventBus } from './eventBus.js';
@@ -1481,7 +1482,7 @@ export function checkIn(jobId, workerId, coords = {}) {
     createdAt: now.toISOString(),
   };
 
-  await atomicWrite(getRecordPath('attendance', id), attendance);
+  await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
   // Update indexes
   await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
@@ -1670,7 +1671,7 @@ export function reportNoShow(jobId, workerId, reportedBy) {
     createdAt: now.toISOString(),
   };
 
-  await atomicWrite(getRecordPath('attendance', id), attendance);
+  await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
   // Update indexes
   await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
@@ -1780,7 +1781,7 @@ export function employerCheckIn(jobId, workerId, employerId) {
       createdAt: now.toISOString(),
     };
 
-    await atomicWrite(getRecordPath('attendance', id), attendance);
+    await atomicWrite(getWriteRecordPath('attendance', id), attendance);
 
     // Update indexes
     await addToSetIndex(JOB_ATTENDANCE_INDEX, jobId, id);
@@ -3090,14 +3091,93 @@ import { withLock } from './resourceLock.js';
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const ENCODING = config.DATABASE.encoding;
 
+// ═══════════════════════════════════════════════════════════════
+// Sharding Helpers
+// ═══════════════════════════════════════════════════════════════
+
+/** @type {Map<string, string>} recordId → shard subdir path (e.g. 'data/jobs/2026-04') */
+const shardLocationCache = new Map();
+
+/**
+ * Check if sharding is enabled for a collection
+ * @param {string} collection
+ * @returns {boolean}
+ */
+function isShardedCollection(collection) {
+  if (!config.SHARDING || !config.SHARDING.enabled) return false;
+  return config.SHARDING.collections.includes(collection);
+}
+
+/**
+ * Get current shard key (YYYY-MM in Egypt timezone UTC+2)
+ * @returns {string} e.g. '2026-04'
+ */
+function getCurrentShard() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+/**
+ * Enforce max entries in shard location cache
+ */
+function trimShardCache() {
+  const max = (config.SHARDING && config.SHARDING.locationCacheMax) || 50000;
+  if (shardLocationCache.size > max) {
+    // Delete oldest entries (first inserted in Map)
+    const excess = shardLocationCache.size - max;
+    let count = 0;
+    for (const key of shardLocationCache.keys()) {
+      if (count >= excess) break;
+      shardLocationCache.delete(key);
+      count++;
+    }
+  }
+}
+
+/**
+ * Get list of shard subdirectories for a collection (newest first)
+ * @param {string} collectionDir — full path to collection root
+ * @returns {Promise<string[]>} sorted shard names descending (e.g. ['2026-04', '2026-03', ...])
+ */
+async function getShardDirs(collectionDir) {
+  try {
+    const entries = await readdir(collectionDir, { withFileTypes: true });
+    const shards = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name)
+      .sort()
+      .reverse(); // newest first
+    return shards;
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Initialize all database directories
+ * Creates shard subdirectories for current month on sharded collections
  */
 export async function initDatabase() {
   const dirs = Object.values(config.DATABASE.dirs);
   for (const dir of dirs) {
     const fullPath = join(BASE_PATH, dir);
     await mkdir(fullPath, { recursive: true });
+  }
+
+  // Create current month shard dirs for sharded collections
+  if (config.SHARDING && config.SHARDING.enabled) {
+    const currentShard = getCurrentShard();
+    for (const collection of config.SHARDING.collections) {
+      const dir = config.DATABASE.dirs[collection];
+      if (dir) {
+        const shardPath = join(BASE_PATH, dir, currentShard);
+        await mkdir(shardPath, { recursive: true });
+      }
+    }
   }
 }
 
@@ -3118,6 +3198,7 @@ export async function atomicWrite(filePath, data) {
 /**
  * Read JSON file — returns null if not found
  * Integrates with in-memory cache for read acceleration
+ * For sharded collections: if file not found at given path, scans shard subdirs
  */
 export async function readJSON(filePath) {
   // Check cache first
@@ -3137,9 +3218,75 @@ export async function readJSON(filePath) {
 
     return parsed;
   } catch (err) {
-    if (err.code === 'ENOENT') return null;
+    if (err.code === 'ENOENT') {
+      // Shard fallback: if this looks like a flat path for a sharded collection,
+      // scan shard subdirs to find the file
+      const shardResult = await _shardFallbackRead(filePath);
+      if (shardResult) return shardResult;
+      return null;
+    }
     throw err;
   }
+}
+
+/**
+ * Shard fallback read — scans shard subdirs for a file not found at flat path
+ * Only activates for sharded collections. Returns parsed JSON or null.
+ * Updates shard location cache on hit.
+ * @param {string} flatFilePath — the original flat path that returned ENOENT
+ * @returns {Promise<object|null>}
+ */
+async function _shardFallbackRead(flatFilePath) {
+  if (!config.SHARDING || !config.SHARDING.enabled) return null;
+
+  // Extract collection and filename from flat path
+  // flatFilePath format: BASE_PATH/collectionDir/id.json
+  const fileName = flatFilePath.split('/').pop(); // e.g. 'job_abc123.json'
+  if (!fileName || !fileName.endsWith('.json')) return null;
+
+  // Determine which collection this belongs to
+  let matchedCollection = null;
+  let collectionDir = null;
+  for (const [col, dir] of Object.entries(config.DATABASE.dirs)) {
+    const colPath = join(BASE_PATH, dir);
+    if (flatFilePath.startsWith(colPath + '/') && flatFilePath === join(colPath, fileName)) {
+      matchedCollection = col;
+      collectionDir = colPath;
+      break;
+    }
+  }
+
+  if (!matchedCollection || !isShardedCollection(matchedCollection)) return null;
+
+  // Scan shard subdirs (newest first, limited by readScanMonths)
+  const maxShards = (config.SHARDING.readScanMonths || 6);
+  const shardDirs = await getShardDirs(collectionDir);
+
+  for (let i = 0; i < Math.min(shardDirs.length, maxShards); i++) {
+    const shardPath = join(collectionDir, shardDirs[i], fileName);
+    try {
+      const raw = await readFile(shardPath, ENCODING);
+      const parsed = JSON.parse(raw);
+
+      // Update shard location cache
+      const id = fileName.replace('.json', '');
+      shardLocationCache.set(`${matchedCollection}:${id}`, join(collectionDir, shardDirs[i]));
+      trimShardCache();
+
+      // Cache the result
+      const cacheKey = `file:${shardPath}`;
+      const ttl = resolveCacheTtl(shardPath);
+      if (ttl > 0) {
+        cacheSet(cacheKey, parsed, ttl);
+      }
+
+      return parsed;
+    } catch {
+      // Not in this shard — continue scanning
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -3216,7 +3363,8 @@ export async function deleteJSON(filePath) {
 
 
 /**
- * List all JSON files in a directory
+ * List all JSON files in a directory (shard-aware)
+ * For sharded collections: also walks shard subdirectories
  * @param {string} dirPath
  * @param {{ prefix?: string }} [options] — optional prefix filter for filenames
  */
@@ -3232,6 +3380,26 @@ export async function listJSON(dirPath, options = {}) {
       const data = await readJSON(join(dirPath, file));
       if (data) results.push(data);
     }
+
+    // Walk shard subdirectories if they exist
+    const shardDirs = await getShardDirs(dirPath);
+    for (const shard of shardDirs) {
+      const shardPath = join(dirPath, shard);
+      try {
+        const shardFiles = await readdir(shardPath);
+        let shardJsonFiles = shardFiles.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
+        if (options.prefix) {
+          shardJsonFiles = shardJsonFiles.filter(f => f.startsWith(options.prefix));
+        }
+        for (const file of shardJsonFiles) {
+          const data = await readJSON(join(shardPath, file));
+          if (data) results.push(data);
+        }
+      } catch {
+        // Skip inaccessible shard dir
+      }
+    }
+
     return results;
   } catch (err) {
     if (err.code === 'ENOENT') return [];
@@ -3315,12 +3483,49 @@ export function isValidId(id) {
 }
 
 /**
- * Get full path for a record
+ * Get full path for a record (shard-aware with cache)
+ * For sharded collections: checks cache → returns cached shard path OR flat path as default.
+ * readJSON handles async fallback scanning if file not found at returned path.
+ * For non-sharded collections: returns flat path (unchanged behavior).
  */
 export function getRecordPath(collection, id) {
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
+
+  // Sharded collection: check location cache
+  if (isShardedCollection(collection)) {
+    const cacheKey = `${collection}:${id}`;
+    const cachedDir = shardLocationCache.get(cacheKey);
+    if (cachedDir) {
+      return join(cachedDir, `${id}.json`);
+    }
+    // Cache miss: return flat path as default — readJSON will do shard scan
+  }
+
+  return join(BASE_PATH, dir, `${id}.json`);
+}
+
+/**
+ * Get full path for WRITING a new record (always current month shard)
+ * For sharded collections: returns path in current month subdirectory.
+ * For non-sharded collections: returns flat path (same as getRecordPath).
+ * USE ONLY for new record creation — updates should use getRecordPath.
+ */
+export function getWriteRecordPath(collection, id) {
+  const dir = config.DATABASE.dirs[collection];
+  if (!dir) throw new Error(`Unknown collection: ${collection}`);
+  if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
+
+  if (isShardedCollection(collection)) {
+    const shard = getCurrentShard();
+    const shardDir = join(BASE_PATH, dir, shard);
+    // Update shard location cache
+    shardLocationCache.set(`${collection}:${id}`, shardDir);
+    trimShardCache();
+    return join(shardDir, `${id}.json`);
+  }
+
   return join(BASE_PATH, dir, `${id}.json`);
 }
 
@@ -3413,7 +3618,7 @@ export async function getFromSetIndex(relativePath, key) {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Clean stale .tmp files from all data directories
+ * Clean stale .tmp files from all data directories (shard-aware)
  * Orphan .tmp files older than 5 minutes are deleted (crash leftovers)
  * Fire-and-forget safe — logs warnings but never throws
  * @returns {Promise<number>} count of cleaned .tmp files
@@ -3423,9 +3628,34 @@ export async function cleanStaleTmpFiles() {
   const now = Date.now();
   let cleaned = 0;
 
-  const dirs = Object.values(config.DATABASE.dirs);
-  for (const dir of dirs) {
-    const fullPath = join(BASE_PATH, dir);
+  async function cleanDir(fullPath) {
+    try {
+      const entries = await readdir(fullPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && /^\d{4}-\d{2}$/.test(entry.name)) {
+          // Recurse into shard subdirectories
+          cleaned += await cleanDirFlat(join(fullPath, entry.name));
+        } else if (entry.isFile() && entry.name.endsWith('.tmp')) {
+          try {
+            const filePath = join(fullPath, entry.name);
+            const fileStat = await stat(filePath);
+            const ageMs = now - fileStat.mtime.getTime();
+            if (ageMs > STALE_THRESHOLD_MS) {
+              await unlink(filePath);
+              cleaned++;
+              try {
+                const { logger } = await import('./logger.js');
+                logger.warn('Cleaned stale .tmp file', { file: filePath, ageMinutes: Math.round(ageMs / 60000) });
+              } catch (_) { /* non-fatal */ }
+            }
+          } catch (_) { /* non-fatal */ }
+        }
+      }
+    } catch (_) { /* non-fatal */ }
+  }
+
+  async function cleanDirFlat(fullPath) {
+    let count = 0;
     try {
       const files = await readdir(fullPath);
       for (const file of files) {
@@ -3436,23 +3666,80 @@ export async function cleanStaleTmpFiles() {
           const ageMs = now - fileStat.mtime.getTime();
           if (ageMs > STALE_THRESHOLD_MS) {
             await unlink(filePath);
-            cleaned++;
-            // Dynamic import to avoid circular dependency
+            count++;
             try {
               const { logger } = await import('./logger.js');
               logger.warn('Cleaned stale .tmp file', { file: filePath, ageMinutes: Math.round(ageMs / 60000) });
             } catch (_) { /* non-fatal */ }
           }
-        } catch (_) {
-          // Skip individual file errors — non-fatal
-        }
+        } catch (_) { /* non-fatal */ }
       }
-    } catch (_) {
-      // Skip directory errors — non-fatal (dir might not exist yet)
-    }
+    } catch (_) { /* non-fatal */ }
+    return count;
+  }
+
+  const dirs = Object.values(config.DATABASE.dirs);
+  for (const dir of dirs) {
+    await cleanDir(join(BASE_PATH, dir));
   }
 
   return cleaned;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Shard-Aware Directory Walking for Cleanup Operations
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Walk a collection directory and all its shard subdirs, yielding JSON filenames.
+ * For use in cleanup operations that need to iterate all files.
+ * @param {string} collectionDir — full path to collection root
+ * @param {string} prefix — filename prefix filter (e.g. 'ntf_', 'job_')
+ * @returns {Promise<Array<{ filePath: string, fileName: string }>>}
+ */
+export async function walkCollectionFiles(collectionDir, prefix) {
+  const results = [];
+
+  // Flat files in root
+  try {
+    const files = await readdir(collectionDir);
+    for (const f of files) {
+      if (f.startsWith(prefix) && f.endsWith('.json') && !f.endsWith('.tmp')) {
+        results.push({ filePath: join(collectionDir, f), fileName: f });
+      }
+    }
+  } catch { /* ENOENT or similar — non-fatal */ }
+
+  // Shard subdirectories
+  const shardDirs = await getShardDirs(collectionDir);
+  for (const shard of shardDirs) {
+    const shardPath = join(collectionDir, shard);
+    try {
+      const files = await readdir(shardPath);
+      for (const f of files) {
+        if (f.startsWith(prefix) && f.endsWith('.json') && !f.endsWith('.tmp')) {
+          results.push({ filePath: join(shardPath, f), fileName: f });
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  return results;
+}
+
+/**
+ * Clear the shard location cache (for testing)
+ */
+export function clearShardCache() {
+  shardLocationCache.clear();
+}
+
+/**
+ * Get shard location cache size (for monitoring)
+ * @returns {number}
+ */
+export function getShardCacheSize() {
+  return shardLocationCache.size;
 }
 ```
 
@@ -4449,6 +4736,228 @@ export function getEgyptMidnight() {
 
 ---
 
+## `server/services/imageStore.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/imageStore.js — Content-Addressed Binary Image Store
+// ═══════════════════════════════════════════════════════════════
+// Stores images as binary files with SHA-256 hash filenames.
+// Hash-prefix bucketing (2-char) prevents large flat directories.
+// Metadata stored alongside binary in {hash}.meta.json.
+// Deduplication: same image → same hash → one file on disk.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { writeFile, readFile, unlink, mkdir, stat } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+const IMAGE_BASE = process.env.YAWMIA_DATA_PATH
+  ? join(process.env.YAWMIA_DATA_PATH, 'images')
+  : (config.IMAGE_STORAGE ? config.IMAGE_STORAGE.basePath : './data/images');
+
+/**
+ * Parse a base64 data URI into buffer + content type
+ * @param {string} dataUri — e.g. 'data:image/jpeg;base64,/9j/4AAQ...'
+ * @returns {{ buffer: Buffer, contentType: string } | null}
+ */
+function parseDataUri(dataUri) {
+  if (!dataUri || typeof dataUri !== 'string') return null;
+
+  // Handle both data URI and raw base64
+  let contentType = 'image/jpeg'; // default
+  let base64Data = dataUri;
+
+  const match = dataUri.match(/^data:([^;]+);base64,(.+)$/s);
+  if (match) {
+    contentType = match[1];
+    base64Data = match[2];
+  }
+
+  try {
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (buffer.length === 0) return null;
+    return { buffer, contentType };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get file extension from content type
+ * @param {string} contentType
+ * @returns {string}
+ */
+function getExtension(contentType) {
+  const map = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  return map[contentType] || 'bin';
+}
+
+/**
+ * Get bucket directory and file paths for a hash
+ * @param {string} hash — full SHA-256 hex string
+ * @param {string} ext — file extension
+ * @returns {{ bucketDir: string, binaryPath: string, metaPath: string }}
+ */
+function getImagePaths(hash, ext) {
+  const prefixLen = (config.IMAGE_STORAGE && config.IMAGE_STORAGE.bucketPrefixLength) || 2;
+  const bucket = hash.substring(0, prefixLen);
+  const bucketDir = join(IMAGE_BASE, bucket);
+  return {
+    bucketDir,
+    binaryPath: join(bucketDir, `${hash}.${ext}`),
+    metaPath: join(bucketDir, `${hash}.meta.json`),
+  };
+}
+
+/**
+ * Store an image from a base64 data URI
+ * Content-addressed: SHA-256 hash → filename. Duplicate = no-op (returns existing ref).
+ *
+ * @param {string} base64DataUri — base64 data URI string
+ * @param {{ uploadedBy?: string, purpose?: string }} metadata — optional metadata
+ * @returns {Promise<{ ok: boolean, imageRef?: string, hash?: string, contentType?: string, sizeBytes?: number, error?: string, code?: string }>}
+ */
+export async function storeImage(base64DataUri, metadata = {}) {
+  // Feature flag
+  if (!config.IMAGE_STORAGE || !config.IMAGE_STORAGE.enabled) {
+    return { ok: false, error: 'خدمة تخزين الصور غير مفعّلة', code: 'IMAGE_STORAGE_DISABLED' };
+  }
+
+  // Parse data URI
+  const parsed = parseDataUri(base64DataUri);
+  if (!parsed) {
+    return { ok: false, error: 'بيانات الصورة غير صالحة', code: 'INVALID_IMAGE_DATA' };
+  }
+
+  const { buffer, contentType } = parsed;
+
+  // Type validation
+  const allowedTypes = config.IMAGE_STORAGE.allowedTypes || ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(contentType)) {
+    return { ok: false, error: 'نوع الصورة غير مسموح', code: 'INVALID_IMAGE_TYPE' };
+  }
+
+  // Size validation
+  const maxSize = config.IMAGE_STORAGE.maxSizeBytes || (2 * 1024 * 1024);
+  if (buffer.length > maxSize) {
+    return { ok: false, error: 'حجم الصورة أكبر من الحد المسموح', code: 'IMAGE_TOO_LARGE' };
+  }
+
+  // Compute SHA-256 hash
+  const algorithm = config.IMAGE_STORAGE.hashAlgorithm || 'sha256';
+  const hash = crypto.createHash(algorithm).update(buffer).digest('hex');
+  const ext = getExtension(contentType);
+  const imageRef = 'img_' + hash.substring(0, 8);
+
+  const { bucketDir, binaryPath, metaPath } = getImagePaths(hash, ext);
+
+  // Check if already exists (deduplication)
+  try {
+    await stat(binaryPath);
+    // File exists — return existing ref (no duplicate write)
+    return { ok: true, imageRef, hash, contentType, sizeBytes: buffer.length };
+  } catch {
+    // File doesn't exist — proceed with write
+  }
+
+  // Write binary file
+  await mkdir(bucketDir, { recursive: true });
+  await writeFile(binaryPath, buffer);
+
+  // Write metadata file
+  const meta = {
+    ref: imageRef,
+    hash,
+    contentType,
+    sizeBytes: buffer.length,
+    uploadedBy: metadata.uploadedBy || null,
+    uploadedAt: new Date().toISOString(),
+    purpose: metadata.purpose || null,
+  };
+  await writeFile(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+
+  logger.info('Image stored', { imageRef, hash: hash.substring(0, 16), contentType, sizeBytes: buffer.length });
+
+  return { ok: true, imageRef, hash, contentType, sizeBytes: buffer.length };
+}
+
+/**
+ * Get an image by reference
+ * @param {string} imageRef — e.g. 'img_a1b2c3d4'
+ * @returns {Promise<{ ok: boolean, buffer?: Buffer, contentType?: string, metadata?: object, error?: string } | null>}
+ */
+export async function getImage(imageRef) {
+  if (!imageRef || typeof imageRef !== 'string' || !imageRef.startsWith('img_')) {
+    return null;
+  }
+
+  const hashPrefix = imageRef.substring(4); // Remove 'img_' prefix
+  const prefixLen = (config.IMAGE_STORAGE && config.IMAGE_STORAGE.bucketPrefixLength) || 2;
+  const bucket = hashPrefix.substring(0, prefixLen);
+  const bucketDir = join(IMAGE_BASE, bucket);
+
+  // Find file matching hash prefix in bucket
+  try {
+    const { readdir: readdirFs } = await import('node:fs/promises');
+    const files = await readdirFs(bucketDir);
+    const metaFile = files.find(f => f.startsWith(hashPrefix) && f.endsWith('.meta.json'));
+    if (!metaFile) return null;
+
+    const metaPath = join(bucketDir, metaFile);
+    const metaRaw = await readFile(metaPath, 'utf-8');
+    const meta = JSON.parse(metaRaw);
+
+    const ext = getExtension(meta.contentType);
+    const binaryPath = join(bucketDir, `${meta.hash}.${ext}`);
+    const buffer = await readFile(binaryPath);
+
+    return { ok: true, buffer, contentType: meta.contentType, metadata: meta };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Delete an image by reference
+ * @param {string} imageRef
+ * @returns {Promise<boolean>}
+ */
+export async function deleteImage(imageRef) {
+  if (!imageRef || !imageRef.startsWith('img_')) return false;
+
+  const result = await getImage(imageRef);
+  if (!result || !result.ok) return false;
+
+  const hash = result.metadata.hash;
+  const ext = getExtension(result.metadata.contentType);
+  const { binaryPath, metaPath } = getImagePaths(hash, ext);
+
+  try { await unlink(binaryPath); } catch { /* non-fatal */ }
+  try { await unlink(metaPath); } catch { /* non-fatal */ }
+
+  return true;
+}
+
+/**
+ * Check if an image exists
+ * @param {string} imageRef
+ * @returns {Promise<boolean>}
+ */
+export async function imageExists(imageRef) {
+  const result = await getImage(imageRef);
+  return !!(result && result.ok);
+}
+```
+
+---
+
 ## `server/services/indexHealth.js`
 
 ```javascript
@@ -5091,7 +5600,7 @@ export function setupJobMatching() {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
 
@@ -5160,8 +5669,8 @@ export async function create(employerId, fields) {
     expiresAt: expiresAt.toISOString(),
   };
 
-  // Save job file
-  const jobPath = getRecordPath('jobs', id);
+  // Save job file (write to current month shard)
+  const jobPath = getWriteRecordPath('jobs', id);
   await atomicWrite(jobPath, job);
 
   // Update jobs index
@@ -5528,16 +6037,16 @@ async function rejectPendingApplications(jobId, jobTitle) {
  */
 export async function enforceExpiredJobs() {
   const jobsDir = getCollectionPath('jobs');
-  let files;
+  let allFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(jobsDir);
+    allFiles = await walkCollectionFiles(jobsDir, 'job_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
+  // Compatibility: map to the format used below
+  const jsonFiles = allFiles;
   let count = 0;
   const now = new Date();
   const expiredJobIds = [];
@@ -5545,7 +6054,7 @@ export async function enforceExpiredJobs() {
   const BATCH_SIZE = 100;
 
   for (let i = 0; i < jsonFiles.length; i++) {
-    const job = await readJSON(getCollectionPath('jobs') + '/' + jsonFiles[i]);
+    const job = await readJSON(jsonFiles[i].filePath);
     if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
@@ -5820,23 +6329,21 @@ export function renewJob(jobId, employerId) {
  */
 export async function checkExpiryWarnings() {
   const jobsDir = getCollectionPath('jobs');
-  let files;
+  let allJobFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(jobsDir);
+    allJobFiles = await walkCollectionFiles(jobsDir, 'job_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('job_'));
   const now = new Date();
   const warningWindowMs = 24 * 60 * 60 * 1000; // 24 hours
   let count = 0;
 
-  for (const file of jsonFiles) {
+  for (const entry of allJobFiles) {
     try {
-      const job = await readJSON(getCollectionPath('jobs') + '/' + file);
+      const job = await readJSON(entry.filePath);
       if (!job) continue;
       if (job.status !== 'open') continue;
       if (job.expiryWarningNotified) continue;
@@ -6064,7 +6571,7 @@ export const logger = {
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import {
-  atomicWrite, readJSON, getRecordPath, getCollectionPath,
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath, getCollectionPath,
   listJSON, addToSetIndex, getFromSetIndex,
 } from './database.js';
 import { eventBus } from './eventBus.js';
@@ -6202,7 +6709,7 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     createdAt: now,
   };
 
-  const msgPath = getRecordPath('messages', id);
+  const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
 
   // 9. Update secondary indexes
@@ -6304,7 +6811,7 @@ export async function broadcastMessage(jobId, employerId, text) {
     createdAt: now,
   };
 
-  const msgPath = getRecordPath('messages', id);
+  const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
 
   // 8. Update job index
@@ -6706,6 +7213,7 @@ export async function sendMessage(phone, message, options = {}) {
 // ═══════════════════════════════════════════════════════════════
 
 import { join } from 'node:path';
+import { readdir, rename as renameFile, readFile as readFileRaw, mkdir } from 'node:fs/promises';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getCollectionPath, listJSON, getRecordPath } from './database.js';
 import { logger } from './logger.js';
@@ -6782,6 +7290,144 @@ const builtInMigrations = [
 
       if (updated > 0) {
         logger.info(`Migration v1: added availability to ${updated} users`);
+      }
+    },
+  },
+  {
+    version: 2,
+    name: 'Shard high-volume collections + extract verification images',
+    up: async () => {
+      const BATCH_SIZE = 100;
+      const shardedCollections = (config.SHARDING && config.SHARDING.enabled)
+        ? (config.SHARDING.collections || [])
+        : [];
+
+      if (shardedCollections.length === 0) {
+        logger.info('Migration v2: sharding disabled — skipping file moves');
+      }
+
+      // Part 1: Move flat files to monthly shard subdirectories
+      for (const collection of shardedCollections) {
+        const dir = config.DATABASE.dirs[collection];
+        if (!dir) continue;
+        const collectionPath = join(BASE_PATH, dir);
+
+        let files;
+        try {
+          files = await readdir(collectionPath);
+        } catch { continue; }
+
+        // Get prefix for this collection's records
+        const prefixMap = {
+          jobs: 'job_', applications: 'app_', notifications: 'ntf_',
+          attendance: 'att_', messages: 'msg_', ratings: 'rtg_', payments: 'pay_',
+        };
+        const prefix = prefixMap[collection] || '';
+        const recordFiles = files.filter(f =>
+          f.startsWith(prefix) && f.endsWith('.json') && !f.endsWith('.tmp')
+        );
+
+        let moved = 0;
+        for (let i = 0; i < recordFiles.length; i++) {
+          const fileName = recordFiles[i];
+          const sourcePath = join(collectionPath, fileName);
+
+          try {
+            const raw = await readFileRaw(sourcePath, 'utf-8');
+            const record = JSON.parse(raw);
+            const createdAt = record.createdAt || record.appliedAt || new Date().toISOString();
+            const date = new Date(createdAt);
+            const egyptMs = date.getTime() + (2 * 60 * 60 * 1000);
+            const egyptDate = new Date(egyptMs);
+            const shard = `${egyptDate.getUTCFullYear()}-${String(egyptDate.getUTCMonth() + 1).padStart(2, '0')}`;
+
+            const shardDir = join(collectionPath, shard);
+            await mkdir(shardDir, { recursive: true });
+            const destPath = join(shardDir, fileName);
+
+            // Only move if dest doesn't already exist
+            try {
+              await readFileRaw(destPath);
+              // Already exists in shard — skip (idempotent)
+            } catch {
+              await renameFile(sourcePath, destPath);
+              moved++;
+            }
+          } catch {
+            // Skip individual file errors — non-fatal
+          }
+
+          // Yield every BATCH_SIZE files
+          if ((i + 1) % BATCH_SIZE === 0) {
+            await new Promise(resolve => setImmediate(resolve));
+          }
+        }
+
+        if (moved > 0) {
+          logger.info(`Migration v2: moved ${moved} ${collection} files to shards`);
+        }
+      }
+
+      // Part 2: Extract verification images to imageStore
+      if (config.IMAGE_STORAGE && config.IMAGE_STORAGE.enabled) {
+        try {
+          const { storeImage } = await import('./imageStore.js');
+          const vrfDir = getCollectionPath('verifications');
+          const allVrfs = await listJSON(vrfDir);
+          const vrfs = allVrfs.filter(v => v.id && v.id.startsWith('vrf_'));
+          let extracted = 0;
+
+          for (let i = 0; i < vrfs.length; i++) {
+            const vrf = vrfs[i];
+            let changed = false;
+
+            // Extract nationalIdImage
+            if (vrf.nationalIdImage && !vrf.nationalIdImageRef) {
+              try {
+                const result = await storeImage(vrf.nationalIdImage, {
+                  uploadedBy: vrf.userId,
+                  purpose: 'national_id',
+                });
+                if (result.ok) {
+                  vrf.nationalIdImageRef = result.imageRef;
+                  vrf.nationalIdImage = null;
+                  changed = true;
+                }
+              } catch { /* non-fatal */ }
+            }
+
+            // Extract selfieImage
+            if (vrf.selfieImage && !vrf.selfieImageRef) {
+              try {
+                const result = await storeImage(vrf.selfieImage, {
+                  uploadedBy: vrf.userId,
+                  purpose: 'selfie',
+                });
+                if (result.ok) {
+                  vrf.selfieImageRef = result.imageRef;
+                  vrf.selfieImage = null;
+                  changed = true;
+                }
+              } catch { /* non-fatal */ }
+            }
+
+            if (changed) {
+              const vrfPath = getRecordPath('verifications', vrf.id);
+              await atomicWrite(vrfPath, vrf);
+              extracted++;
+            }
+
+            if ((i + 1) % BATCH_SIZE === 0) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
+          }
+
+          if (extracted > 0) {
+            logger.info(`Migration v2: extracted images from ${extracted} verification records`);
+          }
+        } catch (err) {
+          logger.warn('Migration v2: image extraction error (non-fatal)', { error: err.message });
+        }
       }
     },
   },
@@ -7316,7 +7962,7 @@ export async function sendNotificationMessage(params) {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, deleteJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex } from './database.js';
+import { atomicWrite, readJSON, deleteJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
@@ -7364,7 +8010,7 @@ export async function createNotification(userId, type, message, meta = {}) {
     readAt: null,
   };
 
-  const ntfPath = getRecordPath('notifications', id);
+  const ntfPath = getWriteRecordPath('notifications', id);
   await atomicWrite(ntfPath, notification);
 
   // Update secondary index
@@ -7516,27 +8162,23 @@ export async function cleanOldNotifications() {
   const cutoff = new Date(Date.now() - ttlDays * 24 * 60 * 60 * 1000);
   const ntfDir = getCollectionPath('notifications');
 
-  let files;
+  let allNtfFiles;
   try {
-    const { readdir } = await import('node:fs/promises');
-    files = await readdir(ntfDir);
+    allNtfFiles = await walkCollectionFiles(ntfDir, 'ntf_');
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp') && f.startsWith('ntf_'));
   let cleaned = 0;
   const affectedUsers = new Set();
   const cleanedIds = new Set();
   const BATCH_SIZE = 100;
-  const { join: joinPath } = await import('node:path');
 
-  for (let i = 0; i < jsonFiles.length; i++) {
-    const ntf = await readJSON(joinPath(ntfDir, jsonFiles[i]));
+  for (let i = 0; i < allNtfFiles.length; i++) {
+    const ntf = await readJSON(allNtfFiles[i].filePath);
     if (ntf && ntf.createdAt && new Date(ntf.createdAt) < cutoff && ntf.read) {
-      const ntfPath = getRecordPath('notifications', ntf.id);
-      await deleteJSON(ntfPath);
+      await deleteJSON(allNtfFiles[i].filePath);
       if (ntf.userId) affectedUsers.add(ntf.userId);
       cleanedIds.add(ntf.id);
       cleaned++;
@@ -8052,7 +8694,7 @@ export function setupNotificationListeners() {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex } from './database.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
@@ -8159,8 +8801,8 @@ export async function createPayment(jobId, employerId, options = {}) {
     attendanceBreakdown,
   };
 
-  // Save payment file
-  const paymentPath = getRecordPath('payments', id);
+  // Save payment file (write to current month shard)
+  const paymentPath = getWriteRecordPath('payments', id);
   await atomicWrite(paymentPath, payment);
 
   // Update job-payments index
@@ -8829,7 +9471,7 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, getRecordPath, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath } from './database.js';
 import { findById as findJobById } from './jobs.js';
 import { findById as findUserById, update as updateUser } from './users.js';
 import { listByJob as listApplicationsByJob } from './applications.js';
@@ -8957,7 +9599,7 @@ export async function submitRating(jobId, fromUserId, { toUserId, stars, comment
     createdAt: now,
   };
 
-  const ratingPath = getRecordPath('ratings', id);
+  const ratingPath = getWriteRecordPath('ratings', id);
   await atomicWrite(ratingPath, rating);
 
   // Update target user aggregate rating
@@ -10885,15 +11527,38 @@ export async function submitVerification(userId, { nationalIdImage, selfieImage 
     // Non-blocking: allow on count failure
   }
 
-  // 9. Create verification record
+  // 9. Store images in imageStore (if enabled) or fallback to inline base64
+  let nationalIdImageRef = null;
+  let selfieImageRef = null;
+
+  try {
+    const { storeImage } = await import('./imageStore.js');
+    const imgResult = await storeImage(nationalIdImage, { uploadedBy: userId, purpose: 'national_id' });
+    if (imgResult.ok) {
+      nationalIdImageRef = imgResult.imageRef;
+    }
+    if (selfieImage && typeof selfieImage === 'string') {
+      const selfieResult = await storeImage(selfieImage, { uploadedBy: userId, purpose: 'selfie' });
+      if (selfieResult.ok) {
+        selfieImageRef = selfieResult.imageRef;
+      }
+    }
+  } catch (_) {
+    // Image store unavailable — fallback to inline base64 (backward compat)
+  }
+
+  // 10. Create verification record
   const id = 'vrf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
   const verification = {
     id,
     userId,
-    nationalIdImage,
-    selfieImage: selfieImage || null,
+    // Use imageRef if available, fallback to inline base64 for backward compat
+    nationalIdImageRef: nationalIdImageRef || null,
+    nationalIdImage: nationalIdImageRef ? null : nationalIdImage,
+    selfieImageRef: selfieImageRef || null,
+    selfieImage: (selfieImageRef || !selfieImage) ? null : selfieImage,
     status: 'pending',
     adminNotes: null,
     reviewedAt: null,

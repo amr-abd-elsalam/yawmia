@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.34.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-25T19:06:02.713Z
+# يوميّة (Yawmia) v0.35.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-25T20:57:08.847Z
 > Files in this part: 35
 
 ## Files
@@ -10054,7 +10054,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.34.0';
+const CACHE_NAME = 'yawmia-v0.35.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10888,19 +10888,23 @@ async function atomicWrite(filePath, data) {
 }
 
 async function listRecords(dir, prefix) {
+  const results = [];
   try {
-    const files = await readdir(dir);
-    const results = [];
-    for (const f of files) {
-      if (f.startsWith(prefix) && f.endsWith('.json')) {
-        const data = await readJSON(join(dir, f));
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && /^\d{4}-\d{2}$/.test(entry.name)) {
+        // Recurse into shard subdirectories
+        const shardResults = await listRecords(join(dir, entry.name), prefix);
+        results.push(...shardResults);
+      } else if (entry.isFile() && entry.name.startsWith(prefix) && entry.name.endsWith('.json')) {
+        const data = await readJSON(join(dir, entry.name));
         if (data) results.push(data);
       }
     }
-    return results;
   } catch {
-    return [];
+    // ENOENT or similar — return empty
   }
+  return results;
 }
 
 async function repair() {
