@@ -37,11 +37,11 @@ describe('Phase 18 — Config & Version', () => {
   it('P18-01: package.json version is 0.25.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.32.0');
+    assert.strictEqual(pkg.version, '0.33.0');
   });
 
-  it('P18-02: PWA cacheName is yawmia-v0.32.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
+  it('P18-02: PWA cacheName is yawmia-v0.33.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
   });
 
   it('P18-03: Router has 89 routes', async () => {

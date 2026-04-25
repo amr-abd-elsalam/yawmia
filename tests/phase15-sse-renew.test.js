@@ -91,7 +91,7 @@ describe('Phase 15 — Config', () => {
 
   it('P15-01: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 49, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 50, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P15-02: SSE section has correct fields', () => {
@@ -127,7 +127,7 @@ describe('Phase 15 — Config', () => {
   });
 
   it('P15-06: PWA cacheName updated to v0.25.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.32.0');
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.33.0');
   });
 });
 
@@ -420,7 +420,7 @@ describe('Phase 15 — Version', () => {
     const pkgPath = resolve('package.json');
     const raw = await readFile(pkgPath, 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.32.0');
+    assert.strictEqual(pkg.version, '0.33.0');
   });
 });
 
