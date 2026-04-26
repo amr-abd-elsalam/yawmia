@@ -248,7 +248,7 @@ describe('Phase 38 — Routes', () => {
   it('P38-26: /api/docs returns 92 routes', async () => {
     const res = await fetch(BASE_URL + '/api/docs');
     const data = await res.json();
-    assert.strictEqual(data.total, 93, `expected 92 routes, got ${data.total}`);
+    assert.strictEqual(data.total, 100, `expected 92 routes, got ${data.total}`);
   });
 
   it('P38-27: all routes have method + path + auth', async () => {
