@@ -781,7 +781,12 @@ test('P40-41: findPendingByJob returns pending match', async () => {
 test('P40-42: Score weights from config are applied', async () => {
   const config = (await import('../config.js')).default;
   const w = config.INSTANT_MATCH.scoreWeights;
-  assert.equal(w.distance + w.trustScore + w.ratingAvg, 1);
+  // Use approximate equality due to JS floating-point precision (0.6 + 0.3 + 0.1 = 0.9999...)
+  const sum = w.distance + w.trustScore + w.ratingAvg;
+  assert.ok(Math.abs(sum - 1) < 0.0001, `Score weights should sum to ~1, got ${sum}`);
+  assert.equal(w.distance, 0.6);
+  assert.equal(w.trustScore, 0.3);
+  assert.equal(w.ratingAvg, 0.1);
 });
 
 test('P40-43: Top N limited to topNCandidates', async () => {
