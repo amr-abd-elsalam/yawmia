@@ -45,7 +45,7 @@ describe('Phase 11 — Config', () => {
 
   it('P11-01: Config has 50 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 50 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 50 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P11-02: PWA section exists with correct fields', () => {

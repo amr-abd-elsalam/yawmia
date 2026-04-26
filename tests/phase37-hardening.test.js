@@ -562,7 +562,7 @@ describe('Phase 37 — Version & Config', () => {
 
   it('P37-73: config section count is 50', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 50, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 50, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P37-74: QUERY_INDEX.enabled is true', () => {

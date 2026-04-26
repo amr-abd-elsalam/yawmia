@@ -174,7 +174,7 @@ describe('Phase 38 — Version & Config', () => {
 
   it('P38-16: Config sections count is 50', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52);
+    assert.strictEqual(keys.length, 56);
   });
 });
 

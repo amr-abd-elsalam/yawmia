@@ -495,7 +495,7 @@ describe('Phase 35 — Version & Config', () => {
 
   it('P35-77: Config sections count === 49', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 48 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 48 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P35-78: PWA.cacheName === yawmia-v0.36.0', () => {

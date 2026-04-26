@@ -54,7 +54,7 @@ describe('Phase 19 — Config & Version', () => {
 
   it('P19-04: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 43 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 56, `expected 43 config sections, got ${keys.length}`);
   });
 });
 

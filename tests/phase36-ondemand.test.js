@@ -131,7 +131,7 @@ describe('Phase 36 — Urgency Config', () => {
 
   it('P36-12: Config section count === 49', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 49, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 49, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 

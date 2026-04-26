@@ -33,7 +33,7 @@ describe('Phase 21 — Config & Version', () => {
 
   it('P21-02: Config has 38 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 
   it('P21-03: CACHE section exists with correct fields', () => {

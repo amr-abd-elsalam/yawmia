@@ -44,7 +44,7 @@ describe('Phase 20 — Config & Version', () => {
 
   it('P20-03: Config has 50 sections', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 50 config sections, got ${keys.length}`);
+    assert.strictEqual(keys.length, 56, `expected 50 config sections, got ${keys.length}`);
   });
 
   it('P20-04: ENV section exists with correct fields', () => {

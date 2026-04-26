@@ -310,7 +310,7 @@ describe('Phase 29 — Config', () => {
 
   it('P29-45: config has 43 sections total', () => {
     const keys = Object.keys(config);
-    assert.strictEqual(keys.length, 52, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.strictEqual(keys.length, 56, `expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
 

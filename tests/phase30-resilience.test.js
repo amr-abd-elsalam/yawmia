@@ -383,6 +383,6 @@ describe('Phase 30 — Version', () => {
     const config = (await import('../config.js')).default;
     // Count top-level keys (sections)
     const keys = Object.keys(config);
-    assert.equal(keys.length, 52, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
+    assert.equal(keys.length, 56, `Expected 43 config sections, got ${keys.length}: ${keys.join(', ')}`);
   });
 });
