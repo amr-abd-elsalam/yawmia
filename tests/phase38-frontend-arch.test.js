@@ -145,31 +145,31 @@ describe('Phase 38 — Static Middleware', () => {
 
 describe('Phase 38 — Version & Config', () => {
 
-  it('P38-11: package.json version is 0.35.0', async () => {
+  it('P38-11: package.json version is 0.36.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.35.0');
+    assert.strictEqual(pkg.version, '0.36.0');
   });
 
-  it('P38-12: PWA.cacheName is yawmia-v0.35.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.35.0');
+  it('P38-12: PWA.cacheName is yawmia-v0.36.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.36.0');
   });
 
-  it('P38-13: sw.js CACHE_NAME is yawmia-v0.35.0', async () => {
+  it('P38-13: sw.js CACHE_NAME is yawmia-v0.36.0', async () => {
     const content = await readFile(resolve('frontend/sw.js'), 'utf-8');
-    assert.ok(content.includes("'yawmia-v0.35.0'"), 'sw.js should have cache name yawmia-v0.35.0');
+    assert.ok(content.includes("'yawmia-v0.36.0'"), 'sw.js should have cache name yawmia-v0.36.0');
   });
 
-  it('P38-14: /api/health version is 0.35.0', async () => {
+  it('P38-14: /api/health version is 0.36.0', async () => {
     const res = await fetch(BASE_URL + '/api/health');
     const data = await res.json();
-    assert.strictEqual(data.version, '0.35.0');
+    assert.strictEqual(data.version, '0.36.0');
   });
 
-  it('P38-15: /api/docs version is 0.35.0', async () => {
+  it('P38-15: /api/docs version is 0.36.0', async () => {
     const res = await fetch(BASE_URL + '/api/docs');
     const data = await res.json();
-    assert.strictEqual(data.version, '0.35.0');
+    assert.strictEqual(data.version, '0.36.0');
   });
 
   it('P38-16: Config sections count is 50', () => {

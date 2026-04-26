@@ -486,13 +486,13 @@ describe('walkCollectionFiles', () => {
 
 describe('Version & Config', () => {
 
-  it('P39-41: package.json version === 0.35.0', async () => {
+  it('P39-41: package.json version === 0.36.0', async () => {
     const pkg = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf-8'));
-    assert.strictEqual(pkg.version, '0.35.0');
+    assert.strictEqual(pkg.version, '0.36.0');
   });
 
-  it('P39-42: PWA.cacheName === yawmia-v0.35.0', () => {
-    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.35.0');
+  it('P39-42: PWA.cacheName === yawmia-v0.36.0', () => {
+    assert.strictEqual(config.PWA.cacheName, 'yawmia-v0.36.0');
   });
 
   it('P39-44: SHARDING config present with 7 collections', () => {

@@ -363,7 +363,7 @@ describe('Phase 34 — Version & Config', () => {
   it('P34-28: package.json version is 0.31.0', async () => {
     const raw = await readFile(resolve('package.json'), 'utf-8');
     const pkg = JSON.parse(raw);
-    assert.strictEqual(pkg.version, '0.35.0');
+    assert.strictEqual(pkg.version, '0.36.0');
   });
 
   it('P34-29: FAVORITES section exists in config', () => {
