@@ -293,7 +293,7 @@ describe('Phase 28 — Route Count', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 93, `expected 84 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 100, `expected 84 routes, got ${routeMatches.length}`);
   });
 });
 

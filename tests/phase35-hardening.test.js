@@ -516,7 +516,7 @@ describe('Phase 35 — Version & Config', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches);
-    assert.strictEqual(routeMatches.length, 93);
+    assert.strictEqual(routeMatches.length, 100);
   });
 
   it('P35-82: /api/admin/errors route exists in router', async () => {

@@ -118,7 +118,7 @@ describe('Phase 16 — Config', () => {
   });
 
   it('P16-05: DATABASE has 12 dirs', () => {
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 18);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 20);
     assert.ok(config.DATABASE.dirs.attendance);
   });
 
@@ -365,6 +365,6 @@ describe('Phase 16 — Version & Routes', () => {
     const content = await readFile(routerPath, 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 93, `expected 74 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 100, `expected 74 routes, got ${routeMatches.length}`);
   });
 });

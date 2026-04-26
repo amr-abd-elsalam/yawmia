@@ -49,7 +49,7 @@ describe('Phase 19 — Config & Version', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches, 'should find route definitions');
-    assert.strictEqual(routeMatches.length, 93, `expected 74 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 100, `expected 74 routes, got ${routeMatches.length}`);
   });
 
   it('P19-04: Config has 38 sections', () => {

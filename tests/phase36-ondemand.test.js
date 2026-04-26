@@ -537,7 +537,7 @@ describe('Phase 36 — Version & Routes', () => {
     const content = await readFile(resolve('server/router.js'), 'utf-8');
     const routeMatches = content.match(/\{\s*method:\s*'/g);
     assert.ok(routeMatches);
-    assert.strictEqual(routeMatches.length, 93, `expected 92 routes, got ${routeMatches.length}`);
+    assert.strictEqual(routeMatches.length, 100, `expected 92 routes, got ${routeMatches.length}`);
   });
 });
 

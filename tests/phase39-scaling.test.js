@@ -498,7 +498,7 @@ describe('Version & Config', () => {
   it('P39-44: SHARDING config present with 7 collections', () => {
     assert.ok(config.SHARDING, 'SHARDING section should exist');
     assert.strictEqual(config.SHARDING.enabled, true);
-    assert.strictEqual(config.SHARDING.collections.length, 7);
+    assert.strictEqual(config.SHARDING.collections.length, 8);
     assert.ok(config.SHARDING.collections.includes('jobs'));
     assert.ok(config.SHARDING.collections.includes('applications'));
     assert.ok(config.SHARDING.collections.includes('notifications'));
