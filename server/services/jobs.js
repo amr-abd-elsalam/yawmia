@@ -156,6 +156,23 @@ export async function list(filters = {}) {
   if (filters.urgency) {
     jobs = jobs.filter(j => (j.urgency || 'normal') === filters.urgency);
   }
+
+  // Phase 40 — onlyOnline filter (employer perspective)
+  // Show only jobs whose category has at least one online worker available
+  if (filters.onlyOnline) {
+    try {
+      const { getOnlineWorkers } = await import('./presenceService.js');
+      const online = await getOnlineWorkers({ acceptingJobs: true, includeAway: false });
+      const onlineCats = new Set();
+      for (const w of online) {
+        if (w.user && Array.isArray(w.user.categories)) {
+          for (const c of w.user.categories) onlineCats.add(c);
+        }
+      }
+      jobs = jobs.filter(j => onlineCats.has(j.category));
+    } catch (_) { /* non-blocking — keep jobs as-is */ }
+  }
+
   if (filters.status) {
     jobs = jobs.filter(j => j.status === filters.status);
   } else {

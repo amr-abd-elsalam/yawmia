@@ -37,6 +37,35 @@
     else if (user.role === 'employer') welcomeDesc.textContent = 'انشر فرصة عمل جديدة وأوصل لأفضل العمال.';
   }
 
+  // Phase 40 — Online workers widget (employer only)
+  if (user.role === 'employer') {
+    var widgetMount = Yawmia.$id('onlineWorkersWidget');
+    if (widgetMount) {
+      widgetMount.classList.remove('hidden');
+      widgetMount.innerHTML =
+        '<section class="card online-workers-widget">' +
+          '<h3 class="card__title" style="font-size:1rem;">👀 العمال المتصلين دلوقتي</h3>' +
+          '<div id="onlineWorkersCount" style="font-size:1.5rem;font-weight:700;color:var(--color-success);">جاري التحميل...</div>' +
+        '</section>';
+      loadOnlineWorkersCount();
+      // Refresh every 30s
+      setInterval(loadOnlineWorkersCount, 30000);
+    }
+  }
+
+  async function loadOnlineWorkersCount() {
+    try {
+      var res = await Yawmia.api('GET', '/api/workers/online-count');
+      var el = Yawmia.$id('onlineWorkersCount');
+      if (el && res.data && res.data.ok) {
+        el.textContent = res.data.count + ' عامل متاح';
+      }
+    } catch (_) {
+      var el = Yawmia.$id('onlineWorkersCount');
+      if (el) el.textContent = '—';
+    }
+  }
+
   // ── First-Time User Hints ─────────────────────────────────
   (function showFirstTimeHints() {
     try { if (localStorage.getItem('yawmia_hints_seen') === '1') return; } catch (_) {}
@@ -222,6 +251,20 @@
     });
   });
 
+  // Phase 40 — Reload jobs when instant match is accepted
+  window.addEventListener('yawmia:instant-match-accepted', function () {
+    loadJobs();
+  });
+
+  // Phase 40 — Update job feed in real-time when worker is online
+  window.addEventListener('yawmia:live-feed-job-updated', function (e) {
+    if (!e.detail || !e.detail.jobId) return;
+    if (e.detail.status === 'filled' || e.detail.status === 'cancelled' || e.detail.status === 'in_progress') {
+      // Reload jobs list to reflect the change
+      loadJobs();
+    }
+  });
+
   var btnPrevPage = Yawmia.$id('btnPrevPage');
   var btnNextPage = Yawmia.$id('btnNextPage');
   if (btnPrevPage) btnPrevPage.addEventListener('click', function () { if (currentPage > 1) { currentPage--; loadJobs(); } });
@@ -263,6 +306,8 @@
     var activeQuickFilter = document.querySelector('.quick-filter.active');
     var urgencyFilter = activeQuickFilter ? activeQuickFilter.getAttribute('data-urgency') : '';
     if (urgencyFilter) query += 'urgency=' + encodeURIComponent(urgencyFilter) + '&';
+    var onlineFilter = activeQuickFilter ? activeQuickFilter.getAttribute('data-online') : '';
+    if (onlineFilter) query += 'onlyOnline=true&';
 
     try {
       var res = await Yawmia.api('GET', query);

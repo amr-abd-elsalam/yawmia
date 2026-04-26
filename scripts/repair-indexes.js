@@ -328,6 +328,10 @@ async function repair() {
     console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
+  // Phase 40 note: instant_matches is sharded but has no secondary index files —
+  // queries are by-id or sweep recent only, so no repair is needed.
+  // availability_windows is flat with no index files either.
+  console.log(`\n📌 Phase 40: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

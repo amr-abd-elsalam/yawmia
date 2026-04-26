@@ -249,6 +249,33 @@ const cleanupTimer = setInterval(async () => {
 }, CLEANUP_INTERVAL);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
+// ── Phase 40 — Presence cleanup timer (every 60s) ─────────────
+if (config.PRESENCE && config.PRESENCE.enabled) {
+  const presenceTimer = setInterval(async () => {
+    try {
+      const { cleanupStale } = await import('./server/services/presenceService.js');
+      cleanupStale();
+    } catch (err) {
+      logger.warn('Presence cleanup error', { error: err.message });
+    }
+  }, config.PRESENCE.cleanupIntervalMs);
+  if (presenceTimer.unref) presenceTimer.unref();
+}
+
+// ── Phase 40 — Instant match cleanup timer (every 30s) ────────
+if (config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
+  const instantMatchTimer = setInterval(async () => {
+    try {
+      const { cleanupExpired } = await import('./server/services/instantMatch.js');
+      const count = await cleanupExpired();
+      if (count > 0) logger.info(`Instant match: expired ${count} match(es)`);
+    } catch (err) {
+      logger.warn('Instant match cleanup error', { error: err.message });
+    }
+  }, config.INSTANT_MATCH.cleanupIntervalMs);
+  if (instantMatchTimer.unref) instantMatchTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {

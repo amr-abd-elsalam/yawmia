@@ -2977,3 +2977,207 @@ textarea:focus:not(:focus-visible) {
     justify-content: flex-start;
   }
 }
+
+/* ═══ Phase 40 — Live Presence ═══ */
+.live-presence-section {
+  margin-block-end: 1rem;
+}
+
+.live-presence-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.live-presence-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.presence-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.presence-dot--online {
+  background: var(--color-success);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  animation: presence-pulse 2s ease-in-out infinite;
+}
+
+.presence-dot--away {
+  background: var(--color-warning);
+}
+
+.presence-dot--offline {
+  background: var(--color-text-muted);
+}
+
+@keyframes presence-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.presence-status-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.live-presence-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.live-presence-toggle input[type="checkbox"] {
+  width: 1.3rem;
+  height: 1.3rem;
+  accent-color: var(--color-success);
+}
+
+/* ═══ Phase 40 — Online Workers Widget ═══ */
+.online-workers-widget {
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1px solid var(--color-success);
+}
+
+/* ═══ Phase 40 — Instant Match Modal ═══ */
+.instant-match-overlay {
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.85);
+  animation: fade-in var(--duration-normal) ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.instant-match-card {
+  max-width: 420px;
+  width: 95%;
+  border: 2px solid var(--color-success);
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.4);
+  animation: instant-match-pulse-card 0.4s ease-out;
+}
+
+@keyframes instant-match-pulse-card {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.instant-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.75rem;
+}
+
+.instant-match-badge {
+  background: var(--color-success);
+  color: #fff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+.instant-match-countdown {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: center;
+}
+
+.instant-match-countdown.countdown-warning {
+  color: var(--color-error);
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.instant-match-info {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-block: 0.75rem;
+}
+
+.instant-match-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 0.4rem;
+  border-block-end: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.instant-match-info-row:last-child {
+  border-block-end: none;
+}
+
+.instant-match-info-label {
+  color: var(--color-text-muted);
+}
+
+.instant-match-info-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.instant-match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+}
+
+.instant-match-accept {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.9rem 1.5rem;
+  min-height: 56px;
+}
+
+.instant-match-error {
+  display: none;
+  text-align: center;
+  color: var(--color-error);
+  margin-block-start: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .live-presence-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .instant-match-card {
+    max-width: 95%;
+  }
+  .instant-match-countdown {
+    font-size: 2.5rem;
+  }
+  .instant-match-accept {
+    min-height: 60px;
+    font-size: 1.2rem;
+  }
+}

@@ -40,6 +40,30 @@ async function matchAndNotify(data) {
     const job = await findJob(jobId);
     if (!job || job.status !== 'open') return;
 
+    // 2b. Phase 40 — Instant match for immediate jobs
+    // If we get enough candidates via instant match, skip broad notification
+    // to avoid over-notification. Otherwise fall through to broad flow.
+    if (job.urgency === 'immediate' && config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
+      try {
+        const { startMatch } = await import('./instantMatch.js');
+        const result = await startMatch(job);
+        const minCandidates = Math.ceil((config.INSTANT_MATCH.topNCandidates || 5) / 2);
+        if (result.ok && result.candidateCount >= minCandidates) {
+          logger.info('Instant match took over for immediate job', {
+            jobId,
+            candidates: result.candidateCount,
+          });
+          return; // Skip broad notification — instant match handles delivery
+        }
+        // Otherwise fall through to broad notification (graceful fallback)
+      } catch (err) {
+        logger.warn('Instant match attempt failed — falling back to broad notification', {
+          jobId,
+          error: err.message,
+        });
+      }
+    }
+
     // 3. Load all users
     const { listAll: listAllUsers } = await import('./users.js');
     const allUsers = await listAllUsers();

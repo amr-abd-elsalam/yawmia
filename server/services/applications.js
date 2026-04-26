@@ -399,3 +399,73 @@ export async function withdraw(applicationId, workerId) {
 
   return { ok: true, application };
 }
+
+/**
+ * Internal instant-accept — called by instantMatch.tryAccept() which already holds the lock.
+ * DO NOT call directly from handlers — use instantMatch.tryAccept() instead.
+ *
+ * Creates a new application with status='accepted' (skip pending state).
+ * Emits 'application:accepted' + 'job:filled' (if applicable).
+ *
+ * @param {string} jobId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, code?: string, error?: string }>}
+ */
+export async function instantAcceptInternal(jobId, workerId) {
+  // Re-read job inside (already holding lock from tryAccept)
+  const job = await findJobById(jobId);
+  if (!job) return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  if (job.status !== 'open') return { ok: false, error: 'الفرصة مش متاحة', code: 'JOB_NOT_OPEN' };
+  if (job.workersAccepted >= job.workersNeeded) {
+    return { ok: false, error: 'الفرصة اكتملت', code: 'JOB_FILLED' };
+  }
+
+  // Check for existing application (avoid duplicate)
+  const existing = await findByJobAndWorker(jobId, workerId);
+  if (existing) {
+    return { ok: false, error: 'أنت متقدم بالفعل لهذه الفرصة', code: 'ALREADY_APPLIED' };
+  }
+
+  const id = 'app_' + crypto.randomBytes(6).toString('hex');
+  const now = new Date().toISOString();
+
+  const application = {
+    id,
+    jobId,
+    workerId,
+    status: 'accepted',
+    appliedAt: now,
+    respondedAt: now,
+    acceptedViaInstantMatch: true,
+  };
+
+  const appPath = getWriteRecordPath('applications', id);
+  await atomicWrite(appPath, application);
+
+  // Update secondary indexes
+  await addToSetIndex(WORKER_APPS_INDEX, workerId, id);
+  await addToSetIndex(JOB_APPS_INDEX, jobId, id);
+
+  // Increment job
+  const updatedJob = await incrementAccepted(jobId);
+
+  // Emit events (existing notification listeners fire automatically)
+  eventBus.emit('application:accepted', {
+    applicationId: id,
+    jobId,
+    workerId,
+    employerId: job.employerId,
+    jobTitle: job.title,
+    viaInstantMatch: true,
+  });
+
+  if (updatedJob && updatedJob.status === 'filled') {
+    eventBus.emit('job:filled', {
+      jobId,
+      employerId: job.employerId,
+      jobTitle: job.title,
+    });
+  }
+
+  return { ok: true, application };
+}

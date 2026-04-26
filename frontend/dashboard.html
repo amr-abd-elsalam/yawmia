@@ -55,6 +55,12 @@
           <p id="welcomeDesc"></p>
         </section>
 
+        <!-- Phase 40 — Live Presence Toggle (worker only, mounted by JS) -->
+        <div id="livePresenceMount"></div>
+
+        <!-- Phase 40 — Online Workers Widget (employer only) -->
+        <div id="onlineWorkersWidget" class="hidden"></div>
+
         <!-- Recent Jobs (Worker) -->
         <section class="card hidden" id="recentJobsSection">
           <h2 class="card__title">آخر فرصك</h2>
@@ -151,6 +157,7 @@
             <button class="btn btn--sm btn--primary quick-filter active" data-urgency="">الكل</button>
             <button class="btn btn--sm btn--ghost quick-filter" data-urgency="immediate">🔥 فوري</button>
             <button class="btn btn--sm btn--ghost quick-filter" data-urgency="urgent">⚡ عاجل</button>
+            <button class="btn btn--sm btn--ghost quick-filter quick-filter-online" data-online="1" id="filterOnlyOnline">👀 متاح الآن</button>
           </div>
           <div class="section-header">
             <h2 class="card__title">الفرص المتاحة</h2>
@@ -252,6 +259,8 @@
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/livePresence.js"></script>
+  <script src="./assets/js/instantMatch.js"></script>
   <script src="./assets/js/jobCard.js"></script>
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>

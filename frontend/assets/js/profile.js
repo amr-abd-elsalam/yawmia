@@ -64,6 +64,11 @@
         // Job alerts management (all roles)
         loadMyAlerts();
 
+        // Phase 40 — Availability windows (worker only)
+        if (user.role === 'worker') {
+          loadAvailabilityWindows();
+        }
+
         // Analytics sections
         if (user.role === 'employer') {
           loadEmployerAnalytics();
@@ -1263,6 +1268,136 @@
             loadMyAlerts();
           } else {
             YawmiaToast.error(res.data.error || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
+  }
+
+  // ── Phase 40 — Availability Windows ─────────────────────────
+  async function loadAvailabilityWindows() {
+    var container = Yawmia.$id('availability-windows-section');
+    if (!container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/availability/windows');
+      var windows = (res.data && res.data.windows) || [];
+      renderAvailabilityWindows(container, windows);
+    } catch (err) {
+      container.innerHTML = '';
+    }
+  }
+
+  function renderAvailabilityWindows(container, windows) {
+    var dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    var html = '<section class="card">' +
+      '<h2 class="card__title">⏰ نوافذ الإتاحة الزمنية</h2>' +
+      '<p class="card__desc">حدد الأوقات اللي بتكون متاح فيها للشغل (مثلاً: من الأحد للخميس من 8 لـ 5).</p>';
+
+    // Create form
+    html += '<div class="availability-create-form">' +
+      '<div class="form-group">' +
+        '<label class="form-label">أيام الأسبوع (اختار يوم أو أكثر)</label>' +
+        '<div class="checkbox-grid" id="awDaysGrid">';
+    for (var i = 0; i < 7; i++) {
+      html += '<label class="checkbox-label"><input type="checkbox" name="awDays" value="' + i + '"><span>' + dayNames[i] + '</span></label>';
+    }
+    html += '</div></div>' +
+      '<div class="location-group">' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="awStartHour">ساعة البدء</label>' +
+          '<input type="number" id="awStartHour" class="form-input form-input--sm" min="0" max="23" placeholder="8">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="awEndHour">ساعة الانتهاء</label>' +
+          '<input type="number" id="awEndHour" class="form-input form-input--sm" min="1" max="24" placeholder="17">' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn--primary btn--sm" id="btnCreateWindow">إضافة نافذة</button>' +
+      '<div class="message" id="awCreateMsg"></div>' +
+    '</div>';
+
+    // Existing windows
+    if (windows.length > 0) {
+      html += '<hr class="section-divider">';
+      html += '<div class="alerts-list">';
+      windows.forEach(function (w) {
+        var label = '';
+        if (w.type === 'recurring') {
+          var days = (w.daysOfWeek || []).map(function (d) { return dayNames[d]; }).join('، ');
+          label = days + ' من ' + w.startHour + ':00 إلى ' + w.endHour + ':00';
+        } else {
+          label = 'مرة واحدة: ' + new Date(w.startAt).toLocaleString('ar-EG') + ' إلى ' + new Date(w.endAt).toLocaleString('ar-EG');
+        }
+
+        html += '<div class="alert-card">' +
+          '<div class="alert-card__info">' +
+            '<div class="alert-card__name">' + (w.type === 'recurring' ? '🔁 متكرر' : '📅 لمرة واحدة') + '</div>' +
+            '<div class="alert-criteria">' + YawmiaUtils.escapeHtml(label) + '</div>' +
+          '</div>' +
+          '<div class="alert-card__actions">' +
+            '<button class="btn btn--ghost btn--sm btn-delete-window" data-window-id="' + YawmiaUtils.escapeHtml(w.id) + '" style="color:var(--color-error);border-color:var(--color-error);">🗑 حذف</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="empty-state" style="margin-top:1rem;">مفيش نوافذ — هتكون متاح طوال الوقت بشكل افتراضي.</p>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    // Create handler
+    var btnCreate = Yawmia.$id('btnCreateWindow');
+    if (btnCreate) {
+      btnCreate.addEventListener('click', async function () {
+        Yawmia.clearMessage('awCreateMsg');
+        var checked = document.querySelectorAll('input[name="awDays"]:checked');
+        var days = Array.from(checked).map(function (el) { return parseInt(el.value); });
+        var startH = parseInt((Yawmia.$id('awStartHour') || {}).value);
+        var endH = parseInt((Yawmia.$id('awEndHour') || {}).value);
+
+        if (days.length === 0) return Yawmia.showMessage('awCreateMsg', 'اختار يوم على الأقل', 'error');
+        if (isNaN(startH) || startH < 0 || startH > 23) return Yawmia.showMessage('awCreateMsg', 'ساعة البدء غير صالحة', 'error');
+        if (isNaN(endH) || endH < 1 || endH > 24) return Yawmia.showMessage('awCreateMsg', 'ساعة الانتهاء غير صالحة', 'error');
+        if (endH <= startH) return Yawmia.showMessage('awCreateMsg', 'ساعة الانتهاء لازم تكون بعد ساعة البدء', 'error');
+
+        Yawmia.setLoading(btnCreate, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/availability/windows', {
+            type: 'recurring',
+            daysOfWeek: days,
+            startHour: startH,
+            endHour: endH,
+          });
+          if (res.data && res.data.ok) {
+            YawmiaToast.success('تم إضافة النافذة ✓');
+            loadAvailabilityWindows();
+          } else {
+            Yawmia.showMessage('awCreateMsg', (res.data && res.data.error) || 'خطأ', 'error');
+          }
+        } catch (err) { Yawmia.showMessage('awCreateMsg', 'خطأ في الاتصال', 'error'); }
+        finally { Yawmia.setLoading(btnCreate, false); }
+      });
+    }
+
+    // Delete handlers
+    container.querySelectorAll('.btn-delete-window').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var wid = btn.getAttribute('data-window-id');
+        var confirmed = await YawmiaModal.confirm({ title: 'حذف النافذة', message: 'متأكد إنك عايز تحذف هذه النافذة؟', confirmText: 'حذف', cancelText: 'إلغاء', danger: true });
+        if (!confirmed) return;
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('DELETE', '/api/availability/windows/' + wid);
+          if (res.data && res.data.ok) {
+            YawmiaToast.success('تم الحذف');
+            loadAvailabilityWindows();
+          } else {
+            YawmiaToast.error((res.data && res.data.error) || 'خطأ');
           }
         } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
         finally { Yawmia.setLoading(btn, false); }

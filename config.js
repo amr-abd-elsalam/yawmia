@@ -261,6 +261,8 @@ const config = {
       metrics: 'metrics',
       favorites: 'favorites',
       images: 'images',
+      availability_windows: 'availability_windows',
+      instant_matches: 'instant_matches',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -446,7 +448,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.35.0',
+    cacheName: 'yawmia-v0.36.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -776,7 +778,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -792,6 +794,56 @@ const config = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
     hashAlgorithm: 'sha256',
     bucketPrefixLength: 2,                   // أول حرفين من الـ hash كـ directory bucketing
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 53. حضور العامل اللحظي (PRESENCE)
+  // ═══════════════════════════════════════════════════════════════
+  PRESENCE: {
+    enabled: true,
+    heartbeatIntervalMs: 30000,              // worker pings every 30s (foreground)
+    heartbeatBackgroundMs: 60000,            // 60s when tab hidden (battery saving)
+    awayAfterMs: 90000,                      // 1.5 min no heartbeat → status='away'
+    offlineAfterMs: 300000,                  // 5 min no heartbeat → removed from map
+    cleanupIntervalMs: 60000,                // cleanup stale entries every 60s
+    maxOnlineWorkers: 100000,                // soft Map size limit (FIFO eviction)
+    rateLimitMs: 25000,                      // throttle: max 1 heartbeat per 25s per user
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 54. المطابقة الفورية (INSTANT_MATCH)
+  // ═══════════════════════════════════════════════════════════════
+  INSTANT_MATCH: {
+    enabled: true,
+    topNCandidates: 5,                       // pick top 5 online workers
+    acceptanceWindowSeconds: 90,             // worker has 90s to accept
+    searchRadiusKm: 5,                       // search radius for candidates
+    fallbackToBroadcast: true,               // after expiry: job stays open for normal flow
+    cleanupIntervalMs: 30000,                // expire pending matches every 30s
+    scoreWeights: {
+      distance: 0.6,
+      trustScore: 0.3,
+      ratingAvg: 0.1,
+    },
+    notifyChannels: ['sse', 'push'],         // delivery channels for instant offers
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 55. نوافذ الإتاحة الزمنية (AVAILABILITY_WINDOWS)
+  // ═══════════════════════════════════════════════════════════════
+  AVAILABILITY_WINDOWS: {
+    enabled: true,
+    maxWindowsPerUser: 10,
+    defaultBehavior: 'always_available',     // when no windows → always available
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 56. خلاصة الفرص الحية (LIVE_FEED)
+  // ═══════════════════════════════════════════════════════════════
+  LIVE_FEED: {
+    enabled: true,
+    initialDumpSize: 20,                     // top N nearby jobs sent on connection
+    maxRadiusKm: 30,                         // worker sees jobs within this radius
   },
 
 };

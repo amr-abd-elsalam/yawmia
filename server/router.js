@@ -22,6 +22,9 @@ import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleA
 import { handleAddFavorite, handleRemoveFavorite, handleListFavorites, handleCheckFavorite } from './handlers/favoritesHandler.js';
 import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot, handleGetErrors } from './handlers/analyticsHandler.js';
 import { handleGetImage } from './handlers/imageHandler.js';
+import { handleHeartbeat, handleOnlineCount } from './handlers/presenceHandler.js';
+import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './handlers/availabilityHandler.js';
+import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -46,7 +49,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.35.0',
+        version: '0.36.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -100,6 +103,27 @@ const routes = [
       } catch (_) {
         response.searchIndex = { size: 0, lastBuilt: null };
       }
+      // Phase 40 — Presence stats (non-blocking)
+      try {
+        const { getStats: presenceStats } = await import('./services/presenceService.js');
+        response.presence = presenceStats();
+      } catch (_) {
+        response.presence = { online: 0, away: 0, offline: 0, total: 0 };
+      }
+      // Phase 40 — Instant match stats (non-blocking)
+      try {
+        const { getStats: instantMatchStats } = await import('./services/instantMatch.js');
+        response.instantMatch = await instantMatchStats();
+      } catch (_) {
+        response.instantMatch = { activeAttempts: 0, successRateLastHour: 0 };
+      }
+      // Phase 40 — Live feed stats (non-blocking)
+      try {
+        const { getStats: liveFeedStats } = await import('./services/liveFeed.js');
+        response.liveFeed = liveFeedStats();
+      } catch (_) {
+        response.liveFeed = { connections: 0, users: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -134,7 +158,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.35.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.36.0' });
     },
   },
 
@@ -229,6 +253,19 @@ const routes = [
 
   // ── Image Route ──
   { method: 'GET', path: '/api/images/:id', middlewares: [requireAuth], handler: handleGetImage },
+
+  // ── Phase 40 — Live Presence ──
+  { method: 'POST', path: '/api/presence/heartbeat', middlewares: [requireAuth, requireRole('worker')], handler: handleHeartbeat },
+  { method: 'GET', path: '/api/workers/online-count', middlewares: [requireAuth], handler: handleOnlineCount },
+
+  // ── Phase 40 — Availability Windows ──
+  { method: 'POST', path: '/api/availability/windows', middlewares: [requireAuth, requireRole('worker')], handler: handleCreateWindow },
+  { method: 'GET', path: '/api/availability/windows', middlewares: [requireAuth, requireRole('worker')], handler: handleListWindows },
+  { method: 'DELETE', path: '/api/availability/windows/:id', middlewares: [requireAuth, requireRole('worker')], handler: handleDeleteWindow },
+
+  // ── Phase 40 — Live Feed + Instant Accept ──
+  { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
+  { method: 'POST', path: '/api/jobs/:id/instant-accept', middlewares: [requireAuth, requireRole('worker')], handler: handleInstantAccept },
 
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
@@ -338,6 +375,13 @@ setupJobMatching();
 
 import { setupJobAlerts } from './services/jobAlerts.js';
 setupJobAlerts();
+
+// Phase 40 — Setup instant match + live feed listeners
+import { setupInstantMatchListeners } from './services/instantMatch.js';
+setupInstantMatchListeners();
+
+import { setupLiveFeedListeners } from './services/liveFeed.js';
+setupLiveFeedListeners();
 
 /**
  * Creates the router function

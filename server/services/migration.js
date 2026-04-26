@@ -225,6 +225,17 @@ const builtInMigrations = [
       }
     },
   },
+  {
+    version: 3,
+    name: 'Initialize availability_windows + instant_matches collections',
+    up: async () => {
+      // Greenfield: initDatabase() (called at server startup) creates the new
+      // directories from config.DATABASE.dirs. No data migration needed —
+      // these are entirely new collections introduced by Phase 40.
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v3: greenfield collections registered (availability_windows + instant_matches)');
+    },
+  },
 ];
 
 /**
