@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.35.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-26T03:13:07.728Z
-> Files in this part: 47
+# يوميّة (Yawmia) v0.36.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-26T06:17:10.179Z
+> Files in this part: 51
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -10,46 +10,50 @@
 5. `server/services/attendance.js`
 6. `server/services/auditLog.js`
 7. `server/services/auth.js`
-8. `server/services/backupScheduler.js`
-9. `server/services/cache.js`
-10. `server/services/channels/sms.js`
-11. `server/services/channels/whatsapp.js`
-12. `server/services/contentFilter.js`
-13. `server/services/database.js`
-14. `server/services/errorAggregator.js`
-15. `server/services/eventBus.js`
-16. `server/services/eventReplayBuffer.js`
-17. `server/services/favorites.js`
-18. `server/services/financialExport.js`
-19. `server/services/geo.js`
-20. `server/services/imageStore.js`
-21. `server/services/indexHealth.js`
-22. `server/services/jobAlerts.js`
-23. `server/services/jobMatcher.js`
-24. `server/services/jobs.js`
-25. `server/services/logWriter.js`
-26. `server/services/logger.js`
-27. `server/services/messages.js`
-28. `server/services/messaging.js`
-29. `server/services/migration.js`
-30. `server/services/monitor.js`
-31. `server/services/notificationMessenger.js`
-32. `server/services/notifications.js`
-33. `server/services/payments.js`
-34. `server/services/profileCompleteness.js`
-35. `server/services/queryIndex.js`
-36. `server/services/ratings.js`
-37. `server/services/reports.js`
-38. `server/services/resourceLock.js`
-39. `server/services/sanitizer.js`
-40. `server/services/searchIndex.js`
-41. `server/services/sessions.js`
-42. `server/services/sseManager.js`
-43. `server/services/trust.js`
-44. `server/services/users.js`
-45. `server/services/validators.js`
-46. `server/services/verification.js`
-47. `server/services/webpush.js`
+8. `server/services/availabilityWindow.js`
+9. `server/services/backupScheduler.js`
+10. `server/services/cache.js`
+11. `server/services/channels/sms.js`
+12. `server/services/channels/whatsapp.js`
+13. `server/services/contentFilter.js`
+14. `server/services/database.js`
+15. `server/services/errorAggregator.js`
+16. `server/services/eventBus.js`
+17. `server/services/eventReplayBuffer.js`
+18. `server/services/favorites.js`
+19. `server/services/financialExport.js`
+20. `server/services/geo.js`
+21. `server/services/imageStore.js`
+22. `server/services/indexHealth.js`
+23. `server/services/instantMatch.js`
+24. `server/services/jobAlerts.js`
+25. `server/services/jobMatcher.js`
+26. `server/services/jobs.js`
+27. `server/services/liveFeed.js`
+28. `server/services/logWriter.js`
+29. `server/services/logger.js`
+30. `server/services/messages.js`
+31. `server/services/messaging.js`
+32. `server/services/migration.js`
+33. `server/services/monitor.js`
+34. `server/services/notificationMessenger.js`
+35. `server/services/notifications.js`
+36. `server/services/payments.js`
+37. `server/services/presenceService.js`
+38. `server/services/profileCompleteness.js`
+39. `server/services/queryIndex.js`
+40. `server/services/ratings.js`
+41. `server/services/reports.js`
+42. `server/services/resourceLock.js`
+43. `server/services/sanitizer.js`
+44. `server/services/searchIndex.js`
+45. `server/services/sessions.js`
+46. `server/services/sseManager.js`
+47. `server/services/trust.js`
+48. `server/services/users.js`
+49. `server/services/validators.js`
+50. `server/services/verification.js`
+51. `server/services/webpush.js`
 
 ---
 
@@ -1227,6 +1231,76 @@ export async function withdraw(applicationId, workerId) {
 
   return { ok: true, application };
 }
+
+/**
+ * Internal instant-accept — called by instantMatch.tryAccept() which already holds the lock.
+ * DO NOT call directly from handlers — use instantMatch.tryAccept() instead.
+ *
+ * Creates a new application with status='accepted' (skip pending state).
+ * Emits 'application:accepted' + 'job:filled' (if applicable).
+ *
+ * @param {string} jobId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, application?: object, code?: string, error?: string }>}
+ */
+export async function instantAcceptInternal(jobId, workerId) {
+  // Re-read job inside (already holding lock from tryAccept)
+  const job = await findJobById(jobId);
+  if (!job) return { ok: false, error: 'الفرصة غير موجودة', code: 'JOB_NOT_FOUND' };
+  if (job.status !== 'open') return { ok: false, error: 'الفرصة مش متاحة', code: 'JOB_NOT_OPEN' };
+  if (job.workersAccepted >= job.workersNeeded) {
+    return { ok: false, error: 'الفرصة اكتملت', code: 'JOB_FILLED' };
+  }
+
+  // Check for existing application (avoid duplicate)
+  const existing = await findByJobAndWorker(jobId, workerId);
+  if (existing) {
+    return { ok: false, error: 'أنت متقدم بالفعل لهذه الفرصة', code: 'ALREADY_APPLIED' };
+  }
+
+  const id = 'app_' + crypto.randomBytes(6).toString('hex');
+  const now = new Date().toISOString();
+
+  const application = {
+    id,
+    jobId,
+    workerId,
+    status: 'accepted',
+    appliedAt: now,
+    respondedAt: now,
+    acceptedViaInstantMatch: true,
+  };
+
+  const appPath = getWriteRecordPath('applications', id);
+  await atomicWrite(appPath, application);
+
+  // Update secondary indexes
+  await addToSetIndex(WORKER_APPS_INDEX, workerId, id);
+  await addToSetIndex(JOB_APPS_INDEX, jobId, id);
+
+  // Increment job
+  const updatedJob = await incrementAccepted(jobId);
+
+  // Emit events (existing notification listeners fire automatically)
+  eventBus.emit('application:accepted', {
+    applicationId: id,
+    jobId,
+    workerId,
+    employerId: job.employerId,
+    jobTitle: job.title,
+    viaInstantMatch: true,
+  });
+
+  if (updatedJob && updatedJob.status === 'filled') {
+    eventBus.emit('job:filled', {
+      jobId,
+      employerId: job.employerId,
+      jobTitle: job.title,
+    });
+  }
+
+  return { ok: true, application };
+}
 ```
 
 ---
@@ -2282,6 +2356,249 @@ export async function cleanExpiredOtps() {
 
   return cleaned;
 }
+```
+
+---
+
+## `server/services/availabilityWindow.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/availabilityWindow.js — Time-Windowed Availability
+// ═══════════════════════════════════════════════════════════════
+// Recurring (daysOfWeek + hour range) + one-time windows.
+// Egypt timezone-aware (UTC+2). Storage: flat data/availability_windows/.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite, readJSON, deleteJSON, getRecordPath, getCollectionPath, listJSON,
+} from './database.js';
+import { logger } from './logger.js';
+
+/**
+ * Generate window record ID
+ */
+function generateId() {
+  return 'aw_' + crypto.randomBytes(6).toString('hex');
+}
+
+/**
+ * Validate window fields.
+ * @param {object} fields
+ * @returns {{ valid: boolean, error?: string, code?: string }}
+ */
+function validateFields(fields) {
+  if (!fields || typeof fields !== 'object') {
+    return { valid: false, error: 'بيانات النافذة غير صالحة', code: 'INVALID_FIELDS' };
+  }
+  const { type } = fields;
+  if (type !== 'recurring' && type !== 'one_time') {
+    return { valid: false, error: 'نوع النافذة غير صالح', code: 'INVALID_TYPE' };
+  }
+
+  if (type === 'recurring') {
+    if (!Array.isArray(fields.daysOfWeek) || fields.daysOfWeek.length === 0) {
+      return { valid: false, error: 'أيام الأسبوع مطلوبة', code: 'DAYS_REQUIRED' };
+    }
+    for (const d of fields.daysOfWeek) {
+      if (typeof d !== 'number' || d < 0 || d > 6) {
+        return { valid: false, error: 'أيام الأسبوع غير صالحة (0-6)', code: 'INVALID_DAYS' };
+      }
+    }
+    if (typeof fields.startHour !== 'number' || fields.startHour < 0 || fields.startHour > 23) {
+      return { valid: false, error: 'ساعة البدء غير صالحة', code: 'INVALID_START_HOUR' };
+    }
+    if (typeof fields.endHour !== 'number' || fields.endHour < 1 || fields.endHour > 24) {
+      return { valid: false, error: 'ساعة الانتهاء غير صالحة', code: 'INVALID_END_HOUR' };
+    }
+    if (fields.endHour <= fields.startHour) {
+      return { valid: false, error: 'ساعة الانتهاء لازم تكون بعد ساعة البدء', code: 'INVALID_HOUR_RANGE' };
+    }
+  } else {
+    // one_time
+    if (!fields.startAt || typeof fields.startAt !== 'string') {
+      return { valid: false, error: 'وقت البدء مطلوب', code: 'START_AT_REQUIRED' };
+    }
+    if (!fields.endAt || typeof fields.endAt !== 'string') {
+      return { valid: false, error: 'وقت الانتهاء مطلوب', code: 'END_AT_REQUIRED' };
+    }
+    const startMs = new Date(fields.startAt).getTime();
+    const endMs = new Date(fields.endAt).getTime();
+    if (isNaN(startMs) || isNaN(endMs)) {
+      return { valid: false, error: 'صيغة الوقت غير صالحة', code: 'INVALID_DATE_FORMAT' };
+    }
+    if (endMs <= startMs) {
+      return { valid: false, error: 'وقت الانتهاء لازم يكون بعد وقت البدء', code: 'INVALID_TIME_RANGE' };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Create a new availability window for a user.
+ * @param {string} userId
+ * @param {object} fields
+ * @returns {Promise<{ ok: boolean, window?: object, error?: string, code?: string }>}
+ */
+export async function createWindow(userId, fields) {
+  if (!config.AVAILABILITY_WINDOWS || !config.AVAILABILITY_WINDOWS.enabled) {
+    return { ok: false, error: 'نوافذ الإتاحة غير مفعّلة', code: 'WINDOWS_DISABLED' };
+  }
+
+  const validation = validateFields(fields);
+  if (!validation.valid) {
+    return { ok: false, error: validation.error, code: validation.code };
+  }
+
+  // Enforce max windows per user
+  const existing = await listByUser(userId);
+  if (existing.length >= config.AVAILABILITY_WINDOWS.maxWindowsPerUser) {
+    return {
+      ok: false,
+      error: `وصلت للحد الأقصى (${config.AVAILABILITY_WINDOWS.maxWindowsPerUser} نوافذ)`,
+      code: 'MAX_WINDOWS_REACHED',
+    };
+  }
+
+  const id = generateId();
+  const now = new Date().toISOString();
+
+  const window = {
+    id,
+    userId,
+    type: fields.type,
+    enabled: fields.enabled !== false,
+    createdAt: now,
+  };
+
+  if (fields.type === 'recurring') {
+    window.daysOfWeek = fields.daysOfWeek;
+    window.startHour = fields.startHour;
+    window.endHour = fields.endHour;
+  } else {
+    window.startAt = fields.startAt;
+    window.endAt = fields.endAt;
+  }
+
+  const filePath = getRecordPath('availability_windows', id);
+  await atomicWrite(filePath, window);
+
+  logger.info('Availability window created', { windowId: id, userId, type: window.type });
+
+  return { ok: true, window };
+}
+
+/**
+ * List all windows for a user (newest first).
+ * @param {string} userId
+ * @returns {Promise<object[]>}
+ */
+export async function listByUser(userId) {
+  const dir = getCollectionPath('availability_windows');
+  const all = await listJSON(dir);
+  const userWindows = all.filter(w => w.id && w.id.startsWith('aw_') && w.userId === userId);
+  userWindows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return userWindows;
+}
+
+/**
+ * Find a window by ID.
+ * @param {string} windowId
+ * @returns {Promise<object|null>}
+ */
+export async function findById(windowId) {
+  return await readJSON(getRecordPath('availability_windows', windowId));
+}
+
+/**
+ * Delete a window (with ownership check).
+ * @param {string} windowId
+ * @param {string} userId
+ * @returns {Promise<{ ok: boolean, error?: string, code?: string }>}
+ */
+export async function deleteWindow(windowId, userId) {
+  const filePath = getRecordPath('availability_windows', windowId);
+  const window = await readJSON(filePath);
+
+  if (!window) {
+    return { ok: false, error: 'النافذة غير موجودة', code: 'WINDOW_NOT_FOUND' };
+  }
+  if (window.userId !== userId) {
+    return { ok: false, error: 'مش مسموحلك تحذف هذه النافذة', code: 'NOT_WINDOW_OWNER' };
+  }
+
+  await deleteJSON(filePath);
+  logger.info('Availability window deleted', { windowId, userId });
+  return { ok: true };
+}
+
+/**
+ * Get current time in Egypt timezone (UTC+2) — returns getUTCDay/getUTCHours-compatible Date.
+ * @returns {Date}
+ */
+function getEgyptNow() {
+  return new Date(Date.now() + 2 * 60 * 60 * 1000);
+}
+
+/**
+ * Check if a single window is currently active.
+ * @param {object} window
+ * @param {Date} egyptNow
+ * @param {number} nowMs — Unix ms (for one_time)
+ * @returns {boolean}
+ */
+function isWindowActive(window, egyptNow, nowMs) {
+  if (!window.enabled) return false;
+
+  if (window.type === 'recurring') {
+    const day = egyptNow.getUTCDay();
+    const hour = egyptNow.getUTCHours();
+    if (!Array.isArray(window.daysOfWeek) || !window.daysOfWeek.includes(day)) return false;
+    if (hour < window.startHour || hour >= window.endHour) return false;
+    return true;
+  }
+
+  if (window.type === 'one_time') {
+    const start = new Date(window.startAt).getTime();
+    const end = new Date(window.endAt).getTime();
+    return nowMs >= start && nowMs < end;
+  }
+
+  return false;
+}
+
+/**
+ * Check if a user is currently available based on their windows.
+ * If user has no windows: returns defaultBehavior === 'always_available'.
+ *
+ * @param {string} userId
+ * @returns {Promise<boolean>}
+ */
+export async function isAvailableNow(userId) {
+  if (!config.AVAILABILITY_WINDOWS || !config.AVAILABILITY_WINDOWS.enabled) return true;
+
+  const windows = await listByUser(userId);
+  if (windows.length === 0) {
+    return config.AVAILABILITY_WINDOWS.defaultBehavior === 'always_available';
+  }
+
+  const egyptNow = getEgyptNow();
+  const nowMs = Date.now();
+
+  for (const w of windows) {
+    if (isWindowActive(w, egyptNow, nowMs)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * For testing — exposed for unit test access.
+ */
+export const _testHelpers = { isWindowActive, getEgyptNow, validateFields };
 ```
 
 ---
@@ -5099,6 +5416,451 @@ export function getHealthStatus() {
 
 ---
 
+## `server/services/instantMatch.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/instantMatch.js — Instant Matching Pipeline
+// ═══════════════════════════════════════════════════════════════
+// Triggered on job:created (urgency='immediate').
+// Selects top 5 candidates by score (distance + trust + rating).
+// 90-second acceptance window. First-accept-wins via per-jobId lock.
+// Storage: sharded monthly (data/instant_matches/YYYY-MM/).
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath,
+  getCollectionPath, listJSON,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
+
+/** Generate match ID */
+function generateId() {
+  return 'im_' + crypto.randomBytes(6).toString('hex');
+}
+
+/**
+ * Score a candidate worker for an instant match.
+ * @param {object} job
+ * @param {object} workerEntry — { user, currentLocation, ... }
+ * @param {object} jobCoords
+ * @param {number} trustScore — 0–1
+ * @returns {Promise<number>} score 0–1
+ */
+async function scoreCandidate(job, workerEntry, jobCoords, trustScore) {
+  const weights = config.INSTANT_MATCH.scoreWeights;
+  const radius = config.INSTANT_MATCH.searchRadiusKm;
+
+  // Distance score
+  let distScore = 0;
+  try {
+    const { haversineDistance, resolveCoordinates } = await import('./geo.js');
+    const wCoords = workerEntry.currentLocation ||
+      resolveCoordinates({
+        lat: workerEntry.user.lat,
+        lng: workerEntry.user.lng,
+        governorate: workerEntry.user.governorate,
+      });
+    if (wCoords && jobCoords) {
+      const dist = haversineDistance(jobCoords.lat, jobCoords.lng, wCoords.lat, wCoords.lng);
+      distScore = Math.max(0, 1 - dist / radius);
+    }
+  } catch (_) { /* default 0 */ }
+
+  // Rating score
+  const ratingAvg = (workerEntry.user.rating && workerEntry.user.rating.avg) || 0;
+  const ratingScore = ratingAvg / 5;
+
+  // Trust score (already 0–1)
+  const trust = typeof trustScore === 'number' ? trustScore : 0.5;
+
+  return (
+    distScore * weights.distance +
+    trust * weights.trustScore +
+    ratingScore * weights.ratingAvg
+  );
+}
+
+/**
+ * Start an instant match for a newly created immediate job.
+ *
+ * @param {object} job — full job object
+ * @returns {Promise<{ ok: boolean, matchId?: string, candidateCount?: number, code?: string }>}
+ */
+export async function startMatch(job) {
+  if (!config.INSTANT_MATCH || !config.INSTANT_MATCH.enabled) {
+    return { ok: false, code: 'INSTANT_MATCH_DISABLED' };
+  }
+  if (!job || !job.id || job.status !== 'open' || job.urgency !== 'immediate') {
+    return { ok: false, code: 'JOB_NOT_ELIGIBLE' };
+  }
+
+  try {
+    const { getOnlineWorkers } = await import('./presenceService.js');
+    const { isAvailableNow } = await import('./availabilityWindow.js');
+    const { getUserTrustScore } = await import('./trust.js');
+    const { resolveCoordinates } = await import('./geo.js');
+
+    const jobCoords = resolveCoordinates({
+      lat: job.lat,
+      lng: job.lng,
+      governorate: job.governorate,
+    });
+
+    // 1. Get online workers (with category + proximity filters)
+    const onlineWorkers = await getOnlineWorkers({
+      acceptingJobs: true,
+      includeAway: false, // only fully online
+      categories: [job.category],
+      lat: jobCoords ? jobCoords.lat : undefined,
+      lng: jobCoords ? jobCoords.lng : undefined,
+      radiusKm: config.INSTANT_MATCH.searchRadiusKm,
+    });
+
+    if (onlineWorkers.length === 0) {
+      return { ok: false, code: 'NO_CANDIDATES' };
+    }
+
+    // 2. Filter by availability window (parallel)
+    const availabilityChecks = await Promise.all(
+      onlineWorkers.map(w => isAvailableNow(w.userId).catch(() => true))
+    );
+    const availableWorkers = onlineWorkers.filter((_, i) => availabilityChecks[i]);
+
+    if (availableWorkers.length === 0) {
+      return { ok: false, code: 'NO_CANDIDATES' };
+    }
+
+    // 3. Don't include the employer himself if he's somehow a worker
+    const filtered = availableWorkers.filter(w => w.userId !== job.employerId);
+    if (filtered.length === 0) {
+      return { ok: false, code: 'NO_CANDIDATES' };
+    }
+
+    // 4. Score candidates (load trust scores in parallel)
+    const trustScores = await Promise.all(
+      filtered.map(async w => {
+        try {
+          const t = await getUserTrustScore(w.userId);
+          return t ? t.score : 0.5;
+        } catch (_) {
+          return 0.5;
+        }
+      })
+    );
+
+    const scored = await Promise.all(
+      filtered.map(async (w, i) => ({
+        worker: w,
+        score: await scoreCandidate(job, w, jobCoords, trustScores[i]),
+      }))
+    );
+
+    // 5. Sort and take top N
+    scored.sort((a, b) => b.score - a.score);
+    const topN = scored.slice(0, config.INSTANT_MATCH.topNCandidates);
+
+    if (topN.length === 0) {
+      return { ok: false, code: 'NO_CANDIDATES' };
+    }
+
+    // 6. Create instant_match record
+    const matchId = generateId();
+    const now = new Date();
+    const record = {
+      id: matchId,
+      jobId: job.id,
+      employerId: job.employerId,
+      candidateWorkerIds: topN.map(c => c.worker.userId),
+      candidateScores: topN.map(c => Math.round(c.score * 1000) / 1000),
+      notifiedAt: now.toISOString(),
+      acceptanceWindowSeconds: config.INSTANT_MATCH.acceptanceWindowSeconds,
+      status: 'pending',
+      acceptedBy: null,
+      acceptedAt: null,
+      expiredAt: null,
+      createdAt: now.toISOString(),
+    };
+
+    const filePath = getWriteRecordPath('instant_matches', matchId);
+    await atomicWrite(filePath, record);
+
+    logger.info('Instant match started', {
+      matchId,
+      jobId: job.id,
+      candidateCount: topN.length,
+    });
+
+    // 7. Emit candidates event (liveFeed listener delivers via SSE + Push)
+    eventBus.emit('instant_match:candidates', {
+      matchId,
+      jobId: job.id,
+      employerId: job.employerId,
+      candidateWorkerIds: record.candidateWorkerIds,
+      acceptanceWindowSeconds: record.acceptanceWindowSeconds,
+      jobSummary: {
+        id: job.id,
+        title: job.title,
+        category: job.category,
+        governorate: job.governorate,
+        dailyWage: job.dailyWage,
+        durationDays: job.durationDays,
+        startDate: job.startDate,
+      },
+    });
+
+    // 8. Schedule expiry (in-process timer, unref'd)
+    const expiryTimer = setTimeout(() => {
+      expireMatch(matchId).catch(err => {
+        logger.warn('Instant match expiry error', { matchId, error: err.message });
+      });
+    }, config.INSTANT_MATCH.acceptanceWindowSeconds * 1000);
+    if (expiryTimer.unref) expiryTimer.unref();
+
+    return { ok: true, matchId, candidateCount: topN.length };
+  } catch (err) {
+    logger.error('startMatch error', { jobId: job.id, error: err.message });
+    return { ok: false, code: 'INTERNAL_ERROR' };
+  }
+}
+
+/**
+ * Try to accept an instant match — first-accept-wins via per-jobId lock.
+ * Uses the SAME lock key as applications.js accept() — prevents races.
+ *
+ * @param {string} matchId
+ * @param {string} workerId
+ * @returns {Promise<{ ok: boolean, code?: string, application?: object, jobId?: string }>}
+ */
+export async function tryAccept(matchId, workerId) {
+  const matchPath = getRecordPath('instant_matches', matchId);
+
+  // Pre-lock read to get jobId
+  let preMatch = await readJSON(matchPath);
+  if (!preMatch) {
+    return { ok: false, code: 'MATCH_NOT_FOUND' };
+  }
+
+  const jobId = preMatch.jobId;
+
+  // Use SAME lock key as applications.accept() — prevents over-acceptance
+  return withLock(`accept-job:${jobId}`, async () => {
+    // Re-read inside lock
+    const match = await readJSON(matchPath);
+    if (!match) return { ok: false, code: 'MATCH_NOT_FOUND' };
+
+    if (match.status === 'accepted') {
+      return { ok: false, code: 'TOO_LATE' };
+    }
+    if (match.status === 'expired') {
+      return { ok: false, code: 'EXPIRED' };
+    }
+    if (match.status !== 'pending') {
+      return { ok: false, code: 'INVALID_STATUS' };
+    }
+
+    // Verify worker is in candidate list
+    if (!Array.isArray(match.candidateWorkerIds) || !match.candidateWorkerIds.includes(workerId)) {
+      return { ok: false, code: 'NOT_CANDIDATE' };
+    }
+
+    // Verify within acceptance window
+    const notifiedMs = new Date(match.notifiedAt).getTime();
+    const expiresMs = notifiedMs + match.acceptanceWindowSeconds * 1000;
+    if (Date.now() >= expiresMs) {
+      // Mark expired now
+      match.status = 'expired';
+      match.expiredAt = new Date().toISOString();
+      await atomicWrite(matchPath, match);
+      eventBus.emit('instant_match:expired', { matchId, jobId });
+      return { ok: false, code: 'EXPIRED' };
+    }
+
+    // ── Atomic acceptance ──
+    // 1. Mark match as accepted
+    match.status = 'accepted';
+    match.acceptedBy = workerId;
+    match.acceptedAt = new Date().toISOString();
+    await atomicWrite(matchPath, match);
+
+    // 2. Create application via applications.instantAccept
+    let application;
+    try {
+      const { instantAcceptInternal } = await import('./applications.js');
+      const result = await instantAcceptInternal(jobId, workerId);
+      if (!result.ok) {
+        // Rollback match status (best-effort)
+        match.status = 'pending';
+        match.acceptedBy = null;
+        match.acceptedAt = null;
+        await atomicWrite(matchPath, match).catch(() => {});
+        return { ok: false, code: result.code || 'ACCEPT_FAILED' };
+      }
+      application = result.application;
+    } catch (err) {
+      // Rollback
+      match.status = 'pending';
+      match.acceptedBy = null;
+      match.acceptedAt = null;
+      await atomicWrite(matchPath, match).catch(() => {});
+      return { ok: false, code: 'ACCEPT_FAILED' };
+    }
+
+    // 3. Emit acceptance event
+    eventBus.emit('instant_match:accepted', {
+      matchId,
+      jobId,
+      workerId,
+      otherCandidateIds: match.candidateWorkerIds.filter(id => id !== workerId),
+    });
+
+    logger.info('Instant match accepted', { matchId, jobId, workerId });
+
+    return { ok: true, application, jobId };
+  });
+}
+
+/**
+ * Mark a match as expired (called by timer or cleanup).
+ * @param {string} matchId
+ * @returns {Promise<boolean>}
+ */
+export async function expireMatch(matchId) {
+  const matchPath = getRecordPath('instant_matches', matchId);
+  const match = await readJSON(matchPath);
+  if (!match) return false;
+  if (match.status !== 'pending') return false;
+
+  match.status = 'expired';
+  match.expiredAt = new Date().toISOString();
+  await atomicWrite(matchPath, match);
+
+  eventBus.emit('instant_match:expired', { matchId, jobId: match.jobId });
+  logger.info('Instant match expired', { matchId, jobId: match.jobId });
+
+  return true;
+}
+
+/**
+ * Sweep pending matches that have exceeded their window.
+ * Called by cleanup timer.
+ * @returns {Promise<number>}
+ */
+export async function cleanupExpired() {
+  if (!config.INSTANT_MATCH || !config.INSTANT_MATCH.enabled) return 0;
+
+  const dir = getCollectionPath('instant_matches');
+  let all;
+  try {
+    all = await listJSON(dir);
+  } catch (_) {
+    return 0;
+  }
+
+  const matches = all.filter(m => m.id && m.id.startsWith('im_') && m.status === 'pending');
+  if (matches.length === 0) return 0;
+
+  const now = Date.now();
+  let count = 0;
+
+  for (const m of matches) {
+    const notifiedMs = new Date(m.notifiedAt).getTime();
+    const expiresMs = notifiedMs + (m.acceptanceWindowSeconds || 90) * 1000;
+    if (now >= expiresMs) {
+      try {
+        const did = await expireMatch(m.id);
+        if (did) count++;
+      } catch (_) { /* fire-and-forget */ }
+    }
+  }
+
+  return count;
+}
+
+/**
+ * Get aggregate stats for /api/health.
+ * @returns {Promise<{ activeAttempts: number, successRateLastHour: number }>}
+ */
+export async function getStats() {
+  if (!config.INSTANT_MATCH || !config.INSTANT_MATCH.enabled) {
+    return { activeAttempts: 0, successRateLastHour: 0 };
+  }
+
+  const dir = getCollectionPath('instant_matches');
+  let all;
+  try {
+    all = await listJSON(dir);
+  } catch (_) {
+    return { activeAttempts: 0, successRateLastHour: 0 };
+  }
+
+  const matches = all.filter(m => m.id && m.id.startsWith('im_'));
+  const now = Date.now();
+  const hourAgo = now - 60 * 60 * 1000;
+
+  let activeAttempts = 0;
+  let recentAccepted = 0;
+  let recentExpired = 0;
+
+  for (const m of matches) {
+    const created = new Date(m.createdAt || m.notifiedAt || 0).getTime();
+    if (m.status === 'pending') activeAttempts++;
+    if (created >= hourAgo) {
+      if (m.status === 'accepted') recentAccepted++;
+      else if (m.status === 'expired') recentExpired++;
+    }
+  }
+
+  const total = recentAccepted + recentExpired;
+  const successRateLastHour = total > 0 ? Math.round((recentAccepted / total) * 100) : 0;
+
+  return { activeAttempts, successRateLastHour };
+}
+
+/**
+ * Setup EventBus listeners — call once at startup (from router.js).
+ */
+export function setupInstantMatchListeners() {
+  if (!config.INSTANT_MATCH || !config.INSTANT_MATCH.enabled) {
+    logger.info('Instant match: disabled via config');
+    return;
+  }
+
+  // Note: jobMatcher.js handles 'job:created' for instant match trigger
+  // (it calls startMatch directly to integrate with notification flow).
+  // No listener needed here — instantMatch is invoked imperatively.
+
+  logger.info('Instant match: enabled');
+}
+
+/**
+ * Find match by ID (for handlers).
+ */
+export async function findById(matchId) {
+  return await readJSON(getRecordPath('instant_matches', matchId));
+}
+
+/**
+ * Find pending match for a job (for instantAccept by jobId).
+ * @param {string} jobId
+ * @returns {Promise<object|null>}
+ */
+export async function findPendingByJob(jobId) {
+  const dir = getCollectionPath('instant_matches');
+  const all = await listJSON(dir);
+  const matches = all
+    .filter(m => m.id && m.id.startsWith('im_') && m.jobId === jobId && m.status === 'pending')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return matches[0] || null;
+}
+```
+
+---
+
 ## `server/services/jobAlerts.js`
 
 ```javascript
@@ -5461,6 +6223,30 @@ async function matchAndNotify(data) {
     const job = await findJob(jobId);
     if (!job || job.status !== 'open') return;
 
+    // 2b. Phase 40 — Instant match for immediate jobs
+    // If we get enough candidates via instant match, skip broad notification
+    // to avoid over-notification. Otherwise fall through to broad flow.
+    if (job.urgency === 'immediate' && config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
+      try {
+        const { startMatch } = await import('./instantMatch.js');
+        const result = await startMatch(job);
+        const minCandidates = Math.ceil((config.INSTANT_MATCH.topNCandidates || 5) / 2);
+        if (result.ok && result.candidateCount >= minCandidates) {
+          logger.info('Instant match took over for immediate job', {
+            jobId,
+            candidates: result.candidateCount,
+          });
+          return; // Skip broad notification — instant match handles delivery
+        }
+        // Otherwise fall through to broad notification (graceful fallback)
+      } catch (err) {
+        logger.warn('Instant match attempt failed — falling back to broad notification', {
+          jobId,
+          error: err.message,
+        });
+      }
+    }
+
     // 3. Load all users
     const { listAll: listAllUsers } = await import('./users.js');
     const allUsers = await listAllUsers();
@@ -5752,6 +6538,23 @@ export async function list(filters = {}) {
   if (filters.urgency) {
     jobs = jobs.filter(j => (j.urgency || 'normal') === filters.urgency);
   }
+
+  // Phase 40 — onlyOnline filter (employer perspective)
+  // Show only jobs whose category has at least one online worker available
+  if (filters.onlyOnline) {
+    try {
+      const { getOnlineWorkers } = await import('./presenceService.js');
+      const online = await getOnlineWorkers({ acceptingJobs: true, includeAway: false });
+      const onlineCats = new Set();
+      for (const w of online) {
+        if (w.user && Array.isArray(w.user.categories)) {
+          for (const c of w.user.categories) onlineCats.add(c);
+        }
+      }
+      jobs = jobs.filter(j => onlineCats.has(j.category));
+    } catch (_) { /* non-blocking — keep jobs as-is */ }
+  }
+
   if (filters.status) {
     jobs = jobs.filter(j => j.status === filters.status);
   } else {
@@ -6386,6 +7189,373 @@ export async function checkExpiryWarnings() {
 
   return count;
 }
+```
+
+---
+
+## `server/services/liveFeed.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/liveFeed.js — Live Job Feed SSE Stream
+// ═══════════════════════════════════════════════════════════════
+// Per-connection filtered stream for online workers.
+// Filters: governorate + categories + proximity (lat/lng/radius).
+// Listens to job:created/filled/cancelled + instant_match:candidates.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { formatSSE } from './sseManager.js';
+import { logger } from './logger.js';
+
+/**
+ * @typedef {object} LiveFeedConnection
+ * @property {string} userId
+ * @property {import('node:http').ServerResponse} res
+ * @property {{ governorate?: string, categories?: string[], lat?: number, lng?: number, radiusKm?: number }} filters
+ * @property {number} connectedAt
+ */
+
+/** @type {Map<string, Set<LiveFeedConnection>>} userId → Set of connections */
+const liveFeedConnections = new Map();
+
+/**
+ * Register a live feed connection.
+ * @param {string} userId
+ * @param {import('node:http').ServerResponse} res
+ * @param {object} filters
+ */
+export function registerConnection(userId, res, filters = {}) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+
+  if (!liveFeedConnections.has(userId)) {
+    liveFeedConnections.set(userId, new Set());
+  }
+
+  const entry = {
+    userId,
+    res,
+    filters: {
+      governorate: filters.governorate || null,
+      categories: Array.isArray(filters.categories) ? filters.categories : null,
+      lat: typeof filters.lat === 'number' ? filters.lat : null,
+      lng: typeof filters.lng === 'number' ? filters.lng : null,
+      radiusKm: typeof filters.radiusKm === 'number' ? filters.radiusKm : config.LIVE_FEED.maxRadiusKm,
+    },
+    connectedAt: Date.now(),
+  };
+
+  liveFeedConnections.get(userId).add(entry);
+
+  res.on('close', () => {
+    const set = liveFeedConnections.get(userId);
+    if (set) {
+      set.delete(entry);
+      if (set.size === 0) liveFeedConnections.delete(userId);
+    }
+  });
+}
+
+/**
+ * Check if a job matches a connection's filters.
+ * @param {object} job
+ * @param {object} filters
+ * @returns {boolean}
+ */
+function jobMatchesFilters(job, filters) {
+  if (!job) return false;
+
+  if (filters.governorate && job.governorate !== filters.governorate) return false;
+
+  if (filters.categories && filters.categories.length > 0) {
+    if (!filters.categories.includes(job.category)) return false;
+  }
+
+  if (typeof filters.lat === 'number' && typeof filters.lng === 'number' && filters.radiusKm) {
+    try {
+      // Lazy load geo (avoid circular issues)
+      // We use sync resolveCoordinates — it's pure
+      // eslint-disable-next-line global-require
+      const geoMod = globalThis.__yawmiaGeoSync || null;
+      // Fallback: attempt distance check inline using Haversine if coords resolvable
+      const jLat = typeof job.lat === 'number' ? job.lat : null;
+      const jLng = typeof job.lng === 'number' ? job.lng : null;
+      if (jLat == null || jLng == null) return true; // no location → don't filter out
+      const dLat = (jLat - filters.lat) * (Math.PI / 180);
+      const dLng = (jLng - filters.lng) * (Math.PI / 180);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(filters.lat * Math.PI / 180) * Math.cos(jLat * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dist = 6371 * c;
+      if (dist > filters.radiusKm) return false;
+    } catch (_) { /* don't filter on error */ }
+  }
+
+  return true;
+}
+
+/**
+ * Send an SSE event to a single connection.
+ */
+function sendToConnection(entry, eventType, data, eventId) {
+  try {
+    if (entry.res.writableEnded || entry.res.destroyed) return;
+    entry.res.write(formatSSE(eventType, data, eventId));
+  } catch (_) { /* ignore write errors */ }
+}
+
+/**
+ * Broadcast a job:created event to matching connections.
+ * @param {object} job
+ */
+export function broadcastJobCreated(job) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!job || !job.id) return;
+
+  const summary = jobToSummary(job);
+
+  for (const [, conns] of liveFeedConnections) {
+    for (const entry of conns) {
+      if (jobMatchesFilters(job, entry.filters)) {
+        sendToConnection(entry, 'job_created', summary, 'lf-' + job.id);
+      }
+    }
+  }
+}
+
+/**
+ * Broadcast a job status update (filled/cancelled/expired) to all connections.
+ * @param {string} jobId
+ * @param {{ status: string }} update
+ */
+export function broadcastJobUpdate(jobId, update) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!jobId) return;
+
+  for (const [, conns] of liveFeedConnections) {
+    for (const entry of conns) {
+      sendToConnection(entry, 'job_updated', { jobId, ...update }, 'lfu-' + jobId);
+    }
+  }
+}
+
+/**
+ * Send instant_match_offer to a specific candidate worker.
+ * @param {string} workerId
+ * @param {object} payload
+ */
+export function sendInstantMatchOffer(workerId, payload) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+
+  const conns = liveFeedConnections.get(workerId);
+  if (!conns || conns.size === 0) return;
+
+  for (const entry of conns) {
+    sendToConnection(entry, 'instant_match_offer', payload, 'imo-' + payload.matchId);
+  }
+}
+
+/**
+ * Notify other candidates that an offer was taken (close their modals).
+ * @param {string[]} workerIds
+ * @param {object} payload
+ */
+export function notifyOfferTaken(workerIds, payload) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!Array.isArray(workerIds)) return;
+
+  for (const workerId of workerIds) {
+    const conns = liveFeedConnections.get(workerId);
+    if (!conns || conns.size === 0) continue;
+    for (const entry of conns) {
+      sendToConnection(entry, 'instant_match_taken', payload, 'imt-' + payload.matchId);
+    }
+  }
+}
+
+/**
+ * Get initial dump of nearby jobs for a worker on connection.
+ * @param {string} userId
+ * @param {object} filters
+ * @returns {Promise<object[]>}
+ */
+export async function getInitialDump(userId, filters = {}) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return [];
+
+  try {
+    const { list } = await import('./jobs.js');
+    const queryFilters = { status: 'open' };
+
+    if (filters.governorate) queryFilters.governorate = filters.governorate;
+    if (filters.categories && filters.categories.length > 0) {
+      queryFilters.categories = filters.categories.join(',');
+    }
+    if (typeof filters.lat === 'number' && typeof filters.lng === 'number') {
+      queryFilters.lat = filters.lat;
+      queryFilters.lng = filters.lng;
+      queryFilters.radius = filters.radiusKm || config.LIVE_FEED.maxRadiusKm;
+    }
+
+    const jobs = await list(queryFilters);
+    const limit = config.LIVE_FEED.initialDumpSize;
+    return jobs.slice(0, limit).map(jobToSummary);
+  } catch (err) {
+    logger.warn('liveFeed initial dump error', { userId, error: err.message });
+    return [];
+  }
+}
+
+/**
+ * Convert full job to live feed summary.
+ */
+function jobToSummary(job) {
+  return {
+    id: job.id,
+    title: job.title,
+    category: job.category,
+    governorate: job.governorate,
+    dailyWage: job.dailyWage,
+    workersNeeded: job.workersNeeded,
+    workersAccepted: job.workersAccepted,
+    durationDays: job.durationDays,
+    startDate: job.startDate,
+    urgency: job.urgency || 'normal',
+    status: job.status,
+    createdAt: job.createdAt,
+    distance: job._distance != null ? job._distance : null,
+  };
+}
+
+/**
+ * Get aggregate live feed stats.
+ * @returns {{ connections: number, users: number }}
+ */
+export function getStats() {
+  let total = 0;
+  for (const [, conns] of liveFeedConnections) total += conns.size;
+  return { connections: total, users: liveFeedConnections.size };
+}
+
+/**
+ * Clear all connections (for testing).
+ */
+export function clearConnections() {
+  for (const [, conns] of liveFeedConnections) {
+    for (const entry of conns) {
+      try { entry.res.end(); } catch (_) {}
+    }
+  }
+  liveFeedConnections.clear();
+}
+
+/**
+ * Setup EventBus listeners — call once at startup (from router.js).
+ */
+export function setupLiveFeedListeners() {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) {
+    logger.info('Live feed: disabled via config');
+    return;
+  }
+
+  // Job created → broadcast to matching connections
+  eventBus.on('job:created', (data) => {
+    if (!data || !data.jobId) return;
+    import('./jobs.js').then(({ findById }) => {
+      findById(data.jobId).then(job => {
+        if (job && job.status === 'open') broadcastJobCreated(job);
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  // Job filled → broadcast update
+  eventBus.on('job:filled', (data) => {
+    if (data && data.jobId) broadcastJobUpdate(data.jobId, { status: 'filled' });
+  });
+
+  // Job cancelled → broadcast update
+  eventBus.on('job:cancelled', (data) => {
+    if (data && data.jobId) broadcastJobUpdate(data.jobId, { status: 'cancelled' });
+  });
+
+  // Job started → broadcast update (workers know it's no longer accepting)
+  eventBus.on('job:started', (data) => {
+    if (data && data.jobId) broadcastJobUpdate(data.jobId, { status: 'in_progress' });
+  });
+
+  // Job completed → broadcast update
+  eventBus.on('job:completed', (data) => {
+    if (data && data.jobId) broadcastJobUpdate(data.jobId, { status: 'completed' });
+  });
+
+  // Instant match candidates selected → send offer to each via SSE + Push
+  eventBus.on('instant_match:candidates', (data) => {
+    if (!data || !data.candidateWorkerIds || !Array.isArray(data.candidateWorkerIds)) return;
+
+    const offerPayload = {
+      matchId: data.matchId,
+      jobId: data.jobId,
+      job: data.jobSummary,
+      acceptanceWindowSeconds: data.acceptanceWindowSeconds,
+      notifiedAt: new Date().toISOString(),
+    };
+
+    // Send SSE to each candidate
+    for (const workerId of data.candidateWorkerIds) {
+      sendInstantMatchOffer(workerId, offerPayload);
+    }
+
+    // Web Push (fire-and-forget) — only if enabled
+    if (config.INSTANT_MATCH && Array.isArray(config.INSTANT_MATCH.notifyChannels) && config.INSTANT_MATCH.notifyChannels.includes('push')) {
+      import('./webpush.js').then(({ sendPushToMany }) => {
+        const title = 'يوميّة — فرصة فورية ⚡';
+        const body = (data.jobSummary && data.jobSummary.title)
+          ? `${data.jobSummary.title} — ${data.jobSummary.dailyWage} جنيه`
+          : 'فرصة عمل فورية متاحة لك دلوقتي';
+        sendPushToMany(data.candidateWorkerIds, {
+          title,
+          body,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+  });
+
+  // Instant match accepted → notify other candidates
+  eventBus.on('instant_match:accepted', (data) => {
+    if (!data || !Array.isArray(data.otherCandidateIds)) return;
+    notifyOfferTaken(data.otherCandidateIds, {
+      matchId: data.matchId,
+      jobId: data.jobId,
+    });
+  });
+
+  // Instant match expired → notify all candidates (close their modals)
+  eventBus.on('instant_match:expired', (data) => {
+    if (!data || !data.matchId) return;
+    // Find candidates from match record
+    import('./instantMatch.js').then(({ findById }) => {
+      findById(data.matchId).then(match => {
+        if (match && Array.isArray(match.candidateWorkerIds)) {
+          notifyOfferTaken(match.candidateWorkerIds, {
+            matchId: data.matchId,
+            jobId: data.jobId,
+            reason: 'expired',
+          });
+        }
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  logger.info('Live feed: enabled');
+}
+
+/**
+ * Exposed for testing.
+ */
+export const _testHelpers = { liveFeedConnections, jobMatchesFilters, jobToSummary };
 ```
 
 ---
@@ -7429,6 +8599,17 @@ const builtInMigrations = [
           logger.warn('Migration v2: image extraction error (non-fatal)', { error: err.message });
         }
       }
+    },
+  },
+  {
+    version: 3,
+    name: 'Initialize availability_windows + instant_matches collections',
+    up: async () => {
+      // Greenfield: initDatabase() (called at server startup) creates the new
+      // directories from config.DATABASE.dirs. No data migration needed —
+      // these are entirely new collections introduced by Phase 40.
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v3: greenfield collections registered (availability_windows + instant_matches)');
     },
   },
 ];
@@ -9058,6 +10239,313 @@ export async function countByStatus() {
     if (counts[pay.status] !== undefined) counts[pay.status]++;
   }
   return counts;
+}
+```
+
+---
+
+## `server/services/presenceService.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/presenceService.js — In-Memory Worker Presence
+// ═══════════════════════════════════════════════════════════════
+// Map-based presence tracking — NOT persisted (server restart = all offline).
+// Workers reconnect within 30s heartbeat. Cleanup timer removes stale entries.
+// Multi-tab/multi-device merged via sessionId set.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+/**
+ * @typedef {object} PresenceRecord
+ * @property {string} userId
+ * @property {number} lastHeartbeat — Unix ms
+ * @property {{ lat: number, lng: number }|null} currentLocation
+ * @property {boolean} acceptingJobs
+ * @property {Set<string>} sessionIds — multi-tab tracking
+ * @property {number} onlineSince — Unix ms when first went online
+ */
+
+/** @type {Map<string, PresenceRecord>} userId → PresenceRecord */
+const presenceMap = new Map();
+
+/** @type {Map<string, number>} userId → lastHeartbeat (for rate limiting) */
+const lastHeartbeatMs = new Map();
+
+/**
+ * Compute status from lastHeartbeat (no in-place mutation).
+ * @param {number} lastHeartbeat
+ * @returns {'online'|'away'|'offline'}
+ */
+function computeStatus(lastHeartbeat) {
+  if (!config.PRESENCE) return 'offline';
+  const now = Date.now();
+  const elapsed = now - lastHeartbeat;
+  if (elapsed < config.PRESENCE.awayAfterMs) return 'online';
+  if (elapsed < config.PRESENCE.offlineAfterMs) return 'away';
+  return 'offline';
+}
+
+/**
+ * Record a heartbeat from a worker.
+ * Throttled: rejects if last heartbeat was within rateLimitMs.
+ * Multi-tab: merges sessionId into existing set.
+ *
+ * @param {string} userId
+ * @param {{ lat?: number, lng?: number, acceptingJobs?: boolean, sessionId?: string }} payload
+ * @returns {{ ok: boolean, status?: string, throttled?: boolean }}
+ */
+export function recordHeartbeat(userId, payload = {}) {
+  if (!config.PRESENCE || !config.PRESENCE.enabled) {
+    return { ok: false, throttled: false };
+  }
+  if (!userId) return { ok: false, throttled: false };
+
+  const now = Date.now();
+
+  // Rate limit check
+  const lastTs = lastHeartbeatMs.get(userId);
+  if (lastTs && (now - lastTs) < config.PRESENCE.rateLimitMs) {
+    const existing = presenceMap.get(userId);
+    return {
+      ok: true,
+      throttled: true,
+      status: existing ? computeStatus(existing.lastHeartbeat) : 'online',
+    };
+  }
+
+  let record = presenceMap.get(userId);
+
+  if (!record) {
+    // Soft limit: evict oldest if at capacity (FIFO via insertion order)
+    if (presenceMap.size >= config.PRESENCE.maxOnlineWorkers) {
+      const firstKey = presenceMap.keys().next().value;
+      if (firstKey !== undefined) {
+        presenceMap.delete(firstKey);
+        lastHeartbeatMs.delete(firstKey);
+      }
+    }
+
+    record = {
+      userId,
+      lastHeartbeat: now,
+      currentLocation: null,
+      acceptingJobs: true,
+      sessionIds: new Set(),
+      onlineSince: now,
+    };
+    presenceMap.set(userId, record);
+  }
+
+  // Update fields
+  record.lastHeartbeat = now;
+  if (typeof payload.lat === 'number' && typeof payload.lng === 'number') {
+    record.currentLocation = { lat: payload.lat, lng: payload.lng };
+  }
+  if (typeof payload.acceptingJobs === 'boolean') {
+    record.acceptingJobs = payload.acceptingJobs;
+  }
+  if (payload.sessionId && typeof payload.sessionId === 'string') {
+    record.sessionIds.add(payload.sessionId);
+  }
+
+  lastHeartbeatMs.set(userId, now);
+
+  return { ok: true, throttled: false, status: computeStatus(now) };
+}
+
+/**
+ * Get presence record for a user.
+ * @param {string} userId
+ * @returns {(PresenceRecord & { status: string })|null}
+ */
+export function getPresence(userId) {
+  const record = presenceMap.get(userId);
+  if (!record) return null;
+  return {
+    userId: record.userId,
+    lastHeartbeat: record.lastHeartbeat,
+    currentLocation: record.currentLocation,
+    acceptingJobs: record.acceptingJobs,
+    sessionIds: Array.from(record.sessionIds),
+    onlineSince: record.onlineSince,
+    status: computeStatus(record.lastHeartbeat),
+  };
+}
+
+/**
+ * Get all online workers, optionally filtered.
+ * Loads user records on-demand (for category/governorate filtering).
+ *
+ * @param {{ acceptingJobs?: boolean, includeAway?: boolean, governorate?: string, categories?: string[], lat?: number, lng?: number, radiusKm?: number }} filters
+ * @returns {Promise<Array<PresenceRecord & { status: string, user: object }>>}
+ */
+export async function getOnlineWorkers(filters = {}) {
+  if (!config.PRESENCE || !config.PRESENCE.enabled) return [];
+
+  const includeAway = filters.includeAway !== false; // default true
+  const candidates = [];
+
+  for (const [userId, record] of presenceMap) {
+    const status = computeStatus(record.lastHeartbeat);
+    if (status === 'offline') continue;
+    if (!includeAway && status !== 'online') continue;
+    if (filters.acceptingJobs === true && !record.acceptingJobs) continue;
+    candidates.push({ record, status });
+  }
+
+  if (candidates.length === 0) return [];
+
+  // Load user records (for category/governorate enrichment + filtering)
+  let findUser;
+  try {
+    const usersMod = await import('./users.js');
+    findUser = usersMod.findById;
+  } catch (_) {
+    return [];
+  }
+
+  const results = [];
+  for (const { record, status } of candidates) {
+    let user;
+    try {
+      user = await findUser(record.userId);
+    } catch (_) {
+      user = null;
+    }
+    if (!user) continue;
+    if (user.status !== 'active') continue;
+    if (user.role !== 'worker') continue;
+
+    // Governorate filter
+    if (filters.governorate && user.governorate !== filters.governorate) continue;
+
+    // Categories filter (worker must have at least one matching category)
+    if (filters.categories && Array.isArray(filters.categories) && filters.categories.length > 0) {
+      const userCats = user.categories || [];
+      const hasMatch = filters.categories.some(c => userCats.includes(c));
+      if (!hasMatch) continue;
+    }
+
+    // Proximity filter
+    if (typeof filters.lat === 'number' && typeof filters.lng === 'number' && typeof filters.radiusKm === 'number') {
+      const coords = record.currentLocation ||
+        (typeof user.lat === 'number' && typeof user.lng === 'number' ? { lat: user.lat, lng: user.lng } : null);
+      if (!coords) continue;
+      try {
+        const { haversineDistance, resolveCoordinates } = await import('./geo.js');
+        const wCoords = coords.lat != null ? coords : resolveCoordinates({ governorate: user.governorate });
+        if (!wCoords) continue;
+        const dist = haversineDistance(filters.lat, filters.lng, wCoords.lat, wCoords.lng);
+        if (dist > filters.radiusKm) continue;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    results.push({
+      userId: record.userId,
+      lastHeartbeat: record.lastHeartbeat,
+      currentLocation: record.currentLocation,
+      acceptingJobs: record.acceptingJobs,
+      onlineSince: record.onlineSince,
+      status,
+      user,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Count online workers matching filters (faster than getOnlineWorkers).
+ * @param {object} filters — same as getOnlineWorkers
+ * @returns {Promise<number>}
+ */
+export async function countOnlineByFilters(filters = {}) {
+  const list = await getOnlineWorkers(filters);
+  return list.length;
+}
+
+/**
+ * Remove stale presence entries (lastHeartbeat older than offlineAfterMs).
+ * Called by cleanup timer.
+ * @returns {number} count removed
+ */
+export function cleanupStale() {
+  if (!config.PRESENCE || !config.PRESENCE.enabled) return 0;
+  const now = Date.now();
+  const threshold = config.PRESENCE.offlineAfterMs;
+  let removed = 0;
+
+  for (const [userId, record] of presenceMap) {
+    if (now - record.lastHeartbeat > threshold) {
+      presenceMap.delete(userId);
+      lastHeartbeatMs.delete(userId);
+      removed++;
+    }
+  }
+
+  if (removed > 0) {
+    logger.info('Presence cleanup', { removed, remaining: presenceMap.size });
+  }
+
+  return removed;
+}
+
+/**
+ * Get aggregate presence stats.
+ * @returns {{ online: number, away: number, offline: number, total: number }}
+ */
+export function getStats() {
+  let online = 0;
+  let away = 0;
+  for (const [, record] of presenceMap) {
+    const status = computeStatus(record.lastHeartbeat);
+    if (status === 'online') online++;
+    else if (status === 'away') away++;
+  }
+  return {
+    online,
+    away,
+    offline: 0, // offline entries are removed; count is implicit
+    total: presenceMap.size,
+  };
+}
+
+/**
+ * Clear all presence data (for testing).
+ */
+export function clearPresence() {
+  presenceMap.clear();
+  lastHeartbeatMs.clear();
+}
+
+/**
+ * Manually set presence for a user (testing helper).
+ * @param {string} userId
+ * @param {Partial<PresenceRecord>} fields
+ */
+export function _setPresence(userId, fields) {
+  const now = Date.now();
+  const record = {
+    userId,
+    lastHeartbeat: fields.lastHeartbeat || now,
+    currentLocation: fields.currentLocation || null,
+    acceptingJobs: fields.acceptingJobs !== false,
+    sessionIds: fields.sessionIds instanceof Set ? fields.sessionIds : new Set(),
+    onlineSince: fields.onlineSince || now,
+  };
+  presenceMap.set(userId, record);
+  lastHeartbeatMs.set(userId, record.lastHeartbeat);
+}
+
+// ── Cleanup Timer (unref'd — doesn't prevent process exit) ───
+if (config.PRESENCE && config.PRESENCE.enabled) {
+  const cleanupTimer = setInterval(cleanupStale, config.PRESENCE.cleanupIntervalMs);
+  if (cleanupTimer.unref) cleanupTimer.unref();
 }
 ```
 

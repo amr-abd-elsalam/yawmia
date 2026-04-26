@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.35.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-26T03:13:07.725Z
+# يوميّة (Yawmia) v0.36.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-26T06:17:10.176Z
 > Files in this part: 6
 
 ## Files
@@ -331,6 +331,8 @@ const config = {
       metrics: 'metrics',
       favorites: 'favorites',
       images: 'images',
+      availability_windows: 'availability_windows',
+      instant_matches: 'instant_matches',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -516,7 +518,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.35.0',
+    cacheName: 'yawmia-v0.36.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -846,7 +848,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -862,6 +864,56 @@ const config = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
     hashAlgorithm: 'sha256',
     bucketPrefixLength: 2,                   // أول حرفين من الـ hash كـ directory bucketing
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 53. حضور العامل اللحظي (PRESENCE)
+  // ═══════════════════════════════════════════════════════════════
+  PRESENCE: {
+    enabled: true,
+    heartbeatIntervalMs: 30000,              // worker pings every 30s (foreground)
+    heartbeatBackgroundMs: 60000,            // 60s when tab hidden (battery saving)
+    awayAfterMs: 90000,                      // 1.5 min no heartbeat → status='away'
+    offlineAfterMs: 300000,                  // 5 min no heartbeat → removed from map
+    cleanupIntervalMs: 60000,                // cleanup stale entries every 60s
+    maxOnlineWorkers: 100000,                // soft Map size limit (FIFO eviction)
+    rateLimitMs: 25000,                      // throttle: max 1 heartbeat per 25s per user
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 54. المطابقة الفورية (INSTANT_MATCH)
+  // ═══════════════════════════════════════════════════════════════
+  INSTANT_MATCH: {
+    enabled: true,
+    topNCandidates: 5,                       // pick top 5 online workers
+    acceptanceWindowSeconds: 90,             // worker has 90s to accept
+    searchRadiusKm: 5,                       // search radius for candidates
+    fallbackToBroadcast: true,               // after expiry: job stays open for normal flow
+    cleanupIntervalMs: 30000,                // expire pending matches every 30s
+    scoreWeights: {
+      distance: 0.6,
+      trustScore: 0.3,
+      ratingAvg: 0.1,
+    },
+    notifyChannels: ['sse', 'push'],         // delivery channels for instant offers
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 55. نوافذ الإتاحة الزمنية (AVAILABILITY_WINDOWS)
+  // ═══════════════════════════════════════════════════════════════
+  AVAILABILITY_WINDOWS: {
+    enabled: true,
+    maxWindowsPerUser: 10,
+    defaultBehavior: 'always_available',     // when no windows → always available
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 56. خلاصة الفرص الحية (LIVE_FEED)
+  // ═══════════════════════════════════════════════════════════════
+  LIVE_FEED: {
+    enabled: true,
+    initialDumpSize: 20,                     // top N nearby jobs sent on connection
+    maxRadiusKm: 30,                         // worker sees jobs within this radius
   },
 
 };
@@ -912,7 +964,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1188,6 +1240,33 @@ const cleanupTimer = setInterval(async () => {
 }, CLEANUP_INTERVAL);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
+// ── Phase 40 — Presence cleanup timer (every 60s) ─────────────
+if (config.PRESENCE && config.PRESENCE.enabled) {
+  const presenceTimer = setInterval(async () => {
+    try {
+      const { cleanupStale } = await import('./server/services/presenceService.js');
+      cleanupStale();
+    } catch (err) {
+      logger.warn('Presence cleanup error', { error: err.message });
+    }
+  }, config.PRESENCE.cleanupIntervalMs);
+  if (presenceTimer.unref) presenceTimer.unref();
+}
+
+// ── Phase 40 — Instant match cleanup timer (every 30s) ────────
+if (config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
+  const instantMatchTimer = setInterval(async () => {
+    try {
+      const { cleanupExpired } = await import('./server/services/instantMatch.js');
+      const count = await cleanupExpired();
+      if (count > 0) logger.info(`Instant match: expired ${count} match(es)`);
+    } catch (err) {
+      logger.warn('Instant match cleanup error', { error: err.message });
+    }
+  }, config.INSTANT_MATCH.cleanupIntervalMs);
+  if (instantMatchTimer.unref) instantMatchTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {
@@ -1302,6 +1381,9 @@ import { handleCreateAlert, handleListMyAlerts, handleDeleteAlert, handleToggleA
 import { handleAddFavorite, handleRemoveFavorite, handleListFavorites, handleCheckFavorite } from './handlers/favoritesHandler.js';
 import { handleEmployerAnalytics, handleWorkerAnalytics, handlePlatformAnalytics, handleExportPayments, handleExportJobs, handleExportUsers, handleEmployerExportPayments, handleGetReceipt, handleGetMonitoring, handleGetLatestSnapshot, handleGetErrors } from './handlers/analyticsHandler.js';
 import { handleGetImage } from './handlers/imageHandler.js';
+import { handleHeartbeat, handleOnlineCount } from './handlers/presenceHandler.js';
+import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './handlers/availabilityHandler.js';
+import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1326,7 +1408,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.35.0',
+        version: '0.36.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1380,6 +1462,27 @@ const routes = [
       } catch (_) {
         response.searchIndex = { size: 0, lastBuilt: null };
       }
+      // Phase 40 — Presence stats (non-blocking)
+      try {
+        const { getStats: presenceStats } = await import('./services/presenceService.js');
+        response.presence = presenceStats();
+      } catch (_) {
+        response.presence = { online: 0, away: 0, offline: 0, total: 0 };
+      }
+      // Phase 40 — Instant match stats (non-blocking)
+      try {
+        const { getStats: instantMatchStats } = await import('./services/instantMatch.js');
+        response.instantMatch = await instantMatchStats();
+      } catch (_) {
+        response.instantMatch = { activeAttempts: 0, successRateLastHour: 0 };
+      }
+      // Phase 40 — Live feed stats (non-blocking)
+      try {
+        const { getStats: liveFeedStats } = await import('./services/liveFeed.js');
+        response.liveFeed = liveFeedStats();
+      } catch (_) {
+        response.liveFeed = { connections: 0, users: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1414,7 +1517,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.35.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.36.0' });
     },
   },
 
@@ -1509,6 +1612,19 @@ const routes = [
 
   // ── Image Route ──
   { method: 'GET', path: '/api/images/:id', middlewares: [requireAuth], handler: handleGetImage },
+
+  // ── Phase 40 — Live Presence ──
+  { method: 'POST', path: '/api/presence/heartbeat', middlewares: [requireAuth, requireRole('worker')], handler: handleHeartbeat },
+  { method: 'GET', path: '/api/workers/online-count', middlewares: [requireAuth], handler: handleOnlineCount },
+
+  // ── Phase 40 — Availability Windows ──
+  { method: 'POST', path: '/api/availability/windows', middlewares: [requireAuth, requireRole('worker')], handler: handleCreateWindow },
+  { method: 'GET', path: '/api/availability/windows', middlewares: [requireAuth, requireRole('worker')], handler: handleListWindows },
+  { method: 'DELETE', path: '/api/availability/windows/:id', middlewares: [requireAuth, requireRole('worker')], handler: handleDeleteWindow },
+
+  // ── Phase 40 — Live Feed + Instant Accept ──
+  { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
+  { method: 'POST', path: '/api/jobs/:id/instant-accept', middlewares: [requireAuth, requireRole('worker')], handler: handleInstantAccept },
 
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
@@ -1618,6 +1734,13 @@ setupJobMatching();
 
 import { setupJobAlerts } from './services/jobAlerts.js';
 setupJobAlerts();
+
+// Phase 40 — Setup instant match + live feed listeners
+import { setupInstantMatchListeners } from './services/instantMatch.js';
+setupInstantMatchListeners();
+
+import { setupLiveFeedListeners } from './services/liveFeed.js';
+setupLiveFeedListeners();
 
 /**
  * Creates the router function

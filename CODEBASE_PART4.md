@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.35.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-26T03:13:07.746Z
-> Files in this part: 35
+# يوميّة (Yawmia) v0.36.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-26T06:17:10.200Z
+> Files in this part: 37
 
 ## Files
 1. `frontend/404.html`
@@ -11,33 +11,35 @@
 6. `frontend/assets/js/app.js`
 7. `frontend/assets/js/auth.js`
 8. `frontend/assets/js/icons.js`
-9. `frontend/assets/js/jobCard.js`
-10. `frontend/assets/js/jobDetail.js`
-11. `frontend/assets/js/jobs.js`
-12. `frontend/assets/js/modal.js`
-13. `frontend/assets/js/panels.js`
-14. `frontend/assets/js/profile.js`
-15. `frontend/assets/js/ratingModal.js`
-16. `frontend/assets/js/toast.js`
-17. `frontend/assets/js/user.js`
-18. `frontend/assets/js/utils.js`
-19. `frontend/dashboard.html`
-20. `frontend/index.html`
-21. `frontend/job.html`
-22. `frontend/manifest.json`
-23. `frontend/offline.html`
-24. `frontend/profile.html`
-25. `frontend/robots.txt`
-26. `frontend/sitemap.xml`
-27. `frontend/sw.js`
-28. `frontend/terms.html`
-29. `frontend/user.html`
-30. `scripts/backup.js`
-31. `scripts/benchmark.js`
-32. `scripts/bundle-for-review.js`
-33. `scripts/generate-vapid-keys.js`
-34. `scripts/migrate.js`
-35. `scripts/repair-indexes.js`
+9. `frontend/assets/js/instantMatch.js`
+10. `frontend/assets/js/jobCard.js`
+11. `frontend/assets/js/jobDetail.js`
+12. `frontend/assets/js/jobs.js`
+13. `frontend/assets/js/livePresence.js`
+14. `frontend/assets/js/modal.js`
+15. `frontend/assets/js/panels.js`
+16. `frontend/assets/js/profile.js`
+17. `frontend/assets/js/ratingModal.js`
+18. `frontend/assets/js/toast.js`
+19. `frontend/assets/js/user.js`
+20. `frontend/assets/js/utils.js`
+21. `frontend/dashboard.html`
+22. `frontend/index.html`
+23. `frontend/job.html`
+24. `frontend/manifest.json`
+25. `frontend/offline.html`
+26. `frontend/profile.html`
+27. `frontend/robots.txt`
+28. `frontend/sitemap.xml`
+29. `frontend/sw.js`
+30. `frontend/terms.html`
+31. `frontend/user.html`
+32. `scripts/backup.js`
+33. `scripts/benchmark.js`
+34. `scripts/bundle-for-review.js`
+35. `scripts/generate-vapid-keys.js`
+36. `scripts/migrate.js`
+37. `scripts/repair-indexes.js`
 
 ---
 
@@ -3218,6 +3220,210 @@ textarea:focus:not(:focus-visible) {
     justify-content: flex-start;
   }
 }
+
+/* ═══ Phase 40 — Live Presence ═══ */
+.live-presence-section {
+  margin-block-end: 1rem;
+}
+
+.live-presence-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.live-presence-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.presence-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.presence-dot--online {
+  background: var(--color-success);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  animation: presence-pulse 2s ease-in-out infinite;
+}
+
+.presence-dot--away {
+  background: var(--color-warning);
+}
+
+.presence-dot--offline {
+  background: var(--color-text-muted);
+}
+
+@keyframes presence-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.presence-status-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.live-presence-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.live-presence-toggle input[type="checkbox"] {
+  width: 1.3rem;
+  height: 1.3rem;
+  accent-color: var(--color-success);
+}
+
+/* ═══ Phase 40 — Online Workers Widget ═══ */
+.online-workers-widget {
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border: 1px solid var(--color-success);
+}
+
+/* ═══ Phase 40 — Instant Match Modal ═══ */
+.instant-match-overlay {
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.85);
+  animation: fade-in var(--duration-normal) ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.instant-match-card {
+  max-width: 420px;
+  width: 95%;
+  border: 2px solid var(--color-success);
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.4);
+  animation: instant-match-pulse-card 0.4s ease-out;
+}
+
+@keyframes instant-match-pulse-card {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.instant-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.75rem;
+}
+
+.instant-match-badge {
+  background: var(--color-success);
+  color: #fff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+.instant-match-countdown {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: center;
+}
+
+.instant-match-countdown.countdown-warning {
+  color: var(--color-error);
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.instant-match-info {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-block: 0.75rem;
+}
+
+.instant-match-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 0.4rem;
+  border-block-end: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.instant-match-info-row:last-child {
+  border-block-end: none;
+}
+
+.instant-match-info-label {
+  color: var(--color-text-muted);
+}
+
+.instant-match-info-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.instant-match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+}
+
+.instant-match-accept {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.9rem 1.5rem;
+  min-height: 56px;
+}
+
+.instant-match-error {
+  display: none;
+  text-align: center;
+  color: var(--color-error);
+  margin-block-start: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .live-presence-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .instant-match-card {
+    max-width: 95%;
+  }
+  .instant-match-countdown {
+    font-size: 2.5rem;
+  }
+  .instant-match-accept {
+    min-height: 60px;
+    font-size: 1.2rem;
+  }
+}
 ```
 
 ---
@@ -4779,6 +4985,231 @@ var YawmiaIcons = (function () {
 
 ---
 
+## `frontend/assets/js/instantMatch.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/instantMatch.js — Instant Match Offer Modal
+// Phase 40 — Full-screen modal + countdown + audio + vibration
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaInstantMatch = (function () {
+  'use strict';
+
+  var activeModal = null;
+  var countdownTimer = null;
+  var releaseTrap = null;
+
+  function escapeHtml(str) {
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
+  }
+
+  function playOfferSound() {
+    try {
+      // Short ping using Web Audio API (no external file dependency)
+      var AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      var ctx = new AudioContext();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (_) { /* audio unavailable */ }
+  }
+
+  function vibrate() {
+    try {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    } catch (_) {}
+  }
+
+  function closeModal() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+    if (releaseTrap) {
+      try { releaseTrap(); } catch (_) {}
+      releaseTrap = null;
+    }
+    if (activeModal && activeModal.parentNode) {
+      activeModal.parentNode.removeChild(activeModal);
+    }
+    activeModal = null;
+    document.body.style.overflow = '';
+  }
+
+  function showOffer(detail) {
+    if (!detail || !detail.matchId || !detail.job) return;
+    if (activeModal) {
+      // Close previous if any
+      closeModal();
+    }
+
+    var job = detail.job;
+    var matchId = detail.matchId;
+    var jobId = detail.jobId || job.id;
+    var windowSec = detail.acceptanceWindowSeconds || 90;
+    var notifiedAt = detail.notifiedAt ? new Date(detail.notifiedAt).getTime() : Date.now();
+    var expiresAt = notifiedAt + windowSec * 1000;
+
+    // Build modal
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay instant-match-overlay';
+
+    var titleId = 'im-title-' + Date.now();
+    var card = document.createElement('div');
+    card.className = 'ym-modal-card instant-match-card';
+    card.setAttribute('role', 'alertdialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-labelledby', titleId);
+    card.setAttribute('aria-live', 'assertive');
+
+    card.innerHTML =
+      '<div class="instant-match-header">' +
+        '<span class="instant-match-badge">⚡ فرصة فورية</span>' +
+        '<span class="instant-match-countdown" id="instantMatchCountdown" aria-live="polite">' + windowSec + '</span>' +
+      '</div>' +
+      '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(job.title || 'فرصة عمل') + '</h3>' +
+      '<div class="instant-match-info">' +
+        '<div class="instant-match-info-row">' +
+          '<span class="instant-match-info-label">💰 اليومية</span>' +
+          '<span class="instant-match-info-value">' + (job.dailyWage || 0) + ' جنيه/يوم</span>' +
+        '</div>' +
+        '<div class="instant-match-info-row">' +
+          '<span class="instant-match-info-label">📍 المحافظة</span>' +
+          '<span class="instant-match-info-value">' + escapeHtml(job.governorate || '') + '</span>' +
+        '</div>' +
+        '<div class="instant-match-info-row">' +
+          '<span class="instant-match-info-label">⏱ المدة</span>' +
+          '<span class="instant-match-info-value">' + (job.durationDays || 1) + ' يوم</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="instant-match-actions">' +
+        '<button class="btn btn--success btn--full instant-match-accept" id="btnAcceptInstant">⚡ اقبل دلوقتي</button>' +
+        '<button class="btn btn--ghost btn--sm instant-match-decline" id="btnDeclineInstant">ارفض</button>' +
+      '</div>' +
+      '<div class="instant-match-error" id="instantMatchError"></div>';
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    activeModal = overlay;
+
+    // Focus trap
+    if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.trapFocus) {
+      releaseTrap = YawmiaUtils.trapFocus(card, function () {
+        // Escape closes the modal (counts as decline)
+        handleDecline();
+      });
+    }
+
+    // Audio + vibration alert
+    playOfferSound();
+    vibrate();
+
+    // Countdown
+    var countdownEl = document.getElementById('instantMatchCountdown');
+    function updateCountdown() {
+      var remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 10) {
+          countdownEl.classList.add('countdown-warning');
+        }
+      }
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        showError('انتهت مهلة العرض ⌛');
+        setTimeout(closeModal, 1500);
+      }
+    }
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 1000);
+
+    // Accept handler
+    var acceptBtn = document.getElementById('btnAcceptInstant');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(acceptBtn, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/jobs/' + jobId + '/instant-accept', { matchId: matchId });
+          if (res.data && res.data.ok) {
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success('تم قبول الفرصة ✓ — يلا اشتغل!');
+            }
+            closeModal();
+            // Trigger jobs reload if available
+            window.dispatchEvent(new CustomEvent('yawmia:instant-match-accepted', { detail: { jobId: jobId, matchId: matchId } }));
+          } else {
+            var code = res.data && res.data.code;
+            var msg = (res.data && res.data.error) || 'تعذّر قبول العرض';
+            showError(msg);
+            if (code === 'TOO_LATE' || code === 'EXPIRED') {
+              setTimeout(closeModal, 2000);
+            } else {
+              Yawmia.setLoading(acceptBtn, false);
+            }
+          }
+        } catch (err) {
+          showError('خطأ في الاتصال');
+          Yawmia.setLoading(acceptBtn, false);
+        }
+      });
+    }
+
+    // Decline handler
+    function handleDecline() {
+      closeModal();
+    }
+    var declineBtn = document.getElementById('btnDeclineInstant');
+    if (declineBtn) {
+      declineBtn.addEventListener('click', handleDecline);
+    }
+
+    // Click outside ignored (modal is alertdialog — must use buttons)
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('instantMatchError');
+    if (el) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+  }
+
+  function handleTaken(detail) {
+    if (!activeModal) return;
+    if (!detail || !detail.matchId) return;
+    showError('حد آخر سبقك ⚡');
+    setTimeout(closeModal, 1500);
+  }
+
+  // Listen for window events from livePresence SSE
+  window.addEventListener('yawmia:instant-match-offer', function (e) {
+    if (e.detail) showOffer(e.detail);
+  });
+
+  window.addEventListener('yawmia:instant-match-taken', function (e) {
+    handleTaken(e.detail || {});
+  });
+
+  return {
+    showOffer: showOffer,
+    closeModal: closeModal,
+  };
+})();
+```
+
+---
+
 ## `frontend/assets/js/jobCard.js`
 
 ```javascript
@@ -5832,6 +6263,35 @@ var YawmiaJobCard = (function () {
     else if (user.role === 'employer') welcomeDesc.textContent = 'انشر فرصة عمل جديدة وأوصل لأفضل العمال.';
   }
 
+  // Phase 40 — Online workers widget (employer only)
+  if (user.role === 'employer') {
+    var widgetMount = Yawmia.$id('onlineWorkersWidget');
+    if (widgetMount) {
+      widgetMount.classList.remove('hidden');
+      widgetMount.innerHTML =
+        '<section class="card online-workers-widget">' +
+          '<h3 class="card__title" style="font-size:1rem;">👀 العمال المتصلين دلوقتي</h3>' +
+          '<div id="onlineWorkersCount" style="font-size:1.5rem;font-weight:700;color:var(--color-success);">جاري التحميل...</div>' +
+        '</section>';
+      loadOnlineWorkersCount();
+      // Refresh every 30s
+      setInterval(loadOnlineWorkersCount, 30000);
+    }
+  }
+
+  async function loadOnlineWorkersCount() {
+    try {
+      var res = await Yawmia.api('GET', '/api/workers/online-count');
+      var el = Yawmia.$id('onlineWorkersCount');
+      if (el && res.data && res.data.ok) {
+        el.textContent = res.data.count + ' عامل متاح';
+      }
+    } catch (_) {
+      var el = Yawmia.$id('onlineWorkersCount');
+      if (el) el.textContent = '—';
+    }
+  }
+
   // ── First-Time User Hints ─────────────────────────────────
   (function showFirstTimeHints() {
     try { if (localStorage.getItem('yawmia_hints_seen') === '1') return; } catch (_) {}
@@ -6017,6 +6477,20 @@ var YawmiaJobCard = (function () {
     });
   });
 
+  // Phase 40 — Reload jobs when instant match is accepted
+  window.addEventListener('yawmia:instant-match-accepted', function () {
+    loadJobs();
+  });
+
+  // Phase 40 — Update job feed in real-time when worker is online
+  window.addEventListener('yawmia:live-feed-job-updated', function (e) {
+    if (!e.detail || !e.detail.jobId) return;
+    if (e.detail.status === 'filled' || e.detail.status === 'cancelled' || e.detail.status === 'in_progress') {
+      // Reload jobs list to reflect the change
+      loadJobs();
+    }
+  });
+
   var btnPrevPage = Yawmia.$id('btnPrevPage');
   var btnNextPage = Yawmia.$id('btnNextPage');
   if (btnPrevPage) btnPrevPage.addEventListener('click', function () { if (currentPage > 1) { currentPage--; loadJobs(); } });
@@ -6058,6 +6532,8 @@ var YawmiaJobCard = (function () {
     var activeQuickFilter = document.querySelector('.quick-filter.active');
     var urgencyFilter = activeQuickFilter ? activeQuickFilter.getAttribute('data-urgency') : '';
     if (urgencyFilter) query += 'urgency=' + encodeURIComponent(urgencyFilter) + '&';
+    var onlineFilter = activeQuickFilter ? activeQuickFilter.getAttribute('data-online') : '';
+    if (onlineFilter) query += 'onlyOnline=true&';
 
     try {
       var res = await Yawmia.api('GET', query);
@@ -6169,6 +6645,296 @@ var YawmiaJobCard = (function () {
     } catch (err) {}
   }
 
+})();
+```
+
+---
+
+## `frontend/assets/js/livePresence.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/livePresence.js — Worker Presence + Heartbeat
+// Phase 40 — Battery-aware heartbeat sender + status indicator UI
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaLivePresence = (function () {
+  'use strict';
+
+  var heartbeatTimer = null;
+  var currentInterval = null;
+  var FOREGROUND_INTERVAL = 30000;
+  var BACKGROUND_INTERVAL = 60000;
+  var acceptingJobs = true;
+  var sessionId = null;
+  var lastStatus = 'offline';
+  var started = false;
+  var liveFeedSource = null;
+
+  function getSessionId() {
+    if (sessionId) return sessionId;
+    try {
+      sessionId = sessionStorage.getItem('yawmia_session_id');
+      if (!sessionId) {
+        sessionId = 'sid_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        sessionStorage.setItem('yawmia_session_id', sessionId);
+      }
+    } catch (_) {
+      sessionId = 'sid_' + Date.now();
+    }
+    return sessionId;
+  }
+
+  function getStoredAccepting() {
+    try {
+      var v = localStorage.getItem('yawmia_accepting_jobs');
+      if (v === 'false') return false;
+    } catch (_) {}
+    return true;
+  }
+
+  function storeAccepting(val) {
+    try { localStorage.setItem('yawmia_accepting_jobs', val ? 'true' : 'false'); } catch (_) {}
+  }
+
+  /**
+   * Send a single heartbeat to the server.
+   */
+  async function sendHeartbeat() {
+    if (!Yawmia.isLoggedIn()) return;
+    var user = Yawmia.getUser();
+    if (!user || user.role !== 'worker') return;
+
+    var body = { sessionId: getSessionId(), acceptingJobs: acceptingJobs };
+
+    // Try to include current location (non-blocking)
+    if (typeof user.lat === 'number') body.lat = user.lat;
+    if (typeof user.lng === 'number') body.lng = user.lng;
+
+    try {
+      var res = await Yawmia.api('POST', '/api/presence/heartbeat', body);
+      if (res.data && res.data.ok) {
+        var newStatus = res.data.status || 'online';
+        if (newStatus !== lastStatus) {
+          lastStatus = newStatus;
+          window.dispatchEvent(new CustomEvent('yawmia:presence-status-changed', { detail: { status: newStatus } }));
+        }
+        updateIndicator(newStatus);
+      }
+    } catch (_) {
+      // Network error — degrade gracefully
+      updateIndicator('offline');
+    }
+  }
+
+  /**
+   * Compute the appropriate heartbeat interval based on tab visibility.
+   */
+  function computeInterval() {
+    if (typeof document === 'undefined') return FOREGROUND_INTERVAL;
+    return document.visibilityState === 'hidden' ? BACKGROUND_INTERVAL : FOREGROUND_INTERVAL;
+  }
+
+  /**
+   * Restart heartbeat timer with the current interval.
+   */
+  function restartTimer() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+    var interval = computeInterval();
+    currentInterval = interval;
+    heartbeatTimer = setInterval(sendHeartbeat, interval);
+  }
+
+  /**
+   * Update the visual status indicator (dot + label).
+   */
+  function updateIndicator(status) {
+    var dot = document.getElementById('presenceStatusDot');
+    var label = document.getElementById('presenceStatusLabel');
+    if (dot) {
+      dot.classList.remove('presence-dot--online', 'presence-dot--away', 'presence-dot--offline');
+      dot.classList.add('presence-dot--' + status);
+    }
+    if (label) {
+      var labels = { online: '🟢 متاح للشغل', away: '🟡 بعيد', offline: '⚫ غير متصل' };
+      label.textContent = labels[status] || labels.offline;
+    }
+  }
+
+  /**
+   * Start the live feed EventSource connection.
+   */
+  function startLiveFeed() {
+    if (liveFeedSource) return;
+    if (!Yawmia.isLoggedIn()) return;
+    var user = Yawmia.getUser();
+    if (!user || user.role !== 'worker') return;
+
+    try {
+      var token = Yawmia.getToken();
+      var url = '/api/jobs/live-feed?token=' + encodeURIComponent(token);
+      liveFeedSource = new EventSource(url);
+
+      liveFeedSource.addEventListener('init', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:live-feed-init', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.addEventListener('job_created', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:live-feed-job-created', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.addEventListener('job_updated', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:live-feed-job-updated', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.addEventListener('instant_match_offer', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:instant-match-offer', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.addEventListener('instant_match_taken', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:instant-match-taken', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.onerror = function () { /* auto-reconnects */ };
+    } catch (_) {
+      liveFeedSource = null;
+    }
+  }
+
+  function stopLiveFeed() {
+    if (liveFeedSource) {
+      liveFeedSource.close();
+      liveFeedSource = null;
+    }
+  }
+
+  /**
+   * Toggle acceptingJobs flag.
+   */
+  function setAcceptingJobs(val) {
+    acceptingJobs = !!val;
+    storeAccepting(acceptingJobs);
+    var toggle = document.getElementById('acceptingJobsToggle');
+    if (toggle) toggle.checked = acceptingJobs;
+    sendHeartbeat();
+  }
+
+  /**
+   * Render the presence toggle UI.
+   */
+  function renderToggleUI(container) {
+    if (!container) return;
+    container.innerHTML =
+      '<section class="card live-presence-section">' +
+        '<div class="live-presence-row">' +
+          '<div class="live-presence-status">' +
+            '<span id="presenceStatusDot" class="presence-dot presence-dot--offline"></span>' +
+            '<span id="presenceStatusLabel" class="presence-status-label">⚫ غير متصل</span>' +
+          '</div>' +
+          '<label class="live-presence-toggle">' +
+            '<input type="checkbox" id="acceptingJobsToggle" ' + (acceptingJobs ? 'checked' : '') + '>' +
+            '<span>متاح للشغل دلوقتي</span>' +
+          '</label>' +
+        '</div>' +
+        '<p class="card__desc" style="margin-block-start:0.5rem;font-size:0.8rem;">لما تكون online، أصحاب العمل يقدروا يبعتولك فرص فورية مباشرة.</p>' +
+      '</section>';
+
+    var toggle = document.getElementById('acceptingJobsToggle');
+    if (toggle) {
+      toggle.addEventListener('change', function () {
+        setAcceptingJobs(toggle.checked);
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success(toggle.checked ? 'متاح للشغل دلوقتي ⚡' : 'تم إيقاف استلام الفرص الفورية');
+        }
+      });
+    }
+  }
+
+  /**
+   * Initialize for a worker user.
+   */
+  function start() {
+    if (started) return;
+    if (!Yawmia.isLoggedIn()) return;
+    var user = Yawmia.getUser();
+    if (!user || user.role !== 'worker') return;
+
+    started = true;
+    acceptingJobs = getStoredAccepting();
+
+    // Visibility change handler — adapt heartbeat frequency
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', function () {
+        var newInterval = computeInterval();
+        if (newInterval !== currentInterval) {
+          restartTimer();
+        }
+        if (document.visibilityState === 'visible') {
+          // Send immediate heartbeat when coming back
+          sendHeartbeat();
+        }
+      });
+    }
+
+    // Send initial heartbeat
+    sendHeartbeat();
+
+    // Start interval timer
+    restartTimer();
+
+    // Start live feed SSE
+    startLiveFeed();
+
+    // Render toggle UI if mount point exists
+    var mount = document.getElementById('livePresenceMount');
+    if (mount) renderToggleUI(mount);
+  }
+
+  function stop() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+    stopLiveFeed();
+    started = false;
+  }
+
+  // Auto-start when DOM ready
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      // Defer to allow other modules to initialize
+      setTimeout(start, 100);
+    }
+  }
+
+  return {
+    start: start,
+    stop: stop,
+    sendHeartbeat: sendHeartbeat,
+    setAcceptingJobs: setAcceptingJobs,
+    isAccepting: function () { return acceptingJobs; },
+    getStatus: function () { return lastStatus; },
+  };
 })();
 ```
 
@@ -7007,6 +7773,11 @@ var YawmiaPanels = (function () {
 
         // Job alerts management (all roles)
         loadMyAlerts();
+
+        // Phase 40 — Availability windows (worker only)
+        if (user.role === 'worker') {
+          loadAvailabilityWindows();
+        }
 
         // Analytics sections
         if (user.role === 'employer') {
@@ -8214,6 +8985,136 @@ var YawmiaPanels = (function () {
     });
   }
 
+  // ── Phase 40 — Availability Windows ─────────────────────────
+  async function loadAvailabilityWindows() {
+    var container = Yawmia.$id('availability-windows-section');
+    if (!container) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/availability/windows');
+      var windows = (res.data && res.data.windows) || [];
+      renderAvailabilityWindows(container, windows);
+    } catch (err) {
+      container.innerHTML = '';
+    }
+  }
+
+  function renderAvailabilityWindows(container, windows) {
+    var dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    var html = '<section class="card">' +
+      '<h2 class="card__title">⏰ نوافذ الإتاحة الزمنية</h2>' +
+      '<p class="card__desc">حدد الأوقات اللي بتكون متاح فيها للشغل (مثلاً: من الأحد للخميس من 8 لـ 5).</p>';
+
+    // Create form
+    html += '<div class="availability-create-form">' +
+      '<div class="form-group">' +
+        '<label class="form-label">أيام الأسبوع (اختار يوم أو أكثر)</label>' +
+        '<div class="checkbox-grid" id="awDaysGrid">';
+    for (var i = 0; i < 7; i++) {
+      html += '<label class="checkbox-label"><input type="checkbox" name="awDays" value="' + i + '"><span>' + dayNames[i] + '</span></label>';
+    }
+    html += '</div></div>' +
+      '<div class="location-group">' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="awStartHour">ساعة البدء</label>' +
+          '<input type="number" id="awStartHour" class="form-input form-input--sm" min="0" max="23" placeholder="8">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="awEndHour">ساعة الانتهاء</label>' +
+          '<input type="number" id="awEndHour" class="form-input form-input--sm" min="1" max="24" placeholder="17">' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn--primary btn--sm" id="btnCreateWindow">إضافة نافذة</button>' +
+      '<div class="message" id="awCreateMsg"></div>' +
+    '</div>';
+
+    // Existing windows
+    if (windows.length > 0) {
+      html += '<hr class="section-divider">';
+      html += '<div class="alerts-list">';
+      windows.forEach(function (w) {
+        var label = '';
+        if (w.type === 'recurring') {
+          var days = (w.daysOfWeek || []).map(function (d) { return dayNames[d]; }).join('، ');
+          label = days + ' من ' + w.startHour + ':00 إلى ' + w.endHour + ':00';
+        } else {
+          label = 'مرة واحدة: ' + new Date(w.startAt).toLocaleString('ar-EG') + ' إلى ' + new Date(w.endAt).toLocaleString('ar-EG');
+        }
+
+        html += '<div class="alert-card">' +
+          '<div class="alert-card__info">' +
+            '<div class="alert-card__name">' + (w.type === 'recurring' ? '🔁 متكرر' : '📅 لمرة واحدة') + '</div>' +
+            '<div class="alert-criteria">' + YawmiaUtils.escapeHtml(label) + '</div>' +
+          '</div>' +
+          '<div class="alert-card__actions">' +
+            '<button class="btn btn--ghost btn--sm btn-delete-window" data-window-id="' + YawmiaUtils.escapeHtml(w.id) + '" style="color:var(--color-error);border-color:var(--color-error);">🗑 حذف</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="empty-state" style="margin-top:1rem;">مفيش نوافذ — هتكون متاح طوال الوقت بشكل افتراضي.</p>';
+    }
+
+    html += '</section>';
+    container.innerHTML = html;
+
+    // Create handler
+    var btnCreate = Yawmia.$id('btnCreateWindow');
+    if (btnCreate) {
+      btnCreate.addEventListener('click', async function () {
+        Yawmia.clearMessage('awCreateMsg');
+        var checked = document.querySelectorAll('input[name="awDays"]:checked');
+        var days = Array.from(checked).map(function (el) { return parseInt(el.value); });
+        var startH = parseInt((Yawmia.$id('awStartHour') || {}).value);
+        var endH = parseInt((Yawmia.$id('awEndHour') || {}).value);
+
+        if (days.length === 0) return Yawmia.showMessage('awCreateMsg', 'اختار يوم على الأقل', 'error');
+        if (isNaN(startH) || startH < 0 || startH > 23) return Yawmia.showMessage('awCreateMsg', 'ساعة البدء غير صالحة', 'error');
+        if (isNaN(endH) || endH < 1 || endH > 24) return Yawmia.showMessage('awCreateMsg', 'ساعة الانتهاء غير صالحة', 'error');
+        if (endH <= startH) return Yawmia.showMessage('awCreateMsg', 'ساعة الانتهاء لازم تكون بعد ساعة البدء', 'error');
+
+        Yawmia.setLoading(btnCreate, true);
+        try {
+          var res = await Yawmia.api('POST', '/api/availability/windows', {
+            type: 'recurring',
+            daysOfWeek: days,
+            startHour: startH,
+            endHour: endH,
+          });
+          if (res.data && res.data.ok) {
+            YawmiaToast.success('تم إضافة النافذة ✓');
+            loadAvailabilityWindows();
+          } else {
+            Yawmia.showMessage('awCreateMsg', (res.data && res.data.error) || 'خطأ', 'error');
+          }
+        } catch (err) { Yawmia.showMessage('awCreateMsg', 'خطأ في الاتصال', 'error'); }
+        finally { Yawmia.setLoading(btnCreate, false); }
+      });
+    }
+
+    // Delete handlers
+    container.querySelectorAll('.btn-delete-window').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var wid = btn.getAttribute('data-window-id');
+        var confirmed = await YawmiaModal.confirm({ title: 'حذف النافذة', message: 'متأكد إنك عايز تحذف هذه النافذة؟', confirmText: 'حذف', cancelText: 'إلغاء', danger: true });
+        if (!confirmed) return;
+        Yawmia.setLoading(btn, true);
+        try {
+          var res = await Yawmia.api('DELETE', '/api/availability/windows/' + wid);
+          if (res.data && res.data.ok) {
+            YawmiaToast.success('تم الحذف');
+            loadAvailabilityWindows();
+          } else {
+            YawmiaToast.error((res.data && res.data.error) || 'خطأ');
+          }
+        } catch (err) { YawmiaToast.error('خطأ في الاتصال'); }
+        finally { Yawmia.setLoading(btn, false); }
+      });
+    });
+  }
+
 })();
 ```
 
@@ -9180,6 +10081,12 @@ var YawmiaUtils = (function () {
           <p id="welcomeDesc"></p>
         </section>
 
+        <!-- Phase 40 — Live Presence Toggle (worker only, mounted by JS) -->
+        <div id="livePresenceMount"></div>
+
+        <!-- Phase 40 — Online Workers Widget (employer only) -->
+        <div id="onlineWorkersWidget" class="hidden"></div>
+
         <!-- Recent Jobs (Worker) -->
         <section class="card hidden" id="recentJobsSection">
           <h2 class="card__title">آخر فرصك</h2>
@@ -9276,6 +10183,7 @@ var YawmiaUtils = (function () {
             <button class="btn btn--sm btn--primary quick-filter active" data-urgency="">الكل</button>
             <button class="btn btn--sm btn--ghost quick-filter" data-urgency="immediate">🔥 فوري</button>
             <button class="btn btn--sm btn--ghost quick-filter" data-urgency="urgent">⚡ عاجل</button>
+            <button class="btn btn--sm btn--ghost quick-filter quick-filter-online" data-online="1" id="filterOnlyOnline">👀 متاح الآن</button>
           </div>
           <div class="section-header">
             <h2 class="card__title">الفرص المتاحة</h2>
@@ -9377,6 +10285,8 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/livePresence.js"></script>
+  <script src="./assets/js/instantMatch.js"></script>
   <script src="./assets/js/jobCard.js"></script>
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>
@@ -9908,6 +10818,9 @@ var YawmiaUtils = (function () {
         <!-- Availability Toggle (worker only) -->
         <div id="availability-section"></div>
 
+        <!-- Phase 40 — Availability Windows (worker only) -->
+        <div id="availability-windows-section"></div>
+
         <!-- Job Alerts Management -->
         <div id="alerts-section"></div>
 
@@ -9993,6 +10906,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/livePresence.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -10054,7 +10968,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.35.0';
+const CACHE_NAME = 'yawmia-v0.36.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10077,6 +10991,8 @@ const STATIC_ASSETS = [
   '/assets/js/jobCard.js',
   '/assets/js/panels.js',
   '/assets/js/ratingModal.js',
+  '/assets/js/livePresence.js',
+  '/assets/js/instantMatch.js',
   '/job.html',
   '/assets/js/jobDetail.js',
   '/assets/css/tokens.css',
@@ -11186,6 +12102,10 @@ async function repair() {
     console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
+  // Phase 40 note: instant_matches is sharded but has no secondary index files —
+  // queries are by-id or sweep recent only, so no repair is needed.
+  // availability_windows is flat with no index files either.
+  console.log(`\n📌 Phase 40: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 
