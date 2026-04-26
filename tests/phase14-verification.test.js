@@ -91,7 +91,7 @@ describe('Phase 14 — Config', () => {
 
   it('P14-05: DATABASE.dirs includes verifications', () => {
     assert.strictEqual(config.DATABASE.dirs.verifications, 'verifications');
-    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 17);
+    assert.strictEqual(Object.keys(config.DATABASE.dirs).length, 18);
   });
 
   it('P14-06: DATABASE.indexFiles includes userVerificationIndex', () => {

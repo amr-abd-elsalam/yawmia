@@ -284,7 +284,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'fayoum',
         workersNeeded: 10,
         dailyWage: 250,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 2,
       }, {
         Authorization: `Bearer ${login.token}`,
@@ -304,7 +304,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, {
         Authorization: `Bearer ${login.token}`,
@@ -337,7 +337,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'fayoum',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, { Authorization: `Bearer ${login.token}` });
 
@@ -356,7 +356,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 3,
         dailyWage: 300,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 5,
       }, { Authorization: `Bearer ${login.token}` });
 
@@ -388,7 +388,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, { Authorization: `Bearer ${employer.token}` });
 
@@ -409,7 +409,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, { Authorization: `Bearer ${employer.token}` });
 
@@ -432,7 +432,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, { Authorization: `Bearer ${employer.token}` });
 
@@ -457,7 +457,7 @@ describe('HTTP Integration Tests', () => {
         governorate: 'cairo',
         workersNeeded: 5,
         dailyWage: 200,
-        startDate: '2026-04-25',
+        startDate: '2026-06-15',
         durationDays: 1,
       }, { Authorization: `Bearer ${employer.token}` });
 
