@@ -321,17 +321,21 @@ describe('Phase 41 — WorkerDiscovery Service', () => {
   test('P41-16 — TIER 1 returns active ads first', async () => {
     const { createAd } = await import('../server/services/availabilityAd.js');
     const { discoverWorkers, _testHelpers } = await import('../server/services/workerDiscovery.js');
+    const { buildAllIndexes } = await import('../server/services/queryIndex.js');
     _testHelpers.clearCache();
     const worker = await createTestWorker('d1');
     await createAd(worker.id, makeAdFields());
+    // Build query index so searchAds can find the ad via TIER 1
+    await buildAllIndexes();
     const result = await discoverWorkers({
       lat: 30.0444, lng: 31.2357, radiusKm: 30,
       governorate: 'cairo',
+      categories: ['plumbing'],
       limit: 10,
     });
-    assert.ok(result.workers.length >= 1);
+    assert.ok(result.workers.length >= 1, 'expected at least 1 worker');
     const tier1 = result.workers.filter(w => w._tier === 1);
-    assert.ok(tier1.length >= 1);
+    assert.ok(tier1.length >= 1, 'expected at least 1 TIER 1 (active ad) worker, got: ' + JSON.stringify(result.workers.map(w => ({ id: w.id, tier: w._tier }))));
   });
 
   test('P41-17 — TIER 2 supplements when no ads', async () => {
@@ -413,7 +417,9 @@ describe('Phase 41 — WorkerDiscovery Service', () => {
 
   test('P41-22 — Tile cache invalidates on ad event', async () => {
     const { eventBus } = await import('../server/services/eventBus.js');
-    const { discoverWorkers, _testHelpers, getStats } = await import('../server/services/workerDiscovery.js');
+    const { discoverWorkers, _testHelpers, getStats, setupCacheInvalidation } = await import('../server/services/workerDiscovery.js');
+    // Ensure listeners are wired (router.js does this in production — manually invoke for unit test)
+    setupCacheInvalidation();
     _testHelpers.clearCache();
     const opts = { lat: 30.0444, lng: 31.2357, radiusKm: 30, governorate: 'cairo', limit: 10 };
     await discoverWorkers(opts);
@@ -683,8 +689,11 @@ describe('Phase 41 — AdMatcher Service', () => {
     const worker = await createTestWorker('p36');
     await createAd(worker.id, makeAdFields({ availableFrom: futureISO(1), availableUntil: futureISO(8) }));
     await buildAllIndexes();
-    let received = null;
-    const off = eventBus.on('ad:job_match', (data) => { received = data; });
+    // Capture only events for THIS specific job (avoid bleed from previous tests)
+    const receivedEvents = [];
+    const off = eventBus.on('ad:job_match', (data) => {
+      if (data && data.jobId === 'job_p36') receivedEvents.push(data);
+    });
     const job = {
       id: 'job_p36',
       title: 'فرصة',
@@ -699,9 +708,12 @@ describe('Phase 41 — AdMatcher Service', () => {
     };
     await matchAdsToJob(job);
     if (typeof off === 'function') off();
-    assert.ok(received);
-    assert.equal(received.jobId, 'job_p36');
-    assert.equal(received.workerId, worker.id);
+    assert.ok(receivedEvents.length >= 1, 'expected at least 1 ad:job_match event for job_p36');
+    // Find the event for our worker (other ads in this gov+cat may also match — we need ours)
+    const ourEvent = receivedEvents.find(e => e.workerId === worker.id);
+    assert.ok(ourEvent, 'expected ad:job_match event for worker ' + worker.id);
+    assert.equal(ourEvent.jobId, 'job_p36');
+    assert.equal(ourEvent.workerId, worker.id);
   });
 
   test('P41-37 — Dedup map TTL is enforced', async () => {
@@ -899,7 +911,9 @@ describe('Phase 41 — Concurrency', () => {
 
   test('P41-46 — Cache invalidation on rapid ad changes', async () => {
     const { eventBus } = await import('../server/services/eventBus.js');
-    const { discoverWorkers, _testHelpers, getStats } = await import('../server/services/workerDiscovery.js');
+    const { discoverWorkers, _testHelpers, getStats, setupCacheInvalidation } = await import('../server/services/workerDiscovery.js');
+    // Ensure listeners are wired (router.js does this in production — manually invoke for unit test)
+    setupCacheInvalidation();
     _testHelpers.clearCache();
     await discoverWorkers({ lat: 30.0444, lng: 31.2357, radiusKm: 30, governorate: 'cairo', limit: 10 });
     assert.ok(getStats().tilesCached >= 1);
