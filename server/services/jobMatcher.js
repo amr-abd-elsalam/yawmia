@@ -138,12 +138,25 @@ async function matchAndNotify(data) {
 
     if (toNotify.length === 0) return;
 
+    // Phase 41 — Read shared dedup from adMatcher (workers already notified about this job)
+    let dedupedWorkers = new Set();
+    try {
+      const { getDedupedWorkers } = await import('./adMatcher.js');
+      dedupedWorkers = getDedupedWorkers(jobId);
+    } catch (_) { /* non-fatal — proceed with no dedup */ }
+
     // 8. Create notifications (fire-and-forget per worker)
     const { createNotification } = await import('./notifications.js');
     const message = `فرصة عمل جديدة قريبة منك: ${job.title} — ${job.dailyWage} جنيه/يوم`;
 
     let notified = 0;
+    let skippedByDedup = 0;
     for (const match of toNotify) {
+      // Skip workers already notified by adMatcher
+      if (dedupedWorkers.has(match.user.id)) {
+        skippedByDedup++;
+        continue;
+      }
       try {
         await createNotification(
           match.user.id,
@@ -157,11 +170,12 @@ async function matchAndNotify(data) {
       }
     }
 
-    if (notified > 0) {
+    if (notified > 0 || skippedByDedup > 0) {
       logger.info('Job matching: notified workers', {
         jobId,
         matched: matches.length,
         notified,
+        skippedByDedup,
         category: job.category,
         governorate: job.governorate,
       });

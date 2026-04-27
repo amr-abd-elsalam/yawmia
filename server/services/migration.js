@@ -236,6 +236,18 @@ const builtInMigrations = [
       logger.info('Migration v3: greenfield collections registered (availability_windows + instant_matches)');
     },
   },
+  {
+    version: 4,
+    name: 'Initialize availability_ads collection (Phase 41 Talent Exchange)',
+    up: async () => {
+      // Greenfield: initDatabase() (called at server startup) creates the new
+      // directory + monthly shard from config.DATABASE.dirs + SHARDING.collections.
+      // No data migration needed — availability_ads is a new collection introduced
+      // by Phase 41 (Talent Exchange Foundation).
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v4: greenfield availability_ads collection registered (Phase 41)');
+    },
+  },
 ];
 
 /**

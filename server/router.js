@@ -25,6 +25,8 @@ import { handleGetImage } from './handlers/imageHandler.js';
 import { handleHeartbeat, handleOnlineCount } from './handlers/presenceHandler.js';
 import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './handlers/availabilityHandler.js';
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
+import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
+import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -49,7 +51,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.36.0',
+        version: '0.37.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -124,6 +126,20 @@ const routes = [
       } catch (_) {
         response.liveFeed = { connections: 0, users: 0 };
       }
+      // Phase 41 — Availability ads stats (non-blocking)
+      try {
+        const { getStats: adStats } = await import('./services/availabilityAd.js');
+        response.availabilityAds = await adStats();
+      } catch (_) {
+        response.availabilityAds = { active: 0, totalToday: 0, expiredLastHour: 0, withdrawnLastHour: 0 };
+      }
+      // Phase 41 — Worker discovery stats (non-blocking)
+      try {
+        const { getStats: discoveryStats } = await import('./services/workerDiscovery.js');
+        response.workerDiscovery = discoveryStats();
+      } catch (_) {
+        response.workerDiscovery = { tilesCached: 0, totalCachedItems: 0, cardsCached: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -158,7 +174,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.36.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.37.0' });
     },
   },
 
@@ -267,6 +283,20 @@ const routes = [
   { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
   { method: 'POST', path: '/api/jobs/:id/instant-accept', middlewares: [requireAuth, requireRole('worker')], handler: handleInstantAccept },
 
+  // ── Phase 41 — Availability Ads (Worker) ──
+  { method: 'POST', path: '/api/availability-ads', middlewares: [requireAuth, requireRole('worker')], handler: handleCreateAd },
+  { method: 'GET', path: '/api/availability-ads/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyAds },
+  { method: 'DELETE', path: '/api/availability-ads/:id', middlewares: [requireAuth, requireRole('worker')], handler: handleWithdrawAd },
+  { method: 'GET', path: '/api/availability-ads/:id', middlewares: [requireAuth], handler: handleGetAd },
+
+  // ── Phase 41 — Worker Discovery (Employer) ──
+  { method: 'GET', path: '/api/workers/discover', middlewares: [requireAuth, requireRole('employer')], handler: handleDiscoverWorkers },
+  { method: 'GET', path: '/api/workers/:id/card', middlewares: [requireAuth], handler: handleGetWorkerCard },
+  { method: 'POST', path: '/api/workers/:id/quick-offer', middlewares: [requireAuth, requireRole('employer')], handler: handleQuickOffer },
+
+  // ── Phase 41 — Admin Ad Stats ──
+  { method: 'GET', path: '/api/admin/availability-ads/stats', middlewares: [requireAdmin], handler: handleAdStats },
+
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
 
@@ -369,7 +399,16 @@ function runMiddlewares(middlewares, req, res, done) {
 // Setup notification event listeners
 setupNotificationListeners();
 
-// Setup smart job matching
+// Phase 41 — Setup ad matcher FIRST (must run before jobMatcher's broad notification)
+// adMatcher writes to dedup map → jobMatcher reads it to skip already-notified workers
+import { setupAdMatchListeners } from './services/adMatcher.js';
+setupAdMatchListeners();
+
+// Phase 41 — Setup worker discovery cache invalidation listeners
+import { setupCacheInvalidation } from './services/workerDiscovery.js';
+setupCacheInvalidation();
+
+// Setup smart job matching (registers AFTER adMatcher so adMatcher's job:created listener fires first)
 import { setupJobMatching } from './services/jobMatcher.js';
 setupJobMatching();
 

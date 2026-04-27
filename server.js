@@ -276,6 +276,30 @@ if (config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
   if (instantMatchTimer.unref) instantMatchTimer.unref();
 }
 
+// ── Phase 41 — Availability ad expiration timer (every 5 min) ─
+if (config.AVAILABILITY_ADS && config.AVAILABILITY_ADS.enabled) {
+  const adExpirationTimer = setInterval(async () => {
+    try {
+      const { expireStaleAds } = await import('./server/services/availabilityAd.js');
+      await expireStaleAds();
+    } catch (err) {
+      logger.warn('Ad expiration error', { error: err.message });
+    }
+  }, config.AVAILABILITY_ADS.expirationCheckIntervalMs || 5 * 60 * 1000);
+  if (adExpirationTimer.unref) adExpirationTimer.unref();
+
+  // Phase 41 — adMatcher dedup map cleanup timer (every 1 min)
+  const adDedupCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupDedup } = await import('./server/services/adMatcher.js');
+      cleanupDedup();
+    } catch (err) {
+      logger.warn('Ad dedup cleanup error', { error: err.message });
+    }
+  }, 60 * 1000);
+  if (adDedupCleanupTimer.unref) adDedupCleanupTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {

@@ -178,6 +178,7 @@ const config = {
     maxJobsPerEmployerPerDay: 10,
     maxApplicationsPerWorkerPerDay: 20,
     rateLimitPerMinute: 60,
+    maxAdsPerWorkerPerDay: 5,
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -263,6 +264,7 @@ const config = {
       images: 'images',
       availability_windows: 'availability_windows',
       instant_matches: 'instant_matches',
+      availability_ads: 'availability_ads',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -282,6 +284,7 @@ const config = {
       pushUserIndex: 'push_subscriptions/user-index.json',
       userAlertsIndex: 'alerts/user-index.json',
       userFavoritesIndex: 'favorites/user-index.json',
+      workerAdsIndex: 'availability_ads/worker-index.json',
     },
     encoding: 'utf-8',
   },
@@ -448,7 +451,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.36.0',
+    cacheName: 'yawmia-v0.37.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -778,7 +781,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -844,6 +847,52 @@ const config = {
     enabled: true,
     initialDumpSize: 20,                     // top N nearby jobs sent on connection
     maxRadiusKm: 30,                         // worker sees jobs within this radius
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 57. إعلانات إتاحة العامل (AVAILABILITY_ADS)
+  // ═══════════════════════════════════════════════════════════════
+  AVAILABILITY_ADS: {
+    enabled: true,
+    maxActivePerWorker: 1,                   // عامل = إعلان نشط واحد (auto-expire previous)
+    maxAdvanceDays: 7,                       // ما يقدرش يحدد إتاحة بعد أسبوع من اليوم
+    maxDurationHours: 12,                    // أقصى مدة الإعلان (نهار شغل واحد)
+    defaultRadiusKm: 20,
+    maxRadiusKm: 50,
+    maxNotesLength: 200,
+    maxCategories: 3,                        // 1-3 categories
+    autoExpireBufferMinutes: 30,             // expire قبل availableUntil بنص ساعة
+    expirationCheckIntervalMs: 5 * 60 * 1000, // every 5 min
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 58. اكتشاف العمال (WORKER_DISCOVERY)
+  // ═══════════════════════════════════════════════════════════════
+  WORKER_DISCOVERY: {
+    enabled: true,
+    defaultRadiusKm: 30,
+    maxRadiusKm: 100,
+    cacheKeyTileSize: 0.01,                  // ~1km tile للـ caching
+    cacheTtlMs: 30000,                       // 30 ثانية cache TTL
+    scoreWeights: {
+      distance: 0.4,
+      trustScore: 0.3,
+      ratingAvg: 0.2,
+      recency: 0.1,
+    },
+    activeAdBonus: 0.1,                      // bonus للعمال عندهم active ad
+    includeRecentlyOfflineHours: 24,         // TIER 3: recently online window
+    privacyMode: true,                       // redact full names + phones in public cards
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 59. العروض المباشرة (DIRECT_OFFERS) — placeholder for Phase 42
+  // ═══════════════════════════════════════════════════════════════
+  DIRECT_OFFERS: {
+    enabled: false,                          // Phase 42 يفعّلها
+    acceptanceWindowSeconds: 120,
+    maxPendingPerEmployer: 5,
+    maxPendingPerWorker: 3,
   },
 
 };

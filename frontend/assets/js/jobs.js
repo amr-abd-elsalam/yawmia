@@ -53,6 +53,11 @@
     }
   }
 
+  // Phase 41 — Employer View Mode (Talent Radar | Browse Jobs)
+  if (user.role === 'employer') {
+    initEmployerViewMode();
+  }
+
   async function loadOnlineWorkersCount() {
     try {
       var res = await Yawmia.api('GET', '/api/workers/online-count');
@@ -63,6 +68,75 @@
     } catch (_) {
       var el = Yawmia.$id('onlineWorkersCount');
       if (el) el.textContent = '—';
+    }
+  }
+
+  // ── Phase 41 — Employer View Mode ─────────────────────────
+  function initEmployerViewMode() {
+    var toggleEl = Yawmia.$id('employerViewToggle');
+    var radarMount = Yawmia.$id('talentRadarMount');
+    var jobsSection = Yawmia.$id('jobsSection');
+    if (!toggleEl || !radarMount) return;
+
+    // Default: existing employers (created before v0.37.0 deployment ~ April 2026) → 'jobs'
+    // New employers → 'radar'
+    var savedMode = null;
+    try { savedMode = localStorage.getItem('yawmia_view_mode'); } catch (_) {}
+
+    var defaultMode = 'radar';
+    if (user && user.createdAt) {
+      var deployDate = new Date('2026-04-27').getTime();
+      var userCreatedAt = new Date(user.createdAt).getTime();
+      if (userCreatedAt < deployDate) defaultMode = 'jobs';
+    }
+
+    var currentMode = savedMode || defaultMode;
+    toggleEl.classList.remove('hidden');
+    setActiveViewMode(currentMode);
+
+    // Wire toggle buttons
+    toggleEl.querySelectorAll('.view-toggle__btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var newMode = btn.getAttribute('data-view');
+        if (newMode === currentMode) return;
+        currentMode = newMode;
+        try { localStorage.setItem('yawmia_view_mode', newMode); } catch (_) {}
+        setActiveViewMode(newMode);
+      });
+    });
+
+    function setActiveViewMode(mode) {
+      // Update toggle button styles
+      toggleEl.querySelectorAll('.view-toggle__btn').forEach(function (b) {
+        if (b.getAttribute('data-view') === mode) {
+          b.classList.add('btn--primary');
+          b.classList.remove('btn--ghost');
+        } else {
+          b.classList.add('btn--ghost');
+          b.classList.remove('btn--primary');
+        }
+      });
+
+      if (mode === 'radar') {
+        radarMount.classList.remove('hidden');
+        if (jobsSection) jobsSection.classList.add('hidden');
+        // Hide pagination
+        var pag = Yawmia.$id('paginationControls');
+        if (pag) pag.classList.add('hidden');
+        // Initialize Talent Radar
+        if (typeof YawmiaTalentRadar !== 'undefined') {
+          YawmiaTalentRadar.init('talentRadarMount');
+        }
+      } else {
+        radarMount.classList.add('hidden');
+        if (jobsSection) jobsSection.classList.remove('hidden');
+        // Stop radar refresh
+        if (typeof YawmiaTalentRadar !== 'undefined') {
+          YawmiaTalentRadar.destroy();
+        }
+        // Trigger jobs load if not already loaded
+        if (typeof loadJobs === 'function') loadJobs();
+      }
     }
   }
 

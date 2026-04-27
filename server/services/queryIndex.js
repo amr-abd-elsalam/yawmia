@@ -11,7 +11,7 @@ import config from '../../config.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 
-// ── Data Structures ──────────────────────────────────────────
+// ── Data Structures (Jobs) ───────────────────────────────────
 
 /** @type {Map<string, Set<string>>} status → Set of jobIds */
 const jobsByStatus = new Map();
@@ -27,6 +27,20 @@ const jobsByUrgency = new Map();
 
 /** @type {Map<string, object>} jobId → summary object */
 const jobsById = new Map();
+
+// ── Data Structures (Ads — Phase 41) ─────────────────────────
+
+/** @type {Map<string, Set<string>>} governorate → Set of adIds */
+const adsByGovernorate = new Map();
+
+/** @type {Map<string, Set<string>>} category → Set of adIds */
+const adsByCategory = new Map();
+
+/** @type {Set<string>} only ads with status='active' */
+const adsActive = new Set();
+
+/** @type {Map<string, object>} adId → summary object */
+const adsById = new Map();
 
 /** @type {string|null} */
 let lastBuilt = null;
@@ -127,6 +141,116 @@ export function onJobRemoved(jobId) {
   jobsById.delete(jobId);
 }
 
+// ── Ads Index Operations (Phase 41) ──────────────────────────
+
+/**
+ * Add an availability ad to all indexes (sync).
+ * @param {object} ad — full or summary ad object
+ */
+export function onAdCreated(ad) {
+  if (!isEnabled() || !ad || !ad.id) return;
+
+  const summary = {
+    id: ad.id,
+    workerId: ad.workerId,
+    status: ad.status,
+    governorate: ad.governorate,
+    categories: Array.isArray(ad.categories) ? ad.categories.slice() : [],
+    minDailyWage: ad.minDailyWage,
+    maxDailyWage: ad.maxDailyWage,
+    availableFrom: ad.availableFrom,
+    availableUntil: ad.availableUntil,
+    createdAt: ad.createdAt,
+  };
+
+  adsById.set(ad.id, summary);
+  addToMap(adsByGovernorate, summary.governorate, ad.id);
+  for (const cat of summary.categories) {
+    addToMap(adsByCategory, cat, ad.id);
+  }
+  if (summary.status === 'active') {
+    adsActive.add(ad.id);
+  }
+}
+
+/**
+ * Update an ad's status in indexes (sync).
+ * Only the adsActive Set tracks status — gov/category Maps keep all ads for history.
+ * @param {string} adId
+ * @param {string} newStatus
+ */
+export function onAdStatusChanged(adId, newStatus) {
+  if (!isEnabled() || !adId) return;
+  const summary = adsById.get(adId);
+  if (!summary) return;
+
+  summary.status = newStatus;
+  if (newStatus === 'active') {
+    adsActive.add(adId);
+  } else {
+    adsActive.delete(adId);
+  }
+}
+
+/**
+ * Remove an ad from all indexes (sync) — used only for hard delete.
+ * Normal lifecycle uses onAdStatusChanged (keep history).
+ * @param {string} adId
+ */
+export function onAdRemoved(adId) {
+  if (!isEnabled() || !adId) return;
+  const summary = adsById.get(adId);
+  if (!summary) return;
+
+  removeFromMap(adsByGovernorate, summary.governorate, adId);
+  for (const cat of summary.categories) {
+    removeFromMap(adsByCategory, cat, adId);
+  }
+  adsActive.delete(adId);
+  adsById.delete(adId);
+}
+
+/**
+ * Query active ads using Set intersection.
+ *
+ * @param {{ governorate?: string, categories?: string[] }} filters
+ * @returns {string[]} — array of matching adIds (active only)
+ */
+export function queryAds(filters = {}) {
+  if (!isEnabled()) return [];
+
+  // Start with active ads as base
+  let result = adsActive;
+  if (!result || result.size === 0) return [];
+
+  // Copy to avoid mutating source
+  result = new Set(result);
+
+  // Intersect with governorate
+  if (filters.governorate) {
+    const govSet = adsByGovernorate.get(filters.governorate);
+    if (!govSet || govSet.size === 0) return [];
+    result = intersect(result, govSet);
+    if (result.size === 0) return [];
+  }
+
+  // Intersect with categories (union of cat Sets, then intersect)
+  if (filters.categories && Array.isArray(filters.categories) && filters.categories.length > 0) {
+    const catUnion = new Set();
+    for (const cat of filters.categories) {
+      const catSet = adsByCategory.get(cat);
+      if (catSet) {
+        for (const id of catSet) catUnion.add(id);
+      }
+    }
+    if (catUnion.size === 0) return [];
+    result = intersect(result, catUnion);
+    if (result.size === 0) return [];
+  }
+
+  return Array.from(result);
+}
+
 /**
  * Full rebuild from disk. Clears all indexes and repopulates.
  * @returns {Promise<number>} number of jobs indexed
@@ -134,27 +258,45 @@ export function onJobRemoved(jobId) {
 export async function buildAllIndexes() {
   if (!isEnabled()) return 0;
 
-  // Clear all maps
+  // Clear all jobs maps
   jobsByStatus.clear();
   jobsByGov.clear();
   jobsByCategory.clear();
   jobsByUrgency.clear();
   jobsById.clear();
 
+  // Clear all ads maps
+  adsByGovernorate.clear();
+  adsByCategory.clear();
+  adsActive.clear();
+  adsById.clear();
+
+  let jobsCount = 0;
+
   try {
     const { listAll } = await import('./jobs.js');
     const allJobs = await listAll();
-
     for (const job of allJobs) {
       onJobCreated(job);
     }
-
-    lastBuilt = new Date().toISOString();
-    return allJobs.length;
+    jobsCount = allJobs.length;
   } catch (err) {
-    logger.warn('queryIndex buildAllIndexes error', { error: err.message });
-    return 0;
+    logger.warn('queryIndex buildAllIndexes (jobs) error', { error: err.message });
   }
+
+  // Phase 41 — also build ads index
+  try {
+    const { listAll: listAllAds } = await import('./availabilityAd.js');
+    const allAds = await listAllAds();
+    for (const ad of allAds) {
+      onAdCreated(ad);
+    }
+  } catch (err) {
+    logger.warn('queryIndex buildAllIndexes (ads) error', { error: err.message });
+  }
+
+  lastBuilt = new Date().toISOString();
+  return jobsCount;
 }
 
 /**
@@ -218,7 +360,7 @@ export function queryJobs(filters = {}) {
 
 /**
  * Get index statistics (sync).
- * @returns {{ totalJobs: number, lastBuilt: string|null, byStatus: object, byGovernorate: number, byCategory: number }}
+ * @returns {{ totalJobs: number, lastBuilt: string|null, byStatus: object, byGovernorate: number, byCategory: number, totalAds: number, activeAds: number, adsByGovernorate: number, adsByCategory: number }}
  */
 export function getStats() {
   const byStatus = {};
@@ -232,6 +374,11 @@ export function getStats() {
     byStatus,
     byGovernorate: jobsByGov.size,
     byCategory: jobsByCategory.size,
+    // Phase 41 — Ads stats
+    totalAds: adsById.size,
+    activeAds: adsActive.size,
+    adsByGovernorate: adsByGovernorate.size,
+    adsByCategory: adsByCategory.size,
   };
 }
 
@@ -244,6 +391,10 @@ export function clear() {
   jobsByCategory.clear();
   jobsByUrgency.clear();
   jobsById.clear();
+  adsByGovernorate.clear();
+  adsByCategory.clear();
+  adsActive.clear();
+  adsById.clear();
   lastBuilt = null;
 }
 
@@ -289,5 +440,32 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
         onJobStatusChanged(data.jobId, summary.status, 'open');
       }
     }
+  });
+
+  // Phase 41 — Ad lifecycle listeners
+
+  // Ad created → add to ads indexes
+  eventBus.on('ad:created', (data) => {
+    if (!data || !data.adId) return;
+    import('./availabilityAd.js').then(({ findById }) => {
+      findById(data.adId).then(ad => {
+        if (ad) onAdCreated(ad);
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  // Ad withdrawn → remove from active set
+  eventBus.on('ad:withdrawn', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'withdrawn');
+  });
+
+  // Ad expired → remove from active set
+  eventBus.on('ad:expired', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'expired');
+  });
+
+  // Ad matched (Phase 42 will fire this) → remove from active set
+  eventBus.on('ad:matched', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'matched');
   });
 }

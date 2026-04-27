@@ -328,10 +328,28 @@ async function repair() {
     console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
-  // Phase 40 note: instant_matches is sharded but has no secondary index files —
+  // 16. Worker-Ads Index (availability_ads/worker-index.json) — Phase 41
+  console.log('1️⃣6️⃣ Worker-Ads Index...');
+  const ads = await listRecords(join(DATA_DIR, 'availability_ads'), 'aad_');
+  const workerAdsIndex = {};
+  for (const ad of ads) {
+    if (!workerAdsIndex[ad.workerId]) workerAdsIndex[ad.workerId] = [];
+    workerAdsIndex[ad.workerId].push(ad.id);
+  }
+  const existingWorkerAdsIndex = await readJSON(join(DATA_DIR, 'availability_ads/worker-index.json')) || {};
+  const workerAdsIndexChanged = JSON.stringify(workerAdsIndex) !== JSON.stringify(existingWorkerAdsIndex);
+  if (workerAdsIndexChanged) {
+    console.log(`   ⚠️  Worker-Ads index needs repair (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'availability_ads/worker-index.json'), workerAdsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+  }
+
+  // Phase 40+41 note: instant_matches is sharded but has no secondary index files —
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.
-  console.log(`\n📌 Phase 40: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
+  console.log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

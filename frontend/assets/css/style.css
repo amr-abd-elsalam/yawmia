@@ -3181,3 +3181,356 @@ textarea:focus:not(:focus-visible) {
     font-size: 1.2rem;
   }
 }
+
+/* ═══ Phase 41 — Talent Exchange ═══ */
+
+/* View Mode Toggle */
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+  padding: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.view-toggle__btn {
+  flex: 1;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+/* Talent Radar */
+.talent-radar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 0.5rem;
+}
+
+.talent-radar__count {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-block-end: 0.75rem;
+}
+
+.talent-radar__results {
+  margin-block-start: 1rem;
+}
+
+/* Radar Filter Panel */
+.radar-filter-panel {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 1rem;
+}
+
+.radar-filter__row {
+  margin-block-end: 0.75rem;
+}
+
+.radar-filter__row--inline {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.radar-filter__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block-start: 0.4rem;
+}
+
+.radar-filter__category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--duration-fast, 0.15s);
+}
+
+.radar-filter__category-pill:hover {
+  border-color: var(--color-primary);
+}
+
+.radar-filter__category-pill input:checked + span {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.radar-filter__slider {
+  width: 100%;
+  margin-block-start: 0.3rem;
+}
+
+/* Worker Cards Grid */
+.worker-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Worker Card */
+.worker-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color var(--duration-normal, 0.2s), transform var(--duration-normal, 0.2s);
+  animation: slide-up-fade var(--duration-slow, 0.3s) var(--ease-out, ease-out) both;
+}
+
+.worker-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.worker-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.worker-card__avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.worker-card__avatar-icon {
+  display: block;
+}
+
+.worker-card__online-pulse {
+  position: absolute;
+  bottom: 2px;
+  inset-inline-end: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface-2);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  animation: presence-pulse 2s ease-in-out infinite;
+}
+
+.worker-card__name-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.worker-card__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-block-end: 0.2rem;
+  word-break: break-word;
+}
+
+.worker-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+}
+
+.worker-card__ad-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.worker-card__score-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.4rem;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.worker-card__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.worker-card__cat-pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.worker-card__info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.worker-card__distance {
+  color: var(--color-text-muted);
+}
+
+.worker-card__rating {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.worker-card__wage {
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.worker-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-block-start: 0.4rem;
+}
+
+.worker-card__actions .btn {
+  flex: 1;
+  min-height: 40px;
+}
+
+.worker-card-skeleton {
+  padding: 1rem;
+}
+
+/* Worker Card Modal */
+.worker-card-modal {
+  max-width: 460px;
+}
+
+.worker-card-modal__ad {
+  margin-block-start: 1rem;
+  padding: 0.75rem;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  border-inline-start: 3px solid var(--color-success);
+  text-align: start;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+/* Empty State for Radar */
+.radar-empty-state {
+  padding: 2rem 1rem;
+}
+
+/* Ad Form */
+.ad-form__section {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 1rem;
+}
+
+.ad-form__step {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-block-end: 0.6rem;
+}
+
+.ad-form__time-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ad-form--active {
+  border-color: var(--color-success);
+}
+
+.ad-form__active-summary {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block: 0.75rem;
+}
+
+.ad-form__summary-row {
+  padding-block: 0.3rem;
+  font-size: 0.9rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.ad-form__summary-row:last-child {
+  border-block-end: none;
+}
+
+.ad-form__summary-row strong {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.ad-form__active-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-block-end: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ad-form__stat {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 600px) {
+  .worker-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .radar-filter__row--inline {
+    flex-direction: column;
+  }
+  .ad-form__time-presets {
+    flex-direction: column;
+  }
+  .ad-form__time-presets .btn {
+    width: 100%;
+  }
+}

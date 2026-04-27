@@ -61,6 +61,15 @@
         <!-- Phase 40 — Online Workers Widget (employer only) -->
         <div id="onlineWorkersWidget" class="hidden"></div>
 
+        <!-- Phase 41 — Employer View Mode Toggle (Talent Radar | Browse Jobs) -->
+        <section id="employerViewToggle" class="view-toggle hidden" data-role="employer" aria-label="اختار طريقة العرض">
+          <button class="btn btn--primary view-toggle__btn" data-view="radar">👀 اكتشف الصنايعية</button>
+          <button class="btn btn--ghost view-toggle__btn" data-view="jobs">📋 الفرص الموجودة</button>
+        </section>
+
+        <!-- Phase 41 — Talent Radar Mount (employer only, when view=radar) -->
+        <div id="talentRadarMount" class="hidden"></div>
+
         <!-- Recent Jobs (Worker) -->
         <section class="card hidden" id="recentJobsSection">
           <h2 class="card__title">آخر فرصك</h2>
@@ -261,6 +270,7 @@
   <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/livePresence.js"></script>
   <script src="./assets/js/instantMatch.js"></script>
+  <script src="./assets/js/talentRadar.js"></script>
   <script src="./assets/js/jobCard.js"></script>
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>

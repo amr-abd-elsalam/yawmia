@@ -69,6 +69,15 @@
           loadAvailabilityWindows();
         }
 
+        // Phase 41 — Availability Ad Form (worker only)
+        if (user.role === 'worker') {
+          var adMount = Yawmia.$id('adFormMount');
+          if (adMount && typeof YawmiaAdForm !== 'undefined') {
+            adMount.classList.remove('hidden');
+            YawmiaAdForm.init('adFormMount');
+          }
+        }
+
         // Analytics sections
         if (user.role === 'employer') {
           loadEmployerAnalytics();

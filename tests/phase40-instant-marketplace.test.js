@@ -1134,9 +1134,9 @@ test('P40-78: SHARDING.collections has 8 entries', async () => {
   assert.ok(config.SHARDING.collections.includes('instant_matches'));
 });
 
-test('P40-79: PWA cache name = yawmia-v0.36.0', async () => {
+test('P40-79: PWA cache name = yawmia-v0.37.0', async () => {
   const config = (await import('../config.js')).default;
-  assert.equal(config.PWA.cacheName, 'yawmia-v0.36.0');
+  assert.equal(config.PWA.cacheName, 'yawmia-v0.37.0');
 });
 
 test('P40-80: Config has 4 new Phase 40 sections', async () => {
