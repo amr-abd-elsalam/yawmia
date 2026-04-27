@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.36.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-26T14:55:28.906Z
-> Files in this part: 28
+# يوميّة (Yawmia) v0.37.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-27T19:14:09.699Z
+> Files in this part: 30
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -9,28 +9,30 @@
 4. `server/handlers/applicationsHandler.js`
 5. `server/handlers/attendanceHandler.js`
 6. `server/handlers/authHandler.js`
-7. `server/handlers/availabilityHandler.js`
-8. `server/handlers/favoritesHandler.js`
-9. `server/handlers/imageHandler.js`
-10. `server/handlers/jobsHandler.js`
-11. `server/handlers/liveFeedHandler.js`
-12. `server/handlers/messagesHandler.js`
-13. `server/handlers/notificationsHandler.js`
-14. `server/handlers/paymentsHandler.js`
-15. `server/handlers/presenceHandler.js`
-16. `server/handlers/pushHandler.js`
-17. `server/handlers/ratingsHandler.js`
-18. `server/handlers/reportsHandler.js`
-19. `server/handlers/sseHandler.js`
-20. `server/handlers/verificationHandler.js`
-21. `server/middleware/auth.js`
-22. `server/middleware/bodyParser.js`
-23. `server/middleware/cors.js`
-24. `server/middleware/rateLimit.js`
-25. `server/middleware/requestId.js`
-26. `server/middleware/security.js`
-27. `server/middleware/static.js`
-28. `server/middleware/timing.js`
+7. `server/handlers/availabilityAdHandler.js`
+8. `server/handlers/availabilityHandler.js`
+9. `server/handlers/favoritesHandler.js`
+10. `server/handlers/imageHandler.js`
+11. `server/handlers/jobsHandler.js`
+12. `server/handlers/liveFeedHandler.js`
+13. `server/handlers/messagesHandler.js`
+14. `server/handlers/notificationsHandler.js`
+15. `server/handlers/paymentsHandler.js`
+16. `server/handlers/presenceHandler.js`
+17. `server/handlers/pushHandler.js`
+18. `server/handlers/ratingsHandler.js`
+19. `server/handlers/reportsHandler.js`
+20. `server/handlers/sseHandler.js`
+21. `server/handlers/verificationHandler.js`
+22. `server/handlers/workerDiscoveryHandler.js`
+23. `server/middleware/auth.js`
+24. `server/middleware/bodyParser.js`
+25. `server/middleware/cors.js`
+26. `server/middleware/rateLimit.js`
+27. `server/middleware/requestId.js`
+28. `server/middleware/security.js`
+29. `server/middleware/static.js`
+30. `server/middleware/timing.js`
 
 ---
 
@@ -1300,6 +1302,155 @@ export async function handleDeleteAccount(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في حذف الحساب', code: 'DELETE_ACCOUNT_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/availabilityAdHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/availabilityAdHandler.js — Ad CRUD Endpoints
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  createAd, withdrawAd, findById, listByWorker,
+  incrementViewCount, getStats,
+} from '../services/availabilityAd.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const ERROR_STATUS = {
+  ADS_DISABLED: 503,
+  INVALID_FIELDS: 400,
+  INVALID_CATEGORIES: 400,
+  INVALID_GOVERNORATE: 400,
+  INVALID_GEO: 400,
+  INVALID_RADIUS: 400,
+  INVALID_WAGE_RANGE: 400,
+  INVALID_TIME_WINDOW: 400,
+  NOTES_TOO_LONG: 400,
+  DAILY_AD_LIMIT: 429,
+  AD_NOT_FOUND: 404,
+  NOT_OWNER: 403,
+  INVALID_STATUS: 400,
+};
+
+function errorStatus(code) {
+  return ERROR_STATUS[code] || 400;
+}
+
+/**
+ * POST /api/availability-ads
+ * Body: { categories, governorate, lat, lng, radiusKm, minDailyWage, maxDailyWage, availableFrom, availableUntil, notes? }
+ * Requires: requireAuth + requireRole('worker')
+ */
+export async function handleCreateAd(req, res) {
+  try {
+    const workerId = req.user.id;
+    const body = req.body || {};
+
+    const result = await createAd(workerId, {
+      categories: body.categories,
+      governorate: body.governorate,
+      lat: body.lat,
+      lng: body.lng,
+      radiusKm: body.radiusKm,
+      minDailyWage: body.minDailyWage,
+      maxDailyWage: body.maxDailyWage,
+      availableFrom: body.availableFrom,
+      availableUntil: body.availableUntil,
+      notes: body.notes,
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, ad: result.ad });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/availability-ads/mine
+ * Lists worker's own ads (all statuses, newest first)
+ * Requires: requireAuth + requireRole('worker')
+ */
+export async function handleListMyAds(req, res) {
+  try {
+    const workerId = req.user.id;
+    const ads = await listByWorker(workerId);
+    sendJSON(res, 200, { ok: true, ads, count: ads.length });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * DELETE /api/availability-ads/:id
+ * Withdraw an active ad
+ * Requires: requireAuth + requireRole('worker')
+ */
+export async function handleWithdrawAd(req, res) {
+  try {
+    const adId = req.params.id;
+    const workerId = req.user.id;
+
+    const result = await withdrawAd(adId, workerId);
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 200, { ok: true, ad: result.ad });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/availability-ads/:id
+ * View a single ad. If viewer is an employer, increments viewCount.
+ * Requires: requireAuth
+ */
+export async function handleGetAd(req, res) {
+  try {
+    const adId = req.params.id;
+    const ad = await findById(adId);
+
+    if (!ad) {
+      return sendJSON(res, 404, { error: 'الإعلان غير موجود', code: 'AD_NOT_FOUND' });
+    }
+
+    // Increment viewCount if viewer is an employer (not the ad owner)
+    if (req.user && req.user.role === 'employer' && req.user.id !== ad.workerId) {
+      incrementViewCount(adId).catch(() => { /* fire-and-forget */ });
+    }
+
+    sendJSON(res, 200, { ok: true, ad });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/availability-ads/stats
+ * Admin stats endpoint
+ * Requires: requireAdmin
+ */
+export async function handleAdStats(req, res) {
+  try {
+    const stats = await getStats();
+    sendJSON(res, 200, { ok: true, stats });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب إحصائيات الإعلانات', code: 'AD_STATS_ERROR' });
   }
 }
 ```
@@ -3246,6 +3397,149 @@ export async function handleAdminReviewVerification(req, res) {
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في مراجعة طلب التحقق', code: 'ADMIN_REVIEW_ERROR' });
   }
+}
+```
+
+---
+
+## `server/handlers/workerDiscoveryHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/workerDiscoveryHandler.js — Talent Discovery Endpoints
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { discoverWorkers, getWorkerCard } from '../services/workerDiscovery.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+/**
+ * GET /api/workers/discover?lat=&lng=&radius=&category=&minWage=&maxWage=&governorate=&sortBy=&limit=&offset=
+ * Returns 3-tier worker pool with composite scoring + privacy-first cards.
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleDiscoverWorkers(req, res) {
+  try {
+    if (!config.WORKER_DISCOVERY || !config.WORKER_DISCOVERY.enabled) {
+      return sendJSON(res, 503, { error: 'اكتشاف العمال غير مفعّل', code: 'DISCOVERY_DISABLED' });
+    }
+
+    const q = req.query || {};
+
+    // Parse coordinates
+    let lat;
+    let lng;
+    if (q.lat !== undefined && q.lat !== '') {
+      lat = parseFloat(q.lat);
+      if (isNaN(lat)) {
+        return sendJSON(res, 400, { error: 'lat غير صالح', code: 'INVALID_LAT' });
+      }
+    }
+    if (q.lng !== undefined && q.lng !== '') {
+      lng = parseFloat(q.lng);
+      if (isNaN(lng)) {
+        return sendJSON(res, 400, { error: 'lng غير صالح', code: 'INVALID_LNG' });
+      }
+    }
+
+    // Fall back to employer's stored location if not provided
+    if (lat === undefined || lng === undefined) {
+      const user = req.user;
+      if (typeof user.lat === 'number' && typeof user.lng === 'number') {
+        lat = user.lat;
+        lng = user.lng;
+      } else {
+        // Resolve from governorate
+        try {
+          const { resolveCoordinates } = await import('../services/geo.js');
+          const coords = resolveCoordinates({ governorate: user.governorate });
+          if (coords) {
+            lat = coords.lat;
+            lng = coords.lng;
+          }
+        } catch (_) { /* non-blocking */ }
+      }
+    }
+
+    const radiusKm = q.radius !== undefined && q.radius !== ''
+      ? Math.min(parseFloat(q.radius) || config.WORKER_DISCOVERY.defaultRadiusKm, config.WORKER_DISCOVERY.maxRadiusKm)
+      : config.WORKER_DISCOVERY.defaultRadiusKm;
+
+    const categories = [];
+    if (q.category) categories.push(q.category);
+    if (q.categories && typeof q.categories === 'string') {
+      const parts = q.categories.split(',').map(s => s.trim()).filter(Boolean);
+      for (const p of parts) {
+        if (!categories.includes(p)) categories.push(p);
+      }
+    }
+
+    const options = {
+      lat,
+      lng,
+      radiusKm,
+      categories: categories.length > 0 ? categories : undefined,
+      governorate: q.governorate || undefined,
+      minWage: q.minWage !== undefined && q.minWage !== '' ? parseFloat(q.minWage) : undefined,
+      maxWage: q.maxWage !== undefined && q.maxWage !== '' ? parseFloat(q.maxWage) : undefined,
+      sortBy: q.sortBy || 'composite',
+      limit: q.limit !== undefined && q.limit !== '' ? Math.min(parseInt(q.limit) || 20, 50) : 20,
+      offset: q.offset !== undefined && q.offset !== '' ? Math.max(parseInt(q.offset) || 0, 0) : 0,
+    };
+
+    const result = await discoverWorkers(options);
+    sendJSON(res, 200, {
+      ok: true,
+      workers: result.workers,
+      total: result.total,
+      filters: {
+        lat: options.lat || null,
+        lng: options.lng || null,
+        radiusKm: options.radiusKm,
+        categories: options.categories || null,
+        governorate: options.governorate || null,
+      },
+    });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في اكتشاف العمال', code: 'DISCOVER_ERROR' });
+  }
+}
+
+/**
+ * GET /api/workers/:id/card
+ * Returns a privacy-first worker card.
+ * Requires: requireAuth (any role)
+ */
+export async function handleGetWorkerCard(req, res) {
+  try {
+    const workerId = req.params.id;
+    const card = await getWorkerCard(workerId);
+
+    if (!card) {
+      return sendJSON(res, 404, { error: 'العامل غير موجود', code: 'WORKER_NOT_FOUND' });
+    }
+
+    sendJSON(res, 200, { ok: true, card });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب بيانات العامل', code: 'CARD_ERROR' });
+  }
+}
+
+/**
+ * POST /api/workers/:id/quick-offer
+ * Phase 41 STUB: returns 501 NOT_IMPLEMENTED.
+ * Phase 42 will implement direct offer flow.
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleQuickOffer(req, res) {
+  sendJSON(res, 501, {
+    error: 'إرسال العروض المباشرة هيكون متاح في التحديث القادم',
+    code: 'PHASE_42_PENDING',
+  });
 }
 ```
 

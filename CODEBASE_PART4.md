@@ -1,45 +1,47 @@
-# يوميّة (Yawmia) v0.36.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-26T14:55:28.911Z
-> Files in this part: 37
+# يوميّة (Yawmia) v0.37.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-27T19:14:09.707Z
+> Files in this part: 39
 
 ## Files
 1. `frontend/404.html`
 2. `frontend/admin.html`
 3. `frontend/assets/css/style.css`
 4. `frontend/assets/css/tokens.css`
-5. `frontend/assets/js/admin.js`
-6. `frontend/assets/js/app.js`
-7. `frontend/assets/js/auth.js`
-8. `frontend/assets/js/icons.js`
-9. `frontend/assets/js/instantMatch.js`
-10. `frontend/assets/js/jobCard.js`
-11. `frontend/assets/js/jobDetail.js`
-12. `frontend/assets/js/jobs.js`
-13. `frontend/assets/js/livePresence.js`
-14. `frontend/assets/js/modal.js`
-15. `frontend/assets/js/panels.js`
-16. `frontend/assets/js/profile.js`
-17. `frontend/assets/js/ratingModal.js`
-18. `frontend/assets/js/toast.js`
-19. `frontend/assets/js/user.js`
-20. `frontend/assets/js/utils.js`
-21. `frontend/dashboard.html`
-22. `frontend/index.html`
-23. `frontend/job.html`
-24. `frontend/manifest.json`
-25. `frontend/offline.html`
-26. `frontend/profile.html`
-27. `frontend/robots.txt`
-28. `frontend/sitemap.xml`
-29. `frontend/sw.js`
-30. `frontend/terms.html`
-31. `frontend/user.html`
-32. `scripts/backup.js`
-33. `scripts/benchmark.js`
-34. `scripts/bundle-for-review.js`
-35. `scripts/generate-vapid-keys.js`
-36. `scripts/migrate.js`
-37. `scripts/repair-indexes.js`
+5. `frontend/assets/js/adForm.js`
+6. `frontend/assets/js/admin.js`
+7. `frontend/assets/js/app.js`
+8. `frontend/assets/js/auth.js`
+9. `frontend/assets/js/icons.js`
+10. `frontend/assets/js/instantMatch.js`
+11. `frontend/assets/js/jobCard.js`
+12. `frontend/assets/js/jobDetail.js`
+13. `frontend/assets/js/jobs.js`
+14. `frontend/assets/js/livePresence.js`
+15. `frontend/assets/js/modal.js`
+16. `frontend/assets/js/panels.js`
+17. `frontend/assets/js/profile.js`
+18. `frontend/assets/js/ratingModal.js`
+19. `frontend/assets/js/talentRadar.js`
+20. `frontend/assets/js/toast.js`
+21. `frontend/assets/js/user.js`
+22. `frontend/assets/js/utils.js`
+23. `frontend/dashboard.html`
+24. `frontend/index.html`
+25. `frontend/job.html`
+26. `frontend/manifest.json`
+27. `frontend/offline.html`
+28. `frontend/profile.html`
+29. `frontend/robots.txt`
+30. `frontend/sitemap.xml`
+31. `frontend/sw.js`
+32. `frontend/terms.html`
+33. `frontend/user.html`
+34. `scripts/backup.js`
+35. `scripts/benchmark.js`
+36. `scripts/bundle-for-review.js`
+37. `scripts/generate-vapid-keys.js`
+38. `scripts/migrate.js`
+39. `scripts/repair-indexes.js`
 
 ---
 
@@ -3424,6 +3426,359 @@ textarea:focus:not(:focus-visible) {
     font-size: 1.2rem;
   }
 }
+
+/* ═══ Phase 41 — Talent Exchange ═══ */
+
+/* View Mode Toggle */
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+  padding: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.view-toggle__btn {
+  flex: 1;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+/* Talent Radar */
+.talent-radar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 0.5rem;
+}
+
+.talent-radar__count {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-block-end: 0.75rem;
+}
+
+.talent-radar__results {
+  margin-block-start: 1rem;
+}
+
+/* Radar Filter Panel */
+.radar-filter-panel {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 1rem;
+}
+
+.radar-filter__row {
+  margin-block-end: 0.75rem;
+}
+
+.radar-filter__row--inline {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.radar-filter__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block-start: 0.4rem;
+}
+
+.radar-filter__category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--duration-fast, 0.15s);
+}
+
+.radar-filter__category-pill:hover {
+  border-color: var(--color-primary);
+}
+
+.radar-filter__category-pill input:checked + span {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.radar-filter__slider {
+  width: 100%;
+  margin-block-start: 0.3rem;
+}
+
+/* Worker Cards Grid */
+.worker-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Worker Card */
+.worker-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color var(--duration-normal, 0.2s), transform var(--duration-normal, 0.2s);
+  animation: slide-up-fade var(--duration-slow, 0.3s) var(--ease-out, ease-out) both;
+}
+
+.worker-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.worker-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.worker-card__avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.worker-card__avatar-icon {
+  display: block;
+}
+
+.worker-card__online-pulse {
+  position: absolute;
+  bottom: 2px;
+  inset-inline-end: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface-2);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  animation: presence-pulse 2s ease-in-out infinite;
+}
+
+.worker-card__name-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.worker-card__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-block-end: 0.2rem;
+  word-break: break-word;
+}
+
+.worker-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+}
+
+.worker-card__ad-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.worker-card__score-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.4rem;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.worker-card__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.worker-card__cat-pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.worker-card__info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.worker-card__distance {
+  color: var(--color-text-muted);
+}
+
+.worker-card__rating {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.worker-card__wage {
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.worker-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-block-start: 0.4rem;
+}
+
+.worker-card__actions .btn {
+  flex: 1;
+  min-height: 40px;
+}
+
+.worker-card-skeleton {
+  padding: 1rem;
+}
+
+/* Worker Card Modal */
+.worker-card-modal {
+  max-width: 460px;
+}
+
+.worker-card-modal__ad {
+  margin-block-start: 1rem;
+  padding: 0.75rem;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  border-inline-start: 3px solid var(--color-success);
+  text-align: start;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+/* Empty State for Radar */
+.radar-empty-state {
+  padding: 2rem 1rem;
+}
+
+/* Ad Form */
+.ad-form__section {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 1rem;
+}
+
+.ad-form__step {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-block-end: 0.6rem;
+}
+
+.ad-form__time-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ad-form--active {
+  border-color: var(--color-success);
+}
+
+.ad-form__active-summary {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block: 0.75rem;
+}
+
+.ad-form__summary-row {
+  padding-block: 0.3rem;
+  font-size: 0.9rem;
+  border-block-end: 1px solid var(--color-border);
+}
+
+.ad-form__summary-row:last-child {
+  border-block-end: none;
+}
+
+.ad-form__summary-row strong {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.ad-form__active-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  margin-block-end: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ad-form__stat {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 600px) {
+  .worker-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .radar-filter__row--inline {
+    flex-direction: column;
+  }
+  .ad-form__time-presets {
+    flex-direction: column;
+  }
+  .ad-form__time-presets .btn {
+    width: 100%;
+  }
+}
 ```
 
 ---
@@ -3557,6 +3912,468 @@ textarea:focus:not(:focus-visible) {
   --safe-left:   env(safe-area-inset-left, 0px);
   --safe-right:  env(safe-area-inset-right, 0px);
 }
+```
+
+---
+
+## `frontend/assets/js/adForm.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/adForm.js — Worker Availability Ad Form
+// ═══════════════════════════════════════════════════════════════
+// IIFE module — exposes window.YawmiaAdForm
+// Renders ad creation form (4 sections) OR active ad summary.
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaAdForm = (function () {
+  'use strict';
+
+  var mountEl = null;
+
+  function escapeHtml(str) {
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
+  }
+
+  /**
+   * Initialize Ad Form in the given mount element.
+   */
+  function init(mountId) {
+    mountEl = document.getElementById(mountId);
+    if (!mountEl) return;
+    loadAndRender();
+  }
+
+  /**
+   * Load worker's ads and render either active ad summary or creation form.
+   */
+  async function loadAndRender() {
+    if (!mountEl) return;
+
+    mountEl.innerHTML = '<section class="card"><h2 class="card__title">📢 إعلان الإتاحة</h2><p class="empty-state">جاري التحميل...</p></section>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/availability-ads/mine');
+      if (!res || !res.data || !res.data.ok) {
+        renderCreateForm();
+        return;
+      }
+      var ads = res.data.ads || [];
+      var activeAd = ads.find(function (a) { return a.status === 'active'; });
+      if (activeAd) {
+        renderActiveAd(activeAd);
+      } else {
+        renderCreateForm();
+      }
+    } catch (err) {
+      renderCreateForm();
+    }
+  }
+
+  /**
+   * Render the active ad summary + withdraw button.
+   */
+  function renderActiveAd(ad) {
+    var fromDt = new Date(ad.availableFrom).toLocaleString('ar-EG');
+    var untilDt = new Date(ad.availableUntil).toLocaleString('ar-EG');
+
+    var html =
+      '<section class="card ad-form ad-form--active">' +
+        '<h2 class="card__title">📢 إعلانك النشط</h2>' +
+        '<p class="card__desc">إعلانك ظاهر لأصحاب العمل في منطقتك. يقدر يتسحب في أي وقت.</p>' +
+
+        '<div class="ad-form__active-summary">' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>التخصصات:</strong> ' + escapeHtml(ad.categories.join('، ')) +
+          '</div>' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>المحافظة:</strong> ' + escapeHtml(ad.governorate) +
+          '</div>' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>النطاق:</strong> ' + ad.radiusKm + ' كم' +
+          '</div>' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>الأجر:</strong> ' + ad.minDailyWage + '–' + ad.maxDailyWage + ' جنيه/يوم' +
+          '</div>' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>متاح من:</strong> ' + escapeHtml(fromDt) +
+          '</div>' +
+          '<div class="ad-form__summary-row">' +
+            '<strong>إلى:</strong> ' + escapeHtml(untilDt) +
+          '</div>' +
+          (ad.notes ? '<div class="ad-form__summary-row"><strong>ملاحظات:</strong> ' + escapeHtml(ad.notes) + '</div>' : '') +
+        '</div>' +
+
+        '<div class="ad-form__active-stats">' +
+          '<span class="ad-form__stat">👁 ' + (ad.viewCount || 0) + ' مشاهدة</span>' +
+          '<span class="ad-form__stat">📩 ' + (ad.offerCount || 0) + ' عرض</span>' +
+        '</div>' +
+
+        '<button class="btn btn--ghost btn--sm" id="adWithdrawBtn" style="color:var(--color-error);border-color:var(--color-error);">سحب الإعلان</button>' +
+        '<div class="message" id="adFormMsg"></div>' +
+      '</section>';
+
+    mountEl.innerHTML = html;
+
+    var withdrawBtn = document.getElementById('adWithdrawBtn');
+    if (withdrawBtn) {
+      withdrawBtn.addEventListener('click', function () { handleWithdraw(ad.id); });
+    }
+  }
+
+  /**
+   * Render the ad creation form (4 sections).
+   */
+  function renderCreateForm() {
+    var html =
+      '<section class="card ad-form">' +
+        '<h2 class="card__title">📢 انشر إعلان إتاحة</h2>' +
+        '<p class="card__desc">قول أنا متاح للشغل! أصحاب العمل في منطقتك هيلاقوك ويبعتولك عروض مباشرة.</p>' +
+
+        // Section 1 — Categories
+        '<div class="ad-form__section">' +
+          '<h3 class="ad-form__step">1. التخصصات (1-3 تخصصات)</h3>' +
+          '<div class="checkbox-grid" id="adCategoriesGrid"></div>' +
+        '</div>' +
+
+        // Section 2 — Time window
+        '<div class="ad-form__section">' +
+          '<h3 class="ad-form__step">2. متى تكون متاح؟</h3>' +
+          '<div class="ad-form__time-presets">' +
+            '<button type="button" class="btn btn--ghost btn--sm ad-time-preset" data-preset="today_morning">اليوم 8 ص - 5 م</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm ad-time-preset" data-preset="tomorrow_morning">بكرة 8 ص - 5 م</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm ad-time-preset" data-preset="custom">مخصص</button>' +
+          '</div>' +
+          '<div class="form-row" style="margin-block-start:0.75rem;">' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adFromDt">من</label>' +
+              '<input type="datetime-local" id="adFromDt" class="form-input form-input--sm" dir="ltr">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adUntilDt">إلى</label>' +
+              '<input type="datetime-local" id="adUntilDt" class="form-input form-input--sm" dir="ltr">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Section 3 — Wage range
+        '<div class="ad-form__section">' +
+          '<h3 class="ad-form__step">3. مدى الأجر اليومي</h3>' +
+          '<div class="form-row">' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adMinWage">الأقل (جنيه)</label>' +
+              '<input type="number" id="adMinWage" class="form-input form-input--sm" min="150" max="1000" placeholder="250">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adMaxWage">الأقصى (جنيه)</label>' +
+              '<input type="number" id="adMaxWage" class="form-input form-input--sm" min="150" max="1000" placeholder="350">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Section 4 — Geo radius
+        '<div class="ad-form__section">' +
+          '<h3 class="ad-form__step">4. نطاق التنقل</h3>' +
+          '<div class="form-group">' +
+            '<label class="form-label" for="adGov">المحافظة</label>' +
+            '<select id="adGov" class="form-input form-input--sm"><option value="">اختار المحافظة</option></select>' +
+          '</div>' +
+          '<div class="location-group">' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adLat">خط العرض</label>' +
+              '<input type="number" step="any" id="adLat" class="form-input form-input--sm" placeholder="30.04">' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="adLng">خط الطول</label>' +
+              '<input type="number" step="any" id="adLng" class="form-input form-input--sm" placeholder="31.23">' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn-detect-location" id="adDetectLoc">📍 استخدم موقعي الحالي</button>' +
+          '<div class="form-group" style="margin-block-start:0.75rem;">' +
+            '<label class="form-label" for="adRadius">النطاق (كم): <span id="adRadiusValue">20</span></label>' +
+            '<input type="range" id="adRadius" min="1" max="50" step="1" value="20">' +
+          '</div>' +
+        '</div>' +
+
+        // Optional notes
+        '<div class="ad-form__section">' +
+          '<div class="form-group">' +
+            '<label class="form-label" for="adNotes">ملاحظات (اختياري)</label>' +
+            '<textarea id="adNotes" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: عندي عربية، خبرة 5 سنين..."></textarea>' +
+          '</div>' +
+        '</div>' +
+
+        '<button class="btn btn--primary btn--full" id="adSubmitBtn">انشر الإعلان</button>' +
+        '<div class="message" id="adFormMsg"></div>' +
+      '</section>';
+
+    mountEl.innerHTML = html;
+
+    populateFormDropdowns();
+    wireFormEvents();
+    prefillFromUser();
+  }
+
+  /**
+   * Populate categories grid + governorates dropdown.
+   */
+  function populateFormDropdowns() {
+    Yawmia.populateCategoriesCheckboxes('adCategoriesGrid');
+    Yawmia.populateGovernorates('adGov');
+  }
+
+  /**
+   * Pre-fill governorate + lat/lng from user profile.
+   */
+  function prefillFromUser() {
+    var user = Yawmia.getUser();
+    if (!user) return;
+    var govEl = document.getElementById('adGov');
+    if (govEl && user.governorate) {
+      // Wait for options to populate (populateGovernorates is async)
+      setTimeout(function () {
+        govEl.value = user.governorate;
+      }, 100);
+    }
+    var latEl = document.getElementById('adLat');
+    var lngEl = document.getElementById('adLng');
+    if (latEl && typeof user.lat === 'number') latEl.value = user.lat;
+    if (lngEl && typeof user.lng === 'number') lngEl.value = user.lng;
+  }
+
+  /**
+   * Wire form interaction handlers.
+   */
+  function wireFormEvents() {
+    // Time presets
+    document.querySelectorAll('.ad-time-preset').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyTimePreset(btn.getAttribute('data-preset'));
+      });
+    });
+
+    // Radius slider
+    var radiusEl = document.getElementById('adRadius');
+    var radiusValue = document.getElementById('adRadiusValue');
+    if (radiusEl && radiusValue) {
+      radiusEl.addEventListener('input', function () {
+        radiusValue.textContent = radiusEl.value;
+      });
+    }
+
+    // Detect location
+    var detectBtn = document.getElementById('adDetectLoc');
+    if (detectBtn) {
+      detectBtn.addEventListener('click', detectLocation);
+    }
+
+    // Submit
+    var submitBtn = document.getElementById('adSubmitBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleSubmit);
+    }
+  }
+
+  /**
+   * Apply a time preset to the datetime inputs.
+   */
+  function applyTimePreset(preset) {
+    var fromEl = document.getElementById('adFromDt');
+    var untilEl = document.getElementById('adUntilDt');
+    if (!fromEl || !untilEl) return;
+
+    var now = new Date();
+    var from, until;
+
+    if (preset === 'today_morning') {
+      // Today 8 AM - 5 PM (Egypt local)
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+      until = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0);
+      // If "today 8 AM" already passed, switch to tomorrow
+      if (from.getTime() <= now.getTime()) {
+        from.setDate(from.getDate() + 1);
+        until.setDate(until.getDate() + 1);
+      }
+    } else if (preset === 'tomorrow_morning') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0);
+      until = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 17, 0, 0);
+    } else {
+      // custom — leave fields for user
+      return;
+    }
+
+    fromEl.value = formatLocalDateTime(from);
+    untilEl.value = formatLocalDateTime(until);
+  }
+
+  /**
+   * Format Date as YYYY-MM-DDTHH:MM (local) for datetime-local input.
+   */
+  function formatLocalDateTime(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var h = String(d.getHours()).padStart(2, '0');
+    var mn = String(d.getMinutes()).padStart(2, '0');
+    return y + '-' + m + '-' + day + 'T' + h + ':' + mn;
+  }
+
+  /**
+   * Use Geolocation API.
+   */
+  function detectLocation() {
+    if (!navigator.geolocation) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
+      return;
+    }
+    var btn = document.getElementById('adDetectLoc');
+    if (btn) {
+      btn.textContent = '⏳ جاري تحديد الموقع...';
+      btn.disabled = true;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var latEl = document.getElementById('adLat');
+        var lngEl = document.getElementById('adLng');
+        if (latEl) latEl.value = pos.coords.latitude.toFixed(6);
+        if (lngEl) lngEl.value = pos.coords.longitude.toFixed(6);
+        if (btn) {
+          btn.textContent = '📍 تم تحديد الموقع ✓';
+          btn.disabled = false;
+        }
+      },
+      function (err) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('تعذّر تحديد الموقع: ' + (err.message || ''));
+        if (btn) {
+          btn.textContent = '📍 استخدم موقعي الحالي';
+          btn.disabled = false;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  /**
+   * Submit handler.
+   */
+  async function handleSubmit() {
+    Yawmia.clearMessage('adFormMsg');
+
+    var checkedCats = document.querySelectorAll('#adCategoriesGrid input[name="categories"]:checked');
+    var categories = Array.from(checkedCats).map(function (el) { return el.value; });
+    if (categories.length === 0) {
+      return Yawmia.showMessage('adFormMsg', 'اختار تخصص واحد على الأقل', 'error');
+    }
+    if (categories.length > 3) {
+      return Yawmia.showMessage('adFormMsg', 'أقصى 3 تخصصات', 'error');
+    }
+
+    var govEl = document.getElementById('adGov');
+    var governorate = govEl ? govEl.value : '';
+    if (!governorate) {
+      return Yawmia.showMessage('adFormMsg', 'اختار المحافظة', 'error');
+    }
+
+    var latEl = document.getElementById('adLat');
+    var lngEl = document.getElementById('adLng');
+    var lat = latEl && latEl.value ? parseFloat(latEl.value) : NaN;
+    var lng = lngEl && lngEl.value ? parseFloat(lngEl.value) : NaN;
+    if (isNaN(lat) || isNaN(lng)) {
+      return Yawmia.showMessage('adFormMsg', 'حدّد موقعك على الخريطة (lat / lng)', 'error');
+    }
+
+    var radiusEl = document.getElementById('adRadius');
+    var radiusKm = radiusEl ? parseInt(radiusEl.value, 10) : 20;
+
+    var minWageEl = document.getElementById('adMinWage');
+    var maxWageEl = document.getElementById('adMaxWage');
+    var minDailyWage = minWageEl && minWageEl.value ? parseInt(minWageEl.value, 10) : NaN;
+    var maxDailyWage = maxWageEl && maxWageEl.value ? parseInt(maxWageEl.value, 10) : NaN;
+    if (isNaN(minDailyWage) || isNaN(maxDailyWage)) {
+      return Yawmia.showMessage('adFormMsg', 'حدّد مدى الأجر', 'error');
+    }
+    if (minDailyWage > maxDailyWage) {
+      return Yawmia.showMessage('adFormMsg', 'الأجر الأدنى لازم يكون أقل من الأقصى', 'error');
+    }
+
+    var fromEl = document.getElementById('adFromDt');
+    var untilEl = document.getElementById('adUntilDt');
+    if (!fromEl || !fromEl.value || !untilEl || !untilEl.value) {
+      return Yawmia.showMessage('adFormMsg', 'حدّد وقت البدء والانتهاء', 'error');
+    }
+    var availableFrom = new Date(fromEl.value).toISOString();
+    var availableUntil = new Date(untilEl.value).toISOString();
+
+    var notesEl = document.getElementById('adNotes');
+    var notes = notesEl && notesEl.value ? notesEl.value.trim() : '';
+
+    var body = {
+      categories: categories,
+      governorate: governorate,
+      lat: lat,
+      lng: lng,
+      radiusKm: radiusKm,
+      minDailyWage: minDailyWage,
+      maxDailyWage: maxDailyWage,
+      availableFrom: availableFrom,
+      availableUntil: availableUntil,
+    };
+    if (notes) body.notes = notes;
+
+    var submitBtn = document.getElementById('adSubmitBtn');
+    Yawmia.setLoading(submitBtn, true);
+
+    try {
+      var res = await Yawmia.api('POST', '/api/availability-ads', body);
+      if (res.data && res.data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم نشر الإعلان ✓');
+        loadAndRender();
+      } else {
+        Yawmia.showMessage('adFormMsg', (res.data && res.data.error) || 'خطأ في نشر الإعلان', 'error');
+      }
+    } catch (err) {
+      Yawmia.showMessage('adFormMsg', 'خطأ في الاتصال', 'error');
+    } finally {
+      Yawmia.setLoading(submitBtn, false);
+    }
+  }
+
+  /**
+   * Withdraw active ad.
+   */
+  async function handleWithdraw(adId) {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'سحب الإعلان',
+      message: 'متأكد إنك عايز تسحب الإعلان؟ ما هتظهرش لأصحاب العمل بعد كده.',
+      confirmText: 'سحب',
+      cancelText: 'رجوع',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    var btn = document.getElementById('adWithdrawBtn');
+    Yawmia.setLoading(btn, true);
+
+    try {
+      var res = await Yawmia.api('DELETE', '/api/availability-ads/' + adId);
+      if (res.data && res.data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم سحب الإعلان');
+        loadAndRender();
+      } else {
+        Yawmia.showMessage('adFormMsg', (res.data && res.data.error) || 'خطأ في السحب', 'error');
+      }
+    } catch (err) {
+      Yawmia.showMessage('adFormMsg', 'خطأ في الاتصال', 'error');
+    } finally {
+      Yawmia.setLoading(btn, false);
+    }
+  }
+
+  return {
+    init: init,
+    refresh: loadAndRender,
+  };
+})();
 ```
 
 ---
@@ -6279,6 +7096,11 @@ var YawmiaJobCard = (function () {
     }
   }
 
+  // Phase 41 — Employer View Mode (Talent Radar | Browse Jobs)
+  if (user.role === 'employer') {
+    initEmployerViewMode();
+  }
+
   async function loadOnlineWorkersCount() {
     try {
       var res = await Yawmia.api('GET', '/api/workers/online-count');
@@ -6289,6 +7111,75 @@ var YawmiaJobCard = (function () {
     } catch (_) {
       var el = Yawmia.$id('onlineWorkersCount');
       if (el) el.textContent = '—';
+    }
+  }
+
+  // ── Phase 41 — Employer View Mode ─────────────────────────
+  function initEmployerViewMode() {
+    var toggleEl = Yawmia.$id('employerViewToggle');
+    var radarMount = Yawmia.$id('talentRadarMount');
+    var jobsSection = Yawmia.$id('jobsSection');
+    if (!toggleEl || !radarMount) return;
+
+    // Default: existing employers (created before v0.37.0 deployment ~ April 2026) → 'jobs'
+    // New employers → 'radar'
+    var savedMode = null;
+    try { savedMode = localStorage.getItem('yawmia_view_mode'); } catch (_) {}
+
+    var defaultMode = 'radar';
+    if (user && user.createdAt) {
+      var deployDate = new Date('2026-04-27').getTime();
+      var userCreatedAt = new Date(user.createdAt).getTime();
+      if (userCreatedAt < deployDate) defaultMode = 'jobs';
+    }
+
+    var currentMode = savedMode || defaultMode;
+    toggleEl.classList.remove('hidden');
+    setActiveViewMode(currentMode);
+
+    // Wire toggle buttons
+    toggleEl.querySelectorAll('.view-toggle__btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var newMode = btn.getAttribute('data-view');
+        if (newMode === currentMode) return;
+        currentMode = newMode;
+        try { localStorage.setItem('yawmia_view_mode', newMode); } catch (_) {}
+        setActiveViewMode(newMode);
+      });
+    });
+
+    function setActiveViewMode(mode) {
+      // Update toggle button styles
+      toggleEl.querySelectorAll('.view-toggle__btn').forEach(function (b) {
+        if (b.getAttribute('data-view') === mode) {
+          b.classList.add('btn--primary');
+          b.classList.remove('btn--ghost');
+        } else {
+          b.classList.add('btn--ghost');
+          b.classList.remove('btn--primary');
+        }
+      });
+
+      if (mode === 'radar') {
+        radarMount.classList.remove('hidden');
+        if (jobsSection) jobsSection.classList.add('hidden');
+        // Hide pagination
+        var pag = Yawmia.$id('paginationControls');
+        if (pag) pag.classList.add('hidden');
+        // Initialize Talent Radar
+        if (typeof YawmiaTalentRadar !== 'undefined') {
+          YawmiaTalentRadar.init('talentRadarMount');
+        }
+      } else {
+        radarMount.classList.add('hidden');
+        if (jobsSection) jobsSection.classList.remove('hidden');
+        // Stop radar refresh
+        if (typeof YawmiaTalentRadar !== 'undefined') {
+          YawmiaTalentRadar.destroy();
+        }
+        // Trigger jobs load if not already loaded
+        if (typeof loadJobs === 'function') loadJobs();
+      }
     }
   }
 
@@ -7777,6 +8668,15 @@ var YawmiaPanels = (function () {
         // Phase 40 — Availability windows (worker only)
         if (user.role === 'worker') {
           loadAvailabilityWindows();
+        }
+
+        // Phase 41 — Availability Ad Form (worker only)
+        if (user.role === 'worker') {
+          var adMount = Yawmia.$id('adFormMount');
+          if (adMount && typeof YawmiaAdForm !== 'undefined') {
+            adMount.classList.remove('hidden');
+            YawmiaAdForm.init('adFormMount');
+          }
         }
 
         // Analytics sections
@@ -9362,6 +10262,497 @@ var YawmiaRatingModal = (function () {
 
 ---
 
+## `frontend/assets/js/talentRadar.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/talentRadar.js — Employer Talent Radar UI
+// ═══════════════════════════════════════════════════════════════
+// IIFE module — exposes window.YawmiaTalentRadar
+// Renders worker cards grid + filter panel + auto-refresh.
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaTalentRadar = (function () {
+  'use strict';
+
+  var mountEl = null;
+  var refreshTimer = null;
+  var currentFilters = {
+    categories: [],
+    radiusKm: 30,
+    minWage: null,
+    maxWage: null,
+    governorate: '',
+    sortBy: 'composite',
+  };
+
+  function escapeHtml(str) {
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
+  }
+
+  function getIcon(name, size) {
+    if (typeof YawmiaIcons !== 'undefined') {
+      return YawmiaIcons.get(name, { size: size || 16 });
+    }
+    return '';
+  }
+
+  /**
+   * Initialize Talent Radar in the given mount element.
+   * @param {string} mountId — DOM element ID
+   */
+  function init(mountId) {
+    mountEl = document.getElementById(mountId);
+    if (!mountEl) return;
+
+    // Use employer's stored location as default
+    var user = Yawmia.getUser();
+    if (user && user.governorate) {
+      currentFilters.governorate = user.governorate;
+    }
+
+    renderShell();
+    populateFilterDropdowns();
+    loadWorkers();
+
+    // Auto-refresh every 30 seconds
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(loadWorkers, 30000);
+
+    window.dispatchEvent(new CustomEvent('yawmia:talent-radar-loaded'));
+  }
+
+  /**
+   * Stop auto-refresh and clean up.
+   */
+  function destroy() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+    if (mountEl) {
+      mountEl.innerHTML = '';
+    }
+  }
+
+  /**
+   * Render the static shell (filter panel + workers container).
+   */
+  function renderShell() {
+    var html =
+      '<section class="card talent-radar">' +
+        '<div class="talent-radar__header">' +
+          '<h2 class="card__title">👀 اكتشف الصنايعية المتاحين</h2>' +
+          '<button class="btn btn--ghost btn--sm" id="trRefreshBtn" aria-label="تحديث">' + getIcon('refresh', 16) + ' تحديث</button>' +
+        '</div>' +
+        '<p class="card__desc">شوف الصنايعية المتاحين دلوقتي في منطقتك. اضغط على أي بطاقة عشان تشوف التفاصيل.</p>' +
+
+        '<div class="radar-filter-panel" id="trFilters">' +
+          '<div class="radar-filter__row">' +
+            '<label class="form-label">المحافظة</label>' +
+            '<select class="form-input form-input--sm" id="trGov"><option value="">كل المحافظات</option></select>' +
+          '</div>' +
+
+          '<div class="radar-filter__row">' +
+            '<label class="form-label">التخصصات (اختار واحد أو أكثر)</label>' +
+            '<div class="radar-filter__categories" id="trCategories"></div>' +
+          '</div>' +
+
+          '<div class="radar-filter__row radar-filter__row--inline">' +
+            '<div class="form-group" style="flex:1;">' +
+              '<label class="form-label" for="trRadius">النطاق (كم): <span id="trRadiusValue">30</span></label>' +
+              '<input type="range" id="trRadius" min="5" max="100" step="5" value="30" class="radar-filter__slider">' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="radar-filter__row radar-filter__row--inline">' +
+            '<div class="form-group" style="flex:1;">' +
+              '<label class="form-label" for="trMinWage">الأجر من</label>' +
+              '<input type="number" id="trMinWage" class="form-input form-input--sm" placeholder="150" min="150" max="1000">' +
+            '</div>' +
+            '<div class="form-group" style="flex:1;">' +
+              '<label class="form-label" for="trMaxWage">إلى</label>' +
+              '<input type="number" id="trMaxWage" class="form-input form-input--sm" placeholder="1000" min="150" max="1000">' +
+            '</div>' +
+          '</div>' +
+
+          '<button class="btn btn--primary btn--sm" id="trApplyFilters">تطبيق الفلاتر</button>' +
+        '</div>' +
+
+        '<div class="talent-radar__results" id="trResults" aria-live="polite">' +
+          '<p class="empty-state">جاري التحميل...</p>' +
+        '</div>' +
+      '</section>';
+
+    mountEl.innerHTML = html;
+
+    // Wire events
+    var applyBtn = document.getElementById('trApplyFilters');
+    if (applyBtn) applyBtn.addEventListener('click', applyFiltersFromForm);
+
+    var refreshBtn = document.getElementById('trRefreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', function () { loadWorkers(); });
+
+    var radiusSlider = document.getElementById('trRadius');
+    var radiusValue = document.getElementById('trRadiusValue');
+    if (radiusSlider && radiusValue) {
+      radiusSlider.addEventListener('input', function () {
+        radiusValue.textContent = radiusSlider.value;
+      });
+    }
+  }
+
+  /**
+   * Populate governorate + categories from config.
+   */
+  function populateFilterDropdowns() {
+    Yawmia.loadConfig().then(function (cfg) {
+      if (!cfg) return;
+
+      // Governorates
+      var govSelect = document.getElementById('trGov');
+      if (govSelect && cfg.REGIONS && cfg.REGIONS.governorates) {
+        cfg.REGIONS.governorates.forEach(function (g) {
+          var opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.label;
+          if (currentFilters.governorate === g.id) opt.selected = true;
+          govSelect.appendChild(opt);
+        });
+      }
+
+      // Categories as pills
+      var catContainer = document.getElementById('trCategories');
+      if (catContainer && cfg.LABOR_CATEGORIES) {
+        catContainer.innerHTML = '';
+        cfg.LABOR_CATEGORIES.forEach(function (cat) {
+          var label = document.createElement('label');
+          label.className = 'radar-filter__category-pill';
+          var input = document.createElement('input');
+          input.type = 'checkbox';
+          input.name = 'trCategory';
+          input.value = cat.id;
+          var span = document.createElement('span');
+          span.textContent = cat.icon + ' ' + cat.label;
+          label.appendChild(input);
+          label.appendChild(span);
+          catContainer.appendChild(label);
+        });
+      }
+    }).catch(function () {});
+  }
+
+  /**
+   * Read filters from form and reload.
+   */
+  function applyFiltersFromForm() {
+    var govEl = document.getElementById('trGov');
+    var radiusEl = document.getElementById('trRadius');
+    var minWageEl = document.getElementById('trMinWage');
+    var maxWageEl = document.getElementById('trMaxWage');
+
+    currentFilters.governorate = govEl ? govEl.value : '';
+    currentFilters.radiusKm = radiusEl ? parseInt(radiusEl.value, 10) : 30;
+
+    var minVal = minWageEl ? minWageEl.value.trim() : '';
+    var maxVal = maxWageEl ? maxWageEl.value.trim() : '';
+    currentFilters.minWage = minVal ? parseInt(minVal, 10) : null;
+    currentFilters.maxWage = maxVal ? parseInt(maxVal, 10) : null;
+
+    var checkedCats = document.querySelectorAll('input[name="trCategory"]:checked');
+    currentFilters.categories = Array.from(checkedCats).map(function (el) { return el.value; });
+
+    loadWorkers();
+  }
+
+  /**
+   * Load workers from API.
+   */
+  async function loadWorkers() {
+    var resultsEl = document.getElementById('trResults');
+    if (!resultsEl) return;
+
+    // Show skeleton on first load only
+    if (!resultsEl.querySelector('.worker-card')) {
+      resultsEl.innerHTML = renderSkeleton(4);
+    }
+
+    var query = '?';
+    if (currentFilters.governorate) query += 'governorate=' + encodeURIComponent(currentFilters.governorate) + '&';
+    if (currentFilters.categories.length > 0) {
+      query += 'categories=' + encodeURIComponent(currentFilters.categories.join(',')) + '&';
+    }
+    if (currentFilters.radiusKm) query += 'radius=' + encodeURIComponent(currentFilters.radiusKm) + '&';
+    if (currentFilters.minWage !== null) query += 'minWage=' + encodeURIComponent(currentFilters.minWage) + '&';
+    if (currentFilters.maxWage !== null) query += 'maxWage=' + encodeURIComponent(currentFilters.maxWage) + '&';
+    if (currentFilters.sortBy) query += 'sortBy=' + encodeURIComponent(currentFilters.sortBy) + '&';
+    query += 'limit=20';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workers/discover' + query);
+      if (!res || !res.data || !res.data.ok) {
+        renderError(res && res.data && res.data.error);
+        return;
+      }
+      renderWorkers(res.data.workers || [], res.data.total || 0);
+    } catch (err) {
+      renderError('خطأ في الاتصال');
+    }
+  }
+
+  /**
+   * Render skeleton cards.
+   */
+  function renderSkeleton(count) {
+    var html = '<div class="worker-cards-grid">';
+    for (var i = 0; i < count; i++) {
+      html +=
+        '<div class="skeleton-card worker-card-skeleton">' +
+          '<div class="skeleton skeleton-circle" style="width:48px;height:48px;"></div>' +
+          '<div class="skeleton skeleton-text--lg" style="width:60%;margin-block-start:0.75rem;"></div>' +
+          '<div class="skeleton skeleton-text" style="width:40%;"></div>' +
+          '<div class="skeleton skeleton-text" style="width:80%;"></div>' +
+        '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * Render workers list.
+   */
+  function renderWorkers(workers, total) {
+    var resultsEl = document.getElementById('trResults');
+    if (!resultsEl) return;
+
+    if (!workers || workers.length === 0) {
+      resultsEl.innerHTML =
+        '<div class="empty-state radar-empty-state">' +
+          '<span class="empty-state__icon">🔍</span>' +
+          '<p class="empty-state__text">مفيش صنايعية متاحين دلوقتي في منطقتك</p>' +
+          '<p class="empty-state__hint">جرّب توسّع النطاق أو غيّر الفلاتر</p>' +
+        '</div>';
+      return;
+    }
+
+    var html = '<div class="talent-radar__count">عرض ' + workers.length + ' من ' + total + '</div>';
+    html += '<div class="worker-cards-grid">';
+    for (var i = 0; i < workers.length; i++) {
+      html += buildWorkerCardHtml(workers[i]);
+    }
+    html += '</div>';
+
+    resultsEl.innerHTML = html;
+
+    // Wire quick offer buttons
+    resultsEl.querySelectorAll('.btn-quick-offer').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var workerId = btn.getAttribute('data-worker-id');
+        handleQuickOfferClick(workerId, btn);
+      });
+    });
+
+    // Wire view profile buttons
+    resultsEl.querySelectorAll('.btn-view-card').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var workerId = btn.getAttribute('data-worker-id');
+        showWorkerCardModal(workerId);
+      });
+    });
+  }
+
+  /**
+   * Build single worker card HTML.
+   */
+  function buildWorkerCardHtml(w) {
+    var onlineBadge = w.isOnline
+      ? '<span class="worker-card__online-pulse" title="متصل دلوقتي" aria-label="متصل"></span>'
+      : '';
+
+    var verifiedBadge = w.verificationStatus === 'verified'
+      ? '<span class="verification-badge verification-badge--verified" style="font-size:0.7rem;">✓ محقق</span>'
+      : '';
+
+    var adBadge = w.hasActiveAd
+      ? '<span class="worker-card__ad-badge">📢 متاح الآن</span>'
+      : '';
+
+    var ratingHtml = '';
+    if (w.rating && w.rating.count > 0) {
+      ratingHtml = '⭐ ' + w.rating.avg + ' (' + w.rating.count + ')';
+    } else {
+      ratingHtml = '<span style="color:var(--color-text-muted);">بدون تقييم</span>';
+    }
+
+    var distanceHtml = (typeof w.distanceKm === 'number')
+      ? '<span class="worker-card__distance">📍 ' + w.distanceKm + ' كم</span>'
+      : (w.governorate ? '<span class="worker-card__distance">📍 ' + escapeHtml(w.governorate) + '</span>' : '');
+
+    var categoriesHtml = '';
+    if (w.categories && w.categories.length > 0) {
+      categoriesHtml = '<div class="worker-card__categories">';
+      w.categories.slice(0, 3).forEach(function (cat) {
+        categoriesHtml += '<span class="worker-card__cat-pill">' + escapeHtml(cat) + '</span>';
+      });
+      categoriesHtml += '</div>';
+    }
+
+    var wageHtml = '';
+    if (w.adSummary && w.adSummary.minDailyWage) {
+      wageHtml = '<div class="worker-card__wage">💰 ' + w.adSummary.minDailyWage + '–' + w.adSummary.maxDailyWage + ' جنيه/يوم</div>';
+    }
+
+    var scoreHtml = '';
+    if (typeof w._score === 'number') {
+      var scorePercent = Math.round(w._score * 100);
+      scoreHtml = '<div class="worker-card__score-badge" title="درجة المطابقة">' + scorePercent + '</div>';
+    }
+
+    return '' +
+      '<div class="worker-card" data-worker-id="' + escapeHtml(w.id) + '">' +
+        '<div class="worker-card__header">' +
+          '<div class="worker-card__avatar">' +
+            '<span class="worker-card__avatar-icon">👷</span>' +
+            onlineBadge +
+          '</div>' +
+          '<div class="worker-card__name-block">' +
+            '<div class="worker-card__name">' + escapeHtml(w.displayName || 'مستخدم') + '</div>' +
+            '<div class="worker-card__meta">' + verifiedBadge + ' ' + adBadge + '</div>' +
+          '</div>' +
+          scoreHtml +
+        '</div>' +
+
+        categoriesHtml +
+
+        '<div class="worker-card__info-row">' +
+          distanceHtml +
+          '<span class="worker-card__rating">' + ratingHtml + '</span>' +
+        '</div>' +
+
+        wageHtml +
+
+        '<div class="worker-card__actions">' +
+          '<button class="btn btn--primary btn--sm btn-quick-offer" data-worker-id="' + escapeHtml(w.id) + '" aria-label="إرسال عرض لـ ' + escapeHtml(w.displayName) + '">📩 عرض سريع</button>' +
+          '<button class="btn btn--ghost btn--sm btn-view-card" data-worker-id="' + escapeHtml(w.id) + '" aria-label="عرض تفاصيل ' + escapeHtml(w.displayName) + '">عرض</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /**
+   * Handle quick offer click — Phase 41 stub.
+   */
+  function handleQuickOfferClick(workerId, btn) {
+    if (typeof YawmiaToast !== 'undefined') {
+      YawmiaToast.info('إرسال العروض المباشرة هتكون متاحة في التحديث القادم 🚀');
+    }
+  }
+
+  /**
+   * Show worker card details in modal.
+   */
+  async function showWorkerCardModal(workerId) {
+    if (!workerId) return;
+    try {
+      var res = await Yawmia.api('GET', '/api/workers/' + workerId + '/card');
+      if (!res || !res.data || !res.data.ok || !res.data.card) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('تعذّر جلب البيانات');
+        return;
+      }
+      var card = res.data.card;
+
+      var existing = document.querySelector('.ym-modal-overlay.worker-card-overlay');
+      if (existing) existing.remove();
+
+      var overlay = document.createElement('div');
+      overlay.className = 'ym-modal-overlay worker-card-overlay';
+
+      var ratingLine = (card.rating && card.rating.count > 0)
+        ? '⭐ ' + card.rating.avg + ' (' + card.rating.count + ' تقييم)'
+        : 'بدون تقييم';
+
+      var trustLine = (typeof card.trustScore === 'number')
+        ? 'ثقة: ' + Math.round(card.trustScore * 100) + '/100'
+        : 'ثقة غير متاحة';
+
+      var adLine = '';
+      if (card.adSummary) {
+        adLine =
+          '<div class="worker-card-modal__ad">' +
+            '<strong>📢 إعلان متاح:</strong><br>' +
+            '💰 ' + card.adSummary.minDailyWage + '–' + card.adSummary.maxDailyWage + ' جنيه/يوم<br>' +
+            '📅 من ' + new Date(card.adSummary.availableFrom).toLocaleString('ar-EG') + '<br>' +
+            '📅 إلى ' + new Date(card.adSummary.availableUntil).toLocaleString('ar-EG') + '<br>' +
+            '📍 نطاق ' + card.adSummary.radiusKm + ' كم' +
+          '</div>';
+      }
+
+      overlay.innerHTML =
+        '<div class="ym-modal-card worker-card-modal">' +
+          '<h3 class="ym-modal-title">' + escapeHtml(card.displayName) + '</h3>' +
+          '<div class="ym-modal-message">' +
+            (card.verificationStatus === 'verified' ? '<div>✓ هوية محققة</div>' : '') +
+            '<div>📍 ' + escapeHtml(card.governorate || '') + '</div>' +
+            '<div>' + escapeHtml(ratingLine) + '</div>' +
+            '<div>' + escapeHtml(trustLine) + '</div>' +
+            (card.categories && card.categories.length > 0
+              ? '<div>التخصصات: ' + escapeHtml(card.categories.join('، ')) + '</div>'
+              : '') +
+            adLine +
+            '<p style="margin-block-start:1rem;font-size:0.8rem;color:var(--color-text-muted);">' +
+            'الاسم الكامل ورقم الموبايل هيظهروا بعد قبول العرض.' +
+            '</p>' +
+          '</div>' +
+          '<div class="ym-modal-actions">' +
+            '<button class="btn btn--primary btn--sm" id="modalQuickOffer">📩 عرض سريع</button>' +
+            '<button class="btn btn--ghost btn--sm" id="modalCloseBtn">إغلاق</button>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(overlay);
+
+      var closeBtn = document.getElementById('modalCloseBtn');
+      if (closeBtn) closeBtn.addEventListener('click', function () { overlay.remove(); });
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.remove();
+      });
+
+      var modalOfferBtn = document.getElementById('modalQuickOffer');
+      if (modalOfferBtn) {
+        modalOfferBtn.addEventListener('click', function () {
+          handleQuickOfferClick(workerId);
+        });
+      }
+    } catch (err) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+    }
+  }
+
+  /**
+   * Render error state.
+   */
+  function renderError(msg) {
+    var resultsEl = document.getElementById('trResults');
+    if (!resultsEl) return;
+    resultsEl.innerHTML =
+      '<div class="empty-state radar-empty-state">' +
+        '<span class="empty-state__icon">⚠️</span>' +
+        '<p class="empty-state__text">' + escapeHtml(msg || 'خطأ في تحميل العمال') + '</p>' +
+        '<button class="btn btn--primary btn--sm" id="trRetryBtn" style="margin-top:0.75rem;">🔄 حاول مرة تانية</button>' +
+      '</div>';
+    var retryBtn = document.getElementById('trRetryBtn');
+    if (retryBtn) retryBtn.addEventListener('click', function () { loadWorkers(); });
+  }
+
+  return {
+    init: init,
+    destroy: destroy,
+    refresh: loadWorkers,
+  };
+})();
+```
+
+---
+
 ## `frontend/assets/js/toast.js`
 
 ```javascript
@@ -10087,6 +11478,15 @@ var YawmiaUtils = (function () {
         <!-- Phase 40 — Online Workers Widget (employer only) -->
         <div id="onlineWorkersWidget" class="hidden"></div>
 
+        <!-- Phase 41 — Employer View Mode Toggle (Talent Radar | Browse Jobs) -->
+        <section id="employerViewToggle" class="view-toggle hidden" data-role="employer" aria-label="اختار طريقة العرض">
+          <button class="btn btn--primary view-toggle__btn" data-view="radar">👀 اكتشف الصنايعية</button>
+          <button class="btn btn--ghost view-toggle__btn" data-view="jobs">📋 الفرص الموجودة</button>
+        </section>
+
+        <!-- Phase 41 — Talent Radar Mount (employer only, when view=radar) -->
+        <div id="talentRadarMount" class="hidden"></div>
+
         <!-- Recent Jobs (Worker) -->
         <section class="card hidden" id="recentJobsSection">
           <h2 class="card__title">آخر فرصك</h2>
@@ -10287,6 +11687,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/livePresence.js"></script>
   <script src="./assets/js/instantMatch.js"></script>
+  <script src="./assets/js/talentRadar.js"></script>
   <script src="./assets/js/jobCard.js"></script>
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>
@@ -10821,6 +12222,9 @@ var YawmiaUtils = (function () {
         <!-- Phase 40 — Availability Windows (worker only) -->
         <div id="availability-windows-section"></div>
 
+        <!-- Phase 41 — Availability Ad Form (worker only, mounted by JS) -->
+        <div id="adFormMount" data-role="worker"></div>
+
         <!-- Job Alerts Management -->
         <div id="alerts-section"></div>
 
@@ -10907,6 +12311,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/livePresence.js"></script>
+  <script src="./assets/js/adForm.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -10968,7 +12373,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.36.0';
+const CACHE_NAME = 'yawmia-v0.37.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10993,6 +12398,8 @@ const STATIC_ASSETS = [
   '/assets/js/ratingModal.js',
   '/assets/js/livePresence.js',
   '/assets/js/instantMatch.js',
+  '/assets/js/talentRadar.js',
+  '/assets/js/adForm.js',
   '/job.html',
   '/assets/js/jobDetail.js',
   '/assets/css/tokens.css',
@@ -12102,10 +13509,28 @@ async function repair() {
     console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
-  // Phase 40 note: instant_matches is sharded but has no secondary index files —
+  // 16. Worker-Ads Index (availability_ads/worker-index.json) — Phase 41
+  console.log('1️⃣6️⃣ Worker-Ads Index...');
+  const ads = await listRecords(join(DATA_DIR, 'availability_ads'), 'aad_');
+  const workerAdsIndex = {};
+  for (const ad of ads) {
+    if (!workerAdsIndex[ad.workerId]) workerAdsIndex[ad.workerId] = [];
+    workerAdsIndex[ad.workerId].push(ad.id);
+  }
+  const existingWorkerAdsIndex = await readJSON(join(DATA_DIR, 'availability_ads/worker-index.json')) || {};
+  const workerAdsIndexChanged = JSON.stringify(workerAdsIndex) !== JSON.stringify(existingWorkerAdsIndex);
+  if (workerAdsIndexChanged) {
+    console.log(`   ⚠️  Worker-Ads index needs repair (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'availability_ads/worker-index.json'), workerAdsIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+  }
+
+  // Phase 40+41 note: instant_matches is sharded but has no secondary index files —
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.
-  console.log(`\n📌 Phase 40: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
+  console.log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

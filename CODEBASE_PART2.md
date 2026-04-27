@@ -1,59 +1,62 @@
-# يوميّة (Yawmia) v0.36.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-26T14:55:28.893Z
-> Files in this part: 51
+# يوميّة (Yawmia) v0.37.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-27T19:14:09.683Z
+> Files in this part: 54
 
 ## Files
 1. `server/services/activitySummary.js`
-2. `server/services/analytics.js`
-3. `server/services/applications.js`
-4. `server/services/arabicNormalizer.js`
-5. `server/services/attendance.js`
-6. `server/services/auditLog.js`
-7. `server/services/auth.js`
-8. `server/services/availabilityWindow.js`
-9. `server/services/backupScheduler.js`
-10. `server/services/cache.js`
-11. `server/services/channels/sms.js`
-12. `server/services/channels/whatsapp.js`
-13. `server/services/contentFilter.js`
-14. `server/services/database.js`
-15. `server/services/errorAggregator.js`
-16. `server/services/eventBus.js`
-17. `server/services/eventReplayBuffer.js`
-18. `server/services/favorites.js`
-19. `server/services/financialExport.js`
-20. `server/services/geo.js`
-21. `server/services/imageStore.js`
-22. `server/services/indexHealth.js`
-23. `server/services/instantMatch.js`
-24. `server/services/jobAlerts.js`
-25. `server/services/jobMatcher.js`
-26. `server/services/jobs.js`
-27. `server/services/liveFeed.js`
-28. `server/services/logWriter.js`
-29. `server/services/logger.js`
-30. `server/services/messages.js`
-31. `server/services/messaging.js`
-32. `server/services/migration.js`
-33. `server/services/monitor.js`
-34. `server/services/notificationMessenger.js`
-35. `server/services/notifications.js`
-36. `server/services/payments.js`
-37. `server/services/presenceService.js`
-38. `server/services/profileCompleteness.js`
-39. `server/services/queryIndex.js`
-40. `server/services/ratings.js`
-41. `server/services/reports.js`
-42. `server/services/resourceLock.js`
-43. `server/services/sanitizer.js`
-44. `server/services/searchIndex.js`
-45. `server/services/sessions.js`
-46. `server/services/sseManager.js`
-47. `server/services/trust.js`
-48. `server/services/users.js`
-49. `server/services/validators.js`
-50. `server/services/verification.js`
-51. `server/services/webpush.js`
+2. `server/services/adMatcher.js`
+3. `server/services/analytics.js`
+4. `server/services/applications.js`
+5. `server/services/arabicNormalizer.js`
+6. `server/services/attendance.js`
+7. `server/services/auditLog.js`
+8. `server/services/auth.js`
+9. `server/services/availabilityAd.js`
+10. `server/services/availabilityWindow.js`
+11. `server/services/backupScheduler.js`
+12. `server/services/cache.js`
+13. `server/services/channels/sms.js`
+14. `server/services/channels/whatsapp.js`
+15. `server/services/contentFilter.js`
+16. `server/services/database.js`
+17. `server/services/errorAggregator.js`
+18. `server/services/eventBus.js`
+19. `server/services/eventReplayBuffer.js`
+20. `server/services/favorites.js`
+21. `server/services/financialExport.js`
+22. `server/services/geo.js`
+23. `server/services/imageStore.js`
+24. `server/services/indexHealth.js`
+25. `server/services/instantMatch.js`
+26. `server/services/jobAlerts.js`
+27. `server/services/jobMatcher.js`
+28. `server/services/jobs.js`
+29. `server/services/liveFeed.js`
+30. `server/services/logWriter.js`
+31. `server/services/logger.js`
+32. `server/services/messages.js`
+33. `server/services/messaging.js`
+34. `server/services/migration.js`
+35. `server/services/monitor.js`
+36. `server/services/notificationMessenger.js`
+37. `server/services/notifications.js`
+38. `server/services/payments.js`
+39. `server/services/presenceService.js`
+40. `server/services/profileCompleteness.js`
+41. `server/services/queryIndex.js`
+42. `server/services/ratings.js`
+43. `server/services/reports.js`
+44. `server/services/resourceLock.js`
+45. `server/services/sanitizer.js`
+46. `server/services/searchIndex.js`
+47. `server/services/sessions.js`
+48. `server/services/sseManager.js`
+49. `server/services/trust.js`
+50. `server/services/users.js`
+51. `server/services/validators.js`
+52. `server/services/verification.js`
+53. `server/services/webpush.js`
+54. `server/services/workerDiscovery.js`
 
 ---
 
@@ -327,6 +330,257 @@ export async function sendWeeklySummaries() {
 
   return sent;
 }
+```
+
+---
+
+## `server/services/adMatcher.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/adMatcher.js — Ad-Driven Job Matching
+// ═══════════════════════════════════════════════════════════════
+// Listens to 'job:created' events and notifies workers whose
+// availability ads match the job (urgent + immediate only).
+//
+// Coordinates with jobMatcher via shared in-memory dedup map:
+// - adMatcher fires first → writes notified workerIds
+// - jobMatcher reads dedup → skips already-notified workers
+//
+// Net effect: workers with active ads get priority notification,
+// jobMatcher serves as fallback for the broader pool.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+// ── Shared dedup map (jobId → { workerIds: Set, expiresAt }) ──
+/** @type {Map<string, { workerIds: Set<string>, expiresAt: number }>} */
+const notificationDedup = new Map();
+
+const DEDUP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get worker IDs already notified by adMatcher for this job.
+ * Used by jobMatcher to skip duplicates.
+ *
+ * @param {string} jobId
+ * @returns {Set<string>}
+ */
+export function getDedupedWorkers(jobId) {
+  if (!jobId) return new Set();
+  const entry = notificationDedup.get(jobId);
+  if (!entry) return new Set();
+  if (Date.now() > entry.expiresAt) {
+    notificationDedup.delete(jobId);
+    return new Set();
+  }
+  return entry.workerIds;
+}
+
+/**
+ * Add worker IDs to dedup map for a job.
+ *
+ * @param {string} jobId
+ * @param {string[]} workerIds
+ */
+export function addToDedup(jobId, workerIds) {
+  if (!jobId || !Array.isArray(workerIds)) return;
+  let entry = notificationDedup.get(jobId);
+  if (!entry || Date.now() > entry.expiresAt) {
+    entry = { workerIds: new Set(), expiresAt: Date.now() + DEDUP_TTL_MS };
+    notificationDedup.set(jobId, entry);
+  }
+  for (const wid of workerIds) entry.workerIds.add(wid);
+}
+
+/**
+ * Cleanup expired dedup entries (called by periodic timer).
+ */
+export function cleanupDedup() {
+  const now = Date.now();
+  for (const [jobId, entry] of notificationDedup) {
+    if (now > entry.expiresAt) {
+      notificationDedup.delete(jobId);
+    }
+  }
+}
+
+/**
+ * Match availability ads to a newly created job.
+ * Fire-and-forget — never throws.
+ *
+ * Pipeline:
+ *   1. Skip if urgency === 'normal'
+ *   2. Query active ads by governorate + category (Set intersection via queryIndex)
+ *   3. For each ad, verify wage overlap + time overlap + geo overlap
+ *   4. Notify ad owner (in-app + push)
+ *   5. Increment ad.offerCount
+ *   6. Track in dedup map for jobMatcher
+ *
+ * @param {object} job — full job object
+ * @returns {Promise<number>} count of workers notified
+ */
+export async function matchAdsToJob(job) {
+  try {
+    if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) return 0;
+    if (!job || !job.id || job.status !== 'open') return 0;
+
+    // Only urgent + immediate jobs trigger ad matching
+    const urgency = job.urgency || 'normal';
+    if (urgency !== 'urgent' && urgency !== 'immediate') return 0;
+
+    // Get matching active ad IDs via query index
+    let candidateAdIds = [];
+    try {
+      const { queryAds, getStats } = await import('./queryIndex.js');
+      const stats = getStats();
+      if (stats.activeAds > 0 || stats.totalAds > 0) {
+        candidateAdIds = queryAds({
+          governorate: job.governorate,
+          categories: [job.category],
+        });
+      } else {
+        // Index empty — fall back via searchAds
+        const { searchAds } = await import('./availabilityAd.js');
+        const ads = await searchAds({
+          governorate: job.governorate,
+          categories: [job.category],
+          limit: 100,
+        });
+        candidateAdIds = ads.map(a => a.id);
+      }
+    } catch (err) {
+      logger.warn('adMatcher queryIndex error', { jobId: job.id, error: err.message });
+      return 0;
+    }
+
+    if (candidateAdIds.length === 0) return 0;
+
+    // Lazy imports
+    const { findById: findAd, incrementOfferCount } = await import('./availabilityAd.js');
+    const { createNotification } = await import('./notifications.js');
+    const { haversineDistance, resolveCoordinates } = await import('./geo.js');
+
+    // Resolve job coordinates
+    const jobCoords = resolveCoordinates({
+      lat: job.lat,
+      lng: job.lng,
+      governorate: job.governorate,
+    });
+
+    const notifiedWorkerIds = [];
+    const jobStartMs = job.startDate ? new Date(job.startDate).getTime() : null;
+
+    for (const adId of candidateAdIds) {
+      try {
+        const ad = await findAd(adId);
+        if (!ad || ad.status !== 'active') continue;
+
+        // Wage overlap: job's dailyWage must be within ad's range
+        if (typeof job.dailyWage === 'number') {
+          if (job.dailyWage < ad.minDailyWage || job.dailyWage > ad.maxDailyWage) continue;
+        }
+
+        // Time overlap: job's startDate must be within ad's window
+        if (jobStartMs !== null) {
+          const adFromMs = new Date(ad.availableFrom).getTime();
+          const adUntilMs = new Date(ad.availableUntil).getTime();
+          if (jobStartMs < adFromMs || jobStartMs > adUntilMs) continue;
+        }
+
+        // Geo overlap: job within ad.radiusKm OR ad within reasonable proximity
+        if (jobCoords) {
+          const dist = haversineDistance(jobCoords.lat, jobCoords.lng, ad.lat, ad.lng);
+          if (dist > ad.radiusKm) continue;
+        }
+
+        // ── Match ──
+        const message = `فرصة جديدة مطابقة لإعلانك: ${job.title} — ${job.dailyWage} جنيه/يوم`;
+        try {
+          await createNotification(
+            ad.workerId,
+            'job_match',
+            message,
+            { jobId: job.id, adId: ad.id, dailyWage: job.dailyWage, urgency: job.urgency }
+          );
+        } catch (_) { /* per-ad fire-and-forget */ }
+
+        // Web push (fire-and-forget)
+        try {
+          const { sendPush } = await import('./webpush.js');
+          sendPush(ad.workerId, {
+            title: 'يوميّة — فرصة مطابقة لإعلانك',
+            body: `${job.title} — ${job.dailyWage} جنيه/يوم`,
+            icon: '/assets/img/icon-192.png',
+            url: '/dashboard.html',
+          }).catch(() => {});
+        } catch (_) { /* non-fatal */ }
+
+        // Increment offer count (fire-and-forget)
+        incrementOfferCount(ad.id).catch(() => {});
+
+        // Track for dedup
+        notifiedWorkerIds.push(ad.workerId);
+
+        // Emit event
+        eventBus.emit('ad:job_match', {
+          adId: ad.id,
+          workerId: ad.workerId,
+          jobId: job.id,
+          employerId: job.employerId,
+        });
+      } catch (err) {
+        // Per-ad fire-and-forget
+        logger.warn('adMatcher per-ad error', { adId, error: err.message });
+      }
+    }
+
+    if (notifiedWorkerIds.length > 0) {
+      addToDedup(job.id, notifiedWorkerIds);
+      logger.info('Ad matcher notified workers', {
+        jobId: job.id,
+        count: notifiedWorkerIds.length,
+        urgency: job.urgency,
+      });
+    }
+
+    return notifiedWorkerIds.length;
+  } catch (err) {
+    // NEVER throw — fire-and-forget at caller
+    logger.warn('matchAdsToJob error', { jobId: job?.id, error: err.message });
+    return 0;
+  }
+}
+
+/**
+ * Setup EventBus listener for job:created.
+ * Called once at startup (from router.js).
+ */
+export function setupAdMatchListeners() {
+  if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) {
+    logger.info('Ad matcher: disabled via config');
+    return;
+  }
+
+  eventBus.on('job:created', (data) => {
+    if (!data || !data.jobId) return;
+    // Fire-and-forget: load job and match against ads
+    import('./jobs.js').then(({ findById }) => {
+      findById(data.jobId).then(job => {
+        if (job) matchAdsToJob(job).catch(() => {});
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  logger.info('Ad matcher: enabled');
+}
+
+/**
+ * Test helpers.
+ */
+export const _testHelpers = { notificationDedup, DEDUP_TTL_MS };
 ```
 
 ---
@@ -2356,6 +2610,562 @@ export async function cleanExpiredOtps() {
 
   return cleaned;
 }
+```
+
+---
+
+## `server/services/availabilityAd.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/availabilityAd.js — Worker Availability Ads
+// ═══════════════════════════════════════════════════════════════
+// First-class entity for worker availability ads.
+// Lifecycle: active → matched / expired / withdrawn
+// Max 1 active ad per worker (auto-expire previous on create).
+// Storage: sharded monthly (data/availability_ads/YYYY-MM/).
+// Index: workerAdsIndex (flat).
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite, readJSON, getRecordPath, getWriteRecordPath,
+  getCollectionPath, listJSON,
+  addToSetIndex, getFromSetIndex,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import { withLock } from './resourceLock.js';
+
+const WORKER_ADS_INDEX = config.DATABASE.indexFiles.workerAdsIndex;
+
+/** Generate ad ID */
+function generateId() {
+  return 'aad_' + crypto.randomBytes(6).toString('hex');
+}
+
+/**
+ * Validate ad fields.
+ * @param {object} fields
+ * @returns {{ valid: boolean, error?: string, code?: string }}
+ */
+function validateFields(fields) {
+  if (!fields || typeof fields !== 'object') {
+    return { valid: false, error: 'بيانات الإعلان غير صالحة', code: 'INVALID_FIELDS' };
+  }
+
+  const cfg = config.AVAILABILITY_ADS;
+
+  // Categories — 1-3 valid IDs
+  if (!Array.isArray(fields.categories) || fields.categories.length === 0) {
+    return { valid: false, error: 'اختار تخصص واحد على الأقل', code: 'INVALID_CATEGORIES' };
+  }
+  if (fields.categories.length > cfg.maxCategories) {
+    return { valid: false, error: `أقصى ${cfg.maxCategories} تخصصات`, code: 'INVALID_CATEGORIES' };
+  }
+  const validCatIds = new Set(config.LABOR_CATEGORIES.map(c => c.id));
+  for (const cat of fields.categories) {
+    if (!validCatIds.has(cat)) {
+      return { valid: false, error: `التخصص "${cat}" غير موجود`, code: 'INVALID_CATEGORIES' };
+    }
+  }
+
+  // Governorate
+  const validGovs = new Set(config.REGIONS.governorates.map(g => g.id));
+  if (!fields.governorate || !validGovs.has(fields.governorate)) {
+    return { valid: false, error: 'المحافظة غير صالحة', code: 'INVALID_GOVERNORATE' };
+  }
+
+  // Geo
+  if (typeof fields.lat !== 'number' || typeof fields.lng !== 'number' ||
+      isNaN(fields.lat) || isNaN(fields.lng) ||
+      fields.lat < 22 || fields.lat > 32 ||
+      fields.lng < 24 || fields.lng > 37) {
+    return { valid: false, error: 'الموقع الجغرافي غير صالح (داخل نطاق مصر)', code: 'INVALID_GEO' };
+  }
+
+  // Radius
+  if (typeof fields.radiusKm !== 'number' || fields.radiusKm < 1 || fields.radiusKm > cfg.maxRadiusKm) {
+    return { valid: false, error: `النطاق لازم يكون بين 1 و ${cfg.maxRadiusKm} كم`, code: 'INVALID_RADIUS' };
+  }
+
+  // Wage range
+  const minW = config.FINANCIALS.minDailyWage;
+  const maxW = config.FINANCIALS.maxDailyWage;
+  if (typeof fields.minDailyWage !== 'number' || typeof fields.maxDailyWage !== 'number') {
+    return { valid: false, error: 'مدى الأجر مطلوب', code: 'INVALID_WAGE_RANGE' };
+  }
+  if (fields.minDailyWage < minW || fields.minDailyWage > maxW ||
+      fields.maxDailyWage < minW || fields.maxDailyWage > maxW) {
+    return { valid: false, error: `الأجر لازم يكون بين ${minW} و ${maxW} جنيه`, code: 'INVALID_WAGE_RANGE' };
+  }
+  if (fields.minDailyWage > fields.maxDailyWage) {
+    return { valid: false, error: 'الأجر الأدنى لازم يكون أقل من أو يساوي الأقصى', code: 'INVALID_WAGE_RANGE' };
+  }
+
+  // Time window
+  if (!fields.availableFrom || !fields.availableUntil) {
+    return { valid: false, error: 'وقت البدء والانتهاء مطلوبان', code: 'INVALID_TIME_WINDOW' };
+  }
+  const fromMs = new Date(fields.availableFrom).getTime();
+  const untilMs = new Date(fields.availableUntil).getTime();
+  const now = Date.now();
+  if (isNaN(fromMs) || isNaN(untilMs)) {
+    return { valid: false, error: 'صيغة الوقت غير صالحة', code: 'INVALID_TIME_WINDOW' };
+  }
+  if (fromMs <= now) {
+    return { valid: false, error: 'وقت البدء لازم يكون في المستقبل', code: 'INVALID_TIME_WINDOW' };
+  }
+  const maxAdvance = now + cfg.maxAdvanceDays * 24 * 60 * 60 * 1000;
+  if (fromMs > maxAdvance) {
+    return { valid: false, error: `لا يمكن الإعلان لأكثر من ${cfg.maxAdvanceDays} أيام مقدماً`, code: 'INVALID_TIME_WINDOW' };
+  }
+  if (untilMs <= fromMs) {
+    return { valid: false, error: 'وقت الانتهاء لازم يكون بعد وقت البدء', code: 'INVALID_TIME_WINDOW' };
+  }
+  const durationHours = (untilMs - fromMs) / (60 * 60 * 1000);
+  if (durationHours > cfg.maxDurationHours) {
+    return { valid: false, error: `أقصى مدة ${cfg.maxDurationHours} ساعة`, code: 'INVALID_TIME_WINDOW' };
+  }
+
+  // Notes (optional)
+  if (fields.notes !== undefined && fields.notes !== null) {
+    if (typeof fields.notes !== 'string') {
+      return { valid: false, error: 'الملاحظات لازم تكون نص', code: 'NOTES_TOO_LONG' };
+    }
+    if (fields.notes.length > cfg.maxNotesLength) {
+      return { valid: false, error: `الملاحظات لا تتجاوز ${cfg.maxNotesLength} حرف`, code: 'NOTES_TOO_LONG' };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Find currently active ad for a worker (returns null if none).
+ * @param {string} workerId
+ * @returns {Promise<object|null>}
+ */
+export async function findActiveByWorker(workerId) {
+  const adIds = await getFromSetIndex(WORKER_ADS_INDEX, workerId);
+  for (const adId of adIds) {
+    const ad = await readJSON(getRecordPath('availability_ads', adId));
+    if (ad && ad.status === 'active') return ad;
+  }
+  return null;
+}
+
+/**
+ * Count today's ads created by worker (Egypt timezone).
+ * @param {string} workerId
+ * @returns {Promise<number>}
+ */
+export async function countTodayByWorker(workerId) {
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
+  const adIds = await getFromSetIndex(WORKER_ADS_INDEX, workerId);
+  let count = 0;
+  for (const adId of adIds) {
+    const ad = await readJSON(getRecordPath('availability_ads', adId));
+    if (ad && new Date(ad.createdAt) >= todayMidnight) count++;
+  }
+  return count;
+}
+
+/**
+ * Create a new availability ad for a worker.
+ * Auto-expires any existing active ad.
+ * Serialized per worker via withLock(`ad:${workerId}`).
+ *
+ * @param {string} workerId
+ * @param {object} fields — { categories, governorate, lat, lng, radiusKm, minDailyWage, maxDailyWage, availableFrom, availableUntil, notes? }
+ * @returns {Promise<{ ok: boolean, ad?: object, error?: string, code?: string }>}
+ */
+export function createAd(workerId, fields) {
+  return withLock(`ad:${workerId}`, async () => {
+    if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) {
+      return { ok: false, error: 'إعلانات الإتاحة غير مفعّلة', code: 'ADS_DISABLED' };
+    }
+
+    // Validate
+    const validation = validateFields(fields);
+    if (!validation.valid) {
+      return { ok: false, error: validation.error, code: validation.code };
+    }
+
+    // Daily limit
+    try {
+      const todayCount = await countTodayByWorker(workerId);
+      const dailyLimit = config.LIMITS.maxAdsPerWorkerPerDay || 5;
+      if (todayCount >= dailyLimit) {
+        return { ok: false, error: 'وصلت للحد اليومي لإنشاء الإعلانات', code: 'DAILY_AD_LIMIT' };
+      }
+    } catch (_) { /* non-blocking */ }
+
+    // Auto-expire existing active ad
+    try {
+      const existingActive = await findActiveByWorker(workerId);
+      if (existingActive) {
+        existingActive.status = 'expired';
+        existingActive.updatedAt = new Date().toISOString();
+        await atomicWrite(getRecordPath('availability_ads', existingActive.id), existingActive);
+        eventBus.emit('ad:expired', { adId: existingActive.id, workerId, reason: 'replaced' });
+      }
+    } catch (_) { /* non-fatal */ }
+
+    // Create new ad
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    const ad = {
+      id,
+      workerId,
+      categories: fields.categories.slice(),
+      governorate: fields.governorate,
+      lat: fields.lat,
+      lng: fields.lng,
+      radiusKm: fields.radiusKm,
+      minDailyWage: fields.minDailyWage,
+      maxDailyWage: fields.maxDailyWage,
+      availableFrom: new Date(fields.availableFrom).toISOString(),
+      availableUntil: new Date(fields.availableUntil).toISOString(),
+      notes: (fields.notes && typeof fields.notes === 'string') ? fields.notes.trim() : null,
+      status: 'active',
+      matchedJobId: null,
+      matchedAt: null,
+      viewCount: 0,
+      offerCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const adPath = getWriteRecordPath('availability_ads', id);
+    await atomicWrite(adPath, ad);
+
+    // Update index
+    await addToSetIndex(WORKER_ADS_INDEX, workerId, id);
+
+    eventBus.emit('ad:created', {
+      adId: id,
+      workerId,
+      governorate: ad.governorate,
+      categories: ad.categories,
+    });
+
+    logger.info('Availability ad created', { adId: id, workerId, categories: ad.categories });
+
+    return { ok: true, ad };
+  });
+}
+
+/**
+ * Withdraw an ad (worker-initiated cancellation).
+ * @param {string} adId
+ * @param {string} workerId — ownership check
+ * @returns {Promise<{ ok: boolean, ad?: object, error?: string, code?: string }>}
+ */
+export async function withdrawAd(adId, workerId) {
+  const adPath = getRecordPath('availability_ads', adId);
+  const ad = await readJSON(adPath);
+
+  if (!ad) {
+    return { ok: false, error: 'الإعلان غير موجود', code: 'AD_NOT_FOUND' };
+  }
+  if (ad.workerId !== workerId) {
+    return { ok: false, error: 'مش مسموحلك تسحب هذا الإعلان', code: 'NOT_OWNER' };
+  }
+  if (ad.status !== 'active') {
+    return { ok: false, error: 'الإعلان مش نشط حالياً', code: 'INVALID_STATUS' };
+  }
+
+  ad.status = 'withdrawn';
+  ad.updatedAt = new Date().toISOString();
+  await atomicWrite(adPath, ad);
+
+  eventBus.emit('ad:withdrawn', { adId, workerId });
+  logger.info('Availability ad withdrawn', { adId, workerId });
+
+  return { ok: true, ad };
+}
+
+/**
+ * Find ad by ID.
+ * @param {string} adId
+ * @returns {Promise<object|null>}
+ */
+export async function findById(adId) {
+  return await readJSON(getRecordPath('availability_ads', adId));
+}
+
+/**
+ * List ads by worker (newest first).
+ * @param {string} workerId
+ * @returns {Promise<object[]>}
+ */
+export async function listByWorker(workerId) {
+  const adIds = await getFromSetIndex(WORKER_ADS_INDEX, workerId);
+  const results = [];
+  for (const adId of adIds) {
+    const ad = await readJSON(getRecordPath('availability_ads', adId));
+    if (ad) results.push(ad);
+  }
+  results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return results;
+}
+
+/**
+ * List all ads (for index rebuilds + admin).
+ * Shard-aware via listJSON.
+ * @returns {Promise<object[]>}
+ */
+export async function listAll() {
+  const dir = getCollectionPath('availability_ads');
+  const all = await listJSON(dir);
+  return all.filter(a => a.id && a.id.startsWith('aad_'));
+}
+
+/**
+ * Search active ads with filters.
+ * Uses queryIndex for first-pass, then filters in-memory.
+ *
+ * @param {object} filters — { governorate?, categories?, lat?, lng?, radiusKm?, minWage?, maxWage?, sortBy?, limit? }
+ * @returns {Promise<object[]>} — array of ads enriched with worker public profile
+ */
+export async function searchAds(filters = {}) {
+  if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) return [];
+
+  let candidateIds = [];
+
+  // Try query index first
+  try {
+    const { queryAds, getStats } = await import('./queryIndex.js');
+    const stats = getStats();
+    if (stats.totalAds > 0 || stats.activeAds > 0) {
+      candidateIds = queryAds({
+        governorate: filters.governorate,
+        categories: filters.categories,
+      });
+    } else {
+      // Index not built yet — fall back to full scan
+      const all = await listAll();
+      candidateIds = all
+        .filter(a => a.status === 'active')
+        .filter(a => !filters.governorate || a.governorate === filters.governorate)
+        .filter(a => {
+          if (!filters.categories || filters.categories.length === 0) return true;
+          return filters.categories.some(c => a.categories.includes(c));
+        })
+        .map(a => a.id);
+    }
+  } catch (_) {
+    // Fallback: full scan
+    const all = await listAll();
+    candidateIds = all
+      .filter(a => a.status === 'active')
+      .map(a => a.id);
+  }
+
+  if (candidateIds.length === 0) return [];
+
+  // Load each candidate
+  const ads = [];
+  for (const adId of candidateIds) {
+    const ad = await readJSON(getRecordPath('availability_ads', adId));
+    if (!ad || ad.status !== 'active') continue;
+    ads.push(ad);
+  }
+
+  // Time overlap filter (active means not expired yet)
+  const nowMs = Date.now();
+  const buffer = (config.AVAILABILITY_ADS.autoExpireBufferMinutes || 30) * 60 * 1000;
+  let filtered = ads.filter(a => {
+    const untilMs = new Date(a.availableUntil).getTime();
+    return untilMs - buffer > nowMs;
+  });
+
+  // Wage overlap (filters.minWage = job's wage; ad's range must contain it)
+  if (typeof filters.minWage === 'number') {
+    filtered = filtered.filter(a => a.maxDailyWage >= filters.minWage);
+  }
+  if (typeof filters.maxWage === 'number') {
+    filtered = filtered.filter(a => a.minDailyWage <= filters.maxWage);
+  }
+
+  // Geo filter (Haversine)
+  if (typeof filters.lat === 'number' && typeof filters.lng === 'number' &&
+      typeof filters.radiusKm === 'number') {
+    try {
+      const { haversineDistance } = await import('./geo.js');
+      filtered = filtered.filter(a => {
+        const dist = haversineDistance(filters.lat, filters.lng, a.lat, a.lng);
+        // Match if employer's location is within ad's radius OR ad is within employer's radius
+        return dist <= filters.radiusKm || dist <= a.radiusKm;
+      });
+      // Attach distance for sorting
+      for (const a of filtered) {
+        a._distance = haversineDistance(filters.lat, filters.lng, a.lat, a.lng);
+      }
+    } catch (_) { /* skip on error */ }
+  }
+
+  // Sort
+  const sortBy = filters.sortBy || 'newest';
+  if (sortBy === 'distance' && filtered[0] && filtered[0]._distance !== undefined) {
+    filtered.sort((a, b) => (a._distance || 0) - (b._distance || 0));
+  } else if (sortBy === 'wage_high') {
+    filtered.sort((a, b) => b.maxDailyWage - a.maxDailyWage);
+  } else {
+    // newest
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  // Limit
+  if (typeof filters.limit === 'number' && filters.limit > 0) {
+    filtered = filtered.slice(0, filters.limit);
+  }
+
+  return filtered;
+}
+
+/**
+ * Periodic: expire stale ads (availableUntil + buffer < now).
+ * Called by cleanup timer.
+ * @returns {Promise<number>} count expired
+ */
+export async function expireStaleAds() {
+  if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) return 0;
+
+  let all;
+  try {
+    all = await listAll();
+  } catch (_) {
+    return 0;
+  }
+
+  const active = all.filter(a => a.status === 'active');
+  if (active.length === 0) return 0;
+
+  const buffer = (config.AVAILABILITY_ADS.autoExpireBufferMinutes || 30) * 60 * 1000;
+  const cutoffMs = Date.now() - buffer;
+  let count = 0;
+
+  for (const ad of active) {
+    try {
+      const untilMs = new Date(ad.availableUntil).getTime();
+      // Expire when (now - buffer) > availableUntil → equivalent to (availableUntil + buffer < now)
+      if (untilMs < cutoffMs) {
+        ad.status = 'expired';
+        ad.updatedAt = new Date().toISOString();
+        await atomicWrite(getRecordPath('availability_ads', ad.id), ad);
+        eventBus.emit('ad:expired', { adId: ad.id, workerId: ad.workerId, reason: 'timeout' });
+        count++;
+      }
+    } catch (_) { /* fire-and-forget per ad */ }
+  }
+
+  if (count > 0) logger.info(`Ad expiration: expired ${count} stale ad(s)`);
+  return count;
+}
+
+/**
+ * Increment offerCount (called by adMatcher when notifying).
+ * Fire-and-forget — never throws.
+ * @param {string} adId
+ */
+export async function incrementOfferCount(adId) {
+  try {
+    const adPath = getRecordPath('availability_ads', adId);
+    const ad = await readJSON(adPath);
+    if (!ad) return;
+    ad.offerCount = (ad.offerCount || 0) + 1;
+    ad.updatedAt = new Date().toISOString();
+    await atomicWrite(adPath, ad);
+  } catch (_) { /* non-fatal */ }
+}
+
+/**
+ * Increment viewCount (called when employer views ad).
+ * Fire-and-forget — never throws.
+ * @param {string} adId
+ */
+export async function incrementViewCount(adId) {
+  try {
+    const adPath = getRecordPath('availability_ads', adId);
+    const ad = await readJSON(adPath);
+    if (!ad) return;
+    ad.viewCount = (ad.viewCount || 0) + 1;
+    ad.updatedAt = new Date().toISOString();
+    await atomicWrite(adPath, ad);
+  } catch (_) { /* non-fatal */ }
+}
+
+/**
+ * Mark ad as matched (called by Phase 42 when worker accepts a direct offer).
+ * @param {string} adId
+ * @param {string} jobId
+ * @returns {Promise<boolean>}
+ */
+export async function markAsMatched(adId, jobId) {
+  const adPath = getRecordPath('availability_ads', adId);
+  const ad = await readJSON(adPath);
+  if (!ad) return false;
+  if (ad.status !== 'active') return false;
+  ad.status = 'matched';
+  ad.matchedJobId = jobId;
+  ad.matchedAt = new Date().toISOString();
+  ad.updatedAt = ad.matchedAt;
+  await atomicWrite(adPath, ad);
+  eventBus.emit('ad:matched', { adId, workerId: ad.workerId, jobId });
+  return true;
+}
+
+/**
+ * Get aggregate stats for /api/health and admin dashboard.
+ * @returns {Promise<{ active: number, totalToday: number, expiredLastHour: number, withdrawnLastHour: number }>}
+ */
+export async function getStats() {
+  if (!config.AVAILABILITY_ADS || !config.AVAILABILITY_ADS.enabled) {
+    return { active: 0, totalToday: 0, expiredLastHour: 0, withdrawnLastHour: 0 };
+  }
+
+  let all;
+  try {
+    all = await listAll();
+  } catch (_) {
+    return { active: 0, totalToday: 0, expiredLastHour: 0, withdrawnLastHour: 0 };
+  }
+
+  let active = 0;
+  let totalToday = 0;
+  let expiredLastHour = 0;
+  let withdrawnLastHour = 0;
+
+  let todayMidnight = null;
+  try {
+    const { getEgyptMidnight } = await import('./geo.js');
+    todayMidnight = getEgyptMidnight();
+  } catch (_) { /* non-fatal */ }
+
+  const hourAgo = Date.now() - 60 * 60 * 1000;
+
+  for (const ad of all) {
+    if (ad.status === 'active') active++;
+    if (todayMidnight && new Date(ad.createdAt) >= todayMidnight) totalToday++;
+    const updatedMs = new Date(ad.updatedAt || ad.createdAt).getTime();
+    if (updatedMs >= hourAgo) {
+      if (ad.status === 'expired') expiredLastHour++;
+      else if (ad.status === 'withdrawn') withdrawnLastHour++;
+    }
+  }
+
+  return { active, totalToday, expiredLastHour, withdrawnLastHour };
+}
+
+/**
+ * Test helpers (exported for unit tests).
+ */
+export const _testHelpers = { validateFields };
 ```
 
 ---
@@ -6321,12 +7131,25 @@ async function matchAndNotify(data) {
 
     if (toNotify.length === 0) return;
 
+    // Phase 41 — Read shared dedup from adMatcher (workers already notified about this job)
+    let dedupedWorkers = new Set();
+    try {
+      const { getDedupedWorkers } = await import('./adMatcher.js');
+      dedupedWorkers = getDedupedWorkers(jobId);
+    } catch (_) { /* non-fatal — proceed with no dedup */ }
+
     // 8. Create notifications (fire-and-forget per worker)
     const { createNotification } = await import('./notifications.js');
     const message = `فرصة عمل جديدة قريبة منك: ${job.title} — ${job.dailyWage} جنيه/يوم`;
 
     let notified = 0;
+    let skippedByDedup = 0;
     for (const match of toNotify) {
+      // Skip workers already notified by adMatcher
+      if (dedupedWorkers.has(match.user.id)) {
+        skippedByDedup++;
+        continue;
+      }
       try {
         await createNotification(
           match.user.id,
@@ -6340,11 +7163,12 @@ async function matchAndNotify(data) {
       }
     }
 
-    if (notified > 0) {
+    if (notified > 0 || skippedByDedup > 0) {
       logger.info('Job matching: notified workers', {
         jobId,
         matched: matches.length,
         notified,
+        skippedByDedup,
         category: job.category,
         governorate: job.governorate,
       });
@@ -8612,6 +9436,18 @@ const builtInMigrations = [
       logger.info('Migration v3: greenfield collections registered (availability_windows + instant_matches)');
     },
   },
+  {
+    version: 4,
+    name: 'Initialize availability_ads collection (Phase 41 Talent Exchange)',
+    up: async () => {
+      // Greenfield: initDatabase() (called at server startup) creates the new
+      // directory + monthly shard from config.DATABASE.dirs + SHARDING.collections.
+      // No data migration needed — availability_ads is a new collection introduced
+      // by Phase 41 (Talent Exchange Foundation).
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v4: greenfield availability_ads collection registered (Phase 41)');
+    },
+  },
 ];
 
 /**
@@ -10666,7 +11502,7 @@ import config from '../../config.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 
-// ── Data Structures ──────────────────────────────────────────
+// ── Data Structures (Jobs) ───────────────────────────────────
 
 /** @type {Map<string, Set<string>>} status → Set of jobIds */
 const jobsByStatus = new Map();
@@ -10682,6 +11518,20 @@ const jobsByUrgency = new Map();
 
 /** @type {Map<string, object>} jobId → summary object */
 const jobsById = new Map();
+
+// ── Data Structures (Ads — Phase 41) ─────────────────────────
+
+/** @type {Map<string, Set<string>>} governorate → Set of adIds */
+const adsByGovernorate = new Map();
+
+/** @type {Map<string, Set<string>>} category → Set of adIds */
+const adsByCategory = new Map();
+
+/** @type {Set<string>} only ads with status='active' */
+const adsActive = new Set();
+
+/** @type {Map<string, object>} adId → summary object */
+const adsById = new Map();
 
 /** @type {string|null} */
 let lastBuilt = null;
@@ -10782,6 +11632,116 @@ export function onJobRemoved(jobId) {
   jobsById.delete(jobId);
 }
 
+// ── Ads Index Operations (Phase 41) ──────────────────────────
+
+/**
+ * Add an availability ad to all indexes (sync).
+ * @param {object} ad — full or summary ad object
+ */
+export function onAdCreated(ad) {
+  if (!isEnabled() || !ad || !ad.id) return;
+
+  const summary = {
+    id: ad.id,
+    workerId: ad.workerId,
+    status: ad.status,
+    governorate: ad.governorate,
+    categories: Array.isArray(ad.categories) ? ad.categories.slice() : [],
+    minDailyWage: ad.minDailyWage,
+    maxDailyWage: ad.maxDailyWage,
+    availableFrom: ad.availableFrom,
+    availableUntil: ad.availableUntil,
+    createdAt: ad.createdAt,
+  };
+
+  adsById.set(ad.id, summary);
+  addToMap(adsByGovernorate, summary.governorate, ad.id);
+  for (const cat of summary.categories) {
+    addToMap(adsByCategory, cat, ad.id);
+  }
+  if (summary.status === 'active') {
+    adsActive.add(ad.id);
+  }
+}
+
+/**
+ * Update an ad's status in indexes (sync).
+ * Only the adsActive Set tracks status — gov/category Maps keep all ads for history.
+ * @param {string} adId
+ * @param {string} newStatus
+ */
+export function onAdStatusChanged(adId, newStatus) {
+  if (!isEnabled() || !adId) return;
+  const summary = adsById.get(adId);
+  if (!summary) return;
+
+  summary.status = newStatus;
+  if (newStatus === 'active') {
+    adsActive.add(adId);
+  } else {
+    adsActive.delete(adId);
+  }
+}
+
+/**
+ * Remove an ad from all indexes (sync) — used only for hard delete.
+ * Normal lifecycle uses onAdStatusChanged (keep history).
+ * @param {string} adId
+ */
+export function onAdRemoved(adId) {
+  if (!isEnabled() || !adId) return;
+  const summary = adsById.get(adId);
+  if (!summary) return;
+
+  removeFromMap(adsByGovernorate, summary.governorate, adId);
+  for (const cat of summary.categories) {
+    removeFromMap(adsByCategory, cat, adId);
+  }
+  adsActive.delete(adId);
+  adsById.delete(adId);
+}
+
+/**
+ * Query active ads using Set intersection.
+ *
+ * @param {{ governorate?: string, categories?: string[] }} filters
+ * @returns {string[]} — array of matching adIds (active only)
+ */
+export function queryAds(filters = {}) {
+  if (!isEnabled()) return [];
+
+  // Start with active ads as base
+  let result = adsActive;
+  if (!result || result.size === 0) return [];
+
+  // Copy to avoid mutating source
+  result = new Set(result);
+
+  // Intersect with governorate
+  if (filters.governorate) {
+    const govSet = adsByGovernorate.get(filters.governorate);
+    if (!govSet || govSet.size === 0) return [];
+    result = intersect(result, govSet);
+    if (result.size === 0) return [];
+  }
+
+  // Intersect with categories (union of cat Sets, then intersect)
+  if (filters.categories && Array.isArray(filters.categories) && filters.categories.length > 0) {
+    const catUnion = new Set();
+    for (const cat of filters.categories) {
+      const catSet = adsByCategory.get(cat);
+      if (catSet) {
+        for (const id of catSet) catUnion.add(id);
+      }
+    }
+    if (catUnion.size === 0) return [];
+    result = intersect(result, catUnion);
+    if (result.size === 0) return [];
+  }
+
+  return Array.from(result);
+}
+
 /**
  * Full rebuild from disk. Clears all indexes and repopulates.
  * @returns {Promise<number>} number of jobs indexed
@@ -10789,27 +11749,45 @@ export function onJobRemoved(jobId) {
 export async function buildAllIndexes() {
   if (!isEnabled()) return 0;
 
-  // Clear all maps
+  // Clear all jobs maps
   jobsByStatus.clear();
   jobsByGov.clear();
   jobsByCategory.clear();
   jobsByUrgency.clear();
   jobsById.clear();
 
+  // Clear all ads maps
+  adsByGovernorate.clear();
+  adsByCategory.clear();
+  adsActive.clear();
+  adsById.clear();
+
+  let jobsCount = 0;
+
   try {
     const { listAll } = await import('./jobs.js');
     const allJobs = await listAll();
-
     for (const job of allJobs) {
       onJobCreated(job);
     }
-
-    lastBuilt = new Date().toISOString();
-    return allJobs.length;
+    jobsCount = allJobs.length;
   } catch (err) {
-    logger.warn('queryIndex buildAllIndexes error', { error: err.message });
-    return 0;
+    logger.warn('queryIndex buildAllIndexes (jobs) error', { error: err.message });
   }
+
+  // Phase 41 — also build ads index
+  try {
+    const { listAll: listAllAds } = await import('./availabilityAd.js');
+    const allAds = await listAllAds();
+    for (const ad of allAds) {
+      onAdCreated(ad);
+    }
+  } catch (err) {
+    logger.warn('queryIndex buildAllIndexes (ads) error', { error: err.message });
+  }
+
+  lastBuilt = new Date().toISOString();
+  return jobsCount;
 }
 
 /**
@@ -10873,7 +11851,7 @@ export function queryJobs(filters = {}) {
 
 /**
  * Get index statistics (sync).
- * @returns {{ totalJobs: number, lastBuilt: string|null, byStatus: object, byGovernorate: number, byCategory: number }}
+ * @returns {{ totalJobs: number, lastBuilt: string|null, byStatus: object, byGovernorate: number, byCategory: number, totalAds: number, activeAds: number, adsByGovernorate: number, adsByCategory: number }}
  */
 export function getStats() {
   const byStatus = {};
@@ -10887,6 +11865,11 @@ export function getStats() {
     byStatus,
     byGovernorate: jobsByGov.size,
     byCategory: jobsByCategory.size,
+    // Phase 41 — Ads stats
+    totalAds: adsById.size,
+    activeAds: adsActive.size,
+    adsByGovernorate: adsByGovernorate.size,
+    adsByCategory: adsByCategory.size,
   };
 }
 
@@ -10899,6 +11882,10 @@ export function clear() {
   jobsByCategory.clear();
   jobsByUrgency.clear();
   jobsById.clear();
+  adsByGovernorate.clear();
+  adsByCategory.clear();
+  adsActive.clear();
+  adsById.clear();
   lastBuilt = null;
 }
 
@@ -10944,6 +11931,33 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
         onJobStatusChanged(data.jobId, summary.status, 'open');
       }
     }
+  });
+
+  // Phase 41 — Ad lifecycle listeners
+
+  // Ad created → add to ads indexes
+  eventBus.on('ad:created', (data) => {
+    if (!data || !data.adId) return;
+    import('./availabilityAd.js').then(({ findById }) => {
+      findById(data.adId).then(ad => {
+        if (ad) onAdCreated(ad);
+      }).catch(() => {});
+    }).catch(() => {});
+  });
+
+  // Ad withdrawn → remove from active set
+  eventBus.on('ad:withdrawn', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'withdrawn');
+  });
+
+  // Ad expired → remove from active set
+  eventBus.on('ad:expired', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'expired');
+  });
+
+  // Ad matched (Phase 42 will fire this) → remove from active set
+  eventBus.on('ad:matched', (data) => {
+    if (data && data.adId) onAdStatusChanged(data.adId, 'matched');
   });
 }
 ```
@@ -13859,6 +14873,565 @@ async function deliverPush(subscription, data) {
     return { ok: false };
   }
 }
+```
+
+---
+
+## `server/services/workerDiscovery.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workerDiscovery.js — 3-Tier Worker Pool
+// ═══════════════════════════════════════════════════════════════
+// Aggregates workers from 3 tiers for Employer Talent Radar:
+//   TIER 1: Active availability ads (workers who declared intent)
+//   TIER 2: Online workers without ads (live presence)
+//   TIER 3: Recently online (last 24h) — fallback when supply low
+//
+// 4-Factor Composite Scoring:
+//   distance(40%) + trust(30%) + rating(20%) + recency(10%) + activeAdBonus(0.1)
+//
+// Privacy-First Cards:
+//   - displayName: first name + initial of last (e.g., "أحمد م.")
+//   - No phone exposed
+//   - Governorate, not exact lat/lng
+//   - Full details unlocked when offer accepted (Phase 42)
+//
+// Tile-Based Caching: 0.01° tiles (~1km), 30s TTL.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+// ── Tile cache ───────────────────────────────────────────────
+/** @type {Map<string, { items: object[], expiresAt: number }>} */
+const tileCache = new Map();
+
+/** @type {Map<string, { card: object, expiresAt: number }>} */
+const cardCache = new Map();
+
+/**
+ * Compute tile key from filters.
+ */
+function computeTileKey(filters) {
+  const tileSize = config.WORKER_DISCOVERY.cacheKeyTileSize || 0.01;
+  const tileX = (typeof filters.lat === 'number')
+    ? Math.floor(filters.lat / tileSize)
+    : 'na';
+  const tileY = (typeof filters.lng === 'number')
+    ? Math.floor(filters.lng / tileSize)
+    : 'na';
+  const gov = filters.governorate || 'all';
+  const cats = (Array.isArray(filters.categories) && filters.categories.length > 0)
+    ? filters.categories.slice().sort().join(',')
+    : 'all';
+  const radius = filters.radiusKm || 'na';
+  const minW = filters.minWage || 'na';
+  const maxW = filters.maxWage || 'na';
+  return `${gov}:${cats}:${tileX}:${tileY}:${radius}:${minW}:${maxW}`;
+}
+
+/**
+ * Get from cache (returns null if expired/missing).
+ */
+function cacheGet(key) {
+  const entry = tileCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    tileCache.delete(key);
+    return null;
+  }
+  return entry.items;
+}
+
+function cacheSet(key, items) {
+  const ttl = config.WORKER_DISCOVERY.cacheTtlMs || 30000;
+  tileCache.set(key, { items, expiresAt: Date.now() + ttl });
+}
+
+/**
+ * Clear all caches (called on ad lifecycle events).
+ */
+export function clearCache() {
+  tileCache.clear();
+  cardCache.clear();
+}
+
+/**
+ * Compute composite score (0-1+) for a candidate.
+ */
+function computeCompositeScore(candidate, refLat, refLng, radiusKm) {
+  const weights = config.WORKER_DISCOVERY.scoreWeights;
+
+  // Distance score
+  let distScore = 0;
+  if (typeof candidate.lat === 'number' && typeof candidate.lng === 'number' &&
+      typeof refLat === 'number' && typeof refLng === 'number' &&
+      typeof radiusKm === 'number' && radiusKm > 0) {
+    const dist = candidate._distance || 0;
+    distScore = Math.max(0, 1 - dist / radiusKm);
+  }
+
+  // Trust score
+  const trustScore = typeof candidate.trustScore === 'number' ? candidate.trustScore : 0.5;
+
+  // Rating score
+  const rating = (candidate.user && candidate.user.rating) || candidate.rating || { avg: 0 };
+  const ratingScore = (rating.avg || 0) / 5;
+
+  // Recency score
+  let recencyScore = 0;
+  if (candidate.isOnline) {
+    recencyScore = 1.0;
+  } else if (candidate.lastOnlineAt) {
+    const hoursAgo = (Date.now() - new Date(candidate.lastOnlineAt).getTime()) / 3600000;
+    if (hoursAgo < 24) {
+      recencyScore = Math.max(0, 0.5 + 0.5 * (1 - hoursAgo / 24));
+    }
+  }
+
+  let score = weights.distance * distScore +
+              weights.trustScore * trustScore +
+              weights.ratingAvg * ratingScore +
+              weights.recency * recencyScore;
+
+  if (candidate.hasActiveAd) {
+    score += config.WORKER_DISCOVERY.activeAdBonus || 0.1;
+  }
+
+  return Math.round(score * 1000) / 1000;
+}
+
+/**
+ * Build privacy-first public worker card.
+ */
+function buildPublicCard(user, presenceData, activeAd, distanceKm, trustScore) {
+  const fullName = (user.name || '').trim();
+  const parts = fullName.split(/\s+/).filter(Boolean);
+  let displayName;
+  if (parts.length >= 2) {
+    displayName = `${parts[0]} ${parts[1].charAt(0)}.`;
+  } else if (parts.length === 1) {
+    displayName = parts[0];
+  } else {
+    displayName = 'مستخدم';
+  }
+
+  const card = {
+    id: user.id,
+    displayName,
+    governorate: user.governorate || '',
+    distanceKm: typeof distanceKm === 'number' ? Math.round(distanceKm * 10) / 10 : null,
+    categories: user.categories || [],
+    rating: user.rating || { avg: 0, count: 0 },
+    trustScore: typeof trustScore === 'number' ? trustScore : null,
+    verificationStatus: user.verificationStatus || 'unverified',
+    isOnline: !!presenceData,
+    hasActiveAd: !!activeAd,
+    adSummary: null,
+    memberSince: user.createdAt || null,
+  };
+
+  if (activeAd) {
+    card.adSummary = {
+      adId: activeAd.id,
+      minDailyWage: activeAd.minDailyWage,
+      maxDailyWage: activeAd.maxDailyWage,
+      availableFrom: activeAd.availableFrom,
+      availableUntil: activeAd.availableUntil,
+      radiusKm: activeAd.radiusKm,
+    };
+  }
+
+  return card;
+}
+
+/**
+ * Discover workers — main 3-tier aggregation function.
+ *
+ * @param {object} options
+ *   @param {number} [options.lat]
+ *   @param {number} [options.lng]
+ *   @param {number} [options.radiusKm]
+ *   @param {string[]} [options.categories]
+ *   @param {string} [options.governorate]
+ *   @param {number} [options.minWage]
+ *   @param {number} [options.maxWage]
+ *   @param {string} [options.sortBy='composite']
+ *   @param {number} [options.limit=20]
+ *   @param {number} [options.offset=0]
+ * @returns {Promise<{ workers: object[], total: number }>}
+ */
+export async function discoverWorkers(options = {}) {
+  if (!config.WORKER_DISCOVERY || !config.WORKER_DISCOVERY.enabled) {
+    return { workers: [], total: 0 };
+  }
+
+  const radiusKm = typeof options.radiusKm === 'number' && options.radiusKm > 0
+    ? Math.min(options.radiusKm, config.WORKER_DISCOVERY.maxRadiusKm || 100)
+    : (config.WORKER_DISCOVERY.defaultRadiusKm || 30);
+  const limit = typeof options.limit === 'number' && options.limit > 0 ? options.limit : 20;
+  const offset = typeof options.offset === 'number' && options.offset >= 0 ? options.offset : 0;
+  const sortBy = options.sortBy || 'composite';
+
+  const cacheKey = computeTileKey({
+    lat: options.lat,
+    lng: options.lng,
+    radiusKm,
+    categories: options.categories,
+    governorate: options.governorate,
+    minWage: options.minWage,
+    maxWage: options.maxWage,
+  });
+
+  // Check cache
+  const cached = cacheGet(cacheKey);
+  if (cached) {
+    return {
+      workers: cached.slice(offset, offset + limit),
+      total: cached.length,
+    };
+  }
+
+  // Lazy imports to avoid circular deps
+  const { findActiveByWorker, searchAds } = await import('./availabilityAd.js');
+  const { getOnlineWorkers, getPresence } = await import('./presenceService.js');
+  const { findById: findUser, listAll: listAllUsers } = await import('./users.js');
+  const { getUserTrustScore } = await import('./trust.js');
+  const { haversineDistance } = await import('./geo.js');
+
+  // Track candidates by userId (dedup)
+  /** @type {Map<string, object>} */
+  const candidates = new Map();
+
+  // ── TIER 1: Active Ads ─────────────────────────────────────
+  try {
+    const ads = await searchAds({
+      governorate: options.governorate,
+      categories: options.categories,
+      lat: options.lat,
+      lng: options.lng,
+      radiusKm,
+      minWage: options.minWage,
+      maxWage: options.maxWage,
+      sortBy: 'newest',
+      limit: 100,
+    });
+
+    for (const ad of ads) {
+      if (candidates.has(ad.workerId)) continue;
+      const user = await findUser(ad.workerId);
+      if (!user || user.role !== 'worker' || user.status !== 'active') continue;
+
+      let trustScore = 0.5;
+      try {
+        const ts = await getUserTrustScore(ad.workerId);
+        if (ts && typeof ts.score === 'number') trustScore = ts.score;
+      } catch (_) { /* default */ }
+
+      let distance = ad._distance;
+      if (typeof distance !== 'number' &&
+          typeof options.lat === 'number' && typeof options.lng === 'number') {
+        distance = haversineDistance(options.lat, options.lng, ad.lat, ad.lng);
+      }
+
+      let presenceData = null;
+      try { presenceData = getPresence(ad.workerId); } catch (_) { /* no-op */ }
+
+      candidates.set(ad.workerId, {
+        userId: ad.workerId,
+        user,
+        activeAd: ad,
+        hasActiveAd: true,
+        isOnline: !!(presenceData && presenceData.status !== 'offline'),
+        lastOnlineAt: presenceData ? new Date().toISOString() : null,
+        lat: ad.lat,
+        lng: ad.lng,
+        _distance: distance,
+        trustScore,
+        rating: user.rating,
+        tier: 1,
+      });
+    }
+  } catch (err) {
+    logger.warn('discoverWorkers TIER 1 error', { error: err.message });
+  }
+
+  // ── TIER 2: Online Workers Without Ads ─────────────────────
+  try {
+    const onlineList = await getOnlineWorkers({
+      acceptingJobs: true,
+      includeAway: true,
+      governorate: options.governorate,
+      categories: options.categories,
+      lat: options.lat,
+      lng: options.lng,
+      radiusKm,
+    });
+
+    for (const entry of onlineList) {
+      if (candidates.has(entry.userId)) continue;
+      const user = entry.user;
+      if (!user) continue;
+
+      let trustScore = 0.5;
+      try {
+        const ts = await getUserTrustScore(entry.userId);
+        if (ts && typeof ts.score === 'number') trustScore = ts.score;
+      } catch (_) { /* default */ }
+
+      // Use current location if presence has it, else user's stored location
+      const wLat = (entry.currentLocation && entry.currentLocation.lat) || user.lat;
+      const wLng = (entry.currentLocation && entry.currentLocation.lng) || user.lng;
+      let distance = null;
+      if (typeof options.lat === 'number' && typeof options.lng === 'number' &&
+          typeof wLat === 'number' && typeof wLng === 'number') {
+        distance = haversineDistance(options.lat, options.lng, wLat, wLng);
+      }
+
+      candidates.set(entry.userId, {
+        userId: entry.userId,
+        user,
+        activeAd: null,
+        hasActiveAd: false,
+        isOnline: entry.status === 'online',
+        lastOnlineAt: new Date(entry.lastHeartbeat).toISOString(),
+        lat: wLat,
+        lng: wLng,
+        _distance: distance,
+        trustScore,
+        rating: user.rating,
+        tier: 2,
+      });
+    }
+  } catch (err) {
+    logger.warn('discoverWorkers TIER 2 error', { error: err.message });
+  }
+
+  // ── TIER 3: Recently Online (fallback when supply low) ─────
+  if (candidates.size < limit) {
+    try {
+      const allUsers = await listAllUsers();
+      const recencyHours = config.WORKER_DISCOVERY.includeRecentlyOfflineHours || 24;
+      const cutoffMs = Date.now() - recencyHours * 60 * 60 * 1000;
+
+      for (const user of allUsers) {
+        if (candidates.has(user.id)) continue;
+        if (user.role !== 'worker' || user.status !== 'active') continue;
+        // Filter by governorate
+        if (options.governorate && user.governorate !== options.governorate) continue;
+        // Filter by categories
+        if (options.categories && options.categories.length > 0) {
+          const userCats = user.categories || [];
+          if (!options.categories.some(c => userCats.includes(c))) continue;
+        }
+        // Filter by geo (using user's stored lat/lng or governorate fallback)
+        let wLat = user.lat;
+        let wLng = user.lng;
+        let distance = null;
+        if (typeof options.lat === 'number' && typeof options.lng === 'number') {
+          if (typeof wLat !== 'number' || typeof wLng !== 'number') continue;
+          distance = haversineDistance(options.lat, options.lng, wLat, wLng);
+          if (distance > radiusKm) continue;
+        }
+
+        // For TIER 3, recencyScore relies on lastOnlineAt
+        // Since users.js has no lastOnlineAt field, we approximate via presence
+        // (already-online users are in TIER 2). For non-online users we skip recency check
+        // and just include them with recencyScore=0 — they're "available but not currently online".
+        let presenceData = null;
+        try { presenceData = require_presence_get(user.id); } catch (_) { /* skip */ }
+
+        // Skip if currently online (would be in TIER 2)
+        if (presenceData && presenceData.status === 'online') continue;
+
+        let trustScore = 0.5;
+        try {
+          const ts = await getUserTrustScore(user.id);
+          if (ts && typeof ts.score === 'number') trustScore = ts.score;
+        } catch (_) { /* default */ }
+
+        candidates.set(user.id, {
+          userId: user.id,
+          user,
+          activeAd: null,
+          hasActiveAd: false,
+          isOnline: false,
+          lastOnlineAt: presenceData ? new Date(presenceData.lastHeartbeat || cutoffMs).toISOString() : null,
+          lat: wLat,
+          lng: wLng,
+          _distance: distance,
+          trustScore,
+          rating: user.rating,
+          tier: 3,
+        });
+
+        // Cap TIER 3 contribution
+        if (candidates.size >= limit * 3) break;
+      }
+    } catch (err) {
+      logger.warn('discoverWorkers TIER 3 error', { error: err.message });
+    }
+  }
+
+  // ── Score, sort, build cards ──────────────────────────────
+  const list = Array.from(candidates.values());
+
+  // Compute scores
+  for (const c of list) {
+    c._score = computeCompositeScore(c, options.lat, options.lng, radiusKm);
+  }
+
+  // Sort
+  if (sortBy === 'distance') {
+    list.sort((a, b) => (a._distance || Infinity) - (b._distance || Infinity));
+  } else if (sortBy === 'rating') {
+    list.sort((a, b) => {
+      const ra = (a.rating && a.rating.avg) || 0;
+      const rb = (b.rating && b.rating.avg) || 0;
+      return rb - ra;
+    });
+  } else if (sortBy === 'recency') {
+    list.sort((a, b) => {
+      if (a.isOnline && !b.isOnline) return -1;
+      if (!a.isOnline && b.isOnline) return 1;
+      const ta = a.lastOnlineAt ? new Date(a.lastOnlineAt).getTime() : 0;
+      const tb = b.lastOnlineAt ? new Date(b.lastOnlineAt).getTime() : 0;
+      return tb - ta;
+    });
+  } else {
+    // composite (default)
+    list.sort((a, b) => b._score - a._score);
+  }
+
+  // Build privacy-first cards
+  const cards = list.map(c => {
+    const presenceData = c.isOnline ? { status: 'online', lastHeartbeat: c.lastOnlineAt } : null;
+    const card = buildPublicCard(c.user, presenceData, c.activeAd, c._distance, c.trustScore);
+    card._tier = c.tier;
+    card._score = c._score;
+    return card;
+  });
+
+  // Cache full result
+  cacheSet(cacheKey, cards);
+
+  return {
+    workers: cards.slice(offset, offset + limit),
+    total: cards.length,
+  };
+}
+
+/**
+ * Synchronously get presence data (lazy require to avoid top-level import cycles).
+ */
+let _presenceModule = null;
+function require_presence_get(userId) {
+  if (!_presenceModule) {
+    // Defer — caller will catch and skip
+    throw new Error('presence not loaded');
+  }
+  return _presenceModule.getPresence(userId);
+}
+
+/**
+ * Get a single privacy-first worker card.
+ * Cached for 60s.
+ *
+ * @param {string} workerId
+ * @returns {Promise<object|null>}
+ */
+export async function getWorkerCard(workerId) {
+  const cached = cardCache.get(workerId);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.card;
+  }
+
+  try {
+    const { findById: findUser } = await import('./users.js');
+    const { findActiveByWorker } = await import('./availabilityAd.js');
+    const { getPresence } = await import('./presenceService.js');
+    const { getUserTrustScore } = await import('./trust.js');
+
+    const user = await findUser(workerId);
+    if (!user || user.role !== 'worker' || user.status !== 'active') return null;
+
+    const activeAd = await findActiveByWorker(workerId);
+    let presenceData = null;
+    try { presenceData = getPresence(workerId); } catch (_) { /* no-op */ }
+
+    let trustScore = null;
+    try {
+      const ts = await getUserTrustScore(workerId);
+      if (ts && typeof ts.score === 'number') trustScore = ts.score;
+    } catch (_) { /* default null */ }
+
+    const card = buildPublicCard(user, presenceData, activeAd, null, trustScore);
+    cardCache.set(workerId, { card, expiresAt: Date.now() + 60000 });
+    return card;
+  } catch (err) {
+    logger.warn('getWorkerCard error', { workerId, error: err.message });
+    return null;
+  }
+}
+
+/**
+ * Setup EventBus listeners for cache invalidation.
+ * Called once at startup (from router.js).
+ */
+export function setupCacheInvalidation() {
+  if (!config.WORKER_DISCOVERY || !config.WORKER_DISCOVERY.enabled) {
+    logger.info('Worker discovery: disabled via config');
+    return;
+  }
+
+  const handler = () => {
+    clearCache();
+  };
+
+  eventBus.on('ad:created', handler);
+  eventBus.on('ad:withdrawn', handler);
+  eventBus.on('ad:expired', handler);
+  eventBus.on('ad:matched', handler);
+
+  // Also clear card cache when user is updated (e.g. ban/profile change)
+  // (no listener needed — 60s TTL handles staleness)
+
+  // Lazily load presence module for TIER 3 sync access
+  import('./presenceService.js').then(mod => {
+    _presenceModule = mod;
+  }).catch(() => { /* non-fatal */ });
+
+  logger.info('Worker discovery: enabled');
+}
+
+/**
+ * Get stats for /api/health.
+ */
+export function getStats() {
+  let totalCachedItems = 0;
+  for (const [, entry] of tileCache) {
+    if (Date.now() < entry.expiresAt) {
+      totalCachedItems += entry.items.length;
+    }
+  }
+  return {
+    tilesCached: tileCache.size,
+    totalCachedItems,
+    cardsCached: cardCache.size,
+  };
+}
+
+/**
+ * Test helpers.
+ */
+export const _testHelpers = {
+  computeCompositeScore,
+  buildPublicCard,
+  computeTileKey,
+  clearCache,
+};
 ```
 
 ---

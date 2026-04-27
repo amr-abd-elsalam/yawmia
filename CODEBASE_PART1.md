@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.36.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-26T14:55:28.890Z
+# يوميّة (Yawmia) v0.37.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-27T19:14:09.680Z
 > Files in this part: 6
 
 ## Files
@@ -248,6 +248,7 @@ const config = {
     maxJobsPerEmployerPerDay: 10,
     maxApplicationsPerWorkerPerDay: 20,
     rateLimitPerMinute: 60,
+    maxAdsPerWorkerPerDay: 5,
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -333,6 +334,7 @@ const config = {
       images: 'images',
       availability_windows: 'availability_windows',
       instant_matches: 'instant_matches',
+      availability_ads: 'availability_ads',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -352,6 +354,7 @@ const config = {
       pushUserIndex: 'push_subscriptions/user-index.json',
       userAlertsIndex: 'alerts/user-index.json',
       userFavoritesIndex: 'favorites/user-index.json',
+      workerAdsIndex: 'availability_ads/worker-index.json',
     },
     encoding: 'utf-8',
   },
@@ -518,7 +521,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.36.0',
+    cacheName: 'yawmia-v0.37.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -848,7 +851,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -916,6 +919,52 @@ const config = {
     maxRadiusKm: 30,                         // worker sees jobs within this radius
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 57. إعلانات إتاحة العامل (AVAILABILITY_ADS)
+  // ═══════════════════════════════════════════════════════════════
+  AVAILABILITY_ADS: {
+    enabled: true,
+    maxActivePerWorker: 1,                   // عامل = إعلان نشط واحد (auto-expire previous)
+    maxAdvanceDays: 7,                       // ما يقدرش يحدد إتاحة بعد أسبوع من اليوم
+    maxDurationHours: 12,                    // أقصى مدة الإعلان (نهار شغل واحد)
+    defaultRadiusKm: 20,
+    maxRadiusKm: 50,
+    maxNotesLength: 200,
+    maxCategories: 3,                        // 1-3 categories
+    autoExpireBufferMinutes: 30,             // expire قبل availableUntil بنص ساعة
+    expirationCheckIntervalMs: 5 * 60 * 1000, // every 5 min
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 58. اكتشاف العمال (WORKER_DISCOVERY)
+  // ═══════════════════════════════════════════════════════════════
+  WORKER_DISCOVERY: {
+    enabled: true,
+    defaultRadiusKm: 30,
+    maxRadiusKm: 100,
+    cacheKeyTileSize: 0.01,                  // ~1km tile للـ caching
+    cacheTtlMs: 30000,                       // 30 ثانية cache TTL
+    scoreWeights: {
+      distance: 0.4,
+      trustScore: 0.3,
+      ratingAvg: 0.2,
+      recency: 0.1,
+    },
+    activeAdBonus: 0.1,                      // bonus للعمال عندهم active ad
+    includeRecentlyOfflineHours: 24,         // TIER 3: recently online window
+    privacyMode: true,                       // redact full names + phones in public cards
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 59. العروض المباشرة (DIRECT_OFFERS) — placeholder for Phase 42
+  // ═══════════════════════════════════════════════════════════════
+  DIRECT_OFFERS: {
+    enabled: false,                          // Phase 42 يفعّلها
+    acceptanceWindowSeconds: 120,
+    maxPendingPerEmployer: 5,
+    maxPendingPerWorker: 3,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -964,7 +1013,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1267,6 +1316,30 @@ if (config.INSTANT_MATCH && config.INSTANT_MATCH.enabled) {
   if (instantMatchTimer.unref) instantMatchTimer.unref();
 }
 
+// ── Phase 41 — Availability ad expiration timer (every 5 min) ─
+if (config.AVAILABILITY_ADS && config.AVAILABILITY_ADS.enabled) {
+  const adExpirationTimer = setInterval(async () => {
+    try {
+      const { expireStaleAds } = await import('./server/services/availabilityAd.js');
+      await expireStaleAds();
+    } catch (err) {
+      logger.warn('Ad expiration error', { error: err.message });
+    }
+  }, config.AVAILABILITY_ADS.expirationCheckIntervalMs || 5 * 60 * 1000);
+  if (adExpirationTimer.unref) adExpirationTimer.unref();
+
+  // Phase 41 — adMatcher dedup map cleanup timer (every 1 min)
+  const adDedupCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupDedup } = await import('./server/services/adMatcher.js');
+      cleanupDedup();
+    } catch (err) {
+      logger.warn('Ad dedup cleanup error', { error: err.message });
+    }
+  }, 60 * 1000);
+  if (adDedupCleanupTimer.unref) adDedupCleanupTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {
@@ -1384,6 +1457,8 @@ import { handleGetImage } from './handlers/imageHandler.js';
 import { handleHeartbeat, handleOnlineCount } from './handlers/presenceHandler.js';
 import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './handlers/availabilityHandler.js';
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
+import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
+import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1408,7 +1483,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.36.0',
+        version: '0.37.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1483,6 +1558,20 @@ const routes = [
       } catch (_) {
         response.liveFeed = { connections: 0, users: 0 };
       }
+      // Phase 41 — Availability ads stats (non-blocking)
+      try {
+        const { getStats: adStats } = await import('./services/availabilityAd.js');
+        response.availabilityAds = await adStats();
+      } catch (_) {
+        response.availabilityAds = { active: 0, totalToday: 0, expiredLastHour: 0, withdrawnLastHour: 0 };
+      }
+      // Phase 41 — Worker discovery stats (non-blocking)
+      try {
+        const { getStats: discoveryStats } = await import('./services/workerDiscovery.js');
+        response.workerDiscovery = discoveryStats();
+      } catch (_) {
+        response.workerDiscovery = { tilesCached: 0, totalCachedItems: 0, cardsCached: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1517,7 +1606,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.36.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.37.0' });
     },
   },
 
@@ -1626,6 +1715,20 @@ const routes = [
   { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
   { method: 'POST', path: '/api/jobs/:id/instant-accept', middlewares: [requireAuth, requireRole('worker')], handler: handleInstantAccept },
 
+  // ── Phase 41 — Availability Ads (Worker) ──
+  { method: 'POST', path: '/api/availability-ads', middlewares: [requireAuth, requireRole('worker')], handler: handleCreateAd },
+  { method: 'GET', path: '/api/availability-ads/mine', middlewares: [requireAuth, requireRole('worker')], handler: handleListMyAds },
+  { method: 'DELETE', path: '/api/availability-ads/:id', middlewares: [requireAuth, requireRole('worker')], handler: handleWithdrawAd },
+  { method: 'GET', path: '/api/availability-ads/:id', middlewares: [requireAuth], handler: handleGetAd },
+
+  // ── Phase 41 — Worker Discovery (Employer) ──
+  { method: 'GET', path: '/api/workers/discover', middlewares: [requireAuth, requireRole('employer')], handler: handleDiscoverWorkers },
+  { method: 'GET', path: '/api/workers/:id/card', middlewares: [requireAuth], handler: handleGetWorkerCard },
+  { method: 'POST', path: '/api/workers/:id/quick-offer', middlewares: [requireAuth, requireRole('employer')], handler: handleQuickOffer },
+
+  // ── Phase 41 — Admin Ad Stats ──
+  { method: 'GET', path: '/api/admin/availability-ads/stats', middlewares: [requireAdmin], handler: handleAdStats },
+
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
 
@@ -1728,7 +1831,16 @@ function runMiddlewares(middlewares, req, res, done) {
 // Setup notification event listeners
 setupNotificationListeners();
 
-// Setup smart job matching
+// Phase 41 — Setup ad matcher FIRST (must run before jobMatcher's broad notification)
+// adMatcher writes to dedup map → jobMatcher reads it to skip already-notified workers
+import { setupAdMatchListeners } from './services/adMatcher.js';
+setupAdMatchListeners();
+
+// Phase 41 — Setup worker discovery cache invalidation listeners
+import { setupCacheInvalidation } from './services/workerDiscovery.js';
+setupCacheInvalidation();
+
+// Setup smart job matching (registers AFTER adMatcher so adMatcher's job:created listener fires first)
 import { setupJobMatching } from './services/jobMatcher.js';
 setupJobMatching();
 
