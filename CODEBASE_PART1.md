@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.38.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-28T23:20:35.800Z
+> Auto-generated: 2026-04-28T23:38:04.555Z
 > Files in this part: 6
 
 ## Files
@@ -1668,6 +1668,7 @@ const routes = [
   { method: 'GET', path: '/api/jobs', middlewares: [], handler: handleListJobs },
   { method: 'GET', path: '/api/jobs/mine', middlewares: [requireAuth, requireRole('employer')], handler: handleListMyJobs },
   { method: 'GET', path: '/api/jobs/nearby', middlewares: [requireAuth, requireRole('worker')], handler: handleNearbyJobs },
+  { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
   { method: 'GET', path: '/api/jobs/:id', middlewares: [], handler: handleGetJob },
   { method: 'GET', path: '/api/jobs/:id/applications', middlewares: [requireAuth, requireRole('employer')], handler: handleListJobApplications },
   { method: 'POST', path: '/api/jobs/:id/apply', middlewares: [requireAuth, requireRole('worker')], handler: handleApplyToJob },
@@ -1743,8 +1744,7 @@ const routes = [
   { method: 'GET', path: '/api/availability/windows', middlewares: [requireAuth, requireRole('worker')], handler: handleListWindows },
   { method: 'DELETE', path: '/api/availability/windows/:id', middlewares: [requireAuth, requireRole('worker')], handler: handleDeleteWindow },
 
-  // ── Phase 40 — Live Feed + Instant Accept ──
-  { method: 'GET', path: '/api/jobs/live-feed', middlewares: [], handler: handleLiveFeedStream },
+  // ── Phase 40 — Instant Accept (live-feed moved earlier to avoid /:id conflict) ──
   { method: 'POST', path: '/api/jobs/:id/instant-accept', middlewares: [requireAuth, requireRole('worker')], handler: handleInstantAccept },
 
   // ── Phase 41 — Availability Ads (Worker) ──
