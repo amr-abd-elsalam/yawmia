@@ -158,6 +158,13 @@ var YawmiaLivePresence = (function () {
         } catch (_) {}
       });
 
+      liveFeedSource.addEventListener('direct_offer_received', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:direct-offer-received', { detail: data }));
+        } catch (_) {}
+      });
+
       liveFeedSource.onerror = function () { /* auto-reconnects */ };
     } catch (_) {
       liveFeedSource = null;

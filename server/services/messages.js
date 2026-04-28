@@ -49,6 +49,19 @@ export async function canMessage(jobId, userId) {
   // 4. User involvement check
   const isEmployer = job.employerId === userId;
 
+  // Phase 42 — Fast path for synthetic jobs from accepted direct offers
+  // If job has sourceType='direct_offer' and user is the involved worker on the accepted offer,
+  // skip the application lookup (offer already encodes the relationship).
+  if (!isEmployer && job.sourceType === 'direct_offer' && job.sourceOfferId) {
+    try {
+      const { findById: findOffer } = await import('./directOffer.js');
+      const offer = await findOffer(job.sourceOfferId);
+      if (offer && offer.status === 'accepted' && offer.workerId === userId) {
+        return { allowed: true, job };
+      }
+    } catch (_) { /* fall through to standard path */ }
+  }
+
   if (!isEmployer) {
     // Check if user is an accepted worker
     if (config.MESSAGES.onlyAfterAcceptance) {

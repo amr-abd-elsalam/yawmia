@@ -346,6 +346,41 @@ async function repair() {
     console.log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
   }
 
+  // 17. Employer-Offers Index (direct_offers/employer-index.json) — Phase 42
+  console.log('1️⃣7️⃣ Employer-Offers Index...');
+  const offers = await listRecords(join(DATA_DIR, 'direct_offers'), 'dof_');
+  const employerOffersIndex = {};
+  for (const offer of offers) {
+    if (!employerOffersIndex[offer.employerId]) employerOffersIndex[offer.employerId] = [];
+    employerOffersIndex[offer.employerId].push(offer.id);
+  }
+  const existingEmpOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/employer-index.json')) || {};
+  const empOffersIndexChanged = JSON.stringify(employerOffersIndex) !== JSON.stringify(existingEmpOffersIndex);
+  if (empOffersIndexChanged) {
+    console.log(`   ⚠️  Employer-Offers index needs repair (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/employer-index.json'), employerOffersIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Employer-Offers index OK (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+  }
+
+  // 18. Worker-Offers Index (direct_offers/worker-index.json) — Phase 42
+  console.log('1️⃣8️⃣ Worker-Offers Index...');
+  const workerOffersIndex = {};
+  for (const offer of offers) {
+    if (!workerOffersIndex[offer.workerId]) workerOffersIndex[offer.workerId] = [];
+    workerOffersIndex[offer.workerId].push(offer.id);
+  }
+  const existingWorkerOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/worker-index.json')) || {};
+  const workerOffersIndexChanged = JSON.stringify(workerOffersIndex) !== JSON.stringify(existingWorkerOffersIndex);
+  if (workerOffersIndexChanged) {
+    console.log(`   ⚠️  Worker-Offers index needs repair (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/worker-index.json'), workerOffersIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Offers index OK (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
+  }
+
   // Phase 40+41 note: instant_matches is sharded but has no secondary index files —
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.

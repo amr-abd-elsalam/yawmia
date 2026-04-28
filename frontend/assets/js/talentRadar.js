@@ -372,11 +372,149 @@ var YawmiaTalentRadar = (function () {
   }
 
   /**
-   * Handle quick offer click — Phase 41 stub.
+   * Handle quick offer click — Phase 42: opens compose modal.
    */
   function handleQuickOfferClick(workerId, btn) {
-    if (typeof YawmiaToast !== 'undefined') {
-      YawmiaToast.info('إرسال العروض المباشرة هتكون متاحة في التحديث القادم 🚀');
+    showOfferComposeModal(workerId, btn);
+  }
+
+  /**
+   * Show compose modal for direct offer (Phase 42).
+   */
+  async function showOfferComposeModal(workerId, btn) {
+    if (btn) Yawmia.setLoading(btn, true);
+
+    var card;
+    try {
+      var cardRes = await Yawmia.api('GET', '/api/workers/' + workerId + '/card');
+      if (!cardRes.data || !cardRes.data.ok || !cardRes.data.card) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('تعذّر تحميل بيانات العامل');
+        return;
+      }
+      card = cardRes.data.card;
+    } catch (err) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+      return;
+    } finally {
+      if (btn) Yawmia.setLoading(btn, false);
+    }
+
+    // Defaults
+    var defaultCategory = (card.categories && card.categories.length > 0) ? card.categories[0] : '';
+    var defaultGovernorate = card.governorate || '';
+    var defaultWage = (card.adSummary && card.adSummary.minDailyWage) ? card.adSummary.minDailyWage : 250;
+    var adId = (card.adSummary && card.adSummary.adId) ? card.adSummary.adId : null;
+    var tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Build modal
+    var existing = document.querySelector('.offer-compose-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay offer-compose-overlay';
+
+    var modalCard = document.createElement('div');
+    modalCard.className = 'ym-modal-card offer-compose-card';
+    modalCard.setAttribute('role', 'dialog');
+    modalCard.setAttribute('aria-modal', 'true');
+
+    modalCard.innerHTML =
+      '<h3 class="ym-modal-title">📩 إرسال عرض إلى ' + escapeHtml(card.displayName) + '</h3>' +
+      '<div class="offer-compose__worker-summary">' +
+        '<div>' + escapeHtml(card.displayName) + (card.verificationStatus === 'verified' ? ' ✓' : '') + '</div>' +
+        '<div style="font-size:0.8rem;color:var(--color-text-muted);">📍 ' + escapeHtml(card.governorate || '') + '</div>' +
+      '</div>' +
+      '<div class="form-group" style="margin-block-start:1rem;">' +
+        '<label class="form-label" for="ocCategory">التخصص</label>' +
+        '<select id="ocCategory" class="form-input form-input--sm"><option value="">اختار...</option></select>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocWage">الأجر اليومي (جنيه)</label>' +
+        '<input type="number" id="ocWage" class="form-input form-input--sm" min="150" max="1000" value="' + defaultWage + '">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocStartDate">تاريخ البدء</label>' +
+        '<input type="date" id="ocStartDate" class="form-input form-input--sm" dir="ltr" value="' + tomorrow + '">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocMessage">رسالة (اختياري — أقصى 200 حرف)</label>' +
+        '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '</div>' +
+      '<div class="ym-modal-error" id="ocError"></div>' +
+      '<div class="ym-modal-actions">' +
+        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال العرض</button>' +
+        '<button class="btn btn--ghost btn--sm" id="ocCancel">إلغاء</button>' +
+      '</div>';
+
+    overlay.appendChild(modalCard);
+    document.body.appendChild(overlay);
+
+    // Populate categories
+    Yawmia.populateCategories('ocCategory').then(function () {
+      var sel = document.getElementById('ocCategory');
+      if (sel && defaultCategory) sel.value = defaultCategory;
+    }).catch(function () {});
+
+    function cleanup() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    var cancelBtn = document.getElementById('ocCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', cleanup);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) cleanup();
+    });
+
+    var submitBtn = document.getElementById('ocSubmit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async function () {
+        var errorEl = document.getElementById('ocError');
+        if (errorEl) errorEl.textContent = '';
+
+        var catEl = document.getElementById('ocCategory');
+        var wageEl = document.getElementById('ocWage');
+        var dateEl = document.getElementById('ocStartDate');
+        var msgEl = document.getElementById('ocMessage');
+
+        var category = catEl ? catEl.value : '';
+        var wage = wageEl ? parseInt(wageEl.value, 10) : NaN;
+        var startDate = dateEl ? dateEl.value : '';
+        var message = msgEl ? msgEl.value.trim() : '';
+
+        if (!category) { errorEl.textContent = 'اختار التخصص'; return; }
+        if (isNaN(wage) || wage < 150 || wage > 1000) { errorEl.textContent = 'الأجر لازم يكون بين 150 و 1000 جنيه'; return; }
+        if (!startDate) { errorEl.textContent = 'حدّد تاريخ البدء'; return; }
+        if (message.length > 200) { errorEl.textContent = 'الرسالة لا تتجاوز 200 حرف'; return; }
+
+        var body = {
+          workerId: workerId,
+          adId: adId,
+          category: category,
+          governorate: defaultGovernorate,
+          proposedDailyWage: wage,
+          proposedStartDate: startDate,
+          proposedDurationDays: 1,
+        };
+        if (message) body.message = message;
+
+        Yawmia.setLoading(submitBtn, true);
+
+        try {
+          var res = await Yawmia.api('POST', '/api/direct-offers', body);
+          if (res.data && res.data.ok) {
+            cleanup();
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success('تم إرسال العرض ✓ — العامل عنده 120 ثانية للرد');
+            }
+          } else {
+            errorEl.textContent = (res.data && res.data.error) || 'تعذّر إرسال العرض';
+            Yawmia.setLoading(submitBtn, false);
+          }
+        } catch (err) {
+          errorEl.textContent = 'خطأ في الاتصال';
+          Yawmia.setLoading(submitBtn, false);
+        }
+      });
     }
   }
 

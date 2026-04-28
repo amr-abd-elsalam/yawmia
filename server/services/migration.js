@@ -248,6 +248,18 @@ const builtInMigrations = [
       logger.info('Migration v4: greenfield availability_ads collection registered (Phase 41)');
     },
   },
+  {
+    version: 5,
+    name: 'Initialize direct_offers collection (Phase 42 Direct Offers Activation)',
+    up: async () => {
+      // Greenfield: initDatabase() (called at server startup) creates the new
+      // directory + monthly shard from config.DATABASE.dirs + SHARDING.collections.
+      // No data migration needed — direct_offers is a new collection introduced
+      // by Phase 42 (Direct Offers Activation — Talent Exchange loop closure).
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v5: greenfield direct_offers collection registered (Phase 42)');
+    },
+  },
 ];
 
 /**

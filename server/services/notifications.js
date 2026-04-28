@@ -722,4 +722,77 @@ export function setupNotificationListeners() {
       // Fire-and-forget
     }
   });
+
+  // ── Phase 42 — Direct Offer Notifications ──────────────────────
+
+  // Direct offer received → notify worker (in-app + Web Push)
+  eventBus.on('direct_offer:created', async (data) => {
+    try {
+      await createNotification(
+        data.workerId,
+        'direct_offer',
+        `عرض عمل مباشر — ${data.proposedDailyWage} جنيه/يوم`,
+        { offerId: data.offerId, adId: data.adId, expiresAt: data.expiresAt }
+      ).catch(() => {});
+
+      // High-priority Web Push (fire-and-forget)
+      try {
+        const { sendPush } = await import('./webpush.js');
+        sendPush(data.workerId, {
+          title: 'يوميّة — عرض مباشر ⚡',
+          body: `${data.proposedDailyWage} جنيه/يوم — رد في 120 ثانية`,
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    } catch (_) { /* fire-and-forget */ }
+  });
+
+  // Direct offer accepted → notify employer
+  eventBus.on('direct_offer:accepted', async (data) => {
+    try {
+      await createNotification(
+        data.employerId,
+        'direct_offer_accepted',
+        'العامل قبل العرض ✓ — ابتدأ الشغل',
+        { offerId: data.offerId, jobId: data.jobId, workerId: data.workerId }
+      ).catch(() => {});
+
+      // Web Push for employer (fire-and-forget)
+      try {
+        const { sendPush } = await import('./webpush.js');
+        sendPush(data.employerId, {
+          title: 'يوميّة — تم قبول العرض ✓',
+          body: 'العامل قبل عرضك — ابتدأ الشغل',
+          icon: '/assets/img/icon-192.png',
+          url: '/dashboard.html',
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    } catch (_) { /* fire-and-forget */ }
+  });
+
+  // Direct offer declined → notify employer
+  eventBus.on('direct_offer:declined', async (data) => {
+    try {
+      const reasonText = data.reason ? ` (${data.reason})` : '';
+      await createNotification(
+        data.employerId,
+        'direct_offer_declined',
+        `العامل اعتذر عن العرض${reasonText} — جرّب عامل تاني`,
+        { offerId: data.offerId, reason: data.reason }
+      ).catch(() => {});
+    } catch (_) { /* fire-and-forget */ }
+  });
+
+  // Direct offer expired → notify employer
+  eventBus.on('direct_offer:expired', async (data) => {
+    try {
+      await createNotification(
+        data.employerId,
+        'direct_offer_expired',
+        'انتهت مهلة العرض — جرّب عامل تاني',
+        { offerId: data.offerId }
+      ).catch(() => {});
+    } catch (_) { /* fire-and-forget */ }
+  });
 }

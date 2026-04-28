@@ -300,6 +300,20 @@ if (config.AVAILABILITY_ADS && config.AVAILABILITY_ADS.enabled) {
   if (adDedupCleanupTimer.unref) adDedupCleanupTimer.unref();
 }
 
+// ── Phase 42 — Direct offer expiration timer (every 30s) ─────
+if (config.DIRECT_OFFERS && config.DIRECT_OFFERS.enabled) {
+  const directOfferTimer = setInterval(async () => {
+    try {
+      const { cleanupExpired } = await import('./server/services/directOffer.js');
+      const count = await cleanupExpired();
+      if (count > 0) logger.info(`Direct offers: expired ${count} offer(s)`);
+    } catch (err) {
+      logger.warn('Direct offer cleanup error', { error: err.message });
+    }
+  }, config.DIRECT_OFFERS.cleanupIntervalMs || 30 * 1000);
+  if (directOfferTimer.unref) directOfferTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {

@@ -27,6 +27,7 @@ import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './han
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
 import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
+import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -51,7 +52,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.37.0',
+        version: '0.38.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -140,6 +141,13 @@ const routes = [
       } catch (_) {
         response.workerDiscovery = { tilesCached: 0, totalCachedItems: 0, cardsCached: 0 };
       }
+      // Phase 42 — Direct offers stats (non-blocking)
+      try {
+        const { getStats: offerStats } = await import('./services/directOffer.js');
+        response.directOffers = await offerStats();
+      } catch (_) {
+        response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -174,7 +182,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.37.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.38.0' });
     },
   },
 
@@ -296,6 +304,14 @@ const routes = [
 
   // ── Phase 41 — Admin Ad Stats ──
   { method: 'GET', path: '/api/admin/availability-ads/stats', middlewares: [requireAdmin], handler: handleAdStats },
+
+  // ── Phase 42 — Direct Offers ──
+  { method: 'POST', path: '/api/direct-offers', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateOffer },
+  { method: 'GET', path: '/api/direct-offers/mine', middlewares: [requireAuth], handler: handleListMyOffers },
+  { method: 'POST', path: '/api/direct-offers/:id/accept', middlewares: [requireAuth, requireRole('worker')], handler: handleAcceptOffer },
+  { method: 'POST', path: '/api/direct-offers/:id/decline', middlewares: [requireAuth, requireRole('worker')], handler: handleDeclineOffer },
+  { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
+  { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },

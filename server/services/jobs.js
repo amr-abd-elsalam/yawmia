@@ -69,6 +69,9 @@ export async function create(employerId, fields) {
     platformFee,
     urgency,
     status: 'open',
+    // Phase 42 — Direct offer linkage (synthetic jobs)
+    sourceType: fields.sourceType || null,
+    sourceOfferId: fields.sourceOfferId || null,
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
   };
@@ -145,6 +148,15 @@ export async function list(filters = {}) {
     const allJobs = await listJSON(jobsDir);
     // Filter out index.json (not a job record)
     jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  }
+
+  // Phase 42 — Filter synthetic jobs from public listing (sourceType='direct_offer')
+  // Synthetic jobs are private to employer + accepted worker only.
+  // Show them only when explicit `sourceType` filter requests them.
+  if (!filters.sourceType) {
+    jobs = jobs.filter(j => j.sourceType !== 'direct_offer');
+  } else {
+    jobs = jobs.filter(j => j.sourceType === filters.sourceType);
   }
 
   if (filters.governorate) {

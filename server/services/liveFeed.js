@@ -160,6 +160,23 @@ export function sendInstantMatchOffer(workerId, payload) {
 }
 
 /**
+ * Send direct_offer_received to a worker (Phase 42).
+ * @param {string} workerId
+ * @param {object} payload
+ */
+export function sendDirectOfferToWorker(workerId, payload) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!workerId || !payload || !payload.offerId) return;
+
+  const conns = liveFeedConnections.get(workerId);
+  if (!conns || conns.size === 0) return;
+
+  for (const entry of conns) {
+    sendToConnection(entry, 'direct_offer_received', payload, 'dor-' + payload.offerId);
+  }
+}
+
+/**
  * Notify other candidates that an offer was taken (close their modals).
  * @param {string[]} workerIds
  * @param {object} payload
@@ -349,6 +366,22 @@ export function setupLiveFeedListeners() {
         }
       }).catch(() => {});
     }).catch(() => {});
+  });
+
+  // Phase 42 — Direct offer created → broadcast SSE to worker
+  eventBus.on('direct_offer:created', (data) => {
+    if (!data || !data.workerId || !data.offerId) return;
+
+    const payload = {
+      offerId: data.offerId,
+      adId: data.adId,
+      proposedDailyWage: data.proposedDailyWage,
+      acceptanceWindowSeconds: 120,
+      notifiedAt: new Date().toISOString(),
+      expiresAt: data.expiresAt,
+    };
+
+    sendDirectOfferToWorker(data.workerId, payload);
   });
 
   logger.info('Live feed: enabled');

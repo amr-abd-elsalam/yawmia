@@ -124,13 +124,57 @@ export async function handleGetWorkerCard(req, res) {
 
 /**
  * POST /api/workers/:id/quick-offer
- * Phase 41 STUB: returns 501 NOT_IMPLEMENTED.
- * Phase 42 will implement direct offer flow.
+ * Phase 42: real implementation — delegates to directOffer.create().
+ * Body: { adId?, category, governorate, proposedDailyWage, proposedStartDate, proposedDurationDays?, message? }
  * Requires: requireAuth + requireRole('employer')
  */
 export async function handleQuickOffer(req, res) {
-  sendJSON(res, 501, {
-    error: 'إرسال العروض المباشرة هيكون متاح في التحديث القادم',
-    code: 'PHASE_42_PENDING',
-  });
+  try {
+    const employerId = req.user.id;
+    const workerId = req.params.id;
+    const body = req.body || {};
+
+    if (!body.category || !body.governorate || typeof body.proposedDailyWage !== 'number' || !body.proposedStartDate) {
+      return sendJSON(res, 400, { error: 'بيانات العرض غير مكتملة', code: 'INVALID_OFFER_FIELDS' });
+    }
+
+    const { create } = await import('../services/directOffer.js');
+    const result = await create(employerId, workerId, {
+      adId: body.adId || null,
+      category: body.category,
+      governorate: body.governorate,
+      proposedDailyWage: body.proposedDailyWage,
+      proposedStartDate: body.proposedStartDate,
+      proposedDurationDays: body.proposedDurationDays || 1,
+      message: body.message || null,
+    });
+
+    if (!result.ok) {
+      const statusMap = {
+        OFFERS_DISABLED: 503,
+        SELF_OFFER: 400,
+        INVALID_EMPLOYER: 403,
+        INVALID_WORKER: 404,
+        INVALID_FIELDS: 400,
+        INVALID_CATEGORY: 400,
+        INVALID_GOVERNORATE: 400,
+        INVALID_WAGE: 400,
+        INVALID_START_DATE: 400,
+        INVALID_DURATION: 400,
+        MESSAGE_TOO_LONG: 400,
+        CONTENT_BLOCKED: 400,
+        EMPLOYER_PENDING_CAP: 429,
+        WORKER_PENDING_CAP: 429,
+        EMPLOYER_DAILY_CAP: 429,
+        DUPLICATE_PENDING: 409,
+        INVALID_AD: 400,
+      };
+      const status = statusMap[result.code] || 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    sendJSON(res, 201, { ok: true, offer: result.offer });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
 }

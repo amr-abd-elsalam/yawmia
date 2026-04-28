@@ -265,6 +265,7 @@ const config = {
       availability_windows: 'availability_windows',
       instant_matches: 'instant_matches',
       availability_ads: 'availability_ads',
+      direct_offers: 'direct_offers',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -285,6 +286,8 @@ const config = {
       userAlertsIndex: 'alerts/user-index.json',
       userFavoritesIndex: 'favorites/user-index.json',
       workerAdsIndex: 'availability_ads/worker-index.json',
+      employerOffersIndex: 'direct_offers/employer-index.json',
+      workerOffersIndex: 'direct_offers/worker-index.json',
     },
     encoding: 'utf-8',
   },
@@ -451,7 +454,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.37.0',
+    cacheName: 'yawmia-v0.38.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -781,7 +784,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads', 'direct_offers'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -886,13 +889,20 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — placeholder for Phase 42
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active
   // ═══════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
-    enabled: false,                          // Phase 42 يفعّلها
-    acceptanceWindowSeconds: 120,
-    maxPendingPerEmployer: 5,
-    maxPendingPerWorker: 3,
+    enabled: true,                            // Phase 42 — closed Talent Exchange loop
+    acceptanceWindowSeconds: 120,             // worker has 120s to accept
+    maxPendingPerEmployer: 5,                 // anti-spam: max 5 concurrent pending offers per employer
+    maxPendingPerWorker: 3,                   // anti-overwhelm: max 3 concurrent pending offers per worker
+    maxPerEmployerPerDay: 20,                 // daily ceiling per employer (Egypt timezone reset)
+    cleanupIntervalMs: 30 * 1000,             // sweep stale pending offers every 30s
+    expiryBufferMs: 5 * 1000,                 // 5s grace period for race conditions
+    declineReasons: ['busy', 'wage_low', 'distance', 'category_mismatch', 'other'],
+    enableTwoPhaseReveal: true,               // hide identity (name+phone) before accept
+    syntheticJobUrgency: 'immediate',         // synthetic jobs urgency level
+    maxMessageLength: 200,                    // optional employer message ≤ 200 chars
   },
 
 };
