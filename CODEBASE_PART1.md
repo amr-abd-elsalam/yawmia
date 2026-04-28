@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.37.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-27T19:24:02.776Z
+# يوميّة (Yawmia) v0.38.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-04-28T23:20:35.800Z
 > Files in this part: 6
 
 ## Files
@@ -335,6 +335,7 @@ const config = {
       availability_windows: 'availability_windows',
       instant_matches: 'instant_matches',
       availability_ads: 'availability_ads',
+      direct_offers: 'direct_offers',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -355,6 +356,8 @@ const config = {
       userAlertsIndex: 'alerts/user-index.json',
       userFavoritesIndex: 'favorites/user-index.json',
       workerAdsIndex: 'availability_ads/worker-index.json',
+      employerOffersIndex: 'direct_offers/employer-index.json',
+      workerOffersIndex: 'direct_offers/worker-index.json',
     },
     encoding: 'utf-8',
   },
@@ -521,7 +524,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.37.0',
+    cacheName: 'yawmia-v0.38.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -851,7 +854,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   SHARDING: {
     enabled: true,
-    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads'],
+    collections: ['jobs', 'applications', 'notifications', 'attendance', 'messages', 'ratings', 'payments', 'instant_matches', 'availability_ads', 'direct_offers'],
     strategy: 'monthly',                     // YYYY-MM subdirectories
     readScanMonths: 6,                       // عدد الأشهر للبحث الخلفي عند عدم وجود cache
     locationCacheMax: 50000,                 // أقصى عدد entries في shard location cache
@@ -956,13 +959,20 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — placeholder for Phase 42
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active
   // ═══════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
-    enabled: false,                          // Phase 42 يفعّلها
-    acceptanceWindowSeconds: 120,
-    maxPendingPerEmployer: 5,
-    maxPendingPerWorker: 3,
+    enabled: true,                            // Phase 42 — closed Talent Exchange loop
+    acceptanceWindowSeconds: 120,             // worker has 120s to accept
+    maxPendingPerEmployer: 5,                 // anti-spam: max 5 concurrent pending offers per employer
+    maxPendingPerWorker: 3,                   // anti-overwhelm: max 3 concurrent pending offers per worker
+    maxPerEmployerPerDay: 20,                 // daily ceiling per employer (Egypt timezone reset)
+    cleanupIntervalMs: 30 * 1000,             // sweep stale pending offers every 30s
+    expiryBufferMs: 5 * 1000,                 // 5s grace period for race conditions
+    declineReasons: ['busy', 'wage_low', 'distance', 'category_mismatch', 'other'],
+    enableTwoPhaseReveal: true,               // hide identity (name+phone) before accept
+    syntheticJobUrgency: 'immediate',         // synthetic jobs urgency level
+    maxMessageLength: 200,                    // optional employer message ≤ 200 chars
   },
 
 };
@@ -1013,7 +1023,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1340,6 +1350,20 @@ if (config.AVAILABILITY_ADS && config.AVAILABILITY_ADS.enabled) {
   if (adDedupCleanupTimer.unref) adDedupCleanupTimer.unref();
 }
 
+// ── Phase 42 — Direct offer expiration timer (every 30s) ─────
+if (config.DIRECT_OFFERS && config.DIRECT_OFFERS.enabled) {
+  const directOfferTimer = setInterval(async () => {
+    try {
+      const { cleanupExpired } = await import('./server/services/directOffer.js');
+      const count = await cleanupExpired();
+      if (count > 0) logger.info(`Direct offers: expired ${count} offer(s)`);
+    } catch (err) {
+      logger.warn('Direct offer cleanup error', { error: err.message });
+    }
+  }, config.DIRECT_OFFERS.cleanupIntervalMs || 30 * 1000);
+  if (directOfferTimer.unref) directOfferTimer.unref();
+}
+
 // ── Activity Summary Timer (separate — checks every hour if weekly digest is due) ──
 if (config.ACTIVITY_SUMMARY && config.ACTIVITY_SUMMARY.enabled) {
   const summaryTimer = setInterval(async () => {
@@ -1459,6 +1483,7 @@ import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './han
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
 import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
+import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -1483,7 +1508,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.37.0',
+        version: '0.38.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1572,6 +1597,13 @@ const routes = [
       } catch (_) {
         response.workerDiscovery = { tilesCached: 0, totalCachedItems: 0, cardsCached: 0 };
       }
+      // Phase 42 — Direct offers stats (non-blocking)
+      try {
+        const { getStats: offerStats } = await import('./services/directOffer.js');
+        response.directOffers = await offerStats();
+      } catch (_) {
+        response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1606,7 +1638,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.37.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.38.0' });
     },
   },
 
@@ -1728,6 +1760,14 @@ const routes = [
 
   // ── Phase 41 — Admin Ad Stats ──
   { method: 'GET', path: '/api/admin/availability-ads/stats', middlewares: [requireAdmin], handler: handleAdStats },
+
+  // ── Phase 42 — Direct Offers ──
+  { method: 'POST', path: '/api/direct-offers', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateOffer },
+  { method: 'GET', path: '/api/direct-offers/mine', middlewares: [requireAuth], handler: handleListMyOffers },
+  { method: 'POST', path: '/api/direct-offers/:id/accept', middlewares: [requireAuth, requireRole('worker')], handler: handleAcceptOffer },
+  { method: 'POST', path: '/api/direct-offers/:id/decline', middlewares: [requireAuth, requireRole('worker')], handler: handleDeclineOffer },
+  { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
+  { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },

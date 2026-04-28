@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.37.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-27T19:24:02.802Z
-> Files in this part: 39
+# يوميّة (Yawmia) v0.38.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-28T23:20:35.830Z
+> Files in this part: 40
 
 ## Files
 1. `frontend/404.html`
@@ -11,37 +11,38 @@
 6. `frontend/assets/js/admin.js`
 7. `frontend/assets/js/app.js`
 8. `frontend/assets/js/auth.js`
-9. `frontend/assets/js/icons.js`
-10. `frontend/assets/js/instantMatch.js`
-11. `frontend/assets/js/jobCard.js`
-12. `frontend/assets/js/jobDetail.js`
-13. `frontend/assets/js/jobs.js`
-14. `frontend/assets/js/livePresence.js`
-15. `frontend/assets/js/modal.js`
-16. `frontend/assets/js/panels.js`
-17. `frontend/assets/js/profile.js`
-18. `frontend/assets/js/ratingModal.js`
-19. `frontend/assets/js/talentRadar.js`
-20. `frontend/assets/js/toast.js`
-21. `frontend/assets/js/user.js`
-22. `frontend/assets/js/utils.js`
-23. `frontend/dashboard.html`
-24. `frontend/index.html`
-25. `frontend/job.html`
-26. `frontend/manifest.json`
-27. `frontend/offline.html`
-28. `frontend/profile.html`
-29. `frontend/robots.txt`
-30. `frontend/sitemap.xml`
-31. `frontend/sw.js`
-32. `frontend/terms.html`
-33. `frontend/user.html`
-34. `scripts/backup.js`
-35. `scripts/benchmark.js`
-36. `scripts/bundle-for-review.js`
-37. `scripts/generate-vapid-keys.js`
-38. `scripts/migrate.js`
-39. `scripts/repair-indexes.js`
+9. `frontend/assets/js/directOffer.js`
+10. `frontend/assets/js/icons.js`
+11. `frontend/assets/js/instantMatch.js`
+12. `frontend/assets/js/jobCard.js`
+13. `frontend/assets/js/jobDetail.js`
+14. `frontend/assets/js/jobs.js`
+15. `frontend/assets/js/livePresence.js`
+16. `frontend/assets/js/modal.js`
+17. `frontend/assets/js/panels.js`
+18. `frontend/assets/js/profile.js`
+19. `frontend/assets/js/ratingModal.js`
+20. `frontend/assets/js/talentRadar.js`
+21. `frontend/assets/js/toast.js`
+22. `frontend/assets/js/user.js`
+23. `frontend/assets/js/utils.js`
+24. `frontend/dashboard.html`
+25. `frontend/index.html`
+26. `frontend/job.html`
+27. `frontend/manifest.json`
+28. `frontend/offline.html`
+29. `frontend/profile.html`
+30. `frontend/robots.txt`
+31. `frontend/sitemap.xml`
+32. `frontend/sw.js`
+33. `frontend/terms.html`
+34. `frontend/user.html`
+35. `scripts/backup.js`
+36. `scripts/benchmark.js`
+37. `scripts/bundle-for-review.js`
+38. `scripts/generate-vapid-keys.js`
+39. `scripts/migrate.js`
+40. `scripts/repair-indexes.js`
 
 ---
 
@@ -3779,6 +3780,198 @@ textarea:focus:not(:focus-visible) {
     width: 100%;
   }
 }
+
+/* ═══ Phase 42 — Direct Offer Modal ═══ */
+.direct-offer-overlay {
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.85);
+  animation: fade-in var(--duration-normal, 0.2s) ease-out;
+}
+
+.direct-offer-card {
+  max-width: 440px;
+  width: 95%;
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 40px rgba(37, 99, 235, 0.4);
+  animation: instant-match-pulse-card 0.4s ease-out;
+}
+
+.direct-offer-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 0.75rem;
+}
+
+.direct-offer-modal__badge {
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.direct-offer-modal__countdown {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: center;
+}
+
+.direct-offer-modal__countdown.countdown-warning {
+  color: var(--color-error);
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+.direct-offer-modal__sub {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-warning);
+  margin-block-end: 0.75rem;
+}
+
+.direct-offer-modal__info {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-block: 0.75rem;
+}
+
+.direct-offer-modal__info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 0.4rem;
+  border-block-end: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.direct-offer-modal__info-row:last-child {
+  border-block-end: none;
+}
+
+.direct-offer-modal__info-label {
+  color: var(--color-text-muted);
+}
+
+.direct-offer-modal__info-value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.direct-offer-modal__message {
+  background: rgba(37, 99, 235, 0.08);
+  border-inline-start: 3px solid var(--color-primary);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-block: 0.75rem;
+}
+
+.direct-offer-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+}
+
+.direct-offer-modal__accept {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.9rem 1.5rem;
+  min-height: 56px;
+}
+
+.direct-offer-modal__error {
+  display: none;
+  text-align: center;
+  color: var(--color-error);
+  margin-block-start: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Direct Offer — Reveal Modal (post-accept full identity) */
+.do-reveal-overlay {
+  z-index: 500;
+}
+
+.do-reveal-card {
+  max-width: 420px;
+  border: 2px solid var(--color-success);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+}
+
+.do-reveal-modal__identity {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-start: 0.75rem;
+  text-align: center;
+}
+
+.do-reveal-modal__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-block-end: 0.25rem;
+}
+
+.do-reveal-modal__rating {
+  color: var(--color-warning);
+  font-size: 0.9rem;
+  margin-block-end: 0.5rem;
+}
+
+.do-reveal-modal__phone {
+  display: inline-block;
+  background: var(--color-success);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-block-start: 0.5rem;
+}
+
+.do-reveal-modal__phone:hover {
+  filter: brightness(1.1);
+}
+
+/* Direct Offer — Compose Modal (employer side) */
+.offer-compose-overlay {
+  z-index: 350;
+}
+
+.offer-compose-card {
+  max-width: 460px;
+  width: 95%;
+}
+
+.offer-compose__worker-summary {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .direct-offer-card {
+    max-width: 95%;
+  }
+  .direct-offer-modal__countdown {
+    font-size: 2.5rem;
+  }
+  .direct-offer-modal__accept {
+    min-height: 60px;
+    font-size: 1.2rem;
+  }
+}
 ```
 
 ---
@@ -5606,6 +5799,356 @@ var Yawmia = (function () {
       }
     });
   }
+})();
+```
+
+---
+
+## `frontend/assets/js/directOffer.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/directOffer.js — Direct Offer Modal (Phase 42)
+// ═══════════════════════════════════════════════════════════════
+// Worker-side: receives direct_offer_received SSE event,
+// shows full-screen alertdialog with countdown,
+// handles accept/decline, displays post-accept reveal modal.
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaDirectOffer = (function () {
+  'use strict';
+
+  var activeModal = null;
+  var countdownTimer = null;
+  var releaseTrap = null;
+
+  function escapeHtml(str) {
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
+  }
+
+  // ── Audio + Vibration ───────────────────────────────────────
+  function playOfferSound() {
+    try {
+      var AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      var ctx = new AudioContext();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(700, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    } catch (_) { /* audio unavailable */ }
+  }
+
+  function vibrate() {
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (_) {}
+  }
+
+  // ── Modal lifecycle ─────────────────────────────────────────
+  function closeModal() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    if (releaseTrap) { try { releaseTrap(); } catch (_) {} releaseTrap = null; }
+    if (activeModal && activeModal.parentNode) activeModal.parentNode.removeChild(activeModal);
+    activeModal = null;
+    document.body.style.overflow = '';
+  }
+
+  // ── Show offer modal (worker receives offer) ────────────────
+  async function showOfferModal(detail) {
+    if (!detail || !detail.offerId) return;
+    if (activeModal) closeModal();
+
+    // Fetch full offer details (redacted)
+    var offer;
+    try {
+      var res = await Yawmia.api('GET', '/api/direct-offers/' + detail.offerId);
+      if (!res.data || !res.data.ok || !res.data.offer) return;
+      offer = res.data.offer;
+    } catch (err) { return; }
+
+    if (offer.status !== 'pending') return;
+
+    var notifiedAt = detail.notifiedAt ? new Date(detail.notifiedAt).getTime() : Date.now();
+    var windowSec = detail.acceptanceWindowSeconds || offer.acceptanceWindowSeconds || 120;
+    var expiresAt = notifiedAt + windowSec * 1000;
+
+    var titleId = 'do-title-' + Date.now();
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay direct-offer-overlay';
+
+    var card = document.createElement('div');
+    card.className = 'ym-modal-card direct-offer-card';
+    card.setAttribute('role', 'alertdialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-labelledby', titleId);
+    card.setAttribute('aria-live', 'assertive');
+
+    var verifiedBadge = offer.employerVerified ? '<span class="verification-badge verification-badge--verified" style="font-size:0.7rem;">✓ محقق</span>' : '';
+    var ratingHtml = (offer.employerRating && offer.employerRating.count > 0)
+      ? '⭐ ' + offer.employerRating.avg + ' (' + offer.employerRating.count + ')'
+      : 'بدون تقييم';
+
+    var messageHtml = '';
+    if (offer.message) {
+      messageHtml =
+        '<div class="direct-offer-modal__message">' +
+          '<strong>رسالة من صاحب العمل:</strong><br>' + escapeHtml(offer.message) +
+        '</div>';
+    }
+
+    card.innerHTML =
+      '<div class="direct-offer-modal__header">' +
+        '<span class="direct-offer-modal__badge">📩 عرض عمل مباشر</span>' +
+        '<span class="direct-offer-modal__countdown" id="doCountdown" aria-live="polite">' + windowSec + '</span>' +
+      '</div>' +
+      '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(offer.employerDisplayName || 'صاحب عمل') + ' ' + verifiedBadge + '</h3>' +
+      '<div class="direct-offer-modal__sub">' + escapeHtml(ratingHtml) + '</div>' +
+      '<div class="direct-offer-modal__info">' +
+        '<div class="direct-offer-modal__info-row">' +
+          '<span class="direct-offer-modal__info-label">💰 الأجر</span>' +
+          '<span class="direct-offer-modal__info-value">' + offer.proposedDailyWage + ' جنيه/يوم</span>' +
+        '</div>' +
+        '<div class="direct-offer-modal__info-row">' +
+          '<span class="direct-offer-modal__info-label">📅 يبدأ</span>' +
+          '<span class="direct-offer-modal__info-value">' + escapeHtml(offer.proposedStartDate) + '</span>' +
+        '</div>' +
+        '<div class="direct-offer-modal__info-row">' +
+          '<span class="direct-offer-modal__info-label">⏱ المدة</span>' +
+          '<span class="direct-offer-modal__info-value">' + (offer.proposedDurationDays || 1) + ' يوم</span>' +
+        '</div>' +
+        '<div class="direct-offer-modal__info-row">' +
+          '<span class="direct-offer-modal__info-label">📍 المحافظة</span>' +
+          '<span class="direct-offer-modal__info-value">' + escapeHtml(offer.governorate) + '</span>' +
+        '</div>' +
+      '</div>' +
+      messageHtml +
+      '<div class="direct-offer-modal__actions">' +
+        '<button class="btn btn--success btn--full direct-offer-modal__accept" id="btnAcceptOffer">✓ اقبل العرض</button>' +
+        '<button class="btn btn--ghost btn--sm direct-offer-modal__decline" id="btnDeclineOffer">✗ ارفض</button>' +
+      '</div>' +
+      '<div class="direct-offer-modal__error" id="doError"></div>';
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    activeModal = overlay;
+
+    if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.trapFocus) {
+      releaseTrap = YawmiaUtils.trapFocus(card, function () { closeModal(); });
+    }
+
+    playOfferSound();
+    vibrate();
+
+    // Countdown
+    var countdownEl = document.getElementById('doCountdown');
+    function updateCountdown() {
+      var remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 10) countdownEl.classList.add('countdown-warning');
+      }
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        showError('انتهت مهلة العرض ⌛');
+        setTimeout(closeModal, 1500);
+      }
+    }
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 1000);
+
+    // Accept handler
+    var acceptBtn = document.getElementById('btnAcceptOffer');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', async function () {
+        Yawmia.setLoading(acceptBtn, true);
+        try {
+          var ar = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/accept');
+          if (ar.data && ar.data.ok) {
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success('تم قبول العرض ✓');
+            }
+            closeModal();
+            // Show reveal modal with full identity
+            showRevealModal(ar.data.offer, ar.data.jobId);
+            // Notify rest of UI
+            window.dispatchEvent(new CustomEvent('yawmia:direct-offer-accepted', {
+              detail: { offerId: offer.id, jobId: ar.data.jobId }
+            }));
+          } else {
+            var code = ar.data && ar.data.code;
+            var msg = (ar.data && ar.data.error) || 'تعذّر قبول العرض';
+            showError(msg);
+            if (code === 'OFFER_NOT_PENDING' || code === 'OFFER_EXPIRED') {
+              setTimeout(closeModal, 2000);
+            } else {
+              Yawmia.setLoading(acceptBtn, false);
+            }
+          }
+        } catch (err) {
+          showError('خطأ في الاتصال');
+          Yawmia.setLoading(acceptBtn, false);
+        }
+      });
+    }
+
+    // Decline handler
+    var declineBtn = document.getElementById('btnDeclineOffer');
+    if (declineBtn) {
+      declineBtn.addEventListener('click', async function () {
+        // Optional reason picker
+        var reason = null;
+        try {
+          if (typeof YawmiaModal !== 'undefined') {
+            // Simple reason picker dialog
+            reason = await pickDeclineReason();
+          }
+        } catch (_) { /* skip reason */ }
+
+        Yawmia.setLoading(declineBtn, true);
+        try {
+          var dr = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/decline', reason ? { reason: reason } : {});
+          if (dr.data && dr.data.ok) {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.info('تم رفض العرض');
+            closeModal();
+          } else {
+            showError((dr.data && dr.data.error) || 'تعذّر رفض العرض');
+            Yawmia.setLoading(declineBtn, false);
+          }
+        } catch (err) {
+          showError('خطأ في الاتصال');
+          Yawmia.setLoading(declineBtn, false);
+        }
+      });
+    }
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('doError');
+    if (el) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+  }
+
+  // ── Decline reason picker (simple) ──────────────────────────
+  function pickDeclineReason() {
+    return new Promise(function (resolve) {
+      var existing = document.querySelector('.do-reason-overlay');
+      if (existing) existing.remove();
+
+      var overlay = document.createElement('div');
+      overlay.className = 'ym-modal-overlay do-reason-overlay';
+      overlay.style.zIndex = '600';
+
+      var card = document.createElement('div');
+      card.className = 'ym-modal-card';
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+
+      var reasons = [
+        { value: 'busy', label: 'مشغول دلوقتي' },
+        { value: 'wage_low', label: 'الأجر قليل' },
+        { value: 'distance', label: 'بعيد عني' },
+        { value: 'category_mismatch', label: 'مش تخصصي' },
+        { value: 'other', label: 'سبب آخر' },
+      ];
+
+      var btnsHtml = reasons.map(function (r) {
+        return '<button class="btn btn--ghost btn--sm do-reason-btn" data-reason="' + r.value + '" style="margin:0.25rem;">' + r.label + '</button>';
+      }).join('');
+
+      card.innerHTML =
+        '<h3 class="ym-modal-title">سبب الرفض (اختياري)</h3>' +
+        '<div style="display:flex;flex-wrap:wrap;justify-content:center;">' + btnsHtml + '</div>' +
+        '<div class="ym-modal-actions" style="margin-block-start:1rem;">' +
+          '<button class="btn btn--ghost btn--sm" id="doReasonSkip">تخطي</button>' +
+        '</div>';
+
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      function cleanup(reason) {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        resolve(reason);
+      }
+
+      card.querySelectorAll('.do-reason-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          cleanup(btn.getAttribute('data-reason'));
+        });
+      });
+
+      var skipBtn = document.getElementById('doReasonSkip');
+      if (skipBtn) skipBtn.addEventListener('click', function () { cleanup(null); });
+
+      // Auto-resolve null after 8 seconds (don't block decline)
+      setTimeout(function () { cleanup(null); }, 8000);
+    });
+  }
+
+  // ── Show reveal modal (post-accept full identity) ───────────
+  function showRevealModal(offer, jobId) {
+    if (!offer || !offer.revealedToWorker) return;
+
+    var existing = document.querySelector('.do-reveal-overlay');
+    if (existing) existing.remove();
+
+    var r = offer.revealedToWorker;
+    var verifiedBadge = r.employerVerified ? '<span class="verification-badge verification-badge--verified">✓ محقق</span>' : '';
+    var ratingHtml = (r.employerRating && r.employerRating.count > 0)
+      ? '⭐ ' + r.employerRating.avg + ' (' + r.employerRating.count + ')'
+      : '';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay do-reveal-overlay';
+
+    var card = document.createElement('div');
+    card.className = 'ym-modal-card do-reveal-card';
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+
+    card.innerHTML =
+      '<h3 class="ym-modal-title" style="color:var(--color-success);">✓ تم قبول العرض</h3>' +
+      '<div class="do-reveal-modal__identity">' +
+        '<div class="do-reveal-modal__name">' + escapeHtml(r.employerName) + ' ' + verifiedBadge + '</div>' +
+        (ratingHtml ? '<div class="do-reveal-modal__rating">' + escapeHtml(ratingHtml) + '</div>' : '') +
+        '<a class="do-reveal-modal__phone" href="tel:' + escapeHtml(r.employerPhone) + '" dir="ltr">📞 ' + escapeHtml(r.employerPhone) + '</a>' +
+      '</div>' +
+      '<p class="ym-modal-message" style="margin-block-start:1rem;">يمكنك الآن التواصل مع صاحب العمل والاتفاق على التفاصيل.</p>' +
+      '<div class="ym-modal-actions">' +
+        '<a href="/dashboard.html" class="btn btn--primary btn--sm">ابدأ المحادثة</a>' +
+        '<button class="btn btn--ghost btn--sm" id="doRevealClose">إغلاق</button>' +
+      '</div>';
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    var closeBtn = document.getElementById('doRevealClose');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () { overlay.remove(); });
+    }
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) overlay.remove();
+    });
+  }
+
+  // ── Listen for SSE-forwarded window event ───────────────────
+  window.addEventListener('yawmia:direct-offer-received', function (e) {
+    if (e.detail) showOfferModal(e.detail);
+  });
+
+  return {
+    showOfferModal: showOfferModal,
+    showRevealModal: showRevealModal,
+    closeModal: closeModal,
+  };
 })();
 ```
 
@@ -7701,6 +8244,13 @@ var YawmiaLivePresence = (function () {
         try {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:instant-match-taken', { detail: data }));
+        } catch (_) {}
+      });
+
+      liveFeedSource.addEventListener('direct_offer_received', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:direct-offer-received', { detail: data }));
         } catch (_) {}
       });
 
@@ -10639,11 +11189,149 @@ var YawmiaTalentRadar = (function () {
   }
 
   /**
-   * Handle quick offer click — Phase 41 stub.
+   * Handle quick offer click — Phase 42: opens compose modal.
    */
   function handleQuickOfferClick(workerId, btn) {
-    if (typeof YawmiaToast !== 'undefined') {
-      YawmiaToast.info('إرسال العروض المباشرة هتكون متاحة في التحديث القادم 🚀');
+    showOfferComposeModal(workerId, btn);
+  }
+
+  /**
+   * Show compose modal for direct offer (Phase 42).
+   */
+  async function showOfferComposeModal(workerId, btn) {
+    if (btn) Yawmia.setLoading(btn, true);
+
+    var card;
+    try {
+      var cardRes = await Yawmia.api('GET', '/api/workers/' + workerId + '/card');
+      if (!cardRes.data || !cardRes.data.ok || !cardRes.data.card) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('تعذّر تحميل بيانات العامل');
+        return;
+      }
+      card = cardRes.data.card;
+    } catch (err) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+      return;
+    } finally {
+      if (btn) Yawmia.setLoading(btn, false);
+    }
+
+    // Defaults
+    var defaultCategory = (card.categories && card.categories.length > 0) ? card.categories[0] : '';
+    var defaultGovernorate = card.governorate || '';
+    var defaultWage = (card.adSummary && card.adSummary.minDailyWage) ? card.adSummary.minDailyWage : 250;
+    var adId = (card.adSummary && card.adSummary.adId) ? card.adSummary.adId : null;
+    var tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Build modal
+    var existing = document.querySelector('.offer-compose-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'ym-modal-overlay offer-compose-overlay';
+
+    var modalCard = document.createElement('div');
+    modalCard.className = 'ym-modal-card offer-compose-card';
+    modalCard.setAttribute('role', 'dialog');
+    modalCard.setAttribute('aria-modal', 'true');
+
+    modalCard.innerHTML =
+      '<h3 class="ym-modal-title">📩 إرسال عرض إلى ' + escapeHtml(card.displayName) + '</h3>' +
+      '<div class="offer-compose__worker-summary">' +
+        '<div>' + escapeHtml(card.displayName) + (card.verificationStatus === 'verified' ? ' ✓' : '') + '</div>' +
+        '<div style="font-size:0.8rem;color:var(--color-text-muted);">📍 ' + escapeHtml(card.governorate || '') + '</div>' +
+      '</div>' +
+      '<div class="form-group" style="margin-block-start:1rem;">' +
+        '<label class="form-label" for="ocCategory">التخصص</label>' +
+        '<select id="ocCategory" class="form-input form-input--sm"><option value="">اختار...</option></select>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocWage">الأجر اليومي (جنيه)</label>' +
+        '<input type="number" id="ocWage" class="form-input form-input--sm" min="150" max="1000" value="' + defaultWage + '">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocStartDate">تاريخ البدء</label>' +
+        '<input type="date" id="ocStartDate" class="form-input form-input--sm" dir="ltr" value="' + tomorrow + '">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="ocMessage">رسالة (اختياري — أقصى 200 حرف)</label>' +
+        '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '</div>' +
+      '<div class="ym-modal-error" id="ocError"></div>' +
+      '<div class="ym-modal-actions">' +
+        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال العرض</button>' +
+        '<button class="btn btn--ghost btn--sm" id="ocCancel">إلغاء</button>' +
+      '</div>';
+
+    overlay.appendChild(modalCard);
+    document.body.appendChild(overlay);
+
+    // Populate categories
+    Yawmia.populateCategories('ocCategory').then(function () {
+      var sel = document.getElementById('ocCategory');
+      if (sel && defaultCategory) sel.value = defaultCategory;
+    }).catch(function () {});
+
+    function cleanup() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    var cancelBtn = document.getElementById('ocCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', cleanup);
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) cleanup();
+    });
+
+    var submitBtn = document.getElementById('ocSubmit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async function () {
+        var errorEl = document.getElementById('ocError');
+        if (errorEl) errorEl.textContent = '';
+
+        var catEl = document.getElementById('ocCategory');
+        var wageEl = document.getElementById('ocWage');
+        var dateEl = document.getElementById('ocStartDate');
+        var msgEl = document.getElementById('ocMessage');
+
+        var category = catEl ? catEl.value : '';
+        var wage = wageEl ? parseInt(wageEl.value, 10) : NaN;
+        var startDate = dateEl ? dateEl.value : '';
+        var message = msgEl ? msgEl.value.trim() : '';
+
+        if (!category) { errorEl.textContent = 'اختار التخصص'; return; }
+        if (isNaN(wage) || wage < 150 || wage > 1000) { errorEl.textContent = 'الأجر لازم يكون بين 150 و 1000 جنيه'; return; }
+        if (!startDate) { errorEl.textContent = 'حدّد تاريخ البدء'; return; }
+        if (message.length > 200) { errorEl.textContent = 'الرسالة لا تتجاوز 200 حرف'; return; }
+
+        var body = {
+          workerId: workerId,
+          adId: adId,
+          category: category,
+          governorate: defaultGovernorate,
+          proposedDailyWage: wage,
+          proposedStartDate: startDate,
+          proposedDurationDays: 1,
+        };
+        if (message) body.message = message;
+
+        Yawmia.setLoading(submitBtn, true);
+
+        try {
+          var res = await Yawmia.api('POST', '/api/direct-offers', body);
+          if (res.data && res.data.ok) {
+            cleanup();
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success('تم إرسال العرض ✓ — العامل عنده 120 ثانية للرد');
+            }
+          } else {
+            errorEl.textContent = (res.data && res.data.error) || 'تعذّر إرسال العرض';
+            Yawmia.setLoading(submitBtn, false);
+          }
+        } catch (err) {
+          errorEl.textContent = 'خطأ في الاتصال';
+          Yawmia.setLoading(submitBtn, false);
+        }
+      });
     }
   }
 
@@ -11691,6 +12379,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/jobCard.js"></script>
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>
+  <script src="./assets/js/directOffer.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
@@ -12312,6 +13001,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/modal.js"></script>
   <script src="./assets/js/livePresence.js"></script>
   <script src="./assets/js/adForm.js"></script>
+  <script src="./assets/js/directOffer.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -12373,7 +13063,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.37.0';
+const CACHE_NAME = 'yawmia-v0.38.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -12400,6 +13090,7 @@ const STATIC_ASSETS = [
   '/assets/js/instantMatch.js',
   '/assets/js/talentRadar.js',
   '/assets/js/adForm.js',
+  '/assets/js/directOffer.js',
   '/job.html',
   '/assets/js/jobDetail.js',
   '/assets/css/tokens.css',
@@ -13525,6 +14216,41 @@ async function repair() {
     totalFixed++;
   } else {
     console.log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+  }
+
+  // 17. Employer-Offers Index (direct_offers/employer-index.json) — Phase 42
+  console.log('1️⃣7️⃣ Employer-Offers Index...');
+  const offers = await listRecords(join(DATA_DIR, 'direct_offers'), 'dof_');
+  const employerOffersIndex = {};
+  for (const offer of offers) {
+    if (!employerOffersIndex[offer.employerId]) employerOffersIndex[offer.employerId] = [];
+    employerOffersIndex[offer.employerId].push(offer.id);
+  }
+  const existingEmpOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/employer-index.json')) || {};
+  const empOffersIndexChanged = JSON.stringify(employerOffersIndex) !== JSON.stringify(existingEmpOffersIndex);
+  if (empOffersIndexChanged) {
+    console.log(`   ⚠️  Employer-Offers index needs repair (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/employer-index.json'), employerOffersIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Employer-Offers index OK (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+  }
+
+  // 18. Worker-Offers Index (direct_offers/worker-index.json) — Phase 42
+  console.log('1️⃣8️⃣ Worker-Offers Index...');
+  const workerOffersIndex = {};
+  for (const offer of offers) {
+    if (!workerOffersIndex[offer.workerId]) workerOffersIndex[offer.workerId] = [];
+    workerOffersIndex[offer.workerId].push(offer.id);
+  }
+  const existingWorkerOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/worker-index.json')) || {};
+  const workerOffersIndexChanged = JSON.stringify(workerOffersIndex) !== JSON.stringify(existingWorkerOffersIndex);
+  if (workerOffersIndexChanged) {
+    console.log(`   ⚠️  Worker-Offers index needs repair (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
+    if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/worker-index.json'), workerOffersIndex);
+    totalFixed++;
+  } else {
+    console.log(`   ✅ Worker-Offers index OK (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
   }
 
   // Phase 40+41 note: instant_matches is sharded but has no secondary index files —
