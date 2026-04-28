@@ -261,7 +261,10 @@ function validateFields(fields) {
 
 /**
  * Create a new direct offer.
- * Serialized per employer via withLock(`offer-create:${employerId}`) for atomic cap enforcement.
+ * Two-level locking for atomic cap enforcement:
+ *   - Outer lock: per-worker (`offer-create-worker:${workerId}`) — serializes ALL creates targeting same worker
+ *   - Inner lock: per-employer (`offer-create-emp:${employerId}`) — serializes per-employer cap checks
+ * Lock order is fixed (worker → employer) to prevent deadlock.
  *
  * @param {string} employerId
  * @param {string} workerId
@@ -269,7 +272,13 @@ function validateFields(fields) {
  * @returns {Promise<{ ok: boolean, offer?: object, error?: string, code?: string }>}
  */
 export function create(employerId, workerId, fields) {
-  return withLock(`offer-create:${employerId}`, async () => {
+  // Outer lock: per-worker — ensures only one create attempt against this worker proceeds at a time.
+  // This makes the worker pending cap (max 3) atomically enforced even when multiple
+  // employers race to create offers for the same worker.
+  return withLock(`offer-create-worker:${workerId}`, async () => {
+    // Inner lock: per-employer — ensures employer cap (max 5) and daily cap (max 20)
+    // are atomically enforced when the same employer creates offers in parallel.
+    return withLock(`offer-create-emp:${employerId}`, async () => {
     // 1. Feature flag
     if (!config.DIRECT_OFFERS || !config.DIRECT_OFFERS.enabled) {
       return { ok: false, error: 'العروض المباشرة غير مفعّلة', code: 'OFFERS_DISABLED' };
@@ -440,7 +449,8 @@ export function create(employerId, workerId, fields) {
     logger.info('Direct offer created', { offerId: id, employerId, workerId, adId });
 
     return { ok: true, offer: redactOfferForViewer(offer, employerId) };
-  });
+    }); // end inner lock (per-employer)
+  }); // end outer lock (per-worker)
 }
 
 // ═══════════════════════════════════════════════════════════════
