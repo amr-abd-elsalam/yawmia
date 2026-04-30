@@ -454,7 +454,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.38.0',
+    cacheName: 'yawmia-v0.39.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -889,7 +889,7 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening
   // ═══════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
     enabled: true,                            // Phase 42 — closed Talent Exchange loop
@@ -897,6 +897,7 @@ const config = {
     maxPendingPerEmployer: 5,                 // anti-spam: max 5 concurrent pending offers per employer
     maxPendingPerWorker: 3,                   // anti-overwhelm: max 3 concurrent pending offers per worker
     maxPerEmployerPerDay: 20,                 // daily ceiling per employer (Egypt timezone reset)
+    perWorkerDailyReceiveCap: 50,             // Phase 43 — anti-spam: max offers a single worker can receive per day
     cleanupIntervalMs: 30 * 1000,             // sweep stale pending offers every 30s
     expiryBufferMs: 5 * 1000,                 // 5s grace period for race conditions
     declineReasons: ['busy', 'wage_low', 'distance', 'category_mismatch', 'other'],

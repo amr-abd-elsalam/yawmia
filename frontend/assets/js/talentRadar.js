@@ -52,6 +52,31 @@ var YawmiaTalentRadar = (function () {
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(loadWorkers, 30000);
 
+    // Phase 43 — Listen for direct offer status updates (real-time SSE feed)
+    if (!window._yawmiaTalentRadarStatusListener) {
+      window._yawmiaTalentRadarStatusListener = true;
+      window.addEventListener('yawmia:direct-offer-status', function (e) {
+        var detail = e.detail;
+        if (!detail) return;
+
+        var labels = {
+          accepted: '✓ تم قبول العرض',
+          declined: '✗ تم رفض العرض' + (detail.reason ? ' (' + detail.reason + ')' : ''),
+          expired: '⌛ انتهت مهلة العرض',
+        };
+
+        if (typeof YawmiaToast !== 'undefined') {
+          var type = detail.status === 'accepted' ? 'success' : 'info';
+          YawmiaToast[type](labels[detail.status] || 'تحديث على عرض');
+        }
+
+        // Refresh radar 1s later to update worker availability (gives server time to settle ad state)
+        setTimeout(function () {
+          if (mountEl) loadWorkers();
+        }, 1000);
+      });
+    }
+
     window.dispatchEvent(new CustomEvent('yawmia:talent-radar-loaded'));
   }
 

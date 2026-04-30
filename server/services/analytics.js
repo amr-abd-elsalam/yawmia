@@ -126,6 +126,9 @@ export async function getEmployerAnalytics(employerId, options = {}) {
       if (!job) continue;
       if (!inRange(job.createdAt, from, to)) continue;
 
+      // Phase 43: filter synthetic jobs (Direct Offers) from regular employer metrics
+      if (job.sourceType === 'direct_offer') continue;
+
       // Jobs breakdown
       result.jobs.total++;
       if (result.jobs.byStatus[job.status] !== undefined) {
@@ -233,6 +236,19 @@ export async function getEmployerAnalytics(employerId, options = {}) {
     logger.warn('getEmployerAnalytics error', { employerId, error: err.message });
   }
 
+  // Phase 43 — Add Direct Offers separate metric (clean separation from regular jobs)
+  try {
+    const { getEmployerOfferStats } = await import('./directOffer.js');
+    result.directOffers = await getEmployerOfferStats(employerId, { from, to });
+  } catch (_) {
+    result.directOffers = {
+      total: 0, pending: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+      declineReasons: {},
+      avgTimeToResponseMs: 0,
+      acceptRate: 0,
+    };
+  }
+
   cacheSet(cacheKey, result);
   return result;
 }
@@ -302,18 +318,23 @@ export async function getWorkerAnalytics(workerId, options = {}) {
         try {
           const job = await findJob(app.jobId);
           if (job && job.status === 'completed') {
-            result.jobs.completed++;
-            // Calculate earnings from payment
-            try {
-              const payments = await listPaymentsByJob(app.jobId);
-              if (payments.length > 0) {
-                const pay = payments[0];
-                // Worker payout split evenly among accepted workers
-                const acceptedCount = pay.workersAccepted || 1;
-                const perWorker = Math.round((pay.workerPayout || 0) / acceptedCount);
-                result.earnings.total += perWorker;
-              }
-            } catch (_) { /* non-fatal */ }
+            // Phase 43: filter synthetic jobs (Direct Offers) from regular worker metrics
+            if (job.sourceType === 'direct_offer') {
+              // Skip earnings + completed count for synthetic jobs (tracked separately in directOffers metric)
+            } else {
+              result.jobs.completed++;
+              // Calculate earnings from payment
+              try {
+                const payments = await listPaymentsByJob(app.jobId);
+                if (payments.length > 0) {
+                  const pay = payments[0];
+                  // Worker payout split evenly among accepted workers
+                  const acceptedCount = pay.workersAccepted || 1;
+                  const perWorker = Math.round((pay.workerPayout || 0) / acceptedCount);
+                  result.earnings.total += perWorker;
+                }
+              } catch (_) { /* non-fatal */ }
+            }
           }
         } catch (_) { /* non-fatal */ }
       } else if (app.status === 'rejected') {
@@ -374,6 +395,18 @@ export async function getWorkerAnalytics(workerId, options = {}) {
     logger.warn('getWorkerAnalytics error', { workerId, error: err.message });
   }
 
+  // Phase 43 — Add Direct Offers separate metric (clean separation from regular applications)
+  try {
+    const { getWorkerOfferStats } = await import('./directOffer.js');
+    result.directOffers = await getWorkerOfferStats(workerId, { from, to });
+  } catch (_) {
+    result.directOffers = {
+      total: 0, pending: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+      declineReasons: {},
+      avgTimeToResponseMs: 0,
+    };
+  }
+
   cacheSet(cacheKey, result);
   return result;
 }
@@ -431,6 +464,10 @@ export async function getPlatformAnalytics(options = {}) {
     const allJobs = await listAllJobs();
     for (const j of allJobs) {
       if (!inRange(j.createdAt, from, to)) continue;
+
+      // Phase 43: filter synthetic jobs (Direct Offers) from platform metrics
+      if (j.sourceType === 'direct_offer') continue;
+
       result.jobs.created++;
       if (j.status === 'completed') result.jobs.completed++;
       else if (j.status === 'cancelled') result.jobs.cancelled++;

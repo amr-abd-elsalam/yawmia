@@ -502,6 +502,50 @@ export async function markAsMatched(adId, jobId) {
 }
 
 /**
+ * Phase 43 — Idempotent ad-matched marker (handles partial-failure recovery).
+ * Used by directOffer.tryAccept (initial) + reconciliation listener (delayed re-sync).
+ *
+ * Semantics:
+ *   - If ad doesn't exist → { ok: false }
+ *   - If ad.status === 'matched' && matchedJobId === jobId → { ok: true, alreadyMatched: true } (no-op)
+ *   - If ad.status === 'matched' && matchedJobId !== jobId → conflict (preserve older state, log warning)
+ *   - Else → mark as matched, emit event
+ *
+ * @param {string} adId
+ * @param {string} jobId — synthetic job from accepted offer
+ * @returns {Promise<{ ok: boolean, alreadyMatched?: boolean }>}
+ */
+export async function ensureMarkedAsMatched(adId, jobId) {
+  const adPath = getRecordPath('availability_ads', adId);
+  const ad = await readJSON(adPath);
+  if (!ad) return { ok: false };
+
+  // Idempotent: already matched to same job
+  if (ad.status === 'matched' && ad.matchedJobId === jobId) {
+    return { ok: true, alreadyMatched: true };
+  }
+
+  // Conflict: matched to different job (preserve older state)
+  if (ad.status === 'matched' && ad.matchedJobId && ad.matchedJobId !== jobId) {
+    logger.warn('Ad already matched to different job', {
+      adId,
+      existing: ad.matchedJobId,
+      requested: jobId,
+    });
+    return { ok: false };
+  }
+
+  // Mark as matched (idempotent: works on active OR un-matched states)
+  ad.status = 'matched';
+  ad.matchedJobId = jobId;
+  ad.matchedAt = new Date().toISOString();
+  ad.updatedAt = ad.matchedAt;
+  await atomicWrite(adPath, ad);
+  eventBus.emit('ad:matched', { adId, workerId: ad.workerId, jobId });
+  return { ok: true, alreadyMatched: false };
+}
+
+/**
  * Get aggregate stats for /api/health and admin dashboard.
  * @returns {Promise<{ active: number, totalToday: number, expiredLastHour: number, withdrawnLastHour: number }>}
  */

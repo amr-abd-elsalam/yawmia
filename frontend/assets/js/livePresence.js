@@ -165,6 +165,14 @@ var YawmiaLivePresence = (function () {
         } catch (_) {}
       });
 
+      // Phase 43 — Direct offer status updates (employer-side: accepted/declined/expired)
+      liveFeedSource.addEventListener('direct_offer_status', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:direct-offer-status', { detail: data }));
+        } catch (_) {}
+      });
+
       liveFeedSource.onerror = function () { /* auto-reconnects */ };
     } catch (_) {
       liveFeedSource = null;

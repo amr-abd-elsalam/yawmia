@@ -27,7 +27,7 @@ import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './han
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
 import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
-import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer } from './handlers/directOfferHandler.js';
+import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer, handleEmployerOfferStats, handleWorkerOfferStats } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
@@ -52,7 +52,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.38.0',
+        version: '0.39.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -182,7 +182,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.38.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.39.0' });
     },
   },
 
@@ -305,9 +305,11 @@ const routes = [
   // ── Phase 41 — Admin Ad Stats ──
   { method: 'GET', path: '/api/admin/availability-ads/stats', middlewares: [requireAdmin], handler: handleAdStats },
 
-  // ── Phase 42 — Direct Offers ──
+  // ── Phase 42 — Direct Offers + Phase 43 stats ──
   { method: 'POST', path: '/api/direct-offers', middlewares: [requireAuth, requireRole('employer')], handler: handleCreateOffer },
   { method: 'GET', path: '/api/direct-offers/mine', middlewares: [requireAuth], handler: handleListMyOffers },
+  { method: 'GET', path: '/api/direct-offers/stats/employer', middlewares: [requireAuth, requireRole('employer')], handler: handleEmployerOfferStats },
+  { method: 'GET', path: '/api/direct-offers/stats/worker', middlewares: [requireAuth, requireRole('worker')], handler: handleWorkerOfferStats },
   { method: 'POST', path: '/api/direct-offers/:id/accept', middlewares: [requireAuth, requireRole('worker')], handler: handleAcceptOffer },
   { method: 'POST', path: '/api/direct-offers/:id/decline', middlewares: [requireAuth, requireRole('worker')], handler: handleDeclineOffer },
   { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
@@ -437,6 +439,10 @@ setupInstantMatchListeners();
 
 import { setupLiveFeedListeners } from './services/liveFeed.js';
 setupLiveFeedListeners();
+
+// Phase 43 — Setup direct offer reconciliation listener (5s delayed re-sync)
+import { setupDirectOfferListeners } from './services/directOffer.js';
+setupDirectOfferListeners();
 
 /**
  * Creates the router function

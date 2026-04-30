@@ -177,6 +177,25 @@ export function sendDirectOfferToWorker(workerId, payload) {
 }
 
 /**
+ * Phase 43 — Send direct offer status update to employer (for live Talent Radar UI).
+ * Triggered by direct_offer:accepted/declined/expired EventBus events.
+ *
+ * @param {string} employerId
+ * @param {object} payload — { offerId, status, workerId?, jobId?, reason? }
+ */
+export function sendDirectOfferStatusToEmployer(employerId, payload) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!employerId || !payload || !payload.offerId) return;
+
+  const conns = liveFeedConnections.get(employerId);
+  if (!conns || conns.size === 0) return;
+
+  for (const entry of conns) {
+    sendToConnection(entry, 'direct_offer_status', payload, 'dos-' + payload.offerId);
+  }
+}
+
+/**
  * Notify other candidates that an offer was taken (close their modals).
  * @param {string[]} workerIds
  * @param {object} payload
@@ -382,6 +401,34 @@ export function setupLiveFeedListeners() {
     };
 
     sendDirectOfferToWorker(data.workerId, payload);
+  });
+
+  // Phase 43 — Direct offer status updates to employer (Talent Radar live UI)
+  eventBus.on('direct_offer:accepted', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      workerId: data.workerId,
+      jobId: data.jobId,
+      status: 'accepted',
+    });
+  });
+
+  eventBus.on('direct_offer:declined', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      status: 'declined',
+      reason: data.reason,
+    });
+  });
+
+  eventBus.on('direct_offer:expired', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      status: 'expired',
+    });
   });
 
   logger.info('Live feed: enabled');

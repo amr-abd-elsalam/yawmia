@@ -82,10 +82,14 @@ function intersect(setA, setB) {
 
 /**
  * Add a job to all indexes (sync).
+ * Phase 43 — Skip synthetic jobs (sourceType='direct_offer') — they're filtered from public listing.
  * @param {object} job — full or summary job object
  */
 export function onJobCreated(job) {
   if (!isEnabled() || !job || !job.id) return;
+
+  // Phase 43: synthetic jobs (Direct Offers) are private — never appear in public query results
+  if (job.sourceType === 'direct_offer') return;
 
   const summary = {
     id: job.id,

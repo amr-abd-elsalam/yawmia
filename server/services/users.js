@@ -4,7 +4,41 @@
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, getFromSetIndex } from './database.js';
+
+/**
+ * Phase 43 — Internal helper: cascade pending direct offers when a user is soft-deleted or banned.
+ * System-level access pattern — uses raw getFromSetIndex + readJSON (bypasses redaction).
+ * Fire-and-forget per offer — single failure doesn't block others.
+ *
+ * @param {string} userId
+ * @param {'employer'|'worker'} role
+ */
+async function _cascadePendingOffers(userId, role) {
+  try {
+    const indexPath = role === 'employer'
+      ? config.DATABASE.indexFiles.employerOffersIndex
+      : config.DATABASE.indexFiles.workerOffersIndex;
+
+    const ids = await getFromSetIndex(indexPath, userId);
+    if (!ids || ids.length === 0) return;
+
+    const { withdraw, decline } = await import('./directOffer.js');
+
+    for (const oid of ids) {
+      try {
+        const offer = await readJSON(getRecordPath('direct_offers', oid));
+        if (!offer || offer.status !== 'pending') continue;
+
+        if (role === 'employer') {
+          await withdraw(oid, userId);
+        } else {
+          await decline(oid, userId, 'other');
+        }
+      } catch (_) { /* per-offer fire-and-forget */ }
+    }
+  } catch (_) { /* cascade non-fatal */ }
+}
 
 /**
  * Create a new user
@@ -117,6 +151,7 @@ export async function countByRole() {
 
 /**
  * Ban a user (set status to 'banned')
+ * Phase 43 — Adds comprehensive cascade for banned user's pending business actions.
  * @param {string} userId
  * @param {string} reason
  * @returns {Promise<object|null>}
@@ -136,6 +171,52 @@ export async function banUser(userId, reason = '') {
 
   const userPath = getRecordPath('users', userId);
   await atomicWrite(userPath, updatedUser);
+
+  // Phase 43 — Comprehensive cascade for banned user
+  try {
+    if (user.role === 'worker') {
+      // Worker ban: decline pending offers + withdraw active ad + withdraw pending applications
+      await _cascadePendingOffers(userId, 'worker').catch(() => {});
+
+      try {
+        const { findActiveByWorker, withdrawAd } = await import('./availabilityAd.js');
+        const activeAd = await findActiveByWorker(userId);
+        if (activeAd) {
+          await withdrawAd(activeAd.id, userId).catch(() => {});
+        }
+      } catch (_) { /* fire-and-forget */ }
+
+      try {
+        const { listByWorker, withdraw: withdrawApp } = await import('./applications.js');
+        const apps = await listByWorker(userId);
+        for (const app of apps) {
+          if (app.status === 'pending') {
+            await withdrawApp(app.id, userId).catch(() => {});
+          }
+        }
+      } catch (_) { /* fire-and-forget */ }
+    }
+
+    if (user.role === 'employer') {
+      // Employer ban: cancel open jobs + withdraw pending direct offers
+      await _cascadePendingOffers(userId, 'employer').catch(() => {});
+
+      try {
+        const { getFromSetIndex: getFromSetIndexFn, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+        const { cancelJob } = await import('./jobs.js');
+        const jobIds = await getFromSetIndexFn(config.DATABASE.indexFiles.employerJobsIndex, userId);
+        for (const jobId of jobIds) {
+          try {
+            const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+            if (job && job.status === 'open') {
+              await cancelJob(jobId, userId);
+            }
+          } catch (_) { /* fire-and-forget per job */ }
+        }
+      } catch (_) { /* fire-and-forget */ }
+    }
+  } catch (_) { /* cascade non-fatal */ }
+
   return updatedUser;
 }
 
@@ -220,9 +301,9 @@ export async function softDelete(userId) {
   // Cascade: cancel open jobs (employer) — fire-and-forget
   if (user.role === 'employer') {
     try {
-      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const { getFromSetIndex: getFromSetIndexFn, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
       const { cancelJob } = await import('./jobs.js');
-      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      const jobIds = await getFromSetIndexFn(config.DATABASE.indexFiles.employerJobsIndex, userId);
       for (const jobId of jobIds) {
         try {
           const job = await readJSONFn(getRecordPathFn('jobs', jobId));
@@ -232,6 +313,9 @@ export async function softDelete(userId) {
         } catch (_) { /* fire-and-forget per job */ }
       }
     } catch (_) { /* cascade error doesn't block deletion */ }
+
+    // Phase 43 — Cascade: withdraw pending direct offers (employer side)
+    await _cascadePendingOffers(userId, 'employer').catch(() => {});
   }
 
   // Cascade: withdraw pending applications (worker) — fire-and-forget
@@ -245,6 +329,18 @@ export async function softDelete(userId) {
             await withdraw(app.id, userId);
           } catch (_) { /* fire-and-forget per app */ }
         }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
+
+    // Phase 43 — Cascade: decline pending direct offers (worker side)
+    await _cascadePendingOffers(userId, 'worker').catch(() => {});
+
+    // Phase 43 — Cascade: withdraw active availability ad (Phase 41 gap fix)
+    try {
+      const { findActiveByWorker, withdrawAd } = await import('./availabilityAd.js');
+      const activeAd = await findActiveByWorker(userId);
+      if (activeAd) {
+        await withdrawAd(activeAd.id, userId).catch(() => {});
       }
     } catch (_) { /* cascade error doesn't block deletion */ }
   }

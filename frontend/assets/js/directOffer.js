@@ -154,13 +154,13 @@ var YawmiaDirectOffer = (function () {
     updateCountdown();
     countdownTimer = setInterval(updateCountdown, 1000);
 
-    // Accept handler
+    // Accept handler — Phase 43: apiWithRetry for network blip resilience (2 retries, 500ms base)
     var acceptBtn = document.getElementById('btnAcceptOffer');
     if (acceptBtn) {
       acceptBtn.addEventListener('click', async function () {
         Yawmia.setLoading(acceptBtn, true);
         try {
-          var ar = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/accept');
+          var ar = await Yawmia.apiWithRetry('POST', '/api/direct-offers/' + offer.id + '/accept', null, { maxRetries: 2, baseDelayMs: 500 });
           if (ar.data && ar.data.ok) {
             if (typeof YawmiaToast !== 'undefined') {
               YawmiaToast.success('تم قبول العرض ✓');
@@ -204,7 +204,8 @@ var YawmiaDirectOffer = (function () {
 
         Yawmia.setLoading(declineBtn, true);
         try {
-          var dr = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/decline', reason ? { reason: reason } : {});
+          // Phase 43: apiWithRetry for network blip resilience (2 retries, 500ms base)
+          var dr = await Yawmia.apiWithRetry('POST', '/api/direct-offers/' + offer.id + '/decline', reason ? { reason: reason } : {}, { maxRetries: 2, baseDelayMs: 500 });
           if (dr.data && dr.data.ok) {
             if (typeof YawmiaToast !== 'undefined') YawmiaToast.info('تم رفض العرض');
             closeModal();

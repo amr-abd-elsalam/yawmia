@@ -135,9 +135,13 @@ export function getStats() {
 
 /**
  * Index a single job (sync — normalizes once, stores in Map)
+ * Phase 43 — Skip synthetic jobs (sourceType='direct_offer') — they're filtered from public listing.
  * @param {object} job
  */
 function indexJob(job) {
+  // Phase 43: synthetic jobs (Direct Offers) are private — never appear in public search
+  if (job.sourceType === 'direct_offer') return;
+
   index.set(job.id, {
     normalizedTitle: normalizeArabic((job.title || '').toLowerCase()),
     normalizedDesc: normalizeArabic((job.description || '').toLowerCase()),
