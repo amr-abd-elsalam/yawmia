@@ -163,7 +163,7 @@ test('Phase 43 — perWorkerDailyReceiveCap blocks worker after 50 offers/day', 
   await updateUser(employer.id, { name: 'E', governorate: 'cairo', lat: 30.0444, lng: 31.2357 });
 
   // Manually inject 50 offers from today (bypass create() which has caps)
-  const config = (await import('../../config.js')).default;
+  const config = (await import('../config.js')).default;
   const crypto = await import('node:crypto');
   const now = new Date();
   const indexPath = config.DATABASE.indexFiles.workerOffersIndex;
