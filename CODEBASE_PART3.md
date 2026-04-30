@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.38.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-04-28T23:38:04.573Z
+# يوميّة (Yawmia) v0.39.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-04-30T18:24:39.010Z
 > Files in this part: 31
 
 ## Files
@@ -1561,7 +1561,7 @@ export async function handleDeleteWindow(req, res) {
 
 import {
   create, tryAccept, decline, withdraw, findById, listByEmployer, listByWorker,
-  redactOfferForViewer,
+  redactOfferForViewer, getEmployerOfferStats, getWorkerOfferStats,
 } from '../services/directOffer.js';
 
 function sendJSON(res, statusCode, data) {
@@ -1752,6 +1752,44 @@ export async function handleGetOffer(req, res) {
     sendJSON(res, 200, { ok: true, offer: redactOfferForViewer(offer, userId) });
   } catch (err) {
     sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+
+/**
+ * Phase 43 — GET /api/direct-offers/stats/employer?from=&to=
+ * Returns aggregated direct offer stats for the authenticated employer.
+ * Requires: requireAuth + requireRole('employer')
+ */
+export async function handleEmployerOfferStats(req, res) {
+  try {
+    const employerId = req.user.id;
+    const options = {};
+    if (req.query.from) options.from = req.query.from;
+    if (req.query.to) options.to = req.query.to;
+
+    const stats = await getEmployerOfferStats(employerId, options);
+    sendJSON(res, 200, { ok: true, stats });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب الإحصائيات', code: 'STATS_ERROR' });
+  }
+}
+
+/**
+ * Phase 43 — GET /api/direct-offers/stats/worker?from=&to=
+ * Returns aggregated direct offer stats for the authenticated worker.
+ * Requires: requireAuth + requireRole('worker')
+ */
+export async function handleWorkerOfferStats(req, res) {
+  try {
+    const workerId = req.user.id;
+    const options = {};
+    if (req.query.from) options.from = req.query.from;
+    if (req.query.to) options.to = req.query.to;
+
+    const stats = await getWorkerOfferStats(workerId, options);
+    sendJSON(res, 200, { ok: true, stats });
+  } catch (err) {
+    sendJSON(res, 500, { error: 'خطأ في جلب الإحصائيات', code: 'STATS_ERROR' });
   }
 }
 ```

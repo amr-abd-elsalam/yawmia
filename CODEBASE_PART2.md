@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.38.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-28T23:38:04.558Z
+# يوميّة (Yawmia) v0.39.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-04-30T18:24:38.994Z
 > Files in this part: 55
 
 ## Files
@@ -717,6 +717,9 @@ export async function getEmployerAnalytics(employerId, options = {}) {
       if (!job) continue;
       if (!inRange(job.createdAt, from, to)) continue;
 
+      // Phase 43: filter synthetic jobs (Direct Offers) from regular employer metrics
+      if (job.sourceType === 'direct_offer') continue;
+
       // Jobs breakdown
       result.jobs.total++;
       if (result.jobs.byStatus[job.status] !== undefined) {
@@ -824,6 +827,19 @@ export async function getEmployerAnalytics(employerId, options = {}) {
     logger.warn('getEmployerAnalytics error', { employerId, error: err.message });
   }
 
+  // Phase 43 — Add Direct Offers separate metric (clean separation from regular jobs)
+  try {
+    const { getEmployerOfferStats } = await import('./directOffer.js');
+    result.directOffers = await getEmployerOfferStats(employerId, { from, to });
+  } catch (_) {
+    result.directOffers = {
+      total: 0, pending: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+      declineReasons: {},
+      avgTimeToResponseMs: 0,
+      acceptRate: 0,
+    };
+  }
+
   cacheSet(cacheKey, result);
   return result;
 }
@@ -893,18 +909,23 @@ export async function getWorkerAnalytics(workerId, options = {}) {
         try {
           const job = await findJob(app.jobId);
           if (job && job.status === 'completed') {
-            result.jobs.completed++;
-            // Calculate earnings from payment
-            try {
-              const payments = await listPaymentsByJob(app.jobId);
-              if (payments.length > 0) {
-                const pay = payments[0];
-                // Worker payout split evenly among accepted workers
-                const acceptedCount = pay.workersAccepted || 1;
-                const perWorker = Math.round((pay.workerPayout || 0) / acceptedCount);
-                result.earnings.total += perWorker;
-              }
-            } catch (_) { /* non-fatal */ }
+            // Phase 43: filter synthetic jobs (Direct Offers) from regular worker metrics
+            if (job.sourceType === 'direct_offer') {
+              // Skip earnings + completed count for synthetic jobs (tracked separately in directOffers metric)
+            } else {
+              result.jobs.completed++;
+              // Calculate earnings from payment
+              try {
+                const payments = await listPaymentsByJob(app.jobId);
+                if (payments.length > 0) {
+                  const pay = payments[0];
+                  // Worker payout split evenly among accepted workers
+                  const acceptedCount = pay.workersAccepted || 1;
+                  const perWorker = Math.round((pay.workerPayout || 0) / acceptedCount);
+                  result.earnings.total += perWorker;
+                }
+              } catch (_) { /* non-fatal */ }
+            }
           }
         } catch (_) { /* non-fatal */ }
       } else if (app.status === 'rejected') {
@@ -965,6 +986,18 @@ export async function getWorkerAnalytics(workerId, options = {}) {
     logger.warn('getWorkerAnalytics error', { workerId, error: err.message });
   }
 
+  // Phase 43 — Add Direct Offers separate metric (clean separation from regular applications)
+  try {
+    const { getWorkerOfferStats } = await import('./directOffer.js');
+    result.directOffers = await getWorkerOfferStats(workerId, { from, to });
+  } catch (_) {
+    result.directOffers = {
+      total: 0, pending: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+      declineReasons: {},
+      avgTimeToResponseMs: 0,
+    };
+  }
+
   cacheSet(cacheKey, result);
   return result;
 }
@@ -1022,6 +1055,10 @@ export async function getPlatformAnalytics(options = {}) {
     const allJobs = await listAllJobs();
     for (const j of allJobs) {
       if (!inRange(j.createdAt, from, to)) continue;
+
+      // Phase 43: filter synthetic jobs (Direct Offers) from platform metrics
+      if (j.sourceType === 'direct_offer') continue;
+
       result.jobs.created++;
       if (j.status === 'completed') result.jobs.completed++;
       else if (j.status === 'cancelled') result.jobs.cancelled++;
@@ -3122,6 +3159,50 @@ export async function markAsMatched(adId, jobId) {
 }
 
 /**
+ * Phase 43 — Idempotent ad-matched marker (handles partial-failure recovery).
+ * Used by directOffer.tryAccept (initial) + reconciliation listener (delayed re-sync).
+ *
+ * Semantics:
+ *   - If ad doesn't exist → { ok: false }
+ *   - If ad.status === 'matched' && matchedJobId === jobId → { ok: true, alreadyMatched: true } (no-op)
+ *   - If ad.status === 'matched' && matchedJobId !== jobId → conflict (preserve older state, log warning)
+ *   - Else → mark as matched, emit event
+ *
+ * @param {string} adId
+ * @param {string} jobId — synthetic job from accepted offer
+ * @returns {Promise<{ ok: boolean, alreadyMatched?: boolean }>}
+ */
+export async function ensureMarkedAsMatched(adId, jobId) {
+  const adPath = getRecordPath('availability_ads', adId);
+  const ad = await readJSON(adPath);
+  if (!ad) return { ok: false };
+
+  // Idempotent: already matched to same job
+  if (ad.status === 'matched' && ad.matchedJobId === jobId) {
+    return { ok: true, alreadyMatched: true };
+  }
+
+  // Conflict: matched to different job (preserve older state)
+  if (ad.status === 'matched' && ad.matchedJobId && ad.matchedJobId !== jobId) {
+    logger.warn('Ad already matched to different job', {
+      adId,
+      existing: ad.matchedJobId,
+      requested: jobId,
+    });
+    return { ok: false };
+  }
+
+  // Mark as matched (idempotent: works on active OR un-matched states)
+  ad.status = 'matched';
+  ad.matchedJobId = jobId;
+  ad.matchedAt = new Date().toISOString();
+  ad.updatedAt = ad.matchedAt;
+  await atomicWrite(adPath, ad);
+  eventBus.emit('ad:matched', { adId, workerId: ad.workerId, jobId });
+  return { ok: true, alreadyMatched: false };
+}
+
+/**
  * Get aggregate stats for /api/health and admin dashboard.
  * @returns {Promise<{ active: number, totalToday: number, expiredLastHour: number, withdrawnLastHour: number }>}
  */
@@ -5050,6 +5131,24 @@ export async function countTodayByEmployer(employerId) {
 }
 
 /**
+ * Phase 43 — Count offers received today by worker (Egypt timezone).
+ * Used to enforce per-worker daily receive cap (anti-spam).
+ * @param {string} workerId
+ * @returns {Promise<number>}
+ */
+export async function countTodayReceivedByWorker(workerId) {
+  const { getEgyptMidnight } = await import('./geo.js');
+  const todayMidnight = getEgyptMidnight();
+  const ids = await getFromSetIndex(WORKER_OFFERS_INDEX, workerId);
+  let count = 0;
+  for (const oid of ids) {
+    const offer = await readJSON(getRecordPath('direct_offers', oid));
+    if (offer && new Date(offer.createdAt) >= todayMidnight) count++;
+  }
+  return count;
+}
+
+/**
  * Find existing pending offer for (employerId, workerId) pair.
  * @param {string} employerId
  * @param {string} workerId
@@ -5213,6 +5312,14 @@ export function create(employerId, workerId, fields) {
       const wkrPending = await countPendingByWorker(workerId);
       if (wkrPending >= config.DIRECT_OFFERS.maxPendingPerWorker) {
         return { ok: false, error: 'العامل لديه عروض معلّقة كثيرة — جرّب بعد قليل', code: 'WORKER_PENDING_CAP' };
+      }
+    } catch (_) { /* on error, allow */ }
+
+    // Phase 43 — Per-worker daily receive cap (anti-spam)
+    try {
+      const dailyReceived = await countTodayReceivedByWorker(workerId);
+      if (dailyReceived >= config.DIRECT_OFFERS.perWorkerDailyReceiveCap) {
+        return { ok: false, error: 'العامل وصل لحد العروض اليومية', code: 'WORKER_DAILY_RECEIVE_CAP' };
       }
     } catch (_) { /* on error, allow */ }
 
@@ -5486,13 +5593,14 @@ export async function tryAccept(offerId, workerId) {
       logger.warn('Synthetic job startJob failed (non-fatal)', { offerId, jobId: resultingJob.id, error: err.message });
     }
 
-    // 10. Mark linked ad as matched (fire-and-forget on error)
+    // 10. Mark linked ad as matched — Phase 43: idempotent ensureMarkedAsMatched
+    // (initial attempt; reconciliation listener provides 5s delayed re-sync as defense-in-depth)
     if (offer.adId) {
       try {
-        const { markAsMatched } = await import('./availabilityAd.js');
-        await markAsMatched(offer.adId, resultingJob.id);
+        const { ensureMarkedAsMatched } = await import('./availabilityAd.js');
+        await ensureMarkedAsMatched(offer.adId, resultingJob.id);
       } catch (err) {
-        logger.warn('Ad markAsMatched failed (non-fatal)', { offerId, adId: offer.adId, error: err.message });
+        logger.warn('Ad ensureMarkedAsMatched failed (non-fatal)', { offerId, adId: offer.adId, error: err.message });
       }
     }
 
@@ -5777,6 +5885,148 @@ export async function listByWorker(workerId, options = {}) {
 // Stats (for /api/health)
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// Phase 43 — History & Analytics Helpers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Phase 43 — Aggregated offer stats for an employer (history dashboard).
+ *
+ * @param {string} employerId
+ * @param {{ from?: string, to?: string }} [options] — ISO date range filters
+ * @returns {Promise<{
+ *   total: number,
+ *   pending: number,
+ *   accepted: number,
+ *   declined: number,
+ *   expired: number,
+ *   withdrawn: number,
+ *   declineReasons: object,
+ *   avgTimeToResponseMs: number,
+ *   acceptRate: number
+ * }>}
+ */
+export async function getEmployerOfferStats(employerId, options = {}) {
+  const ids = await getFromSetIndex(EMPLOYER_OFFERS_INDEX, employerId);
+  const stats = {
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    declined: 0,
+    expired: 0,
+    withdrawn: 0,
+    declineReasons: {},
+    avgTimeToResponseMs: 0,
+    acceptRate: 0,
+  };
+
+  if (!ids || ids.length === 0) return stats;
+
+  let responseTimeSum = 0;
+  let responseTimeCount = 0;
+
+  for (const oid of ids) {
+    const offer = await readJSON(getRecordPath('direct_offers', oid));
+    if (!offer) continue;
+    if (options.from && offer.createdAt < options.from) continue;
+    if (options.to && offer.createdAt > options.to) continue;
+
+    stats.total++;
+    if (typeof stats[offer.status] === 'number') {
+      stats[offer.status]++;
+    }
+
+    if (offer.declinedReason) {
+      stats.declineReasons[offer.declinedReason] = (stats.declineReasons[offer.declinedReason] || 0) + 1;
+    }
+
+    const responseTs = offer.acceptedAt || offer.declinedAt;
+    if (responseTs) {
+      const diffMs = new Date(responseTs).getTime() - new Date(offer.createdAt).getTime();
+      if (diffMs > 0) {
+        responseTimeSum += diffMs;
+        responseTimeCount++;
+      }
+    }
+  }
+
+  if (responseTimeCount > 0) {
+    stats.avgTimeToResponseMs = Math.round(responseTimeSum / responseTimeCount);
+  }
+  const decisionTotal = stats.accepted + stats.declined + stats.expired;
+  if (decisionTotal > 0) {
+    stats.acceptRate = Math.round((stats.accepted / decisionTotal) * 100);
+  }
+
+  return stats;
+}
+
+/**
+ * Phase 43 — Aggregated offer stats for a worker (history dashboard).
+ *
+ * @param {string} workerId
+ * @param {{ from?: string, to?: string }} [options] — ISO date range filters
+ * @returns {Promise<{
+ *   total: number,
+ *   pending: number,
+ *   accepted: number,
+ *   declined: number,
+ *   expired: number,
+ *   withdrawn: number,
+ *   declineReasons: object,
+ *   avgTimeToResponseMs: number
+ * }>}
+ */
+export async function getWorkerOfferStats(workerId, options = {}) {
+  const ids = await getFromSetIndex(WORKER_OFFERS_INDEX, workerId);
+  const stats = {
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    declined: 0,
+    expired: 0,
+    withdrawn: 0,
+    declineReasons: {},
+    avgTimeToResponseMs: 0,
+  };
+
+  if (!ids || ids.length === 0) return stats;
+
+  let responseTimeSum = 0;
+  let responseTimeCount = 0;
+
+  for (const oid of ids) {
+    const offer = await readJSON(getRecordPath('direct_offers', oid));
+    if (!offer) continue;
+    if (options.from && offer.createdAt < options.from) continue;
+    if (options.to && offer.createdAt > options.to) continue;
+
+    stats.total++;
+    if (typeof stats[offer.status] === 'number') {
+      stats[offer.status]++;
+    }
+
+    if (offer.declinedReason) {
+      stats.declineReasons[offer.declinedReason] = (stats.declineReasons[offer.declinedReason] || 0) + 1;
+    }
+
+    const responseTs = offer.acceptedAt || offer.declinedAt;
+    if (responseTs) {
+      const diffMs = new Date(responseTs).getTime() - new Date(offer.createdAt).getTime();
+      if (diffMs > 0) {
+        responseTimeSum += diffMs;
+        responseTimeCount++;
+      }
+    }
+  }
+
+  if (responseTimeCount > 0) {
+    stats.avgTimeToResponseMs = Math.round(responseTimeSum / responseTimeCount);
+  }
+
+  return stats;
+}
+
 /**
  * Aggregate stats for health endpoint.
  * @returns {Promise<{ activePending: number, expiredLastHour: number, acceptedLastHour: number, declinedLastHour: number }>}
@@ -5814,6 +6064,45 @@ export async function getStats() {
   }
 
   return { activePending, expiredLastHour, acceptedLastHour, declinedLastHour };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 43 — EventBus Listener Setup (Reconciliation)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Phase 43 — Setup EventBus listeners for direct offer reconciliation.
+ * Called once at startup (from router.js after setupAdMatchListeners + setupJobMatching).
+ *
+ * Defense-in-depth: 5s delayed re-sync after `direct_offer:accepted`.
+ * Uses idempotent `ensureMarkedAsMatched` — safe to run multiple times.
+ *   - If initial markAsMatched in tryAccept succeeded → returns alreadyMatched: true (no-op)
+ *   - If initial failed (lock contention, disk error) → recovers ad state
+ */
+export function setupDirectOfferListeners() {
+  if (!config.DIRECT_OFFERS || !config.DIRECT_OFFERS.enabled) {
+    logger.info('Direct offer reconciliation: disabled via config');
+    return;
+  }
+
+  eventBus.on('direct_offer:accepted', (data) => {
+    if (!data || !data.adId || !data.jobId) return;
+
+    // 5-second delay allows initial markAsMatched in tryAccept to complete first.
+    setTimeout(() => {
+      import('./availabilityAd.js').then(({ ensureMarkedAsMatched }) => {
+        ensureMarkedAsMatched(data.adId, data.jobId).catch(err => {
+          logger.warn('Ad re-sync failed after delayed reconciliation', {
+            adId: data.adId,
+            jobId: data.jobId,
+            error: err.message,
+          });
+        });
+      }).catch(() => {});
+    }, 5000);
+  });
+
+  logger.info('Direct offer reconciliation: enabled (5s delayed re-sync)');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -9164,6 +9453,25 @@ export function sendDirectOfferToWorker(workerId, payload) {
 }
 
 /**
+ * Phase 43 — Send direct offer status update to employer (for live Talent Radar UI).
+ * Triggered by direct_offer:accepted/declined/expired EventBus events.
+ *
+ * @param {string} employerId
+ * @param {object} payload — { offerId, status, workerId?, jobId?, reason? }
+ */
+export function sendDirectOfferStatusToEmployer(employerId, payload) {
+  if (!config.LIVE_FEED || !config.LIVE_FEED.enabled) return;
+  if (!employerId || !payload || !payload.offerId) return;
+
+  const conns = liveFeedConnections.get(employerId);
+  if (!conns || conns.size === 0) return;
+
+  for (const entry of conns) {
+    sendToConnection(entry, 'direct_offer_status', payload, 'dos-' + payload.offerId);
+  }
+}
+
+/**
  * Notify other candidates that an offer was taken (close their modals).
  * @param {string[]} workerIds
  * @param {object} payload
@@ -9369,6 +9677,34 @@ export function setupLiveFeedListeners() {
     };
 
     sendDirectOfferToWorker(data.workerId, payload);
+  });
+
+  // Phase 43 — Direct offer status updates to employer (Talent Radar live UI)
+  eventBus.on('direct_offer:accepted', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      workerId: data.workerId,
+      jobId: data.jobId,
+      status: 'accepted',
+    });
+  });
+
+  eventBus.on('direct_offer:declined', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      status: 'declined',
+      reason: data.reason,
+    });
+  });
+
+  eventBus.on('direct_offer:expired', (data) => {
+    if (!data || !data.employerId) return;
+    sendDirectOfferStatusToEmployer(data.employerId, {
+      offerId: data.offerId,
+      status: 'expired',
+    });
   });
 
   logger.info('Live feed: enabled');
@@ -12669,10 +13005,14 @@ function intersect(setA, setB) {
 
 /**
  * Add a job to all indexes (sync).
+ * Phase 43 — Skip synthetic jobs (sourceType='direct_offer') — they're filtered from public listing.
  * @param {object} job — full or summary job object
  */
 export function onJobCreated(job) {
   if (!isEnabled() || !job || !job.id) return;
+
+  // Phase 43: synthetic jobs (Direct Offers) are private — never appear in public query results
+  if (job.sourceType === 'direct_offer') return;
 
   const summary = {
     id: job.id,
@@ -13879,9 +14219,13 @@ export function getStats() {
 
 /**
  * Index a single job (sync — normalizes once, stores in Map)
+ * Phase 43 — Skip synthetic jobs (sourceType='direct_offer') — they're filtered from public listing.
  * @param {object} job
  */
 function indexJob(job) {
+  // Phase 43: synthetic jobs (Direct Offers) are private — never appear in public search
+  if (job.sourceType === 'direct_offer') return;
+
   index.set(job.id, {
     normalizedTitle: normalizeArabic((job.title || '').toLowerCase()),
     normalizedDesc: normalizeArabic((job.description || '').toLowerCase()),
@@ -14464,7 +14808,41 @@ export async function getUserTrustScore(userId) {
 
 import crypto from 'node:crypto';
 import config from '../../config.js';
-import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath } from './database.js';
+import { atomicWrite, readJSON, safeReadJSON, getRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, getFromSetIndex } from './database.js';
+
+/**
+ * Phase 43 — Internal helper: cascade pending direct offers when a user is soft-deleted or banned.
+ * System-level access pattern — uses raw getFromSetIndex + readJSON (bypasses redaction).
+ * Fire-and-forget per offer — single failure doesn't block others.
+ *
+ * @param {string} userId
+ * @param {'employer'|'worker'} role
+ */
+async function _cascadePendingOffers(userId, role) {
+  try {
+    const indexPath = role === 'employer'
+      ? config.DATABASE.indexFiles.employerOffersIndex
+      : config.DATABASE.indexFiles.workerOffersIndex;
+
+    const ids = await getFromSetIndex(indexPath, userId);
+    if (!ids || ids.length === 0) return;
+
+    const { withdraw, decline } = await import('./directOffer.js');
+
+    for (const oid of ids) {
+      try {
+        const offer = await readJSON(getRecordPath('direct_offers', oid));
+        if (!offer || offer.status !== 'pending') continue;
+
+        if (role === 'employer') {
+          await withdraw(oid, userId);
+        } else {
+          await decline(oid, userId, 'other');
+        }
+      } catch (_) { /* per-offer fire-and-forget */ }
+    }
+  } catch (_) { /* cascade non-fatal */ }
+}
 
 /**
  * Create a new user
@@ -14577,6 +14955,7 @@ export async function countByRole() {
 
 /**
  * Ban a user (set status to 'banned')
+ * Phase 43 — Adds comprehensive cascade for banned user's pending business actions.
  * @param {string} userId
  * @param {string} reason
  * @returns {Promise<object|null>}
@@ -14596,6 +14975,52 @@ export async function banUser(userId, reason = '') {
 
   const userPath = getRecordPath('users', userId);
   await atomicWrite(userPath, updatedUser);
+
+  // Phase 43 — Comprehensive cascade for banned user
+  try {
+    if (user.role === 'worker') {
+      // Worker ban: decline pending offers + withdraw active ad + withdraw pending applications
+      await _cascadePendingOffers(userId, 'worker').catch(() => {});
+
+      try {
+        const { findActiveByWorker, withdrawAd } = await import('./availabilityAd.js');
+        const activeAd = await findActiveByWorker(userId);
+        if (activeAd) {
+          await withdrawAd(activeAd.id, userId).catch(() => {});
+        }
+      } catch (_) { /* fire-and-forget */ }
+
+      try {
+        const { listByWorker, withdraw: withdrawApp } = await import('./applications.js');
+        const apps = await listByWorker(userId);
+        for (const app of apps) {
+          if (app.status === 'pending') {
+            await withdrawApp(app.id, userId).catch(() => {});
+          }
+        }
+      } catch (_) { /* fire-and-forget */ }
+    }
+
+    if (user.role === 'employer') {
+      // Employer ban: cancel open jobs + withdraw pending direct offers
+      await _cascadePendingOffers(userId, 'employer').catch(() => {});
+
+      try {
+        const { getFromSetIndex: getFromSetIndexFn, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+        const { cancelJob } = await import('./jobs.js');
+        const jobIds = await getFromSetIndexFn(config.DATABASE.indexFiles.employerJobsIndex, userId);
+        for (const jobId of jobIds) {
+          try {
+            const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+            if (job && job.status === 'open') {
+              await cancelJob(jobId, userId);
+            }
+          } catch (_) { /* fire-and-forget per job */ }
+        }
+      } catch (_) { /* fire-and-forget */ }
+    }
+  } catch (_) { /* cascade non-fatal */ }
+
   return updatedUser;
 }
 
@@ -14680,9 +15105,9 @@ export async function softDelete(userId) {
   // Cascade: cancel open jobs (employer) — fire-and-forget
   if (user.role === 'employer') {
     try {
-      const { getFromSetIndex, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      const { getFromSetIndex: getFromSetIndexFn, readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
       const { cancelJob } = await import('./jobs.js');
-      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      const jobIds = await getFromSetIndexFn(config.DATABASE.indexFiles.employerJobsIndex, userId);
       for (const jobId of jobIds) {
         try {
           const job = await readJSONFn(getRecordPathFn('jobs', jobId));
@@ -14692,6 +15117,9 @@ export async function softDelete(userId) {
         } catch (_) { /* fire-and-forget per job */ }
       }
     } catch (_) { /* cascade error doesn't block deletion */ }
+
+    // Phase 43 — Cascade: withdraw pending direct offers (employer side)
+    await _cascadePendingOffers(userId, 'employer').catch(() => {});
   }
 
   // Cascade: withdraw pending applications (worker) — fire-and-forget
@@ -14705,6 +15133,18 @@ export async function softDelete(userId) {
             await withdraw(app.id, userId);
           } catch (_) { /* fire-and-forget per app */ }
         }
+      }
+    } catch (_) { /* cascade error doesn't block deletion */ }
+
+    // Phase 43 — Cascade: decline pending direct offers (worker side)
+    await _cascadePendingOffers(userId, 'worker').catch(() => {});
+
+    // Phase 43 — Cascade: withdraw active availability ad (Phase 41 gap fix)
+    try {
+      const { findActiveByWorker, withdrawAd } = await import('./availabilityAd.js');
+      const activeAd = await findActiveByWorker(userId);
+      if (activeAd) {
+        await withdrawAd(activeAd.id, userId).catch(() => {});
       }
     } catch (_) { /* cascade error doesn't block deletion */ }
   }

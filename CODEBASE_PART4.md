@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.38.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-04-28T23:38:04.579Z
+# يوميّة (Yawmia) v0.39.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-04-30T18:24:39.016Z
 > Files in this part: 40
 
 ## Files
@@ -5963,13 +5963,13 @@ var YawmiaDirectOffer = (function () {
     updateCountdown();
     countdownTimer = setInterval(updateCountdown, 1000);
 
-    // Accept handler
+    // Accept handler — Phase 43: apiWithRetry for network blip resilience (2 retries, 500ms base)
     var acceptBtn = document.getElementById('btnAcceptOffer');
     if (acceptBtn) {
       acceptBtn.addEventListener('click', async function () {
         Yawmia.setLoading(acceptBtn, true);
         try {
-          var ar = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/accept');
+          var ar = await Yawmia.apiWithRetry('POST', '/api/direct-offers/' + offer.id + '/accept', null, { maxRetries: 2, baseDelayMs: 500 });
           if (ar.data && ar.data.ok) {
             if (typeof YawmiaToast !== 'undefined') {
               YawmiaToast.success('تم قبول العرض ✓');
@@ -6013,7 +6013,8 @@ var YawmiaDirectOffer = (function () {
 
         Yawmia.setLoading(declineBtn, true);
         try {
-          var dr = await Yawmia.api('POST', '/api/direct-offers/' + offer.id + '/decline', reason ? { reason: reason } : {});
+          // Phase 43: apiWithRetry for network blip resilience (2 retries, 500ms base)
+          var dr = await Yawmia.apiWithRetry('POST', '/api/direct-offers/' + offer.id + '/decline', reason ? { reason: reason } : {}, { maxRetries: 2, baseDelayMs: 500 });
           if (dr.data && dr.data.ok) {
             if (typeof YawmiaToast !== 'undefined') YawmiaToast.info('تم رفض العرض');
             closeModal();
@@ -8254,6 +8255,14 @@ var YawmiaLivePresence = (function () {
         } catch (_) {}
       });
 
+      // Phase 43 — Direct offer status updates (employer-side: accepted/declined/expired)
+      liveFeedSource.addEventListener('direct_offer_status', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:direct-offer-status', { detail: data }));
+        } catch (_) {}
+      });
+
       liveFeedSource.onerror = function () { /* auto-reconnects */ };
     } catch (_) {
       liveFeedSource = null;
@@ -9235,6 +9244,9 @@ var YawmiaPanels = (function () {
         } else if (user.role === 'worker') {
           loadWorkerAnalytics();
         }
+
+        // Phase 43 — Direct Offers History (both roles)
+        loadDirectOffers();
 
         // Role-specific sections
         if (user.role === 'worker') {
@@ -10257,6 +10269,165 @@ var YawmiaPanels = (function () {
     });
   }
 
+  // ── Phase 43 — Direct Offers History ───────────────────────
+  async function loadDirectOffers() {
+    var currentUser = Yawmia.getUser();
+    if (!currentUser) return;
+
+    var section = Yawmia.$id('directOffersSection');
+    if (!section) return;
+
+    try {
+      // 1. Fetch stats
+      var statsEndpoint = currentUser.role === 'employer'
+        ? '/api/direct-offers/stats/employer'
+        : '/api/direct-offers/stats/worker';
+      var statsRes = await Yawmia.api('GET', statsEndpoint);
+      if (!statsRes.data || !statsRes.data.ok) return;
+      var stats = statsRes.data.stats;
+
+      // Hide section if no offers
+      if (!stats || stats.total === 0) return;
+
+      Yawmia.show('directOffersSection');
+
+      // 2. Render stats grid (role-specific cards)
+      var statsGrid = Yawmia.$id('directOffersStats');
+      if (statsGrid) {
+        var cards;
+        if (currentUser.role === 'employer') {
+          cards = [
+            { value: stats.total, label: 'إجمالي العروض المرسلة' },
+            { value: stats.accepted, label: 'مقبولة' },
+            { value: stats.acceptRate + '%', label: 'نسبة القبول' },
+            { value: formatResponseTime(stats.avgTimeToResponseMs), label: 'متوسط وقت الرد' },
+          ];
+        } else {
+          cards = [
+            { value: stats.total, label: 'العروض المستلمة' },
+            { value: stats.accepted, label: 'قبلتها' },
+            { value: stats.declined, label: 'رفضتها' },
+            { value: stats.expired, label: 'انتهت' },
+          ];
+        }
+        statsGrid.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'stat-card';
+          card.innerHTML =
+            '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+          statsGrid.appendChild(card);
+        });
+      }
+
+      // 3. Render decline reasons chart (employer only, only if there are declines)
+      var chartEl = Yawmia.$id('declineReasonsChart');
+      if (chartEl) {
+        chartEl.innerHTML = '';
+        if (currentUser.role === 'employer' && stats.declineReasons && Object.keys(stats.declineReasons).length > 0) {
+          var reasonLabels = {
+            busy: 'مشغول',
+            wage_low: 'الأجر قليل',
+            distance: 'بعيد',
+            category_mismatch: 'مش تخصصه',
+            other: 'سبب آخر',
+          };
+          var totalDeclined = 0;
+          Object.values(stats.declineReasons).forEach(function (v) { totalDeclined += v; });
+          if (totalDeclined > 0) {
+            var html = '<h4 style="margin-block-end: 0.5rem; font-size: 0.95rem;">أسباب الرفض</h4>';
+            Object.entries(stats.declineReasons).forEach(function (entry) {
+              var reason = entry[0];
+              var count = entry[1];
+              var pct = Math.round((count / totalDeclined) * 100);
+              html +=
+                '<div class="rating-dist-row">' +
+                  '<span class="rating-dist-label">' + escapeHtml(reasonLabels[reason] || reason) + '</span>' +
+                  '<div class="rating-dist-bar"><div class="rating-dist-fill" style="width:' + pct + '%; background: var(--color-error);"></div></div>' +
+                  '<span class="rating-dist-count">' + count + '</span>' +
+                '</div>';
+            });
+            chartEl.innerHTML = html;
+          }
+        }
+      }
+
+      // 4. Recent offers list (top 10)
+      var listRes = await Yawmia.api('GET', '/api/direct-offers/mine?limit=10');
+      var listEl = Yawmia.$id('directOffersList');
+      if (listEl && listRes.data && listRes.data.ok) {
+        listEl.innerHTML = '';
+        var offers = listRes.data.offers || [];
+        if (offers.length === 0) {
+          listEl.innerHTML = '<p class="empty-state">لا توجد عروض</p>';
+          return;
+        }
+        var statusLabels = {
+          pending: '⏳ معلّق',
+          accepted: '✓ مقبول',
+          declined: '✗ مرفوض',
+          expired: '⌛ انتهى',
+          withdrawn: '↩ مسحوب',
+        };
+        var statusClasses = {
+          pending: 'badge--filled',
+          accepted: 'badge--completed',
+          declined: 'badge--cancelled',
+          expired: 'badge--expired',
+          withdrawn: 'badge--expired',
+        };
+        offers.forEach(function (offer) {
+          var card = document.createElement('div');
+          card.className = 'app-card';
+
+          // Determine other party display name (from redacted offer)
+          var otherParty;
+          if (currentUser.role === 'employer') {
+            otherParty = offer.workerDisplayName ||
+              (offer.revealedToEmployer && offer.revealedToEmployer.workerName) ||
+              'عامل';
+          } else {
+            otherParty = offer.employerDisplayName ||
+              (offer.revealedToWorker && offer.revealedToWorker.employerName) ||
+              'صاحب عمل';
+          }
+
+          var statusLabel = statusLabels[offer.status] || offer.status;
+          var statusClass = statusClasses[offer.status] || '';
+
+          card.innerHTML =
+            '<div class="app-card__info">' +
+              '<div class="app-card__title">' + escapeHtml(otherParty) + '</div>' +
+              '<div class="app-card__meta">' +
+                offer.proposedDailyWage + ' جنيه/يوم • ' +
+                escapeHtml(offer.governorate || '') + ' • ' +
+                (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.timeAgo
+                  ? YawmiaUtils.timeAgo(offer.createdAt)
+                  : new Date(offer.createdAt).toLocaleDateString('ar-EG')) +
+              '</div>' +
+            '</div>' +
+            '<div class="app-card__actions">' +
+              '<span class="badge badge--status ' + statusClass + '">' + escapeHtml(statusLabel) + '</span>' +
+            '</div>';
+          listEl.appendChild(card);
+        });
+      }
+    } catch (err) {
+      // Non-blocking — section stays hidden if errors occur
+    }
+  }
+
+  function formatResponseTime(ms) {
+    if (!ms || ms <= 0) return '-';
+    var seconds = Math.round(ms / 1000);
+    if (seconds < 60) return seconds + ' ث';
+    var minutes = Math.round(seconds / 60);
+    if (minutes < 60) return minutes + ' د';
+    var hours = Math.round(minutes / 60);
+    return hours + ' س';
+  }
+
   // ── Alerts Management ─────────────────────────────────────
   async function loadMyAlerts() {
     var container = Yawmia.$id('alerts-section');
@@ -10868,6 +11039,31 @@ var YawmiaTalentRadar = (function () {
     // Auto-refresh every 30 seconds
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(loadWorkers, 30000);
+
+    // Phase 43 — Listen for direct offer status updates (real-time SSE feed)
+    if (!window._yawmiaTalentRadarStatusListener) {
+      window._yawmiaTalentRadarStatusListener = true;
+      window.addEventListener('yawmia:direct-offer-status', function (e) {
+        var detail = e.detail;
+        if (!detail) return;
+
+        var labels = {
+          accepted: '✓ تم قبول العرض',
+          declined: '✗ تم رفض العرض' + (detail.reason ? ' (' + detail.reason + ')' : ''),
+          expired: '⌛ انتهت مهلة العرض',
+        };
+
+        if (typeof YawmiaToast !== 'undefined') {
+          var type = detail.status === 'accepted' ? 'success' : 'info';
+          YawmiaToast[type](labels[detail.status] || 'تحديث على عرض');
+        }
+
+        // Refresh radar 1s later to update worker availability (gives server time to settle ad state)
+        setTimeout(function () {
+          if (mountEl) loadWorkers();
+        }, 1000);
+      });
+    }
 
     window.dispatchEvent(new CustomEvent('yawmia:talent-radar-loaded'));
   }
@@ -12923,6 +13119,18 @@ var YawmiaUtils = (function () {
         <!-- Worker Analytics -->
         <div id="worker-analytics-section"></div>
 
+        <!-- Phase 43 — Direct Offers History (auto-shown by JS for both roles when offers exist) -->
+        <section class="card hidden" id="directOffersSection">
+          <h2 class="card__title">📩 العروض المباشرة</h2>
+          <div id="directOffersStats" class="analytics-grid"></div>
+          <div id="declineReasonsChart" style="margin-block: 1rem;"></div>
+          <hr class="section-divider">
+          <h3 style="margin-block-end: 0.75rem; font-size: 1rem; color: var(--color-text-muted);">آخر العروض</h3>
+          <div id="directOffersList" class="jobs-list">
+            <p class="empty-state">جاري التحميل...</p>
+          </div>
+        </section>
+
         <!-- Attendance History (worker only) -->
         <section class="card hidden" id="attendanceHistorySection">
           <h2 class="card__title">📋 سجل الحضور</h2>
@@ -13063,7 +13271,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.38.0';
+const CACHE_NAME = 'yawmia-v0.39.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
