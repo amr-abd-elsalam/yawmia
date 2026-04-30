@@ -17,12 +17,12 @@ const ROOT = join(__dirname, '..');
 test('Phase 43 — directOffer.js accept uses apiWithRetry', async () => {
   const content = await readFile(join(ROOT, 'frontend/assets/js/directOffer.js'), 'utf-8');
 
-  // Find the accept block
-  const acceptIdx = content.indexOf('btnAcceptOffer');
-  assert.ok(acceptIdx > 0, 'btnAcceptOffer block must exist');
+  // Find the accept handler block (not the HTML template — search for getElementById call)
+  const acceptHandlerIdx = content.indexOf("getElementById('btnAcceptOffer')");
+  assert.ok(acceptHandlerIdx > 0, 'btnAcceptOffer handler block must exist');
 
-  // Look for apiWithRetry within the next 800 chars (within the click handler)
-  const acceptSection = content.substring(acceptIdx, acceptIdx + 800);
+  // Look for apiWithRetry within the next 1000 chars (within the click handler)
+  const acceptSection = content.substring(acceptHandlerIdx, acceptHandlerIdx + 1000);
   assert.ok(
     acceptSection.includes('apiWithRetry'),
     'Accept handler must use Yawmia.apiWithRetry for network resilience'
@@ -33,10 +33,11 @@ test('Phase 43 — directOffer.js accept uses apiWithRetry', async () => {
 test('Phase 43 — directOffer.js decline uses apiWithRetry', async () => {
   const content = await readFile(join(ROOT, 'frontend/assets/js/directOffer.js'), 'utf-8');
 
-  const declineIdx = content.indexOf('btnDeclineOffer');
-  assert.ok(declineIdx > 0, 'btnDeclineOffer block must exist');
+  // Find the decline handler block (not the HTML template — search for getElementById call)
+  const declineHandlerIdx = content.indexOf("getElementById('btnDeclineOffer')");
+  assert.ok(declineHandlerIdx > 0, 'btnDeclineOffer handler block must exist');
 
-  const declineSection = content.substring(declineIdx, declineIdx + 1500);
+  const declineSection = content.substring(declineHandlerIdx, declineHandlerIdx + 1500);
   assert.ok(
     declineSection.includes('apiWithRetry'),
     'Decline handler must use Yawmia.apiWithRetry for network resilience'
