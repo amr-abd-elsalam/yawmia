@@ -100,6 +100,20 @@ export async function captureSnapshot() {
     payments: await countCollectionFiles('payments'),
   };
 
+  // Phase 44 — Direct offer health (last-hour metrics, no caching)
+  let directOffers = {
+    activePending: 0,
+    recentAccepted: 0,
+    recentDeclined: 0,
+    recentExpired: 0,
+    acceptRate: 0,
+    avgResponseSec: 0,
+  };
+  try {
+    const { getOfferStatsSnapshot } = await import('./directOfferAnalytics.js');
+    directOffers = await getOfferStatsSnapshot();
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -111,6 +125,7 @@ export async function captureSnapshot() {
     indexHealth,
     searchIndex,
     dataSize,
+    directOffers,
   };
 
   // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
@@ -212,6 +227,58 @@ export function checkThresholds(snapshot) {
       } else if (val <= thresholds.cacheHitRate.warning) {
         alerts.push({ level: 'warning', metric: 'cacheHitRate', value: val, threshold: thresholds.cacheHitRate.warning, message: `Cache hit rate warning: ${val}%` });
       }
+    }
+  }
+
+  // Phase 44 — Direct offer accept rate (lower = worse, with min-volume guard)
+  if (thresholds.directOfferAcceptRate && snapshot.directOffers) {
+    const val = snapshot.directOffers.acceptRate;
+    const decided = (snapshot.directOffers.recentAccepted || 0) +
+                    (snapshot.directOffers.recentDeclined || 0) +
+                    (snapshot.directOffers.recentExpired || 0);
+
+    // Minimum-volume guard: don't alert on low-traffic noise
+    if (decided >= 5) {
+      if (val <= thresholds.directOfferAcceptRate.critical) {
+        alerts.push({
+          level: 'critical',
+          metric: 'directOfferAcceptRate',
+          value: val,
+          threshold: thresholds.directOfferAcceptRate.critical,
+          message: `Direct offer accept rate critical: ${val}% (${decided} decided offers)`,
+        });
+      } else if (val <= thresholds.directOfferAcceptRate.warning) {
+        alerts.push({
+          level: 'warning',
+          metric: 'directOfferAcceptRate',
+          value: val,
+          threshold: thresholds.directOfferAcceptRate.warning,
+          message: `Direct offer accept rate warning: ${val}% (${decided} decided offers)`,
+        });
+      }
+    }
+  }
+
+  // Phase 44 — Direct offer avg response time (higher = worse)
+  if (thresholds.directOfferAvgResponseSec && snapshot.directOffers) {
+    const val = snapshot.directOffers.avgResponseSec || 0;
+
+    if (val >= thresholds.directOfferAvgResponseSec.critical) {
+      alerts.push({
+        level: 'critical',
+        metric: 'directOfferAvgResponseSec',
+        value: val,
+        threshold: thresholds.directOfferAvgResponseSec.critical,
+        message: `Slow worker response time: ${val}s`,
+      });
+    } else if (val >= thresholds.directOfferAvgResponseSec.warning) {
+      alerts.push({
+        level: 'warning',
+        metric: 'directOfferAvgResponseSec',
+        value: val,
+        threshold: thresholds.directOfferAvgResponseSec.warning,
+        message: `Slow worker response time: ${val}s`,
+      });
     }
   }
 

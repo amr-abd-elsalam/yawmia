@@ -454,7 +454,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.39.0',
+    cacheName: 'yawmia-v0.40.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -716,6 +716,8 @@ const config = {
       errorRate: { warning: 5, critical: 15 },        // نسبة مئوية
       p95Ms: { warning: 1000, critical: 3000 },       // مللي ثانية
       cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
+      directOfferAcceptRate: { warning: 30, critical: 10 },     // Phase 44 — نسبة مئوية (أقل = أسوأ)
+      directOfferAvgResponseSec: { warning: 60, critical: 90 }, // Phase 44 — ثوانى (أعلى = أسوأ)
     },
   },
 
@@ -727,6 +729,14 @@ const config = {
     cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
     maxExportRows: 10000,                    // أقصى عدد صفوف في CSV export
     receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
+    cacheInvalidationEnabled: true,          // Phase 44 — clear analytics cache on direct_offer:* events
+    cacheInvalidationEvents: [               // Phase 44 — events that trigger cache clearing
+      'direct_offer:created',
+      'direct_offer:accepted',
+      'direct_offer:declined',
+      'direct_offer:expired',
+      'direct_offer:withdrawn',
+    ],
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -889,7 +899,7 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection
   // ═══════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
     enabled: true,                            // Phase 42 — closed Talent Exchange loop
@@ -904,6 +914,17 @@ const config = {
     enableTwoPhaseReveal: true,               // hide identity (name+phone) before accept
     syntheticJobUrgency: 'immediate',         // synthetic jobs urgency level
     maxMessageLength: 200,                    // optional employer message ≤ 200 chars
+    abuse: {                                  // Phase 44 — rule-based abuse detection (admin review, no auto-ban)
+      enabled: true,
+      sameWorkerOfferThreshold: 5,            // employer→same worker > N offers in window = suspicious
+      sameWorkerWindowHours: 24,              // window for same-worker spam detection
+      employerHighDeclineRateThreshold: 0.8,  // employer with >=80% decline rate = suspicious
+      employerDeclineWindowDays: 7,           // window for employer decline rate check
+      employerMinOffersForRateCheck: 10,      // statistical significance threshold
+      workerOfferBombingThreshold: 30,        // worker receives >=N offers = bombing
+      workerOfferBombingWindowMinutes: 60,    // window for offer-bombing detection
+      workerOfferBombingMinUniqueEmployers: 5, // min unique employers (rules out same_worker_spam overlap)
+    },
   },
 
 };

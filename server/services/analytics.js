@@ -30,9 +30,27 @@ function cacheSet(key, value) {
   analyticsCache.set(key, { value, expiresAt: Date.now() + ttl });
 }
 
-/** Clear analytics cache (for testing) */
-export function clearAnalyticsCache() {
-  analyticsCache.clear();
+/**
+ * Clear analytics cache.
+ * @param {string} [prefix] — if provided, only clear keys starting with prefix.
+ *                            If omitted, clear entire cache.
+ *
+ * Phase 44: Used by EventBus listeners for cache coherence after direct_offer:* events.
+ *   - clearAnalyticsCache('analytics:employer:${id}:') — per-employer
+ *   - clearAnalyticsCache('analytics:worker:${id}:')   — per-worker
+ *   - clearAnalyticsCache('analytics:platform:')       — platform-wide
+ *   - clearAnalyticsCache()                            — full clear (testing)
+ */
+export function clearAnalyticsCache(prefix) {
+  if (!prefix) {
+    analyticsCache.clear();
+    return;
+  }
+  for (const key of analyticsCache.keys()) {
+    if (key.startsWith(prefix)) {
+      analyticsCache.delete(key);
+    }
+  }
 }
 
 // ── Date helpers (Egypt timezone UTC+2) ──────────────────────

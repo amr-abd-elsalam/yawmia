@@ -138,3 +138,96 @@ export async function handleAdminUpdateUserStatus(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في تحديث حالة المستخدم', code: 'UPDATE_USER_STATUS_ERROR' });
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 44 — Admin Direct Offers Operations Console
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/direct-offers/dashboard?from=&to=
+ * Unified dashboard — funnel + topEmployers + topWorkers + declineReasons.
+ * Requires: requireAdmin
+ */
+export async function handleAdminDirectOffersDashboard(req, res) {
+  try {
+    const {
+      getPlatformOfferFunnel,
+      getTopEmployersByAcceptance,
+      getTopWorkersByAcceptance,
+      getDeclineReasonsBreakdown,
+    } = await import('../services/directOfferAnalytics.js');
+
+    const from = req.query.from || undefined;
+    const to = req.query.to || undefined;
+
+    const [funnel, topEmployers, topWorkers, declineReasons] = await Promise.all([
+      getPlatformOfferFunnel({ from, to }),
+      getTopEmployersByAcceptance({ from, to, limit: 10 }),
+      getTopWorkersByAcceptance({ from, to, limit: 10 }),
+      getDeclineReasonsBreakdown({ from, to }),
+    ]);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      period: { from: from || null, to: to || null },
+      funnel,
+      topEmployers,
+      topWorkers,
+      declineReasons,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب dashboard العروض', code: 'OFFERS_DASHBOARD_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/direct-offers/funnel?from=&to=
+ * Lightweight funnel-only endpoint (cheaper than full dashboard).
+ * Requires: requireAdmin
+ */
+export async function handleAdminDirectOffersFunnel(req, res) {
+  try {
+    const { getPlatformOfferFunnel } = await import('../services/directOfferAnalytics.js');
+    const funnel = await getPlatformOfferFunnel({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, funnel });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب funnel', code: 'FUNNEL_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/direct-offers/decline-reasons?from=&to=
+ * Lightweight decline reasons aggregation.
+ * Requires: requireAdmin
+ */
+export async function handleAdminDeclineReasons(req, res) {
+  try {
+    const { getDeclineReasonsBreakdown } = await import('../services/directOfferAnalytics.js');
+    const result = await getDeclineReasonsBreakdown({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب أسباب الرفض', code: 'DECLINE_REASONS_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/direct-offers/abuse
+ * Run abuse detection rules + return flagged signals.
+ * Human-in-the-loop: admin reviews flags + decides (no auto-ban).
+ * Requires: requireAdmin
+ */
+export async function handleAdminAbuseSignals(req, res) {
+  try {
+    const { detectAbuse } = await import('../services/offerAbuseDetector.js');
+    const result = await detectAbuse();
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في كشف الإساءة', code: 'ABUSE_DETECTION_ERROR' });
+  }
+}

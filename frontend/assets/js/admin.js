@@ -95,7 +95,18 @@ var AdminApp = (function () {
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
       // Load remaining data in parallel
-      Promise.all([loadHealth(), loadUsers(), loadJobs(), loadFinancials(), loadReports(), loadVerifications(), loadAnalytics(), loadMonitoring()]).catch(function () {});
+      Promise.all([
+        loadHealth(),
+        loadUsers(),
+        loadJobs(),
+        loadFinancials(),
+        loadReports(),
+        loadVerifications(),
+        loadAnalytics(),
+        loadMonitoring(),
+        loadDirectOffersDashboard(),
+        loadAbuseSignals(),
+      ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
@@ -572,6 +583,183 @@ var AdminApp = (function () {
     document.body.removeChild(link);
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 44 — Admin Direct Offers Operations Console
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadDirectOffersDashboard() {
+    try {
+      var data = await api('/api/admin/direct-offers/dashboard');
+      if (!data || !data.ok) return;
+
+      // ── Funnel cards ──
+      var funnelEl = document.getElementById('directOffersFunnel');
+      if (funnelEl) {
+        var f = data.funnel || {};
+        var cards = [
+          { value: f.sent || 0, label: 'إجمالي العروض' },
+          { value: f.accepted || 0, label: 'مقبولة' },
+          { value: (f.acceptRate || 0) + '%', label: 'نسبة القبول' },
+          { value: f.declined || 0, label: 'مرفوضة' },
+          { value: (f.declineRate || 0) + '%', label: 'نسبة الرفض' },
+          { value: f.expired || 0, label: 'منتهية' },
+          { value: f.pending || 0, label: 'معلّقة الآن' },
+          { value: f.withdrawn || 0, label: 'مسحوبة' },
+        ];
+        funnelEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'stat-card';
+          card.innerHTML =
+            '<div class="stat-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="stat-card__label">' + escapeHtml(c.label) + '</div>';
+          funnelEl.appendChild(card);
+        });
+      }
+
+      // ── Decline reasons ──
+      var drEl = document.getElementById('directOffersDeclineReasons');
+      if (drEl) {
+        var reasonLabels = {
+          busy: 'مشغول',
+          wage_low: 'الأجر قليل',
+          distance: 'بعيد',
+          category_mismatch: 'مش تخصصه',
+          other: 'سبب آخر',
+          unspecified: 'بدون سبب',
+        };
+        var dr = data.declineReasons || { total: 0, breakdown: [] };
+        if (!dr.total || dr.total === 0) {
+          drEl.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد عروض مرفوضة</p>';
+        } else {
+          var html = '';
+          dr.breakdown.forEach(function (r) {
+            html += '<div class="rating-dist-row">' +
+              '<span class="rating-dist-label">' + escapeHtml(reasonLabels[r.reason] || r.reason) + '</span>' +
+              '<div class="rating-dist-bar"><div class="rating-dist-fill" style="width:' + r.percentage + '%;background:var(--color-error);"></div></div>' +
+              '<span class="rating-dist-count">' + r.count + ' (' + r.percentage + '%)</span>' +
+            '</div>';
+          });
+          drEl.innerHTML = html;
+        }
+      }
+
+      // ── Top employers ──
+      var teEl = document.getElementById('topEmployersTable');
+      if (teEl) {
+        var topEmps = data.topEmployers || [];
+        if (topEmps.length === 0) {
+          teEl.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد بيانات كافية</p>';
+        } else {
+          var html = '<table class="admin-table"><thead><tr>' +
+            '<th>صاحب العمل</th><th>عروض</th><th>مقبولة</th><th>نسبة القبول</th>' +
+            '</tr></thead><tbody>';
+          topEmps.forEach(function (e) {
+            html += '<tr>' +
+              '<td><a href="/user.html?id=' + escapeHtml(e.employerId) + '" class="worker-link">' + escapeHtml(e.name || e.employerId) + '</a></td>' +
+              '<td>' + e.total + '</td>' +
+              '<td>' + e.accepted + '</td>' +
+              '<td>' + e.acceptRate + '%</td>' +
+            '</tr>';
+          });
+          html += '</tbody></table>';
+          teEl.innerHTML = html;
+        }
+      }
+
+      // ── Top workers ──
+      var twEl = document.getElementById('topWorkersTable');
+      if (twEl) {
+        var topWrks = data.topWorkers || [];
+        if (topWrks.length === 0) {
+          twEl.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد بيانات كافية</p>';
+        } else {
+          var html = '<table class="admin-table"><thead><tr>' +
+            '<th>العامل</th><th>عروض مستلمة</th><th>مقبولة</th><th>نسبة القبول</th><th>متوسط الرد</th>' +
+            '</tr></thead><tbody>';
+          topWrks.forEach(function (w) {
+            html += '<tr>' +
+              '<td><a href="/user.html?id=' + escapeHtml(w.workerId) + '" class="worker-link">' + escapeHtml(w.name || w.workerId) + '</a></td>' +
+              '<td>' + w.total + '</td>' +
+              '<td>' + w.accepted + '</td>' +
+              '<td>' + w.acceptRate + '%</td>' +
+              '<td>' + w.avgResponseSec + 's</td>' +
+            '</tr>';
+          });
+          html += '</tbody></table>';
+          twEl.innerHTML = html;
+        }
+      }
+    } catch (err) {
+      var funnelEl = document.getElementById('directOffersFunnel');
+      if (funnelEl) funnelEl.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل dashboard العروض</p>';
+    }
+  }
+
+  async function loadAbuseSignals() {
+    try {
+      var data = await api('/api/admin/direct-offers/abuse');
+      var el = document.getElementById('abuseSignalsArea');
+      if (!el) return;
+
+      if (!data.enabled) {
+        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">كشف الإساءة غير مفعّل</p>';
+        return;
+      }
+
+      if (!data.flagCount || data.flagCount === 0) {
+        el.innerHTML = '<p style="color: var(--color-success); text-align: center; padding: 1rem;">✓ لا توجد إشارات إساءة</p>';
+        return;
+      }
+
+      var typeLabels = {
+        same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
+        high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+        worker_offer_bombing: 'عامل يستلم سيل من العروض',
+      };
+
+      var html = '<p style="margin-block-end:0.75rem;">عُثر على <strong>' + data.flagCount + '</strong> إشارة:</p>';
+
+      data.flags.forEach(function (f) {
+        var sevColor = f.severity === 'high' ? 'var(--color-error)' :
+                       f.severity === 'medium' ? 'var(--color-warning)' :
+                       'var(--color-text-muted)';
+        var sevLabel = f.severity === 'high' ? 'عالية' :
+                       f.severity === 'medium' ? 'متوسطة' : 'منخفضة';
+
+        html += '<div style="border-inline-start:3px solid ' + sevColor + ';padding:0.75rem 1rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;">' +
+          '<strong>' + escapeHtml(typeLabels[f.type] || f.type) + '</strong> ' +
+          '<span style="font-size:0.75rem;color:' + sevColor + ';font-weight:600;">[خطورة ' + sevLabel + ']</span><br>';
+
+        if (f.employerId) {
+          html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a> ' +
+            '<button class="btn btn--sm btn--ghost" style="margin-inline-start:0.5rem;color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.toggleBan(\'' + escapeHtml(f.employerId) + '\',\'banned\')">حظر</button></small><br>';
+        }
+        if (f.workerId) {
+          html += '<small>العامل: <a href="/user.html?id=' + escapeHtml(f.workerId) + '" class="worker-link">' + escapeHtml(f.workerId) + '</a></small><br>';
+        }
+
+        var details = [];
+        if (typeof f.offerCount === 'number') details.push(f.offerCount + ' عروض');
+        if (typeof f.uniqueEmployers === 'number') details.push('من ' + f.uniqueEmployers + ' أصحاب عمل');
+        if (typeof f.declinedOrExpired === 'number') details.push(f.declinedOrExpired + ' مرفوضة/منتهية');
+        if (typeof f.totalOffers === 'number') details.push('إجمالي ' + f.totalOffers + ' عرض');
+        if (typeof f.negativeRate === 'number') details.push('نسبة سلبية: ' + f.negativeRate + '%');
+
+        if (details.length > 0) {
+          html += '<small style="color:var(--color-text-muted);">' + details.join(' · ') + '</small>';
+        }
+
+        html += '</div>';
+      });
+
+      el.innerHTML = html;
+    } catch (err) {
+      var el = document.getElementById('abuseSignalsArea');
+      if (el) el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في التحميل</p>';
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -586,6 +774,8 @@ var AdminApp = (function () {
     reviewVerification: reviewVerification,
     loadAnalytics: loadAnalytics,
     loadMonitoring: loadMonitoring,
+    loadDirectOffersDashboard: loadDirectOffersDashboard,
+    loadAbuseSignals: loadAbuseSignals,
     exportCSV: exportCSV,
   };
 })();

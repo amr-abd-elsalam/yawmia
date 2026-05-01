@@ -8,7 +8,16 @@ import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication, handleWorkerConfirm, handleWorkerDecline } from './handlers/applicationsHandler.js';
-import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
+import {
+  handleAdminStats,
+  handleAdminUsers,
+  handleAdminJobs,
+  handleAdminUpdateUserStatus,
+  handleAdminDirectOffersDashboard,
+  handleAdminDirectOffersFunnel,
+  handleAdminDeclineReasons,
+  handleAdminAbuseSignals,
+} from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -31,6 +40,9 @@ import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdra
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
+import { eventBus } from './services/eventBus.js';
+import { clearAnalyticsCache } from './services/analytics.js';
+import { clearCache as clearDirectOfferAnalyticsCache } from './services/directOfferAnalytics.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -52,7 +64,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.39.0',
+        version: '0.40.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -182,7 +194,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.39.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.40.0' });
     },
   },
 
@@ -367,6 +379,12 @@ const routes = [
       }
     },
   },
+
+  // ── Phase 44 — Admin Direct Offers Operations Console ──
+  { method: 'GET', path: '/api/admin/direct-offers/dashboard', middlewares: [requireAdmin], handler: handleAdminDirectOffersDashboard },
+  { method: 'GET', path: '/api/admin/direct-offers/funnel', middlewares: [requireAdmin], handler: handleAdminDirectOffersFunnel },
+  { method: 'GET', path: '/api/admin/direct-offers/decline-reasons', middlewares: [requireAdmin], handler: handleAdminDeclineReasons },
+  { method: 'GET', path: '/api/admin/direct-offers/abuse', middlewares: [requireAdmin], handler: handleAdminAbuseSignals },
 ];
 
 /**
@@ -443,6 +461,34 @@ setupLiveFeedListeners();
 // Phase 43 — Setup direct offer reconciliation listener (5s delayed re-sync)
 import { setupDirectOfferListeners } from './services/directOffer.js';
 setupDirectOfferListeners();
+
+// Phase 44 — Analytics cache invalidation on direct offer events
+// Listeners registered AFTER setupDirectOfferListeners to ensure proper event ordering.
+// Fire-and-forget: failure tolerated, TTL (5min) catches stale data eventually.
+if (config.ANALYTICS && config.ANALYTICS.cacheInvalidationEnabled) {
+  const invalidationEvents = config.ANALYTICS.cacheInvalidationEvents || [];
+  for (const eventName of invalidationEvents) {
+    eventBus.on(eventName, (data) => {
+      try {
+        // Per-employer analytics cache (if event payload has employerId)
+        if (data && data.employerId) {
+          clearAnalyticsCache(`analytics:employer:${data.employerId}:`);
+        }
+        // Per-worker analytics cache (if event payload has workerId)
+        if (data && data.workerId) {
+          clearAnalyticsCache(`analytics:worker:${data.workerId}:`);
+        }
+        // Platform-wide analytics cache (always invalidate)
+        clearAnalyticsCache('analytics:platform:');
+        // Admin direct offer analytics cache (always invalidate)
+        clearDirectOfferAnalyticsCache();
+      } catch (_) { /* fire-and-forget */ }
+    });
+  }
+  logger.info(`Analytics cache invalidation: enabled (${invalidationEvents.length} events)`);
+} else {
+  logger.info('Analytics cache invalidation: disabled via config');
+}
 
 /**
  * Creates the router function
