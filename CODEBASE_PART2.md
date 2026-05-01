@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.39.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-04-30T19:08:14.772Z
-> Files in this part: 55
+# يوميّة (Yawmia) v0.40.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-01T17:59:20.752Z
+> Files in this part: 57
 
 ## Files
 1. `server/services/activitySummary.js`
@@ -20,44 +20,46 @@
 15. `server/services/contentFilter.js`
 16. `server/services/database.js`
 17. `server/services/directOffer.js`
-18. `server/services/errorAggregator.js`
-19. `server/services/eventBus.js`
-20. `server/services/eventReplayBuffer.js`
-21. `server/services/favorites.js`
-22. `server/services/financialExport.js`
-23. `server/services/geo.js`
-24. `server/services/imageStore.js`
-25. `server/services/indexHealth.js`
-26. `server/services/instantMatch.js`
-27. `server/services/jobAlerts.js`
-28. `server/services/jobMatcher.js`
-29. `server/services/jobs.js`
-30. `server/services/liveFeed.js`
-31. `server/services/logWriter.js`
-32. `server/services/logger.js`
-33. `server/services/messages.js`
-34. `server/services/messaging.js`
-35. `server/services/migration.js`
-36. `server/services/monitor.js`
-37. `server/services/notificationMessenger.js`
-38. `server/services/notifications.js`
-39. `server/services/payments.js`
-40. `server/services/presenceService.js`
-41. `server/services/profileCompleteness.js`
-42. `server/services/queryIndex.js`
-43. `server/services/ratings.js`
-44. `server/services/reports.js`
-45. `server/services/resourceLock.js`
-46. `server/services/sanitizer.js`
-47. `server/services/searchIndex.js`
-48. `server/services/sessions.js`
-49. `server/services/sseManager.js`
-50. `server/services/trust.js`
-51. `server/services/users.js`
-52. `server/services/validators.js`
-53. `server/services/verification.js`
-54. `server/services/webpush.js`
-55. `server/services/workerDiscovery.js`
+18. `server/services/directOfferAnalytics.js`
+19. `server/services/errorAggregator.js`
+20. `server/services/eventBus.js`
+21. `server/services/eventReplayBuffer.js`
+22. `server/services/favorites.js`
+23. `server/services/financialExport.js`
+24. `server/services/geo.js`
+25. `server/services/imageStore.js`
+26. `server/services/indexHealth.js`
+27. `server/services/instantMatch.js`
+28. `server/services/jobAlerts.js`
+29. `server/services/jobMatcher.js`
+30. `server/services/jobs.js`
+31. `server/services/liveFeed.js`
+32. `server/services/logWriter.js`
+33. `server/services/logger.js`
+34. `server/services/messages.js`
+35. `server/services/messaging.js`
+36. `server/services/migration.js`
+37. `server/services/monitor.js`
+38. `server/services/notificationMessenger.js`
+39. `server/services/notifications.js`
+40. `server/services/offerAbuseDetector.js`
+41. `server/services/payments.js`
+42. `server/services/presenceService.js`
+43. `server/services/profileCompleteness.js`
+44. `server/services/queryIndex.js`
+45. `server/services/ratings.js`
+46. `server/services/reports.js`
+47. `server/services/resourceLock.js`
+48. `server/services/sanitizer.js`
+49. `server/services/searchIndex.js`
+50. `server/services/sessions.js`
+51. `server/services/sseManager.js`
+52. `server/services/trust.js`
+53. `server/services/users.js`
+54. `server/services/validators.js`
+55. `server/services/verification.js`
+56. `server/services/webpush.js`
+57. `server/services/workerDiscovery.js`
 
 ---
 
@@ -621,9 +623,27 @@ function cacheSet(key, value) {
   analyticsCache.set(key, { value, expiresAt: Date.now() + ttl });
 }
 
-/** Clear analytics cache (for testing) */
-export function clearAnalyticsCache() {
-  analyticsCache.clear();
+/**
+ * Clear analytics cache.
+ * @param {string} [prefix] — if provided, only clear keys starting with prefix.
+ *                            If omitted, clear entire cache.
+ *
+ * Phase 44: Used by EventBus listeners for cache coherence after direct_offer:* events.
+ *   - clearAnalyticsCache('analytics:employer:${id}:') — per-employer
+ *   - clearAnalyticsCache('analytics:worker:${id}:')   — per-worker
+ *   - clearAnalyticsCache('analytics:platform:')       — platform-wide
+ *   - clearAnalyticsCache()                            — full clear (testing)
+ */
+export function clearAnalyticsCache(prefix) {
+  if (!prefix) {
+    analyticsCache.clear();
+    return;
+  }
+  for (const key of analyticsCache.keys()) {
+    if (key.startsWith(prefix)) {
+      analyticsCache.delete(key);
+    }
+  }
 }
 
 // ── Date helpers (Egypt timezone UTC+2) ──────────────────────
@@ -6114,6 +6134,420 @@ export const _testHelpers = { validateFields, redactName };
 
 ---
 
+## `server/services/directOfferAnalytics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/directOfferAnalytics.js — Platform-Wide Direct Offer Analytics (Phase 44)
+// ═══════════════════════════════════════════════════════════════
+// On-the-fly aggregation across all employers + workers.
+// Module-local cache (5-min TTL) — separate from analytics.js cache.
+// All functions return all-zero objects on empty data (no errors).
+// Admin-only consumption — bypasses redaction.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { getCollectionPath, listJSON } from './database.js';
+import { logger } from './logger.js';
+
+// ── Module-local cache ────────────────────────────────────────
+/** @type {Map<string, { value: *, expiresAt: number }>} */
+const cache = new Map();
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = (config.ANALYTICS && config.ANALYTICS.cacheTtlMs) || 300000;
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+/**
+ * Clear cache (called by EventBus on direct_offer:* events).
+ * Phase 44 — cache coherence after offer state transitions.
+ */
+export function clearCache() {
+  cache.clear();
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function inDateRange(iso, from, to) {
+  if (!iso) return false;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+/**
+ * Read all direct offers (raw, bypassing redaction).
+ * Shard-aware via listJSON.
+ * @returns {Promise<object[]>}
+ */
+async function listAllOffers() {
+  try {
+    const dir = getCollectionPath('direct_offers');
+    const all = await listJSON(dir);
+    return all.filter(o => o && o.id && o.id.startsWith('dof_'));
+  } catch (err) {
+    logger.warn('directOfferAnalytics: listAllOffers failed', { error: err.message });
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Platform Funnel
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Compute platform-wide offer funnel.
+ *
+ * @param {{ from?: string, to?: string }} options
+ * @returns {Promise<{
+ *   sent: number,
+ *   pending: number,
+ *   accepted: number,
+ *   declined: number,
+ *   expired: number,
+ *   withdrawn: number,
+ *   acceptRate: number,
+ *   declineRate: number,
+ *   expireRate: number
+ * }>}
+ */
+export async function getPlatformOfferFunnel(options = {}) {
+  const { from, to } = options;
+  const cacheKey = `funnel:${from || 'all'}:${to || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const offers = await listAllOffers();
+  const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
+
+  let sent = filtered.length;
+  let accepted = 0, declined = 0, expired = 0, withdrawn = 0, pending = 0;
+
+  for (const o of filtered) {
+    if (o.status === 'accepted') accepted++;
+    else if (o.status === 'declined') declined++;
+    else if (o.status === 'expired') expired++;
+    else if (o.status === 'withdrawn') withdrawn++;
+    else if (o.status === 'pending') pending++;
+  }
+
+  const decided = accepted + declined + expired;
+  const result = {
+    sent,
+    pending,
+    accepted,
+    declined,
+    expired,
+    withdrawn,
+    acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
+    declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
+    expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
+  };
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Top Employers by Acceptance
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Compute top employers ranked by acceptance rate.
+ * Sorted: acceptRate DESC, then total DESC (volume tiebreaker).
+ * Filters out employers with < minOffers (statistical noise prevention).
+ *
+ * @param {{ from?: string, to?: string, limit?: number, minOffers?: number }} options
+ * @returns {Promise<Array<{ employerId, name, total, accepted, acceptRate }>>}
+ */
+export async function getTopEmployersByAcceptance(options = {}) {
+  const { from, to, limit = 10, minOffers = 3 } = options;
+  const cacheKey = `topEmp:${from || 'all'}:${to || 'all'}:${limit}:${minOffers}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const offers = await listAllOffers();
+  const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
+
+  // Group by employerId
+  const byEmployer = new Map();
+  for (const o of filtered) {
+    if (!byEmployer.has(o.employerId)) {
+      byEmployer.set(o.employerId, { total: 0, accepted: 0, declined: 0, expired: 0 });
+    }
+    const e = byEmployer.get(o.employerId);
+    e.total++;
+    if (o.status === 'accepted') e.accepted++;
+    else if (o.status === 'declined') e.declined++;
+    else if (o.status === 'expired') e.expired++;
+  }
+
+  // Enrich with user names (dynamic import to avoid circular deps)
+  const { findById } = await import('./users.js');
+  const rows = [];
+
+  for (const [empId, stats] of byEmployer) {
+    if (stats.total < minOffers) continue;
+
+    const decided = stats.accepted + stats.declined + stats.expired;
+    const rate = decided > 0 ? stats.accepted / decided : 0;
+
+    let name = empId; // fallback to userId on missing user
+    try {
+      const u = await findById(empId);
+      if (u && u.name) name = u.name;
+      else if (u && u.phone) name = u.phone;
+    } catch (_) { /* fallback to empId */ }
+
+    rows.push({
+      employerId: empId,
+      name,
+      total: stats.total,
+      accepted: stats.accepted,
+      acceptRate: Math.round(rate * 100),
+    });
+  }
+
+  // Sort: acceptRate DESC, then total DESC
+  rows.sort((a, b) => b.acceptRate - a.acceptRate || b.total - a.total);
+
+  const result = rows.slice(0, limit);
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Top Workers by Acceptance
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Compute top workers ranked by acceptance rate (with avgResponseSec).
+ * Sorted: acceptRate DESC, then avgResponseSec ASC (faster = better tiebreaker).
+ *
+ * @param {{ from?: string, to?: string, limit?: number, minOffers?: number }} options
+ * @returns {Promise<Array<{ workerId, name, total, accepted, acceptRate, avgResponseSec }>>}
+ */
+export async function getTopWorkersByAcceptance(options = {}) {
+  const { from, to, limit = 10, minOffers = 3 } = options;
+  const cacheKey = `topWrk:${from || 'all'}:${to || 'all'}:${limit}:${minOffers}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const offers = await listAllOffers();
+  const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
+
+  // Group by workerId
+  const byWorker = new Map();
+  for (const o of filtered) {
+    if (!byWorker.has(o.workerId)) {
+      byWorker.set(o.workerId, {
+        total: 0,
+        accepted: 0,
+        declined: 0,
+        expired: 0,
+        totalResponseMs: 0,
+        responseCount: 0,
+      });
+    }
+    const w = byWorker.get(o.workerId);
+    w.total++;
+
+    if (o.status === 'accepted') {
+      w.accepted++;
+      if (o.acceptedAt && o.createdAt) {
+        const responseMs = new Date(o.acceptedAt).getTime() - new Date(o.createdAt).getTime();
+        if (responseMs > 0) {
+          w.totalResponseMs += responseMs;
+          w.responseCount++;
+        }
+      }
+    } else if (o.status === 'declined') {
+      w.declined++;
+      if (o.declinedAt && o.createdAt) {
+        const responseMs = new Date(o.declinedAt).getTime() - new Date(o.createdAt).getTime();
+        if (responseMs > 0) {
+          w.totalResponseMs += responseMs;
+          w.responseCount++;
+        }
+      }
+    } else if (o.status === 'expired') {
+      w.expired++;
+    }
+  }
+
+  // Enrich with user names
+  const { findById } = await import('./users.js');
+  const rows = [];
+
+  for (const [wid, stats] of byWorker) {
+    if (stats.total < minOffers) continue;
+
+    const decided = stats.accepted + stats.declined + stats.expired;
+    const rate = decided > 0 ? stats.accepted / decided : 0;
+    const avgResponseSec = stats.responseCount > 0
+      ? Math.round((stats.totalResponseMs / stats.responseCount) / 1000)
+      : 0;
+
+    let name = wid;
+    try {
+      const u = await findById(wid);
+      if (u && u.name) name = u.name;
+      else if (u && u.phone) name = u.phone;
+    } catch (_) { /* fallback to wid */ }
+
+    rows.push({
+      workerId: wid,
+      name,
+      total: stats.total,
+      accepted: stats.accepted,
+      acceptRate: Math.round(rate * 100),
+      avgResponseSec,
+    });
+  }
+
+  // Sort: acceptRate DESC, then avgResponseSec ASC (faster response tiebreaker)
+  rows.sort((a, b) => b.acceptRate - a.acceptRate || a.avgResponseSec - b.avgResponseSec);
+
+  const result = rows.slice(0, limit);
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Decline Reasons Breakdown
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Aggregate platform-wide decline reasons.
+ * 'unspecified' fallback for null/missing reasons.
+ *
+ * @param {{ from?: string, to?: string }} options
+ * @returns {Promise<{
+ *   total: number,
+ *   breakdown: Array<{ reason: string, count: number, percentage: number }>
+ * }>}
+ */
+export async function getDeclineReasonsBreakdown(options = {}) {
+  const { from, to } = options;
+  const cacheKey = `declineReasons:${from || 'all'}:${to || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const offers = await listAllOffers();
+  const declined = offers.filter(o =>
+    o.status === 'declined' &&
+    inDateRange(o.declinedAt || o.createdAt, from, to)
+  );
+
+  const reasons = {};
+  let total = 0;
+  for (const o of declined) {
+    const r = o.declinedReason || 'unspecified';
+    reasons[r] = (reasons[r] || 0) + 1;
+    total++;
+  }
+
+  const breakdown = Object.entries(reasons)
+    .map(([reason, count]) => ({
+      reason,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const result = { total, breakdown };
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Stats Snapshot for Monitor (no caching — always fresh)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Lightweight snapshot for monitor.captureSnapshot.
+ * Returns last-hour metrics only. Always fresh — no caching.
+ *
+ * Why no caching?
+ *   - Monitor runs hourly. Cache TTL would be useless.
+ *   - Volume is bounded (last hour) so computation is cheap.
+ *
+ * @returns {Promise<{
+ *   activePending: number,
+ *   recentAccepted: number,
+ *   recentDeclined: number,
+ *   recentExpired: number,
+ *   acceptRate: number,
+ *   avgResponseSec: number
+ * }>}
+ */
+export async function getOfferStatsSnapshot() {
+  const offers = await listAllOffers();
+  const hourAgo = Date.now() - 60 * 60 * 1000;
+
+  let activePending = 0;
+  let recentAccepted = 0, recentDeclined = 0, recentExpired = 0;
+  let recentTotalResponseMs = 0, recentResponseCount = 0;
+
+  for (const o of offers) {
+    if (o.status === 'pending') activePending++;
+
+    const updatedMs = new Date(o.updatedAt || o.createdAt).getTime();
+    if (updatedMs >= hourAgo) {
+      if (o.status === 'accepted') {
+        recentAccepted++;
+        if (o.acceptedAt && o.createdAt) {
+          const ms = new Date(o.acceptedAt).getTime() - new Date(o.createdAt).getTime();
+          if (ms > 0) {
+            recentTotalResponseMs += ms;
+            recentResponseCount++;
+          }
+        }
+      } else if (o.status === 'declined') {
+        recentDeclined++;
+        if (o.declinedAt && o.createdAt) {
+          const ms = new Date(o.declinedAt).getTime() - new Date(o.createdAt).getTime();
+          if (ms > 0) {
+            recentTotalResponseMs += ms;
+            recentResponseCount++;
+          }
+        }
+      } else if (o.status === 'expired') {
+        recentExpired++;
+      }
+    }
+  }
+
+  const decided = recentAccepted + recentDeclined + recentExpired;
+  return {
+    activePending,
+    recentAccepted,
+    recentDeclined,
+    recentExpired,
+    acceptRate: decided > 0 ? Math.round((recentAccepted / decided) * 100) : 0,
+    avgResponseSec: recentResponseCount > 0
+      ? Math.round((recentTotalResponseMs / recentResponseCount) / 1000)
+      : 0,
+  };
+}
+
+// ── Test helpers (exported for unit tests) ───────────────────
+export const _testHelpers = { listAllOffers, inDateRange };
+```
+
+---
+
 ## `server/services/errorAggregator.js`
 
 ```javascript
@@ -10973,6 +11407,20 @@ export async function captureSnapshot() {
     payments: await countCollectionFiles('payments'),
   };
 
+  // Phase 44 — Direct offer health (last-hour metrics, no caching)
+  let directOffers = {
+    activePending: 0,
+    recentAccepted: 0,
+    recentDeclined: 0,
+    recentExpired: 0,
+    acceptRate: 0,
+    avgResponseSec: 0,
+  };
+  try {
+    const { getOfferStatsSnapshot } = await import('./directOfferAnalytics.js');
+    directOffers = await getOfferStatsSnapshot();
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -10984,6 +11432,7 @@ export async function captureSnapshot() {
     indexHealth,
     searchIndex,
     dataSize,
+    directOffers,
   };
 
   // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
@@ -11085,6 +11534,58 @@ export function checkThresholds(snapshot) {
       } else if (val <= thresholds.cacheHitRate.warning) {
         alerts.push({ level: 'warning', metric: 'cacheHitRate', value: val, threshold: thresholds.cacheHitRate.warning, message: `Cache hit rate warning: ${val}%` });
       }
+    }
+  }
+
+  // Phase 44 — Direct offer accept rate (lower = worse, with min-volume guard)
+  if (thresholds.directOfferAcceptRate && snapshot.directOffers) {
+    const val = snapshot.directOffers.acceptRate;
+    const decided = (snapshot.directOffers.recentAccepted || 0) +
+                    (snapshot.directOffers.recentDeclined || 0) +
+                    (snapshot.directOffers.recentExpired || 0);
+
+    // Minimum-volume guard: don't alert on low-traffic noise
+    if (decided >= 5) {
+      if (val <= thresholds.directOfferAcceptRate.critical) {
+        alerts.push({
+          level: 'critical',
+          metric: 'directOfferAcceptRate',
+          value: val,
+          threshold: thresholds.directOfferAcceptRate.critical,
+          message: `Direct offer accept rate critical: ${val}% (${decided} decided offers)`,
+        });
+      } else if (val <= thresholds.directOfferAcceptRate.warning) {
+        alerts.push({
+          level: 'warning',
+          metric: 'directOfferAcceptRate',
+          value: val,
+          threshold: thresholds.directOfferAcceptRate.warning,
+          message: `Direct offer accept rate warning: ${val}% (${decided} decided offers)`,
+        });
+      }
+    }
+  }
+
+  // Phase 44 — Direct offer avg response time (higher = worse)
+  if (thresholds.directOfferAvgResponseSec && snapshot.directOffers) {
+    const val = snapshot.directOffers.avgResponseSec || 0;
+
+    if (val >= thresholds.directOfferAvgResponseSec.critical) {
+      alerts.push({
+        level: 'critical',
+        metric: 'directOfferAvgResponseSec',
+        value: val,
+        threshold: thresholds.directOfferAvgResponseSec.critical,
+        message: `Slow worker response time: ${val}s`,
+      });
+    } else if (val >= thresholds.directOfferAvgResponseSec.warning) {
+      alerts.push({
+        level: 'warning',
+        metric: 'directOfferAvgResponseSec',
+        value: val,
+        threshold: thresholds.directOfferAvgResponseSec.warning,
+        message: `Slow worker response time: ${val}s`,
+      });
     }
   }
 
@@ -12130,6 +12631,247 @@ export function setupNotificationListeners() {
     } catch (_) { /* fire-and-forget */ }
   });
 }
+```
+
+---
+
+## `server/services/offerAbuseDetector.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/offerAbuseDetector.js — Rule-Based Abuse Detection (Phase 44)
+// ═══════════════════════════════════════════════════════════════
+// 3 detection rules:
+//   1. Same-worker spam (employer→same worker > threshold in 24h)
+//   2. High-decline employer (>=80% negative rate with >=10 offers in 7d)
+//   3. Offer-bombing (worker receives > threshold from > minUnique employers in 60min)
+//
+// Pure read-only — no persistence, no auto-ban.
+// Admin reviews flags + decides (human-in-the-loop pattern).
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { getCollectionPath, listJSON } from './database.js';
+import { logger } from './logger.js';
+
+/**
+ * Read all direct offers (raw, bypassing redaction).
+ * @returns {Promise<object[]>}
+ */
+async function listAllOffers() {
+  try {
+    const dir = getCollectionPath('direct_offers');
+    const all = await listJSON(dir);
+    return all.filter(o => o && o.id && o.id.startsWith('dof_'));
+  } catch (err) {
+    logger.warn('offerAbuseDetector: listAllOffers failed', { error: err.message });
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Rule 1: Same-Worker Spam
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Detect employers sending too many offers to same worker.
+ * Severity: 'high' if 2x threshold, else 'medium'.
+ *
+ * @param {object[]} offers
+ * @param {object} cfg — config.DIRECT_OFFERS.abuse
+ * @returns {Array<object>} flags
+ */
+function detectSameWorkerSpam(offers, cfg) {
+  const cutoff = Date.now() - cfg.sameWorkerWindowHours * 60 * 60 * 1000;
+  const pairs = new Map();
+
+  for (const o of offers) {
+    const createdMs = new Date(o.createdAt).getTime();
+    if (createdMs < cutoff) continue;
+
+    const key = `${o.employerId}:${o.workerId}`;
+    if (!pairs.has(key)) {
+      pairs.set(key, {
+        employerId: o.employerId,
+        workerId: o.workerId,
+        count: 0,
+        declined: 0,
+        expired: 0,
+      });
+    }
+    const p = pairs.get(key);
+    p.count++;
+    if (o.status === 'declined') p.declined++;
+    else if (o.status === 'expired') p.expired++;
+  }
+
+  const flags = [];
+  for (const p of pairs.values()) {
+    if (p.count >= cfg.sameWorkerOfferThreshold) {
+      const severity = p.count >= cfg.sameWorkerOfferThreshold * 2 ? 'high' : 'medium';
+      flags.push({
+        type: 'same_worker_spam',
+        employerId: p.employerId,
+        workerId: p.workerId,
+        offerCount: p.count,
+        declinedOrExpired: p.declined + p.expired,
+        severity,
+      });
+    }
+  }
+  return flags;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Rule 2: High-Decline Employer
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Detect employers with toxic offer behavior (high decline+expire rate).
+ * Severity: 'high' if >=95%, else 'medium'.
+ * Requires >=employerMinOffersForRateCheck for statistical significance.
+ *
+ * @param {object[]} offers
+ * @param {object} cfg
+ * @returns {Array<object>} flags
+ */
+function detectHighDeclineEmployers(offers, cfg) {
+  const cutoff = Date.now() - cfg.employerDeclineWindowDays * 24 * 60 * 60 * 1000;
+  const byEmployer = new Map();
+
+  for (const o of offers) {
+    const createdMs = new Date(o.createdAt).getTime();
+    if (createdMs < cutoff) continue;
+
+    if (!byEmployer.has(o.employerId)) {
+      byEmployer.set(o.employerId, { total: 0, declined: 0, expired: 0 });
+    }
+    const e = byEmployer.get(o.employerId);
+    e.total++;
+    if (o.status === 'declined') e.declined++;
+    else if (o.status === 'expired') e.expired++;
+  }
+
+  const flags = [];
+  for (const [empId, stats] of byEmployer) {
+    if (stats.total < cfg.employerMinOffersForRateCheck) continue;
+
+    const negativeRate = (stats.declined + stats.expired) / stats.total;
+    if (negativeRate >= cfg.employerHighDeclineRateThreshold) {
+      const severity = negativeRate >= 0.95 ? 'high' : 'medium';
+      flags.push({
+        type: 'high_decline_employer',
+        employerId: empId,
+        totalOffers: stats.total,
+        declinedOrExpired: stats.declined + stats.expired,
+        negativeRate: Math.round(negativeRate * 100),
+        severity,
+      });
+    }
+  }
+  return flags;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Rule 3: Offer Bombing
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Detect coordinated offer bombing on a single worker.
+ * Always 'high' severity (system-level abuse signal).
+ * Requires >= minUniqueEmployers (rules out single-employer spam).
+ *
+ * @param {object[]} offers
+ * @param {object} cfg
+ * @returns {Array<object>} flags
+ */
+function detectOfferBombing(offers, cfg) {
+  const cutoff = Date.now() - cfg.workerOfferBombingWindowMinutes * 60 * 1000;
+  const byWorker = new Map();
+
+  for (const o of offers) {
+    const createdMs = new Date(o.createdAt).getTime();
+    if (createdMs < cutoff) continue;
+
+    if (!byWorker.has(o.workerId)) {
+      byWorker.set(o.workerId, { count: 0, employers: new Set() });
+    }
+    const w = byWorker.get(o.workerId);
+    w.count++;
+    w.employers.add(o.employerId);
+  }
+
+  const flags = [];
+  for (const [wid, stats] of byWorker) {
+    if (stats.count >= cfg.workerOfferBombingThreshold &&
+        stats.employers.size >= cfg.workerOfferBombingMinUniqueEmployers) {
+      flags.push({
+        type: 'worker_offer_bombing',
+        workerId: wid,
+        offerCount: stats.count,
+        uniqueEmployers: stats.employers.size,
+        severity: 'high',
+      });
+    }
+  }
+  return flags;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Main Entry
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Run all 3 detection rules and return flagged signals.
+ * Sorted by severity: high → medium → low.
+ *
+ * @returns {Promise<{
+ *   enabled: boolean,
+ *   generatedAt?: string,
+ *   flagCount?: number,
+ *   flags?: Array<object>,
+ *   error?: string
+ * }>}
+ */
+export async function detectAbuse() {
+  if (!config.DIRECT_OFFERS || !config.DIRECT_OFFERS.abuse || !config.DIRECT_OFFERS.abuse.enabled) {
+    return { enabled: false, flags: [] };
+  }
+
+  const cfg = config.DIRECT_OFFERS.abuse;
+
+  let offers;
+  try {
+    offers = await listAllOffers();
+  } catch (err) {
+    logger.warn('detectAbuse: failed to list offers', { error: err.message });
+    return { enabled: true, flags: [], error: 'list_failed' };
+  }
+
+  const flags = [
+    ...detectSameWorkerSpam(offers, cfg),
+    ...detectHighDeclineEmployers(offers, cfg),
+    ...detectOfferBombing(offers, cfg),
+  ];
+
+  // Sort by severity: high (3) → medium (2) → low (1)
+  const severityOrder = { high: 3, medium: 2, low: 1 };
+  flags.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+
+  return {
+    enabled: true,
+    generatedAt: new Date().toISOString(),
+    flagCount: flags.length,
+    flags,
+  };
+}
+
+// ── Test helpers (exported for unit tests) ───────────────────
+export const _testHelpers = {
+  detectSameWorkerSpam,
+  detectHighDeclineEmployers,
+  detectOfferBombing,
+};
 ```
 
 ---

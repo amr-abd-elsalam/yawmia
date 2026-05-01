@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.39.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-04-30T19:08:14.768Z
+# يوميّة (Yawmia) v0.40.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-01T17:59:20.749Z
 > Files in this part: 6
 
 ## Files
@@ -524,7 +524,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.39.0',
+    cacheName: 'yawmia-v0.40.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -786,6 +786,8 @@ const config = {
       errorRate: { warning: 5, critical: 15 },        // نسبة مئوية
       p95Ms: { warning: 1000, critical: 3000 },       // مللي ثانية
       cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
+      directOfferAcceptRate: { warning: 30, critical: 10 },     // Phase 44 — نسبة مئوية (أقل = أسوأ)
+      directOfferAvgResponseSec: { warning: 60, critical: 90 }, // Phase 44 — ثوانى (أعلى = أسوأ)
     },
   },
 
@@ -797,6 +799,14 @@ const config = {
     cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
     maxExportRows: 10000,                    // أقصى عدد صفوف في CSV export
     receiptPrefix: 'RCT',                    // بادئة رقم الإيصال
+    cacheInvalidationEnabled: true,          // Phase 44 — clear analytics cache on direct_offer:* events
+    cacheInvalidationEvents: [               // Phase 44 — events that trigger cache clearing
+      'direct_offer:created',
+      'direct_offer:accepted',
+      'direct_offer:declined',
+      'direct_offer:expired',
+      'direct_offer:withdrawn',
+    ],
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -959,7 +969,7 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection
   // ═══════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
     enabled: true,                            // Phase 42 — closed Talent Exchange loop
@@ -974,6 +984,17 @@ const config = {
     enableTwoPhaseReveal: true,               // hide identity (name+phone) before accept
     syntheticJobUrgency: 'immediate',         // synthetic jobs urgency level
     maxMessageLength: 200,                    // optional employer message ≤ 200 chars
+    abuse: {                                  // Phase 44 — rule-based abuse detection (admin review, no auto-ban)
+      enabled: true,
+      sameWorkerOfferThreshold: 5,            // employer→same worker > N offers in window = suspicious
+      sameWorkerWindowHours: 24,              // window for same-worker spam detection
+      employerHighDeclineRateThreshold: 0.8,  // employer with >=80% decline rate = suspicious
+      employerDeclineWindowDays: 7,           // window for employer decline rate check
+      employerMinOffersForRateCheck: 10,      // statistical significance threshold
+      workerOfferBombingThreshold: 30,        // worker receives >=N offers = bombing
+      workerOfferBombingWindowMinutes: 60,    // window for offer-bombing detection
+      workerOfferBombingMinUniqueEmployers: 5, // min unique employers (rules out same_worker_spam overlap)
+    },
   },
 
 };
@@ -1024,7 +1045,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1465,7 +1486,16 @@ import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication, handleWorkerConfirm, handleWorkerDecline } from './handlers/applicationsHandler.js';
-import { handleAdminStats, handleAdminUsers, handleAdminJobs, handleAdminUpdateUserStatus } from './handlers/adminHandler.js';
+import {
+  handleAdminStats,
+  handleAdminUsers,
+  handleAdminJobs,
+  handleAdminUpdateUserStatus,
+  handleAdminDirectOffersDashboard,
+  handleAdminDirectOffersFunnel,
+  handleAdminDeclineReasons,
+  handleAdminAbuseSignals,
+} from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -1488,6 +1518,9 @@ import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdra
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
 import { listActions } from './services/auditLog.js';
+import { eventBus } from './services/eventBus.js';
+import { clearAnalyticsCache } from './services/analytics.js';
+import { clearCache as clearDirectOfferAnalyticsCache } from './services/directOfferAnalytics.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -1509,7 +1542,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.39.0',
+        version: '0.40.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1639,7 +1672,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.39.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.40.0' });
     },
   },
 
@@ -1824,6 +1857,12 @@ const routes = [
       }
     },
   },
+
+  // ── Phase 44 — Admin Direct Offers Operations Console ──
+  { method: 'GET', path: '/api/admin/direct-offers/dashboard', middlewares: [requireAdmin], handler: handleAdminDirectOffersDashboard },
+  { method: 'GET', path: '/api/admin/direct-offers/funnel', middlewares: [requireAdmin], handler: handleAdminDirectOffersFunnel },
+  { method: 'GET', path: '/api/admin/direct-offers/decline-reasons', middlewares: [requireAdmin], handler: handleAdminDeclineReasons },
+  { method: 'GET', path: '/api/admin/direct-offers/abuse', middlewares: [requireAdmin], handler: handleAdminAbuseSignals },
 ];
 
 /**
@@ -1900,6 +1939,34 @@ setupLiveFeedListeners();
 // Phase 43 — Setup direct offer reconciliation listener (5s delayed re-sync)
 import { setupDirectOfferListeners } from './services/directOffer.js';
 setupDirectOfferListeners();
+
+// Phase 44 — Analytics cache invalidation on direct offer events
+// Listeners registered AFTER setupDirectOfferListeners to ensure proper event ordering.
+// Fire-and-forget: failure tolerated, TTL (5min) catches stale data eventually.
+if (config.ANALYTICS && config.ANALYTICS.cacheInvalidationEnabled) {
+  const invalidationEvents = config.ANALYTICS.cacheInvalidationEvents || [];
+  for (const eventName of invalidationEvents) {
+    eventBus.on(eventName, (data) => {
+      try {
+        // Per-employer analytics cache (if event payload has employerId)
+        if (data && data.employerId) {
+          clearAnalyticsCache(`analytics:employer:${data.employerId}:`);
+        }
+        // Per-worker analytics cache (if event payload has workerId)
+        if (data && data.workerId) {
+          clearAnalyticsCache(`analytics:worker:${data.workerId}:`);
+        }
+        // Platform-wide analytics cache (always invalidate)
+        clearAnalyticsCache('analytics:platform:');
+        // Admin direct offer analytics cache (always invalidate)
+        clearDirectOfferAnalyticsCache();
+      } catch (_) { /* fire-and-forget */ }
+    });
+  }
+  logger.info(`Analytics cache invalidation: enabled (${invalidationEvents.length} events)`);
+} else {
+  logger.info('Analytics cache invalidation: disabled via config');
+}
 
 /**
  * Creates the router function
