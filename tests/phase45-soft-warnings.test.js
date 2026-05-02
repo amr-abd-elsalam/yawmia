@@ -130,32 +130,44 @@ test('Phase 45 — Rate limit enforced (max warnings per user per week)', async 
   const fp = abuseFlagReview.computeFingerprint(flag);
   await abuseFlagReview.recordReview({ flag, adminId: 'a1', decision: 'dismissed' });
 
-  // Send 3 warnings (max)
+  // Note: createNotification has a 5-min dedup window per (userId, type, contextId).
+  // For this test, we bypass dedup by directly seeding 3 admin_warning notifications
+  // via the database layer (mimicking what handleSendAbuseWarning would create over time).
+  const { atomicWrite, getRecordPath, addToSetIndex } = await import('../server/services/database.js');
+  const { default: cfg } = await import('../config.js');
+  const userNtfIndex = cfg.DATABASE.indexFiles.userNotificationsIndex;
+
+  // Seed 3 admin_warning notifications (within the last week, varied timestamps)
+  const baseMs = Date.now() - 60000; // 1 minute ago, well within last-week window
   for (let i = 0; i < 3; i++) {
-    const req = {
-      params: { id: fp },
-      body: { message: `warning ${i + 1}` },
-      user: { id: 'admin_rl' },
-      headers: {},
-      socket: {},
-    };
-    const res = mockRes();
-    await handleSendAbuseWarning(req, res);
-    assert.equal(res.statusCode, 200, `Warning ${i + 1} should succeed`);
+    const ntfId = 'ntf_rl_' + i + '_' + crypto.randomBytes(3).toString('hex');
+    const createdAt = new Date(baseMs - i * 1000).toISOString();
+    await atomicWrite(getRecordPath('notifications', ntfId), {
+      id: ntfId,
+      userId: user.id,
+      type: 'admin_warning',
+      message: `seeded warning ${i + 1}`,
+      meta: { flagType: flag.type, severity: 'warning', fromAdmin: 'admin_seed' },
+      read: false,
+      createdAt,
+      readAt: null,
+    });
+    await addToSetIndex(userNtfIndex, user.id, ntfId);
   }
 
-  // 4th warning should be rate-limited
-  const req4 = {
+  // Now attempt to send a 4th warning — should be rate-limited
+  const req = {
     params: { id: fp },
-    body: { message: 'warning 4 (should fail)' },
+    body: { message: 'warning 4 (should fail rate limit)' },
     user: { id: 'admin_rl' },
     headers: {},
     socket: {},
   };
-  const res4 = mockRes();
-  await handleSendAbuseWarning(req4, res4);
-  assert.equal(res4.statusCode, 429);
-  const data = JSON.parse(res4.body);
+  const res = mockRes();
+  await handleSendAbuseWarning(req, res);
+  assert.equal(res.statusCode, 429,
+    `Expected 429 Rate Limited but got ${res.statusCode}: ${res.body}`);
+  const data = JSON.parse(res.body);
   assert.equal(data.code, 'WARNING_RATE_LIMITED');
 });
 
