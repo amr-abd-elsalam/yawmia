@@ -26,7 +26,24 @@ const dedupCleanupTimer = setInterval(() => {
 if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
 
 /**
- * Create a notification
+ * Create a notification.
+ *
+ * Supported types include (non-exhaustive):
+ *   - application_accepted, application_rejected
+ *   - new_application, job_filled, job_cancelled, job_renewed, job_expiry_warning
+ *   - rating_received, payment_created, payment_disputed
+ *   - report_received, report_reviewed, report_autoban
+ *   - verification_reviewed
+ *   - worker_checked_in, attendance_noshow, attendance_confirmed
+ *   - new_message
+ *   - direct_offer, direct_offer_accepted, direct_offer_declined, direct_offer_expired
+ *   - admin_warning (Phase 45 — admin-initiated soft warning before ban)
+ *   - job_alert_match, job_match, job_nearby, activity_summary
+ *
+ * @param {string} userId
+ * @param {string} type
+ * @param {string} message
+ * @param {object} [meta]
  */
 export async function createNotification(userId, type, message, meta = {}) {
   // Dedup check: skip if same userId+type+context within window

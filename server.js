@@ -358,6 +358,55 @@ if (config.BACKUP && config.BACKUP.enabled) {
   if (backupTimer.unref) backupTimer.unref();
 }
 
+// ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
+if (config.COUNTERS && config.COUNTERS.enabled) {
+  // Startup integrity check (fire-and-forget — non-blocking)
+  (async () => {
+    try {
+      const counters = await import('./server/services/directOfferCounters.js');
+      const c = await counters.readCounters();
+      const lastUpdateMs = c.lastUpdatedAt ? new Date(c.lastUpdatedAt).getTime() : 0;
+      const totalOffers = c.platform?.total || 0;
+      const maxAge = config.COUNTERS.startupRebuildMaxAgeMs || (24 * 60 * 60 * 1000);
+
+      // Trigger rebuild if file is stale AND offers exist (empty system = healthy)
+      if (totalOffers > 0 && lastUpdateMs > 0) {
+        const ageMs = Date.now() - lastUpdateMs;
+        if (ageMs > maxAge) {
+          logger.warn('Startup: counter file stale — triggering rebuild', { ageHours: Math.round(ageMs / 3600000) });
+          counters.rebuildCounters().catch(err => {
+            logger.error('Startup rebuild failed', { error: err.message });
+          });
+        }
+      } else if (totalOffers === 0 && lastUpdateMs === 0) {
+        logger.info('Startup: counter file empty — no rebuild needed');
+      }
+    } catch (err) {
+      // Counter file corrupt or missing — trigger rebuild
+      logger.warn('Startup: counter file integrity check failed — triggering rebuild', { error: err.message });
+      try {
+        const counters = await import('./server/services/directOfferCounters.js');
+        counters.rebuildCounters().catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    }
+  })();
+
+  // Scheduled rebuild every 24h (defense in depth against drift)
+  const rebuildIntervalMs = config.COUNTERS.rebuildIntervalMs || (24 * 60 * 60 * 1000);
+  const counterRebuildTimer = setInterval(async () => {
+    try {
+      const counters = await import('./server/services/directOfferCounters.js');
+      const result = await counters.rebuildCounters();
+      if (!result.skipped) {
+        logger.info('Counters: scheduled rebuild complete', result);
+      }
+    } catch (err) {
+      logger.error('Counters: scheduled rebuild failed', { error: err.message });
+    }
+  }, rebuildIntervalMs);
+  if (counterRebuildTimer.unref) counterRebuildTimer.unref();
+}
+
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);

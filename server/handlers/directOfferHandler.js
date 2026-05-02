@@ -182,7 +182,8 @@ export async function handleGetOffer(req, res) {
     const offerId = req.params.id;
     const userId = req.user.id;
 
-    const offer = await findById(offerId);
+    // Phase 45: pass userId to enable viewedAt tracking when worker first views pending offer
+    const offer = await findById(offerId, userId);
     if (!offer) {
       return sendJSON(res, 404, { error: 'العرض غير موجود', code: 'OFFER_NOT_FOUND' });
     }

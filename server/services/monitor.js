@@ -100,7 +100,7 @@ export async function captureSnapshot() {
     payments: await countCollectionFiles('payments'),
   };
 
-  // Phase 44 — Direct offer health (last-hour metrics, no caching)
+  // Phase 44 + 45 — Direct offer health (last-hour metrics from rolling counter file)
   let directOffers = {
     activePending: 0,
     recentAccepted: 0,
@@ -110,6 +110,7 @@ export async function captureSnapshot() {
     avgResponseSec: 0,
   };
   try {
+    // Phase 45: getOfferStatsSnapshot now reads from counter file (O(1) instead of O(n))
     const { getOfferStatsSnapshot } = await import('./directOfferAnalytics.js');
     directOffers = await getOfferStatsSnapshot();
   } catch (_) { /* non-fatal — defaults preserved */ }

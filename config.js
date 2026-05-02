@@ -266,6 +266,7 @@ const config = {
       instant_matches: 'instant_matches',
       availability_ads: 'availability_ads',
       direct_offers: 'direct_offers',
+      abuse_flag_reviews: 'abuse_flag_reviews',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -449,12 +450,12 @@ const config = {
     },
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 24. تطبيق الويب التدريجي (PWA)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.40.0',
+    cacheName: 'yawmia-v0.41.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -721,9 +722,9 @@ const config = {
     },
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 45. التحليلات (ANALYTICS)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   ANALYTICS: {
     enabled: true,
     cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
@@ -737,6 +738,8 @@ const config = {
       'direct_offer:expired',
       'direct_offer:withdrawn',
     ],
+    debounceMs: 10000,                       // Phase 45 — debounce window for cache invalidation
+    minIntervalMs: 5000,                     // Phase 45 — minimum interval between clears per key
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -898,9 +901,9 @@ const config = {
     privacyMode: true,                       // redact full names + phones in public cards
   },
 
-  // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection + Phase 45 review workflow
+  // ═══════════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
     enabled: true,                            // Phase 42 — closed Talent Exchange loop
     acceptanceWindowSeconds: 120,             // worker has 120s to accept
@@ -924,7 +927,22 @@ const config = {
       workerOfferBombingThreshold: 30,        // worker receives >=N offers = bombing
       workerOfferBombingWindowMinutes: 60,    // window for offer-bombing detection
       workerOfferBombingMinUniqueEmployers: 5, // min unique employers (rules out same_worker_spam overlap)
+      reviewWorkflowEnabled: true,            // Phase 45 — admin can dismiss/snooze/warn flags
+      maxWarningsPerUserPerWeek: 3,           // Phase 45 — rate limit for soft warnings
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file
+  // ═══════════════════════════════════════════════════════════════════
+  COUNTERS: {
+    enabled: true,
+    filePath: 'metrics/direct-offer-counters.json',  // relative to data/
+    rebuildIntervalMs: 24 * 60 * 60 * 1000,           // 24 hours
+    startupRebuildMaxAgeMs: 24 * 60 * 60 * 1000,      // rebuild on startup if file > 24h old
+    maxDecisionTimesArrayLength: 1000,                 // for p50/p95 calculation
+    hourlyBucketsRetentionHours: 48,                   // keep last 48 hours of buckets
+    minRebuildIntervalMs: 23 * 60 * 60 * 1000,         // skip rebuild if last < 23h ago
   },
 
 };

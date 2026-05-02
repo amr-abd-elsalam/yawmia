@@ -13,6 +13,7 @@
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import * as abuseFlagReview from './abuseFlagReview.js';
 
 /**
  * Read all direct offers (raw, bypassing redaction).
@@ -208,21 +209,42 @@ export async function detectAbuse() {
     return { enabled: true, flags: [], error: 'list_failed' };
   }
 
-  const flags = [
+  const rawFlags = [
     ...detectSameWorkerSpam(offers, cfg),
     ...detectHighDeclineEmployers(offers, cfg),
     ...detectOfferBombing(offers, cfg),
   ];
 
+  // Phase 45: filter snoozed flags + attach fingerprint + reviewState
+  const reviewWorkflowEnabled = cfg.reviewWorkflowEnabled !== false;
+  const filtered = [];
+  for (const flag of rawFlags) {
+    if (reviewWorkflowEnabled) {
+      try {
+        const fingerprint = abuseFlagReview.computeFingerprint(flag);
+        const snoozed = await abuseFlagReview.isCurrentlySnoozed(fingerprint);
+        if (snoozed) continue; // skip snoozed
+        flag.fingerprint = fingerprint;
+        flag.reviewState = await abuseFlagReview.getReviewState(fingerprint);
+      } catch (err) {
+        logger.warn('detectAbuse: review state lookup failed', { error: err.message });
+        // On error, include flag without reviewState (degrade gracefully)
+        flag.fingerprint = abuseFlagReview.computeFingerprint(flag);
+        flag.reviewState = null;
+      }
+    }
+    filtered.push(flag);
+  }
+
   // Sort by severity: high (3) → medium (2) → low (1)
   const severityOrder = { high: 3, medium: 2, low: 1 };
-  flags.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+  filtered.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
 
   return {
     enabled: true,
     generatedAt: new Date().toISOString(),
-    flagCount: flags.length,
-    flags,
+    flagCount: filtered.length,
+    flags: filtered,
   };
 }
 

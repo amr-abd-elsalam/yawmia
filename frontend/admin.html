@@ -179,6 +179,28 @@
     </main>
   </div>
 
+  <!-- Phase 45 — Abuse Flag Review Modal -->
+  <div id="abuseFlagReviewModal" class="ym-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="flagReviewModalTitle" style="display:none;">
+    <div class="ym-modal-card" style="max-width:600px;">
+      <h3 class="ym-modal-title" id="flagReviewModalTitle">📋 مراجعة إشارة إساءة</h3>
+      <div id="flagReviewDetails" style="margin-block-end:1rem;font-size:0.9rem;background:var(--color-surface-2);padding:0.75rem;border-radius:var(--radius-sm);"></div>
+      <div style="margin-block-end:1rem;">
+        <strong style="font-size:0.9rem;">سجل المراجعة:</strong>
+        <div id="flagReviewHistory" style="max-height:200px;overflow-y:auto;margin-block-start:0.5rem;font-size:0.85rem;"></div>
+      </div>
+      <textarea id="flagReviewNote" class="form-input form-textarea" rows="3" placeholder="ملاحظة (اختياري — أقصى 500 حرف)..." maxlength="500" style="margin-block-end:1rem;"></textarea>
+      <div class="ym-modal-error" id="flagReviewError" style="display:none;"></div>
+      <div class="ym-modal-actions" style="flex-wrap:wrap;gap:0.5rem;justify-content:flex-start;">
+        <button class="btn btn--ghost btn--sm" data-decision="dismissed">رفض الإشارة</button>
+        <button class="btn btn--warning btn--sm" data-decision="snoozed" data-snooze-days="7">تأجيل 7 أيام</button>
+        <button class="btn btn--warning btn--sm" data-decision="snoozed" data-snooze-days="30">تأجيل 30 يوم</button>
+        <button class="btn btn--primary btn--sm" data-decision="warning">📨 إرسال تحذير</button>
+        <button class="btn ym-modal-btn--danger btn--sm" data-decision="actioned">🚫 حظر</button>
+        <button class="btn btn--ghost btn--sm" id="closeFlagReviewModal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/assets/js/icons.js"></script>
   <script src="/assets/js/utils.js"></script>
   <script src="/assets/js/toast.js"></script>

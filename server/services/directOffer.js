@@ -849,11 +849,44 @@ export async function cleanupExpired() {
 
 /**
  * Find offer by ID (raw — no redaction).
+ *
+ * Phase 45: optional viewerUserId enables viewedAt tracking.
+ * If viewerUserId === offer.workerId AND !offer.viewedAt AND offer is pending,
+ * sets viewedAt + applies counter event (idempotent — fire-and-forget).
+ *
+ * Internal callers pass no viewerUserId → no viewedAt tracking (safe).
+ * Only handleGetOffer (worker view) passes req.user.id.
+ *
  * @param {string} offerId
+ * @param {string} [viewerUserId] — optional viewer ID for viewedAt tracking
  * @returns {Promise<object|null>}
  */
-export async function findById(offerId) {
-  return await readJSON(getRecordPath('direct_offers', offerId));
+export async function findById(offerId, viewerUserId) {
+  const offer = await readJSON(getRecordPath('direct_offers', offerId));
+  if (!offer) return null;
+
+  // Phase 45: viewedAt tracking — only when worker recipient first views pending offer
+  if (viewerUserId && offer.workerId === viewerUserId && !offer.viewedAt && offer.status === 'pending') {
+    try {
+      const now = new Date();
+      const viewMs = now.getTime() - new Date(offer.createdAt).getTime();
+      offer.viewedAt = now.toISOString();
+      await atomicWrite(getRecordPath('direct_offers', offerId), offer);
+
+      // Fire-and-forget counter applyEvent
+      try {
+        const counters = await import('./directOfferCounters.js');
+        counters.applyEvent('viewed', {
+          offerId,
+          employerId: offer.employerId,
+          workerId: offer.workerId,
+          viewMs,
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    } catch (_) { /* non-fatal — viewedAt is best-effort */ }
+  }
+
+  return offer;
 }
 
 /**

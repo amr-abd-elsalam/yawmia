@@ -727,13 +727,28 @@ var AdminApp = (function () {
         var sevLabel = f.severity === 'high' ? 'عالية' :
                        f.severity === 'medium' ? 'متوسطة' : 'منخفضة';
 
+        // Phase 45 — review state info
+        var reviewInfo = '';
+        if (f.reviewState) {
+          var status = f.reviewState.currentStatus;
+          var statusLabel = status === 'snoozed' ? 'مؤجلة' :
+                           status === 'dismissed' ? 'مرفوضة' :
+                           status === 'actioned' ? 'تم الإجراء' : 'نشطة';
+          var occCount = f.reviewState.occurrenceCount || 1;
+          reviewInfo = '<small style="display:block;margin-block-start:0.4rem;color:var(--color-text-muted);">' +
+            '📋 الحالة: ' + escapeHtml(statusLabel) + ' · تكرار ' + occCount + ' مرة';
+          if (f.reviewState.reviews && f.reviewState.reviews.length > 0) {
+            reviewInfo += ' · ' + f.reviewState.reviews.length + ' مراجعة';
+          }
+          reviewInfo += '</small>';
+        }
+
         html += '<div style="border-inline-start:3px solid ' + sevColor + ';padding:0.75rem 1rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;">' +
           '<strong>' + escapeHtml(typeLabels[f.type] || f.type) + '</strong> ' +
           '<span style="font-size:0.75rem;color:' + sevColor + ';font-weight:600;">[خطورة ' + sevLabel + ']</span><br>';
 
         if (f.employerId) {
-          html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a> ' +
-            '<button class="btn btn--sm btn--ghost" style="margin-inline-start:0.5rem;color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.toggleBan(\'' + escapeHtml(f.employerId) + '\',\'banned\')">حظر</button></small><br>';
+          html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a></small><br>';
         }
         if (f.workerId) {
           html += '<small>العامل: <a href="/user.html?id=' + escapeHtml(f.workerId) + '" class="worker-link">' + escapeHtml(f.workerId) + '</a></small><br>';
@@ -750,6 +765,15 @@ var AdminApp = (function () {
           html += '<small style="color:var(--color-text-muted);">' + details.join(' · ') + '</small>';
         }
 
+        html += reviewInfo;
+
+        // Phase 45 — Review button
+        if (f.fingerprint) {
+          html += '<div style="margin-block-start:0.5rem;">' +
+            '<button class="btn btn--sm btn--primary" onclick="AdminApp.showFlagReviewModal(\'' + escapeHtml(f.fingerprint) + '\')">📋 مراجعة الإشارة</button>' +
+            '</div>';
+        }
+
         html += '</div>';
       });
 
@@ -757,6 +781,233 @@ var AdminApp = (function () {
     } catch (err) {
       var el = document.getElementById('abuseSignalsArea');
       if (el) el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في التحميل</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 45 — Abuse Flag Review Modal
+  // ═══════════════════════════════════════════════════════════════
+
+  async function showFlagReviewModal(fingerprint) {
+    var modal = document.getElementById('abuseFlagReviewModal');
+    if (!modal) return;
+
+    var detailsEl = document.getElementById('flagReviewDetails');
+    var historyEl = document.getElementById('flagReviewHistory');
+    var noteEl = document.getElementById('flagReviewNote');
+    var errorEl = document.getElementById('flagReviewError');
+
+    if (detailsEl) detailsEl.innerHTML = 'جاري التحميل...';
+    if (historyEl) historyEl.innerHTML = '';
+    if (noteEl) noteEl.value = '';
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+
+    modal.style.display = '';
+    modal.classList.remove('hidden');
+    modal.dataset.fingerprint = fingerprint;
+
+    try {
+      var data = await api('/api/admin/abuse-flags/' + fingerprint + '/history');
+      if (!data.ok || !data.reviewState) {
+        if (detailsEl) detailsEl.innerHTML = '<span style="color:var(--color-error);">خطأ في تحميل البيانات</span>';
+        return;
+      }
+
+      var state = data.reviewState;
+      modal.dataset.flagType = state.flagType || '';
+      modal.dataset.targetUserId = state.flagType === 'worker_offer_bombing' ? (state.workerId || '') : (state.employerId || '');
+
+      var typeLabels = {
+        same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
+        high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+        worker_offer_bombing: 'عامل يستلم سيل من العروض',
+      };
+
+      var statusLabels = {
+        active: 'نشطة',
+        snoozed: 'مؤجلة',
+        dismissed: 'مرفوضة',
+        actioned: 'تم الإجراء',
+      };
+
+      var detailsHtml = '<strong>النوع:</strong> ' + escapeHtml(typeLabels[state.flagType] || state.flagType) + '<br>' +
+        '<strong>أول ظهور:</strong> ' + new Date(state.firstSeenAt).toLocaleString('ar-EG') + '<br>' +
+        '<strong>عدد التكرار:</strong> ' + (state.occurrenceCount || 1) + '<br>' +
+        '<strong>الحالة الحالية:</strong> ' + escapeHtml(statusLabels[state.currentStatus] || state.currentStatus);
+
+      if (state.snoozeUntil) {
+        detailsHtml += '<br><strong>التأجيل ينتهي:</strong> ' + new Date(state.snoozeUntil).toLocaleString('ar-EG');
+      }
+      if (state.employerId) {
+        detailsHtml += '<br><strong>صاحب العمل:</strong> <a href="/user.html?id=' + escapeHtml(state.employerId) + '" class="worker-link">' + escapeHtml(state.employerId) + '</a>';
+      }
+      if (state.workerId) {
+        detailsHtml += '<br><strong>العامل:</strong> <a href="/user.html?id=' + escapeHtml(state.workerId) + '" class="worker-link">' + escapeHtml(state.workerId) + '</a>';
+      }
+
+      if (detailsEl) detailsEl.innerHTML = detailsHtml;
+
+      // History
+      if (historyEl) {
+        if (!state.reviews || state.reviews.length === 0) {
+          historyEl.innerHTML = '<em style="color:var(--color-text-muted);">لا توجد مراجعات سابقة</em>';
+        } else {
+          var historyHtml = '';
+          var decisionLabels = {
+            dismissed: 'رفض',
+            snoozed: 'تأجيل',
+            warning: 'تحذير',
+            actioned: 'إجراء',
+          };
+          state.reviews.slice().reverse().forEach(function (r) {
+            historyHtml += '<div style="padding:0.5rem;border-block-end:1px solid var(--color-border);">' +
+              '<strong>' + escapeHtml(decisionLabels[r.decision] || r.decision) + '</strong>' +
+              ' — <small>' + new Date(r.createdAt).toLocaleString('ar-EG') + '</small>' +
+              ' — <small>أدمن: ' + escapeHtml(r.adminId) + '</small>';
+            if (r.snoozeUntil) {
+              historyHtml += '<br><small>حتى: ' + new Date(r.snoozeUntil).toLocaleString('ar-EG') + '</small>';
+            }
+            if (r.note) {
+              historyHtml += '<br><em>' + escapeHtml(r.note) + '</em>';
+            }
+            historyHtml += '</div>';
+          });
+          historyEl.innerHTML = historyHtml;
+        }
+      }
+    } catch (err) {
+      if (detailsEl) detailsEl.innerHTML = '<span style="color:var(--color-error);">خطأ في تحميل البيانات</span>';
+    }
+  }
+
+  function hideFlagReviewModal() {
+    var modal = document.getElementById('abuseFlagReviewModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  function showFlagReviewError(msg) {
+    var errorEl = document.getElementById('flagReviewError');
+    if (errorEl) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  async function handleFlagReview(decision, snoozeDays) {
+    var modal = document.getElementById('abuseFlagReviewModal');
+    if (!modal) return;
+    var fingerprint = modal.dataset.fingerprint;
+    if (!fingerprint) return;
+
+    var noteEl = document.getElementById('flagReviewNote');
+    var note = noteEl ? noteEl.value.trim() : '';
+
+    if (decision === 'warning') {
+      if (!note || note.length < 3) {
+        showFlagReviewError('اكتب رسالة التحذير (3 حروف على الأقل) في حقل الملاحظة');
+        return;
+      }
+      await sendWarning(fingerprint, note);
+      return;
+    }
+
+    if (decision === 'actioned') {
+      var targetUserId = modal.dataset.targetUserId;
+      if (!targetUserId) {
+        showFlagReviewError('لا يمكن تحديد المستخدم للحظر');
+        return;
+      }
+      var confirmed = await YawmiaModal.confirm({
+        title: 'تأكيد الحظر',
+        message: 'متأكد من حظر هذا المستخدم؟',
+        confirmText: 'حظر',
+        cancelText: 'إلغاء',
+        danger: true,
+      });
+      if (!confirmed) return;
+
+      try {
+        await apiWrite('PUT', '/api/admin/users/' + targetUserId + '/status', { status: 'banned', reason: 'Abuse flag actioned: ' + (note || fingerprint) });
+      } catch (err) {
+        showFlagReviewError('خطأ في الحظر: ' + (err.message || ''));
+        return;
+      }
+
+      // Record the actioned decision
+      try {
+        await apiWrite('POST', '/api/admin/abuse-flags/' + fingerprint + '/review', {
+          decision: 'actioned',
+          note: note || null,
+        });
+      } catch (_) { /* non-fatal */ }
+
+      hideFlagReviewModal();
+      loadAbuseSignals();
+      return;
+    }
+
+    // dismissed or snoozed
+    var body = { decision: decision, note: note || null };
+    if (decision === 'snoozed') {
+      var days = parseInt(snoozeDays);
+      if (!days || days < 1) {
+        showFlagReviewError('مدة التأجيل غير صالحة');
+        return;
+      }
+      body.snoozeDays = days;
+    }
+
+    try {
+      await apiWrite('POST', '/api/admin/abuse-flags/' + fingerprint + '/review', body);
+      hideFlagReviewModal();
+      loadAbuseSignals();
+    } catch (err) {
+      showFlagReviewError(err.message || 'خطأ في تسجيل المراجعة');
+    }
+  }
+
+  async function sendWarning(fingerprint, message) {
+    try {
+      await apiWrite('POST', '/api/admin/abuse-flags/' + fingerprint + '/warn', { message: message });
+      hideFlagReviewModal();
+      loadAbuseSignals();
+    } catch (err) {
+      showFlagReviewError(err.message || 'خطأ في إرسال التحذير');
+    }
+  }
+
+  function setupFlagReviewModalHandlers() {
+    var modal = document.getElementById('abuseFlagReviewModal');
+    if (!modal || modal.dataset.handlersAttached === '1') return;
+    modal.dataset.handlersAttached = '1';
+
+    modal.querySelectorAll('[data-decision]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.dataset.decision;
+        var snoozeDays = btn.dataset.snoozeDays;
+        handleFlagReview(decision, snoozeDays);
+      });
+    });
+
+    var closeBtn = document.getElementById('closeFlagReviewModal');
+    if (closeBtn) closeBtn.addEventListener('click', hideFlagReviewModal);
+
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) hideFlagReviewModal();
+    });
+  }
+
+  // Initialize modal handlers on first load
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupFlagReviewModalHandlers);
+    } else {
+      setupFlagReviewModalHandlers();
     }
   }
 
@@ -776,6 +1027,9 @@ var AdminApp = (function () {
     loadMonitoring: loadMonitoring,
     loadDirectOffersDashboard: loadDirectOffersDashboard,
     loadAbuseSignals: loadAbuseSignals,
+    showFlagReviewModal: showFlagReviewModal,
+    hideFlagReviewModal: hideFlagReviewModal,
+    handleFlagReview: handleFlagReview,
     exportCSV: exportCSV,
   };
 })();

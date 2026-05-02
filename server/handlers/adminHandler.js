@@ -231,3 +231,196 @@ export async function handleAdminAbuseSignals(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في كشف الإساءة', code: 'ABUSE_DETECTION_ERROR' });
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 45 — Admin Abuse Flag Review Workflow
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/abuse-flags/:id/history
+ * Returns full review state for a flag fingerprint.
+ * Requires: requireAdmin
+ */
+export async function handleAdminFlagReviewHistory(req, res) {
+  try {
+    const { getReviewState } = await import('../services/abuseFlagReview.js');
+    const fingerprint = req.params.id;
+    const state = await getReviewState(fingerprint);
+    if (!state) {
+      return sendJSON(res, 404, { error: 'الإشارة غير موجودة', code: 'FLAG_NOT_FOUND' });
+    }
+    return sendJSON(res, 200, { ok: true, reviewState: state });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب سجل المراجعة', code: 'HISTORY_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/abuse-flags/:id/review
+ * Body: { decision, note?, snoozeDays? }
+ * decision: 'dismissed' | 'snoozed' | 'actioned'
+ * Requires: requireAdmin
+ */
+export async function handleAdminFlagReview(req, res) {
+  try {
+    const { recordReview, getReviewState } = await import('../services/abuseFlagReview.js');
+    const { logAction } = await import('../services/auditLog.js');
+
+    const fingerprint = req.params.id;
+    const body = req.body || {};
+    const { decision, note, snoozeDays } = body;
+
+    const validDecisions = ['dismissed', 'snoozed', 'actioned'];
+    if (!validDecisions.includes(decision)) {
+      return sendJSON(res, 400, {
+        error: 'القرار غير صالح. القرارات المسموحة: dismissed, snoozed, actioned',
+        code: 'INVALID_DECISION',
+      });
+    }
+
+    if (decision === 'snoozed') {
+      const days = parseInt(snoozeDays);
+      if (!days || days < 1 || days > 365) {
+        return sendJSON(res, 400, {
+          error: 'مدة التأجيل لازم تكون بين 1 و 365 يوم',
+          code: 'INVALID_SNOOZE_DAYS',
+        });
+      }
+    }
+
+    if (note && (typeof note !== 'string' || note.length > 500)) {
+      return sendJSON(res, 400, {
+        error: 'الملاحظة لا تتجاوز 500 حرف',
+        code: 'NOTE_TOO_LONG',
+      });
+    }
+
+    // Load existing flag state
+    const existingFlag = await getReviewState(fingerprint);
+    if (!existingFlag) {
+      return sendJSON(res, 404, { error: 'الإشارة غير موجودة', code: 'FLAG_NOT_FOUND' });
+    }
+
+    const adminId = req.user?.id || 'admin_token';
+    const result = await recordReview({
+      flag: existingFlag,
+      adminId,
+      decision,
+      note: note || null,
+      snoozeDays: decision === 'snoozed' ? parseInt(snoozeDays) : null,
+    });
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId,
+      action: 'abuse_flag_reviewed',
+      targetType: 'abuse_flag',
+      targetId: fingerprint,
+      details: { decision, snoozeDays: decision === 'snoozed' ? parseInt(snoozeDays) : null, note: note || null },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, reviewState: result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تسجيل المراجعة', code: 'REVIEW_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/abuse-flags/:id/warn
+ * Body: { message }
+ * Sends admin warning notification + Web Push + audit log + records as 'warning' review.
+ * Rate limited per user (max 3 warnings per week).
+ * Requires: requireAdmin
+ */
+export async function handleSendAbuseWarning(req, res) {
+  try {
+    const { getReviewState, recordReview } = await import('../services/abuseFlagReview.js');
+    const { createNotification, listByUser } = await import('../services/notifications.js');
+    const { sendPush } = await import('../services/webpush.js');
+    const { logAction } = await import('../services/auditLog.js');
+    const config = (await import('../../config.js')).default;
+
+    const fingerprint = req.params.id;
+    const body = req.body || {};
+    const message = body.message;
+
+    if (!message || typeof message !== 'string') {
+      return sendJSON(res, 400, { error: 'نص الرسالة مطلوب', code: 'INVALID_MESSAGE' });
+    }
+    const trimmed = message.trim();
+    if (trimmed.length < 3 || trimmed.length > 500) {
+      return sendJSON(res, 400, {
+        error: 'الرسالة لازم تكون بين 3 و 500 حرف',
+        code: 'INVALID_MESSAGE',
+      });
+    }
+
+    const flag = await getReviewState(fingerprint);
+    if (!flag) {
+      return sendJSON(res, 404, { error: 'الإشارة غير موجودة', code: 'FLAG_NOT_FOUND' });
+    }
+
+    // Determine target user (worker for offer-bombing, employer otherwise)
+    const targetUserId = flag.flagType === 'worker_offer_bombing' ? flag.workerId : flag.employerId;
+    if (!targetUserId) {
+      return sendJSON(res, 400, { error: 'لا يمكن تحديد المستخدم المستهدف', code: 'NO_TARGET_USER' });
+    }
+
+    // Rate limit check — max N warnings per user per week
+    const maxWarnings = (config.DIRECT_OFFERS && config.DIRECT_OFFERS.abuse && config.DIRECT_OFFERS.abuse.maxWarningsPerUserPerWeek) || 3;
+    try {
+      const userNotifs = await listByUser(targetUserId, { limit: 100, offset: 0 });
+      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const recentWarnings = (userNotifs.items || []).filter(n =>
+        n.type === 'admin_warning' && new Date(n.createdAt).getTime() >= weekAgo
+      ).length;
+      if (recentWarnings >= maxWarnings) {
+        return sendJSON(res, 429, {
+          error: `وصل المستخدم للحد الأقصى من التحذيرات الأسبوعية (${maxWarnings})`,
+          code: 'WARNING_RATE_LIMITED',
+        });
+      }
+    } catch (_) { /* on rate-check error, allow send */ }
+
+    const adminId = req.user?.id || 'admin_token';
+
+    // Send notification
+    await createNotification(targetUserId, 'admin_warning', trimmed, {
+      flagType: flag.flagType,
+      severity: 'warning',
+      fromAdmin: adminId,
+      fingerprint,
+    });
+
+    // Web Push (fire-and-forget)
+    sendPush(targetUserId, {
+      title: 'تنبيه من إدارة المنصة',
+      body: trimmed,
+      icon: '/assets/img/icon-192.png',
+      url: '/dashboard.html',
+    }).catch(() => {});
+
+    // Record in flag review history (decision='warning', does NOT change currentStatus)
+    await recordReview({
+      flag,
+      adminId,
+      decision: 'warning',
+      note: trimmed,
+    });
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId,
+      action: 'abuse_warning_sent',
+      targetType: 'user',
+      targetId: targetUserId,
+      details: { fingerprint, flagType: flag.flagType, message: trimmed },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, targetUserId });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إرسال التحذير', code: 'WARNING_ERROR' });
+  }
+}

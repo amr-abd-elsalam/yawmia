@@ -10,6 +10,7 @@
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import * as directOfferCounters from './directOfferCounters.js';
 
 // ── Module-local cache ────────────────────────────────────────
 /** @type {Map<string, { value: *, expiresAt: number }>} */
@@ -89,32 +90,37 @@ export async function getPlatformOfferFunnel(options = {}) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const offers = await listAllOffers();
-  const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
-
-  let sent = filtered.length;
-  let accepted = 0, declined = 0, expired = 0, withdrawn = 0, pending = 0;
-
-  for (const o of filtered) {
-    if (o.status === 'accepted') accepted++;
-    else if (o.status === 'declined') declined++;
-    else if (o.status === 'expired') expired++;
-    else if (o.status === 'withdrawn') withdrawn++;
-    else if (o.status === 'pending') pending++;
+  // Phase 45: read from rolling counter file (O(1) instead of O(n))
+  let result;
+  try {
+    result = await directOfferCounters.getPlatformFunnel({ from, to });
+  } catch (err) {
+    logger.warn('getPlatformOfferFunnel: counter read failed, falling back to full scan', { error: err.message });
+    // Fallback to Phase 44 full scan
+    const offers = await listAllOffers();
+    const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
+    let sent = filtered.length;
+    let accepted = 0, declined = 0, expired = 0, withdrawn = 0, pending = 0;
+    for (const o of filtered) {
+      if (o.status === 'accepted') accepted++;
+      else if (o.status === 'declined') declined++;
+      else if (o.status === 'expired') expired++;
+      else if (o.status === 'withdrawn') withdrawn++;
+      else if (o.status === 'pending') pending++;
+    }
+    const decided = accepted + declined + expired;
+    result = {
+      sent,
+      pending,
+      accepted,
+      declined,
+      expired,
+      withdrawn,
+      acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
+      declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
+      expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
+    };
   }
-
-  const decided = accepted + declined + expired;
-  const result = {
-    sent,
-    pending,
-    accepted,
-    declined,
-    expired,
-    withdrawn,
-    acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
-    declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
-    expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
-  };
 
   cacheSet(cacheKey, result);
   return result;
@@ -138,10 +144,24 @@ export async function getTopEmployersByAcceptance(options = {}) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
+  // Phase 45: counter file does not support per-employer date range.
+  // If from/to NOT provided → use counter file (fast path).
+  // If from/to provided → fall back to listAllOffers (rare admin case).
+  if (!from && !to) {
+    try {
+      const result = await directOfferCounters.getTopEmployers({ limit, minOffers });
+      cacheSet(cacheKey, result);
+      return result;
+    } catch (err) {
+      logger.warn('getTopEmployersByAcceptance: counter read failed, falling back', { error: err.message });
+      // Fall through to full scan
+    }
+  }
+
+  // Fallback (date-range filter or counter failure)
   const offers = await listAllOffers();
   const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
 
-  // Group by employerId
   const byEmployer = new Map();
   for (const o of filtered) {
     if (!byEmployer.has(o.employerId)) {
@@ -154,23 +174,19 @@ export async function getTopEmployersByAcceptance(options = {}) {
     else if (o.status === 'expired') e.expired++;
   }
 
-  // Enrich with user names (dynamic import to avoid circular deps)
   const { findById } = await import('./users.js');
   const rows = [];
 
   for (const [empId, stats] of byEmployer) {
     if (stats.total < minOffers) continue;
-
     const decided = stats.accepted + stats.declined + stats.expired;
     const rate = decided > 0 ? stats.accepted / decided : 0;
-
-    let name = empId; // fallback to userId on missing user
+    let name = empId;
     try {
       const u = await findById(empId);
       if (u && u.name) name = u.name;
       else if (u && u.phone) name = u.phone;
-    } catch (_) { /* fallback to empId */ }
-
+    } catch (_) { /* fallback */ }
     rows.push({
       employerId: empId,
       name,
@@ -180,9 +196,7 @@ export async function getTopEmployersByAcceptance(options = {}) {
     });
   }
 
-  // Sort: acceptRate DESC, then total DESC
   rows.sort((a, b) => b.acceptRate - a.acceptRate || b.total - a.total);
-
   const result = rows.slice(0, limit);
   cacheSet(cacheKey, result);
   return result;
@@ -204,6 +218,19 @@ export async function getTopWorkersByAcceptance(options = {}) {
   const cacheKey = `topWrk:${from || 'all'}:${to || 'all'}:${limit}:${minOffers}`;
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
+
+  // Phase 45: counter file does not support per-worker date range.
+  // If from/to NOT provided → use counter file (fast path).
+  if (!from && !to) {
+    try {
+      const result = await directOfferCounters.getTopWorkers({ limit, minOffers });
+      cacheSet(cacheKey, result);
+      return result;
+    } catch (err) {
+      logger.warn('getTopWorkersByAcceptance: counter read failed, falling back', { error: err.message });
+      // Fall through to full scan
+    }
+  }
 
   const offers = await listAllOffers();
   const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
@@ -354,16 +381,49 @@ export async function getDeclineReasonsBreakdown(options = {}) {
  * }>}
  */
 export async function getOfferStatsSnapshot() {
+  // Phase 45: read from counter file directly (last hour from hourlyBuckets)
+  try {
+    const counters = await directOfferCounters.readCounters();
+    const hourAgoIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    let recentAccepted = 0, recentDeclined = 0, recentExpired = 0;
+    for (const [hourKey, bucket] of Object.entries(counters.hourlyBuckets || {})) {
+      const bucketIso = hourKey + ':00:00.000Z';
+      if (bucketIso >= hourAgoIso) {
+        recentAccepted += bucket.accepted || 0;
+        recentDeclined += bucket.declined || 0;
+        recentExpired += bucket.expired || 0;
+      }
+    }
+
+    const activePending = counters.platform.pending || 0;
+    const decided = recentAccepted + recentDeclined + recentExpired;
+
+    // Aging-based avgResponseSec from platform aggregate (best-effort approximation)
+    const avgResponseSec = counters.platform.responseCount > 0
+      ? Math.round((counters.platform.totalResponseMs / counters.platform.responseCount) / 1000)
+      : 0;
+
+    return {
+      activePending,
+      recentAccepted,
+      recentDeclined,
+      recentExpired,
+      acceptRate: decided > 0 ? Math.round((recentAccepted / decided) * 100) : 0,
+      avgResponseSec,
+    };
+  } catch (err) {
+    logger.warn('getOfferStatsSnapshot: counter read failed, falling back', { error: err.message });
+  }
+
+  // Fallback (Phase 44 full scan)
   const offers = await listAllOffers();
   const hourAgo = Date.now() - 60 * 60 * 1000;
-
   let activePending = 0;
   let recentAccepted = 0, recentDeclined = 0, recentExpired = 0;
   let recentTotalResponseMs = 0, recentResponseCount = 0;
-
   for (const o of offers) {
     if (o.status === 'pending') activePending++;
-
     const updatedMs = new Date(o.updatedAt || o.createdAt).getTime();
     if (updatedMs >= hourAgo) {
       if (o.status === 'accepted') {
@@ -389,7 +449,6 @@ export async function getOfferStatsSnapshot() {
       }
     }
   }
-
   const decided = recentAccepted + recentDeclined + recentExpired;
   return {
     activePending,
