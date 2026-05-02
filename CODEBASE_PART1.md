@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.40.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-01T17:59:20.749Z
+# يوميّة (Yawmia) v0.41.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-02T02:15:57.113Z
 > Files in this part: 6
 
 ## Files
@@ -336,6 +336,7 @@ const config = {
       instant_matches: 'instant_matches',
       availability_ads: 'availability_ads',
       direct_offers: 'direct_offers',
+      abuse_flag_reviews: 'abuse_flag_reviews',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -519,12 +520,12 @@ const config = {
     },
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 24. تطبيق الويب التدريجي (PWA)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.40.0',
+    cacheName: 'yawmia-v0.41.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -791,9 +792,9 @@ const config = {
     },
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 45. التحليلات (ANALYTICS)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   ANALYTICS: {
     enabled: true,
     cacheTtlMs: 300000,                      // 5 دقائق cache للـ analytics
@@ -807,6 +808,8 @@ const config = {
       'direct_offer:expired',
       'direct_offer:withdrawn',
     ],
+    debounceMs: 10000,                       // Phase 45 — debounce window for cache invalidation
+    minIntervalMs: 5000,                     // Phase 45 — minimum interval between clears per key
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -968,9 +971,9 @@ const config = {
     privacyMode: true,                       // redact full names + phones in public cards
   },
 
-  // ═══════════════════════════════════════════════════════════════
-  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+  // 59. العروض المباشرة (DIRECT_OFFERS) — Phase 42 active + Phase 43 hardening + Phase 44 abuse detection + Phase 45 review workflow
+  // ═══════════════════════════════════════════════════════════════════
   DIRECT_OFFERS: {
     enabled: true,                            // Phase 42 — closed Talent Exchange loop
     acceptanceWindowSeconds: 120,             // worker has 120s to accept
@@ -994,7 +997,22 @@ const config = {
       workerOfferBombingThreshold: 30,        // worker receives >=N offers = bombing
       workerOfferBombingWindowMinutes: 60,    // window for offer-bombing detection
       workerOfferBombingMinUniqueEmployers: 5, // min unique employers (rules out same_worker_spam overlap)
+      reviewWorkflowEnabled: true,            // Phase 45 — admin can dismiss/snooze/warn flags
+      maxWarningsPerUserPerWeek: 3,           // Phase 45 — rate limit for soft warnings
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file
+  // ═══════════════════════════════════════════════════════════════════
+  COUNTERS: {
+    enabled: true,
+    filePath: 'metrics/direct-offer-counters.json',  // relative to data/
+    rebuildIntervalMs: 24 * 60 * 60 * 1000,           // 24 hours
+    startupRebuildMaxAgeMs: 24 * 60 * 60 * 1000,      // rebuild on startup if file > 24h old
+    maxDecisionTimesArrayLength: 1000,                 // for p50/p95 calculation
+    hourlyBucketsRetentionHours: 48,                   // keep last 48 hours of buckets
+    minRebuildIntervalMs: 23 * 60 * 60 * 1000,         // skip rebuild if last < 23h ago
   },
 
 };
@@ -1045,7 +1063,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.40.0",
+  "version": "0.41.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1430,6 +1448,55 @@ if (config.BACKUP && config.BACKUP.enabled) {
   if (backupTimer.unref) backupTimer.unref();
 }
 
+// ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
+if (config.COUNTERS && config.COUNTERS.enabled) {
+  // Startup integrity check (fire-and-forget — non-blocking)
+  (async () => {
+    try {
+      const counters = await import('./server/services/directOfferCounters.js');
+      const c = await counters.readCounters();
+      const lastUpdateMs = c.lastUpdatedAt ? new Date(c.lastUpdatedAt).getTime() : 0;
+      const totalOffers = c.platform?.total || 0;
+      const maxAge = config.COUNTERS.startupRebuildMaxAgeMs || (24 * 60 * 60 * 1000);
+
+      // Trigger rebuild if file is stale AND offers exist (empty system = healthy)
+      if (totalOffers > 0 && lastUpdateMs > 0) {
+        const ageMs = Date.now() - lastUpdateMs;
+        if (ageMs > maxAge) {
+          logger.warn('Startup: counter file stale — triggering rebuild', { ageHours: Math.round(ageMs / 3600000) });
+          counters.rebuildCounters().catch(err => {
+            logger.error('Startup rebuild failed', { error: err.message });
+          });
+        }
+      } else if (totalOffers === 0 && lastUpdateMs === 0) {
+        logger.info('Startup: counter file empty — no rebuild needed');
+      }
+    } catch (err) {
+      // Counter file corrupt or missing — trigger rebuild
+      logger.warn('Startup: counter file integrity check failed — triggering rebuild', { error: err.message });
+      try {
+        const counters = await import('./server/services/directOfferCounters.js');
+        counters.rebuildCounters().catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    }
+  })();
+
+  // Scheduled rebuild every 24h (defense in depth against drift)
+  const rebuildIntervalMs = config.COUNTERS.rebuildIntervalMs || (24 * 60 * 60 * 1000);
+  const counterRebuildTimer = setInterval(async () => {
+    try {
+      const counters = await import('./server/services/directOfferCounters.js');
+      const result = await counters.rebuildCounters();
+      if (!result.skipped) {
+        logger.info('Counters: scheduled rebuild complete', result);
+      }
+    } catch (err) {
+      logger.error('Counters: scheduled rebuild failed', { error: err.message });
+    }
+  }, rebuildIntervalMs);
+  if (counterRebuildTimer.unref) counterRebuildTimer.unref();
+}
+
 // ── Start ─────────────────────────────────────────────────────
 server.listen(PORT, HOST, () => {
   logger.info(`🟢 يوميّة — ${config.BRAND.tagline}`);
@@ -1495,6 +1562,9 @@ import {
   handleAdminDirectOffersFunnel,
   handleAdminDeclineReasons,
   handleAdminAbuseSignals,
+  handleAdminFlagReviewHistory,
+  handleAdminFlagReview,
+  handleSendAbuseWarning,
 } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
@@ -1521,6 +1591,8 @@ import { listActions } from './services/auditLog.js';
 import { eventBus } from './services/eventBus.js';
 import { clearAnalyticsCache } from './services/analytics.js';
 import { clearCache as clearDirectOfferAnalyticsCache } from './services/directOfferAnalytics.js';
+import * as directOfferCounters from './services/directOfferCounters.js';
+import { debouncedClear } from './services/cacheDebouncer.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -1542,7 +1614,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.40.0',
+        version: '0.41.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1638,6 +1710,30 @@ const routes = [
       } catch (_) {
         response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
       }
+      // Phase 45 — Counter file integrity (non-blocking)
+      try {
+        const counters = await directOfferCounters.readCounters();
+        const now = Date.now();
+        const lastUpdateMs = counters.lastUpdatedAt ? new Date(counters.lastUpdatedAt).getTime() : 0;
+        const ageMs = lastUpdateMs > 0 ? (now - lastUpdateMs) : null;
+        const totalOffers = counters.platform?.total || 0;
+        const maxAge = (config.COUNTERS && config.COUNTERS.startupRebuildMaxAgeMs) || (24 * 60 * 60 * 1000);
+        let status = 'healthy';
+        if (totalOffers === 0 && lastUpdateMs === 0) {
+          status = 'empty';
+        } else if (ageMs !== null && ageMs > maxAge) {
+          status = 'stale';
+        }
+        response.counters = {
+          lastUpdatedAt: counters.lastUpdatedAt,
+          lastRebuildAt: counters.lastRebuildAt,
+          totalOffers,
+          hourlyBucketsCount: Object.keys(counters.hourlyBuckets || {}).length,
+          status,
+        };
+      } catch (_) {
+        response.counters = { lastUpdatedAt: null, lastRebuildAt: null, totalOffers: 0, hourlyBucketsCount: 0, status: 'corrupt' };
+      }
       sendJSON(res, 200, response);
     },
   },
@@ -1672,7 +1768,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.40.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.41.0' });
     },
   },
 
@@ -1863,6 +1959,11 @@ const routes = [
   { method: 'GET', path: '/api/admin/direct-offers/funnel', middlewares: [requireAdmin], handler: handleAdminDirectOffersFunnel },
   { method: 'GET', path: '/api/admin/direct-offers/decline-reasons', middlewares: [requireAdmin], handler: handleAdminDeclineReasons },
   { method: 'GET', path: '/api/admin/direct-offers/abuse', middlewares: [requireAdmin], handler: handleAdminAbuseSignals },
+
+  // ── Phase 45 — Admin Abuse Flag Review Workflow ──
+  { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },
+  { method: 'POST', path: '/api/admin/abuse-flags/:id/review', middlewares: [requireAdmin], handler: handleAdminFlagReview },
+  { method: 'POST', path: '/api/admin/abuse-flags/:id/warn', middlewares: [requireAdmin], handler: handleSendAbuseWarning },
 ];
 
 /**
@@ -1940,8 +2041,27 @@ setupLiveFeedListeners();
 import { setupDirectOfferListeners } from './services/directOffer.js';
 setupDirectOfferListeners();
 
-// Phase 44 — Analytics cache invalidation on direct offer events
-// Listeners registered AFTER setupDirectOfferListeners to ensure proper event ordering.
+// Phase 45 — Counter applyEvent listeners (registered FIRST — before cache invalidation)
+// Each direct_offer:* event triggers an incremental counter file update.
+// Fire-and-forget: failures logged, scheduled rebuild (every 24h) catches drift.
+if (config.COUNTERS && config.COUNTERS.enabled) {
+  const counterEvents = ['direct_offer:created', 'direct_offer:accepted', 'direct_offer:declined', 'direct_offer:expired', 'direct_offer:withdrawn'];
+  for (const eventName of counterEvents) {
+    eventBus.on(eventName, (data) => {
+      const eventType = eventName.split(':')[1];
+      directOfferCounters.applyEvent(eventType, data).catch(err => {
+        logger.warn('Counter applyEvent failed', { eventName, error: err.message });
+      });
+    });
+  }
+  logger.info(`Direct offer counters: enabled (${counterEvents.length} event listeners)`);
+} else {
+  logger.info('Direct offer counters: disabled via config');
+}
+
+// Phase 44 + 45 — Analytics cache invalidation (debounced, registered AFTER counter listeners)
+// Listeners registered AFTER setupDirectOfferListeners + counter listeners to ensure proper event ordering.
+// Phase 45: uses debouncedClear to prevent thundering herd during event bursts.
 // Fire-and-forget: failure tolerated, TTL (5min) catches stale data eventually.
 if (config.ANALYTICS && config.ANALYTICS.cacheInvalidationEnabled) {
   const invalidationEvents = config.ANALYTICS.cacheInvalidationEvents || [];
@@ -1950,20 +2070,25 @@ if (config.ANALYTICS && config.ANALYTICS.cacheInvalidationEnabled) {
       try {
         // Per-employer analytics cache (if event payload has employerId)
         if (data && data.employerId) {
-          clearAnalyticsCache(`analytics:employer:${data.employerId}:`);
+          debouncedClear(`emp:${data.employerId}`, () => {
+            clearAnalyticsCache(`analytics:employer:${data.employerId}:`);
+          });
         }
         // Per-worker analytics cache (if event payload has workerId)
         if (data && data.workerId) {
-          clearAnalyticsCache(`analytics:worker:${data.workerId}:`);
+          debouncedClear(`wrk:${data.workerId}`, () => {
+            clearAnalyticsCache(`analytics:worker:${data.workerId}:`);
+          });
         }
         // Platform-wide analytics cache (always invalidate)
-        clearAnalyticsCache('analytics:platform:');
-        // Admin direct offer analytics cache (always invalidate)
-        clearDirectOfferAnalyticsCache();
+        debouncedClear('platform', () => {
+          clearAnalyticsCache('analytics:platform:');
+          clearDirectOfferAnalyticsCache();
+        });
       } catch (_) { /* fire-and-forget */ }
     });
   }
-  logger.info(`Analytics cache invalidation: enabled (${invalidationEvents.length} events)`);
+  logger.info(`Analytics cache invalidation: enabled (${invalidationEvents.length} events, debounced)`);
 } else {
   logger.info('Analytics cache invalidation: disabled via config');
 }

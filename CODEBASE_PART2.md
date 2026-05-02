@@ -1,65 +1,268 @@
-# يوميّة (Yawmia) v0.40.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-01T17:59:20.752Z
-> Files in this part: 57
+# يوميّة (Yawmia) v0.41.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-02T02:15:57.118Z
+> Files in this part: 60
 
 ## Files
-1. `server/services/activitySummary.js`
-2. `server/services/adMatcher.js`
-3. `server/services/analytics.js`
-4. `server/services/applications.js`
-5. `server/services/arabicNormalizer.js`
-6. `server/services/attendance.js`
-7. `server/services/auditLog.js`
-8. `server/services/auth.js`
-9. `server/services/availabilityAd.js`
-10. `server/services/availabilityWindow.js`
-11. `server/services/backupScheduler.js`
-12. `server/services/cache.js`
-13. `server/services/channels/sms.js`
-14. `server/services/channels/whatsapp.js`
-15. `server/services/contentFilter.js`
-16. `server/services/database.js`
-17. `server/services/directOffer.js`
-18. `server/services/directOfferAnalytics.js`
-19. `server/services/errorAggregator.js`
-20. `server/services/eventBus.js`
-21. `server/services/eventReplayBuffer.js`
-22. `server/services/favorites.js`
-23. `server/services/financialExport.js`
-24. `server/services/geo.js`
-25. `server/services/imageStore.js`
-26. `server/services/indexHealth.js`
-27. `server/services/instantMatch.js`
-28. `server/services/jobAlerts.js`
-29. `server/services/jobMatcher.js`
-30. `server/services/jobs.js`
-31. `server/services/liveFeed.js`
-32. `server/services/logWriter.js`
-33. `server/services/logger.js`
-34. `server/services/messages.js`
-35. `server/services/messaging.js`
-36. `server/services/migration.js`
-37. `server/services/monitor.js`
-38. `server/services/notificationMessenger.js`
-39. `server/services/notifications.js`
-40. `server/services/offerAbuseDetector.js`
-41. `server/services/payments.js`
-42. `server/services/presenceService.js`
-43. `server/services/profileCompleteness.js`
-44. `server/services/queryIndex.js`
-45. `server/services/ratings.js`
-46. `server/services/reports.js`
-47. `server/services/resourceLock.js`
-48. `server/services/sanitizer.js`
-49. `server/services/searchIndex.js`
-50. `server/services/sessions.js`
-51. `server/services/sseManager.js`
-52. `server/services/trust.js`
-53. `server/services/users.js`
-54. `server/services/validators.js`
-55. `server/services/verification.js`
-56. `server/services/webpush.js`
-57. `server/services/workerDiscovery.js`
+1. `server/services/abuseFlagReview.js`
+2. `server/services/activitySummary.js`
+3. `server/services/adMatcher.js`
+4. `server/services/analytics.js`
+5. `server/services/applications.js`
+6. `server/services/arabicNormalizer.js`
+7. `server/services/attendance.js`
+8. `server/services/auditLog.js`
+9. `server/services/auth.js`
+10. `server/services/availabilityAd.js`
+11. `server/services/availabilityWindow.js`
+12. `server/services/backupScheduler.js`
+13. `server/services/cache.js`
+14. `server/services/cacheDebouncer.js`
+15. `server/services/channels/sms.js`
+16. `server/services/channels/whatsapp.js`
+17. `server/services/contentFilter.js`
+18. `server/services/database.js`
+19. `server/services/directOffer.js`
+20. `server/services/directOfferAnalytics.js`
+21. `server/services/directOfferCounters.js`
+22. `server/services/errorAggregator.js`
+23. `server/services/eventBus.js`
+24. `server/services/eventReplayBuffer.js`
+25. `server/services/favorites.js`
+26. `server/services/financialExport.js`
+27. `server/services/geo.js`
+28. `server/services/imageStore.js`
+29. `server/services/indexHealth.js`
+30. `server/services/instantMatch.js`
+31. `server/services/jobAlerts.js`
+32. `server/services/jobMatcher.js`
+33. `server/services/jobs.js`
+34. `server/services/liveFeed.js`
+35. `server/services/logWriter.js`
+36. `server/services/logger.js`
+37. `server/services/messages.js`
+38. `server/services/messaging.js`
+39. `server/services/migration.js`
+40. `server/services/monitor.js`
+41. `server/services/notificationMessenger.js`
+42. `server/services/notifications.js`
+43. `server/services/offerAbuseDetector.js`
+44. `server/services/payments.js`
+45. `server/services/presenceService.js`
+46. `server/services/profileCompleteness.js`
+47. `server/services/queryIndex.js`
+48. `server/services/ratings.js`
+49. `server/services/reports.js`
+50. `server/services/resourceLock.js`
+51. `server/services/sanitizer.js`
+52. `server/services/searchIndex.js`
+53. `server/services/sessions.js`
+54. `server/services/sseManager.js`
+55. `server/services/trust.js`
+56. `server/services/users.js`
+57. `server/services/validators.js`
+58. `server/services/verification.js`
+59. `server/services/webpush.js`
+60. `server/services/workerDiscovery.js`
+
+---
+
+## `server/services/abuseFlagReview.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/abuseFlagReview.js — Abuse Flag Review State (Phase 45)
+// ═══════════════════════════════════════════════════════════════
+// Persistent review state per abuse flag fingerprint.
+// Storage: data/abuse_flag_reviews/{fingerprint}.json (flat collection).
+// Fingerprint = SHA256(flagType + employerId + workerId).
+//
+// Review decisions:
+//   - 'dismissed' — admin reviewed and decided no action (currentStatus → 'dismissed')
+//   - 'snoozed' — admin defers decision (currentStatus → 'snoozed', snoozeUntil set)
+//   - 'warning' — admin sent warning (status unchanged — flag still active)
+//   - 'actioned' — admin took definitive action e.g. ban (currentStatus → 'actioned')
+//
+// Snooze expiry is LAZY — checked on isCurrentlySnoozed call.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+
+/**
+ * Compute deterministic fingerprint for an abuse flag.
+ * Same flag (type + entities) always produces same fingerprint.
+ *
+ * @param {object} flag — { type, employerId?, workerId? }
+ * @returns {string} hex SHA256
+ */
+export function computeFingerprint(flag) {
+  if (!flag || !flag.type) return '';
+  const employerId = flag.employerId || '';
+  const workerId = flag.workerId || '';
+  const input = `${flag.type}:${employerId}:${workerId}`;
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
+/**
+ * Read review state for a fingerprint.
+ * @param {string} fingerprint
+ * @returns {Promise<object|null>}
+ */
+export async function getReviewState(fingerprint) {
+  if (!fingerprint || typeof fingerprint !== 'string') return null;
+  try {
+    return await readJSON(getRecordPath('abuse_flag_reviews', fingerprint));
+  } catch (err) {
+    logger.warn('abuseFlagReview: getReviewState failed', { fingerprint, error: err.message });
+    return null;
+  }
+}
+
+/**
+ * Build initial review state from a flag.
+ */
+function buildInitialState(flag, fingerprint) {
+  const now = new Date().toISOString();
+  return {
+    fingerprint,
+    flagType: flag.type,
+    employerId: flag.employerId || null,
+    workerId: flag.workerId || null,
+    firstSeenAt: now,
+    occurrenceCount: 1,
+    reviews: [],
+    currentStatus: 'active', // 'active' | 'dismissed' | 'snoozed' | 'actioned'
+    snoozeUntil: null,
+  };
+}
+
+/**
+ * Record a review decision.
+ *
+ * @param {object} params
+ * @param {object} params.flag — flag object (from detectAbuse) OR existing reviewState
+ * @param {string} params.adminId
+ * @param {'dismissed'|'snoozed'|'warning'|'actioned'} params.decision
+ * @param {string} [params.note]
+ * @param {number} [params.snoozeDays]
+ * @returns {Promise<object>} updated reviewState
+ */
+export async function recordReview({ flag, adminId, decision, note, snoozeDays }) {
+  if (!flag) throw new Error('flag is required');
+  if (!adminId) throw new Error('adminId is required');
+  const validDecisions = ['dismissed', 'snoozed', 'warning', 'actioned'];
+  if (!validDecisions.includes(decision)) {
+    throw new Error(`Invalid decision: ${decision}`);
+  }
+
+  // Derive fingerprint — accept flag with/without precomputed fingerprint
+  const fingerprint = flag.fingerprint || computeFingerprint(flag);
+  if (!fingerprint) throw new Error('Could not compute fingerprint');
+
+  return withLock(`abuse-review:${fingerprint}`, async () => {
+    const filePath = getRecordPath('abuse_flag_reviews', fingerprint);
+    let state = await readJSON(filePath);
+
+    if (!state) {
+      // Initial — flag must have type
+      if (!flag.type && !flag.flagType) {
+        throw new Error('Cannot create review state: flag missing type');
+      }
+      state = buildInitialState({
+        type: flag.type || flag.flagType,
+        employerId: flag.employerId,
+        workerId: flag.workerId,
+      }, fingerprint);
+    } else {
+      state.occurrenceCount = (state.occurrenceCount || 0) + 1;
+    }
+
+    const reviewId = 'rev_' + crypto.randomBytes(6).toString('hex');
+    const now = new Date().toISOString();
+
+    let snoozeUntil = null;
+    if (decision === 'snoozed' && typeof snoozeDays === 'number' && snoozeDays > 0) {
+      snoozeUntil = new Date(Date.now() + snoozeDays * 86400000).toISOString();
+    }
+
+    state.reviews.push({
+      id: reviewId,
+      adminId,
+      decision,
+      note: note || null,
+      snoozeUntil,
+      createdAt: now,
+    });
+
+    // Update currentStatus based on decision
+    if (decision === 'dismissed') {
+      state.currentStatus = 'dismissed';
+      state.snoozeUntil = null;
+    } else if (decision === 'snoozed') {
+      state.currentStatus = 'snoozed';
+      state.snoozeUntil = snoozeUntil;
+    } else if (decision === 'actioned') {
+      state.currentStatus = 'actioned';
+      state.snoozeUntil = null;
+    }
+    // 'warning' does NOT change currentStatus — flag remains active
+
+    await atomicWrite(filePath, state);
+    return state;
+  });
+}
+
+/**
+ * Check if a flag fingerprint is currently snoozed.
+ * Implements LAZY expiry: if snoozeUntil < now, updates state to 'active' and returns false.
+ *
+ * @param {string} fingerprint
+ * @returns {Promise<boolean>}
+ */
+export async function isCurrentlySnoozed(fingerprint) {
+  if (!fingerprint) return false;
+  const state = await getReviewState(fingerprint);
+  if (!state) return false;
+  if (state.currentStatus !== 'snoozed') return false;
+  if (!state.snoozeUntil) return false;
+
+  const nowMs = Date.now();
+  const snoozeMs = new Date(state.snoozeUntil).getTime();
+
+  if (nowMs < snoozeMs) return true;
+
+  // Snooze expired — lazy update (idempotent atomicWrite)
+  state.currentStatus = 'active';
+  state.snoozeUntil = null;
+  try {
+    await atomicWrite(getRecordPath('abuse_flag_reviews', fingerprint), state);
+  } catch (err) {
+    logger.warn('abuseFlagReview: lazy expiry write failed', { fingerprint, error: err.message });
+  }
+  return false;
+}
+
+/**
+ * List all review states (admin/debugging).
+ * @returns {Promise<object[]>}
+ */
+export async function listAllReviewStates() {
+  try {
+    const dir = getCollectionPath('abuse_flag_reviews');
+    return await listJSON(dir);
+  } catch (err) {
+    logger.warn('abuseFlagReview: listAllReviewStates failed', { error: err.message });
+    return [];
+  }
+}
+
+// Test helpers
+export const _testHelpers = {
+  buildInitialState,
+};
+```
 
 ---
 
@@ -3865,6 +4068,153 @@ if (cleanupTimer.unref) cleanupTimer.unref();
 
 ---
 
+## `server/services/cacheDebouncer.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/cacheDebouncer.js — Cache Invalidation Debouncer (Phase 45)
+// ═══════════════════════════════════════════════════════════════
+// Wraps cache clear functions with per-key debounce + min interval guard.
+// Prevents thundering herd during event bursts.
+//
+// Behavior:
+//   debouncedClear(key, fn):
+//     - First call schedules fn() to run after DEBOUNCE_MS
+//     - Subsequent calls within DEBOUNCE_MS window are coalesced
+//     - After execution, MIN_INTERVAL_MS guards against rapid re-execution
+//
+// Per-key isolation: different keys debounced independently.
+// flushPending(): execute all pending immediately (for shutdown).
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+/**
+ * @typedef {object} PendingEntry
+ * @property {NodeJS.Timeout|null} timeoutId
+ * @property {number} lastClearedAt — Unix ms (0 = never cleared)
+ * @property {Function|null} clearFn
+ */
+
+/** @type {Map<string, PendingEntry>} */
+const pendingClears = new Map();
+
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const STALE_ENTRY_AGE_MS = 60 * 60 * 1000;  // 1 hour
+
+/**
+ * Get debounce/min-interval from config (with fallback).
+ */
+function getTimings() {
+  return {
+    debounceMs: (config.ANALYTICS && config.ANALYTICS.debounceMs) || 10000,
+    minIntervalMs: (config.ANALYTICS && config.ANALYTICS.minIntervalMs) || 5000,
+  };
+}
+
+/**
+ * Schedule a debounced cache clear.
+ *
+ * @param {string} cacheKey — unique identifier (e.g., 'emp:usr_123', 'platform')
+ * @param {Function} clearFn — zero-arg function executing the cache clear
+ */
+export function debouncedClear(cacheKey, clearFn) {
+  if (!cacheKey || typeof clearFn !== 'function') return;
+
+  const { debounceMs, minIntervalMs } = getTimings();
+  const now = Date.now();
+  const existing = pendingClears.get(cacheKey);
+
+  // If already scheduled, do nothing (coalesce)
+  if (existing && existing.timeoutId) {
+    // Update clearFn (latest wins — typically same function but safe)
+    existing.clearFn = clearFn;
+    return;
+  }
+
+  // Calculate delay: respect min interval since last clear
+  const lastClearedAt = existing ? existing.lastClearedAt : 0;
+  const sinceLastClear = lastClearedAt > 0 ? now - lastClearedAt : Infinity;
+  const delay = sinceLastClear < minIntervalMs ? (minIntervalMs - sinceLastClear) : debounceMs;
+
+  const timeoutId = setTimeout(() => {
+    // Execute the clear
+    let clearError = null;
+    try {
+      const fn = pendingClears.get(cacheKey)?.clearFn;
+      if (fn) fn();
+    } catch (err) {
+      clearError = err;
+      logger.warn('cacheDebouncer: clearFn failed', { cacheKey, error: err.message });
+    } finally {
+      // Mark as cleared
+      const entry = pendingClears.get(cacheKey);
+      if (entry) {
+        entry.timeoutId = null;
+        entry.lastClearedAt = Date.now();
+        // Keep clearFn for potential subsequent scheduling
+      }
+    }
+  }, delay);
+
+  if (timeoutId.unref) timeoutId.unref();
+
+  pendingClears.set(cacheKey, {
+    timeoutId,
+    lastClearedAt: lastClearedAt,
+    clearFn,
+  });
+}
+
+/**
+ * Force immediate execution of all pending clears.
+ * Used during graceful shutdown.
+ */
+export function flushPending() {
+  const keys = Array.from(pendingClears.keys());
+  for (const key of keys) {
+    const entry = pendingClears.get(key);
+    if (entry && entry.timeoutId) {
+      clearTimeout(entry.timeoutId);
+      try {
+        if (entry.clearFn) entry.clearFn();
+      } catch (err) {
+        logger.warn('cacheDebouncer: flushPending clear failed', { cacheKey: key, error: err.message });
+      }
+      entry.timeoutId = null;
+      entry.lastClearedAt = Date.now();
+    }
+  }
+}
+
+/**
+ * Cleanup stale entries (no pending timeout + lastClearedAt > 1h ago).
+ * Called by hourly timer.
+ */
+function cleanup() {
+  const now = Date.now();
+  for (const [key, entry] of pendingClears) {
+    if (!entry.timeoutId && entry.lastClearedAt > 0 && (now - entry.lastClearedAt) > STALE_ENTRY_AGE_MS) {
+      pendingClears.delete(key);
+    }
+  }
+}
+
+// Hourly cleanup timer (unref'd — doesn't prevent process exit)
+const cleanupTimer = setInterval(cleanup, CLEANUP_INTERVAL_MS);
+if (cleanupTimer.unref) cleanupTimer.unref();
+
+// Test helpers
+export const _testHelpers = {
+  pendingClears,
+  cleanup,
+  STALE_ENTRY_AGE_MS,
+};
+```
+
+---
+
 ## `server/services/channels/sms.js`
 
 ```javascript
@@ -5828,11 +6178,44 @@ export async function cleanupExpired() {
 
 /**
  * Find offer by ID (raw — no redaction).
+ *
+ * Phase 45: optional viewerUserId enables viewedAt tracking.
+ * If viewerUserId === offer.workerId AND !offer.viewedAt AND offer is pending,
+ * sets viewedAt + applies counter event (idempotent — fire-and-forget).
+ *
+ * Internal callers pass no viewerUserId → no viewedAt tracking (safe).
+ * Only handleGetOffer (worker view) passes req.user.id.
+ *
  * @param {string} offerId
+ * @param {string} [viewerUserId] — optional viewer ID for viewedAt tracking
  * @returns {Promise<object|null>}
  */
-export async function findById(offerId) {
-  return await readJSON(getRecordPath('direct_offers', offerId));
+export async function findById(offerId, viewerUserId) {
+  const offer = await readJSON(getRecordPath('direct_offers', offerId));
+  if (!offer) return null;
+
+  // Phase 45: viewedAt tracking — only when worker recipient first views pending offer
+  if (viewerUserId && offer.workerId === viewerUserId && !offer.viewedAt && offer.status === 'pending') {
+    try {
+      const now = new Date();
+      const viewMs = now.getTime() - new Date(offer.createdAt).getTime();
+      offer.viewedAt = now.toISOString();
+      await atomicWrite(getRecordPath('direct_offers', offerId), offer);
+
+      // Fire-and-forget counter applyEvent
+      try {
+        const counters = await import('./directOfferCounters.js');
+        counters.applyEvent('viewed', {
+          offerId,
+          employerId: offer.employerId,
+          workerId: offer.workerId,
+          viewMs,
+        }).catch(() => {});
+      } catch (_) { /* non-fatal */ }
+    } catch (_) { /* non-fatal — viewedAt is best-effort */ }
+  }
+
+  return offer;
 }
 
 /**
@@ -6149,6 +6532,7 @@ export const _testHelpers = { validateFields, redactName };
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import * as directOfferCounters from './directOfferCounters.js';
 
 // ── Module-local cache ────────────────────────────────────────
 /** @type {Map<string, { value: *, expiresAt: number }>} */
@@ -6228,32 +6612,37 @@ export async function getPlatformOfferFunnel(options = {}) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const offers = await listAllOffers();
-  const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
-
-  let sent = filtered.length;
-  let accepted = 0, declined = 0, expired = 0, withdrawn = 0, pending = 0;
-
-  for (const o of filtered) {
-    if (o.status === 'accepted') accepted++;
-    else if (o.status === 'declined') declined++;
-    else if (o.status === 'expired') expired++;
-    else if (o.status === 'withdrawn') withdrawn++;
-    else if (o.status === 'pending') pending++;
+  // Phase 45: read from rolling counter file (O(1) instead of O(n))
+  let result;
+  try {
+    result = await directOfferCounters.getPlatformFunnel({ from, to });
+  } catch (err) {
+    logger.warn('getPlatformOfferFunnel: counter read failed, falling back to full scan', { error: err.message });
+    // Fallback to Phase 44 full scan
+    const offers = await listAllOffers();
+    const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
+    let sent = filtered.length;
+    let accepted = 0, declined = 0, expired = 0, withdrawn = 0, pending = 0;
+    for (const o of filtered) {
+      if (o.status === 'accepted') accepted++;
+      else if (o.status === 'declined') declined++;
+      else if (o.status === 'expired') expired++;
+      else if (o.status === 'withdrawn') withdrawn++;
+      else if (o.status === 'pending') pending++;
+    }
+    const decided = accepted + declined + expired;
+    result = {
+      sent,
+      pending,
+      accepted,
+      declined,
+      expired,
+      withdrawn,
+      acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
+      declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
+      expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
+    };
   }
-
-  const decided = accepted + declined + expired;
-  const result = {
-    sent,
-    pending,
-    accepted,
-    declined,
-    expired,
-    withdrawn,
-    acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
-    declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
-    expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
-  };
 
   cacheSet(cacheKey, result);
   return result;
@@ -6277,10 +6666,24 @@ export async function getTopEmployersByAcceptance(options = {}) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
+  // Phase 45: counter file does not support per-employer date range.
+  // If from/to NOT provided → use counter file (fast path).
+  // If from/to provided → fall back to listAllOffers (rare admin case).
+  if (!from && !to) {
+    try {
+      const result = await directOfferCounters.getTopEmployers({ limit, minOffers });
+      cacheSet(cacheKey, result);
+      return result;
+    } catch (err) {
+      logger.warn('getTopEmployersByAcceptance: counter read failed, falling back', { error: err.message });
+      // Fall through to full scan
+    }
+  }
+
+  // Fallback (date-range filter or counter failure)
   const offers = await listAllOffers();
   const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
 
-  // Group by employerId
   const byEmployer = new Map();
   for (const o of filtered) {
     if (!byEmployer.has(o.employerId)) {
@@ -6293,23 +6696,19 @@ export async function getTopEmployersByAcceptance(options = {}) {
     else if (o.status === 'expired') e.expired++;
   }
 
-  // Enrich with user names (dynamic import to avoid circular deps)
   const { findById } = await import('./users.js');
   const rows = [];
 
   for (const [empId, stats] of byEmployer) {
     if (stats.total < minOffers) continue;
-
     const decided = stats.accepted + stats.declined + stats.expired;
     const rate = decided > 0 ? stats.accepted / decided : 0;
-
-    let name = empId; // fallback to userId on missing user
+    let name = empId;
     try {
       const u = await findById(empId);
       if (u && u.name) name = u.name;
       else if (u && u.phone) name = u.phone;
-    } catch (_) { /* fallback to empId */ }
-
+    } catch (_) { /* fallback */ }
     rows.push({
       employerId: empId,
       name,
@@ -6319,9 +6718,7 @@ export async function getTopEmployersByAcceptance(options = {}) {
     });
   }
 
-  // Sort: acceptRate DESC, then total DESC
   rows.sort((a, b) => b.acceptRate - a.acceptRate || b.total - a.total);
-
   const result = rows.slice(0, limit);
   cacheSet(cacheKey, result);
   return result;
@@ -6343,6 +6740,19 @@ export async function getTopWorkersByAcceptance(options = {}) {
   const cacheKey = `topWrk:${from || 'all'}:${to || 'all'}:${limit}:${minOffers}`;
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
+
+  // Phase 45: counter file does not support per-worker date range.
+  // If from/to NOT provided → use counter file (fast path).
+  if (!from && !to) {
+    try {
+      const result = await directOfferCounters.getTopWorkers({ limit, minOffers });
+      cacheSet(cacheKey, result);
+      return result;
+    } catch (err) {
+      logger.warn('getTopWorkersByAcceptance: counter read failed, falling back', { error: err.message });
+      // Fall through to full scan
+    }
+  }
 
   const offers = await listAllOffers();
   const filtered = offers.filter(o => inDateRange(o.createdAt, from, to));
@@ -6493,16 +6903,49 @@ export async function getDeclineReasonsBreakdown(options = {}) {
  * }>}
  */
 export async function getOfferStatsSnapshot() {
+  // Phase 45: read from counter file directly (last hour from hourlyBuckets)
+  try {
+    const counters = await directOfferCounters.readCounters();
+    const hourAgoIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    let recentAccepted = 0, recentDeclined = 0, recentExpired = 0;
+    for (const [hourKey, bucket] of Object.entries(counters.hourlyBuckets || {})) {
+      const bucketIso = hourKey + ':00:00.000Z';
+      if (bucketIso >= hourAgoIso) {
+        recentAccepted += bucket.accepted || 0;
+        recentDeclined += bucket.declined || 0;
+        recentExpired += bucket.expired || 0;
+      }
+    }
+
+    const activePending = counters.platform.pending || 0;
+    const decided = recentAccepted + recentDeclined + recentExpired;
+
+    // Aging-based avgResponseSec from platform aggregate (best-effort approximation)
+    const avgResponseSec = counters.platform.responseCount > 0
+      ? Math.round((counters.platform.totalResponseMs / counters.platform.responseCount) / 1000)
+      : 0;
+
+    return {
+      activePending,
+      recentAccepted,
+      recentDeclined,
+      recentExpired,
+      acceptRate: decided > 0 ? Math.round((recentAccepted / decided) * 100) : 0,
+      avgResponseSec,
+    };
+  } catch (err) {
+    logger.warn('getOfferStatsSnapshot: counter read failed, falling back', { error: err.message });
+  }
+
+  // Fallback (Phase 44 full scan)
   const offers = await listAllOffers();
   const hourAgo = Date.now() - 60 * 60 * 1000;
-
   let activePending = 0;
   let recentAccepted = 0, recentDeclined = 0, recentExpired = 0;
   let recentTotalResponseMs = 0, recentResponseCount = 0;
-
   for (const o of offers) {
     if (o.status === 'pending') activePending++;
-
     const updatedMs = new Date(o.updatedAt || o.createdAt).getTime();
     if (updatedMs >= hourAgo) {
       if (o.status === 'accepted') {
@@ -6528,7 +6971,6 @@ export async function getOfferStatsSnapshot() {
       }
     }
   }
-
   const decided = recentAccepted + recentDeclined + recentExpired;
   return {
     activePending,
@@ -6544,6 +6986,714 @@ export async function getOfferStatsSnapshot() {
 
 // ── Test helpers (exported for unit tests) ───────────────────
 export const _testHelpers = { listAllOffers, inDateRange };
+```
+
+---
+
+## `server/services/directOfferCounters.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/directOfferCounters.js — Rolling Counter File (Phase 45)
+// ═══════════════════════════════════════════════════════════════
+// Pre-aggregated direct offer counters in single file.
+// Updated incrementally on every direct_offer:* event.
+// Single-writer pattern via withLock('direct-offer-counters').
+// Replaces O(n) listAllOffers with O(1) counter file reads.
+//
+// ⚠️ Throughput note (Phase 45):
+//   At >10 events/sec, the single-writer lock becomes a bottleneck.
+//   Phase 45 expected scale: 1-10 events/sec — acceptable.
+//   Phase 46+ may introduce event batching or sharded counter files.
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import { atomicWrite, readJSON, getCollectionPath, listJSON } from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+const COUNTER_LOCK_KEY = 'direct-offer-counters';
+
+/**
+ * Get the absolute path to the counter file.
+ * @returns {string}
+ */
+function getCounterFilePath() {
+  const relPath = (config.COUNTERS && config.COUNTERS.filePath) || 'metrics/direct-offer-counters.json';
+  return join(BASE_PATH, relPath);
+}
+
+/**
+ * Build empty counter structure.
+ * @returns {object}
+ */
+function emptyCounters() {
+  return {
+    version: 1,
+    lastUpdatedAt: null,
+    lastRebuildAt: null,
+    platform: {
+      total: 0,
+      pending: 0,
+      accepted: 0,
+      declined: 0,
+      expired: 0,
+      withdrawn: 0,
+      totalResponseMs: 0,
+      responseCount: 0,
+      declineReasons: {},
+    },
+    aging: {
+      totalTimeToFirstViewMs: 0,
+      viewCount: 0,
+      totalTimeToDecisionMs: 0,
+      decisionCount: 0,
+      decisionTimes: [],
+    },
+    byEmployer: {},
+    byWorker: {},
+    hourlyBuckets: {},
+  };
+}
+
+/**
+ * Get hourly bucket key (YYYY-MM-DDTHH) in UTC.
+ * @param {string|Date} ts
+ * @returns {string}
+ */
+function getHourKey(ts) {
+  const d = ts instanceof Date ? ts : new Date(ts);
+  return d.toISOString().slice(0, 13);
+}
+
+/**
+ * Read counter file. Returns empty structure on missing/corrupt.
+ * @returns {Promise<object>}
+ */
+export async function readCounters() {
+  try {
+    const data = await readJSON(getCounterFilePath());
+    if (!data || typeof data !== 'object') return emptyCounters();
+    // Ensure all required fields exist (forward-compatible)
+    const empty = emptyCounters();
+    return {
+      ...empty,
+      ...data,
+      platform: { ...empty.platform, ...(data.platform || {}) },
+      aging: { ...empty.aging, ...(data.aging || {}) },
+      byEmployer: data.byEmployer || {},
+      byWorker: data.byWorker || {},
+      hourlyBuckets: data.hourlyBuckets || {},
+    };
+  } catch (err) {
+    logger.warn('directOfferCounters: readCounters failed, returning empty', { error: err.message });
+    return emptyCounters();
+  }
+}
+
+/**
+ * Cleanup old hourly buckets (older than retention).
+ * @param {object} counters
+ */
+function cleanupOldBuckets(counters) {
+  const retentionHours = (config.COUNTERS && config.COUNTERS.hourlyBucketsRetentionHours) || 48;
+  const cutoff = Date.now() - retentionHours * 60 * 60 * 1000;
+  for (const key of Object.keys(counters.hourlyBuckets)) {
+    const ts = new Date(key + ':00:00Z').getTime();
+    if (ts < cutoff) {
+      delete counters.hourlyBuckets[key];
+    }
+  }
+}
+
+/**
+ * Apply event to counters. Single-writer via withLock.
+ * Fire-and-forget safe — caller catches errors.
+ *
+ * @param {string} eventType — 'created' | 'accepted' | 'declined' | 'expired' | 'withdrawn' | 'viewed'
+ * @param {object} data — { employerId, workerId, declinedReason?, responseMs?, viewMs?, createdAt? }
+ */
+export async function applyEvent(eventType, data) {
+  if (!config.COUNTERS || !config.COUNTERS.enabled) return;
+  if (!eventType || !data) return;
+
+  return withLock(COUNTER_LOCK_KEY, async () => {
+    const counters = await readCounters();
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const employerId = data.employerId || null;
+    const workerId = data.workerId || null;
+    const responseMs = typeof data.responseMs === 'number' && data.responseMs > 0 ? data.responseMs : 0;
+
+    // Initialize per-entity buckets
+    function ensureEmployer(id) {
+      if (!counters.byEmployer[id]) {
+        counters.byEmployer[id] = {
+          total: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+          totalResponseMs: 0, responseCount: 0, lastOfferAt: null,
+        };
+      }
+      return counters.byEmployer[id];
+    }
+    function ensureWorker(id) {
+      if (!counters.byWorker[id]) {
+        counters.byWorker[id] = {
+          total: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+          totalResponseMs: 0, responseCount: 0,
+        };
+      }
+      return counters.byWorker[id];
+    }
+    function ensureBucket(hourKey) {
+      if (!counters.hourlyBuckets[hourKey]) {
+        counters.hourlyBuckets[hourKey] = {
+          created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+        };
+      }
+      return counters.hourlyBuckets[hourKey];
+    }
+
+    const hourKey = getHourKey(now);
+    const bucket = ensureBucket(hourKey);
+
+    switch (eventType) {
+      case 'created': {
+        counters.platform.total++;
+        counters.platform.pending++;
+        bucket.created++;
+        if (employerId) {
+          const e = ensureEmployer(employerId);
+          e.total++;
+          e.lastOfferAt = nowIso;
+        }
+        if (workerId) {
+          const w = ensureWorker(workerId);
+          w.total++;
+        }
+        break;
+      }
+
+      case 'accepted': {
+        counters.platform.accepted++;
+        counters.platform.pending = Math.max(0, counters.platform.pending - 1);
+        bucket.accepted++;
+        if (employerId) {
+          const e = ensureEmployer(employerId);
+          e.accepted++;
+          if (responseMs > 0) {
+            e.totalResponseMs += responseMs;
+            e.responseCount++;
+          }
+        }
+        if (workerId) {
+          const w = ensureWorker(workerId);
+          w.accepted++;
+          if (responseMs > 0) {
+            w.totalResponseMs += responseMs;
+            w.responseCount++;
+          }
+        }
+        if (responseMs > 0) {
+          counters.platform.totalResponseMs += responseMs;
+          counters.platform.responseCount++;
+          // Aging — decision time tracking
+          counters.aging.totalTimeToDecisionMs += responseMs;
+          counters.aging.decisionCount++;
+          counters.aging.decisionTimes.push(responseMs);
+          const maxLen = (config.COUNTERS && config.COUNTERS.maxDecisionTimesArrayLength) || 1000;
+          while (counters.aging.decisionTimes.length > maxLen) {
+            counters.aging.decisionTimes.shift();
+          }
+        }
+        break;
+      }
+
+      case 'declined': {
+        counters.platform.declined++;
+        counters.platform.pending = Math.max(0, counters.platform.pending - 1);
+        bucket.declined++;
+        if (data.declinedReason) {
+          counters.platform.declineReasons[data.declinedReason] =
+            (counters.platform.declineReasons[data.declinedReason] || 0) + 1;
+        }
+        if (employerId) {
+          const e = ensureEmployer(employerId);
+          e.declined++;
+          if (responseMs > 0) {
+            e.totalResponseMs += responseMs;
+            e.responseCount++;
+          }
+        }
+        if (workerId) {
+          const w = ensureWorker(workerId);
+          w.declined++;
+          if (responseMs > 0) {
+            w.totalResponseMs += responseMs;
+            w.responseCount++;
+          }
+        }
+        if (responseMs > 0) {
+          counters.platform.totalResponseMs += responseMs;
+          counters.platform.responseCount++;
+          counters.aging.totalTimeToDecisionMs += responseMs;
+          counters.aging.decisionCount++;
+          counters.aging.decisionTimes.push(responseMs);
+          const maxLen = (config.COUNTERS && config.COUNTERS.maxDecisionTimesArrayLength) || 1000;
+          while (counters.aging.decisionTimes.length > maxLen) {
+            counters.aging.decisionTimes.shift();
+          }
+        }
+        break;
+      }
+
+      case 'expired': {
+        counters.platform.expired++;
+        counters.platform.pending = Math.max(0, counters.platform.pending - 1);
+        bucket.expired++;
+        if (employerId) {
+          const e = ensureEmployer(employerId);
+          e.expired++;
+        }
+        if (workerId) {
+          const w = ensureWorker(workerId);
+          w.expired++;
+        }
+        break;
+      }
+
+      case 'withdrawn': {
+        counters.platform.withdrawn++;
+        counters.platform.pending = Math.max(0, counters.platform.pending - 1);
+        bucket.withdrawn++;
+        if (employerId) {
+          const e = ensureEmployer(employerId);
+          e.withdrawn++;
+        }
+        if (workerId) {
+          const w = ensureWorker(workerId);
+          w.withdrawn++;
+        }
+        break;
+      }
+
+      case 'viewed': {
+        const viewMs = typeof data.viewMs === 'number' && data.viewMs > 0 ? data.viewMs : 0;
+        if (viewMs > 0) {
+          counters.aging.totalTimeToFirstViewMs += viewMs;
+          counters.aging.viewCount++;
+        }
+        break;
+      }
+
+      default:
+        return; // unknown event — no-op
+    }
+
+    counters.lastUpdatedAt = nowIso;
+    cleanupOldBuckets(counters);
+
+    await atomicWrite(getCounterFilePath(), counters);
+  });
+}
+
+/**
+ * Compute platform funnel from counters.
+ * @param {{ from?: string, to?: string }} options — date range filter (uses hourlyBuckets)
+ * @returns {Promise<object>}
+ */
+export async function getPlatformFunnel(options = {}) {
+  const counters = await readCounters();
+  const { from, to } = options;
+
+  // No date filter → return platform totals directly
+  if (!from && !to) {
+    const p = counters.platform;
+    const decided = p.accepted + p.declined + p.expired;
+    return {
+      sent: p.total,
+      pending: p.pending,
+      accepted: p.accepted,
+      declined: p.declined,
+      expired: p.expired,
+      withdrawn: p.withdrawn,
+      acceptRate: decided > 0 ? Math.round((p.accepted / decided) * 100) : 0,
+      declineRate: decided > 0 ? Math.round((p.declined / decided) * 100) : 0,
+      expireRate: decided > 0 ? Math.round((p.expired / decided) * 100) : 0,
+    };
+  }
+
+  // Date range filter → aggregate hourlyBuckets
+  let created = 0, accepted = 0, declined = 0, expired = 0, withdrawn = 0;
+  for (const [hourKey, bucket] of Object.entries(counters.hourlyBuckets)) {
+    const bucketIso = hourKey + ':00:00.000Z';
+    if (from && bucketIso < from) continue;
+    if (to && bucketIso > to) continue;
+    created += bucket.created || 0;
+    accepted += bucket.accepted || 0;
+    declined += bucket.declined || 0;
+    expired += bucket.expired || 0;
+    withdrawn += bucket.withdrawn || 0;
+  }
+  const decided = accepted + declined + expired;
+  return {
+    sent: created,
+    pending: 0, // pending is point-in-time, not date-rangeable from buckets
+    accepted,
+    declined,
+    expired,
+    withdrawn,
+    acceptRate: decided > 0 ? Math.round((accepted / decided) * 100) : 0,
+    declineRate: decided > 0 ? Math.round((declined / decided) * 100) : 0,
+    expireRate: decided > 0 ? Math.round((expired / decided) * 100) : 0,
+  };
+}
+
+/**
+ * Get top employers by acceptance rate.
+ * Date-range filtering NOT supported in Phase 45 (would require per-employer hourly buckets).
+ *
+ * @param {{ limit?: number, minOffers?: number }} options
+ * @returns {Promise<Array<{ employerId, name, total, accepted, acceptRate }>>}
+ */
+export async function getTopEmployers(options = {}) {
+  const { limit = 10, minOffers = 3 } = options;
+  const counters = await readCounters();
+
+  const { findById } = await import('./users.js');
+  const rows = [];
+
+  for (const [empId, stats] of Object.entries(counters.byEmployer)) {
+    if (stats.total < minOffers) continue;
+    const decided = stats.accepted + stats.declined + stats.expired;
+    const rate = decided > 0 ? stats.accepted / decided : 0;
+
+    let name = empId;
+    try {
+      const u = await findById(empId);
+      if (u && u.name) name = u.name;
+      else if (u && u.phone) name = u.phone;
+    } catch (_) { /* fallback */ }
+
+    rows.push({
+      employerId: empId,
+      name,
+      total: stats.total,
+      accepted: stats.accepted,
+      acceptRate: Math.round(rate * 100),
+    });
+  }
+
+  rows.sort((a, b) => b.acceptRate - a.acceptRate || b.total - a.total);
+  return rows.slice(0, limit);
+}
+
+/**
+ * Get top workers by acceptance rate.
+ * @param {{ limit?: number, minOffers?: number }} options
+ * @returns {Promise<Array<{ workerId, name, total, accepted, acceptRate, avgResponseSec }>>}
+ */
+export async function getTopWorkers(options = {}) {
+  const { limit = 10, minOffers = 3 } = options;
+  const counters = await readCounters();
+
+  const { findById } = await import('./users.js');
+  const rows = [];
+
+  for (const [wid, stats] of Object.entries(counters.byWorker)) {
+    if (stats.total < minOffers) continue;
+    const decided = stats.accepted + stats.declined + stats.expired;
+    const rate = decided > 0 ? stats.accepted / decided : 0;
+    const avgResponseSec = stats.responseCount > 0
+      ? Math.round((stats.totalResponseMs / stats.responseCount) / 1000)
+      : 0;
+
+    let name = wid;
+    try {
+      const u = await findById(wid);
+      if (u && u.name) name = u.name;
+      else if (u && u.phone) name = u.phone;
+    } catch (_) { /* fallback */ }
+
+    rows.push({
+      workerId: wid,
+      name,
+      total: stats.total,
+      accepted: stats.accepted,
+      acceptRate: Math.round(rate * 100),
+      avgResponseSec,
+    });
+  }
+
+  rows.sort((a, b) => b.acceptRate - a.acceptRate || a.avgResponseSec - b.avgResponseSec);
+  return rows.slice(0, limit);
+}
+
+/**
+ * Compute aging stats (avg + p50 + p95).
+ * @returns {Promise<{ avgTimeToFirstViewSec, avgTimeToDecisionSec, p50DecisionSec, p95DecisionSec }>}
+ */
+export async function getAgingStats() {
+  const counters = await readCounters();
+  const a = counters.aging;
+
+  const avgTimeToFirstViewSec = a.viewCount > 0
+    ? Math.round((a.totalTimeToFirstViewMs / a.viewCount) / 1000)
+    : 0;
+  const avgTimeToDecisionSec = a.decisionCount > 0
+    ? Math.round((a.totalTimeToDecisionMs / a.decisionCount) / 1000)
+    : 0;
+
+  let p50DecisionSec = 0;
+  let p95DecisionSec = 0;
+  if (a.decisionTimes && a.decisionTimes.length > 0) {
+    const sorted = a.decisionTimes.slice().sort((x, y) => x - y);
+    const p50Idx = Math.floor(sorted.length * 0.5);
+    const p95Idx = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95));
+    p50DecisionSec = Math.round(sorted[p50Idx] / 1000);
+    p95DecisionSec = Math.round(sorted[p95Idx] / 1000);
+  }
+
+  return {
+    avgTimeToFirstViewSec,
+    avgTimeToDecisionSec,
+    p50DecisionSec,
+    p95DecisionSec,
+  };
+}
+
+/**
+ * Disaster recovery — full scan + rebuild from raw offers.
+ * Locked via withLock.
+ *
+ * Skips if last rebuild was within minRebuildIntervalMs (prevents thrashing).
+ *
+ * @returns {Promise<{ offerCount, employerCount, workerCount, durationMs, skipped? }>}
+ */
+export async function rebuildCounters() {
+  if (!config.COUNTERS || !config.COUNTERS.enabled) {
+    return { offerCount: 0, employerCount: 0, workerCount: 0, durationMs: 0, skipped: true };
+  }
+
+  return withLock(COUNTER_LOCK_KEY, async () => {
+    const startTs = Date.now();
+
+    // Pre-check: skip if last rebuild was very recent
+    try {
+      const existing = await readCounters();
+      if (existing.lastRebuildAt) {
+        const sinceLast = Date.now() - new Date(existing.lastRebuildAt).getTime();
+        const minInterval = (config.COUNTERS && config.COUNTERS.minRebuildIntervalMs) || (23 * 60 * 60 * 1000);
+        if (sinceLast < minInterval) {
+          logger.info('directOfferCounters: rebuild skipped — last rebuild too recent', {
+            sinceLastMs: sinceLast,
+          });
+          return {
+            offerCount: existing.platform.total,
+            employerCount: Object.keys(existing.byEmployer).length,
+            workerCount: Object.keys(existing.byWorker).length,
+            durationMs: 0,
+            skipped: true,
+          };
+        }
+      }
+    } catch (_) { /* proceed with rebuild */ }
+
+    logger.warn('directOfferCounters: starting rebuild — events emitted during rebuild may be lost (will be reflected on next rebuild)');
+
+    // Full scan of raw offers
+    let offers;
+    try {
+      const dir = getCollectionPath('direct_offers');
+      offers = await listJSON(dir);
+    } catch (err) {
+      logger.error('directOfferCounters: rebuild failed to read offers', { error: err.message });
+      throw err;
+    }
+
+    offers = offers.filter(o => o && o.id && o.id.startsWith('dof_'));
+
+    const counters = emptyCounters();
+    const retentionHours = (config.COUNTERS && config.COUNTERS.hourlyBucketsRetentionHours) || 48;
+    const cutoffMs = Date.now() - retentionHours * 60 * 60 * 1000;
+    const maxLen = (config.COUNTERS && config.COUNTERS.maxDecisionTimesArrayLength) || 1000;
+
+    for (const o of offers) {
+      const employerId = o.employerId;
+      const workerId = o.workerId;
+
+      // Initialize per-entity buckets
+      if (employerId && !counters.byEmployer[employerId]) {
+        counters.byEmployer[employerId] = {
+          total: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+          totalResponseMs: 0, responseCount: 0, lastOfferAt: null,
+        };
+      }
+      if (workerId && !counters.byWorker[workerId]) {
+        counters.byWorker[workerId] = {
+          total: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0,
+          totalResponseMs: 0, responseCount: 0,
+        };
+      }
+
+      counters.platform.total++;
+
+      // Mark lastOfferAt as max createdAt
+      if (employerId) {
+        if (!counters.byEmployer[employerId].lastOfferAt ||
+            o.createdAt > counters.byEmployer[employerId].lastOfferAt) {
+          counters.byEmployer[employerId].lastOfferAt = o.createdAt;
+        }
+        counters.byEmployer[employerId].total++;
+      }
+      if (workerId) {
+        counters.byWorker[workerId].total++;
+      }
+
+      // Hourly bucket — only within retention window
+      const createdMs = new Date(o.createdAt).getTime();
+      if (createdMs >= cutoffMs) {
+        const hourKey = getHourKey(o.createdAt);
+        if (!counters.hourlyBuckets[hourKey]) {
+          counters.hourlyBuckets[hourKey] = { created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0 };
+        }
+        counters.hourlyBuckets[hourKey].created++;
+      }
+
+      // Status-based aggregation
+      switch (o.status) {
+        case 'pending':
+          counters.platform.pending++;
+          break;
+        case 'accepted': {
+          counters.platform.accepted++;
+          if (employerId) counters.byEmployer[employerId].accepted++;
+          if (workerId) counters.byWorker[workerId].accepted++;
+          if (createdMs >= cutoffMs) {
+            const k = getHourKey(o.acceptedAt || o.createdAt);
+            if (!counters.hourlyBuckets[k]) counters.hourlyBuckets[k] = { created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0 };
+            counters.hourlyBuckets[k].accepted++;
+          }
+          if (o.acceptedAt && o.createdAt) {
+            const responseMs = new Date(o.acceptedAt).getTime() - new Date(o.createdAt).getTime();
+            if (responseMs > 0) {
+              counters.platform.totalResponseMs += responseMs;
+              counters.platform.responseCount++;
+              if (employerId) {
+                counters.byEmployer[employerId].totalResponseMs += responseMs;
+                counters.byEmployer[employerId].responseCount++;
+              }
+              if (workerId) {
+                counters.byWorker[workerId].totalResponseMs += responseMs;
+                counters.byWorker[workerId].responseCount++;
+              }
+              counters.aging.totalTimeToDecisionMs += responseMs;
+              counters.aging.decisionCount++;
+              counters.aging.decisionTimes.push(responseMs);
+            }
+          }
+          break;
+        }
+        case 'declined': {
+          counters.platform.declined++;
+          if (employerId) counters.byEmployer[employerId].declined++;
+          if (workerId) counters.byWorker[workerId].declined++;
+          if (o.declinedReason) {
+            counters.platform.declineReasons[o.declinedReason] =
+              (counters.platform.declineReasons[o.declinedReason] || 0) + 1;
+          }
+          if (createdMs >= cutoffMs) {
+            const k = getHourKey(o.declinedAt || o.createdAt);
+            if (!counters.hourlyBuckets[k]) counters.hourlyBuckets[k] = { created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0 };
+            counters.hourlyBuckets[k].declined++;
+          }
+          if (o.declinedAt && o.createdAt) {
+            const responseMs = new Date(o.declinedAt).getTime() - new Date(o.createdAt).getTime();
+            if (responseMs > 0) {
+              counters.platform.totalResponseMs += responseMs;
+              counters.platform.responseCount++;
+              if (employerId) {
+                counters.byEmployer[employerId].totalResponseMs += responseMs;
+                counters.byEmployer[employerId].responseCount++;
+              }
+              if (workerId) {
+                counters.byWorker[workerId].totalResponseMs += responseMs;
+                counters.byWorker[workerId].responseCount++;
+              }
+              counters.aging.totalTimeToDecisionMs += responseMs;
+              counters.aging.decisionCount++;
+              counters.aging.decisionTimes.push(responseMs);
+            }
+          }
+          break;
+        }
+        case 'expired': {
+          counters.platform.expired++;
+          if (employerId) counters.byEmployer[employerId].expired++;
+          if (workerId) counters.byWorker[workerId].expired++;
+          if (createdMs >= cutoffMs) {
+            const k = getHourKey(o.expiredAt || o.createdAt);
+            if (!counters.hourlyBuckets[k]) counters.hourlyBuckets[k] = { created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0 };
+            counters.hourlyBuckets[k].expired++;
+          }
+          break;
+        }
+        case 'withdrawn': {
+          counters.platform.withdrawn++;
+          if (employerId) counters.byEmployer[employerId].withdrawn++;
+          if (workerId) counters.byWorker[workerId].withdrawn++;
+          if (createdMs >= cutoffMs) {
+            const k = getHourKey(o.withdrawnAt || o.createdAt);
+            if (!counters.hourlyBuckets[k]) counters.hourlyBuckets[k] = { created: 0, accepted: 0, declined: 0, expired: 0, withdrawn: 0 };
+            counters.hourlyBuckets[k].withdrawn++;
+          }
+          break;
+        }
+      }
+
+      // Aging — viewedAt
+      if (o.viewedAt && o.createdAt) {
+        const viewMs = new Date(o.viewedAt).getTime() - new Date(o.createdAt).getTime();
+        if (viewMs > 0) {
+          counters.aging.totalTimeToFirstViewMs += viewMs;
+          counters.aging.viewCount++;
+        }
+      }
+    }
+
+    // Trim decisionTimes to maxLen (keep most recent)
+    if (counters.aging.decisionTimes.length > maxLen) {
+      counters.aging.decisionTimes = counters.aging.decisionTimes.slice(-maxLen);
+    }
+
+    counters.lastUpdatedAt = new Date().toISOString();
+    counters.lastRebuildAt = counters.lastUpdatedAt;
+
+    await atomicWrite(getCounterFilePath(), counters);
+
+    const durationMs = Date.now() - startTs;
+    const result = {
+      offerCount: counters.platform.total,
+      employerCount: Object.keys(counters.byEmployer).length,
+      workerCount: Object.keys(counters.byWorker).length,
+      durationMs,
+    };
+
+    logger.info('directOfferCounters: rebuild complete', result);
+    return result;
+  });
+}
+
+// Test helpers
+export const _testHelpers = {
+  emptyCounters,
+  getHourKey,
+  getCounterFilePath,
+  cleanupOldBuckets,
+  COUNTER_LOCK_KEY,
+};
 ```
 
 ---
@@ -11407,7 +12557,7 @@ export async function captureSnapshot() {
     payments: await countCollectionFiles('payments'),
   };
 
-  // Phase 44 — Direct offer health (last-hour metrics, no caching)
+  // Phase 44 + 45 — Direct offer health (last-hour metrics from rolling counter file)
   let directOffers = {
     activePending: 0,
     recentAccepted: 0,
@@ -11417,6 +12567,7 @@ export async function captureSnapshot() {
     avgResponseSec: 0,
   };
   try {
+    // Phase 45: getOfferStatsSnapshot now reads from counter file (O(1) instead of O(n))
     const { getOfferStatsSnapshot } = await import('./directOfferAnalytics.js');
     directOffers = await getOfferStatsSnapshot();
   } catch (_) { /* non-fatal — defaults preserved */ }
@@ -11861,7 +13012,24 @@ const dedupCleanupTimer = setInterval(() => {
 if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
 
 /**
- * Create a notification
+ * Create a notification.
+ *
+ * Supported types include (non-exhaustive):
+ *   - application_accepted, application_rejected
+ *   - new_application, job_filled, job_cancelled, job_renewed, job_expiry_warning
+ *   - rating_received, payment_created, payment_disputed
+ *   - report_received, report_reviewed, report_autoban
+ *   - verification_reviewed
+ *   - worker_checked_in, attendance_noshow, attendance_confirmed
+ *   - new_message
+ *   - direct_offer, direct_offer_accepted, direct_offer_declined, direct_offer_expired
+ *   - admin_warning (Phase 45 — admin-initiated soft warning before ban)
+ *   - job_alert_match, job_match, job_nearby, activity_summary
+ *
+ * @param {string} userId
+ * @param {string} type
+ * @param {string} message
+ * @param {object} [meta]
  */
 export async function createNotification(userId, type, message, meta = {}) {
   // Dedup check: skip if same userId+type+context within window
@@ -12653,6 +13821,7 @@ export function setupNotificationListeners() {
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import * as abuseFlagReview from './abuseFlagReview.js';
 
 /**
  * Read all direct offers (raw, bypassing redaction).
@@ -12848,21 +14017,42 @@ export async function detectAbuse() {
     return { enabled: true, flags: [], error: 'list_failed' };
   }
 
-  const flags = [
+  const rawFlags = [
     ...detectSameWorkerSpam(offers, cfg),
     ...detectHighDeclineEmployers(offers, cfg),
     ...detectOfferBombing(offers, cfg),
   ];
 
+  // Phase 45: filter snoozed flags + attach fingerprint + reviewState
+  const reviewWorkflowEnabled = cfg.reviewWorkflowEnabled !== false;
+  const filtered = [];
+  for (const flag of rawFlags) {
+    if (reviewWorkflowEnabled) {
+      try {
+        const fingerprint = abuseFlagReview.computeFingerprint(flag);
+        const snoozed = await abuseFlagReview.isCurrentlySnoozed(fingerprint);
+        if (snoozed) continue; // skip snoozed
+        flag.fingerprint = fingerprint;
+        flag.reviewState = await abuseFlagReview.getReviewState(fingerprint);
+      } catch (err) {
+        logger.warn('detectAbuse: review state lookup failed', { error: err.message });
+        // On error, include flag without reviewState (degrade gracefully)
+        flag.fingerprint = abuseFlagReview.computeFingerprint(flag);
+        flag.reviewState = null;
+      }
+    }
+    filtered.push(flag);
+  }
+
   // Sort by severity: high (3) → medium (2) → low (1)
   const severityOrder = { high: 3, medium: 2, low: 1 };
-  flags.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+  filtered.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
 
   return {
     enabled: true,
     generatedAt: new Date().toISOString(),
-    flagCount: flags.length,
-    flags,
+    flagCount: filtered.length,
+    flags: filtered,
   };
 }
 
