@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.42.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-03T09:36:59.822Z
+# يوميّة (Yawmia) v0.43.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-03T13:23:51.218Z
 > Files in this part: 41
 
 ## Files
@@ -253,17 +253,93 @@
         </div>
       </div>
 
-      <div class="admin-section">
+      <div class="admin-section" id="abuseSignalsSection">
         <div class="admin-section__header">
           <h2>🚨 إشارات الإساءة</h2>
-          <button class="refresh-btn" onclick="AdminApp.loadAbuseSignals()">تحديث</button>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <select id="flagStatusFilter" class="form-input form-input--sm">
+              <option value="active">نشطة</option>
+              <option value="snoozed">مؤجلة</option>
+              <option value="dismissed">مرفوضة</option>
+              <option value="actioned">تم الإجراء</option>
+              <option value="all">الكل (محدّث)</option>
+            </select>
+            <button class="refresh-btn" onclick="AdminApp.loadAbuseSignals()">تحديث</button>
+          </div>
         </div>
+
+        <div style="display:flex;gap:0.5rem;margin-block-end:1rem;flex-wrap:wrap;">
+          <input type="text" id="flagSearchNotes" class="form-input form-input--sm" placeholder="بحث في ملاحظات المراجعة..." style="flex:1;min-width:200px;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.searchFlagsByNotes()">بحث</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.loadSnoozeExpiring()">⏰ مؤجلة قارب انتهائها</button>
+          <button class="btn btn--primary btn--sm hidden" id="btnBulkAction" onclick="AdminApp.openBulkActionModal()">
+            ⚡ إجراء جماعي (<span id="bulkSelectedCount">0</span>)
+          </button>
+        </div>
+
         <div id="abuseSignalsArea">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
+
+      <!-- Phase 47 — Audit Log Section -->
+      <div class="admin-section" id="auditLogSection">
+        <div class="admin-section__header">
+          <h2>📋 سجل العمليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.searchAuditLog()">تحديث</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.5rem;margin-block-end:1rem;">
+          <input type="text" id="auditSearchQuery" class="form-input form-input--sm" placeholder="بحث...">
+          <select id="auditActionFilter" class="form-input form-input--sm">
+            <option value="">كل الإجراءات</option>
+            <option value="user_banned">حظر مستخدم</option>
+            <option value="user_unbanned">إلغاء حظر</option>
+            <option value="report_reviewed">مراجعة بلاغ</option>
+            <option value="abuse_flag_reviewed">مراجعة إشارة</option>
+            <option value="abuse_warning_sent">إرسال تحذير</option>
+            <option value="abuse_flags_bulk_action">إجراء جماعي</option>
+            <option value="payment_completed">إنهاء دفعة</option>
+            <option value="verification_reviewed">مراجعة تحقق</option>
+          </select>
+          <input type="date" id="auditFromDate" class="form-input form-input--sm">
+          <input type="date" id="auditToDate" class="form-input form-input--sm">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.searchAuditLog()">🔍 بحث</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportAuditLog()">📥 تصدير CSV</button>
+        </div>
+
+        <div id="auditLogResults">
+          <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
+        </div>
+      </div>
     </div>
     </main>
+  </div>
+
+  <!-- Phase 47 — Bulk Action Modal -->
+  <div id="bulkActionModal" class="ym-modal-overlay hidden" role="dialog" aria-modal="true" style="display:none;">
+    <div class="ym-modal-card">
+      <h3 class="ym-modal-title">⚡ إجراء جماعي</h3>
+      <p class="ym-modal-message">سيتم تطبيق الإجراء على <strong id="bulkActionCount">0</strong> إشارة محددة.</p>
+      <div style="margin-block-end:1rem;">
+        <label class="form-label">القرار:</label>
+        <select id="bulkActionDecision" class="form-input form-input--sm" onchange="AdminApp.toggleBulkSnoozeDays()">
+          <option value="dismissed">رفض الإشارات</option>
+          <option value="snoozed">تأجيل</option>
+          <option value="actioned">إجراء (حظر — متقدم)</option>
+        </select>
+      </div>
+      <div id="bulkSnoozeDaysGroup" class="hidden" style="margin-block-end:1rem;display:none;">
+        <label class="form-label">مدة التأجيل (أيام):</label>
+        <input type="number" id="bulkSnoozeDays" class="form-input form-input--sm" min="1" max="365" value="7">
+      </div>
+      <textarea id="bulkActionNote" class="form-input form-textarea" rows="2" placeholder="ملاحظة (اختياري)..." maxlength="500" style="margin-block-end:1rem;"></textarea>
+      <div class="ym-modal-error hidden" id="bulkActionError" style="display:none;"></div>
+      <div class="ym-modal-actions">
+        <button class="btn btn--primary btn--sm" onclick="AdminApp.confirmBulkAction()">تأكيد</button>
+        <button class="btn btn--ghost btn--sm" onclick="AdminApp.closeBulkActionModal()">إلغاء</button>
+      </div>
+    </div>
   </div>
 
   <!-- Phase 45 — Abuse Flag Review Modal -->
@@ -4031,6 +4107,28 @@ textarea:focus:not(:focus-visible) {
     font-size: 1.2rem;
   }
 }
+
+/* ═══ Phase 47 — Admin Operations ═══ */
+.bulk-flag-check {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.admin-table small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+@media (max-width: 600px) {
+  .admin-table th,
+  .admin-table td {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.4rem;
+  }
+}
 ```
 
 ---
@@ -4642,6 +4740,8 @@ var AdminApp = (function () {
 
   var token = '';
   var API = '';
+  // Phase 47 — Bulk select state
+  var bulkSelectedFlags = new Set();
 
   function escapeHtml(str) {
     return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
@@ -5333,90 +5433,452 @@ var AdminApp = (function () {
 
   async function loadAbuseSignals() {
     try {
-      var data = await api('/api/admin/direct-offers/abuse');
+      var statusEl = document.getElementById('flagStatusFilter');
+      var status = statusEl ? statusEl.value : 'active';
+
+      // 'all' uses Phase 44 detected flags endpoint (current snapshot of detected abuse)
+      // Other statuses use Phase 47 listByStatus endpoint (filtered review states)
+      var endpoint = status === 'all'
+        ? '/api/admin/direct-offers/abuse'
+        : '/api/admin/abuse-flags?status=' + encodeURIComponent(status);
+
+      var data = await api(endpoint);
       var el = document.getElementById('abuseSignalsArea');
       if (!el) return;
 
-      if (!data.enabled) {
-        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">كشف الإساءة غير مفعّل</p>';
+      // Reset bulk selection state on reload
+      bulkSelectedFlags.clear();
+      updateBulkButton();
+
+      // Handle Phase 44 'all' (detected flags) response
+      if (status === 'all') {
+        if (!data.enabled) {
+          el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">كشف الإساءة غير مفعّل</p>';
+          return;
+        }
+
+        if (!data.flagCount || data.flagCount === 0) {
+          el.innerHTML = '<p style="color: var(--color-success); text-align: center; padding: 1rem;">✓ لا توجد إشارات إساءة</p>';
+          return;
+        }
+
+        renderDetectedFlags(el, data.flags);
         return;
       }
 
-      if (!data.flagCount || data.flagCount === 0) {
-        el.innerHTML = '<p style="color: var(--color-success); text-align: center; padding: 1rem;">✓ لا توجد إشارات إساءة</p>';
+      // Handle Phase 47 'listByStatus' (filtered review states)
+      var flags = data.flags || [];
+      if (flags.length === 0) {
+        var emptyMsg = status === 'active'
+          ? '✓ لا توجد إشارات نشطة'
+          : 'لا توجد إشارات بهذه الحالة';
+        el.innerHTML = '<p style="color: var(--color-success); text-align: center; padding: 1rem;">' + emptyMsg + '</p>';
         return;
       }
 
-      var typeLabels = {
-        same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
-        high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
-        worker_offer_bombing: 'عامل يستلم سيل من العروض',
-      };
-
-      var html = '<p style="margin-block-end:0.75rem;">عُثر على <strong>' + data.flagCount + '</strong> إشارة:</p>';
-
-      data.flags.forEach(function (f) {
-        var sevColor = f.severity === 'high' ? 'var(--color-error)' :
-                       f.severity === 'medium' ? 'var(--color-warning)' :
-                       'var(--color-text-muted)';
-        var sevLabel = f.severity === 'high' ? 'عالية' :
-                       f.severity === 'medium' ? 'متوسطة' : 'منخفضة';
-
-        // Phase 45 — review state info
-        var reviewInfo = '';
-        if (f.reviewState) {
-          var status = f.reviewState.currentStatus;
-          var statusLabel = status === 'snoozed' ? 'مؤجلة' :
-                           status === 'dismissed' ? 'مرفوضة' :
-                           status === 'actioned' ? 'تم الإجراء' : 'نشطة';
-          var occCount = f.reviewState.occurrenceCount || 1;
-          reviewInfo = '<small style="display:block;margin-block-start:0.4rem;color:var(--color-text-muted);">' +
-            '📋 الحالة: ' + escapeHtml(statusLabel) + ' · تكرار ' + occCount + ' مرة';
-          if (f.reviewState.reviews && f.reviewState.reviews.length > 0) {
-            reviewInfo += ' · ' + f.reviewState.reviews.length + ' مراجعة';
-          }
-          reviewInfo += '</small>';
-        }
-
-        html += '<div style="border-inline-start:3px solid ' + sevColor + ';padding:0.75rem 1rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;">' +
-          '<strong>' + escapeHtml(typeLabels[f.type] || f.type) + '</strong> ' +
-          '<span style="font-size:0.75rem;color:' + sevColor + ';font-weight:600;">[خطورة ' + sevLabel + ']</span><br>';
-
-        if (f.employerId) {
-          html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a></small><br>';
-        }
-        if (f.workerId) {
-          html += '<small>العامل: <a href="/user.html?id=' + escapeHtml(f.workerId) + '" class="worker-link">' + escapeHtml(f.workerId) + '</a></small><br>';
-        }
-
-        var details = [];
-        if (typeof f.offerCount === 'number') details.push(f.offerCount + ' عروض');
-        if (typeof f.uniqueEmployers === 'number') details.push('من ' + f.uniqueEmployers + ' أصحاب عمل');
-        if (typeof f.declinedOrExpired === 'number') details.push(f.declinedOrExpired + ' مرفوضة/منتهية');
-        if (typeof f.totalOffers === 'number') details.push('إجمالي ' + f.totalOffers + ' عرض');
-        if (typeof f.negativeRate === 'number') details.push('نسبة سلبية: ' + f.negativeRate + '%');
-
-        if (details.length > 0) {
-          html += '<small style="color:var(--color-text-muted);">' + details.join(' · ') + '</small>';
-        }
-
-        html += reviewInfo;
-
-        // Phase 45 — Review button
-        if (f.fingerprint) {
-          html += '<div style="margin-block-start:0.5rem;">' +
-            '<button class="btn btn--sm btn--primary" onclick="AdminApp.showFlagReviewModal(\'' + escapeHtml(f.fingerprint) + '\')">📋 مراجعة الإشارة</button>' +
-            '</div>';
-        }
-
-        html += '</div>';
-      });
-
-      el.innerHTML = html;
+      renderReviewStates(el, flags, status);
     } catch (err) {
       var el = document.getElementById('abuseSignalsArea');
       if (el) el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في التحميل</p>';
     }
+  }
+
+  // Phase 44 — Detected flags renderer (existing behavior)
+  function renderDetectedFlags(el, flags) {
+    var typeLabels = {
+      same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
+      high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+      worker_offer_bombing: 'عامل يستلم سيل من العروض',
+    };
+
+    var html = '<p style="margin-block-end:0.75rem;">عُثر على <strong>' + flags.length + '</strong> إشارة:</p>';
+
+    flags.forEach(function (f) {
+      var sevColor = f.severity === 'high' ? 'var(--color-error)' :
+                     f.severity === 'medium' ? 'var(--color-warning)' :
+                     'var(--color-text-muted)';
+      var sevLabel = f.severity === 'high' ? 'عالية' :
+                     f.severity === 'medium' ? 'متوسطة' : 'منخفضة';
+
+      var reviewInfo = '';
+      if (f.reviewState) {
+        var status = f.reviewState.currentStatus;
+        var statusLabel = status === 'snoozed' ? 'مؤجلة' :
+                         status === 'dismissed' ? 'مرفوضة' :
+                         status === 'actioned' ? 'تم الإجراء' : 'نشطة';
+        var occCount = f.reviewState.occurrenceCount || 1;
+        reviewInfo = '<small style="display:block;margin-block-start:0.4rem;color:var(--color-text-muted);">' +
+          '📋 الحالة: ' + escapeHtml(statusLabel) + ' · تكرار ' + occCount + ' مرة';
+        if (f.reviewState.reviews && f.reviewState.reviews.length > 0) {
+          reviewInfo += ' · ' + f.reviewState.reviews.length + ' مراجعة';
+        }
+        reviewInfo += '</small>';
+      }
+
+      var fingerprint = f.fingerprint || '';
+
+      html += '<div style="border-inline-start:3px solid ' + sevColor + ';padding:0.75rem 1rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;display:flex;align-items:flex-start;gap:0.5rem;">';
+
+      if (fingerprint) {
+        html += '<input type="checkbox" class="bulk-flag-check" data-fingerprint="' + escapeHtml(fingerprint) + '" onchange="AdminApp.toggleBulkSelect(\'' + escapeHtml(fingerprint) + '\')" style="margin-top:0.25rem;">';
+      }
+
+      html += '<div style="flex:1;">' +
+        '<strong>' + escapeHtml(typeLabels[f.type] || f.type) + '</strong> ' +
+        '<span style="font-size:0.75rem;color:' + sevColor + ';font-weight:600;">[خطورة ' + sevLabel + ']</span><br>';
+
+      if (f.employerId) {
+        html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a></small><br>';
+      }
+      if (f.workerId) {
+        html += '<small>العامل: <a href="/user.html?id=' + escapeHtml(f.workerId) + '" class="worker-link">' + escapeHtml(f.workerId) + '</a></small><br>';
+      }
+
+      var details = [];
+      if (typeof f.offerCount === 'number') details.push(f.offerCount + ' عروض');
+      if (typeof f.uniqueEmployers === 'number') details.push('من ' + f.uniqueEmployers + ' أصحاب عمل');
+      if (typeof f.declinedOrExpired === 'number') details.push(f.declinedOrExpired + ' مرفوضة/منتهية');
+      if (typeof f.totalOffers === 'number') details.push('إجمالي ' + f.totalOffers + ' عرض');
+      if (typeof f.negativeRate === 'number') details.push('نسبة سلبية: ' + f.negativeRate + '%');
+
+      if (details.length > 0) {
+        html += '<small style="color:var(--color-text-muted);">' + details.join(' · ') + '</small>';
+      }
+
+      html += reviewInfo;
+
+      if (fingerprint) {
+        html += '<div style="margin-block-start:0.5rem;">' +
+          '<button class="btn btn--sm btn--primary" onclick="AdminApp.showFlagReviewModal(\'' + escapeHtml(fingerprint) + '\')">📋 مراجعة الإشارة</button>' +
+          '</div>';
+      }
+
+      html += '</div></div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  // Phase 47 — Filtered review states renderer
+  function renderReviewStates(el, flags, status) {
+    var typeLabels = {
+      same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
+      high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+      worker_offer_bombing: 'عامل يستلم سيل من العروض',
+    };
+    var statusLabels = {
+      active: 'نشطة', snoozed: 'مؤجلة', dismissed: 'مرفوضة', actioned: 'تم الإجراء',
+    };
+
+    var html = '<p style="margin-block-end:0.75rem;">عرض <strong>' + flags.length + '</strong> إشارة (' + escapeHtml(statusLabels[status] || status) + '):</p>';
+
+    flags.forEach(function (f) {
+      var fingerprint = f.fingerprint || '';
+      var sevColor = status === 'active'
+        ? 'var(--color-warning)'
+        : (status === 'snoozed' ? 'var(--color-warning)' : 'var(--color-text-muted)');
+
+      html += '<div style="border-inline-start:3px solid ' + sevColor + ';padding:0.75rem 1rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;display:flex;align-items:flex-start;gap:0.5rem;">';
+
+      // Bulk select checkbox (only for active and snoozed)
+      if (fingerprint && (status === 'active' || status === 'snoozed')) {
+        html += '<input type="checkbox" class="bulk-flag-check" data-fingerprint="' + escapeHtml(fingerprint) + '" onchange="AdminApp.toggleBulkSelect(\'' + escapeHtml(fingerprint) + '\')" style="margin-top:0.25rem;">';
+      } else {
+        html += '<span style="width:18px;display:inline-block;"></span>';
+      }
+
+      html += '<div style="flex:1;">' +
+        '<strong>' + escapeHtml(typeLabels[f.flagType] || f.flagType) + '</strong>';
+
+      if (f.currentStatus === 'snoozed' && f.snoozeUntil) {
+        var snoozeDate = new Date(f.snoozeUntil);
+        html += ' <span style="color:var(--color-warning);font-size:0.75rem;">⏰ ينتهي ' + snoozeDate.toLocaleDateString('ar-EG') + '</span>';
+      }
+
+      html += '<br>';
+
+      if (f.employerId) {
+        html += '<small>صاحب العمل: <a href="/user.html?id=' + escapeHtml(f.employerId) + '" class="worker-link">' + escapeHtml(f.employerId) + '</a></small><br>';
+      }
+      if (f.workerId) {
+        html += '<small>العامل: <a href="/user.html?id=' + escapeHtml(f.workerId) + '" class="worker-link">' + escapeHtml(f.workerId) + '</a></small><br>';
+      }
+      if (f.occurrenceCount > 1) {
+        html += '<small style="color:var(--color-warning);">📊 تكرار: ' + f.occurrenceCount + ' مرة</small><br>';
+      }
+      if (f.reviews && f.reviews.length > 0) {
+        html += '<small style="color:var(--color-text-muted);">' + f.reviews.length + ' مراجعة</small><br>';
+      }
+
+      if (fingerprint) {
+        html += '<div style="margin-block-start:0.5rem;">' +
+          '<button class="btn btn--sm btn--primary" onclick="AdminApp.showFlagReviewModal(\'' + escapeHtml(fingerprint) + '\')">📋 مراجعة</button>' +
+          '</div>';
+      }
+
+      html += '</div></div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  // Phase 47 — Bulk select handlers
+  function toggleBulkSelect(fingerprint) {
+    if (bulkSelectedFlags.has(fingerprint)) {
+      bulkSelectedFlags.delete(fingerprint);
+    } else {
+      bulkSelectedFlags.add(fingerprint);
+    }
+    updateBulkButton();
+  }
+
+  function updateBulkButton() {
+    var btn = document.getElementById('btnBulkAction');
+    var count = document.getElementById('bulkSelectedCount');
+    if (count) count.textContent = bulkSelectedFlags.size;
+    if (btn) {
+      if (bulkSelectedFlags.size > 0) {
+        btn.classList.remove('hidden');
+      } else {
+        btn.classList.add('hidden');
+      }
+    }
+  }
+
+  // Phase 47 — Search by notes
+  async function searchFlagsByNotes() {
+    var inputEl = document.getElementById('flagSearchNotes');
+    var q = inputEl ? inputEl.value.trim() : '';
+    if (q.length < 2) {
+      showError('الاستعلام لازم يكون حرفين على الأقل');
+      return;
+    }
+    try {
+      var data = await api('/api/admin/abuse-flags/search?notes=' + encodeURIComponent(q));
+      renderSearchResults(data.flags || [], 'نتائج البحث: "' + q + '"');
+    } catch (err) {
+      showError('خطأ في البحث');
+    }
+  }
+
+  // Phase 47 — Snooze expiring soon
+  async function loadSnoozeExpiring() {
+    try {
+      var data = await api('/api/admin/abuse-flags/snooze-expiring?days=7');
+      var flags = data.flags || [];
+      renderSearchResults(flags, 'إشارات مؤجلة قارب انتهاؤها (' + flags.length + ')');
+    } catch (err) {
+      showError('خطأ');
+    }
+  }
+
+  // Phase 47 — Generic search/expiring renderer
+  function renderSearchResults(flags, title) {
+    var el = document.getElementById('abuseSignalsArea');
+    if (!el) return;
+    if (flags.length === 0) {
+      el.innerHTML = '<h4 style="margin-block-end:0.75rem;">' + escapeHtml(title) + '</h4><p style="text-align:center;padding:1rem;color:var(--color-text-muted);">لا توجد نتائج</p>';
+      return;
+    }
+
+    var typeLabels = {
+      same_worker_spam: 'صاحب عمل يبعت لنفس العامل بشكل متكرر',
+      high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+      worker_offer_bombing: 'عامل يستلم سيل من العروض',
+    };
+
+    var html = '<h4 style="margin-block-end:0.75rem;">' + escapeHtml(title) + '</h4>';
+
+    flags.forEach(function (f) {
+      var fingerprint = f.fingerprint || '';
+      html += '<div style="padding:0.75rem;background:var(--color-surface-2);border-radius:var(--radius-sm);margin-block-end:0.5rem;">' +
+        '<strong>' + escapeHtml(typeLabels[f.flagType] || f.flagType) + '</strong>';
+
+      if (typeof f._hoursUntilExpiry === 'number') {
+        html += ' <span style="color:var(--color-warning);font-size:0.75rem;">⏰ ' + f._hoursUntilExpiry + ' ساعة</span>';
+      }
+      html += '<br>';
+
+      if (f._matchingReview && f._matchingReview.note) {
+        html += '<small><em>"' + escapeHtml(f._matchingReview.note) + '"</em></small><br>';
+      }
+
+      if (fingerprint) {
+        html += '<button class="btn btn--sm btn--primary" onclick="AdminApp.showFlagReviewModal(\'' + escapeHtml(fingerprint) + '\')" style="margin-top:0.5rem;">📋 مراجعة</button>';
+      }
+      html += '</div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  // Phase 47 — Bulk action modal
+  function openBulkActionModal() {
+    if (bulkSelectedFlags.size === 0) return;
+    var modal = document.getElementById('bulkActionModal');
+    var count = document.getElementById('bulkActionCount');
+    if (count) count.textContent = bulkSelectedFlags.size;
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = '';
+    }
+  }
+
+  function closeBulkActionModal() {
+    var modal = document.getElementById('bulkActionModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    var errorEl = document.getElementById('bulkActionError');
+    if (errorEl) {
+      errorEl.classList.add('hidden');
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+  }
+
+  function toggleBulkSnoozeDays() {
+    var decisionEl = document.getElementById('bulkActionDecision');
+    var decision = decisionEl ? decisionEl.value : '';
+    var group = document.getElementById('bulkSnoozeDaysGroup');
+    if (group) {
+      if (decision === 'snoozed') {
+        group.classList.remove('hidden');
+        group.style.display = '';
+      } else {
+        group.classList.add('hidden');
+        group.style.display = 'none';
+      }
+    }
+  }
+
+  async function confirmBulkAction() {
+    var decisionEl = document.getElementById('bulkActionDecision');
+    var noteEl = document.getElementById('bulkActionNote');
+    var snoozeDaysEl = document.getElementById('bulkSnoozeDays');
+    var errorEl = document.getElementById('bulkActionError');
+
+    var decision = decisionEl ? decisionEl.value : '';
+    var note = noteEl ? noteEl.value.trim() : '';
+    var snoozeDays = snoozeDaysEl ? parseInt(snoozeDaysEl.value) : 7;
+
+    function showBulkError(msg) {
+      if (errorEl) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+        errorEl.style.display = '';
+      }
+    }
+
+    // Confirmation for destructive action
+    if (decision === 'actioned') {
+      var confirmed = await YawmiaModal.confirm({
+        title: 'تأكيد الإجراء الجماعي',
+        message: 'سيتم حظر جميع المستخدمين المرتبطين بـ ' + bulkSelectedFlags.size + ' إشارة. متأكد؟',
+        confirmText: 'حظر',
+        cancelText: 'إلغاء',
+        danger: true,
+      });
+      if (!confirmed) return;
+    }
+
+    try {
+      var body = {
+        fingerprints: Array.from(bulkSelectedFlags),
+        decision: decision,
+      };
+      if (note) body.note = note;
+      if (decision === 'snoozed') body.snoozeDays = snoozeDays;
+
+      var result = await apiWrite('POST', '/api/admin/abuse-flags/bulk-action', body);
+      if (result.ok) {
+        closeBulkActionModal();
+        bulkSelectedFlags.clear();
+        updateBulkButton();
+        loadAbuseSignals();
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم: ' + result.succeeded + ' نجح، ' + result.failed + ' فشل');
+        }
+      }
+    } catch (err) {
+      showBulkError(err.message || 'خطأ في العملية');
+    }
+  }
+
+  // Phase 47 — Audit log search + export
+  async function searchAuditLog() {
+    try {
+      var qEl = document.getElementById('auditSearchQuery');
+      var actionEl = document.getElementById('auditActionFilter');
+      var fromEl = document.getElementById('auditFromDate');
+      var toEl = document.getElementById('auditToDate');
+
+      var q = qEl ? qEl.value.trim() : '';
+      var action = actionEl ? actionEl.value : '';
+      var from = fromEl ? fromEl.value : '';
+      var to = toEl ? toEl.value : '';
+
+      var query = '/api/admin/audit-log/search?limit=50';
+      if (q) query += '&q=' + encodeURIComponent(q);
+      if (action) query += '&action=' + encodeURIComponent(action);
+      if (from) query += '&from=' + encodeURIComponent(from);
+      if (to) query += '&to=' + encodeURIComponent(to + 'T23:59:59');
+
+      var data = await api(query);
+      var el = document.getElementById('auditLogResults');
+      if (!el) return;
+
+      var entries = data.entries || [];
+
+      if (entries.length === 0) {
+        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد نتائج</p>';
+        return;
+      }
+
+      var html = '<p style="margin-block-end:0.5rem;">عُثر على <strong>' + data.total + '</strong> سجل (يعرض ' + entries.length + ')</p>';
+      html += '<table class="admin-table"><thead><tr>' +
+        '<th>الأدمن</th><th>الإجراء</th><th>الهدف</th><th>التاريخ</th><th>التفاصيل</th>' +
+        '</tr></thead><tbody>';
+
+      entries.forEach(function (e) {
+        var date = e.createdAt ? new Date(e.createdAt).toLocaleString('ar-EG') : '-';
+        var detailsStr = e.details ? JSON.stringify(e.details).substring(0, 80) : '-';
+        html += '<tr>' +
+          '<td>' + escapeHtml(e.adminId || '') + '</td>' +
+          '<td>' + escapeHtml(e.action || '') + '</td>' +
+          '<td>' + escapeHtml((e.targetType || '') + ':' + (e.targetId || '')) + '</td>' +
+          '<td>' + escapeHtml(date) + '</td>' +
+          '<td><small>' + escapeHtml(detailsStr) + '</small></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      showError('خطأ في البحث');
+    }
+  }
+
+  function exportAuditLog() {
+    var fromEl = document.getElementById('auditFromDate');
+    var toEl = document.getElementById('auditToDate');
+    var actionEl = document.getElementById('auditActionFilter');
+
+    var from = fromEl ? fromEl.value : '';
+    var to = toEl ? toEl.value : '';
+    var action = actionEl ? actionEl.value : '';
+
+    var url = API + '/api/admin/audit-log/export?_token=' + encodeURIComponent(token);
+    if (from) url += '&from=' + encodeURIComponent(from);
+    if (to) url += '&to=' + encodeURIComponent(to + 'T23:59:59');
+    if (action) url += '&action=' + encodeURIComponent(action);
+
+    var link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -5484,6 +5946,20 @@ var AdminApp = (function () {
       }
 
       if (detailsEl) detailsEl.innerHTML = detailsHtml;
+
+      // Phase 47 — Display warnings remaining for target user
+      var targetUserId = state.flagType === 'worker_offer_bombing' ? state.workerId : state.employerId;
+      if (targetUserId && detailsEl) {
+        try {
+          var rlData = await api('/api/admin/users/' + targetUserId + '/warnings-remaining');
+          if (rlData && rlData.ok) {
+            var warningHint = document.createElement('p');
+            warningHint.style.cssText = 'margin-block-start:0.5rem;font-size:0.85rem;color:var(--color-warning);';
+            warningHint.innerHTML = '⚠️ التحذيرات المتبقية للمستخدم: <strong>' + rlData.remaining + '/' + rlData.max + '</strong>';
+            detailsEl.appendChild(warningHint);
+          }
+        } catch (_) { /* non-fatal */ }
+      }
 
       // History
       if (historyEl) {
@@ -5646,6 +6122,23 @@ var AdminApp = (function () {
     }
   }
 
+  // Phase 47 — Wire up filter dropdown change handler
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', wirePhase47Handlers);
+    } else {
+      wirePhase47Handlers();
+    }
+  }
+
+  function wirePhase47Handlers() {
+    var filter = document.getElementById('flagStatusFilter');
+    if (filter && !filter.dataset.handlerAttached) {
+      filter.dataset.handlerAttached = '1';
+      filter.addEventListener('change', loadAbuseSignals);
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -5666,6 +6159,16 @@ var AdminApp = (function () {
     hideFlagReviewModal: hideFlagReviewModal,
     handleFlagReview: handleFlagReview,
     exportCSV: exportCSV,
+    // Phase 47 — Admin Operations Excellence
+    toggleBulkSelect: toggleBulkSelect,
+    searchFlagsByNotes: searchFlagsByNotes,
+    loadSnoozeExpiring: loadSnoozeExpiring,
+    openBulkActionModal: openBulkActionModal,
+    closeBulkActionModal: closeBulkActionModal,
+    toggleBulkSnoozeDays: toggleBulkSnoozeDays,
+    confirmBulkAction: confirmBulkAction,
+    searchAuditLog: searchAuditLog,
+    exportAuditLog: exportAuditLog,
   };
 })();
 ```
@@ -13774,7 +14277,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.42.0';
+const CACHE_NAME = 'yawmia-v0.43.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

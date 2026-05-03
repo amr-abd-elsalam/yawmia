@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.42.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-03T09:36:59.813Z
+# يوميّة (Yawmia) v0.43.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-03T13:23:51.211Z
 > Files in this part: 31
 
 ## Files
@@ -464,6 +464,211 @@ export async function handleSendAbuseWarning(req, res) {
     return sendJSON(res, 200, { ok: true, targetUserId });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إرسال التحذير', code: 'WARNING_ERROR' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 47 — Admin Operations Excellence Handlers (7)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/abuse-flags?status=active|snoozed|dismissed|actioned
+ * Phase 47 — filtered list of abuse flags by current status.
+ * Requires: requireAdmin
+ */
+export async function handleAdminListFlagsByStatus(req, res) {
+  try {
+    const { listByStatus } = await import('../services/abuseFlagReview.js');
+    const status = req.query.status || 'active';
+    const flags = await listByStatus(status);
+    return sendJSON(res, 200, { ok: true, flags, count: flags.length, status });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب الإشارات', code: 'LIST_FLAGS_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/abuse-flags/search?notes=...
+ * Phase 47 — search review states by admin notes content.
+ * Requires: requireAdmin
+ */
+export async function handleAdminSearchFlagsByNotes(req, res) {
+  try {
+    const { searchByNotes } = await import('../services/abuseFlagReview.js');
+    const q = req.query.notes || '';
+    if (!q || q.length < 2) {
+      return sendJSON(res, 400, { error: 'الاستعلام لازم يكون حرفين على الأقل', code: 'QUERY_TOO_SHORT' });
+    }
+    const flags = await searchByNotes(q);
+    return sendJSON(res, 200, { ok: true, flags, count: flags.length, query: q });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في البحث', code: 'SEARCH_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/abuse-flags/bulk-action
+ * Body: { fingerprints: [], decision, note?, snoozeDays? }
+ * Phase 47 — atomic per-flag bulk update.
+ * Requires: requireAdmin
+ */
+export async function handleAdminBulkFlagAction(req, res) {
+  try {
+    const { bulkUpdate } = await import('../services/abuseFlagReview.js');
+    const { logAction } = await import('../services/auditLog.js');
+    const body = req.body || {};
+    const { fingerprints, decision, note, snoozeDays } = body;
+
+    if (!Array.isArray(fingerprints) || fingerprints.length === 0) {
+      return sendJSON(res, 400, {
+        error: 'قائمة fingerprints مطلوبة',
+        code: 'FINGERPRINTS_REQUIRED',
+      });
+    }
+
+    const validDecisions = ['dismissed', 'snoozed', 'actioned'];
+    if (!validDecisions.includes(decision)) {
+      return sendJSON(res, 400, {
+        error: 'القرار غير صالح. القرارات المسموحة: dismissed, snoozed, actioned',
+        code: 'INVALID_DECISION',
+      });
+    }
+
+    if (decision === 'snoozed') {
+      const days = parseInt(snoozeDays);
+      if (!days || days < 1 || days > 365) {
+        return sendJSON(res, 400, {
+          error: 'مدة التأجيل لازم تكون بين 1 و 365 يوم',
+          code: 'INVALID_SNOOZE_DAYS',
+        });
+      }
+    }
+
+    if (note && (typeof note !== 'string' || note.length > 500)) {
+      return sendJSON(res, 400, {
+        error: 'الملاحظة لا تتجاوز 500 حرف',
+        code: 'NOTE_TOO_LONG',
+      });
+    }
+
+    const adminId = req.user?.id || 'admin_token';
+    let result;
+    try {
+      result = await bulkUpdate({
+        fingerprints,
+        adminId,
+        decision,
+        note: note || null,
+        snoozeDays: decision === 'snoozed' ? parseInt(snoozeDays) : null,
+      });
+    } catch (err) {
+      // bulkUpdate throws on max-flags exceeded
+      return sendJSON(res, 400, { error: err.message, code: 'BULK_LIMIT_EXCEEDED' });
+    }
+
+    // Audit log (fire-and-forget)
+    logAction({
+      adminId,
+      action: 'abuse_flags_bulk_action',
+      targetType: 'abuse_flags',
+      targetId: 'bulk',
+      details: {
+        fingerprintCount: fingerprints.length,
+        decision,
+        succeeded: result.succeeded.length,
+        failed: result.failed.length,
+      },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, {
+      ok: true,
+      succeeded: result.succeeded.length,
+      failed: result.failed.length,
+      details: { failed: result.failed },
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في العملية الجماعية', code: 'BULK_ACTION_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/abuse-flags/snooze-expiring?days=7
+ * Phase 47 — flags with snooze approaching expiry.
+ * Requires: requireAdmin
+ */
+export async function handleAdminSnoozeExpiring(req, res) {
+  try {
+    const { getSnoozeExpiringSoon } = await import('../services/abuseFlagReview.js');
+    const days = parseInt(req.query.days) || 7;
+    const hoursWindow = days * 24;
+    const flags = await getSnoozeExpiringSoon(hoursWindow);
+    return sendJSON(res, 200, { ok: true, flags, count: flags.length });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب البيانات', code: 'SNOOZE_EXPIRING_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/users/:id/warnings-remaining
+ * Phase 47 — visibility for admin warning rate limit.
+ * Requires: requireAdmin
+ */
+export async function handleAdminUserWarningsRemaining(req, res) {
+  try {
+    const { getRemainingWarnings } = await import('../services/abuseFlagReview.js');
+    const userId = req.params.id;
+    const result = await getRemainingWarnings(userId);
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ', code: 'WARNINGS_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/audit-log/search?q=&action=&adminId=&targetType=&from=&to=&limit=
+ * Phase 47 — full-text search + combined filters on audit log.
+ * Requires: requireAdmin
+ */
+export async function handleAdminAuditLogSearch(req, res) {
+  try {
+    const { searchActions } = await import('../services/auditLogSearch.js');
+    const result = await searchActions({
+      q: req.query.q,
+      action: req.query.action,
+      adminId: req.query.adminId,
+      targetType: req.query.targetType,
+      from: req.query.from,
+      to: req.query.to,
+      limit: parseInt(req.query.limit) || 50,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في البحث', code: 'AUDIT_SEARCH_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/audit-log/export?from=&to=&action=
+ * Phase 47 — CSV export with UTF-8 BOM for Arabic Excel.
+ * Requires: requireAdmin
+ */
+export async function handleAdminAuditLogExport(req, res) {
+  try {
+    const { exportToCSV } = await import('../services/auditLogSearch.js');
+    const result = await exportToCSV({
+      from: req.query.from,
+      to: req.query.to,
+      action: req.query.action,
+    });
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${result.filename}"`,
+      'Content-Length': Buffer.byteLength(result.csv, 'utf-8'),
+    });
+    res.end(result.csv);
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
   }
 }
 ```

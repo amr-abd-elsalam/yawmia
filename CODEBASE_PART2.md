@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.42.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-03T09:36:59.794Z
-> Files in this part: 60
+# يوميّة (Yawmia) v0.43.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-03T13:23:51.192Z
+> Files in this part: 62
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -11,58 +11,60 @@
 6. `server/services/arabicNormalizer.js`
 7. `server/services/attendance.js`
 8. `server/services/auditLog.js`
-9. `server/services/auth.js`
-10. `server/services/availabilityAd.js`
-11. `server/services/availabilityWindow.js`
-12. `server/services/backupScheduler.js`
-13. `server/services/cache.js`
-14. `server/services/cacheDebouncer.js`
-15. `server/services/channels/sms.js`
-16. `server/services/channels/whatsapp.js`
-17. `server/services/contentFilter.js`
-18. `server/services/database.js`
-19. `server/services/directOffer.js`
-20. `server/services/directOfferAnalytics.js`
-21. `server/services/directOfferCounters.js`
-22. `server/services/errorAggregator.js`
-23. `server/services/eventBus.js`
-24. `server/services/eventReplayBuffer.js`
-25. `server/services/favorites.js`
-26. `server/services/financialExport.js`
-27. `server/services/geo.js`
-28. `server/services/imageStore.js`
-29. `server/services/indexHealth.js`
-30. `server/services/instantMatch.js`
-31. `server/services/jobAlerts.js`
-32. `server/services/jobMatcher.js`
-33. `server/services/jobs.js`
-34. `server/services/liveFeed.js`
-35. `server/services/logWriter.js`
-36. `server/services/logger.js`
-37. `server/services/messages.js`
-38. `server/services/messaging.js`
-39. `server/services/migration.js`
-40. `server/services/monitor.js`
-41. `server/services/notificationMessenger.js`
-42. `server/services/notifications.js`
-43. `server/services/offerAbuseDetector.js`
-44. `server/services/payments.js`
-45. `server/services/presenceService.js`
-46. `server/services/profileCompleteness.js`
-47. `server/services/queryIndex.js`
-48. `server/services/ratings.js`
-49. `server/services/reports.js`
-50. `server/services/resourceLock.js`
-51. `server/services/sanitizer.js`
-52. `server/services/searchIndex.js`
-53. `server/services/sessions.js`
-54. `server/services/sseManager.js`
-55. `server/services/trust.js`
-56. `server/services/users.js`
-57. `server/services/validators.js`
-58. `server/services/verification.js`
-59. `server/services/webpush.js`
-60. `server/services/workerDiscovery.js`
+9. `server/services/auditLogSearch.js`
+10. `server/services/auth.js`
+11. `server/services/availabilityAd.js`
+12. `server/services/availabilityWindow.js`
+13. `server/services/backupScheduler.js`
+14. `server/services/cache.js`
+15. `server/services/cacheDebouncer.js`
+16. `server/services/channels/sms.js`
+17. `server/services/channels/whatsapp.js`
+18. `server/services/contentFilter.js`
+19. `server/services/database.js`
+20. `server/services/directOffer.js`
+21. `server/services/directOfferAnalytics.js`
+22. `server/services/directOfferCounters.js`
+23. `server/services/errorAggregator.js`
+24. `server/services/eventBus.js`
+25. `server/services/eventReplayBuffer.js`
+26. `server/services/favorites.js`
+27. `server/services/financialExport.js`
+28. `server/services/geo.js`
+29. `server/services/imageStore.js`
+30. `server/services/indexHealth.js`
+31. `server/services/instantMatch.js`
+32. `server/services/jobAlerts.js`
+33. `server/services/jobMatcher.js`
+34. `server/services/jobs.js`
+35. `server/services/liveFeed.js`
+36. `server/services/logWriter.js`
+37. `server/services/logger.js`
+38. `server/services/messages.js`
+39. `server/services/messaging.js`
+40. `server/services/migration.js`
+41. `server/services/monitor.js`
+42. `server/services/notificationMessenger.js`
+43. `server/services/notifications.js`
+44. `server/services/offerAbuseDetector.js`
+45. `server/services/payments.js`
+46. `server/services/presenceService.js`
+47. `server/services/profileCompleteness.js`
+48. `server/services/queryIndex.js`
+49. `server/services/ratings.js`
+50. `server/services/reports.js`
+51. `server/services/resourceLock.js`
+52. `server/services/sanitizer.js`
+53. `server/services/searchIndex.js`
+54. `server/services/sessions.js`
+55. `server/services/snoozeReminders.js`
+56. `server/services/sseManager.js`
+57. `server/services/trust.js`
+58. `server/services/users.js`
+59. `server/services/validators.js`
+60. `server/services/verification.js`
+61. `server/services/webpush.js`
+62. `server/services/workerDiscovery.js`
 
 ---
 
@@ -289,9 +291,214 @@ export async function incrementOccurrence(fingerprint) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Phase 47 — Admin Operations Excellence Extensions
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Phase 47: List review states filtered by current status.
+ * For 'snoozed' status, applies lazy expiry verification (states with expired
+ * snooze auto-transition to 'active' via isCurrentlySnoozed and are excluded).
+ *
+ * @param {string} status — 'active' | 'snoozed' | 'dismissed' | 'actioned'
+ * @returns {Promise<object[]>} sorted by lastSeen descending (newest activity first)
+ */
+export async function listByStatus(status) {
+  const validStatuses = ['active', 'snoozed', 'dismissed', 'actioned'];
+  if (!validStatuses.includes(status)) return [];
+
+  const all = await listAllReviewStates();
+  const result = [];
+  for (const state of all) {
+    if (state.currentStatus !== status) continue;
+
+    // For snoozed status, verify still snoozed (lazy expiry mutation possible)
+    if (status === 'snoozed') {
+      try {
+        const stillSnoozed = await isCurrentlySnoozed(state.fingerprint);
+        if (stillSnoozed) result.push(state);
+      } catch (_) {
+        // On error, include state (safer than excluding)
+        result.push(state);
+      }
+    } else {
+      result.push(state);
+    }
+  }
+
+  // Sort by latest activity (last review createdAt OR firstSeenAt) descending
+  result.sort((a, b) => {
+    const aTime = a.reviews && a.reviews.length > 0
+      ? new Date(a.reviews[a.reviews.length - 1].createdAt).getTime()
+      : new Date(a.firstSeenAt).getTime();
+    const bTime = b.reviews && b.reviews.length > 0
+      ? new Date(b.reviews[b.reviews.length - 1].createdAt).getTime()
+      : new Date(b.firstSeenAt).getTime();
+    return bTime - aTime;
+  });
+
+  return result;
+}
+
+/**
+ * Phase 47: Get remaining warnings count for a user this rolling 7-day window.
+ * Used by frontend to display rate limit visibility before admin clicks "warn".
+ *
+ * @param {string} userId
+ * @returns {Promise<{ used: number, max: number, remaining: number }>}
+ */
+export async function getRemainingWarnings(userId) {
+  const cfg = (await import('../../config.js')).default;
+  const max = (cfg.DIRECT_OFFERS && cfg.DIRECT_OFFERS.abuse && cfg.DIRECT_OFFERS.abuse.maxWarningsPerUserPerWeek) || 3;
+
+  if (!userId) return { used: 0, max, remaining: max };
+
+  try {
+    const { listByUser } = await import('./notifications.js');
+    const result = await listByUser(userId, { limit: 100, offset: 0 });
+    const items = (result && result.items) || [];
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const used = items.filter(n =>
+      n.type === 'admin_warning' &&
+      new Date(n.createdAt).getTime() >= weekAgo
+    ).length;
+    return { used, max, remaining: Math.max(0, max - used) };
+  } catch (err) {
+    logger.warn('abuseFlagReview: getRemainingWarnings failed', { userId, error: err.message });
+    return { used: 0, max, remaining: max };
+  }
+}
+
+/**
+ * Phase 47: Bulk update flag review states.
+ * Atomic per-flag iteration (no all-or-nothing transaction — file-based limitation).
+ * Returns succeeded[] and failed[] for granular result reporting.
+ *
+ * @param {object} params
+ * @param {string[]} params.fingerprints — array of flag fingerprints
+ * @param {string} params.adminId
+ * @param {'dismissed'|'snoozed'|'actioned'} params.decision
+ * @param {string} [params.note]
+ * @param {number} [params.snoozeDays] — required when decision='snoozed'
+ * @returns {Promise<{ succeeded: object[], failed: object[] }>}
+ */
+export async function bulkUpdate({ fingerprints, adminId, decision, note, snoozeDays }) {
+  if (!Array.isArray(fingerprints) || fingerprints.length === 0) {
+    return { succeeded: [], failed: [] };
+  }
+
+  const cfg = (await import('../../config.js')).default;
+  const max = (cfg.ADMIN_OPERATIONS && cfg.ADMIN_OPERATIONS.bulkActionMaxFlags) || 50;
+  if (fingerprints.length > max) {
+    throw new Error(`Bulk action exceeds max ${max} flags`);
+  }
+
+  const succeeded = [];
+  const failed = [];
+
+  for (const fingerprint of fingerprints) {
+    try {
+      const existingState = await getReviewState(fingerprint);
+      if (!existingState) {
+        failed.push({ fingerprint, error: 'FLAG_NOT_FOUND' });
+        continue;
+      }
+
+      const result = await recordReview({
+        flag: existingState,
+        adminId,
+        decision,
+        note: note || null,
+        snoozeDays: decision === 'snoozed' ? snoozeDays : null,
+      });
+      succeeded.push({ fingerprint, reviewState: result });
+    } catch (err) {
+      failed.push({ fingerprint, error: err.message });
+    }
+  }
+
+  return { succeeded, failed };
+}
+
+/**
+ * Phase 47: Search review states by admin notes content.
+ * Full-text case-insensitive substring match on reviews[].note field.
+ * Attaches _matchingReview metadata for UI display.
+ *
+ * @param {string} query — minimum 2 characters
+ * @returns {Promise<object[]>} sorted by matching review timestamp descending
+ */
+export async function searchByNotes(query) {
+  if (!query || typeof query !== 'string') return [];
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return [];
+
+  const all = await listAllReviewStates();
+  const result = [];
+
+  for (const state of all) {
+    if (!state.reviews || state.reviews.length === 0) continue;
+
+    // Find FIRST matching review (any review with note containing query)
+    // Use slice().reverse() to find newest match first
+    const reviewsNewestFirst = state.reviews.slice().reverse();
+    const matchingReview = reviewsNewestFirst.find(r =>
+      r.note && r.note.toLowerCase().includes(q)
+    );
+    if (matchingReview) {
+      result.push({ ...state, _matchingReview: matchingReview });
+    }
+  }
+
+  // Sort by matching review timestamp (newest first)
+  result.sort((a, b) => {
+    const aTime = new Date(a._matchingReview.createdAt).getTime();
+    const bTime = new Date(b._matchingReview.createdAt).getTime();
+    return bTime - aTime;
+  });
+
+  return result;
+}
+
+/**
+ * Phase 47: Get flags with snooze approaching expiry within window.
+ * Read-only — does NOT mutate state (unlike isCurrentlySnoozed).
+ *
+ * @param {number} hoursWindow — find flags expiring within this many hours
+ * @returns {Promise<object[]>} sorted by closest expiry first
+ */
+export async function getSnoozeExpiringSoon(hoursWindow = 24) {
+  const all = await listAllReviewStates();
+  const nowMs = Date.now();
+  const windowMs = hoursWindow * 60 * 60 * 1000;
+  const result = [];
+
+  for (const state of all) {
+    if (state.currentStatus !== 'snoozed') continue;
+    if (!state.snoozeUntil) continue;
+    const snoozeMs = new Date(state.snoozeUntil).getTime();
+    const timeUntil = snoozeMs - nowMs;
+    if (timeUntil > 0 && timeUntil <= windowMs) {
+      result.push({
+        ...state,
+        _hoursUntilExpiry: Math.round(timeUntil / (60 * 60 * 1000)),
+      });
+    }
+  }
+
+  // Sort by closest expiry first
+  result.sort((a, b) => a._hoursUntilExpiry - b._hoursUntilExpiry);
+  return result;
+}
+
 // Test helpers
 export const _testHelpers = {
   buildInitialState,
+  listByStatus,
+  getRemainingWarnings,
+  bulkUpdate,
+  searchByNotes,
+  getSnoozeExpiringSoon,
 };
 ```
 
@@ -2692,6 +2899,175 @@ export async function countActions() {
   const records = await listJSON(auditDir);
   return records.filter(r => r.id && r.id.startsWith('aud_')).length;
 }
+```
+
+---
+
+## `server/services/auditLogSearch.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/auditLogSearch.js — Full-Text Search + CSV Export (Phase 47)
+// ═══════════════════════════════════════════════════════════════
+// Read-only operations on audit log entries.
+// searchActions: full-text + combined filters with newest-first sort.
+// exportToCSV: UTF-8 BOM + Arabic headers for Excel compatibility.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { getCollectionPath, listJSON } from './database.js';
+import { logger } from './logger.js';
+
+const BOM = '\uFEFF';
+
+function csvEscape(value) {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  return str.replace(/"/g, '""');
+}
+
+function csvRow(fields) {
+  return fields.map(f => `"${csvEscape(f)}"`).join(',');
+}
+
+/**
+ * Search audit log entries with full-text + filters.
+ *
+ * @param {object} options
+ * @param {string} [options.q] — search query (matches action, targetId, targetType, adminId, ip, details JSON)
+ * @param {string} [options.action] — exact action filter
+ * @param {string} [options.adminId] — exact admin filter
+ * @param {string} [options.targetType] — exact target type filter
+ * @param {string} [options.from] — ISO date — entries with createdAt >= from
+ * @param {string} [options.to] — ISO date — entries with createdAt <= to
+ * @param {number} [options.limit=50]
+ * @returns {Promise<{ entries: object[], total: number }>}
+ */
+export async function searchActions(options = {}) {
+  const auditDir = getCollectionPath('audit');
+  let entries;
+  try {
+    entries = await listJSON(auditDir);
+  } catch (err) {
+    logger.warn('auditLogSearch: listJSON failed', { error: err.message });
+    return { entries: [], total: 0 };
+  }
+
+  // Filter to audit records only
+  entries = entries.filter(e => e.id && e.id.startsWith('aud_'));
+
+  // Apply exact-match filters
+  if (options.action) {
+    entries = entries.filter(e => e.action === options.action);
+  }
+  if (options.adminId) {
+    entries = entries.filter(e => e.adminId === options.adminId);
+  }
+  if (options.targetType) {
+    entries = entries.filter(e => e.targetType === options.targetType);
+  }
+
+  // Date range filters
+  if (options.from) {
+    entries = entries.filter(e => e.createdAt && e.createdAt >= options.from);
+  }
+  if (options.to) {
+    entries = entries.filter(e => e.createdAt && e.createdAt <= options.to);
+  }
+
+  // Full-text search (case-insensitive)
+  if (options.q && typeof options.q === 'string') {
+    const q = options.q.toLowerCase().trim();
+    if (q.length > 0) {
+      entries = entries.filter(e => {
+        const haystack = [
+          e.action || '',
+          e.targetId || '',
+          e.targetType || '',
+          e.adminId || '',
+          e.ip || '',
+          e.details ? JSON.stringify(e.details) : '',
+        ].join(' ').toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+  }
+
+  // Sort newest first
+  entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = entries.length;
+  const maxResults = (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.auditLogSearchMaxResults) || 200;
+  const limit = Math.min(Math.max(1, options.limit || 50), maxResults);
+  entries = entries.slice(0, limit);
+
+  return { entries, total };
+}
+
+/**
+ * Export audit log to CSV format with UTF-8 BOM for Arabic Excel compatibility.
+ *
+ * @param {object} options
+ * @param {string} [options.from] — ISO date
+ * @param {string} [options.to] — ISO date
+ * @param {string} [options.action] — exact action filter
+ * @returns {Promise<{ csv: string, count: number, filename: string }>}
+ */
+export async function exportToCSV(options = {}) {
+  const auditDir = getCollectionPath('audit');
+  let entries;
+  try {
+    entries = await listJSON(auditDir);
+  } catch (err) {
+    logger.warn('auditLogSearch: exportToCSV listJSON failed', { error: err.message });
+    return { csv: BOM + 'لا توجد بيانات', count: 0, filename: 'audit-log-empty.csv' };
+  }
+
+  entries = entries.filter(e => e.id && e.id.startsWith('aud_'));
+
+  if (options.from) entries = entries.filter(e => e.createdAt && e.createdAt >= options.from);
+  if (options.to) entries = entries.filter(e => e.createdAt && e.createdAt <= options.to);
+  if (options.action) entries = entries.filter(e => e.action === options.action);
+
+  // Sort newest first
+  entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // Enforce max rows
+  const maxRows = (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.auditLogExportMaxRows) || 10000;
+  entries = entries.slice(0, maxRows);
+
+  // Build CSV
+  const headers = csvRow([
+    'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
+    'IP', 'التفاصيل', 'التاريخ',
+  ]);
+  const rows = [headers];
+
+  for (const e of entries) {
+    rows.push(csvRow([
+      e.id,
+      e.adminId || '',
+      e.action || '',
+      e.targetType || '',
+      e.targetId || '',
+      e.ip || '',
+      e.details ? JSON.stringify(e.details) : '',
+      e.createdAt || '',
+    ]));
+  }
+
+  const csv = BOM + rows.join('\n');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `audit-log-${dateStr}.csv`;
+
+  return { csv, count: entries.length, filename };
+}
+
+// Test helpers
+export const _testHelpers = {
+  csvEscape,
+  csvRow,
+};
 ```
 
 ---
@@ -12915,6 +13291,20 @@ const builtInMigrations = [
       logger.info('Migration v6: lazy schema for per-entity hourlyBuckets registered (Phase 46)');
     },
   },
+  {
+    version: 7,
+    name: 'Phase 47: snoozeReminders metadata (lastReminderSentAt — lazy migration)',
+    up: async () => {
+      // Phase 47: schema extension — abuseFlagReview state objects gain
+      // `lastReminderSentAt` field used by snoozeReminders.scanSnoozeExpiries
+      // for idempotent reminder dispatch.
+      // No data backfill needed — first scan post-deploy lazily populates the field.
+      // Old review state files continue to work unchanged (absent field treated
+      // as "never alerted" → reminder fires on first scan within reminder window).
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v7: lazy metadata for snoozeReminders registered (Phase 47)');
+    },
+  },
 ];
 
 /**
@@ -16897,6 +17287,232 @@ export async function destroyAllByUser(userId) {
 
   return destroyed;
 }
+```
+
+---
+
+## `server/services/snoozeReminders.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/snoozeReminders.js — Snooze Expiry Reminders (Phase 47)
+// ═══════════════════════════════════════════════════════════════
+// Scheduled scanner: finds flags with snoozeUntil approaching expiry,
+// sends notification to all admin users.
+// Idempotent — uses lastReminderSentAt field to prevent duplicate alerts.
+//
+// Plus separate detectExpiredSnoozes() emitting abuse_flag:snooze_expired event.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { listAllReviewStates } from './abuseFlagReview.js';
+import { atomicWrite, getRecordPath } from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+let scanTimer = null;
+
+/**
+ * Scan all snoozed flags for upcoming expiry.
+ * Sends 'admin_alert' notification to all admins for flags within reminder window.
+ * Idempotent: uses lastReminderSentAt field on review state.
+ *
+ * @returns {Promise<{ scanned: number, alertsSent: number }>}
+ */
+export async function scanSnoozeExpiries() {
+  if (!config.ADMIN_OPERATIONS || !config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
+    return { scanned: 0, alertsSent: 0 };
+  }
+
+  const reminderHours = config.ADMIN_OPERATIONS.snoozeReminderHoursBefore || 24;
+  const reminderWindowMs = reminderHours * 60 * 60 * 1000;
+  const now = Date.now();
+
+  let scanned = 0;
+  let alertsSent = 0;
+
+  try {
+    const states = await listAllReviewStates();
+    for (const state of states) {
+      scanned++;
+
+      if (state.currentStatus !== 'snoozed') continue;
+      if (!state.snoozeUntil) continue;
+
+      const snoozeMs = new Date(state.snoozeUntil).getTime();
+      const timeUntilExpiry = snoozeMs - now;
+
+      // Within reminder window AND not already alerted for this snooze period
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= reminderWindowMs) {
+        const lastReminderMs = state.lastReminderSentAt
+          ? new Date(state.lastReminderSentAt).getTime()
+          : 0;
+
+        // Find when current snooze was set (last 'snoozed' decision in reviews[])
+        const lastSnoozeReview = state.reviews && state.reviews.length > 0
+          ? state.reviews.filter(r => r.decision === 'snoozed').pop()
+          : null;
+        if (!lastSnoozeReview) continue;
+        const snoozeSetAtMs = new Date(lastSnoozeReview.createdAt).getTime();
+
+        // Only send if no reminder sent AFTER snooze was set (idempotent per snooze period)
+        if (lastReminderMs > snoozeSetAtMs) continue;
+
+        // Send alert (per-flag isolation)
+        try {
+          await sendAdminAlert(state, timeUntilExpiry);
+          state.lastReminderSentAt = new Date().toISOString();
+          await atomicWrite(getRecordPath('abuse_flag_reviews', state.fingerprint), state);
+          alertsSent++;
+        } catch (err) {
+          logger.warn('snoozeReminders: alert/update failed', {
+            fingerprint: state.fingerprint,
+            error: err.message,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('snoozeReminders: scan failed', { error: err.message });
+  }
+
+  if (alertsSent > 0) {
+    logger.info('snoozeReminders: scan complete', { scanned, alertsSent });
+  }
+
+  return { scanned, alertsSent };
+}
+
+/**
+ * Send admin notification + emit event for a flag with approaching snooze expiry.
+ * Internal helper.
+ */
+async function sendAdminAlert(state, timeUntilExpiry) {
+  const hoursUntilExpiry = Math.round(timeUntilExpiry / (60 * 60 * 1000));
+
+  // Find all active admin users
+  const { listAll: listAllUsers } = await import('./users.js');
+  const users = await listAllUsers();
+  const admins = users.filter(u => u.role === 'admin' && u.status === 'active');
+  if (admins.length === 0) return;
+
+  const flagTypeLabels = {
+    same_worker_spam: 'spam لنفس العامل',
+    high_decline_employer: 'صاحب عمل بنسبة رفض عالية',
+    worker_offer_bombing: 'استهداف عامل بعروض كثيرة',
+  };
+
+  const message = `⏰ تنبيه: snooze flag (${flagTypeLabels[state.flagType] || state.flagType}) هينتهي خلال ${hoursUntilExpiry} ساعة. مراجعة مطلوبة.`;
+
+  const { createNotification } = await import('./notifications.js');
+  for (const admin of admins) {
+    try {
+      await createNotification(
+        admin.id,
+        'admin_alert',
+        message,
+        {
+          fingerprint: state.fingerprint,
+          flagType: state.flagType,
+          snoozeUntil: state.snoozeUntil,
+          hoursUntilExpiry,
+        }
+      );
+    } catch (err) {
+      logger.warn('snoozeReminders: createNotification failed', {
+        adminId: admin.id,
+        error: err.message,
+      });
+    }
+  }
+
+  // Emit event for downstream UI integration (Phase 48 SSE potential)
+  eventBus.emit('abuse_flag:snooze_expiring', {
+    fingerprint: state.fingerprint,
+    flagType: state.flagType,
+    hoursUntilExpiry,
+  });
+}
+
+/**
+ * Detect already-expired snoozes that haven't been processed yet.
+ * Emits 'abuse_flag:snooze_expired' event for each.
+ * Note: isCurrentlySnoozed (lazy expiry) eventually transitions these to 'active'.
+ * This function is for proactive transition signaling.
+ *
+ * @returns {Promise<number>} count of expired snoozes detected
+ */
+export async function detectExpiredSnoozes() {
+  if (!config.ADMIN_OPERATIONS || !config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
+    return 0;
+  }
+
+  let count = 0;
+  try {
+    const states = await listAllReviewStates();
+    const nowMs = Date.now();
+    for (const state of states) {
+      if (state.currentStatus !== 'snoozed') continue;
+      if (!state.snoozeUntil) continue;
+      const snoozeMs = new Date(state.snoozeUntil).getTime();
+      if (nowMs >= snoozeMs) {
+        eventBus.emit('abuse_flag:snooze_expired', {
+          fingerprint: state.fingerprint,
+          flagType: state.flagType,
+          employerId: state.employerId,
+          workerId: state.workerId,
+        });
+        count++;
+      }
+    }
+  } catch (err) {
+    logger.warn('detectExpiredSnoozes: scan failed', { error: err.message });
+  }
+  return count;
+}
+
+/**
+ * Start the scheduled scanner.
+ * Called from server.js on startup.
+ */
+export function start() {
+  if (scanTimer) return;
+  if (!config.ADMIN_OPERATIONS || !config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
+    logger.info('snoozeReminders: disabled via config');
+    return;
+  }
+
+  const intervalMs = config.ADMIN_OPERATIONS.snoozeReminderCheckIntervalMs || (60 * 60 * 1000);
+
+  scanTimer = setInterval(() => {
+    Promise.all([
+      scanSnoozeExpiries(),
+      detectExpiredSnoozes(),
+    ]).catch(err => {
+      logger.warn('snoozeReminders: timer error', { error: err.message });
+    });
+  }, intervalMs);
+
+  if (scanTimer.unref) scanTimer.unref();
+  logger.info(`snoozeReminders: scanner started (every ${intervalMs / 60000} min)`);
+}
+
+/**
+ * Stop the scheduled scanner (test cleanup).
+ */
+export function stop() {
+  if (scanTimer) {
+    clearInterval(scanTimer);
+    scanTimer = null;
+  }
+}
+
+// Test helpers
+export const _testHelpers = {
+  scanSnoozeExpiries,
+  detectExpiredSnoozes,
+  sendAdminAlert,
+};
 ```
 
 ---
