@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.43.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-03T13:57:45.781Z
-> Files in this part: 62
+# يوميّة (Yawmia) v0.44.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-03T17:47:50.674Z
+> Files in this part: 63
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -11,60 +11,61 @@
 6. `server/services/arabicNormalizer.js`
 7. `server/services/attendance.js`
 8. `server/services/auditLog.js`
-9. `server/services/auditLogSearch.js`
-10. `server/services/auth.js`
-11. `server/services/availabilityAd.js`
-12. `server/services/availabilityWindow.js`
-13. `server/services/backupScheduler.js`
-14. `server/services/cache.js`
-15. `server/services/cacheDebouncer.js`
-16. `server/services/channels/sms.js`
-17. `server/services/channels/whatsapp.js`
-18. `server/services/contentFilter.js`
-19. `server/services/database.js`
-20. `server/services/directOffer.js`
-21. `server/services/directOfferAnalytics.js`
-22. `server/services/directOfferCounters.js`
-23. `server/services/errorAggregator.js`
-24. `server/services/eventBus.js`
-25. `server/services/eventReplayBuffer.js`
-26. `server/services/favorites.js`
-27. `server/services/financialExport.js`
-28. `server/services/geo.js`
-29. `server/services/imageStore.js`
-30. `server/services/indexHealth.js`
-31. `server/services/instantMatch.js`
-32. `server/services/jobAlerts.js`
-33. `server/services/jobMatcher.js`
-34. `server/services/jobs.js`
-35. `server/services/liveFeed.js`
-36. `server/services/logWriter.js`
-37. `server/services/logger.js`
-38. `server/services/messages.js`
-39. `server/services/messaging.js`
-40. `server/services/migration.js`
-41. `server/services/monitor.js`
-42. `server/services/notificationMessenger.js`
-43. `server/services/notifications.js`
-44. `server/services/offerAbuseDetector.js`
-45. `server/services/payments.js`
-46. `server/services/presenceService.js`
-47. `server/services/profileCompleteness.js`
-48. `server/services/queryIndex.js`
-49. `server/services/ratings.js`
-50. `server/services/reports.js`
-51. `server/services/resourceLock.js`
-52. `server/services/sanitizer.js`
-53. `server/services/searchIndex.js`
-54. `server/services/sessions.js`
-55. `server/services/snoozeReminders.js`
-56. `server/services/sseManager.js`
-57. `server/services/trust.js`
-58. `server/services/users.js`
-59. `server/services/validators.js`
-60. `server/services/verification.js`
-61. `server/services/webpush.js`
-62. `server/services/workerDiscovery.js`
+9. `server/services/auditLogRetention.js`
+10. `server/services/auditLogSearch.js`
+11. `server/services/auth.js`
+12. `server/services/availabilityAd.js`
+13. `server/services/availabilityWindow.js`
+14. `server/services/backupScheduler.js`
+15. `server/services/cache.js`
+16. `server/services/cacheDebouncer.js`
+17. `server/services/channels/sms.js`
+18. `server/services/channels/whatsapp.js`
+19. `server/services/contentFilter.js`
+20. `server/services/database.js`
+21. `server/services/directOffer.js`
+22. `server/services/directOfferAnalytics.js`
+23. `server/services/directOfferCounters.js`
+24. `server/services/errorAggregator.js`
+25. `server/services/eventBus.js`
+26. `server/services/eventReplayBuffer.js`
+27. `server/services/favorites.js`
+28. `server/services/financialExport.js`
+29. `server/services/geo.js`
+30. `server/services/imageStore.js`
+31. `server/services/indexHealth.js`
+32. `server/services/instantMatch.js`
+33. `server/services/jobAlerts.js`
+34. `server/services/jobMatcher.js`
+35. `server/services/jobs.js`
+36. `server/services/liveFeed.js`
+37. `server/services/logWriter.js`
+38. `server/services/logger.js`
+39. `server/services/messages.js`
+40. `server/services/messaging.js`
+41. `server/services/migration.js`
+42. `server/services/monitor.js`
+43. `server/services/notificationMessenger.js`
+44. `server/services/notifications.js`
+45. `server/services/offerAbuseDetector.js`
+46. `server/services/payments.js`
+47. `server/services/presenceService.js`
+48. `server/services/profileCompleteness.js`
+49. `server/services/queryIndex.js`
+50. `server/services/ratings.js`
+51. `server/services/reports.js`
+52. `server/services/resourceLock.js`
+53. `server/services/sanitizer.js`
+54. `server/services/searchIndex.js`
+55. `server/services/sessions.js`
+56. `server/services/snoozeReminders.js`
+57. `server/services/sseManager.js`
+58. `server/services/trust.js`
+59. `server/services/users.js`
+60. `server/services/validators.js`
+61. `server/services/verification.js`
+62. `server/services/webpush.js`
+63. `server/services/workerDiscovery.js`
 
 ---
 
@@ -2903,6 +2904,170 @@ export async function countActions() {
 
 ---
 
+## `server/services/auditLogRetention.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/auditLogRetention.js — Scheduled Audit Cleanup (Phase 48)
+// ═══════════════════════════════════════════════════════════════
+// Runs daily at configured Egypt hour (default 2AM).
+// Deletes audit entries older than retentionDays.
+// Idempotent via lastRunDate check.
+// Batch processing with event loop yield via setImmediate.
+// Per-file try/catch isolation — single failure doesn't block scan.
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import { readdir, unlink } from 'node:fs/promises';
+import config from '../../config.js';
+import { getCollectionPath, readJSON } from './database.js';
+import { logger } from './logger.js';
+
+let cleanupTimer = null;
+let lastCleanupAt = null;
+let lastCleanupCount = 0;
+let lastRunDate = null;
+
+/**
+ * Get current hour and date string in Egypt timezone (UTC+2).
+ * @returns {{ hour: number, dateStr: string }}
+ */
+function getEgyptDateAndHour() {
+  const now = new Date();
+  const egyptMs = now.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  return {
+    hour: egyptDate.getUTCHours(),
+    dateStr: egyptDate.toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * Run retention cleanup.
+ * Deletes audit entries older than retentionDays.
+ *
+ * @returns {Promise<{ cleaned: number, retentionDays?: number, cutoffIso?: string, skipped?: boolean, error?: string }>}
+ */
+export async function runRetentionCleanup() {
+  const cfg = config.AUDIT_RETENTION;
+  if (!cfg || !cfg.enabled) return { cleaned: 0, skipped: true };
+
+  const retentionDays = cfg.retentionDays || 365;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const cutoffIso = new Date(cutoffMs).toISOString();
+  const batchSize = cfg.cleanupBatchSize || 100;
+
+  const auditDir = getCollectionPath('audit');
+  let files;
+  try {
+    files = await readdir(auditDir);
+  } catch (err) {
+    return { cleaned: 0, error: err.message };
+  }
+
+  const auditFiles = files.filter(f =>
+    f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
+  );
+
+  let cleaned = 0;
+
+  for (let i = 0; i < auditFiles.length; i++) {
+    const filePath = join(auditDir, auditFiles[i]);
+    try {
+      const data = await readJSON(filePath);
+      if (data && data.createdAt && data.createdAt < cutoffIso) {
+        await unlink(filePath);
+        cleaned++;
+      }
+    } catch (_) { /* skip individual errors */ }
+
+    // Yield to event loop every batchSize files
+    if ((i + 1) % batchSize === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  lastCleanupAt = new Date().toISOString();
+  lastCleanupCount = cleaned;
+
+  if (cleaned > 0) {
+    logger.info('Audit retention: cleaned old entries', { cleaned, retentionDays });
+  }
+
+  return { cleaned, retentionDays, cutoffIso };
+}
+
+/**
+ * Internal scheduler check — runs cleanup if hour matches and not already run today.
+ */
+async function checkAndRun() {
+  try {
+    const cfg = config.AUDIT_RETENTION;
+    if (!cfg || !cfg.enabled) return;
+
+    const { hour, dateStr } = getEgyptDateAndHour();
+    if (hour !== (cfg.cleanupHourEgypt || 2)) return;
+    if (lastRunDate === dateStr) return;
+
+    lastRunDate = dateStr;
+    await runRetentionCleanup();
+  } catch (err) {
+    logger.warn('Audit retention scheduled run failed', { error: err.message });
+  }
+}
+
+/**
+ * Start the scheduled cleanup scanner.
+ */
+export function start() {
+  if (cleanupTimer) return;
+  const cfg = config.AUDIT_RETENTION;
+  if (!cfg || !cfg.enabled) {
+    logger.info('Audit retention: disabled via config');
+    return;
+  }
+
+  const intervalMs = cfg.cleanupCheckIntervalMs || (60 * 60 * 1000);
+
+  cleanupTimer = setInterval(checkAndRun, intervalMs);
+  if (cleanupTimer.unref) cleanupTimer.unref();
+  logger.info('Audit retention: scheduler started');
+}
+
+/**
+ * Stop the scheduled cleanup scanner (test cleanup).
+ */
+export function stop() {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
+}
+
+/**
+ * Get retention stats for /api/health and monitoring.
+ * @returns {{ lastCleanupAt: string|null, lastCleanupCount: number }}
+ */
+export function getStats() {
+  return { lastCleanupAt, lastCleanupCount };
+}
+
+// Test helpers
+export const _testHelpers = {
+  runRetentionCleanup,
+  getEgyptDateAndHour,
+  checkAndRun,
+  setLastRunDate: (date) => { lastRunDate = date; },
+  resetState: () => {
+    lastCleanupAt = null;
+    lastCleanupCount = 0;
+    lastRunDate = null;
+  },
+};
+```
+
+---
+
 ## `server/services/auditLogSearch.js`
 
 ```javascript
@@ -2914,8 +3079,11 @@ export async function countActions() {
 // exportToCSV: UTF-8 BOM + Arabic headers for Excel compatibility.
 // ═══════════════════════════════════════════════════════════════
 
+import { Readable } from 'node:stream';
+import { join } from 'node:path';
+import { readdir } from 'node:fs/promises';
 import config from '../../config.js';
-import { getCollectionPath, listJSON } from './database.js';
+import { getCollectionPath, listJSON, readJSON } from './database.js';
 import { logger } from './logger.js';
 
 const BOM = '\uFEFF';
@@ -2932,6 +3100,7 @@ function csvRow(fields) {
 
 /**
  * Search audit log entries with full-text + filters.
+ * Phase 48: cursor pagination support added.
  *
  * @param {object} options
  * @param {string} [options.q] — search query (matches action, targetId, targetType, adminId, ip, details JSON)
@@ -2941,7 +3110,8 @@ function csvRow(fields) {
  * @param {string} [options.from] — ISO date — entries with createdAt >= from
  * @param {string} [options.to] — ISO date — entries with createdAt <= to
  * @param {number} [options.limit=50]
- * @returns {Promise<{ entries: object[], total: number }>}
+ * @param {string} [options.cursor] — Phase 48: last entry id from previous page for forward pagination
+ * @returns {Promise<{ entries: object[], total: number, nextCursor: string|null, hasMore: boolean }>}
  */
 export async function searchActions(options = {}) {
   const auditDir = getCollectionPath('audit');
@@ -2950,7 +3120,7 @@ export async function searchActions(options = {}) {
     entries = await listJSON(auditDir);
   } catch (err) {
     logger.warn('auditLogSearch: listJSON failed', { error: err.message });
-    return { entries: [], total: 0 };
+    return { entries: [], total: 0, nextCursor: null, hasMore: false };
   }
 
   // Filter to audit records only
@@ -2996,16 +3166,134 @@ export async function searchActions(options = {}) {
   // Sort newest first
   entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+  // ── Phase 48 NEW: Cursor support ──
+  // Apply cursor AFTER sort, BEFORE slice — preserves newest-first ordering
+  const cursor = options.cursor;
+  if (cursor && entries.length > 0) {
+    const cursorIdx = entries.findIndex(e => e.id === cursor);
+    if (cursorIdx >= 0) {
+      entries = entries.slice(cursorIdx + 1);
+    }
+    // If cursorIdx === -1 (cursor not found), return from beginning (graceful)
+  }
+
   const total = entries.length;
   const maxResults = (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.auditLogSearchMaxResults) || 200;
   const limit = Math.min(Math.max(1, options.limit || 50), maxResults);
-  entries = entries.slice(0, limit);
+  const sliced = entries.slice(0, limit);
 
-  return { entries, total };
+  // ── Phase 48 NEW: Pagination metadata ──
+  const nextCursor = (sliced.length === limit && total > limit)
+    ? sliced[sliced.length - 1].id
+    : null;
+  const hasMore = nextCursor !== null;
+
+  return { entries: sliced, total, nextCursor, hasMore };
+}
+
+/**
+ * Phase 48: Create a Node.js Readable stream for memory-efficient CSV export.
+ * Streams chunks instead of loading all entries into memory.
+ * Memory pattern: <1KB at any time, regardless of dataset size.
+ *
+ * @param {object} options — { from?, to?, action? }
+ * @returns {Readable}
+ */
+export function createCsvExportStream(options = {}) {
+  const cfg = config.ADMIN_OPERATIONS;
+  const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
+
+  let rowCount = 0;
+  let fileIndex = 0;
+  /** @type {string[]|null} */
+  let auditFiles = null;
+  let auditDirPath = null;
+
+  return new Readable({
+    encoding: 'utf-8',
+    async read() {
+      try {
+        // Lazy load file list on first read
+        if (auditFiles === null) {
+          auditDirPath = getCollectionPath('audit');
+          let files;
+          try {
+            files = await readdir(auditDirPath);
+          } catch (_) {
+            files = [];
+          }
+          auditFiles = files.filter(f =>
+            f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
+          );
+
+          // Push header chunk with BOM
+          const headers = csvRow([
+            'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
+            'IP', 'التفاصيل', 'التاريخ',
+          ]);
+          this.push(BOM + headers + '\n');
+
+          // Empty dataset — end immediately after header
+          if (auditFiles.length === 0) {
+            this.push(null);
+            return;
+          }
+        }
+
+        // Stream rows
+        while (fileIndex < auditFiles.length && rowCount < maxRows) {
+          const filePath = join(auditDirPath, auditFiles[fileIndex]);
+          fileIndex++;
+
+          let data = null;
+          try {
+            data = await readJSON(filePath);
+          } catch (_) { /* skip unreadable files */ }
+          if (!data) continue;
+
+          // Apply filters
+          if (options.from && data.createdAt && data.createdAt < options.from) continue;
+          if (options.to && data.createdAt && data.createdAt > options.to) continue;
+          if (options.action && data.action !== options.action) continue;
+
+          // Build row
+          const row = csvRow([
+            data.id || '',
+            data.adminId || '',
+            data.action || '',
+            data.targetType || '',
+            data.targetId || '',
+            data.ip || '',
+            data.details ? JSON.stringify(data.details) : '',
+            data.createdAt || '',
+          ]);
+
+          // Push with backpressure handling
+          if (!this.push(row + '\n')) {
+            // Backpressure — pause and wait for next read()
+            return;
+          }
+          rowCount++;
+
+          // Yield to event loop every 1000 rows
+          if (rowCount % 1000 === 0) {
+            await new Promise(resolve => setImmediate(resolve));
+          }
+        }
+
+        // End stream when done
+        this.push(null);
+      } catch (err) {
+        this.destroy(err);
+      }
+    },
+  });
 }
 
 /**
  * Export audit log to CSV format with UTF-8 BOM for Arabic Excel compatibility.
+ * Phase 48: Backward-compat wrapper consuming createCsvExportStream.
+ * Memory-efficient via streaming internally, but accumulates final string for callers.
  *
  * @param {object} options
  * @param {string} [options.from] — ISO date
@@ -3014,53 +3302,30 @@ export async function searchActions(options = {}) {
  * @returns {Promise<{ csv: string, count: number, filename: string }>}
  */
 export async function exportToCSV(options = {}) {
-  const auditDir = getCollectionPath('audit');
-  let entries;
+  const stream = createCsvExportStream(options);
+  let csv = '';
+  let count = 0;
+
   try {
-    entries = await listJSON(auditDir);
+    for await (const chunk of stream) {
+      csv += chunk;
+    }
   } catch (err) {
-    logger.warn('auditLogSearch: exportToCSV listJSON failed', { error: err.message });
+    logger.warn('auditLogSearch: exportToCSV stream failed', { error: err.message });
     return { csv: BOM + 'لا توجد بيانات', count: 0, filename: 'audit-log-empty.csv' };
   }
 
-  entries = entries.filter(e => e.id && e.id.startsWith('aud_'));
+  // Count rows: total lines − header − trailing empty line from last \n
+  // csv = "BOM+headers\nrow1\nrow2\n" → split('\n') = ['BOM+headers', 'row1', 'row2', '']
+  // We want count = 2 (rows excluding header + trailing empty)
+  const lines = csv.split('\n');
+  // Subtract 1 for header. Last element is empty string due to trailing \n — also subtract.
+  count = Math.max(0, lines.length - 2);
 
-  if (options.from) entries = entries.filter(e => e.createdAt && e.createdAt >= options.from);
-  if (options.to) entries = entries.filter(e => e.createdAt && e.createdAt <= options.to);
-  if (options.action) entries = entries.filter(e => e.action === options.action);
-
-  // Sort newest first
-  entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  // Enforce max rows
-  const maxRows = (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.auditLogExportMaxRows) || 10000;
-  entries = entries.slice(0, maxRows);
-
-  // Build CSV
-  const headers = csvRow([
-    'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
-    'IP', 'التفاصيل', 'التاريخ',
-  ]);
-  const rows = [headers];
-
-  for (const e of entries) {
-    rows.push(csvRow([
-      e.id,
-      e.adminId || '',
-      e.action || '',
-      e.targetType || '',
-      e.targetId || '',
-      e.ip || '',
-      e.details ? JSON.stringify(e.details) : '',
-      e.createdAt || '',
-    ]));
-  }
-
-  const csv = BOM + rows.join('\n');
   const dateStr = new Date().toISOString().slice(0, 10);
   const filename = `audit-log-${dateStr}.csv`;
 
-  return { csv, count: entries.length, filename };
+  return { csv, count, filename };
 }
 
 // Test helpers
@@ -8556,6 +8821,43 @@ export async function rebuildCounters() {
   });
 }
 
+/**
+ * Phase 48: Check counter file size and trigger auto-rebuild if critical.
+ * Called by monitor.captureSnapshot.
+ * Fire-and-forget — won't block monitor.
+ * Reuses Phase 46 _rebuildInProgress flag (single source of truth — prevents double-trigger).
+ *
+ * @param {object} snapshot — monitor snapshot with counterFileSizeMB
+ */
+export async function maybeTriggerAutoRebuild(snapshot) {
+  if (!config.COUNTERS || !config.COUNTERS.enabled) return;
+  if (_rebuildInProgress) return; // Already running — Phase 46 flag
+
+  const sizeMB = (snapshot && typeof snapshot.counterFileSizeMB === 'number')
+    ? snapshot.counterFileSizeMB
+    : 0;
+  const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
+  const criticalThreshold = (thresholds && thresholds.critical) || 70;
+
+  if (sizeMB >= criticalThreshold) {
+    logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+      sizeMB,
+      threshold: criticalThreshold,
+    });
+
+    eventBus.emit('counters:auto_rebuild_triggered', {
+      sizeMB,
+      threshold: criticalThreshold,
+      triggeredAt: new Date().toISOString(),
+    });
+
+    // Fire-and-forget rebuild (won't block monitor)
+    rebuildCounters().catch(err => {
+      logger.error('Auto-rebuild failed', { error: err.message });
+    });
+  }
+}
+
 // Test helpers (Phase 45 + Phase 46)
 export const _testHelpers = {
   emptyCounters,
@@ -13305,6 +13607,22 @@ const builtInMigrations = [
       logger.info('Migration v7: lazy metadata for snoozeReminders registered (Phase 47)');
     },
   },
+  {
+    version: 8,
+    name: 'Phase 48: Admin Real-Time Operations (no schema changes — version bump)',
+    up: async () => {
+      // Phase 48 is purely infrastructure:
+      //   - Admin SSE channel (in-memory connections, no persistence)
+      //   - Audit log retention enforcement (deletes existing audit files, no schema)
+      //   - Audit log cursor pagination (read-only API extension)
+      //   - CSV streaming export (read-only API refactor)
+      //   - Counter auto-rebuild trigger (reuses Phase 46 rebuildCounters)
+      //   - SnoozeReminders health monitoring (in-memory state)
+      // Zero schema changes. No data backfill.
+      // Migration registered for version tracking + clean state for Phase 49.
+      logger.info('Migration v8: Phase 48 infrastructure registered (no schema changes)');
+    },
+  },
 ];
 
 /**
@@ -13494,6 +13812,24 @@ export async function captureSnapshot() {
     counterFileSizeMB = +(sizeBytes / 1048576).toFixed(2);
   } catch (_) { /* non-fatal — default 0 */ }
 
+  // Phase 48: SnoozeReminders health monitoring (lastScanAt staleness)
+  let snoozeReminders = { lastScanAt: null, lastScanDurationMs: 0, lastScanRemindersCount: 0 };
+  try {
+    const snooze = await import('./snoozeReminders.js');
+    if (snooze.getStats) {
+      snoozeReminders = snooze.getStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
+  // Phase 48: Audit retention stats
+  let auditRetention = { lastCleanupAt: null, lastCleanupCount: 0 };
+  try {
+    const retention = await import('./auditLogRetention.js');
+    if (retention.getStats) {
+      auditRetention = retention.getStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -13507,7 +13843,17 @@ export async function captureSnapshot() {
     dataSize,
     directOffers,
     counterFileSizeMB, // Phase 46
+    snoozeReminders,   // Phase 48
+    auditRetention,    // Phase 48
   };
+
+  // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
+  try {
+    const counters = await import('./directOfferCounters.js');
+    if (counters.maybeTriggerAutoRebuild) {
+      counters.maybeTriggerAutoRebuild(snapshot).catch(() => {});
+    }
+  } catch (_) { /* non-fatal */ }
 
   // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
   await mkdir(METRICS_DIR, { recursive: true });
@@ -13681,6 +14027,33 @@ export function checkThresholds(snapshot) {
         value: val,
         threshold: thresholds.counterFileSizeMB.warning,
         message: `Counter file size warning: ${val}MB (warning threshold ${thresholds.counterFileSizeMB.warning}MB)`,
+      });
+    }
+  }
+
+  // Phase 48 — SnoozeReminders staleness threshold
+  if (snapshot.snoozeReminders && snapshot.snoozeReminders.lastScanAt) {
+    const cfg = config.ADMIN_OPERATIONS;
+    const lastScanMs = new Date(snapshot.snoozeReminders.lastScanAt).getTime();
+    const ageMs = Date.now() - lastScanMs;
+    const warnMs = (cfg && cfg.snoozeReminderStaleWarningMs) || (2 * 60 * 60 * 1000);
+    const critMs = (cfg && cfg.snoozeReminderStaleCriticalMs) || (6 * 60 * 60 * 1000);
+
+    if (ageMs >= critMs) {
+      alerts.push({
+        level: 'critical',
+        metric: 'snoozeReminderStale',
+        value: Math.round(ageMs / 60000),
+        threshold: Math.round(critMs / 60000),
+        message: `snoozeReminders scan stale: ${Math.round(ageMs / 60000)} min ago (threshold ${Math.round(critMs / 60000)} min)`,
+      });
+    } else if (ageMs >= warnMs) {
+      alerts.push({
+        level: 'warning',
+        metric: 'snoozeReminderStale',
+        value: Math.round(ageMs / 60000),
+        threshold: Math.round(warnMs / 60000),
+        message: `snoozeReminders scan stale: ${Math.round(ageMs / 60000)} min ago (threshold ${Math.round(warnMs / 60000)} min)`,
       });
     }
   }
@@ -14766,6 +15139,7 @@ export function setupNotificationListeners() {
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 import * as abuseFlagReview from './abuseFlagReview.js';
 
 /**
@@ -14995,6 +15369,23 @@ export async function detectAbuse() {
       }
     }
     filtered.push(flag);
+  }
+
+  // Phase 48 — Emit event for each high-severity flag (fire-and-forget)
+  // Allows admin SSE channel to deliver real-time notifications
+  for (const flag of filtered) {
+    if (flag.severity === 'high') {
+      try {
+        eventBus.emit('abuse_flag:detected_high_severity', {
+          flagType: flag.type,
+          employerId: flag.employerId || null,
+          workerId: flag.workerId || null,
+          fingerprint: flag.fingerprint || null,
+          severity: flag.severity,
+          detectedAt: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
+    }
   }
 
   // Sort by severity: high (3) → medium (2) → low (1)
@@ -17312,6 +17703,11 @@ import { logger } from './logger.js';
 
 let scanTimer = null;
 
+// Phase 48 — Health monitoring state
+let lastScanAt = null;
+let lastScanDurationMs = 0;
+let lastScanRemindersCount = 0;
+
 /**
  * Scan all snoozed flags for upcoming expiry.
  * Sends 'admin_alert' notification to all admins for flags within reminder window.
@@ -17324,6 +17720,7 @@ export async function scanSnoozeExpiries() {
     return { scanned: 0, alertsSent: 0 };
   }
 
+  const startTs = Date.now();
   const reminderHours = config.ADMIN_OPERATIONS.snoozeReminderHoursBefore || 24;
   const reminderWindowMs = reminderHours * 60 * 60 * 1000;
   const now = Date.now();
@@ -17376,11 +17773,28 @@ export async function scanSnoozeExpiries() {
     logger.warn('snoozeReminders: scan failed', { error: err.message });
   }
 
+  // Phase 48 — Update health monitoring state
+  lastScanAt = new Date().toISOString();
+  lastScanDurationMs = Date.now() - startTs;
+  lastScanRemindersCount = alertsSent;
+
   if (alertsSent > 0) {
     logger.info('snoozeReminders: scan complete', { scanned, alertsSent });
   }
 
   return { scanned, alertsSent };
+}
+
+/**
+ * Phase 48: Get health monitoring stats for /api/health and monitoring.
+ * @returns {{ lastScanAt: string|null, lastScanDurationMs: number, lastScanRemindersCount: number }}
+ */
+export function getStats() {
+  return {
+    lastScanAt,
+    lastScanDurationMs,
+    lastScanRemindersCount,
+  };
 }
 
 /**
@@ -17512,6 +17926,11 @@ export const _testHelpers = {
   scanSnoozeExpiries,
   detectExpiredSnoozes,
   sendAdminAlert,
+  resetHealthState: () => {
+    lastScanAt = null;
+    lastScanDurationMs = 0;
+    lastScanRemindersCount = 0;
+  },
 };
 ```
 

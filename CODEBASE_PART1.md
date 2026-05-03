@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.43.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-03T13:57:45.776Z
+# يوميّة (Yawmia) v0.44.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-03T17:47:50.671Z
 > Files in this part: 6
 
 ## Files
@@ -525,7 +525,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.43.0',
+    cacheName: 'yawmia-v0.44.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1025,19 +1025,33 @@ const config = {
   // ═══════════════════════════════════════════════════════════════════
   ADMIN_OPERATIONS: {
     enabled: true,
-    // Snooze reminder scanner
+    // Snooze reminder scanner (Phase 47)
     snoozeReminderEnabled: true,
     snoozeReminderHoursBefore: 24,                    // notify admin 24h before snooze expires
     snoozeReminderCheckIntervalMs: 60 * 60 * 1000,    // check every hour
-    // Bulk actions
+    // Bulk actions (Phase 47)
     bulkActionMaxFlags: 50,                            // max flags per bulk request
     bulkActionTimeoutMs: 30 * 1000,                    // bulk operation timeout
-    // Audit log search
+    // Audit log search (Phase 47)
     auditLogSearchMaxResults: 200,
-    auditLogExportMaxRows: 10000,
-    auditLogRuntimeCleanupEnabled: false,              // true in Phase 48
-    // Rate limit visibility
+    auditLogExportMaxRows: 100000,                     // Phase 48 — bumped from 10000 (streaming export)
+    auditLogRuntimeCleanupEnabled: false,
+    // Rate limit visibility (Phase 47)
     exposeWarningRateLimitToFrontend: true,
+    // Phase 48 — SnoozeReminders staleness thresholds
+    snoozeReminderStaleWarningMs: 2 * 60 * 60 * 1000,    // 2 hours
+    snoozeReminderStaleCriticalMs: 6 * 60 * 60 * 1000,   // 6 hours
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 62. حفظ سجل العمليات (AUDIT_RETENTION) — Phase 48 Audit Log Retention Enforcement
+  // ═══════════════════════════════════════════════════════════════════
+  AUDIT_RETENTION: {
+    enabled: true,
+    retentionDays: 365,                              // delete entries older than 365 days
+    cleanupHourEgypt: 2,                             // run at 2AM Egypt time
+    cleanupBatchSize: 100,                           // yield event loop every 100 files
+    cleanupCheckIntervalMs: 60 * 60 * 1000,          // check every hour
   },
 
 };
@@ -1088,7 +1102,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.43.0",
+  "version": "0.44.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1483,6 +1497,16 @@ if (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
   }
 }
 
+// ── Phase 48 — Audit Log Retention Scanner ──
+if (config.AUDIT_RETENTION && config.AUDIT_RETENTION.enabled) {
+  try {
+    const auditRetention = await import('./server/services/auditLogRetention.js');
+    auditRetention.start();
+  } catch (err) {
+    logger.warn('Phase 48: auditLogRetention start failed', { error: err.message });
+  }
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)
@@ -1625,6 +1649,7 @@ import {
   handleAdminAuditLogSearch,
   handleAdminAuditLogExport,
 } from './handlers/adminHandler.js';
+import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -1673,7 +1698,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.43.0',
+        version: '0.44.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1835,7 +1860,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.43.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.44.0' });
     },
   },
 
@@ -2035,6 +2060,9 @@ const routes = [
   { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
   { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
   { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
+
+  // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
+  { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

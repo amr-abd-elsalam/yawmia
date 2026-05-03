@@ -1,39 +1,40 @@
-# يوميّة (Yawmia) v0.43.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-03T13:57:45.800Z
-> Files in this part: 31
+# يوميّة (Yawmia) v0.44.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-03T17:47:50.690Z
+> Files in this part: 32
 
 ## Files
 1. `server/handlers/adminHandler.js`
-2. `server/handlers/alertsHandler.js`
-3. `server/handlers/analyticsHandler.js`
-4. `server/handlers/applicationsHandler.js`
-5. `server/handlers/attendanceHandler.js`
-6. `server/handlers/authHandler.js`
-7. `server/handlers/availabilityAdHandler.js`
-8. `server/handlers/availabilityHandler.js`
-9. `server/handlers/directOfferHandler.js`
-10. `server/handlers/favoritesHandler.js`
-11. `server/handlers/imageHandler.js`
-12. `server/handlers/jobsHandler.js`
-13. `server/handlers/liveFeedHandler.js`
-14. `server/handlers/messagesHandler.js`
-15. `server/handlers/notificationsHandler.js`
-16. `server/handlers/paymentsHandler.js`
-17. `server/handlers/presenceHandler.js`
-18. `server/handlers/pushHandler.js`
-19. `server/handlers/ratingsHandler.js`
-20. `server/handlers/reportsHandler.js`
-21. `server/handlers/sseHandler.js`
-22. `server/handlers/verificationHandler.js`
-23. `server/handlers/workerDiscoveryHandler.js`
-24. `server/middleware/auth.js`
-25. `server/middleware/bodyParser.js`
-26. `server/middleware/cors.js`
-27. `server/middleware/rateLimit.js`
-28. `server/middleware/requestId.js`
-29. `server/middleware/security.js`
-30. `server/middleware/static.js`
-31. `server/middleware/timing.js`
+2. `server/handlers/adminSseHandler.js`
+3. `server/handlers/alertsHandler.js`
+4. `server/handlers/analyticsHandler.js`
+5. `server/handlers/applicationsHandler.js`
+6. `server/handlers/attendanceHandler.js`
+7. `server/handlers/authHandler.js`
+8. `server/handlers/availabilityAdHandler.js`
+9. `server/handlers/availabilityHandler.js`
+10. `server/handlers/directOfferHandler.js`
+11. `server/handlers/favoritesHandler.js`
+12. `server/handlers/imageHandler.js`
+13. `server/handlers/jobsHandler.js`
+14. `server/handlers/liveFeedHandler.js`
+15. `server/handlers/messagesHandler.js`
+16. `server/handlers/notificationsHandler.js`
+17. `server/handlers/paymentsHandler.js`
+18. `server/handlers/presenceHandler.js`
+19. `server/handlers/pushHandler.js`
+20. `server/handlers/ratingsHandler.js`
+21. `server/handlers/reportsHandler.js`
+22. `server/handlers/sseHandler.js`
+23. `server/handlers/verificationHandler.js`
+24. `server/handlers/workerDiscoveryHandler.js`
+25. `server/middleware/auth.js`
+26. `server/middleware/bodyParser.js`
+27. `server/middleware/cors.js`
+28. `server/middleware/rateLimit.js`
+29. `server/middleware/requestId.js`
+30. `server/middleware/security.js`
+31. `server/middleware/static.js`
+32. `server/middleware/timing.js`
 
 ---
 
@@ -626,8 +627,9 @@ export async function handleAdminUserWarningsRemaining(req, res) {
 }
 
 /**
- * GET /api/admin/audit-log/search?q=&action=&adminId=&targetType=&from=&to=&limit=
+ * GET /api/admin/audit-log/search?q=&action=&adminId=&targetType=&from=&to=&limit=&cursor=
  * Phase 47 — full-text search + combined filters on audit log.
+ * Phase 48 — cursor pagination support added.
  * Requires: requireAdmin
  */
 export async function handleAdminAuditLogSearch(req, res) {
@@ -641,6 +643,7 @@ export async function handleAdminAuditLogSearch(req, res) {
       from: req.query.from,
       to: req.query.to,
       limit: parseInt(req.query.limit) || 50,
+      cursor: req.query.cursor,  // Phase 48
     });
     return sendJSON(res, 200, { ok: true, ...result });
   } catch (err) {
@@ -651,26 +654,203 @@ export async function handleAdminAuditLogSearch(req, res) {
 /**
  * GET /api/admin/audit-log/export?from=&to=&action=
  * Phase 47 — CSV export with UTF-8 BOM for Arabic Excel.
+ * Phase 48 — Streaming export for memory-efficient large datasets (up to 100K rows).
  * Requires: requireAdmin
  */
 export async function handleAdminAuditLogExport(req, res) {
   try {
-    const { exportToCSV } = await import('../services/auditLogSearch.js');
-    const result = await exportToCSV({
+    const { createCsvExportStream } = await import('../services/auditLogSearch.js');
+    const { logger } = await import('../services/logger.js');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `audit-log-${dateStr}.csv`;
+
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Transfer-Encoding': 'chunked',
+    });
+
+    const stream = createCsvExportStream({
       from: req.query.from,
       to: req.query.to,
       action: req.query.action,
     });
-    res.writeHead(200, {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${result.filename}"`,
-      'Content-Length': Buffer.byteLength(result.csv, 'utf-8'),
+
+    stream.on('error', (err) => {
+      logger.error('CSV stream error', { error: err.message });
+      if (!res.writableEnded) {
+        try { res.end(); } catch (_) {}
+      }
     });
-    res.end(result.csv);
+
+    stream.pipe(res);
   } catch (err) {
-    return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
+    if (!res.writableEnded) {
+      return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
+    }
   }
 }
+```
+
+---
+
+## `server/handlers/adminSseHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/adminSseHandler.js — Admin SSE Channel (Phase 48)
+// ═══════════════════════════════════════════════════════════════
+// Self-authenticated SSE for admin events.
+// Token via X-Admin-Token header OR ?token= / ?_token= query param.
+// Subscribed events:
+//   - abuse_flag:snooze_expiring (Phase 47)
+//   - abuse_flag:snooze_expired (Phase 47)
+//   - abuse_flag:detected_high_severity (Phase 48 NEW)
+//   - direct_offer:abuse_threshold_crossed (Phase 48 NEW — reserved for Phase 49+)
+//   - counters:auto_rebuild_triggered (Phase 48 NEW)
+// In-memory connection map per admin, lazy event listener registration.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from '../services/eventBus.js';
+import { formatSSE } from '../services/sseManager.js';
+import { logger } from '../services/logger.js';
+
+/** @type {Map<string, Set<{ res: any, connectedAt: number }>>} */
+const adminConnections = new Map();
+
+const SUBSCRIBED_EVENTS = [
+  'abuse_flag:snooze_expiring',
+  'abuse_flag:snooze_expired',
+  'abuse_flag:detected_high_severity',
+  'direct_offer:abuse_threshold_crossed',
+  'counters:auto_rebuild_triggered',
+];
+
+let listenersRegistered = false;
+
+/**
+ * Lazy register EventBus listeners on first admin connection.
+ * Idempotent — guarded by listenersRegistered flag.
+ */
+function registerEventListeners() {
+  if (listenersRegistered) return;
+  listenersRegistered = true;
+  for (const eventName of SUBSCRIBED_EVENTS) {
+    eventBus.on(eventName, (data) => broadcastToAdmins(eventName, data));
+  }
+  logger.info('Admin SSE: event listeners registered', { count: SUBSCRIBED_EVENTS.length });
+}
+
+/**
+ * Broadcast an event to all connected admins.
+ * Fire-and-forget per connection — write errors silently ignored.
+ *
+ * @param {string} eventType
+ * @param {*} data
+ */
+function broadcastToAdmins(eventType, data) {
+  const eventId = `adm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const msg = formatSSE(eventType, data, eventId);
+  for (const [, conns] of adminConnections) {
+    for (const entry of conns) {
+      try {
+        if (!entry.res.writableEnded && !entry.res.destroyed) {
+          entry.res.write(msg);
+        }
+      } catch (_) { /* ignore write errors */ }
+    }
+  }
+}
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+/**
+ * GET /api/admin/events
+ * Self-authenticated SSE endpoint for admin events.
+ * Auth: X-Admin-Token header OR ?token= / ?_token= query param.
+ */
+export async function handleAdminEventStream(req, res) {
+  // ── Auth ──
+  let adminToken = req.headers['x-admin-token'];
+  if (!adminToken && req.query) {
+    adminToken = req.query.token || req.query._token;
+  }
+
+  const isValidAdmin =
+    (adminToken && adminToken === process.env.ADMIN_TOKEN) ||
+    (req.user && req.user.role === 'admin');
+
+  if (!isValidAdmin) {
+    return sendJSON(res, 401, { error: 'صلاحيات الأدمن مطلوبة', code: 'ADMIN_REQUIRED' });
+  }
+
+  const adminId = (req.user && req.user.id) || 'admin_token';
+
+  // ── Lazy register listeners on first connection ──
+  registerEventListeners();
+
+  // ── Write SSE headers ──
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  if (req.socket) req.socket.setTimeout(0);
+
+  // ── Suggest retry interval ──
+  const retryMs = (config.SSE && config.SSE.reconnectMs) || 5000;
+  res.write(`retry: ${retryMs}\n\n`);
+
+  // ── Send init event ──
+  res.write(formatSSE(
+    'init',
+    { adminId, subscribedEvents: SUBSCRIBED_EVENTS },
+    'adm-init-' + Date.now()
+  ));
+
+  // ── Register connection ──
+  if (!adminConnections.has(adminId)) {
+    adminConnections.set(adminId, new Set());
+  }
+  const entry = { res, connectedAt: Date.now() };
+  adminConnections.get(adminId).add(entry);
+
+  // ── Cleanup on close ──
+  res.on('close', () => {
+    const conns = adminConnections.get(adminId);
+    if (conns) {
+      conns.delete(entry);
+      if (conns.size === 0) adminConnections.delete(adminId);
+    }
+  });
+}
+
+/**
+ * Get aggregate admin connection stats.
+ * @returns {{ admins: number, totalConnections: number }}
+ */
+export function getAdminConnectionStats() {
+  let total = 0;
+  for (const [, conns] of adminConnections) total += conns.size;
+  return { admins: adminConnections.size, totalConnections: total };
+}
+
+// Test helpers
+export const _testHelpers = {
+  adminConnections,
+  SUBSCRIBED_EVENTS,
+  broadcastToAdmins,
+  resetState: () => {
+    adminConnections.clear();
+    listenersRegistered = false;
+  },
+};
 ```
 
 ---
