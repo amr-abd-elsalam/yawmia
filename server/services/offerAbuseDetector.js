@@ -13,6 +13,7 @@
 import config from '../../config.js';
 import { getCollectionPath, listJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 import * as abuseFlagReview from './abuseFlagReview.js';
 
 /**
@@ -242,6 +243,23 @@ export async function detectAbuse() {
       }
     }
     filtered.push(flag);
+  }
+
+  // Phase 48 — Emit event for each high-severity flag (fire-and-forget)
+  // Allows admin SSE channel to deliver real-time notifications
+  for (const flag of filtered) {
+    if (flag.severity === 'high') {
+      try {
+        eventBus.emit('abuse_flag:detected_high_severity', {
+          flagType: flag.type,
+          employerId: flag.employerId || null,
+          workerId: flag.workerId || null,
+          fingerprint: flag.fingerprint || null,
+          severity: flag.severity,
+          detectedAt: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
+    }
   }
 
   // Sort by severity: high (3) → medium (2) → low (1)

@@ -368,6 +368,16 @@ if (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
   }
 }
 
+// ── Phase 48 — Audit Log Retention Scanner ──
+if (config.AUDIT_RETENTION && config.AUDIT_RETENTION.enabled) {
+  try {
+    const auditRetention = await import('./server/services/auditLogRetention.js');
+    auditRetention.start();
+  } catch (err) {
+    logger.warn('Phase 48: auditLogRetention start failed', { error: err.message });
+  }
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)

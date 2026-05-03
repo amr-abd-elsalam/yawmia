@@ -3748,3 +3748,31 @@ textarea:focus:not(:focus-visible) {
     padding: 0.3rem 0.4rem;
   }
 }
+
+/* ═══ Phase 48 — Admin Real-Time Operations ═══ */
+.admin-sse-status {
+  display: inline-block;
+  font-size: 1.2rem;
+  margin-inline-start: 0.5rem;
+  cursor: help;
+  transition: color 0.3s ease;
+  vertical-align: middle;
+}
+
+.admin-sse-status--connected {
+  color: var(--color-success);
+  animation: admin-sse-pulse 2s ease-in-out infinite;
+}
+
+.admin-sse-status--disconnected {
+  color: var(--color-text-muted);
+}
+
+@keyframes admin-sse-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.audit-load-more {
+  margin-block-start: 1rem;
+}

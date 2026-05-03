@@ -123,6 +123,24 @@ export async function captureSnapshot() {
     counterFileSizeMB = +(sizeBytes / 1048576).toFixed(2);
   } catch (_) { /* non-fatal — default 0 */ }
 
+  // Phase 48: SnoozeReminders health monitoring (lastScanAt staleness)
+  let snoozeReminders = { lastScanAt: null, lastScanDurationMs: 0, lastScanRemindersCount: 0 };
+  try {
+    const snooze = await import('./snoozeReminders.js');
+    if (snooze.getStats) {
+      snoozeReminders = snooze.getStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
+  // Phase 48: Audit retention stats
+  let auditRetention = { lastCleanupAt: null, lastCleanupCount: 0 };
+  try {
+    const retention = await import('./auditLogRetention.js');
+    if (retention.getStats) {
+      auditRetention = retention.getStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -136,7 +154,17 @@ export async function captureSnapshot() {
     dataSize,
     directOffers,
     counterFileSizeMB, // Phase 46
+    snoozeReminders,   // Phase 48
+    auditRetention,    // Phase 48
   };
+
+  // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
+  try {
+    const counters = await import('./directOfferCounters.js');
+    if (counters.maybeTriggerAutoRebuild) {
+      counters.maybeTriggerAutoRebuild(snapshot).catch(() => {});
+    }
+  } catch (_) { /* non-fatal */ }
 
   // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
   await mkdir(METRICS_DIR, { recursive: true });
@@ -310,6 +338,33 @@ export function checkThresholds(snapshot) {
         value: val,
         threshold: thresholds.counterFileSizeMB.warning,
         message: `Counter file size warning: ${val}MB (warning threshold ${thresholds.counterFileSizeMB.warning}MB)`,
+      });
+    }
+  }
+
+  // Phase 48 — SnoozeReminders staleness threshold
+  if (snapshot.snoozeReminders && snapshot.snoozeReminders.lastScanAt) {
+    const cfg = config.ADMIN_OPERATIONS;
+    const lastScanMs = new Date(snapshot.snoozeReminders.lastScanAt).getTime();
+    const ageMs = Date.now() - lastScanMs;
+    const warnMs = (cfg && cfg.snoozeReminderStaleWarningMs) || (2 * 60 * 60 * 1000);
+    const critMs = (cfg && cfg.snoozeReminderStaleCriticalMs) || (6 * 60 * 60 * 1000);
+
+    if (ageMs >= critMs) {
+      alerts.push({
+        level: 'critical',
+        metric: 'snoozeReminderStale',
+        value: Math.round(ageMs / 60000),
+        threshold: Math.round(critMs / 60000),
+        message: `snoozeReminders scan stale: ${Math.round(ageMs / 60000)} min ago (threshold ${Math.round(critMs / 60000)} min)`,
+      });
+    } else if (ageMs >= warnMs) {
+      alerts.push({
+        level: 'warning',
+        metric: 'snoozeReminderStale',
+        value: Math.round(ageMs / 60000),
+        threshold: Math.round(warnMs / 60000),
+        message: `snoozeReminders scan stale: ${Math.round(ageMs / 60000)} min ago (threshold ${Math.round(warnMs / 60000)} min)`,
       });
     }
   }

@@ -29,6 +29,7 @@ import {
   handleAdminAuditLogSearch,
   handleAdminAuditLogExport,
 } from './handlers/adminHandler.js';
+import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -77,7 +78,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.43.0',
+        version: '0.44.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -239,7 +240,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.43.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.44.0' });
     },
   },
 
@@ -439,6 +440,9 @@ const routes = [
   { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
   { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
   { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
+
+  // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
+  { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

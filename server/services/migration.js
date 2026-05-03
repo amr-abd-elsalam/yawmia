@@ -288,6 +288,22 @@ const builtInMigrations = [
       logger.info('Migration v7: lazy metadata for snoozeReminders registered (Phase 47)');
     },
   },
+  {
+    version: 8,
+    name: 'Phase 48: Admin Real-Time Operations (no schema changes — version bump)',
+    up: async () => {
+      // Phase 48 is purely infrastructure:
+      //   - Admin SSE channel (in-memory connections, no persistence)
+      //   - Audit log retention enforcement (deletes existing audit files, no schema)
+      //   - Audit log cursor pagination (read-only API extension)
+      //   - CSV streaming export (read-only API refactor)
+      //   - Counter auto-rebuild trigger (reuses Phase 46 rebuildCounters)
+      //   - SnoozeReminders health monitoring (in-memory state)
+      // Zero schema changes. No data backfill.
+      // Migration registered for version tracking + clean state for Phase 49.
+      logger.info('Migration v8: Phase 48 infrastructure registered (no schema changes)');
+    },
+  },
 ];
 
 /**

@@ -10,6 +10,10 @@ var AdminApp = (function () {
   // Phase 47 — Bulk select state
   var bulkSelectedFlags = new Set();
 
+  // Phase 48 — Admin SSE + cursor pagination state
+  var adminSseSource = null;
+  var auditSearchCursor = null;
+
   function escapeHtml(str) {
     return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
   }
@@ -96,6 +100,8 @@ var AdminApp = (function () {
       document.getElementById('tokenForm').style.display = 'none';
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
+      // Phase 48 — Connect to admin SSE channel
+      connectAdminSse();
       // Load remaining data in parallel
       Promise.all([
         loadHealth(),
@@ -112,6 +118,102 @@ var AdminApp = (function () {
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 48 — Admin SSE Channel
+  // ═══════════════════════════════════════════════════════════════
+
+  function connectAdminSse() {
+    if (adminSseSource) return;
+    if (!token) return;
+
+    try {
+      var url = '/api/admin/events?token=' + encodeURIComponent(token);
+      adminSseSource = new EventSource(url);
+
+      var statusEl = document.getElementById('adminSseStatus');
+
+      adminSseSource.addEventListener('init', function (e) {
+        if (statusEl) {
+          statusEl.classList.remove('admin-sse-status--disconnected');
+          statusEl.classList.add('admin-sse-status--connected');
+          statusEl.title = 'متصل — استلام الأحداث الفورية';
+        }
+      });
+
+      adminSseSource.addEventListener('abuse_flag:snooze_expiring', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('⏰ snooze flag ينتهي خلال ' + (data.hoursUntilExpiry || '?') + ' ساعة');
+          }
+          // Auto-refresh abuse signals
+          if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('abuse_flag:snooze_expired', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.info('انتهى snooze لإشارة (' + (data.flagType || '?') + ')');
+          }
+          if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('abuse_flag:detected_high_severity', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('🚨 إشارة إساءة عالية: ' + (data.flagType || '?'));
+          }
+          if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('counters:auto_rebuild_triggered', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.info('🔄 counter file يُعاد بناؤه (size: ' + (data.sizeMB || '?') + 'MB)');
+          }
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('direct_offer:abuse_threshold_crossed', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('⚠️ تجاوز عتبة العروض المباشرة');
+          }
+        } catch (_) {}
+      });
+
+      adminSseSource.onerror = function () {
+        // EventSource auto-reconnects natively
+        if (statusEl) {
+          statusEl.classList.remove('admin-sse-status--connected');
+          statusEl.classList.add('admin-sse-status--disconnected');
+          statusEl.title = 'محاولة إعادة الاتصال...';
+        }
+      };
+    } catch (err) {
+      console.error('Admin SSE connection failed', err);
+    }
+  }
+
+  function renderAuditRow(e) {
+    var date = e.createdAt ? new Date(e.createdAt).toLocaleString('ar-EG') : '-';
+    var detailsStr = e.details ? JSON.stringify(e.details).substring(0, 80) : '-';
+    return '<tr>' +
+      '<td>' + escapeHtml(e.adminId || '') + '</td>' +
+      '<td>' + escapeHtml(e.action || '') + '</td>' +
+      '<td>' + escapeHtml((e.targetType || '') + ':' + (e.targetId || '')) + '</td>' +
+      '<td>' + escapeHtml(date) + '</td>' +
+      '<td><small>' + escapeHtml(detailsStr) + '</small></td>' +
+      '</tr>';
   }
 
   async function loadStats() {
@@ -1073,8 +1175,11 @@ var AdminApp = (function () {
     }
   }
 
-  // Phase 47 — Audit log search + export
-  async function searchAuditLog() {
+  // Phase 47 + 48 — Audit log search with cursor pagination
+  async function searchAuditLog(reset) {
+    if (reset === undefined) reset = true;
+    if (reset) auditSearchCursor = null;
+
     try {
       var qEl = document.getElementById('auditSearchQuery');
       var actionEl = document.getElementById('auditActionFilter');
@@ -1091,6 +1196,7 @@ var AdminApp = (function () {
       if (action) query += '&action=' + encodeURIComponent(action);
       if (from) query += '&from=' + encodeURIComponent(from);
       if (to) query += '&to=' + encodeURIComponent(to + 'T23:59:59');
+      if (auditSearchCursor) query += '&cursor=' + encodeURIComponent(auditSearchCursor);
 
       var data = await api(query);
       var el = document.getElementById('auditLogResults');
@@ -1098,29 +1204,51 @@ var AdminApp = (function () {
 
       var entries = data.entries || [];
 
-      if (entries.length === 0) {
-        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد نتائج</p>';
-        return;
+      if (reset) {
+        // Fresh search — clear and render full structure
+        if (entries.length === 0) {
+          el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد نتائج</p>';
+          auditSearchCursor = null;
+          return;
+        }
+
+        var html = '<p style="margin-block-end:0.5rem;">عُثر على <strong>' + data.total + '</strong> سجل (يعرض ' + entries.length + ')</p>';
+        html += '<table class="admin-table" id="auditTable"><thead><tr>' +
+          '<th>الأدمن</th><th>الإجراء</th><th>الهدف</th><th>التاريخ</th><th>التفاصيل</th>' +
+          '</tr></thead><tbody>';
+
+        entries.forEach(function (e) {
+          html += renderAuditRow(e);
+        });
+
+        html += '</tbody></table>';
+        html += '<div id="auditLoadMoreContainer" style="text-align:center;margin-block-start:1rem;"></div>';
+        el.innerHTML = html;
+      } else {
+        // Append rows to existing tbody
+        var tbody = document.querySelector('#auditTable tbody');
+        if (tbody) {
+          entries.forEach(function (e) {
+            tbody.insertAdjacentHTML('beforeend', renderAuditRow(e));
+          });
+        }
       }
 
-      var html = '<p style="margin-block-end:0.5rem;">عُثر على <strong>' + data.total + '</strong> سجل (يعرض ' + entries.length + ')</p>';
-      html += '<table class="admin-table"><thead><tr>' +
-        '<th>الأدمن</th><th>الإجراء</th><th>الهدف</th><th>التاريخ</th><th>التفاصيل</th>' +
-        '</tr></thead><tbody>';
-
-      entries.forEach(function (e) {
-        var date = e.createdAt ? new Date(e.createdAt).toLocaleString('ar-EG') : '-';
-        var detailsStr = e.details ? JSON.stringify(e.details).substring(0, 80) : '-';
-        html += '<tr>' +
-          '<td>' + escapeHtml(e.adminId || '') + '</td>' +
-          '<td>' + escapeHtml(e.action || '') + '</td>' +
-          '<td>' + escapeHtml((e.targetType || '') + ':' + (e.targetId || '')) + '</td>' +
-          '<td>' + escapeHtml(date) + '</td>' +
-          '<td><small>' + escapeHtml(detailsStr) + '</small></td>' +
-          '</tr>';
-      });
-      html += '</tbody></table>';
-      el.innerHTML = html;
+      // Render or update Load More button
+      var loadMoreContainer = document.getElementById('auditLoadMoreContainer');
+      if (loadMoreContainer) {
+        loadMoreContainer.innerHTML = '';
+        if (data.hasMore && data.nextCursor) {
+          auditSearchCursor = data.nextCursor;
+          var btn = document.createElement('button');
+          btn.className = 'btn btn--ghost btn--sm audit-load-more';
+          btn.textContent = '🔽 تحميل المزيد';
+          btn.addEventListener('click', function () { searchAuditLog(false); });
+          loadMoreContainer.appendChild(btn);
+        } else {
+          auditSearchCursor = null;
+        }
+      }
     } catch (err) {
       showError('خطأ في البحث');
     }
@@ -1436,5 +1564,7 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 48 — Admin Real-Time Operations
+    connectAdminSse: connectAdminSse,
   };
 })();

@@ -1129,6 +1129,43 @@ export async function rebuildCounters() {
   });
 }
 
+/**
+ * Phase 48: Check counter file size and trigger auto-rebuild if critical.
+ * Called by monitor.captureSnapshot.
+ * Fire-and-forget — won't block monitor.
+ * Reuses Phase 46 _rebuildInProgress flag (single source of truth — prevents double-trigger).
+ *
+ * @param {object} snapshot — monitor snapshot with counterFileSizeMB
+ */
+export async function maybeTriggerAutoRebuild(snapshot) {
+  if (!config.COUNTERS || !config.COUNTERS.enabled) return;
+  if (_rebuildInProgress) return; // Already running — Phase 46 flag
+
+  const sizeMB = (snapshot && typeof snapshot.counterFileSizeMB === 'number')
+    ? snapshot.counterFileSizeMB
+    : 0;
+  const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
+  const criticalThreshold = (thresholds && thresholds.critical) || 70;
+
+  if (sizeMB >= criticalThreshold) {
+    logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+      sizeMB,
+      threshold: criticalThreshold,
+    });
+
+    eventBus.emit('counters:auto_rebuild_triggered', {
+      sizeMB,
+      threshold: criticalThreshold,
+      triggeredAt: new Date().toISOString(),
+    });
+
+    // Fire-and-forget rebuild (won't block monitor)
+    rebuildCounters().catch(err => {
+      logger.error('Auto-rebuild failed', { error: err.message });
+    });
+  }
+}
+
 // Test helpers (Phase 45 + Phase 46)
 export const _testHelpers = {
   emptyCounters,

@@ -584,8 +584,9 @@ export async function handleAdminUserWarningsRemaining(req, res) {
 }
 
 /**
- * GET /api/admin/audit-log/search?q=&action=&adminId=&targetType=&from=&to=&limit=
+ * GET /api/admin/audit-log/search?q=&action=&adminId=&targetType=&from=&to=&limit=&cursor=
  * Phase 47 — full-text search + combined filters on audit log.
+ * Phase 48 — cursor pagination support added.
  * Requires: requireAdmin
  */
 export async function handleAdminAuditLogSearch(req, res) {
@@ -599,6 +600,7 @@ export async function handleAdminAuditLogSearch(req, res) {
       from: req.query.from,
       to: req.query.to,
       limit: parseInt(req.query.limit) || 50,
+      cursor: req.query.cursor,  // Phase 48
     });
     return sendJSON(res, 200, { ok: true, ...result });
   } catch (err) {
@@ -609,23 +611,40 @@ export async function handleAdminAuditLogSearch(req, res) {
 /**
  * GET /api/admin/audit-log/export?from=&to=&action=
  * Phase 47 — CSV export with UTF-8 BOM for Arabic Excel.
+ * Phase 48 — Streaming export for memory-efficient large datasets (up to 100K rows).
  * Requires: requireAdmin
  */
 export async function handleAdminAuditLogExport(req, res) {
   try {
-    const { exportToCSV } = await import('../services/auditLogSearch.js');
-    const result = await exportToCSV({
+    const { createCsvExportStream } = await import('../services/auditLogSearch.js');
+    const { logger } = await import('../services/logger.js');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `audit-log-${dateStr}.csv`;
+
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Transfer-Encoding': 'chunked',
+    });
+
+    const stream = createCsvExportStream({
       from: req.query.from,
       to: req.query.to,
       action: req.query.action,
     });
-    res.writeHead(200, {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${result.filename}"`,
-      'Content-Length': Buffer.byteLength(result.csv, 'utf-8'),
+
+    stream.on('error', (err) => {
+      logger.error('CSV stream error', { error: err.message });
+      if (!res.writableEnded) {
+        try { res.end(); } catch (_) {}
+      }
     });
-    res.end(result.csv);
+
+    stream.pipe(res);
   } catch (err) {
-    return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
+    if (!res.writableEnded) {
+      return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
+    }
   }
 }

@@ -16,6 +16,11 @@ import { logger } from './logger.js';
 
 let scanTimer = null;
 
+// Phase 48 — Health monitoring state
+let lastScanAt = null;
+let lastScanDurationMs = 0;
+let lastScanRemindersCount = 0;
+
 /**
  * Scan all snoozed flags for upcoming expiry.
  * Sends 'admin_alert' notification to all admins for flags within reminder window.
@@ -28,6 +33,7 @@ export async function scanSnoozeExpiries() {
     return { scanned: 0, alertsSent: 0 };
   }
 
+  const startTs = Date.now();
   const reminderHours = config.ADMIN_OPERATIONS.snoozeReminderHoursBefore || 24;
   const reminderWindowMs = reminderHours * 60 * 60 * 1000;
   const now = Date.now();
@@ -80,11 +86,28 @@ export async function scanSnoozeExpiries() {
     logger.warn('snoozeReminders: scan failed', { error: err.message });
   }
 
+  // Phase 48 — Update health monitoring state
+  lastScanAt = new Date().toISOString();
+  lastScanDurationMs = Date.now() - startTs;
+  lastScanRemindersCount = alertsSent;
+
   if (alertsSent > 0) {
     logger.info('snoozeReminders: scan complete', { scanned, alertsSent });
   }
 
   return { scanned, alertsSent };
+}
+
+/**
+ * Phase 48: Get health monitoring stats for /api/health and monitoring.
+ * @returns {{ lastScanAt: string|null, lastScanDurationMs: number, lastScanRemindersCount: number }}
+ */
+export function getStats() {
+  return {
+    lastScanAt,
+    lastScanDurationMs,
+    lastScanRemindersCount,
+  };
 }
 
 /**
@@ -216,4 +239,9 @@ export const _testHelpers = {
   scanSnoozeExpiries,
   detectExpiredSnoozes,
   sendAdminAlert,
+  resetHealthState: () => {
+    lastScanAt = null;
+    lastScanDurationMs = 0;
+    lastScanRemindersCount = 0;
+  },
 };
