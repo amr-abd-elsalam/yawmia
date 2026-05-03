@@ -358,6 +358,16 @@ if (config.BACKUP && config.BACKUP.enabled) {
   if (backupTimer.unref) backupTimer.unref();
 }
 
+// ── Phase 47 — Snooze Reminders Scanner (admin operations excellence) ──
+if (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.snoozeReminderEnabled) {
+  try {
+    const snoozeReminders = await import('./server/services/snoozeReminders.js');
+    snoozeReminders.start();
+  } catch (err) {
+    logger.warn('Phase 47: snoozeReminders start failed', { error: err.message });
+  }
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)

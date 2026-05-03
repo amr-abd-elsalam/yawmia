@@ -20,6 +20,14 @@ import {
   handleAdminFlagReviewHistory,
   handleAdminFlagReview,
   handleSendAbuseWarning,
+  // Phase 47 — Admin Operations Excellence
+  handleAdminListFlagsByStatus,
+  handleAdminSearchFlagsByNotes,
+  handleAdminBulkFlagAction,
+  handleAdminSnoozeExpiring,
+  handleAdminUserWarningsRemaining,
+  handleAdminAuditLogSearch,
+  handleAdminAuditLogExport,
 } from './handlers/adminHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
@@ -69,7 +77,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.42.0',
+        version: '0.43.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -231,7 +239,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.42.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.43.0' });
     },
   },
 
@@ -422,6 +430,15 @@ const routes = [
   { method: 'GET', path: '/api/admin/direct-offers/funnel', middlewares: [requireAdmin], handler: handleAdminDirectOffersFunnel },
   { method: 'GET', path: '/api/admin/direct-offers/decline-reasons', middlewares: [requireAdmin], handler: handleAdminDeclineReasons },
   { method: 'GET', path: '/api/admin/direct-offers/abuse', middlewares: [requireAdmin], handler: handleAdminAbuseSignals },
+
+  // ── Phase 47 — Admin Operations Excellence (BEFORE :id patterns) ──
+  { method: 'GET', path: '/api/admin/abuse-flags', middlewares: [requireAdmin], handler: handleAdminListFlagsByStatus },
+  { method: 'GET', path: '/api/admin/abuse-flags/search', middlewares: [requireAdmin], handler: handleAdminSearchFlagsByNotes },
+  { method: 'POST', path: '/api/admin/abuse-flags/bulk-action', middlewares: [requireAdmin], handler: handleAdminBulkFlagAction },
+  { method: 'GET', path: '/api/admin/abuse-flags/snooze-expiring', middlewares: [requireAdmin], handler: handleAdminSnoozeExpiring },
+  { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
+  { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
+  { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

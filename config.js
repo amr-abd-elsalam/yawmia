@@ -455,7 +455,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.42.0',
+    cacheName: 'yawmia-v0.43.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -948,6 +948,26 @@ const config = {
     batchFlushIntervalMs: 1000,                        // Flush queue every 1s
     batchMaxSize: 100,                                 // OR when queue reaches 100 events
     replayQueueMax: 1000,                              // Max events queued during rebuild
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 61. عمليات الأدمن (ADMIN_OPERATIONS) — Phase 47 Admin Operations Excellence
+  // ═══════════════════════════════════════════════════════════════════
+  ADMIN_OPERATIONS: {
+    enabled: true,
+    // Snooze reminder scanner
+    snoozeReminderEnabled: true,
+    snoozeReminderHoursBefore: 24,                    // notify admin 24h before snooze expires
+    snoozeReminderCheckIntervalMs: 60 * 60 * 1000,    // check every hour
+    // Bulk actions
+    bulkActionMaxFlags: 50,                            // max flags per bulk request
+    bulkActionTimeoutMs: 30 * 1000,                    // bulk operation timeout
+    // Audit log search
+    auditLogSearchMaxResults: 200,
+    auditLogExportMaxRows: 10000,
+    auditLogRuntimeCleanupEnabled: false,              // true in Phase 48
+    // Rate limit visibility
+    exposeWarningRateLimitToFrontend: true,
   },
 
 };

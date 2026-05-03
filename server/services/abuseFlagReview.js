@@ -218,7 +218,212 @@ export async function incrementOccurrence(fingerprint) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Phase 47 — Admin Operations Excellence Extensions
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Phase 47: List review states filtered by current status.
+ * For 'snoozed' status, applies lazy expiry verification (states with expired
+ * snooze auto-transition to 'active' via isCurrentlySnoozed and are excluded).
+ *
+ * @param {string} status — 'active' | 'snoozed' | 'dismissed' | 'actioned'
+ * @returns {Promise<object[]>} sorted by lastSeen descending (newest activity first)
+ */
+export async function listByStatus(status) {
+  const validStatuses = ['active', 'snoozed', 'dismissed', 'actioned'];
+  if (!validStatuses.includes(status)) return [];
+
+  const all = await listAllReviewStates();
+  const result = [];
+  for (const state of all) {
+    if (state.currentStatus !== status) continue;
+
+    // For snoozed status, verify still snoozed (lazy expiry mutation possible)
+    if (status === 'snoozed') {
+      try {
+        const stillSnoozed = await isCurrentlySnoozed(state.fingerprint);
+        if (stillSnoozed) result.push(state);
+      } catch (_) {
+        // On error, include state (safer than excluding)
+        result.push(state);
+      }
+    } else {
+      result.push(state);
+    }
+  }
+
+  // Sort by latest activity (last review createdAt OR firstSeenAt) descending
+  result.sort((a, b) => {
+    const aTime = a.reviews && a.reviews.length > 0
+      ? new Date(a.reviews[a.reviews.length - 1].createdAt).getTime()
+      : new Date(a.firstSeenAt).getTime();
+    const bTime = b.reviews && b.reviews.length > 0
+      ? new Date(b.reviews[b.reviews.length - 1].createdAt).getTime()
+      : new Date(b.firstSeenAt).getTime();
+    return bTime - aTime;
+  });
+
+  return result;
+}
+
+/**
+ * Phase 47: Get remaining warnings count for a user this rolling 7-day window.
+ * Used by frontend to display rate limit visibility before admin clicks "warn".
+ *
+ * @param {string} userId
+ * @returns {Promise<{ used: number, max: number, remaining: number }>}
+ */
+export async function getRemainingWarnings(userId) {
+  const cfg = (await import('../../config.js')).default;
+  const max = (cfg.DIRECT_OFFERS && cfg.DIRECT_OFFERS.abuse && cfg.DIRECT_OFFERS.abuse.maxWarningsPerUserPerWeek) || 3;
+
+  if (!userId) return { used: 0, max, remaining: max };
+
+  try {
+    const { listByUser } = await import('./notifications.js');
+    const result = await listByUser(userId, { limit: 100, offset: 0 });
+    const items = (result && result.items) || [];
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const used = items.filter(n =>
+      n.type === 'admin_warning' &&
+      new Date(n.createdAt).getTime() >= weekAgo
+    ).length;
+    return { used, max, remaining: Math.max(0, max - used) };
+  } catch (err) {
+    logger.warn('abuseFlagReview: getRemainingWarnings failed', { userId, error: err.message });
+    return { used: 0, max, remaining: max };
+  }
+}
+
+/**
+ * Phase 47: Bulk update flag review states.
+ * Atomic per-flag iteration (no all-or-nothing transaction — file-based limitation).
+ * Returns succeeded[] and failed[] for granular result reporting.
+ *
+ * @param {object} params
+ * @param {string[]} params.fingerprints — array of flag fingerprints
+ * @param {string} params.adminId
+ * @param {'dismissed'|'snoozed'|'actioned'} params.decision
+ * @param {string} [params.note]
+ * @param {number} [params.snoozeDays] — required when decision='snoozed'
+ * @returns {Promise<{ succeeded: object[], failed: object[] }>}
+ */
+export async function bulkUpdate({ fingerprints, adminId, decision, note, snoozeDays }) {
+  if (!Array.isArray(fingerprints) || fingerprints.length === 0) {
+    return { succeeded: [], failed: [] };
+  }
+
+  const cfg = (await import('../../config.js')).default;
+  const max = (cfg.ADMIN_OPERATIONS && cfg.ADMIN_OPERATIONS.bulkActionMaxFlags) || 50;
+  if (fingerprints.length > max) {
+    throw new Error(`Bulk action exceeds max ${max} flags`);
+  }
+
+  const succeeded = [];
+  const failed = [];
+
+  for (const fingerprint of fingerprints) {
+    try {
+      const existingState = await getReviewState(fingerprint);
+      if (!existingState) {
+        failed.push({ fingerprint, error: 'FLAG_NOT_FOUND' });
+        continue;
+      }
+
+      const result = await recordReview({
+        flag: existingState,
+        adminId,
+        decision,
+        note: note || null,
+        snoozeDays: decision === 'snoozed' ? snoozeDays : null,
+      });
+      succeeded.push({ fingerprint, reviewState: result });
+    } catch (err) {
+      failed.push({ fingerprint, error: err.message });
+    }
+  }
+
+  return { succeeded, failed };
+}
+
+/**
+ * Phase 47: Search review states by admin notes content.
+ * Full-text case-insensitive substring match on reviews[].note field.
+ * Attaches _matchingReview metadata for UI display.
+ *
+ * @param {string} query — minimum 2 characters
+ * @returns {Promise<object[]>} sorted by matching review timestamp descending
+ */
+export async function searchByNotes(query) {
+  if (!query || typeof query !== 'string') return [];
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return [];
+
+  const all = await listAllReviewStates();
+  const result = [];
+
+  for (const state of all) {
+    if (!state.reviews || state.reviews.length === 0) continue;
+
+    // Find FIRST matching review (any review with note containing query)
+    // Use slice().reverse() to find newest match first
+    const reviewsNewestFirst = state.reviews.slice().reverse();
+    const matchingReview = reviewsNewestFirst.find(r =>
+      r.note && r.note.toLowerCase().includes(q)
+    );
+    if (matchingReview) {
+      result.push({ ...state, _matchingReview: matchingReview });
+    }
+  }
+
+  // Sort by matching review timestamp (newest first)
+  result.sort((a, b) => {
+    const aTime = new Date(a._matchingReview.createdAt).getTime();
+    const bTime = new Date(b._matchingReview.createdAt).getTime();
+    return bTime - aTime;
+  });
+
+  return result;
+}
+
+/**
+ * Phase 47: Get flags with snooze approaching expiry within window.
+ * Read-only — does NOT mutate state (unlike isCurrentlySnoozed).
+ *
+ * @param {number} hoursWindow — find flags expiring within this many hours
+ * @returns {Promise<object[]>} sorted by closest expiry first
+ */
+export async function getSnoozeExpiringSoon(hoursWindow = 24) {
+  const all = await listAllReviewStates();
+  const nowMs = Date.now();
+  const windowMs = hoursWindow * 60 * 60 * 1000;
+  const result = [];
+
+  for (const state of all) {
+    if (state.currentStatus !== 'snoozed') continue;
+    if (!state.snoozeUntil) continue;
+    const snoozeMs = new Date(state.snoozeUntil).getTime();
+    const timeUntil = snoozeMs - nowMs;
+    if (timeUntil > 0 && timeUntil <= windowMs) {
+      result.push({
+        ...state,
+        _hoursUntilExpiry: Math.round(timeUntil / (60 * 60 * 1000)),
+      });
+    }
+  }
+
+  // Sort by closest expiry first
+  result.sort((a, b) => a._hoursUntilExpiry - b._hoursUntilExpiry);
+  return result;
+}
+
 // Test helpers
 export const _testHelpers = {
   buildInitialState,
+  listByStatus,
+  getRemainingWarnings,
+  bulkUpdate,
+  searchByNotes,
+  getSnoozeExpiringSoon,
 };

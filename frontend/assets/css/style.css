@@ -3726,3 +3726,25 @@ textarea:focus:not(:focus-visible) {
     font-size: 1.2rem;
   }
 }
+
+/* ═══ Phase 47 — Admin Operations ═══ */
+.bulk-flag-check {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.admin-table small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+@media (max-width: 600px) {
+  .admin-table th,
+  .admin-table td {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.4rem;
+  }
+}

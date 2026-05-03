@@ -274,6 +274,20 @@ const builtInMigrations = [
       logger.info('Migration v6: lazy schema for per-entity hourlyBuckets registered (Phase 46)');
     },
   },
+  {
+    version: 7,
+    name: 'Phase 47: snoozeReminders metadata (lastReminderSentAt — lazy migration)',
+    up: async () => {
+      // Phase 47: schema extension — abuseFlagReview state objects gain
+      // `lastReminderSentAt` field used by snoozeReminders.scanSnoozeExpiries
+      // for idempotent reminder dispatch.
+      // No data backfill needed — first scan post-deploy lazily populates the field.
+      // Old review state files continue to work unchanged (absent field treated
+      // as "never alerted" → reminder fires on first scan within reminder window).
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v7: lazy metadata for snoozeReminders registered (Phase 47)');
+    },
+  },
 ];
 
 /**

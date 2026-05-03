@@ -166,17 +166,93 @@
         </div>
       </div>
 
-      <div class="admin-section">
+      <div class="admin-section" id="abuseSignalsSection">
         <div class="admin-section__header">
           <h2>🚨 إشارات الإساءة</h2>
-          <button class="refresh-btn" onclick="AdminApp.loadAbuseSignals()">تحديث</button>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <select id="flagStatusFilter" class="form-input form-input--sm">
+              <option value="active">نشطة</option>
+              <option value="snoozed">مؤجلة</option>
+              <option value="dismissed">مرفوضة</option>
+              <option value="actioned">تم الإجراء</option>
+              <option value="all">الكل (محدّث)</option>
+            </select>
+            <button class="refresh-btn" onclick="AdminApp.loadAbuseSignals()">تحديث</button>
+          </div>
         </div>
+
+        <div style="display:flex;gap:0.5rem;margin-block-end:1rem;flex-wrap:wrap;">
+          <input type="text" id="flagSearchNotes" class="form-input form-input--sm" placeholder="بحث في ملاحظات المراجعة..." style="flex:1;min-width:200px;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.searchFlagsByNotes()">بحث</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.loadSnoozeExpiring()">⏰ مؤجلة قارب انتهائها</button>
+          <button class="btn btn--primary btn--sm hidden" id="btnBulkAction" onclick="AdminApp.openBulkActionModal()">
+            ⚡ إجراء جماعي (<span id="bulkSelectedCount">0</span>)
+          </button>
+        </div>
+
         <div id="abuseSignalsArea">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
+
+      <!-- Phase 47 — Audit Log Section -->
+      <div class="admin-section" id="auditLogSection">
+        <div class="admin-section__header">
+          <h2>📋 سجل العمليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.searchAuditLog()">تحديث</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.5rem;margin-block-end:1rem;">
+          <input type="text" id="auditSearchQuery" class="form-input form-input--sm" placeholder="بحث...">
+          <select id="auditActionFilter" class="form-input form-input--sm">
+            <option value="">كل الإجراءات</option>
+            <option value="user_banned">حظر مستخدم</option>
+            <option value="user_unbanned">إلغاء حظر</option>
+            <option value="report_reviewed">مراجعة بلاغ</option>
+            <option value="abuse_flag_reviewed">مراجعة إشارة</option>
+            <option value="abuse_warning_sent">إرسال تحذير</option>
+            <option value="abuse_flags_bulk_action">إجراء جماعي</option>
+            <option value="payment_completed">إنهاء دفعة</option>
+            <option value="verification_reviewed">مراجعة تحقق</option>
+          </select>
+          <input type="date" id="auditFromDate" class="form-input form-input--sm">
+          <input type="date" id="auditToDate" class="form-input form-input--sm">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.searchAuditLog()">🔍 بحث</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportAuditLog()">📥 تصدير CSV</button>
+        </div>
+
+        <div id="auditLogResults">
+          <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
+        </div>
+      </div>
     </div>
     </main>
+  </div>
+
+  <!-- Phase 47 — Bulk Action Modal -->
+  <div id="bulkActionModal" class="ym-modal-overlay hidden" role="dialog" aria-modal="true" style="display:none;">
+    <div class="ym-modal-card">
+      <h3 class="ym-modal-title">⚡ إجراء جماعي</h3>
+      <p class="ym-modal-message">سيتم تطبيق الإجراء على <strong id="bulkActionCount">0</strong> إشارة محددة.</p>
+      <div style="margin-block-end:1rem;">
+        <label class="form-label">القرار:</label>
+        <select id="bulkActionDecision" class="form-input form-input--sm" onchange="AdminApp.toggleBulkSnoozeDays()">
+          <option value="dismissed">رفض الإشارات</option>
+          <option value="snoozed">تأجيل</option>
+          <option value="actioned">إجراء (حظر — متقدم)</option>
+        </select>
+      </div>
+      <div id="bulkSnoozeDaysGroup" class="hidden" style="margin-block-end:1rem;display:none;">
+        <label class="form-label">مدة التأجيل (أيام):</label>
+        <input type="number" id="bulkSnoozeDays" class="form-input form-input--sm" min="1" max="365" value="7">
+      </div>
+      <textarea id="bulkActionNote" class="form-input form-textarea" rows="2" placeholder="ملاحظة (اختياري)..." maxlength="500" style="margin-block-end:1rem;"></textarea>
+      <div class="ym-modal-error hidden" id="bulkActionError" style="display:none;"></div>
+      <div class="ym-modal-actions">
+        <button class="btn btn--primary btn--sm" onclick="AdminApp.confirmBulkAction()">تأكيد</button>
+        <button class="btn btn--ghost btn--sm" onclick="AdminApp.closeBulkActionModal()">إلغاء</button>
+      </div>
+    </div>
   </div>
 
   <!-- Phase 45 — Abuse Flag Review Modal -->
