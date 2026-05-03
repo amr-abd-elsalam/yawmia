@@ -119,102 +119,89 @@ export async function searchActions(options = {}) {
 }
 
 /**
+ * Phase 48: Async generator yielding CSV chunks.
+ * Used internally by createCsvExportStream for memory-efficient streaming.
+ *
+ * @param {object} options — { from?, to?, action? }
+ * @returns {AsyncGenerator<string>}
+ */
+async function* generateCsvChunks(options = {}) {
+  const cfg = config.ADMIN_OPERATIONS;
+  const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
+
+  // Yield header with BOM
+  const headers = csvRow([
+    'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
+    'IP', 'التفاصيل', 'التاريخ',
+  ]);
+  yield BOM + headers + '\n';
+
+  // Load file list
+  const auditDirPath = getCollectionPath('audit');
+  let files;
+  try {
+    files = await readdir(auditDirPath);
+  } catch (_) {
+    return; // No files — generator ends
+  }
+
+  const auditFiles = files.filter(f =>
+    f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
+  );
+
+  if (auditFiles.length === 0) return;
+
+  let rowCount = 0;
+
+  for (let i = 0; i < auditFiles.length; i++) {
+    if (rowCount >= maxRows) break;
+
+    const filePath = join(auditDirPath, auditFiles[i]);
+
+    let data = null;
+    try {
+      data = await readJSON(filePath);
+    } catch (_) { /* skip unreadable */ }
+
+    if (!data) continue;
+
+    // Apply filters
+    if (options.from && data.createdAt && data.createdAt < options.from) continue;
+    if (options.to && data.createdAt && data.createdAt > options.to) continue;
+    if (options.action && data.action !== options.action) continue;
+
+    // Build and yield row
+    const row = csvRow([
+      data.id || '',
+      data.adminId || '',
+      data.action || '',
+      data.targetType || '',
+      data.targetId || '',
+      data.ip || '',
+      data.details ? JSON.stringify(data.details) : '',
+      data.createdAt || '',
+    ]);
+
+    yield row + '\n';
+    rowCount++;
+
+    // Yield to event loop every 1000 rows
+    if (rowCount % 1000 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+}
+
+/**
  * Phase 48: Create a Node.js Readable stream for memory-efficient CSV export.
- * Streams chunks instead of loading all entries into memory.
+ * Uses async generator pattern (Readable.from) — handles backpressure natively.
  * Memory pattern: <1KB at any time, regardless of dataset size.
  *
  * @param {object} options — { from?, to?, action? }
  * @returns {Readable}
  */
 export function createCsvExportStream(options = {}) {
-  const cfg = config.ADMIN_OPERATIONS;
-  const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
-
-  let rowCount = 0;
-  let fileIndex = 0;
-  /** @type {string[]|null} */
-  let auditFiles = null;
-  let auditDirPath = null;
-
-  return new Readable({
-    encoding: 'utf-8',
-    async read() {
-      try {
-        // Lazy load file list on first read
-        if (auditFiles === null) {
-          auditDirPath = getCollectionPath('audit');
-          let files;
-          try {
-            files = await readdir(auditDirPath);
-          } catch (_) {
-            files = [];
-          }
-          auditFiles = files.filter(f =>
-            f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
-          );
-
-          // Push header chunk with BOM
-          const headers = csvRow([
-            'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
-            'IP', 'التفاصيل', 'التاريخ',
-          ]);
-          this.push(BOM + headers + '\n');
-
-          // Empty dataset — end immediately after header
-          if (auditFiles.length === 0) {
-            this.push(null);
-            return;
-          }
-        }
-
-        // Stream rows
-        while (fileIndex < auditFiles.length && rowCount < maxRows) {
-          const filePath = join(auditDirPath, auditFiles[fileIndex]);
-          fileIndex++;
-
-          let data = null;
-          try {
-            data = await readJSON(filePath);
-          } catch (_) { /* skip unreadable files */ }
-          if (!data) continue;
-
-          // Apply filters
-          if (options.from && data.createdAt && data.createdAt < options.from) continue;
-          if (options.to && data.createdAt && data.createdAt > options.to) continue;
-          if (options.action && data.action !== options.action) continue;
-
-          // Build row
-          const row = csvRow([
-            data.id || '',
-            data.adminId || '',
-            data.action || '',
-            data.targetType || '',
-            data.targetId || '',
-            data.ip || '',
-            data.details ? JSON.stringify(data.details) : '',
-            data.createdAt || '',
-          ]);
-
-          // Push with backpressure handling
-          if (!this.push(row + '\n')) {
-            // Backpressure — pause and wait for next read()
-            return;
-          }
-          rowCount++;
-
-          // Yield to event loop every 1000 rows
-          if (rowCount % 1000 === 0) {
-            await new Promise(resolve => setImmediate(resolve));
-          }
-        }
-
-        // End stream when done
-        this.push(null);
-      } catch (err) {
-        this.destroy(err);
-      }
-    },
-  });
+  return Readable.from(generateCsvChunks(options), { encoding: 'utf-8' });
 }
 
 /**
