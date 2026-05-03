@@ -62,6 +62,11 @@ async function cleanCollections() {
 
 beforeEach(async () => {
   await cleanCollections();
+  // Clear in-memory cache from database.js — direct rm() bypasses cacheInvalidate
+  try {
+    const { clear: clearCache } = await import('../server/services/cache.js');
+    if (typeof clearCache === 'function') clearCache();
+  } catch (_) { /* cache module may not be importable, non-fatal */ }
 });
 
 // ── Write helpers ────────────────────────────────────────────
@@ -761,8 +766,17 @@ test('Phase 47 HTTP: GET /api/admin/audit-log/export sets correct headers', asyn
     assert.equal(res.status, 200);
     assert.ok(res.headers.get('content-type').includes('text/csv'));
     assert.ok(res.headers.get('content-disposition').includes('attachment'));
-    const text = await res.text();
-    assert.ok(text.startsWith('\uFEFF'), `expected BOM start, got: ${text.slice(0, 10)}`);
+
+    // BOM verification: read raw response bytes (fetch().text() may strip BOM in some impls)
+    const buf = Buffer.from(await res.arrayBuffer());
+    // UTF-8 BOM = 0xEF 0xBB 0xBF
+    assert.equal(buf[0], 0xEF, `expected BOM byte 0 = 0xEF, got 0x${buf[0]?.toString(16)}`);
+    assert.equal(buf[1], 0xBB, `expected BOM byte 1 = 0xBB, got 0x${buf[1]?.toString(16)}`);
+    assert.equal(buf[2], 0xBF, `expected BOM byte 2 = 0xBF, got 0x${buf[2]?.toString(16)}`);
+
+    // Verify Arabic header present (decode rest as utf-8)
+    const text = buf.toString('utf-8');
+    assert.ok(text.includes('المعرّف'), 'CSV should contain Arabic header');
   } finally {
     await stopTestServer(serverInstance);
   }
