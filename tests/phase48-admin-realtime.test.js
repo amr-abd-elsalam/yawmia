@@ -453,8 +453,13 @@ test('Phase 48: createCsvExportStream handles 100+ rows efficiently', async () =
 
   for (let i = 0; i < 100; i++) {
     const date = new Date(Date.now() - i * 60 * 1000).toISOString();
-    await createAuditEntry('many' + i, date);
+    await createAuditEntry('many' + i.toString().padStart(3, '0'), date);
   }
+
+  // Verify files were created
+  const filesInDir = await readdir(join(tempDir, 'audit'));
+  const auditFilesCreated = filesInDir.filter(f => f.startsWith('aud_many') && f.endsWith('.json'));
+  assert.equal(auditFilesCreated.length, 100, 'Test setup: should have 100 audit files');
 
   const stream = createCsvExportStream({});
   let csv = '';
@@ -462,9 +467,13 @@ test('Phase 48: createCsvExportStream handles 100+ rows efficiently', async () =
     csv += chunk;
   }
 
-  // Header + 100 rows = 101 lines (+ trailing newline)
-  const lines = csv.split('\n');
-  assert.ok(lines.length >= 101);
+  // Count actual data rows (lines starting with "aud_)
+  const dataRows = csv.split('\n').filter(l => l.startsWith('"aud_many'));
+  assert.equal(dataRows.length, 100, 'Should stream all 100 rows');
+
+  // BOM + headers should be present
+  assert.equal(csv.charCodeAt(0), 0xFEFF, 'Should start with BOM');
+  assert.ok(csv.includes('الأدمن'), 'Should include Arabic header');
 });
 
 test('Phase 48: exportToCSV backward compat returns { csv, count, filename }', async () => {
@@ -486,9 +495,15 @@ test('Phase 48: exportToCSV backward compat returns { csv, count, filename }', a
 test('Phase 48: createCsvExportStream applies filters correctly', async () => {
   const { createCsvExportStream } = await import('../server/services/auditLogSearch.js');
 
-  await createAuditEntry('f1', new Date().toISOString(), 'user_banned');
-  await createAuditEntry('f2', new Date().toISOString(), 'admin_warning');
-  await createAuditEntry('f3', new Date().toISOString(), 'user_banned');
+  // Create entries with slightly different timestamps to ensure unique IDs
+  await createAuditEntry('f1', new Date(Date.now() - 1000).toISOString(), 'user_banned');
+  await createAuditEntry('f2', new Date(Date.now() - 2000).toISOString(), 'admin_warning');
+  await createAuditEntry('f3', new Date(Date.now() - 3000).toISOString(), 'user_banned');
+
+  // Verify setup
+  const filesInDir = await readdir(join(tempDir, 'audit'));
+  const auditFilesCreated = filesInDir.filter(f => f.startsWith('aud_f') && f.endsWith('.json'));
+  assert.equal(auditFilesCreated.length, 3, 'Test setup: should have 3 audit files');
 
   const stream = createCsvExportStream({ action: 'user_banned' });
   let csv = '';
@@ -496,9 +511,9 @@ test('Phase 48: createCsvExportStream applies filters correctly', async () => {
     csv += chunk;
   }
 
-  // Should have header + 2 rows (only user_banned entries)
-  const lines = csv.split('\n').filter(l => l.length > 0);
-  assert.equal(lines.length, 3); // header + 2 rows
+  // Count actual data rows (lines starting with "aud_)
+  const dataRows = csv.split('\n').filter(l => l.startsWith('"aud_'));
+  assert.equal(dataRows.length, 2, 'Should have only 2 user_banned rows');
   assert.ok(csv.includes('user_banned'));
   assert.ok(!csv.includes('admin_warning'));
 });
