@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.42.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-03T09:04:35.755Z
+> Auto-generated: 2026-05-03T09:29:08.097Z
 > Files in this part: 60
 
 ## Files
@@ -7520,15 +7520,29 @@ export function applyEventBatched(eventType, data) {
 }
 
 /**
- * Phase 46: Force flush all pending events (used by graceful shutdown).
+ * Phase 46: Force flush all pending events (used by graceful shutdown + tests).
+ * Waits for any in-flight flush to complete BEFORE flushing the remaining queue.
+ * Loops until both eventQueue is empty AND no flush is in-flight.
  * @returns {Promise<void>}
  */
 export async function forceFlush() {
-  if (eventQueue.length > 0) {
+  // Wait up to ~5 seconds total for in-flight flushes + drain queue.
+  // Each iteration: wait for current flush, then flush any newly-queued events.
+  const maxIterations = 50;
+  for (let i = 0; i < maxIterations; i++) {
+    // Wait for any in-flight flush to complete
+    while (isFlushing) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    // If queue empty, we're done
+    if (eventQueue.length === 0) return;
+
     try {
       await flushBatch();
     } catch (err) {
       logger.warn('Phase 46: forceFlush failed', { error: err.message });
+      return;
     }
   }
 }
