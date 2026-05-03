@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.41.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-02T02:34:02.710Z
+# يوميّة (Yawmia) v0.42.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-03T09:04:35.751Z
 > Files in this part: 6
 
 ## Files
@@ -525,7 +525,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.41.0',
+    cacheName: 'yawmia-v0.42.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -775,9 +775,9 @@ const config = {
     intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 44. المراقبة (MONITORING)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   MONITORING: {
     enabled: true,
     snapshotIntervalMs: 3600000,             // snapshot كل ساعة (مللي ثانية)
@@ -789,6 +789,7 @@ const config = {
       cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
       directOfferAcceptRate: { warning: 30, critical: 10 },     // Phase 44 — نسبة مئوية (أقل = أسوأ)
       directOfferAvgResponseSec: { warning: 60, critical: 90 }, // Phase 44 — ثوانى (أعلى = أسوأ)
+      counterFileSizeMB: { warning: 40, critical: 70 }, // Phase 46 — counter file size (MB)
     },
   },
 
@@ -1003,7 +1004,7 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file
+  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file + Phase 46 batching
   // ═══════════════════════════════════════════════════════════════════
   COUNTERS: {
     enabled: true,
@@ -1013,6 +1014,10 @@ const config = {
     maxDecisionTimesArrayLength: 1000,                 // for p50/p95 calculation
     hourlyBucketsRetentionHours: 48,                   // keep last 48 hours of buckets
     minRebuildIntervalMs: 23 * 60 * 60 * 1000,         // skip rebuild if last < 23h ago
+    // Phase 46 — Event batching + replay queue
+    batchFlushIntervalMs: 1000,                        // Flush queue every 1s
+    batchMaxSize: 100,                                 // OR when queue reaches 100 events
+    replayQueueMax: 1000,                              // Max events queued during rebuild
   },
 
 };
@@ -1063,7 +1068,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.41.0",
+  "version": "0.42.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1512,19 +1517,35 @@ async function gracefulShutdown(signal) {
   // 1. Stop accepting new connections
   server.close(() => {});
 
-  // 2. Broadcast SSE shutdown event (fire-and-forget)
+  // 2. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
+  //    Prevents data loss for events still in in-memory queues.
+  try {
+    const counters = await import('./server/services/directOfferCounters.js');
+    await counters.forceFlush();
+  } catch (err) {
+    logger.warn('Phase 46: forceFlush failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  try {
+    const debouncer = await import('./server/services/cacheDebouncer.js');
+    debouncer.flushPending();
+  } catch (err) {
+    logger.warn('Phase 46: flushPending failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 3. Broadcast SSE shutdown event (fire-and-forget)
   try {
     const { broadcast } = await import('./server/services/sseManager.js');
     broadcast('shutdown', { reason: 'server_restart', message: 'السيرفر هيعيد التشغيل — هتتوصل تاني تلقائياً' });
   } catch (_) { /* SSE broadcast failure is non-fatal */ }
 
-  // 3. Wait 1 second for pending writes to complete
+  // 4. Wait 1 second for pending writes to complete
   setTimeout(() => {
     logger.info('🔴 Shutdown complete');
     process.exit(0);
   }, 1000);
 
-  // 4. Force exit after 10 seconds as safety net
+  // 5. Force exit after 10 seconds as safety net
   setTimeout(() => {
     logger.warn('🔴 Forced shutdown after timeout');
     process.exit(1);
@@ -1614,7 +1635,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.41.0',
+        version: '0.42.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1710,7 +1731,7 @@ const routes = [
       } catch (_) {
         response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
       }
-      // Phase 45 — Counter file integrity (non-blocking)
+      // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
         const now = Date.now();
@@ -1724,15 +1745,23 @@ const routes = [
         } else if (ageMs !== null && ageMs > maxAge) {
           status = 'stale';
         }
+
+        // Phase 46: counter file size visibility
+        let fileSizeBytes = 0;
+        try {
+          fileSizeBytes = await directOfferCounters.getFileSize();
+        } catch (_) { /* non-fatal */ }
+
         response.counters = {
           lastUpdatedAt: counters.lastUpdatedAt,
           lastRebuildAt: counters.lastRebuildAt,
           totalOffers,
           hourlyBucketsCount: Object.keys(counters.hourlyBuckets || {}).length,
+          fileSizeBytes, // Phase 46
           status,
         };
       } catch (_) {
-        response.counters = { lastUpdatedAt: null, lastRebuildAt: null, totalOffers: 0, hourlyBucketsCount: 0, status: 'corrupt' };
+        response.counters = { lastUpdatedAt: null, lastRebuildAt: null, totalOffers: 0, hourlyBucketsCount: 0, fileSizeBytes: 0, status: 'corrupt' };
       }
       sendJSON(res, 200, response);
     },
@@ -1768,7 +1797,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.41.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.42.0' });
     },
   },
 
@@ -2041,20 +2070,25 @@ setupLiveFeedListeners();
 import { setupDirectOfferListeners } from './services/directOffer.js';
 setupDirectOfferListeners();
 
-// Phase 45 — Counter applyEvent listeners (registered FIRST — before cache invalidation)
+// Phase 45 + Phase 46 — Counter applyEvent listeners (registered FIRST — before cache invalidation)
 // Each direct_offer:* event triggers an incremental counter file update.
+// Phase 46: uses applyEventBatched (synchronous push to in-memory queue + scheduled flush).
+// Throughput: ~10 evt/sec → 100+ evt/sec sustained.
 // Fire-and-forget: failures logged, scheduled rebuild (every 24h) catches drift.
 if (config.COUNTERS && config.COUNTERS.enabled) {
   const counterEvents = ['direct_offer:created', 'direct_offer:accepted', 'direct_offer:declined', 'direct_offer:expired', 'direct_offer:withdrawn'];
   for (const eventName of counterEvents) {
     eventBus.on(eventName, (data) => {
       const eventType = eventName.split(':')[1];
-      directOfferCounters.applyEvent(eventType, data).catch(err => {
-        logger.warn('Counter applyEvent failed', { eventName, error: err.message });
-      });
+      try {
+        // Phase 46: use applyEventBatched (was applyEvent in Phase 45)
+        directOfferCounters.applyEventBatched(eventType, data);
+      } catch (err) {
+        logger.warn('Phase 46: counter applyEventBatched failed', { eventName, error: err.message });
+      }
     });
   }
-  logger.info(`Direct offer counters: enabled (${counterEvents.length} event listeners)`);
+  logger.info(`Direct offer counters: enabled (${counterEvents.length} event listeners, Phase 46 batched)`);
 } else {
   logger.info('Direct offer counters: disabled via config');
 }
