@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.43.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-03T13:23:51.211Z
+> Auto-generated: 2026-05-03T13:48:48.610Z
 > Files in this part: 31
 
 ## Files
