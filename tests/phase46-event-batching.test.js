@@ -235,7 +235,14 @@ test('Phase 46 — Throughput >50 evt/sec: batch processes 200 events in <2s', a
     for (let i = 0; i < N; i++) {
       counters.applyEventBatched('created', { offerId: `dof_${i}`, employerId: `usr_e${i % 10}`, workerId: `usr_w${i}` });
     }
+
+    // Fix Phase 46: forceFlush now properly waits for in-flight flushes + drains queue.
+    // Multiple calls ensure all batches (including fire-and-forget triggered at MAX_SIZE) complete.
     await counters.forceFlush();
+    // Brief settling time for any final scheduled timer
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await counters.forceFlush();
+
     const duration = Date.now() - startTs;
 
     const ratePerSec = (N / duration) * 1000;
@@ -243,7 +250,7 @@ test('Phase 46 — Throughput >50 evt/sec: batch processes 200 events in <2s', a
     assert.ok(duration < 4000, `Expected <4s for ${N} events, got ${duration}ms (${ratePerSec.toFixed(1)} evt/sec)`);
 
     const data = await counters.readCounters();
-    assert.strictEqual(data.platform.total, N);
+    assert.strictEqual(data.platform.total, N, `expected ${N} total events, got ${data.platform.total} (queue size: ${counters._testHelpers.getEventQueueSize()})`);
   } finally {
     await teardown();
   }
