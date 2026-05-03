@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.44.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-03T17:47:50.674Z
+> Auto-generated: 2026-05-03T17:56:26.472Z
 > Files in this part: 63
 
 ## Files
@@ -7711,6 +7711,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, getCollectionPath, listJSON } from './database.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const COUNTER_LOCK_KEY = 'direct-offer-counters';
