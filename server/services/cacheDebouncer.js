@@ -66,23 +66,32 @@ export function debouncedClear(cacheKey, clearFn) {
   const delay = sinceLastClear < minIntervalMs ? (minIntervalMs - sinceLastClear) : debounceMs;
 
   const timeoutId = setTimeout(() => {
-    // Execute the clear
-    let clearError = null;
-    try {
-      const fn = pendingClears.get(cacheKey)?.clearFn;
-      if (fn) fn();
-    } catch (err) {
-      clearError = err;
-      logger.warn('cacheDebouncer: clearFn failed', { cacheKey, error: err.message });
-    } finally {
-      // Mark as cleared
+    const fn = pendingClears.get(cacheKey)?.clearFn;
+    if (!fn) {
       const entry = pendingClears.get(cacheKey);
-      if (entry) {
-        entry.timeoutId = null;
-        entry.lastClearedAt = Date.now();
-        // Keep clearFn for potential subsequent scheduling
-      }
+      if (entry) entry.timeoutId = null;
+      return;
     }
+
+    // Phase 46 fix: wrap in Promise.resolve().then().catch().finally()
+    // to handle both sync and async errors uniformly. Preserves
+    // fire-and-forget contract — caller never awaits this.
+    Promise.resolve()
+      .then(() => fn())
+      .catch(err => {
+        logger.warn('cacheDebouncer: clearFn failed (Phase 46 async-safe)', {
+          cacheKey,
+          error: err && err.message ? err.message : String(err),
+        });
+      })
+      .finally(() => {
+        const entry = pendingClears.get(cacheKey);
+        if (entry) {
+          entry.timeoutId = null;
+          entry.lastClearedAt = Date.now();
+          // Keep clearFn for potential subsequent scheduling
+        }
+      });
   }, delay);
 
   if (timeoutId.unref) timeoutId.unref();

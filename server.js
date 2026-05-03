@@ -422,19 +422,35 @@ async function gracefulShutdown(signal) {
   // 1. Stop accepting new connections
   server.close(() => {});
 
-  // 2. Broadcast SSE shutdown event (fire-and-forget)
+  // 2. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
+  //    Prevents data loss for events still in in-memory queues.
+  try {
+    const counters = await import('./server/services/directOfferCounters.js');
+    await counters.forceFlush();
+  } catch (err) {
+    logger.warn('Phase 46: forceFlush failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  try {
+    const debouncer = await import('./server/services/cacheDebouncer.js');
+    debouncer.flushPending();
+  } catch (err) {
+    logger.warn('Phase 46: flushPending failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 3. Broadcast SSE shutdown event (fire-and-forget)
   try {
     const { broadcast } = await import('./server/services/sseManager.js');
     broadcast('shutdown', { reason: 'server_restart', message: 'السيرفر هيعيد التشغيل — هتتوصل تاني تلقائياً' });
   } catch (_) { /* SSE broadcast failure is non-fatal */ }
 
-  // 3. Wait 1 second for pending writes to complete
+  // 4. Wait 1 second for pending writes to complete
   setTimeout(() => {
     logger.info('🔴 Shutdown complete');
     process.exit(0);
   }, 1000);
 
-  // 4. Force exit after 10 seconds as safety net
+  // 5. Force exit after 10 seconds as safety net
   setTimeout(() => {
     logger.warn('🔴 Forced shutdown after timeout');
     process.exit(1);

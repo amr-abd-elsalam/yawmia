@@ -69,7 +69,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.41.0',
+        version: '0.42.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -165,7 +165,7 @@ const routes = [
       } catch (_) {
         response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
       }
-      // Phase 45 — Counter file integrity (non-blocking)
+      // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
         const now = Date.now();
@@ -179,15 +179,23 @@ const routes = [
         } else if (ageMs !== null && ageMs > maxAge) {
           status = 'stale';
         }
+
+        // Phase 46: counter file size visibility
+        let fileSizeBytes = 0;
+        try {
+          fileSizeBytes = await directOfferCounters.getFileSize();
+        } catch (_) { /* non-fatal */ }
+
         response.counters = {
           lastUpdatedAt: counters.lastUpdatedAt,
           lastRebuildAt: counters.lastRebuildAt,
           totalOffers,
           hourlyBucketsCount: Object.keys(counters.hourlyBuckets || {}).length,
+          fileSizeBytes, // Phase 46
           status,
         };
       } catch (_) {
-        response.counters = { lastUpdatedAt: null, lastRebuildAt: null, totalOffers: 0, hourlyBucketsCount: 0, status: 'corrupt' };
+        response.counters = { lastUpdatedAt: null, lastRebuildAt: null, totalOffers: 0, hourlyBucketsCount: 0, fileSizeBytes: 0, status: 'corrupt' };
       }
       sendJSON(res, 200, response);
     },
@@ -223,7 +231,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.41.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.42.0' });
     },
   },
 
@@ -496,20 +504,25 @@ setupLiveFeedListeners();
 import { setupDirectOfferListeners } from './services/directOffer.js';
 setupDirectOfferListeners();
 
-// Phase 45 — Counter applyEvent listeners (registered FIRST — before cache invalidation)
+// Phase 45 + Phase 46 — Counter applyEvent listeners (registered FIRST — before cache invalidation)
 // Each direct_offer:* event triggers an incremental counter file update.
+// Phase 46: uses applyEventBatched (synchronous push to in-memory queue + scheduled flush).
+// Throughput: ~10 evt/sec → 100+ evt/sec sustained.
 // Fire-and-forget: failures logged, scheduled rebuild (every 24h) catches drift.
 if (config.COUNTERS && config.COUNTERS.enabled) {
   const counterEvents = ['direct_offer:created', 'direct_offer:accepted', 'direct_offer:declined', 'direct_offer:expired', 'direct_offer:withdrawn'];
   for (const eventName of counterEvents) {
     eventBus.on(eventName, (data) => {
       const eventType = eventName.split(':')[1];
-      directOfferCounters.applyEvent(eventType, data).catch(err => {
-        logger.warn('Counter applyEvent failed', { eventName, error: err.message });
-      });
+      try {
+        // Phase 46: use applyEventBatched (was applyEvent in Phase 45)
+        directOfferCounters.applyEventBatched(eventType, data);
+      } catch (err) {
+        logger.warn('Phase 46: counter applyEventBatched failed', { eventName, error: err.message });
+      }
     });
   }
-  logger.info(`Direct offer counters: enabled (${counterEvents.length} event listeners)`);
+  logger.info(`Direct offer counters: enabled (${counterEvents.length} event listeners, Phase 46 batched)`);
 } else {
   logger.info('Direct offer counters: disabled via config');
 }

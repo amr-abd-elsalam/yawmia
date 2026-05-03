@@ -115,6 +115,14 @@ export async function captureSnapshot() {
     directOffers = await getOfferStatsSnapshot();
   } catch (_) { /* non-fatal — defaults preserved */ }
 
+  // Phase 46: Counter file size monitoring (visibility on disk usage)
+  let counterFileSizeMB = 0;
+  try {
+    const counters = await import('./directOfferCounters.js');
+    const sizeBytes = await counters.getFileSize();
+    counterFileSizeMB = +(sizeBytes / 1048576).toFixed(2);
+  } catch (_) { /* non-fatal — default 0 */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -127,6 +135,7 @@ export async function captureSnapshot() {
     searchIndex,
     dataSize,
     directOffers,
+    counterFileSizeMB, // Phase 46
   };
 
   // Save to disk (use BASE_PATH directly to respect YAWMIA_DATA_PATH)
@@ -279,6 +288,28 @@ export function checkThresholds(snapshot) {
         value: val,
         threshold: thresholds.directOfferAvgResponseSec.warning,
         message: `Slow worker response time: ${val}s`,
+      });
+    }
+  }
+
+  // Phase 46 — Counter file size threshold (visibility on disk growth)
+  if (thresholds.counterFileSizeMB && typeof snapshot.counterFileSizeMB === 'number') {
+    const val = snapshot.counterFileSizeMB;
+    if (val >= thresholds.counterFileSizeMB.critical) {
+      alerts.push({
+        level: 'critical',
+        metric: 'counterFileSizeMB',
+        value: val,
+        threshold: thresholds.counterFileSizeMB.critical,
+        message: `Counter file size critical: ${val}MB (limit ${thresholds.counterFileSizeMB.critical}MB)`,
+      });
+    } else if (val >= thresholds.counterFileSizeMB.warning) {
+      alerts.push({
+        level: 'warning',
+        metric: 'counterFileSizeMB',
+        value: val,
+        threshold: thresholds.counterFileSizeMB.warning,
+        message: `Counter file size warning: ${val}MB (warning threshold ${thresholds.counterFileSizeMB.warning}MB)`,
       });
     }
   }

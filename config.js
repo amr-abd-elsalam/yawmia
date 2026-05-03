@@ -455,7 +455,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.41.0',
+    cacheName: 'yawmia-v0.42.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -705,9 +705,9 @@ const config = {
     intervalCheckMs: 3600000,                // فحص كل ساعة إذا حان وقت الإرسال
   },
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // 44. المراقبة (MONITORING)
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   MONITORING: {
     enabled: true,
     snapshotIntervalMs: 3600000,             // snapshot كل ساعة (مللي ثانية)
@@ -719,6 +719,7 @@ const config = {
       cacheHitRate: { warning: 30, critical: 10 },     // نسبة مئوية (أقل = أسوأ)
       directOfferAcceptRate: { warning: 30, critical: 10 },     // Phase 44 — نسبة مئوية (أقل = أسوأ)
       directOfferAvgResponseSec: { warning: 60, critical: 90 }, // Phase 44 — ثوانى (أعلى = أسوأ)
+      counterFileSizeMB: { warning: 40, critical: 70 }, // Phase 46 — counter file size (MB)
     },
   },
 
@@ -933,7 +934,7 @@ const config = {
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file
+  // 60. عدّادات العروض المباشرة (COUNTERS) — Phase 45 rolling counter file + Phase 46 batching
   // ═══════════════════════════════════════════════════════════════════
   COUNTERS: {
     enabled: true,
@@ -943,6 +944,10 @@ const config = {
     maxDecisionTimesArrayLength: 1000,                 // for p50/p95 calculation
     hourlyBucketsRetentionHours: 48,                   // keep last 48 hours of buckets
     minRebuildIntervalMs: 23 * 60 * 60 * 1000,         // skip rebuild if last < 23h ago
+    // Phase 46 — Event batching + replay queue
+    batchFlushIntervalMs: 1000,                        // Flush queue every 1s
+    batchMaxSize: 100,                                 // OR when queue reaches 100 events
+    replayQueueMax: 1000,                              // Max events queued during rebuild
   },
 
 };

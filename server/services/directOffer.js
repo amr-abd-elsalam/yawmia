@@ -865,24 +865,40 @@ export async function findById(offerId, viewerUserId) {
   const offer = await readJSON(getRecordPath('direct_offers', offerId));
   if (!offer) return null;
 
-  // Phase 45: viewedAt tracking — only when worker recipient first views pending offer
+  // Phase 46: viewedAt tracking with race condition protection.
+  // withLock(`offer-view:${offerId}`) prevents double-count in concurrent worker tabs.
   if (viewerUserId && offer.workerId === viewerUserId && !offer.viewedAt && offer.status === 'pending') {
     try {
-      const now = new Date();
-      const viewMs = now.getTime() - new Date(offer.createdAt).getTime();
-      offer.viewedAt = now.toISOString();
-      await atomicWrite(getRecordPath('direct_offers', offerId), offer);
+      await withLock(`offer-view:${offerId}`, async () => {
+        // Re-read inside lock — concurrent tab may have set viewedAt
+        const fresh = await readJSON(getRecordPath('direct_offers', offerId));
+        if (!fresh || fresh.viewedAt || fresh.status !== 'pending') {
+          // Already set by concurrent tab, or status changed — sync local copy if needed
+          if (fresh && fresh.viewedAt) {
+            offer.viewedAt = fresh.viewedAt;
+          }
+          return;
+        }
 
-      // Fire-and-forget counter applyEvent
-      try {
-        const counters = await import('./directOfferCounters.js');
-        counters.applyEvent('viewed', {
-          offerId,
-          employerId: offer.employerId,
-          workerId: offer.workerId,
-          viewMs,
-        }).catch(() => {});
-      } catch (_) { /* non-fatal */ }
+        const now = new Date();
+        const viewMs = now.getTime() - new Date(fresh.createdAt).getTime();
+        fresh.viewedAt = now.toISOString();
+        await atomicWrite(getRecordPath('direct_offers', offerId), fresh);
+
+        // Sync local copy for caller
+        offer.viewedAt = fresh.viewedAt;
+
+        // Phase 46: use applyEventBatched (was applyEvent in Phase 45)
+        try {
+          const counters = await import('./directOfferCounters.js');
+          counters.applyEventBatched('viewed', {
+            offerId,
+            employerId: offer.employerId,
+            workerId: offer.workerId,
+            viewMs,
+          });
+        } catch (_) { /* non-fatal */ }
+      });
     } catch (_) { /* non-fatal — viewedAt is best-effort */ }
   }
 

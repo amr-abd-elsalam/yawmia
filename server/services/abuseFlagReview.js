@@ -104,9 +104,11 @@ export async function recordReview({ flag, adminId, decision, note, snoozeDays }
         employerId: flag.employerId,
         workerId: flag.workerId,
       }, fingerprint);
-    } else {
-      state.occurrenceCount = (state.occurrenceCount || 0) + 1;
     }
+    // Phase 46 fix: occurrenceCount is no longer auto-incremented on every review.
+    // It now represents "abuse occurrences detected" — incremented by
+    // incrementOccurrence() when detectAbuse re-detects the same fingerprint.
+    // First detection sets occurrenceCount=1 in buildInitialState (preserved).
 
     const reviewId = 'rev_' + crypto.randomBytes(6).toString('hex');
     const now = new Date().toISOString();
@@ -185,6 +187,35 @@ export async function listAllReviewStates() {
     logger.warn('abuseFlagReview: listAllReviewStates failed', { error: err.message });
     return [];
   }
+}
+
+/**
+ * Phase 46: Increment occurrenceCount on re-detection.
+ * Called by detectAbuse when same flag fingerprint is detected again
+ * after a previous review state existed.
+ *
+ * Semantics: occurrenceCount = "abuse occurrences detected" (NOT review count).
+ * No-op if no review state exists (first detection initializes via buildInitialState).
+ *
+ * @param {string} fingerprint
+ * @returns {Promise<void>}
+ */
+export async function incrementOccurrence(fingerprint) {
+  if (!fingerprint || typeof fingerprint !== 'string') return;
+
+  return withLock(`abuse-review:${fingerprint}`, async () => {
+    const filePath = getRecordPath('abuse_flag_reviews', fingerprint);
+    const state = await readJSON(filePath);
+    if (!state) return; // no review state yet — skip silently (first detection lives in detectAbuse output)
+
+    state.occurrenceCount = (state.occurrenceCount || 0) + 1;
+
+    try {
+      await atomicWrite(filePath, state);
+    } catch (err) {
+      logger.warn('abuseFlagReview: incrementOccurrence write failed', { fingerprint, error: err.message });
+    }
+  });
 }
 
 // Test helpers

@@ -215,7 +215,8 @@ export async function detectAbuse() {
     ...detectOfferBombing(offers, cfg),
   ];
 
-  // Phase 45: filter snoozed flags + attach fingerprint + reviewState
+  // Phase 45+46: filter snoozed flags + attach fingerprint + reviewState
+  // Phase 46 addition: increment occurrenceCount on re-detection (when reviewState exists)
   const reviewWorkflowEnabled = cfg.reviewWorkflowEnabled !== false;
   const filtered = [];
   for (const flag of rawFlags) {
@@ -226,6 +227,13 @@ export async function detectAbuse() {
         if (snoozed) continue; // skip snoozed
         flag.fingerprint = fingerprint;
         flag.reviewState = await abuseFlagReview.getReviewState(fingerprint);
+
+        // Phase 46: increment occurrenceCount on re-detection
+        if (flag.reviewState) {
+          await abuseFlagReview.incrementOccurrence(fingerprint);
+          // Re-fetch updated state for client (so occurrenceCount reflects increment)
+          flag.reviewState = await abuseFlagReview.getReviewState(fingerprint);
+        }
       } catch (err) {
         logger.warn('detectAbuse: review state lookup failed', { error: err.message });
         // On error, include flag without reviewState (degrade gracefully)

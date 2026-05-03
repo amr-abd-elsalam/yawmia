@@ -260,6 +260,20 @@ const builtInMigrations = [
       logger.info('Migration v5: greenfield direct_offers collection registered (Phase 42)');
     },
   },
+  {
+    version: 6,
+    name: 'Phase 46: per-entity hourlyBuckets schema (lazy migration)',
+    up: async () => {
+      // Phase 46: schema extension — counter file gains per-entity hourlyBuckets
+      // (byEmployer[id].hourlyBuckets and byWorker[id].hourlyBuckets).
+      // No data backfill needed — first applyEvent post-deploy lazily initializes
+      // new fields. Old counter files continue to work unchanged.
+      // Date-range top performer queries become fully populated after 48h
+      // (rolling retention window) OR immediately after next scheduled rebuild.
+      // Idempotent: re-running this migration is a no-op.
+      logger.info('Migration v6: lazy schema for per-entity hourlyBuckets registered (Phase 46)');
+    },
+  },
 ];
 
 /**
