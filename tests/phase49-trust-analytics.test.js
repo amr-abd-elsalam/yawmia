@@ -76,6 +76,14 @@ test.before(async () => {
 test.beforeEach(async () => {
   await resetCollections();
 
+  // Clear low-level file cache too. database.readJSON() caches by absolute file path,
+  // and these tests rewrite the same paths between cases.
+  const cache = await import('../server/services/cache.js');
+  cache.clear();
+
+  const { clearShardCache } = await import('../server/services/database.js');
+  clearShardCache();
+
   // Do not call eventBus.clear() globally here: module-level listeners
   // like trustAnalytics cache invalidation are registered at import time.
   const trustAnalytics = await import('../server/services/trustAnalytics.js');
