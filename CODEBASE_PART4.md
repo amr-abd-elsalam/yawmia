@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.44.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-03T18:04:54.157Z
+# يوميّة (Yawmia) v0.45.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-05T23:36:57.792Z
 > Files in this part: 41
 
 ## Files
@@ -312,9 +312,73 @@
           <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportAuditLog()">📥 تصدير CSV</button>
         </div>
 
+        <!-- Phase 49 — CSV Export Progress -->
+        <div id="csvExportProgressContainer" class="progress-container hidden" aria-live="polite">
+          <div class="progress-bar" aria-label="تقدم تصدير CSV">
+            <div class="progress-bar__fill" id="csvProgressFill" style="width:0%"></div>
+          </div>
+          <div class="progress-text" id="csvProgressText">0%</div>
+        </div>
+
         <div id="auditLogResults">
           <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
         </div>
+      </div>
+      <!-- Phase 49 — Trust Analytics Dashboard -->
+      <div class="admin-section" id="trustAnalyticsSection">
+        <div class="admin-section__header">
+          <h2>📈 تحليلات الثقة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadTrustDashboard()">تحديث</button>
+        </div>
+
+        <div id="trustPeriodSelector" class="period-selector" style="margin-block-end:1rem;">
+          <button class="btn btn--primary btn--sm" data-days="7" onclick="AdminApp.setTrustPeriod(7)">7 أيام</button>
+          <button class="btn btn--ghost btn--sm" data-days="30" onclick="AdminApp.setTrustPeriod(30)">30 يوم</button>
+          <button class="btn btn--ghost btn--sm" data-days="90" onclick="AdminApp.setTrustPeriod(90)">90 يوم</button>
+        </div>
+
+        <div id="trustMetricsGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="resolutionHistogramChart">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="perAdminTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="abuseTrendChart">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 49 — Multi-Channel Admin Alerting -->
+      <div class="admin-section" id="alertChannelsSection">
+        <div class="admin-section__header">
+          <h2>📢 قنوات تنبيهات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.testWebhook()">اختبار Webhook</button>
+        </div>
+
+        <div class="alert-channels-status">
+          <span class="alert-channels-status__label">الحالة:</span>
+          <span class="alert-channels-status__value" id="alertChannelsStatus">حسب إعدادات السيرفر</span>
+        </div>
+
+        <p style="color: var(--color-text-muted); font-size:0.9rem; margin-block:0.75rem;">
+          Webhook/Email alerts بتشتغل من السيرفر حسب <code>ADMIN_ALERT_CHANNELS</code>.
+          زر الاختبار يرسل payload تجريبي للقنوات المفعّلة.
+        </p>
+
+        <button class="btn btn--primary btn--sm" onclick="AdminApp.testWebhook()">إرسال اختبار Webhook</button>
+        <div id="webhookTestResult" style="margin-block-start:0.75rem;"></div>
       </div>
     </div>
     </main>
@@ -4134,6 +4198,97 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 49 — Trust Analytics + CSV Progress + Alert Channels ═══ */
+.trust-metric-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trust-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.trust-metric-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.35rem;
+}
+
+.progress-container {
+  margin-block: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 10px;
+  background: var(--color-surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  min-width: 80px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: start;
+}
+
+.alert-channels-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.alert-channels-status__label {
+  color: var(--color-text-muted);
+}
+
+.alert-channels-status__value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.abuse-trend-chart-wrap {
+  overflow-x: auto;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.abuse-trend-chart {
+  width: 100%;
+  min-width: 520px;
+  height: 220px;
+  display: block;
+}
+
 /* ═══ Phase 48 — Admin Real-Time Operations ═══ */
 .admin-sse-status {
   display: inline-block;
@@ -4779,6 +4934,9 @@ var AdminApp = (function () {
   var adminSseSource = null;
   var auditSearchCursor = null;
 
+  // Phase 49 — Trust Analytics dashboard state
+  var trustPeriodDays = 7;
+
   function escapeHtml(str) {
     return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
   }
@@ -4879,6 +5037,7 @@ var AdminApp = (function () {
         loadMonitoring(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
+        loadTrustDashboard(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -4953,6 +5112,16 @@ var AdminApp = (function () {
           if (typeof YawmiaToast !== 'undefined') {
             YawmiaToast.warning('⚠️ تجاوز عتبة العروض المباشرة');
           }
+          if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
+          if (typeof loadTrustDashboard === 'function') loadTrustDashboard();
+        } catch (_) {}
+      });
+
+      // Phase 49 — CSV export progress events
+      adminSseSource.addEventListener('csv_export:progress', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          renderCsvExportProgress(data);
         } catch (_) {}
       });
 
@@ -5967,6 +6136,14 @@ var AdminApp = (function () {
       var el = document.getElementById('auditLogResults');
       if (!el) return;
 
+      // Phase 49 — cursor expired after audit retention cleanup.
+      if (data.cursorExpired) {
+        auditSearchCursor = null;
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.warning('الصفحة قديمة — تم إعادة التحميل من البداية');
+        }
+      }
+
       var entries = data.entries || [];
 
       if (reset) {
@@ -6299,6 +6476,275 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 49 — Trust Analytics Dashboard
+  // ═══════════════════════════════════════════════════════════════
+
+  function setTrustPeriod(days) {
+    trustPeriodDays = days || 7;
+
+    var selector = document.getElementById('trustPeriodSelector');
+    if (selector) {
+      selector.querySelectorAll('button[data-days]').forEach(function (btn) {
+        var isActive = parseInt(btn.getAttribute('data-days'), 10) === trustPeriodDays;
+        if (isActive) {
+          btn.classList.add('btn--primary');
+          btn.classList.remove('btn--ghost');
+        } else {
+          btn.classList.remove('btn--primary');
+          btn.classList.add('btn--ghost');
+        }
+      });
+    }
+
+    loadTrustDashboard();
+  }
+
+  function getTrustPeriod() {
+    var toDate = new Date();
+    var fromDate = new Date(Date.now() - trustPeriodDays * 24 * 60 * 60 * 1000);
+    return {
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+    };
+  }
+
+  function formatDuration(ms) {
+    if (!ms || ms <= 0) return '-';
+    var sec = Math.round(ms / 1000);
+    if (sec < 60) return sec + ' ث';
+    var min = Math.round(sec / 60);
+    if (min < 60) return min + ' د';
+    var hr = Math.round(min / 60);
+    if (hr < 24) return hr + ' س';
+    var days = Math.round(hr / 24);
+    return days + ' يوم';
+  }
+
+  async function loadTrustDashboard() {
+    var period = getTrustPeriod();
+
+    try {
+      var data = await api(
+        '/api/admin/trust/dashboard?from=' +
+        encodeURIComponent(period.from) +
+        '&to=' +
+        encodeURIComponent(period.to)
+      );
+
+      if (!data || !data.ok) {
+        throw new Error('TRUST_DASHBOARD_FAILED');
+      }
+
+      renderTrustMetrics(data);
+      renderResolutionHistogram(data.histogram || []);
+      renderPerAdminTable(data.perAdmin || []);
+      renderAbuseTrendChart(data.abuseTrend || []);
+    } catch (err) {
+      var grid = document.getElementById('trustMetricsGrid');
+      if (grid) {
+        grid.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">خطأ في تحميل تحليلات الثقة</p>';
+      }
+    }
+  }
+
+  function renderTrustMetrics(data) {
+    var grid = document.getElementById('trustMetricsGrid');
+    if (!grid) return;
+
+    var avgResolution = data.avgResolution || {};
+    var warningConversion = data.warningConversion || {};
+    var perAdmin = data.perAdmin || [];
+    var abuseTrend = data.abuseTrend || [];
+
+    var totalDetected = abuseTrend.reduce(function (sum, row) {
+      return sum + (row.totalDetected || 0);
+    }, 0);
+
+    var cards = [
+      { value: formatDuration(avgResolution.avgMs || 0), label: 'متوسط وقت الحل' },
+      { value: formatDuration(avgResolution.p95Ms || 0), label: 'P95 وقت الحل' },
+      { value: (warningConversion.conversionRate || 0) + '%', label: 'تحذير → حظر' },
+      { value: String(perAdmin.length || 0), label: 'أدمن نشطين' },
+      { value: String(totalDetected || 0), label: 'إشارات في الفترة' },
+    ];
+
+    grid.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'trust-metric-card';
+      card.innerHTML =
+        '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  function renderResolutionHistogram(histogram) {
+    var el = document.getElementById('resolutionHistogramChart');
+    if (!el) return;
+
+    if (!histogram || histogram.length === 0) {
+      el.innerHTML = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">توزيع وقت الحل</h3><p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">توزيع وقت الحل</h3>';
+    histogram.forEach(function (b) {
+      html += '<div class="rating-dist-row">' +
+        '<span class="rating-dist-label">' + escapeHtml(b.bucket || '') + '</span>' +
+        '<div class="rating-dist-bar"><div class="rating-dist-fill" style="width:' + (b.percentage || 0) + '%;"></div></div>' +
+        '<span class="rating-dist-count">' + (b.count || 0) + ' (' + (b.percentage || 0) + '%)</span>' +
+      '</div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  function renderPerAdminTable(perAdmin) {
+    var el = document.getElementById('perAdminTable');
+    if (!el) return;
+
+    if (!perAdmin || perAdmin.length === 0) {
+      el.innerHTML = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">إنتاجية الأدمن</h3><p style="color:var(--color-text-muted);text-align:center;">لا توجد مراجعات في الفترة</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">إنتاجية الأدمن</h3>';
+    html += '<table class="admin-table"><thead><tr>' +
+      '<th>الأدمن</th><th>إجمالي</th><th>رفض</th><th>تأجيل</th><th>تحذير</th><th>إجراء</th><th>متوسط القرار</th>' +
+      '</tr></thead><tbody>';
+
+    perAdmin.forEach(function (a) {
+      var byDecision = a.byDecision || {};
+      html += '<tr>' +
+        '<td>' + escapeHtml(a.adminId || 'unknown') + '</td>' +
+        '<td>' + (a.totalReviews || 0) + '</td>' +
+        '<td>' + (byDecision.dismissed || 0) + '</td>' +
+        '<td>' + (byDecision.snoozed || 0) + '</td>' +
+        '<td>' + (byDecision.warning || 0) + '</td>' +
+        '<td>' + (byDecision.actioned || 0) + '</td>' +
+        '<td>' + escapeHtml(formatDuration(a.avgTimeToDecisionMs || 0)) + '</td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  function renderAbuseTrendChart(trend) {
+    var el = document.getElementById('abuseTrendChart');
+    if (!el) return;
+
+    if (!trend || trend.length === 0) {
+      el.innerHTML = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">اتجاه إشارات الإساءة</h3><p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات</p>';
+      return;
+    }
+
+    var width = 640;
+    var height = 220;
+    var padding = 24;
+    var maxVal = Math.max.apply(null, trend.map(function (d) { return d.totalDetected || 0; }));
+    if (maxVal <= 0) maxVal = 1;
+
+    var points = trend.map(function (d, i) {
+      var x = padding + (trend.length === 1 ? 0 : (i / (trend.length - 1)) * (width - padding * 2));
+      var y = height - padding - ((d.totalDetected || 0) / maxVal) * (height - padding * 2);
+      return x + ',' + y;
+    }).join(' ');
+
+    var circles = trend.map(function (d, i) {
+      var x = padding + (trend.length === 1 ? 0 : (i / (trend.length - 1)) * (width - padding * 2));
+      var y = height - padding - ((d.totalDetected || 0) / maxVal) * (height - padding * 2);
+      return '<circle cx="' + x + '" cy="' + y + '" r="3" fill="var(--color-primary)"><title>' +
+        escapeHtml(d.date + ': ' + (d.totalDetected || 0)) +
+      '</title></circle>';
+    }).join('');
+
+    var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">اتجاه إشارات الإساءة</h3>';
+    html += '<div class="abuse-trend-chart-wrap">';
+    html += '<svg class="abuse-trend-chart" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="اتجاه إشارات الإساءة">' +
+      '<line x1="' + padding + '" y1="' + (height - padding) + '" x2="' + (width - padding) + '" y2="' + (height - padding) + '" stroke="var(--color-border)" />' +
+      '<line x1="' + padding + '" y1="' + padding + '" x2="' + padding + '" y2="' + (height - padding) + '" stroke="var(--color-border)" />' +
+      '<polyline points="' + points + '" fill="none" stroke="var(--color-primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />' +
+      circles +
+    '</svg>';
+    html += '</div>';
+
+    el.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 49 — CSV Export Progress
+  // ═══════════════════════════════════════════════════════════════
+
+  function renderCsvExportProgress(data) {
+    if (!data) return;
+
+    var container = document.getElementById('csvExportProgressContainer');
+    var fill = document.getElementById('csvProgressFill');
+    var text = document.getElementById('csvProgressText');
+
+    if (container) container.classList.remove('hidden');
+
+    var pct = typeof data.percentage === 'number' ? data.percentage : 0;
+    if (fill) fill.style.width = pct + '%';
+
+    if (text) {
+      var rowsText = data.rowsProcessed != null ? ' — ' + data.rowsProcessed + ' صف' : '';
+      text.textContent = pct + '%' + rowsText;
+    }
+
+    if (data.completed) {
+      if (fill) fill.style.width = '100%';
+      if (text) text.textContent = '100% — اكتمل التصدير';
+      setTimeout(function () {
+        if (container) container.classList.add('hidden');
+        if (fill) fill.style.width = '0%';
+        if (text) text.textContent = '0%';
+      }, 3000);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 49 — Webhook Test
+  // ═══════════════════════════════════════════════════════════════
+
+  async function testWebhook() {
+    var resultEl = document.getElementById('webhookTestResult');
+    if (resultEl) {
+      resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إرسال الاختبار...</p>';
+    }
+
+    try {
+      var headers = { 'X-Admin-Token': token, 'Content-Type': 'application/json' };
+      var res = await fetch(API + '/api/admin/alerts/test-webhook', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({}),
+      });
+
+      var data = await res.json().catch(function () { return {}; });
+
+      if (resultEl) {
+        if (data.ok && data.delivered) {
+          resultEl.innerHTML = '<p style="color:var(--color-success);">✓ تم توصيل الاختبار بنجاح</p>';
+        } else if (data.rateLimited) {
+          resultEl.innerHTML = '<p style="color:var(--color-warning);">⚠️ تم تجاوز حد الاختبارات مؤقتاً</p>';
+        } else {
+          var reason = data.results && data.results[0] && data.results[0].error
+            ? data.results[0].error
+            : (data.error || 'لم يتم التوصيل — تأكد من إعدادات السيرفر');
+          resultEl.innerHTML = '<p style="color:var(--color-error);">✗ فشل الاختبار: ' + escapeHtml(reason) + '</p>';
+        }
+      }
+    } catch (err) {
+      if (resultEl) {
+        resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ في الاتصال</p>';
+      }
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -6329,6 +6775,11 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 49 — Trust Analytics + Alert Channels
+    loadTrustDashboard: loadTrustDashboard,
+    setTrustPeriod: setTrustPeriod,
+    testWebhook: testWebhook,
+    renderCsvExportProgress: renderCsvExportProgress,
     // Phase 48 — Admin Real-Time Operations
     connectAdminSse: connectAdminSse,
   };
@@ -14439,7 +14890,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.44.0';
+const CACHE_NAME = 'yawmia-v0.45.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

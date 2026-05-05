@@ -1,71 +1,75 @@
-# يوميّة (Yawmia) v0.44.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-03T18:04:54.132Z
-> Files in this part: 63
+# يوميّة (Yawmia) v0.45.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-05T23:36:57.763Z
+> Files in this part: 67
 
 ## Files
 1. `server/services/abuseFlagReview.js`
 2. `server/services/activitySummary.js`
 3. `server/services/adMatcher.js`
-4. `server/services/analytics.js`
-5. `server/services/applications.js`
-6. `server/services/arabicNormalizer.js`
-7. `server/services/attendance.js`
-8. `server/services/auditLog.js`
-9. `server/services/auditLogRetention.js`
-10. `server/services/auditLogSearch.js`
-11. `server/services/auth.js`
-12. `server/services/availabilityAd.js`
-13. `server/services/availabilityWindow.js`
-14. `server/services/backupScheduler.js`
-15. `server/services/cache.js`
-16. `server/services/cacheDebouncer.js`
-17. `server/services/channels/sms.js`
-18. `server/services/channels/whatsapp.js`
-19. `server/services/contentFilter.js`
-20. `server/services/database.js`
-21. `server/services/directOffer.js`
-22. `server/services/directOfferAnalytics.js`
-23. `server/services/directOfferCounters.js`
-24. `server/services/errorAggregator.js`
-25. `server/services/eventBus.js`
-26. `server/services/eventReplayBuffer.js`
-27. `server/services/favorites.js`
-28. `server/services/financialExport.js`
-29. `server/services/geo.js`
-30. `server/services/imageStore.js`
-31. `server/services/indexHealth.js`
-32. `server/services/instantMatch.js`
-33. `server/services/jobAlerts.js`
-34. `server/services/jobMatcher.js`
-35. `server/services/jobs.js`
-36. `server/services/liveFeed.js`
-37. `server/services/logWriter.js`
-38. `server/services/logger.js`
-39. `server/services/messages.js`
-40. `server/services/messaging.js`
-41. `server/services/migration.js`
-42. `server/services/monitor.js`
-43. `server/services/notificationMessenger.js`
-44. `server/services/notifications.js`
-45. `server/services/offerAbuseDetector.js`
-46. `server/services/payments.js`
-47. `server/services/presenceService.js`
-48. `server/services/profileCompleteness.js`
-49. `server/services/queryIndex.js`
-50. `server/services/ratings.js`
-51. `server/services/reports.js`
-52. `server/services/resourceLock.js`
-53. `server/services/sanitizer.js`
-54. `server/services/searchIndex.js`
-55. `server/services/sessions.js`
-56. `server/services/snoozeReminders.js`
-57. `server/services/sseManager.js`
-58. `server/services/trust.js`
-59. `server/services/users.js`
-60. `server/services/validators.js`
-61. `server/services/verification.js`
-62. `server/services/webpush.js`
-63. `server/services/workerDiscovery.js`
+4. `server/services/adminAlertChannels.js`
+5. `server/services/analytics.js`
+6. `server/services/applications.js`
+7. `server/services/arabicNormalizer.js`
+8. `server/services/attendance.js`
+9. `server/services/auditLog.js`
+10. `server/services/auditLogRetention.js`
+11. `server/services/auditLogSearch.js`
+12. `server/services/auth.js`
+13. `server/services/availabilityAd.js`
+14. `server/services/availabilityWindow.js`
+15. `server/services/backupScheduler.js`
+16. `server/services/cache.js`
+17. `server/services/cacheDebouncer.js`
+18. `server/services/channels/sms.js`
+19. `server/services/channels/whatsapp.js`
+20. `server/services/contentFilter.js`
+21. `server/services/csvExportProgress.js`
+22. `server/services/database.js`
+23. `server/services/directOffer.js`
+24. `server/services/directOfferAnalytics.js`
+25. `server/services/directOfferCounters.js`
+26. `server/services/errorAggregator.js`
+27. `server/services/eventBus.js`
+28. `server/services/eventReplayBuffer.js`
+29. `server/services/favorites.js`
+30. `server/services/financialExport.js`
+31. `server/services/geo.js`
+32. `server/services/imageStore.js`
+33. `server/services/indexHealth.js`
+34. `server/services/instantMatch.js`
+35. `server/services/jobAlerts.js`
+36. `server/services/jobMatcher.js`
+37. `server/services/jobs.js`
+38. `server/services/liveFeed.js`
+39. `server/services/logWriter.js`
+40. `server/services/logger.js`
+41. `server/services/messages.js`
+42. `server/services/messaging.js`
+43. `server/services/migration.js`
+44. `server/services/monitor.js`
+45. `server/services/notificationMessenger.js`
+46. `server/services/notifications.js`
+47. `server/services/offerAbuseDetector.js`
+48. `server/services/payments.js`
+49. `server/services/presenceService.js`
+50. `server/services/profileCompleteness.js`
+51. `server/services/queryIndex.js`
+52. `server/services/ratings.js`
+53. `server/services/reports.js`
+54. `server/services/resourceLock.js`
+55. `server/services/sanitizer.js`
+56. `server/services/scheduledAbuseDetection.js`
+57. `server/services/searchIndex.js`
+58. `server/services/sessions.js`
+59. `server/services/snoozeReminders.js`
+60. `server/services/sseManager.js`
+61. `server/services/trust.js`
+62. `server/services/trustAnalytics.js`
+63. `server/services/users.js`
+64. `server/services/validators.js`
+65. `server/services/verification.js`
+66. `server/services/webpush.js`
+67. `server/services/workerDiscovery.js`
 
 ---
 
@@ -92,6 +96,7 @@ import crypto from 'node:crypto';
 import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 /**
  * Compute deterministic fingerprint for an abuse flag.
@@ -215,6 +220,18 @@ export async function recordReview({ flag, adminId, decision, note, snoozeDays }
     // 'warning' does NOT change currentStatus — flag remains active
 
     await atomicWrite(filePath, state);
+
+    // Phase 49: notify trustAnalytics cache invalidation listeners.
+    try {
+      eventBus.emit('abuse_flag:state_changed', {
+        fingerprint: state.fingerprint,
+        flagType: state.flagType,
+        decision,
+        currentStatus: state.currentStatus,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) { /* fire-and-forget */ }
+
     return state;
   });
 }
@@ -286,6 +303,16 @@ export async function incrementOccurrence(fingerprint) {
 
     try {
       await atomicWrite(filePath, state);
+
+      // Phase 49: occurrenceCount changed — invalidate trust analytics cache.
+      try {
+        eventBus.emit('abuse_flag:state_changed', {
+          fingerprint,
+          flagType: state.flagType,
+          occurrenceCount: state.occurrenceCount,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
     } catch (err) {
       logger.warn('abuseFlagReview: incrementOccurrence write failed', { fingerprint, error: err.message });
     }
@@ -1026,6 +1053,359 @@ export function setupAdMatchListeners() {
  * Test helpers.
  */
 export const _testHelpers = { notificationDedup, DEDUP_TTL_MS };
+```
+
+---
+
+## `server/services/adminAlertChannels.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/adminAlertChannels.js — Multi-Channel Admin Alerting (Phase 49)
+// ═══════════════════════════════════════════════════════════════
+// Adapter pattern for admin alerts:
+//   - webhook channel via native fetch()
+//   - email placeholder channel
+//
+// Delivery:
+//   - Promise.allSettled across enabled channels
+//   - per-event-type rate limiting
+//   - bounded in-memory queue (drop oldest if full)
+//   - fire-and-forget EventBus listeners
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+/** @type {Map<string, number[]>} eventType → timestamps */
+const rateTracker = new Map();
+
+/** @type {Array<object>} bounded queue of recent pending/delivered alert attempts */
+const alertQueue = [];
+
+let listenersRegistered = false;
+
+const SEVERITY_ORDER = { low: 1, medium: 2, high: 3, critical: 4 };
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function severityPasses(actual, minimum) {
+  const a = SEVERITY_ORDER[actual] || 0;
+  const m = SEVERITY_ORDER[minimum] || 0;
+  return a >= m;
+}
+
+function isEnabled() {
+  return !!(config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled);
+}
+
+function enqueue(entry) {
+  const max = config.ADMIN_ALERT_CHANNELS?.queueMaxSize || 100;
+  alertQueue.push(entry);
+  while (alertQueue.length > max) {
+    alertQueue.shift();
+  }
+}
+
+function checkRateLimit(eventType) {
+  const cfg = config.ADMIN_ALERT_CHANNELS || {};
+  const max = cfg.rateLimitPerEventType || 5;
+  const windowMs = cfg.rateLimitWindowMs || (60 * 60 * 1000);
+  const now = Date.now();
+
+  let timestamps = rateTracker.get(eventType) || [];
+  timestamps = timestamps.filter(ts => now - ts < windowMs);
+
+  if (timestamps.length >= max) {
+    rateTracker.set(eventType, timestamps);
+    return false;
+  }
+
+  timestamps.push(now);
+  rateTracker.set(eventType, timestamps);
+  return true;
+}
+
+function formatPayload(event) {
+  const data = event.data || {};
+  const timestamp = event.timestamp || new Date().toISOString();
+
+  const summary = data.summary
+    || data.message
+    || data.flagType
+    || data.fingerprint
+    || data.offerId
+    || data.sizeMB
+    || event.type;
+
+  let link = '/admin.html';
+  if (data.fingerprint) {
+    link = `/admin.html#abuseSignalsSection`;
+  }
+
+  return {
+    event: event.type,
+    severity: event.severity || 'medium',
+    timestamp,
+    summary: String(summary || event.type).slice(0, 500),
+    link,
+    details: sanitizeDetails(data),
+  };
+}
+
+function sanitizeDetails(details) {
+  if (!details || typeof details !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(details)) {
+    if (value === undefined) continue;
+    if (typeof value === 'string') {
+      out[key] = value.slice(0, 1000);
+    } else if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      out[key] = value;
+    } else {
+      try {
+        out[key] = JSON.stringify(value).slice(0, 1000);
+      } catch (_) {
+        out[key] = '[unserializable]';
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Webhook adapter.
+ *
+ * @param {object} payload
+ * @returns {Promise<{ ok: boolean, channel: string, statusCode?: number, error?: string }>}
+ */
+export async function sendWebhook(payload) {
+  const channel = 'webhook';
+  const cfg = config.ADMIN_ALERT_CHANNELS?.webhook || {};
+
+  const url = process.env.ADMIN_ALERT_WEBHOOK_URL || cfg.url;
+  const enabled = cfg.enabled || !!process.env.ADMIN_ALERT_WEBHOOK_URL;
+
+  if (!enabled || !url) {
+    return { ok: false, channel, error: 'Webhook channel disabled or URL missing' };
+  }
+
+  const retryCount = cfg.retryCount || 3;
+  const timeoutMs = cfg.timeoutMs || 5000;
+
+  let lastError = null;
+  let lastStatusCode = null;
+
+  for (let attempt = 0; attempt < retryCount; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      lastStatusCode = res.status;
+
+      if (res.ok) {
+        return { ok: true, channel, statusCode: res.status };
+      }
+
+      lastError = `HTTP ${res.status}`;
+    } catch (err) {
+      lastError = err.message;
+    }
+
+    if (attempt < retryCount - 1) {
+      await sleep(500 * Math.pow(2, attempt));
+    }
+  }
+
+  return { ok: false, channel, statusCode: lastStatusCode || undefined, error: lastError || 'Webhook failed' };
+}
+
+/**
+ * Email adapter placeholder.
+ *
+ * @param {object} payload
+ * @returns {Promise<{ ok: boolean, channel: string, error?: string }>}
+ */
+export async function sendEmail(payload) {
+  const channel = 'email';
+  const cfg = config.ADMIN_ALERT_CHANNELS?.email || {};
+  const enabled = cfg.enabled && cfg.apiKey && Array.isArray(cfg.toEmails) && cfg.toEmails.length > 0;
+
+  if (!enabled) {
+    return { ok: false, channel, error: 'Email channel disabled or not configured' };
+  }
+
+  // Deferred initial implementation — transactional provider can be wired later.
+  logger.info('Admin alert email placeholder invoked', {
+    toCount: cfg.toEmails.length,
+    event: payload.event,
+  });
+
+  return { ok: false, channel, error: 'Email adapter placeholder — provider not configured' };
+}
+
+const adapters = {
+  webhook: sendWebhook,
+  email: sendEmail,
+};
+
+/**
+ * Main delivery router.
+ *
+ * @param {{ type: string, severity?: string, data?: object, timestamp?: string }} event
+ * @returns {Promise<{ delivered: boolean, rateLimited?: boolean, results: object[] }>}
+ */
+export async function deliverAdminAlert(event) {
+  if (!event || !event.type) {
+    return { delivered: false, results: [{ ok: false, error: 'Invalid event' }] };
+  }
+
+  if (!isEnabled()) {
+    return { delivered: false, results: [{ ok: false, error: 'ADMIN_ALERT_CHANNELS disabled' }] };
+  }
+
+  const routing = event.type === 'test'
+    ? { enabled: true, minSeverity: 'low' } // Phase 49: webhook test endpoint
+    : config.ADMIN_ALERT_CHANNELS.eventRouting?.[event.type];
+
+  if (!routing || !routing.enabled) {
+    return { delivered: false, results: [{ ok: false, error: 'Event routing disabled' }] };
+  }
+
+  const severity = event.severity || 'medium';
+  if (!severityPasses(severity, routing.minSeverity || 'medium')) {
+    return { delivered: false, results: [{ ok: false, error: 'Severity below route threshold' }] };
+  }
+
+  if (!checkRateLimit(event.type)) {
+    logger.warn('Admin alert rate limited', { eventType: event.type });
+    return { delivered: false, rateLimited: true, results: [{ ok: false, error: 'RATE_LIMITED' }] };
+  }
+
+  const payload = formatPayload({ ...event, severity });
+  enqueue({ payload, queuedAt: new Date().toISOString() });
+
+  const configuredChannels = config.ADMIN_ALERT_CHANNELS.channels || [];
+  const enabledChannels = configuredChannels.filter(ch => adapters[ch]);
+
+  if (enabledChannels.length === 0) {
+    return { delivered: false, results: [{ ok: false, error: 'No configured channels' }] };
+  }
+
+  const settled = await Promise.allSettled(
+    enabledChannels.map(channel => adapters[channel](payload))
+  );
+
+  const results = settled.map((r, idx) => {
+    if (r.status === 'fulfilled') return r.value;
+    return { ok: false, channel: enabledChannels[idx], error: r.reason?.message || String(r.reason) };
+  });
+
+  const delivered = results.some(r => r && r.ok);
+
+  if (!delivered) {
+    logger.warn('Admin alert delivery failed on all channels', {
+      eventType: event.type,
+      results,
+    });
+  } else {
+    logger.info('Admin alert delivered', {
+      eventType: event.type,
+      channels: results.filter(r => r.ok).map(r => r.channel),
+    });
+  }
+
+  return { delivered, results };
+}
+
+/**
+ * Register EventBus listeners once.
+ */
+export function registerListeners() {
+  if (listenersRegistered) return;
+  listenersRegistered = true;
+
+  const subscribed = [
+    'abuse_flag:detected_high_severity',
+    'direct_offer:abuse_threshold_crossed',
+    'counters:auto_rebuild_triggered',
+    'audit_retention:cleanup_failed_threshold',
+    'counters:file_size_critical',
+  ];
+
+  for (const eventName of subscribed) {
+    eventBus.on(eventName, (data) => {
+      deliverAdminAlert({
+        type: eventName,
+        severity: data?.severity || inferSeverity(eventName),
+        data,
+        timestamp: new Date().toISOString(),
+      }).catch(err => {
+        logger.warn('Admin alert listener failed', { eventName, error: err.message });
+      });
+    });
+  }
+
+  logger.info('Admin alert channels: listeners registered', { count: subscribed.length });
+}
+
+function inferSeverity(eventName) {
+  if (eventName === 'abuse_flag:detected_high_severity') return 'high';
+  if (eventName === 'direct_offer:abuse_threshold_crossed') return 'high';
+  if (eventName === 'counters:file_size_critical') return 'high';
+  if (eventName === 'counters:auto_rebuild_triggered') return 'medium';
+  if (eventName === 'audit_retention:cleanup_failed_threshold') return 'medium';
+  return 'medium';
+}
+
+/**
+ * Cleanup stale rate-limit timestamps hourly.
+ */
+function cleanupRateTracker() {
+  const now = Date.now();
+  const windowMs = config.ADMIN_ALERT_CHANNELS?.rateLimitWindowMs || (60 * 60 * 1000);
+
+  for (const [eventType, timestamps] of rateTracker) {
+    const recent = timestamps.filter(ts => now - ts < windowMs);
+    if (recent.length === 0) rateTracker.delete(eventType);
+    else rateTracker.set(eventType, recent);
+  }
+}
+
+const cleanupTimer = setInterval(cleanupRateTracker, 60 * 60 * 1000);
+if (cleanupTimer.unref) cleanupTimer.unref();
+
+export function getStats() {
+  return {
+    enabled: isEnabled(),
+    listenersRegistered,
+    queueSize: alertQueue.length,
+    rateTrackedEventTypes: rateTracker.size,
+    channels: config.ADMIN_ALERT_CHANNELS?.channels || [],
+  };
+}
+
+// Test helpers
+export const _testHelpers = {
+  rateTracker,
+  alertQueue,
+  checkRateLimit,
+  formatPayload,
+  sanitizeDetails,
+  cleanupRateTracker,
+  reset: () => {
+    rateTracker.clear();
+    alertQueue.length = 0;
+    listenersRegistered = false;
+  },
+};
 ```
 
 ---
@@ -2922,10 +3302,12 @@ import { readdir, unlink } from 'node:fs/promises';
 import config from '../../config.js';
 import { getCollectionPath, readJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 let cleanupTimer = null;
 let lastCleanupAt = null;
 let lastCleanupCount = 0;
+let lastFailedFiles = 0; // Phase 49 — failed file tracking
 let lastRunDate = null;
 
 /**
@@ -2970,6 +3352,9 @@ export async function runRetentionCleanup() {
   );
 
   let cleaned = 0;
+  let failed = 0;
+  const failedFiles = [];
+  const failedThreshold = 100;
 
   for (let i = 0; i < auditFiles.length; i++) {
     const filePath = join(auditDir, auditFiles[i]);
@@ -2979,7 +3364,14 @@ export async function runRetentionCleanup() {
         await unlink(filePath);
         cleaned++;
       }
-    } catch (_) { /* skip individual errors */ }
+    } catch (err) {
+      // Phase 49: track per-file failures instead of silently skipping them.
+      failed++;
+      if (failedFiles.length < 50) {
+        failedFiles.push({ filePath, error: err.message });
+      }
+      logger.warn('Audit retention: file processing failed', { filePath, error: err.message });
+    }
 
     // Yield to event loop every batchSize files
     if ((i + 1) % batchSize === 0) {
@@ -2989,12 +3381,23 @@ export async function runRetentionCleanup() {
 
   lastCleanupAt = new Date().toISOString();
   lastCleanupCount = cleaned;
+  lastFailedFiles = failed;
 
   if (cleaned > 0) {
     logger.info('Audit retention: cleaned old entries', { cleaned, retentionDays });
   }
 
-  return { cleaned, retentionDays, cutoffIso };
+  // Phase 49: alert admins if retention cleanup is failing on many files.
+  if (failed >= failedThreshold) {
+    eventBus.emit('audit_retention:cleanup_failed_threshold', {
+      failed,
+      threshold: failedThreshold,
+      sampleFiles: failedFiles.slice(0, 5),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return { cleaned, failed, retentionDays, cutoffIso };
 }
 
 /**
@@ -3049,7 +3452,7 @@ export function stop() {
  * @returns {{ lastCleanupAt: string|null, lastCleanupCount: number }}
  */
 export function getStats() {
-  return { lastCleanupAt, lastCleanupCount };
+  return { lastCleanupAt, lastCleanupCount, lastFailedFiles };
 }
 
 // Test helpers
@@ -3061,6 +3464,7 @@ export const _testHelpers = {
   resetState: () => {
     lastCleanupAt = null;
     lastCleanupCount = 0;
+    lastFailedFiles = 0;
     lastRunDate = null;
   },
 };
@@ -3169,12 +3573,16 @@ export async function searchActions(options = {}) {
   // ── Phase 48 NEW: Cursor support ──
   // Apply cursor AFTER sort, BEFORE slice — preserves newest-first ordering
   const cursor = options.cursor;
+  let cursorExpired = false; // Phase 49 — detect stale cursor after retention cleanup
   if (cursor && entries.length > 0) {
     const cursorIdx = entries.findIndex(e => e.id === cursor);
     if (cursorIdx >= 0) {
       entries = entries.slice(cursorIdx + 1);
+    } else {
+      // Phase 49: cursor not found — keep Phase 48 graceful fallback,
+      // but signal frontend so it can show a "page expired" toast.
+      cursorExpired = true;
     }
-    // If cursorIdx === -1 (cursor not found), return from beginning (graceful)
   }
 
   const total = entries.length;
@@ -3188,7 +3596,7 @@ export async function searchActions(options = {}) {
     : null;
   const hasMore = nextCursor !== null;
 
-  return { entries: sliced, total, nextCursor, hasMore };
+  return { entries: sliced, total, nextCursor, hasMore, cursorExpired };
 }
 
 /**
@@ -3201,6 +3609,16 @@ export async function searchActions(options = {}) {
 async function* generateCsvChunks(options = {}) {
   const cfg = config.ADMIN_OPERATIONS;
   const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
+  const exportId = options.exportId || null; // Phase 49 — CSV export progress tracking
+
+  async function updateExportProgress(rowCount, completed = false) {
+    if (!exportId) return;
+    try {
+      const progress = await import('./csvExportProgress.js');
+      if (completed) progress.completeExport(exportId);
+      else progress.updateProgress(exportId, rowCount);
+    } catch (_) { /* progress tracking is non-fatal */ }
+  }
 
   // Yield header with BOM
   const headers = csvRow([
@@ -3215,6 +3633,7 @@ async function* generateCsvChunks(options = {}) {
   try {
     files = await readdir(auditDirPath);
   } catch (_) {
+    await updateExportProgress(0, true);
     return; // No files — generator ends
   }
 
@@ -3222,7 +3641,10 @@ async function* generateCsvChunks(options = {}) {
     f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
   );
 
-  if (auditFiles.length === 0) return;
+  if (auditFiles.length === 0) {
+    await updateExportProgress(0, true);
+    return;
+  }
 
   let rowCount = 0;
 
@@ -3258,11 +3680,19 @@ async function* generateCsvChunks(options = {}) {
     yield row + '\n';
     rowCount++;
 
+    // Phase 49: emit CSV progress every 1000 rows
+    if (rowCount % 1000 === 0) {
+      await updateExportProgress(rowCount, false);
+    }
+
     // Yield to event loop every 1000 rows
     if (rowCount % 1000 === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }
   }
+
+  // Phase 49: final progress event + cleanup
+  await updateExportProgress(rowCount, true);
 }
 
 /**
@@ -5321,6 +5751,140 @@ export function isContentSafe(text) {
 
 ---
 
+## `server/services/csvExportProgress.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/csvExportProgress.js — CSV Export Progress (Phase 49)
+// ═══════════════════════════════════════════════════════════════
+// In-memory export progress tracker.
+// Emits csv_export:progress events for admin SSE delivery.
+// Multiple concurrent exports isolated by exportId.
+// ═══════════════════════════════════════════════════════════════
+
+import { eventBus } from './eventBus.js';
+
+/**
+ * exportId → { rowsProcessed, totalEstimate, startedAt }
+ * @type {Map<string, { rowsProcessed: number, totalEstimate: number, startedAt: string }>}
+ */
+const activeExports = new Map();
+
+const CLEANUP_AFTER_MS = 30 * 60 * 1000;
+
+/**
+ * Start tracking an export.
+ * @param {string} exportId
+ * @param {number} totalEstimate
+ */
+export function startExport(exportId, totalEstimate = 0) {
+  if (!exportId) return;
+
+  activeExports.set(exportId, {
+    rowsProcessed: 0,
+    totalEstimate: Math.max(0, Number(totalEstimate) || 0),
+    startedAt: new Date().toISOString(),
+  });
+
+  emitProgress(exportId, 0);
+}
+
+/**
+ * Update export progress.
+ * Emits every 1000 rows, plus explicit row 0.
+ *
+ * @param {string} exportId
+ * @param {number} rowsProcessed
+ */
+export function updateProgress(exportId, rowsProcessed) {
+  if (!exportId) return;
+
+  const entry = activeExports.get(exportId);
+  if (!entry) return;
+
+  entry.rowsProcessed = Math.max(0, Number(rowsProcessed) || 0);
+
+  if (entry.rowsProcessed === 0 || entry.rowsProcessed % 1000 === 0) {
+    emitProgress(exportId, entry.rowsProcessed);
+  }
+}
+
+/**
+ * Complete export and emit final 100% progress.
+ * @param {string} exportId
+ */
+export function completeExport(exportId) {
+  if (!exportId) return;
+
+  const entry = activeExports.get(exportId);
+  if (!entry) return;
+
+  const finalRows = entry.rowsProcessed;
+  emitProgress(exportId, finalRows, true);
+  activeExports.delete(exportId);
+}
+
+function emitProgress(exportId, rowsProcessed, completed = false) {
+  const entry = activeExports.get(exportId);
+
+  const totalEstimate = entry ? entry.totalEstimate : rowsProcessed;
+  let percentage = 0;
+
+  if (completed) {
+    percentage = 100;
+  } else if (totalEstimate > 0) {
+    percentage = Math.min(99, Math.round((rowsProcessed / totalEstimate) * 100));
+  }
+
+  eventBus.emit('csv_export:progress', {
+    exportId,
+    rowsProcessed,
+    totalEstimate,
+    percentage,
+    completed,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Cleanup stale active export records.
+ */
+export function cleanupStaleExports() {
+  const now = Date.now();
+  for (const [exportId, entry] of activeExports) {
+    const startedMs = new Date(entry.startedAt).getTime();
+    if (now - startedMs > CLEANUP_AFTER_MS) {
+      activeExports.delete(exportId);
+    }
+  }
+}
+
+const cleanupTimer = setInterval(cleanupStaleExports, 10 * 60 * 1000);
+if (cleanupTimer.unref) cleanupTimer.unref();
+
+export function getStats() {
+  return {
+    active: activeExports.size,
+    exports: Array.from(activeExports.entries()).map(([exportId, entry]) => ({
+      exportId,
+      ...entry,
+    })),
+  };
+}
+
+// Test helpers
+export const _testHelpers = {
+  activeExports,
+  emitProgress,
+  cleanupStaleExports,
+  reset: () => {
+    activeExports.clear();
+  },
+};
+```
+
+---
+
 ## `server/services/database.js`
 
 ```javascript
@@ -6019,6 +6583,9 @@ import { withLock } from './resourceLock.js';
 const EMPLOYER_OFFERS_INDEX = config.DATABASE.indexFiles.employerOffersIndex;
 const WORKER_OFFERS_INDEX = config.DATABASE.indexFiles.workerOffersIndex;
 
+// Phase 49 — defensive fallback if config.DIRECT_OFFERS.declineReasons is missing/corrupt.
+const HARDCODED_DECLINE_REASONS = ['busy', 'wage_low', 'distance', 'category_mismatch', 'other'];
+
 /** Generate offer ID */
 function generateId() {
   return 'dof_' + crypto.randomBytes(6).toString('hex');
@@ -6699,7 +7266,11 @@ export async function decline(offerId, workerId, reason) {
     if (typeof reason !== 'string') {
       return { ok: false, error: 'سبب الرفض غير صالح', code: 'INVALID_REASON' };
     }
-    const allowedReasons = config.DIRECT_OFFERS.declineReasons || [];
+    let allowedReasons = config.DIRECT_OFFERS && config.DIRECT_OFFERS.declineReasons;
+    if (!Array.isArray(allowedReasons) || allowedReasons.length === 0) {
+      logger.warn('config.DIRECT_OFFERS.declineReasons missing/empty — using hardcoded fallback');
+      allowedReasons = HARDCODED_DECLINE_REASONS;
+    }
     if (!allowedReasons.includes(reason)) {
       return { ok: false, error: 'سبب الرفض غير صالح', code: 'INVALID_REASON' };
     }
@@ -8805,6 +9376,14 @@ export async function rebuildCounters() {
           logger.warn('Phase 46: replay flush failed', { error: err.message });
         }
       }
+
+      // Phase 49: signal rebuild completion so monitor-triggered retries can run
+      // immediately after lock contention resolves.
+      try {
+        eventBus.emit('counters:rebuild_completed', {
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
     }
   });
 }
@@ -8819,7 +9398,6 @@ export async function rebuildCounters() {
  */
 export async function maybeTriggerAutoRebuild(snapshot) {
   if (!config.COUNTERS || !config.COUNTERS.enabled) return;
-  if (_rebuildInProgress) return; // Already running — Phase 46 flag
 
   const sizeMB = (snapshot && typeof snapshot.counterFileSizeMB === 'number')
     ? snapshot.counterFileSizeMB
@@ -8827,23 +9405,46 @@ export async function maybeTriggerAutoRebuild(snapshot) {
   const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
   const criticalThreshold = (thresholds && thresholds.critical) || 70;
 
-  if (sizeMB >= criticalThreshold) {
-    logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+  if (sizeMB < criticalThreshold) return;
+
+  // Phase 49: if a rebuild is already in progress, retry immediately after it completes
+  // instead of waiting for the next hourly monitor cycle.
+  if (_rebuildInProgress) {
+    logger.warn('Counter file critical while rebuild in progress — scheduling retry after completion', {
       sizeMB,
       threshold: criticalThreshold,
     });
 
-    eventBus.emit('counters:auto_rebuild_triggered', {
-      sizeMB,
-      threshold: criticalThreshold,
-      triggeredAt: new Date().toISOString(),
+    eventBus.once('counters:rebuild_completed', () => {
+      getFileSize().then(sizeBytes => {
+        const newSizeMB = +(sizeBytes / 1048576).toFixed(2);
+        if (newSizeMB >= criticalThreshold) {
+          logger.warn('Counter file still critical after rebuild — retrying auto-rebuild', {
+            sizeMB: newSizeMB,
+            threshold: criticalThreshold,
+          });
+          maybeTriggerAutoRebuild({ counterFileSizeMB: newSizeMB }).catch(() => {});
+        }
+      }).catch(() => {});
     });
-
-    // Fire-and-forget rebuild (won't block monitor)
-    rebuildCounters().catch(err => {
-      logger.error('Auto-rebuild failed', { error: err.message });
-    });
+    return;
   }
+
+  logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+    sizeMB,
+    threshold: criticalThreshold,
+  });
+
+  eventBus.emit('counters:auto_rebuild_triggered', {
+    sizeMB,
+    threshold: criticalThreshold,
+    triggeredAt: new Date().toISOString(),
+  });
+
+  // Fire-and-forget rebuild (won't block monitor)
+  rebuildCounters().catch(err => {
+    logger.error('Auto-rebuild failed', { error: err.message });
+  });
 }
 
 // Test helpers (Phase 45 + Phase 46)
@@ -9031,6 +9632,21 @@ class EventBus {
       set.delete(callback);
       if (set.size === 0) this._listeners.delete(event);
     }
+  }
+
+  /**
+   * Subscribe to an event once, then auto-unsubscribe.
+   * Phase 49: used for counters:rebuild_completed retry coordination.
+   * @param {string} event
+   * @param {Function} callback
+   * @returns {Function} unsubscribe function
+   */
+  once(event, callback) {
+    const unsubscribe = this.on(event, (data) => {
+      unsubscribe();
+      callback(data);
+    });
+    return unsubscribe;
   }
 
   /**
@@ -13611,6 +14227,21 @@ const builtInMigrations = [
       logger.info('Migration v8: Phase 48 infrastructure registered (no schema changes)');
     },
   },
+  {
+    version: 9,
+    name: 'Phase 49: Marketplace Trust Analytics + Multi-Channel Admin Alerting (no schema changes)',
+    up: async () => {
+      // Phase 49 is infrastructure + analytics only:
+      //   - Trust analytics aggregation service (read-only over existing states)
+      //   - Multi-channel admin alerting (in-memory rate limiting + outbound webhook)
+      //   - Scheduled abuse detection scanner (in-memory lastDetectedFlags)
+      //   - CSV export progress tracking (in-memory activeExports)
+      //   - Audit retention failed-file tracking (no schema changes)
+      //   - Cursor expiry detection (response flag only)
+      // Zero new collections. Zero new index files. No data backfill.
+      logger.info('Migration v9: Phase 49 infrastructure registered (no schema changes)');
+    },
+  },
 ];
 
 /**
@@ -13689,9 +14320,13 @@ import { join } from 'node:path';
 import config from '../../config.js';
 import { atomicWrite, readJSON, deleteJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const METRICS_DIR = join(BASE_PATH, 'metrics');
+
+// Phase 49 — emit counters:file_size_critical only on threshold crossing.
+let lastCounterFileSizeMB = 0;
 
 /**
  * Count .json files in a collection directory (no content reading)
@@ -13834,6 +14469,20 @@ export async function captureSnapshot() {
     snoozeReminders,   // Phase 48
     auditRetention,    // Phase 48
   };
+
+  // Phase 49 — Emit critical counter size event on threshold crossing.
+  try {
+    const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
+    const criticalThreshold = (thresholds && thresholds.critical) || 70;
+    if (counterFileSizeMB >= criticalThreshold && lastCounterFileSizeMB < criticalThreshold) {
+      eventBus.emit('counters:file_size_critical', {
+        sizeMB: counterFileSizeMB,
+        threshold: criticalThreshold,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    lastCounterFileSizeMB = counterFileSizeMB;
+  } catch (_) { /* fire-and-forget */ }
 
   // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
   try {
@@ -15309,12 +15958,14 @@ function detectOfferBombing(offers, cfg) {
  *   error?: string
  * }>}
  */
-export async function detectAbuse() {
+export async function detectAbuse(options = {}) {
   if (!config.DIRECT_OFFERS || !config.DIRECT_OFFERS.abuse || !config.DIRECT_OFFERS.abuse.enabled) {
     return { enabled: false, flags: [] };
   }
 
   const cfg = config.DIRECT_OFFERS.abuse;
+  const emitHighSeverityEvents = options.emitHighSeverityEvents !== false;
+  const emitStateChangedEvents = options.emitStateChangedEvents !== false;
 
   let offers;
   try {
@@ -15360,17 +16011,38 @@ export async function detectAbuse() {
   }
 
   // Phase 48 — Emit event for each high-severity flag (fire-and-forget)
-  // Allows admin SSE channel to deliver real-time notifications
-  for (const flag of filtered) {
-    if (flag.severity === 'high') {
+  // Allows admin SSE channel to deliver real-time notifications.
+  //
+  // Phase 49: scheduledAbuseDetection calls detectAbuse({ emitHighSeverityEvents:false })
+  // to prevent duplicate high-severity alerts every 15 minutes.
+  if (emitHighSeverityEvents) {
+    for (const flag of filtered) {
+      if (flag.severity === 'high') {
+        try {
+          eventBus.emit('abuse_flag:detected_high_severity', {
+            flagType: flag.type,
+            employerId: flag.employerId || null,
+            workerId: flag.workerId || null,
+            fingerprint: flag.fingerprint || null,
+            severity: flag.severity,
+            detectedAt: new Date().toISOString(),
+          });
+        } catch (_) { /* fire-and-forget */ }
+      }
+    }
+  }
+
+  // Phase 49 — Trust analytics cache invalidation.
+  // Manual/on-demand detection may update occurrenceCount via incrementOccurrence(),
+  // so downstream analytics should refresh. Scheduled scanner disables this to
+  // avoid periodic cache churn.
+  if (emitStateChangedEvents) {
+    for (const flag of filtered) {
       try {
-        eventBus.emit('abuse_flag:detected_high_severity', {
-          flagType: flag.type,
-          employerId: flag.employerId || null,
-          workerId: flag.workerId || null,
+        eventBus.emit('abuse_flag:state_changed', {
           fingerprint: flag.fingerprint || null,
-          severity: flag.severity,
-          detectedAt: new Date().toISOString(),
+          flagType: flag.type,
+          observationTime: new Date().toISOString(),
         });
       } catch (_) { /* fire-and-forget */ }
     }
@@ -17343,6 +18015,185 @@ export function sanitizeFields(obj, keys) {
 
 ---
 
+## `server/services/scheduledAbuseDetection.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/scheduledAbuseDetection.js — Scheduled Abuse Scanner (Phase 49)
+// ═══════════════════════════════════════════════════════════════
+// Runs every 15 minutes by default.
+// Calls offerAbuseDetector.detectAbuse({ emitHighSeverityEvents: false })
+// and emits direct_offer:abuse_threshold_crossed only for:
+//   - new high-severity flags
+//   - escalated flags (low/medium → high)
+//
+// Uses withLock('abuse-detection-global') to prevent race with manual scans.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+
+/** @type {NodeJS.Timeout|null} */
+let scanTimer = null;
+
+/** @type {Map<string, string>} fingerprint → severity */
+const lastDetectedFlags = new Map();
+
+let lastScanAt = null;
+let lastScanDurationMs = 0;
+let lastScanFlagCount = 0;
+let lastEmittedCount = 0;
+
+/**
+ * Run one scheduled detection scan.
+ *
+ * @returns {Promise<{ scanned: number, emitted: number }>}
+ */
+export async function runScheduledDetection() {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
+    return { scanned: 0, emitted: 0 };
+  }
+
+  const startTs = Date.now();
+
+  return withLock('abuse-detection-global', async () => {
+    let scanned = 0;
+    let emitted = 0;
+
+    try {
+      const { detectAbuse } = await import('./offerAbuseDetector.js');
+
+      // Phase 49: disable Phase 48 per-call high-severity emission.
+      // The scheduled scanner owns dedup/escalation emission.
+      const result = await detectAbuse({
+        emitHighSeverityEvents: false,
+        emitStateChangedEvents: false,
+      });
+
+      if (!result || !result.enabled || !Array.isArray(result.flags)) {
+        lastScanAt = new Date().toISOString();
+        lastScanDurationMs = Date.now() - startTs;
+        lastScanFlagCount = 0;
+        lastEmittedCount = 0;
+        return { scanned: 0, emitted: 0 };
+      }
+
+      const currentFingerprints = new Set();
+
+      for (const flag of result.flags) {
+        if (!flag || !flag.fingerprint) continue;
+
+        scanned++;
+        currentFingerprints.add(flag.fingerprint);
+
+        const previousSeverity = lastDetectedFlags.get(flag.fingerprint) || null;
+        const currentSeverity = flag.severity || 'low';
+
+        if (currentSeverity === 'high' && previousSeverity !== 'high') {
+          eventBus.emit('direct_offer:abuse_threshold_crossed', {
+            fingerprint: flag.fingerprint,
+            flagType: flag.type || flag.flagType,
+            employerId: flag.employerId || null,
+            workerId: flag.workerId || null,
+            severity: currentSeverity,
+            escalatedFrom: previousSeverity,
+            detectedAt: new Date().toISOString(),
+          });
+          emitted++;
+        }
+
+        lastDetectedFlags.set(flag.fingerprint, currentSeverity);
+      }
+
+      // Cleanup stale entries no longer present in current detection result.
+      for (const fingerprint of Array.from(lastDetectedFlags.keys())) {
+        if (!currentFingerprints.has(fingerprint)) {
+          lastDetectedFlags.delete(fingerprint);
+        }
+      }
+
+      lastScanAt = new Date().toISOString();
+      lastScanDurationMs = Date.now() - startTs;
+      lastScanFlagCount = scanned;
+      lastEmittedCount = emitted;
+
+      if (emitted > 0) {
+        logger.warn('Scheduled abuse detection emitted threshold events', { emitted, scanned });
+      }
+
+      return { scanned, emitted };
+    } catch (err) {
+      lastScanAt = new Date().toISOString();
+      lastScanDurationMs = Date.now() - startTs;
+      logger.warn('Scheduled abuse detection failed', { error: err.message });
+      return { scanned, emitted };
+    }
+  });
+}
+
+/**
+ * Start scheduled scanner.
+ */
+export function start() {
+  if (scanTimer) return;
+
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
+    logger.info('Scheduled abuse detection: disabled via config');
+    return;
+  }
+
+  const intervalMs = config.TRUST_ANALYTICS.scheduledDetectionIntervalMs || (15 * 60 * 1000);
+
+  scanTimer = setInterval(() => {
+    runScheduledDetection().catch(err => {
+      logger.warn('Scheduled abuse detection timer error', { error: err.message });
+    });
+  }, intervalMs);
+
+  if (scanTimer.unref) scanTimer.unref();
+
+  logger.info('Scheduled abuse detection: started', { intervalMs });
+}
+
+/**
+ * Stop scanner (tests / graceful control).
+ */
+export function stop() {
+  if (scanTimer) {
+    clearInterval(scanTimer);
+    scanTimer = null;
+  }
+}
+
+export function getStats() {
+  return {
+    running: !!scanTimer,
+    trackedFlags: lastDetectedFlags.size,
+    lastScanAt,
+    lastScanDurationMs,
+    lastScanFlagCount,
+    lastEmittedCount,
+  };
+}
+
+// Test helpers
+export const _testHelpers = {
+  lastDetectedFlags,
+  reset: () => {
+    lastDetectedFlags.clear();
+    lastScanAt = null;
+    lastScanDurationMs = 0;
+    lastScanFlagCount = 0;
+    lastEmittedCount = 0;
+    stop();
+  },
+};
+```
+
+---
+
 ## `server/services/searchIndex.js`
 
 ```javascript
@@ -18313,6 +19164,473 @@ export async function getUserTrustScore(userId) {
     attendedDays,
   });
 }
+```
+
+---
+
+## `server/services/trustAnalytics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/trustAnalytics.js — Marketplace Trust Analytics (Phase 49)
+// ═══════════════════════════════════════════════════════════════
+// Admin-only aggregation service.
+// Sources:
+//   - abuseFlagReview states (Phase 45 + 47)
+//   - directOfferCounters snapshots (Phase 46) for offer-volume context
+//
+// Cache:
+//   - module-local Map cache (same pattern as directOfferAnalytics.js)
+//   - 5-min TTL by default
+//   - invalidated by abuse_flag:state_changed via cacheDebouncer.debouncedClear
+//
+// Privacy:
+//   - admin-only endpoints consume this service
+//   - no phone/name leakage; per-admin productivity returns adminId only
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+import { debouncedClear } from './cacheDebouncer.js';
+
+// ── Module-local cache ───────────────────────────────────────
+/** @type {Map<string, { value: *, expiresAt: number }>} */
+const cache = new Map();
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.cacheTtlMs) || 300000;
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+export function clearTrustAnalyticsCache() {
+  cache.clear();
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+
+function inDateRange(iso, from, to) {
+  if (!iso) return false;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+function percentile(values, p) {
+  if (!Array.isArray(values) || values.length === 0) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+  return sorted[idx] || 0;
+}
+
+function avg(values) {
+  if (!Array.isArray(values) || values.length === 0) return 0;
+  return Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+}
+
+function toEgyptDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const egyptMs = d.getTime() + (2 * 60 * 60 * 1000);
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(egyptDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getLastReview(state) {
+  if (!state || !Array.isArray(state.reviews) || state.reviews.length === 0) return null;
+  return state.reviews[state.reviews.length - 1];
+}
+
+function getResolutionMs(state) {
+  if (!state || !state.firstSeenAt) return 0;
+  const last = getLastReview(state);
+  if (!last || !last.createdAt) return 0;
+  const ms = new Date(last.createdAt).getTime() - new Date(state.firstSeenAt).getTime();
+  return ms > 0 ? ms : 0;
+}
+
+async function loadStates() {
+  try {
+    const { listAllReviewStates } = await import('./abuseFlagReview.js');
+    const states = await listAllReviewStates();
+    return Array.isArray(states) ? states : [];
+  } catch (err) {
+    logger.warn('trustAnalytics: failed to load review states', { error: err.message });
+    return [];
+  }
+}
+
+function filterStates(states, options = {}) {
+  const { from, to, flagType } = options;
+  return states.filter(s => {
+    if (!s || !s.fingerprint) return false;
+    if (flagType && s.flagType !== flagType) return false;
+    const basis = s.firstSeenAt || (getLastReview(s) && getLastReview(s).createdAt);
+    return inDateRange(basis, from, to);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1. Average Resolution Time
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Average/p50/p95 resolution time from firstSeenAt → latest review.
+ * Resolved states are currentStatus !== active.
+ *
+ * @param {{ from?: string, to?: string, flagType?: string }} options
+ */
+export async function getAvgResolutionTime(options = {}) {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.enabled) {
+    return emptyResolution();
+  }
+
+  const cacheKey = `resolution:${options.from || 'all'}:${options.to || 'all'}:${options.flagType || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const states = filterStates(await loadStates(), options);
+  const resolved = states.filter(s => s.currentStatus && s.currentStatus !== 'active');
+
+  const times = [];
+  const byFlagType = {};
+
+  for (const state of resolved) {
+    const ms = getResolutionMs(state);
+    if (ms <= 0) continue;
+
+    times.push(ms);
+
+    const type = state.flagType || 'unknown';
+    if (!byFlagType[type]) byFlagType[type] = { count: 0, totalMs: 0, avgMs: 0 };
+    byFlagType[type].count++;
+    byFlagType[type].totalMs += ms;
+  }
+
+  for (const type of Object.keys(byFlagType)) {
+    byFlagType[type].avgMs = Math.round(byFlagType[type].totalMs / byFlagType[type].count);
+  }
+
+  const result = {
+    count: times.length,
+    avgMs: avg(times),
+    p50Ms: percentile(times, 0.5),
+    p95Ms: percentile(times, 0.95),
+    byFlagType,
+  };
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+function emptyResolution() {
+  return { count: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, byFlagType: {} };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 2. Warning Conversion Rate
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Tracks warning → actioned conversion within configured 30-day window.
+ *
+ * @param {{ from?: string, to?: string }} options
+ */
+export async function getWarningConversionRate(options = {}) {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.enabled) {
+    return emptyWarningConversion();
+  }
+
+  const cacheKey = `warningConversion:${options.from || 'all'}:${options.to || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const states = filterStates(await loadStates(), options);
+  const windowDays = config.TRUST_ANALYTICS.warningConversionWindowDays || 30;
+  const windowMs = windowDays * 24 * 60 * 60 * 1000;
+
+  let totalWarnings = 0;
+  let convertedToBan = 0;
+  let sufficient = 0;
+  let pendingWindow = 0;
+
+  for (const state of states) {
+    const reviews = Array.isArray(state.reviews) ? state.reviews : [];
+    const warnings = reviews.filter(r => r.decision === 'warning' && inDateRange(r.createdAt, options.from, options.to));
+
+    for (const warning of warnings) {
+      totalWarnings++;
+      const warningMs = new Date(warning.createdAt).getTime();
+
+      const actioned = reviews.find(r =>
+        r.decision === 'actioned' &&
+        new Date(r.createdAt).getTime() > warningMs &&
+        new Date(r.createdAt).getTime() <= warningMs + windowMs
+      );
+
+      if (actioned) {
+        convertedToBan++;
+      } else if (Date.now() < warningMs + windowMs) {
+        pendingWindow++;
+      } else {
+        sufficient++;
+      }
+    }
+  }
+
+  const decided = convertedToBan + sufficient;
+  const conversionRate = decided > 0 ? Math.round((convertedToBan / decided) * 100) : 0;
+
+  const result = {
+    totalWarnings,
+    convertedToBan,
+    sufficient,
+    pendingWindow,
+    conversionRate,
+    windowDays,
+  };
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+function emptyWarningConversion() {
+  return {
+    totalWarnings: 0,
+    convertedToBan: 0,
+    sufficient: 0,
+    pendingWindow: 0,
+    conversionRate: 0,
+    windowDays: config.TRUST_ANALYTICS?.warningConversionWindowDays || 30,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3. Per-Admin Productivity
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Groups abuse flag reviews by adminId.
+ *
+ * @param {{ from?: string, to?: string }} options
+ */
+export async function getPerAdminProductivity(options = {}) {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.enabled) return [];
+
+  const cacheKey = `perAdmin:${options.from || 'all'}:${options.to || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const states = await loadStates();
+  const map = new Map();
+
+  for (const state of states) {
+    const reviews = Array.isArray(state.reviews) ? state.reviews : [];
+    for (const review of reviews) {
+      if (!inDateRange(review.createdAt, options.from, options.to)) continue;
+
+      const adminId = review.adminId || 'unknown';
+      if (!map.has(adminId)) {
+        map.set(adminId, {
+          adminId,
+          totalReviews: 0,
+          byDecision: { dismissed: 0, snoozed: 0, warning: 0, actioned: 0 },
+          totalTimeToDecisionMs: 0,
+          decisionCount: 0,
+          avgTimeToDecisionMs: 0,
+        });
+      }
+
+      const row = map.get(adminId);
+      row.totalReviews++;
+      if (row.byDecision[review.decision] !== undefined) {
+        row.byDecision[review.decision]++;
+      }
+
+      if (state.firstSeenAt && review.createdAt) {
+        const ms = new Date(review.createdAt).getTime() - new Date(state.firstSeenAt).getTime();
+        if (ms > 0) {
+          row.totalTimeToDecisionMs += ms;
+          row.decisionCount++;
+        }
+      }
+    }
+  }
+
+  const rows = Array.from(map.values()).map(row => ({
+    ...row,
+    avgTimeToDecisionMs: row.decisionCount > 0
+      ? Math.round(row.totalTimeToDecisionMs / row.decisionCount)
+      : 0,
+  })).sort((a, b) => b.totalReviews - a.totalReviews);
+
+  cacheSet(cacheKey, rows);
+  return rows;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 4. Abuse Trend
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Daily abuse trend based on abuseFlagReview states.
+ * Note: Phase 46 directOfferCounters.hourlyBuckets track direct-offer lifecycle,
+ * not abuse flag type/severity. Therefore abuse trend uses review states as source
+ * of truth, and optionally attaches directOfferVolume from counters when available.
+ *
+ * @param {{ from?: string, to?: string }} options
+ */
+export async function getAbuseTrend(options = {}) {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.enabled) return [];
+
+  const cacheKey = `abuseTrend:${options.from || 'all'}:${options.to || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const states = filterStates(await loadStates(), options);
+  const byDate = new Map();
+
+  for (const state of states) {
+    const date = toEgyptDate(state.firstSeenAt);
+    if (!date) continue;
+
+    if (!byDate.has(date)) {
+      byDate.set(date, {
+        date,
+        totalDetected: 0,
+        byFlagType: {},
+        status: { active: 0, snoozed: 0, dismissed: 0, actioned: 0 },
+        directOfferVolume: 0,
+      });
+    }
+
+    const row = byDate.get(date);
+    row.totalDetected++;
+
+    const type = state.flagType || 'unknown';
+    row.byFlagType[type] = (row.byFlagType[type] || 0) + 1;
+
+    const status = state.currentStatus || 'active';
+    if (row.status[status] !== undefined) row.status[status]++;
+  }
+
+  // Optional context from Phase 46 counters: direct offer creation volume per day.
+  try {
+    const counters = await import('./directOfferCounters.js');
+    const c = await counters.readCounters();
+    for (const [hourKey, bucket] of Object.entries(c.hourlyBuckets || {})) {
+      const iso = hourKey + ':00:00.000Z';
+      if (!inDateRange(iso, options.from, options.to)) continue;
+      const date = toEgyptDate(iso);
+      if (!byDate.has(date)) {
+        byDate.set(date, {
+          date,
+          totalDetected: 0,
+          byFlagType: {},
+          status: { active: 0, snoozed: 0, dismissed: 0, actioned: 0 },
+          directOfferVolume: 0,
+        });
+      }
+      byDate.get(date).directOfferVolume += bucket.created || 0;
+    }
+  } catch (_) {
+    // Direct-offer volume is optional context only.
+  }
+
+  const result = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5. Resolution Time Histogram
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Resolution time histogram using configurable buckets.
+ *
+ * @param {{ from?: string, to?: string, flagType?: string }} options
+ */
+export async function getResolutionTimeHistogram(options = {}) {
+  if (!config.TRUST_ANALYTICS || !config.TRUST_ANALYTICS.enabled) return [];
+
+  const cacheKey = `histogram:${options.from || 'all'}:${options.to || 'all'}:${options.flagType || 'all'}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const states = filterStates(await loadStates(), options)
+    .filter(s => s.currentStatus && s.currentStatus !== 'active');
+
+  const buckets = (config.TRUST_ANALYTICS.resolutionHistogramBuckets || []).map(b => ({
+    bucket: b.label,
+    maxMs: b.maxMs,
+    count: 0,
+    percentage: 0,
+  }));
+
+  const times = states.map(getResolutionMs).filter(ms => ms > 0);
+
+  for (const ms of times) {
+    const bucket = buckets.find(b => ms <= b.maxMs);
+    if (bucket) bucket.count++;
+  }
+
+  for (const bucket of buckets) {
+    bucket.percentage = times.length > 0 ? Math.round((bucket.count / times.length) * 100) : 0;
+  }
+
+  const result = buckets.map(({ bucket, count, percentage }) => ({ bucket, count, percentage }));
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Dashboard Aggregator
+// ═══════════════════════════════════════════════════════════════
+
+export async function getTrustDashboard(options = {}) {
+  const [avgResolution, warningConversion, perAdmin, abuseTrend, histogram] = await Promise.all([
+    getAvgResolutionTime(options),
+    getWarningConversionRate(options),
+    getPerAdminProductivity(options),
+    getAbuseTrend(options),
+    getResolutionTimeHistogram(options),
+  ]);
+
+  return { avgResolution, warningConversion, perAdmin, abuseTrend, histogram };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Cache Invalidation Listener
+// ═══════════════════════════════════════════════════════════════
+
+eventBus.on('abuse_flag:state_changed', () => {
+  debouncedClear('trustAnalytics:all', () => {
+    clearTrustAnalyticsCache();
+  });
+});
+
+// Test helpers
+export const _testHelpers = {
+  cache,
+  clearTrustAnalyticsCache,
+  inDateRange,
+  toEgyptDate,
+  getResolutionMs,
+};
 ```
 
 ---

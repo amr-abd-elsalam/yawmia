@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.44.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-03T18:04:54.150Z
+# يوميّة (Yawmia) v0.45.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-05T23:36:57.784Z
 > Files in this part: 32
 
 ## Files
@@ -660,25 +660,48 @@ export async function handleAdminAuditLogSearch(req, res) {
 export async function handleAdminAuditLogExport(req, res) {
   try {
     const { createCsvExportStream } = await import('../services/auditLogSearch.js');
+    const { startExport } = await import('../services/csvExportProgress.js');
     const { logger } = await import('../services/logger.js');
+    const { getCollectionPath } = await import('../services/database.js');
+    const { readdir } = await import('node:fs/promises');
 
     const dateStr = new Date().toISOString().slice(0, 10);
     const filename = `audit-log-${dateStr}.csv`;
+
+    // Phase 49 — per-export progress tracking ID.
+    const exportId = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows,
+    // so this is intentionally approximate.
+    let totalEstimate = 0;
+    try {
+      const auditDir = getCollectionPath('audit');
+      const files = await readdir(auditDir);
+      totalEstimate = files.filter(f =>
+        f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
+      ).length;
+    } catch (_) {
+      totalEstimate = 0;
+    }
+
+    startExport(exportId, totalEstimate);
 
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Transfer-Encoding': 'chunked',
+      'X-Export-Id': exportId,
     });
 
     const stream = createCsvExportStream({
       from: req.query.from,
       to: req.query.to,
       action: req.query.action,
+      exportId, // Phase 49
     });
 
     stream.on('error', (err) => {
-      logger.error('CSV stream error', { error: err.message });
+      logger.error('CSV stream error', { error: err.message, exportId });
       if (!res.writableEnded) {
         try { res.end(); } catch (_) {}
       }
@@ -689,6 +712,134 @@ export async function handleAdminAuditLogExport(req, res) {
     if (!res.writableEnded) {
       return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 49 — Marketplace Trust Analytics + Admin Alerting
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/trust/resolution-time?from=&to=&flagType=
+ * Admin-only trust analytics: avg/p50/p95 resolution time.
+ */
+export async function handleAdminTrustResolutionTime(req, res) {
+  try {
+    const { getAvgResolutionTime } = await import('../services/trustAnalytics.js');
+    const result = await getAvgResolutionTime({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      flagType: req.query.flagType || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب متوسط وقت الحل', code: 'TRUST_RESOLUTION_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/warning-conversion?from=&to=
+ * Admin-only trust analytics: warning → actioned conversion rate.
+ */
+export async function handleAdminTrustWarningConversion(req, res) {
+  try {
+    const { getWarningConversionRate } = await import('../services/trustAnalytics.js');
+    const result = await getWarningConversionRate({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب معدل التحويل', code: 'TRUST_WARNING_CONVERSION_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/per-admin?from=&to=
+ * Admin-only trust analytics: per-admin productivity.
+ */
+export async function handleAdminTrustPerAdmin(req, res) {
+  try {
+    const { getPerAdminProductivity } = await import('../services/trustAnalytics.js');
+    const result = await getPerAdminProductivity({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, admins: result, count: result.length });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب إنتاجية الأدمن', code: 'TRUST_PER_ADMIN_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/abuse-trend?from=&to=
+ * Admin-only trust analytics: daily abuse trend.
+ */
+export async function handleAdminTrustAbuseTrend(req, res) {
+  try {
+    const { getAbuseTrend } = await import('../services/trustAnalytics.js');
+    const result = await getAbuseTrend({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, trend: result, count: result.length });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب اتجاه الإساءة', code: 'TRUST_ABUSE_TREND_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/dashboard?from=&to=
+ * Unified trust analytics dashboard endpoint.
+ */
+export async function handleAdminTrustDashboard(req, res) {
+  try {
+    const { getTrustDashboard } = await import('../services/trustAnalytics.js');
+    const result = await getTrustDashboard({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+
+    return sendJSON(res, 200, {
+      ok: true,
+      period: {
+        from: req.query.from || null,
+        to: req.query.to || null,
+      },
+      ...result,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب Dashboard الثقة', code: 'TRUST_DASHBOARD_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/alerts/test-webhook
+ * Sends a test alert through configured admin alert channels.
+ */
+export async function handleAdminTestWebhook(req, res) {
+  try {
+    const { deliverAdminAlert } = await import('../services/adminAlertChannels.js');
+
+    const result = await deliverAdminAlert({
+      type: 'test',
+      severity: 'medium',
+      data: {
+        message: 'اختبار Webhook من لوحة تحكم يوميّة',
+        summary: 'Yawmia admin webhook test',
+        requestedBy: req.user?.id || 'admin_token',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return sendJSON(res, 200, {
+      ok: true,
+      delivered: !!result.delivered,
+      rateLimited: !!result.rateLimited,
+      results: result.results || [],
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في اختبار Webhook', code: 'WEBHOOK_TEST_ERROR' });
   }
 }
 ```
@@ -726,6 +877,7 @@ const SUBSCRIBED_EVENTS = [
   'abuse_flag:detected_high_severity',
   'direct_offer:abuse_threshold_crossed',
   'counters:auto_rebuild_triggered',
+  'csv_export:progress', // Phase 49 — streaming CSV export progress
 ];
 
 let listenersRegistered = false;
@@ -821,8 +973,24 @@ export async function handleAdminEventStream(req, res) {
   const entry = { res, connectedAt: Date.now() };
   adminConnections.get(adminId).add(entry);
 
+  // Phase 49 — Per-connection heartbeat.
+  // Keeps admin SSE alive behind load balancers with ~60s idle timeout.
+  const heartbeatTimer = setInterval(() => {
+    try {
+      if (!entry.res.writableEnded && !entry.res.destroyed) {
+        entry.res.write(': heartbeat\n\n');
+      } else {
+        clearInterval(heartbeatTimer);
+      }
+    } catch (_) {
+      clearInterval(heartbeatTimer);
+    }
+  }, 30000);
+  if (heartbeatTimer.unref) heartbeatTimer.unref();
+
   // ── Cleanup on close ──
   res.on('close', () => {
+    clearInterval(heartbeatTimer);
     const conns = adminConnections.get(adminId);
     if (conns) {
       conns.delete(entry);
@@ -4586,6 +4754,15 @@ export function requireAdmin(req, res, next) {
   // Check via ADMIN_TOKEN header
   const adminToken = req.headers['x-admin-token'];
   if (adminToken && adminToken === process.env.ADMIN_TOKEN) {
+    req.isAdmin = true;
+    return next();
+  }
+
+  // Phase 49: allow admin token via query for direct-download links
+  // e.g. /api/admin/export/payments?_token=...
+  // Backward-compatible with Phase 48 adminSSE self-auth pattern.
+  const queryToken = req.query && (req.query.token || req.query._token);
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN) {
     req.isAdmin = true;
     return next();
   }

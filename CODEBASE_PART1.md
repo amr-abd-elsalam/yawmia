@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.44.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-03T18:04:54.128Z
+# يوميّة (Yawmia) v0.45.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-05T23:36:57.759Z
 > Files in this part: 6
 
 ## Files
@@ -40,6 +40,11 @@ INFOBIP_SENDER=Yawmia
 # Generate keys: node scripts/generate-vapid-keys.js
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
+
+# ── Admin Alert Channels (Phase 49) ─────────────────────────
+# Optional: external webhook for critical admin alerts
+# Enable via config.ADMIN_ALERT_CHANNELS.enabled=true + webhook.enabled=true
+ADMIN_ALERT_WEBHOOK_URL=
 ```
 
 ---
@@ -525,7 +530,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.44.0',
+    cacheName: 'yawmia-v0.45.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1054,6 +1059,55 @@ const config = {
     cleanupCheckIntervalMs: 60 * 60 * 1000,          // check every hour
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 63. تحليلات الثقة (TRUST_ANALYTICS) — Phase 49
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_ANALYTICS: {
+    enabled: true,
+    scheduledDetectionEnabled: true,
+    scheduledDetectionIntervalMs: 15 * 60 * 1000,    // every 15 min
+    cacheTtlMs: 300000,                              // 5 min cache
+    warningConversionWindowDays: 30,
+    resolutionHistogramBuckets: [
+      { label: '<1h',  maxMs: 60 * 60 * 1000 },
+      { label: '<6h',  maxMs: 6 * 60 * 60 * 1000 },
+      { label: '<24h', maxMs: 24 * 60 * 60 * 1000 },
+      { label: '<3d',  maxMs: 3 * 24 * 60 * 60 * 1000 },
+      { label: '<7d',  maxMs: 7 * 24 * 60 * 60 * 1000 },
+      { label: '>7d',  maxMs: Infinity },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 64. قنوات تنبيهات الأدمن (ADMIN_ALERT_CHANNELS) — Phase 49
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_ALERT_CHANNELS: {
+    enabled: false,                                  // false by default — enable per deployment
+    channels: ['webhook'],                           // ['webhook', 'email']
+    webhook: {
+      enabled: false,
+      url: '',                                       // Slack/Discord/Telegram/custom webhook URL
+      timeoutMs: 5000,
+      retryCount: 3,
+    },
+    email: {
+      enabled: false,                                // placeholder for transactional email service
+      apiKey: '',
+      fromEmail: 'alerts@yowmia.com',
+      toEmails: [],
+    },
+    rateLimitPerEventType: 5,                        // max alerts per event type per hour
+    rateLimitWindowMs: 60 * 60 * 1000,
+    queueMaxSize: 100,                               // bounded in-memory queue
+    eventRouting: {
+      'abuse_flag:detected_high_severity': { enabled: true, minSeverity: 'high' },
+      'direct_offer:abuse_threshold_crossed': { enabled: true, minSeverity: 'high' },
+      'counters:auto_rebuild_triggered': { enabled: true, minSeverity: 'medium' },
+      'audit_retention:cleanup_failed_threshold': { enabled: true, minSeverity: 'medium' },
+      'counters:file_size_critical': { enabled: true, minSeverity: 'high' },
+    },
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1102,7 +1156,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.44.0",
+  "version": "0.45.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1507,6 +1561,28 @@ if (config.AUDIT_RETENTION && config.AUDIT_RETENTION.enabled) {
   }
 }
 
+// ── Phase 49 — Multi-Channel Admin Alerting ──
+// Register alert listeners before scheduled detection starts so the first emitted
+// threshold event can be delivered through webhook/email if enabled.
+if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
+  try {
+    const alertChannels = await import('./server/services/adminAlertChannels.js');
+    alertChannels.registerListeners();
+  } catch (err) {
+    logger.warn('Phase 49: adminAlertChannels register failed', { error: err.message });
+  }
+}
+
+// ── Phase 49 — Scheduled Abuse Detection Scanner ──
+if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
+  try {
+    const scheduledDetection = await import('./server/services/scheduledAbuseDetection.js');
+    scheduledDetection.start();
+  } catch (err) {
+    logger.warn('Phase 49: scheduledAbuseDetection start failed', { error: err.message });
+  }
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)
@@ -1648,6 +1724,13 @@ import {
   handleAdminUserWarningsRemaining,
   handleAdminAuditLogSearch,
   handleAdminAuditLogExport,
+  // Phase 49 — Marketplace Trust Analytics + Admin Alerting
+  handleAdminTrustResolutionTime,
+  handleAdminTrustWarningConversion,
+  handleAdminTrustPerAdmin,
+  handleAdminTrustAbuseTrend,
+  handleAdminTrustDashboard,
+  handleAdminTestWebhook,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -1698,7 +1781,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.44.0',
+        version: '0.45.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1860,7 +1943,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.44.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.45.0' });
     },
   },
 
@@ -2063,6 +2146,14 @@ const routes = [
 
   // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
   { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
+
+  // ── Phase 49 — Marketplace Trust Analytics + Multi-Channel Admin Alerting ──
+  { method: 'GET', path: '/api/admin/trust/resolution-time', middlewares: [requireAdmin], handler: handleAdminTrustResolutionTime },
+  { method: 'GET', path: '/api/admin/trust/warning-conversion', middlewares: [requireAdmin], handler: handleAdminTrustWarningConversion },
+  { method: 'GET', path: '/api/admin/trust/per-admin', middlewares: [requireAdmin], handler: handleAdminTrustPerAdmin },
+  { method: 'GET', path: '/api/admin/trust/abuse-trend', middlewares: [requireAdmin], handler: handleAdminTrustAbuseTrend },
+  { method: 'GET', path: '/api/admin/trust/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustDashboard },
+  { method: 'POST', path: '/api/admin/alerts/test-webhook', middlewares: [requireAdmin], handler: handleAdminTestWebhook },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },
