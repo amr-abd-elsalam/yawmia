@@ -455,7 +455,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.44.0',
+    cacheName: 'yawmia-v0.45.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -982,6 +982,55 @@ const config = {
     cleanupHourEgypt: 2,                             // run at 2AM Egypt time
     cleanupBatchSize: 100,                           // yield event loop every 100 files
     cleanupCheckIntervalMs: 60 * 60 * 1000,          // check every hour
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 63. تحليلات الثقة (TRUST_ANALYTICS) — Phase 49
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_ANALYTICS: {
+    enabled: true,
+    scheduledDetectionEnabled: true,
+    scheduledDetectionIntervalMs: 15 * 60 * 1000,    // every 15 min
+    cacheTtlMs: 300000,                              // 5 min cache
+    warningConversionWindowDays: 30,
+    resolutionHistogramBuckets: [
+      { label: '<1h',  maxMs: 60 * 60 * 1000 },
+      { label: '<6h',  maxMs: 6 * 60 * 60 * 1000 },
+      { label: '<24h', maxMs: 24 * 60 * 60 * 1000 },
+      { label: '<3d',  maxMs: 3 * 24 * 60 * 60 * 1000 },
+      { label: '<7d',  maxMs: 7 * 24 * 60 * 60 * 1000 },
+      { label: '>7d',  maxMs: Infinity },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 64. قنوات تنبيهات الأدمن (ADMIN_ALERT_CHANNELS) — Phase 49
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_ALERT_CHANNELS: {
+    enabled: false,                                  // false by default — enable per deployment
+    channels: ['webhook'],                           // ['webhook', 'email']
+    webhook: {
+      enabled: false,
+      url: '',                                       // Slack/Discord/Telegram/custom webhook URL
+      timeoutMs: 5000,
+      retryCount: 3,
+    },
+    email: {
+      enabled: false,                                // placeholder for transactional email service
+      apiKey: '',
+      fromEmail: 'alerts@yowmia.com',
+      toEmails: [],
+    },
+    rateLimitPerEventType: 5,                        // max alerts per event type per hour
+    rateLimitWindowMs: 60 * 60 * 1000,
+    queueMaxSize: 100,                               // bounded in-memory queue
+    eventRouting: {
+      'abuse_flag:detected_high_severity': { enabled: true, minSeverity: 'high' },
+      'direct_offer:abuse_threshold_crossed': { enabled: true, minSeverity: 'high' },
+      'counters:auto_rebuild_triggered': { enabled: true, minSeverity: 'medium' },
+      'audit_retention:cleanup_failed_threshold': { enabled: true, minSeverity: 'medium' },
+      'counters:file_size_critical': { enabled: true, minSeverity: 'high' },
+    },
   },
 
 };

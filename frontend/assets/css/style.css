@@ -3749,6 +3749,97 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 49 — Trust Analytics + CSV Progress + Alert Channels ═══ */
+.trust-metric-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trust-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.trust-metric-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.35rem;
+}
+
+.progress-container {
+  margin-block: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 10px;
+  background: var(--color-surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  min-width: 80px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: start;
+}
+
+.alert-channels-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.alert-channels-status__label {
+  color: var(--color-text-muted);
+}
+
+.alert-channels-status__value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.abuse-trend-chart-wrap {
+  overflow-x: auto;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.abuse-trend-chart {
+  width: 100%;
+  min-width: 520px;
+  height: 220px;
+  display: block;
+}
+
 /* ═══ Phase 48 — Admin Real-Time Operations ═══ */
 .admin-sse-status {
   display: inline-block;

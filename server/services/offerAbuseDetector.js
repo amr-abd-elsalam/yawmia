@@ -195,12 +195,14 @@ function detectOfferBombing(offers, cfg) {
  *   error?: string
  * }>}
  */
-export async function detectAbuse() {
+export async function detectAbuse(options = {}) {
   if (!config.DIRECT_OFFERS || !config.DIRECT_OFFERS.abuse || !config.DIRECT_OFFERS.abuse.enabled) {
     return { enabled: false, flags: [] };
   }
 
   const cfg = config.DIRECT_OFFERS.abuse;
+  const emitHighSeverityEvents = options.emitHighSeverityEvents !== false;
+  const emitStateChangedEvents = options.emitStateChangedEvents !== false;
 
   let offers;
   try {
@@ -246,17 +248,38 @@ export async function detectAbuse() {
   }
 
   // Phase 48 — Emit event for each high-severity flag (fire-and-forget)
-  // Allows admin SSE channel to deliver real-time notifications
-  for (const flag of filtered) {
-    if (flag.severity === 'high') {
+  // Allows admin SSE channel to deliver real-time notifications.
+  //
+  // Phase 49: scheduledAbuseDetection calls detectAbuse({ emitHighSeverityEvents:false })
+  // to prevent duplicate high-severity alerts every 15 minutes.
+  if (emitHighSeverityEvents) {
+    for (const flag of filtered) {
+      if (flag.severity === 'high') {
+        try {
+          eventBus.emit('abuse_flag:detected_high_severity', {
+            flagType: flag.type,
+            employerId: flag.employerId || null,
+            workerId: flag.workerId || null,
+            fingerprint: flag.fingerprint || null,
+            severity: flag.severity,
+            detectedAt: new Date().toISOString(),
+          });
+        } catch (_) { /* fire-and-forget */ }
+      }
+    }
+  }
+
+  // Phase 49 — Trust analytics cache invalidation.
+  // Manual/on-demand detection may update occurrenceCount via incrementOccurrence(),
+  // so downstream analytics should refresh. Scheduled scanner disables this to
+  // avoid periodic cache churn.
+  if (emitStateChangedEvents) {
+    for (const flag of filtered) {
       try {
-        eventBus.emit('abuse_flag:detected_high_severity', {
-          flagType: flag.type,
-          employerId: flag.employerId || null,
-          workerId: flag.workerId || null,
+        eventBus.emit('abuse_flag:state_changed', {
           fingerprint: flag.fingerprint || null,
-          severity: flag.severity,
-          detectedAt: new Date().toISOString(),
+          flagType: flag.type,
+          observationTime: new Date().toISOString(),
         });
       } catch (_) { /* fire-and-forget */ }
     }

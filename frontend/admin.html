@@ -225,9 +225,73 @@
           <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportAuditLog()">📥 تصدير CSV</button>
         </div>
 
+        <!-- Phase 49 — CSV Export Progress -->
+        <div id="csvExportProgressContainer" class="progress-container hidden" aria-live="polite">
+          <div class="progress-bar" aria-label="تقدم تصدير CSV">
+            <div class="progress-bar__fill" id="csvProgressFill" style="width:0%"></div>
+          </div>
+          <div class="progress-text" id="csvProgressText">0%</div>
+        </div>
+
         <div id="auditLogResults">
           <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
         </div>
+      </div>
+      <!-- Phase 49 — Trust Analytics Dashboard -->
+      <div class="admin-section" id="trustAnalyticsSection">
+        <div class="admin-section__header">
+          <h2>📈 تحليلات الثقة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadTrustDashboard()">تحديث</button>
+        </div>
+
+        <div id="trustPeriodSelector" class="period-selector" style="margin-block-end:1rem;">
+          <button class="btn btn--primary btn--sm" data-days="7" onclick="AdminApp.setTrustPeriod(7)">7 أيام</button>
+          <button class="btn btn--ghost btn--sm" data-days="30" onclick="AdminApp.setTrustPeriod(30)">30 يوم</button>
+          <button class="btn btn--ghost btn--sm" data-days="90" onclick="AdminApp.setTrustPeriod(90)">90 يوم</button>
+        </div>
+
+        <div id="trustMetricsGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="resolutionHistogramChart">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="perAdminTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <div id="abuseTrendChart">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 49 — Multi-Channel Admin Alerting -->
+      <div class="admin-section" id="alertChannelsSection">
+        <div class="admin-section__header">
+          <h2>📢 قنوات تنبيهات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.testWebhook()">اختبار Webhook</button>
+        </div>
+
+        <div class="alert-channels-status">
+          <span class="alert-channels-status__label">الحالة:</span>
+          <span class="alert-channels-status__value" id="alertChannelsStatus">حسب إعدادات السيرفر</span>
+        </div>
+
+        <p style="color: var(--color-text-muted); font-size:0.9rem; margin-block:0.75rem;">
+          Webhook/Email alerts بتشتغل من السيرفر حسب <code>ADMIN_ALERT_CHANNELS</code>.
+          زر الاختبار يرسل payload تجريبي للقنوات المفعّلة.
+        </p>
+
+        <button class="btn btn--primary btn--sm" onclick="AdminApp.testWebhook()">إرسال اختبار Webhook</button>
+        <div id="webhookTestResult" style="margin-block-start:0.75rem;"></div>
       </div>
     </div>
     </main>

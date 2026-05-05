@@ -12,9 +12,13 @@ import { join } from 'node:path';
 import config from '../../config.js';
 import { atomicWrite, readJSON, deleteJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const METRICS_DIR = join(BASE_PATH, 'metrics');
+
+// Phase 49 — emit counters:file_size_critical only on threshold crossing.
+let lastCounterFileSizeMB = 0;
 
 /**
  * Count .json files in a collection directory (no content reading)
@@ -157,6 +161,20 @@ export async function captureSnapshot() {
     snoozeReminders,   // Phase 48
     auditRetention,    // Phase 48
   };
+
+  // Phase 49 — Emit critical counter size event on threshold crossing.
+  try {
+    const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
+    const criticalThreshold = (thresholds && thresholds.critical) || 70;
+    if (counterFileSizeMB >= criticalThreshold && lastCounterFileSizeMB < criticalThreshold) {
+      eventBus.emit('counters:file_size_critical', {
+        sizeMB: counterFileSizeMB,
+        threshold: criticalThreshold,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    lastCounterFileSizeMB = counterFileSizeMB;
+  } catch (_) { /* fire-and-forget */ }
 
   // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
   try {

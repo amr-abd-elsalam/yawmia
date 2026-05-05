@@ -304,6 +304,21 @@ const builtInMigrations = [
       logger.info('Migration v8: Phase 48 infrastructure registered (no schema changes)');
     },
   },
+  {
+    version: 9,
+    name: 'Phase 49: Marketplace Trust Analytics + Multi-Channel Admin Alerting (no schema changes)',
+    up: async () => {
+      // Phase 49 is infrastructure + analytics only:
+      //   - Trust analytics aggregation service (read-only over existing states)
+      //   - Multi-channel admin alerting (in-memory rate limiting + outbound webhook)
+      //   - Scheduled abuse detection scanner (in-memory lastDetectedFlags)
+      //   - CSV export progress tracking (in-memory activeExports)
+      //   - Audit retention failed-file tracking (no schema changes)
+      //   - Cursor expiry detection (response flag only)
+      // Zero new collections. Zero new index files. No data backfill.
+      logger.info('Migration v9: Phase 49 infrastructure registered (no schema changes)');
+    },
+  },
 ];
 
 /**

@@ -22,6 +22,9 @@ import { withLock } from './resourceLock.js';
 const EMPLOYER_OFFERS_INDEX = config.DATABASE.indexFiles.employerOffersIndex;
 const WORKER_OFFERS_INDEX = config.DATABASE.indexFiles.workerOffersIndex;
 
+// Phase 49 — defensive fallback if config.DIRECT_OFFERS.declineReasons is missing/corrupt.
+const HARDCODED_DECLINE_REASONS = ['busy', 'wage_low', 'distance', 'category_mismatch', 'other'];
+
 /** Generate offer ID */
 function generateId() {
   return 'dof_' + crypto.randomBytes(6).toString('hex');
@@ -702,7 +705,11 @@ export async function decline(offerId, workerId, reason) {
     if (typeof reason !== 'string') {
       return { ok: false, error: 'سبب الرفض غير صالح', code: 'INVALID_REASON' };
     }
-    const allowedReasons = config.DIRECT_OFFERS.declineReasons || [];
+    let allowedReasons = config.DIRECT_OFFERS && config.DIRECT_OFFERS.declineReasons;
+    if (!Array.isArray(allowedReasons) || allowedReasons.length === 0) {
+      logger.warn('config.DIRECT_OFFERS.declineReasons missing/empty — using hardcoded fallback');
+      allowedReasons = HARDCODED_DECLINE_REASONS;
+    }
     if (!allowedReasons.includes(reason)) {
       return { ok: false, error: 'سبب الرفض غير صالح', code: 'INVALID_REASON' };
     }

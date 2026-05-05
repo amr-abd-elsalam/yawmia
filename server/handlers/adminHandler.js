@@ -617,25 +617,48 @@ export async function handleAdminAuditLogSearch(req, res) {
 export async function handleAdminAuditLogExport(req, res) {
   try {
     const { createCsvExportStream } = await import('../services/auditLogSearch.js');
+    const { startExport } = await import('../services/csvExportProgress.js');
     const { logger } = await import('../services/logger.js');
+    const { getCollectionPath } = await import('../services/database.js');
+    const { readdir } = await import('node:fs/promises');
 
     const dateStr = new Date().toISOString().slice(0, 10);
     const filename = `audit-log-${dateStr}.csv`;
+
+    // Phase 49 — per-export progress tracking ID.
+    const exportId = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows,
+    // so this is intentionally approximate.
+    let totalEstimate = 0;
+    try {
+      const auditDir = getCollectionPath('audit');
+      const files = await readdir(auditDir);
+      totalEstimate = files.filter(f =>
+        f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
+      ).length;
+    } catch (_) {
+      totalEstimate = 0;
+    }
+
+    startExport(exportId, totalEstimate);
 
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Transfer-Encoding': 'chunked',
+      'X-Export-Id': exportId,
     });
 
     const stream = createCsvExportStream({
       from: req.query.from,
       to: req.query.to,
       action: req.query.action,
+      exportId, // Phase 49
     });
 
     stream.on('error', (err) => {
-      logger.error('CSV stream error', { error: err.message });
+      logger.error('CSV stream error', { error: err.message, exportId });
       if (!res.writableEnded) {
         try { res.end(); } catch (_) {}
       }
@@ -646,5 +669,133 @@ export async function handleAdminAuditLogExport(req, res) {
     if (!res.writableEnded) {
       return sendJSON(res, 500, { error: 'خطأ في التصدير', code: 'AUDIT_EXPORT_ERROR' });
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 49 — Marketplace Trust Analytics + Admin Alerting
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/trust/resolution-time?from=&to=&flagType=
+ * Admin-only trust analytics: avg/p50/p95 resolution time.
+ */
+export async function handleAdminTrustResolutionTime(req, res) {
+  try {
+    const { getAvgResolutionTime } = await import('../services/trustAnalytics.js');
+    const result = await getAvgResolutionTime({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      flagType: req.query.flagType || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب متوسط وقت الحل', code: 'TRUST_RESOLUTION_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/warning-conversion?from=&to=
+ * Admin-only trust analytics: warning → actioned conversion rate.
+ */
+export async function handleAdminTrustWarningConversion(req, res) {
+  try {
+    const { getWarningConversionRate } = await import('../services/trustAnalytics.js');
+    const result = await getWarningConversionRate({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب معدل التحويل', code: 'TRUST_WARNING_CONVERSION_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/per-admin?from=&to=
+ * Admin-only trust analytics: per-admin productivity.
+ */
+export async function handleAdminTrustPerAdmin(req, res) {
+  try {
+    const { getPerAdminProductivity } = await import('../services/trustAnalytics.js');
+    const result = await getPerAdminProductivity({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, admins: result, count: result.length });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب إنتاجية الأدمن', code: 'TRUST_PER_ADMIN_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/abuse-trend?from=&to=
+ * Admin-only trust analytics: daily abuse trend.
+ */
+export async function handleAdminTrustAbuseTrend(req, res) {
+  try {
+    const { getAbuseTrend } = await import('../services/trustAnalytics.js');
+    const result = await getAbuseTrend({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+    return sendJSON(res, 200, { ok: true, trend: result, count: result.length });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب اتجاه الإساءة', code: 'TRUST_ABUSE_TREND_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/dashboard?from=&to=
+ * Unified trust analytics dashboard endpoint.
+ */
+export async function handleAdminTrustDashboard(req, res) {
+  try {
+    const { getTrustDashboard } = await import('../services/trustAnalytics.js');
+    const result = await getTrustDashboard({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    });
+
+    return sendJSON(res, 200, {
+      ok: true,
+      period: {
+        from: req.query.from || null,
+        to: req.query.to || null,
+      },
+      ...result,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب Dashboard الثقة', code: 'TRUST_DASHBOARD_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/alerts/test-webhook
+ * Sends a test alert through configured admin alert channels.
+ */
+export async function handleAdminTestWebhook(req, res) {
+  try {
+    const { deliverAdminAlert } = await import('../services/adminAlertChannels.js');
+
+    const result = await deliverAdminAlert({
+      type: 'test',
+      severity: 'medium',
+      data: {
+        message: 'اختبار Webhook من لوحة تحكم يوميّة',
+        summary: 'Yawmia admin webhook test',
+        requestedBy: req.user?.id || 'admin_token',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    return sendJSON(res, 200, {
+      ok: true,
+      delivered: !!result.delivered,
+      rateLimited: !!result.rateLimited,
+      results: result.results || [],
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في اختبار Webhook', code: 'WEBHOOK_TEST_ERROR' });
   }
 }

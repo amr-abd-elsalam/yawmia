@@ -96,12 +96,16 @@ export async function searchActions(options = {}) {
   // ── Phase 48 NEW: Cursor support ──
   // Apply cursor AFTER sort, BEFORE slice — preserves newest-first ordering
   const cursor = options.cursor;
+  let cursorExpired = false; // Phase 49 — detect stale cursor after retention cleanup
   if (cursor && entries.length > 0) {
     const cursorIdx = entries.findIndex(e => e.id === cursor);
     if (cursorIdx >= 0) {
       entries = entries.slice(cursorIdx + 1);
+    } else {
+      // Phase 49: cursor not found — keep Phase 48 graceful fallback,
+      // but signal frontend so it can show a "page expired" toast.
+      cursorExpired = true;
     }
-    // If cursorIdx === -1 (cursor not found), return from beginning (graceful)
   }
 
   const total = entries.length;
@@ -115,7 +119,7 @@ export async function searchActions(options = {}) {
     : null;
   const hasMore = nextCursor !== null;
 
-  return { entries: sliced, total, nextCursor, hasMore };
+  return { entries: sliced, total, nextCursor, hasMore, cursorExpired };
 }
 
 /**
@@ -128,6 +132,16 @@ export async function searchActions(options = {}) {
 async function* generateCsvChunks(options = {}) {
   const cfg = config.ADMIN_OPERATIONS;
   const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
+  const exportId = options.exportId || null; // Phase 49 — CSV export progress tracking
+
+  async function updateExportProgress(rowCount, completed = false) {
+    if (!exportId) return;
+    try {
+      const progress = await import('./csvExportProgress.js');
+      if (completed) progress.completeExport(exportId);
+      else progress.updateProgress(exportId, rowCount);
+    } catch (_) { /* progress tracking is non-fatal */ }
+  }
 
   // Yield header with BOM
   const headers = csvRow([
@@ -142,6 +156,7 @@ async function* generateCsvChunks(options = {}) {
   try {
     files = await readdir(auditDirPath);
   } catch (_) {
+    await updateExportProgress(0, true);
     return; // No files — generator ends
   }
 
@@ -149,7 +164,10 @@ async function* generateCsvChunks(options = {}) {
     f.startsWith('aud_') && f.endsWith('.json') && !f.endsWith('.tmp')
   );
 
-  if (auditFiles.length === 0) return;
+  if (auditFiles.length === 0) {
+    await updateExportProgress(0, true);
+    return;
+  }
 
   let rowCount = 0;
 
@@ -185,11 +203,19 @@ async function* generateCsvChunks(options = {}) {
     yield row + '\n';
     rowCount++;
 
+    // Phase 49: emit CSV progress every 1000 rows
+    if (rowCount % 1000 === 0) {
+      await updateExportProgress(rowCount, false);
+    }
+
     // Yield to event loop every 1000 rows
     if (rowCount % 1000 === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }
   }
+
+  // Phase 49: final progress event + cleanup
+  await updateExportProgress(rowCount, true);
 }
 
 /**

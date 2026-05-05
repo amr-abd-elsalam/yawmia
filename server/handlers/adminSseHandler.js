@@ -26,6 +26,7 @@ const SUBSCRIBED_EVENTS = [
   'abuse_flag:detected_high_severity',
   'direct_offer:abuse_threshold_crossed',
   'counters:auto_rebuild_triggered',
+  'csv_export:progress', // Phase 49 — streaming CSV export progress
 ];
 
 let listenersRegistered = false;
@@ -121,8 +122,24 @@ export async function handleAdminEventStream(req, res) {
   const entry = { res, connectedAt: Date.now() };
   adminConnections.get(adminId).add(entry);
 
+  // Phase 49 — Per-connection heartbeat.
+  // Keeps admin SSE alive behind load balancers with ~60s idle timeout.
+  const heartbeatTimer = setInterval(() => {
+    try {
+      if (!entry.res.writableEnded && !entry.res.destroyed) {
+        entry.res.write(': heartbeat\n\n');
+      } else {
+        clearInterval(heartbeatTimer);
+      }
+    } catch (_) {
+      clearInterval(heartbeatTimer);
+    }
+  }, 30000);
+  if (heartbeatTimer.unref) heartbeatTimer.unref();
+
   // ── Cleanup on close ──
   res.on('close', () => {
+    clearInterval(heartbeatTimer);
     const conns = adminConnections.get(adminId);
     if (conns) {
       conns.delete(entry);

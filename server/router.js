@@ -28,6 +28,13 @@ import {
   handleAdminUserWarningsRemaining,
   handleAdminAuditLogSearch,
   handleAdminAuditLogExport,
+  // Phase 49 — Marketplace Trust Analytics + Admin Alerting
+  handleAdminTrustResolutionTime,
+  handleAdminTrustWarningConversion,
+  handleAdminTrustPerAdmin,
+  handleAdminTrustAbuseTrend,
+  handleAdminTrustDashboard,
+  handleAdminTestWebhook,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -78,7 +85,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.44.0',
+        version: '0.45.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -240,7 +247,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.44.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.45.0' });
     },
   },
 
@@ -443,6 +450,14 @@ const routes = [
 
   // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
   { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
+
+  // ── Phase 49 — Marketplace Trust Analytics + Multi-Channel Admin Alerting ──
+  { method: 'GET', path: '/api/admin/trust/resolution-time', middlewares: [requireAdmin], handler: handleAdminTrustResolutionTime },
+  { method: 'GET', path: '/api/admin/trust/warning-conversion', middlewares: [requireAdmin], handler: handleAdminTrustWarningConversion },
+  { method: 'GET', path: '/api/admin/trust/per-admin', middlewares: [requireAdmin], handler: handleAdminTrustPerAdmin },
+  { method: 'GET', path: '/api/admin/trust/abuse-trend', middlewares: [requireAdmin], handler: handleAdminTrustAbuseTrend },
+  { method: 'GET', path: '/api/admin/trust/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustDashboard },
+  { method: 'POST', path: '/api/admin/alerts/test-webhook', middlewares: [requireAdmin], handler: handleAdminTestWebhook },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

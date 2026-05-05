@@ -1126,6 +1126,14 @@ export async function rebuildCounters() {
           logger.warn('Phase 46: replay flush failed', { error: err.message });
         }
       }
+
+      // Phase 49: signal rebuild completion so monitor-triggered retries can run
+      // immediately after lock contention resolves.
+      try {
+        eventBus.emit('counters:rebuild_completed', {
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
     }
   });
 }
@@ -1140,7 +1148,6 @@ export async function rebuildCounters() {
  */
 export async function maybeTriggerAutoRebuild(snapshot) {
   if (!config.COUNTERS || !config.COUNTERS.enabled) return;
-  if (_rebuildInProgress) return; // Already running — Phase 46 flag
 
   const sizeMB = (snapshot && typeof snapshot.counterFileSizeMB === 'number')
     ? snapshot.counterFileSizeMB
@@ -1148,23 +1155,46 @@ export async function maybeTriggerAutoRebuild(snapshot) {
   const thresholds = config.MONITORING && config.MONITORING.thresholds && config.MONITORING.thresholds.counterFileSizeMB;
   const criticalThreshold = (thresholds && thresholds.critical) || 70;
 
-  if (sizeMB >= criticalThreshold) {
-    logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+  if (sizeMB < criticalThreshold) return;
+
+  // Phase 49: if a rebuild is already in progress, retry immediately after it completes
+  // instead of waiting for the next hourly monitor cycle.
+  if (_rebuildInProgress) {
+    logger.warn('Counter file critical while rebuild in progress — scheduling retry after completion', {
       sizeMB,
       threshold: criticalThreshold,
     });
 
-    eventBus.emit('counters:auto_rebuild_triggered', {
-      sizeMB,
-      threshold: criticalThreshold,
-      triggeredAt: new Date().toISOString(),
+    eventBus.once('counters:rebuild_completed', () => {
+      getFileSize().then(sizeBytes => {
+        const newSizeMB = +(sizeBytes / 1048576).toFixed(2);
+        if (newSizeMB >= criticalThreshold) {
+          logger.warn('Counter file still critical after rebuild — retrying auto-rebuild', {
+            sizeMB: newSizeMB,
+            threshold: criticalThreshold,
+          });
+          maybeTriggerAutoRebuild({ counterFileSizeMB: newSizeMB }).catch(() => {});
+        }
+      }).catch(() => {});
     });
-
-    // Fire-and-forget rebuild (won't block monitor)
-    rebuildCounters().catch(err => {
-      logger.error('Auto-rebuild failed', { error: err.message });
-    });
+    return;
   }
+
+  logger.warn('Counter file exceeded critical size — triggering auto-rebuild', {
+    sizeMB,
+    threshold: criticalThreshold,
+  });
+
+  eventBus.emit('counters:auto_rebuild_triggered', {
+    sizeMB,
+    threshold: criticalThreshold,
+    triggeredAt: new Date().toISOString(),
+  });
+
+  // Fire-and-forget rebuild (won't block monitor)
+  rebuildCounters().catch(err => {
+    logger.error('Auto-rebuild failed', { error: err.message });
+  });
 }
 
 // Test helpers (Phase 45 + Phase 46)

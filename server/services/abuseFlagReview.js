@@ -18,6 +18,7 @@ import crypto from 'node:crypto';
 import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 /**
  * Compute deterministic fingerprint for an abuse flag.
@@ -141,6 +142,18 @@ export async function recordReview({ flag, adminId, decision, note, snoozeDays }
     // 'warning' does NOT change currentStatus — flag remains active
 
     await atomicWrite(filePath, state);
+
+    // Phase 49: notify trustAnalytics cache invalidation listeners.
+    try {
+      eventBus.emit('abuse_flag:state_changed', {
+        fingerprint: state.fingerprint,
+        flagType: state.flagType,
+        decision,
+        currentStatus: state.currentStatus,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) { /* fire-and-forget */ }
+
     return state;
   });
 }
@@ -212,6 +225,16 @@ export async function incrementOccurrence(fingerprint) {
 
     try {
       await atomicWrite(filePath, state);
+
+      // Phase 49: occurrenceCount changed — invalidate trust analytics cache.
+      try {
+        eventBus.emit('abuse_flag:state_changed', {
+          fingerprint,
+          flagType: state.flagType,
+          occurrenceCount: state.occurrenceCount,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_) { /* fire-and-forget */ }
     } catch (err) {
       logger.warn('abuseFlagReview: incrementOccurrence write failed', { fingerprint, error: err.message });
     }

@@ -79,6 +79,15 @@ export function requireAdmin(req, res, next) {
     return next();
   }
 
+  // Phase 49: allow admin token via query for direct-download links
+  // e.g. /api/admin/export/payments?_token=...
+  // Backward-compatible with Phase 48 adminSSE self-auth pattern.
+  const queryToken = req.query && (req.query.token || req.query._token);
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN) {
+    req.isAdmin = true;
+    return next();
+  }
+
   // Check via session (admin role)
   if (req.user && req.user.role === 'admin') {
     req.isAdmin = true;

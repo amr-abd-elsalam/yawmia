@@ -378,6 +378,28 @@ if (config.AUDIT_RETENTION && config.AUDIT_RETENTION.enabled) {
   }
 }
 
+// ── Phase 49 — Multi-Channel Admin Alerting ──
+// Register alert listeners before scheduled detection starts so the first emitted
+// threshold event can be delivered through webhook/email if enabled.
+if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
+  try {
+    const alertChannels = await import('./server/services/adminAlertChannels.js');
+    alertChannels.registerListeners();
+  } catch (err) {
+    logger.warn('Phase 49: adminAlertChannels register failed', { error: err.message });
+  }
+}
+
+// ── Phase 49 — Scheduled Abuse Detection Scanner ──
+if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
+  try {
+    const scheduledDetection = await import('./server/services/scheduledAbuseDetection.js');
+    scheduledDetection.start();
+  } catch (err) {
+    logger.warn('Phase 49: scheduledAbuseDetection start failed', { error: err.message });
+  }
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)

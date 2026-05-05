@@ -13,10 +13,12 @@ import { readdir, unlink } from 'node:fs/promises';
 import config from '../../config.js';
 import { getCollectionPath, readJSON } from './database.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 let cleanupTimer = null;
 let lastCleanupAt = null;
 let lastCleanupCount = 0;
+let lastFailedFiles = 0; // Phase 49 — failed file tracking
 let lastRunDate = null;
 
 /**
@@ -61,6 +63,9 @@ export async function runRetentionCleanup() {
   );
 
   let cleaned = 0;
+  let failed = 0;
+  const failedFiles = [];
+  const failedThreshold = 100;
 
   for (let i = 0; i < auditFiles.length; i++) {
     const filePath = join(auditDir, auditFiles[i]);
@@ -70,7 +75,14 @@ export async function runRetentionCleanup() {
         await unlink(filePath);
         cleaned++;
       }
-    } catch (_) { /* skip individual errors */ }
+    } catch (err) {
+      // Phase 49: track per-file failures instead of silently skipping them.
+      failed++;
+      if (failedFiles.length < 50) {
+        failedFiles.push({ filePath, error: err.message });
+      }
+      logger.warn('Audit retention: file processing failed', { filePath, error: err.message });
+    }
 
     // Yield to event loop every batchSize files
     if ((i + 1) % batchSize === 0) {
@@ -80,12 +92,23 @@ export async function runRetentionCleanup() {
 
   lastCleanupAt = new Date().toISOString();
   lastCleanupCount = cleaned;
+  lastFailedFiles = failed;
 
   if (cleaned > 0) {
     logger.info('Audit retention: cleaned old entries', { cleaned, retentionDays });
   }
 
-  return { cleaned, retentionDays, cutoffIso };
+  // Phase 49: alert admins if retention cleanup is failing on many files.
+  if (failed >= failedThreshold) {
+    eventBus.emit('audit_retention:cleanup_failed_threshold', {
+      failed,
+      threshold: failedThreshold,
+      sampleFiles: failedFiles.slice(0, 5),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return { cleaned, failed, retentionDays, cutoffIso };
 }
 
 /**
@@ -140,7 +163,7 @@ export function stop() {
  * @returns {{ lastCleanupAt: string|null, lastCleanupCount: number }}
  */
 export function getStats() {
-  return { lastCleanupAt, lastCleanupCount };
+  return { lastCleanupAt, lastCleanupCount, lastFailedFiles };
 }
 
 // Test helpers
@@ -152,6 +175,7 @@ export const _testHelpers = {
   resetState: () => {
     lastCleanupAt = null;
     lastCleanupCount = 0;
+    lastFailedFiles = 0;
     lastRunDate = null;
   },
 };

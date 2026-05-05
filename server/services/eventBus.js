@@ -34,6 +34,21 @@ class EventBus {
   }
 
   /**
+   * Subscribe to an event once, then auto-unsubscribe.
+   * Phase 49: used for counters:rebuild_completed retry coordination.
+   * @param {string} event
+   * @param {Function} callback
+   * @returns {Function} unsubscribe function
+   */
+  once(event, callback) {
+    const unsubscribe = this.on(event, (data) => {
+      unsubscribe();
+      callback(data);
+    });
+    return unsubscribe;
+  }
+
+  /**
    * Emit an event
    * @param {string} event
    * @param {*} data
