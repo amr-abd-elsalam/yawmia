@@ -109,9 +109,21 @@ export async function initDatabase() {
 export async function atomicWrite(filePath, data) {
   const dir = dirname(filePath);
   await mkdir(dir, { recursive: true });
-  const tmpPath = filePath + '.tmp';
-  await writeFile(tmpPath, JSON.stringify(data, null, 2), ENCODING);
-  await rename(tmpPath, filePath);
+
+  // Phase 50 hotfix:
+  // Use a unique .tmp path per write to avoid concurrent writes to the same
+  // target clobbering each other's temp file. This preserves the atomic
+  // tmp → rename pattern while preventing ENOENT rename races.
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+
+  try {
+    await writeFile(tmpPath, JSON.stringify(data, null, 2), ENCODING);
+    await rename(tmpPath, filePath);
+  } catch (err) {
+    try { await unlink(tmpPath); } catch (_) { /* cleanup best-effort */ }
+    throw err;
+  }
+
   // Invalidate cache AFTER successful disk write
   cacheInvalidate(`file:${filePath}`);
 }

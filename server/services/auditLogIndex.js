@@ -14,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { mkdir, readdir, rm } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import {
@@ -460,7 +460,12 @@ export async function rebuildAuditIndex(options = {}) {
   const started = Date.now();
   const root = indexRoot();
 
-  await rm(root, { recursive: true, force: true });
+  // Phase 50 hotfix:
+  // Do not rm(root) during runtime rebuild. Incremental audit:logged listeners may
+  // still be writing index files, and deleting the directory can race with atomic
+  // writes causing ENOTEMPTY/ENOENT. Rebuild writes fresh index files over current
+  // files. Any stale IDs are harmless because search re-reads final records and
+  // applies exact filters before returning results.
   await mkdir(root, { recursive: true });
 
   const auditDir = getCollectionPath('audit');
@@ -589,7 +594,12 @@ export async function markAuditIndexStale(reason) {
 
 // ── EventBus Integration ─────────────────────────────────────
 // Registered when this module is imported at startup/search.
-if (isEnabled() && config.AUDIT_INDEX.incrementalUpdates) {
+// Phase 50 hotfix: guard globally because tests may import this module with
+// query-string cache busting, which otherwise registers duplicate listeners.
+const AUDIT_INDEX_LISTENER_FLAG = '__yawmiaAuditIndexListenersRegistered';
+
+if (isEnabled() && config.AUDIT_INDEX.incrementalUpdates && !globalThis[AUDIT_INDEX_LISTENER_FLAG]) {
+  globalThis[AUDIT_INDEX_LISTENER_FLAG] = true;
   eventBus.on('audit:logged', (data) => {
     if (!data || !data.record) return;
     indexAuditRecord(data.record).catch(err => {

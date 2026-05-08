@@ -16,6 +16,7 @@ import config from '../../config.js';
 import {
   atomicWrite,
   readJSON,
+  deleteJSON,
   getRecordPath,
   getCollectionPath,
   listJSON,
@@ -343,7 +344,7 @@ export async function cleanupExpiredExports() {
         if (record.filePath) {
           await unlink(join(BASE_PATH, record.filePath)).catch(() => {});
         }
-        await unlink(join(dir, file)).catch(() => {});
+        await deleteJSON(registryPath(exportId)).catch(() => {});
         cleaned++;
       } catch (err) {
         logger.warn('exportRegistry: cleanup failed', { exportId, error: err.message });
