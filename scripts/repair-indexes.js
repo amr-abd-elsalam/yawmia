@@ -83,6 +83,7 @@ async function repair() {
       category: job.category,
       governorate: job.governorate,
       status: job.status,
+      urgency: job.urgency || 'normal',
       createdAt: job.createdAt,
     };
   }
@@ -385,6 +386,10 @@ async function repair() {
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.
   console.log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
+
+  // Phase 50: audit index is a directory tree and can be rebuilt separately.
+  console.log(`📌 Audit index: run "node scripts/rebuild-audit-index.js" to rebuild Phase 50 audit search indexes.`);
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 

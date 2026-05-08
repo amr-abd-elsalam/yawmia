@@ -48,6 +48,23 @@ try {
   logger.warn('Startup: migration error', { error: err.message });
 }
 
+// ── Phase 50 — Audit Log Index Listener Registration ─────────
+// Importing the module registers audit:logged/audit:deleted listeners.
+// Optional rebuild is controlled by config.AUDIT_INDEX.rebuildOnStartup.
+try {
+  if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
+    const auditIdx = await import('./server/services/auditLogIndex.js');
+    if (config.AUDIT_INDEX.rebuildOnStartup) {
+      const result = await auditIdx.rebuildAuditIndex();
+      logger.info('Startup: audit index rebuilt', result);
+    } else {
+      logger.info('Startup: audit index listeners registered');
+    }
+  }
+} catch (err) {
+  logger.warn('Startup: audit index init error', { error: err.message });
+}
+
 // ── Build Search Index (conditional — skip if recently built) ─
 try {
   const searchIdx = await import('./server/services/searchIndex.js');
@@ -343,6 +360,20 @@ if (config.MONITORING && config.MONITORING.enabled) {
     }
   }, config.MONITORING.snapshotIntervalMs);
   if (monitorTimer.unref) monitorTimer.unref();
+}
+
+// ── Phase 50 — Export Registry Cleanup Timer ────────────────
+if (config.EXPORTS && config.EXPORTS.enabled) {
+  const exportCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupExpiredExports } = await import('./server/services/exportRegistry.js');
+      const cleaned = await cleanupExpiredExports();
+      if (cleaned > 0) logger.info(`Exports: cleaned ${cleaned} expired export(s)`);
+    } catch (err) {
+      logger.warn('Export registry cleanup error', { error: err.message });
+    }
+  }, config.EXPORTS.cleanupIntervalMs || (60 * 60 * 1000));
+  if (exportCleanupTimer.unref) exportCleanupTimer.unref();
 }
 
 // ── Backup Scheduler Timer (separate — checks hourly if backup is due) ──

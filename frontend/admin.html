@@ -237,6 +237,55 @@
           <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
         </div>
       </div>
+      <!-- Phase 50 — Audit Index Health -->
+      <div class="admin-section" id="auditIndexSection">
+        <div class="admin-section__header">
+          <h2>🧭 فهرس سجل العمليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadAuditIndexStatus()">تحديث</button>
+        </div>
+
+        <div id="auditIndexStatus">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.rebuildAuditIndex()">إعادة بناء الفهرس</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyAuditIndex()">فحص الفهرس</button>
+        </div>
+
+        <div id="auditIndexActionResult" style="margin-block-start:0.75rem;"></div>
+      </div>
+
+      <!-- Phase 50 — Persistent Export Registry -->
+      <div class="admin-section" id="exportsSection">
+        <div class="admin-section__header">
+          <h2>📦 سجل التصديرات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadExports()">تحديث</button>
+        </div>
+
+        <div id="exportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 50 — Counter Hygiene -->
+      <div class="admin-section" id="counterHygieneSection">
+        <div class="admin-section__header">
+          <h2>🧹 نظافة العدادات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadCounterHygiene()">تحديث</button>
+        </div>
+
+        <div id="counterHygieneInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:1rem;">
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.compactCounters()">ضغط العدادات</button>
+        </div>
+
+        <div id="counterHygieneActionResult" style="margin-block-start:0.75rem;"></div>
+      </div>
+
       <!-- Phase 49 — Trust Analytics Dashboard -->
       <div class="admin-section" id="trustAnalyticsSection">
         <div class="admin-section__header">

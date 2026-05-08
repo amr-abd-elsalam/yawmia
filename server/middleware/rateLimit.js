@@ -197,6 +197,49 @@ function recordViolation(ip) {
 }
 
 /**
+ * Check authenticated per-user rate limit.
+ * Phase 50: global rateLimitMiddleware runs before route auth, so req.user is
+ * usually unavailable there. requireAuth calls this after loading the user.
+ *
+ * @param {object} req
+ * @param {object} res
+ * @returns {boolean} true if allowed, false if response was sent
+ */
+export function checkUserRateLimit(req, res) {
+  if (!config.RATE_LIMIT.enabled || !config.RATE_LIMIT.perUserEnabled) return true;
+  if (!req.user || !req.user.id) return true;
+
+  const now = Date.now();
+  const userId = req.user.id;
+  const userKey = `user:${userId}`;
+  const userWindowMs = config.RATE_LIMIT.perUserWindowMs;
+  const userMaxRequests = config.RATE_LIMIT.perUserMaxRequests;
+
+  let userEntry = store.get(userKey);
+  if (!userEntry || now > userEntry.resetAt) {
+    userEntry = { count: 0, resetAt: now + userWindowMs };
+    store.set(userKey, userEntry);
+  }
+
+  userEntry.count++;
+
+  res.setHeader('X-RateLimit-User-Limit', String(userMaxRequests));
+  res.setHeader('X-RateLimit-User-Remaining', String(Math.max(0, userMaxRequests - userEntry.count)));
+  res.setHeader('X-RateLimit-User-Reset', String(Math.ceil(userEntry.resetAt / 1000)));
+
+  if (userEntry.count > userMaxRequests) {
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: config.RATE_LIMIT.message,
+      code: 'USER_RATE_LIMITED',
+    }));
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Reset store — useful for testing
  */
 export function resetRateLimit() {

@@ -8,7 +8,8 @@
 
 import { Readable } from 'node:stream';
 import { join } from 'node:path';
-import { readdir } from 'node:fs/promises';
+import { readdir, appendFile, rm, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import config from '../../config.js';
 import { getCollectionPath, listJSON, readJSON } from './database.js';
 import { logger } from './logger.js';
@@ -41,13 +42,72 @@ function csvRow(fields) {
  * @returns {Promise<{ entries: object[], total: number, nextCursor: string|null, hasMore: boolean }>}
  */
 export async function searchActions(options = {}) {
+  // Phase 50: indexed-first path with safe full-scan fallback.
+  if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
+    try {
+      const { searchAuditIndex } = await import('./auditLogIndex.js');
+      const indexedResult = await searchAuditIndex(options);
+
+      if (indexedResult && !indexedResult.fallbackRequired) {
+        return indexedResult;
+      }
+
+      if (!config.AUDIT_INDEX.fallbackToFullScan) {
+        logger.warn('auditLogSearch: audit index requested fallback but fallback disabled', {
+          reason: indexedResult && indexedResult.reason,
+        });
+        return {
+          entries: [],
+          total: 0,
+          nextCursor: null,
+          hasMore: false,
+          cursorExpired: false,
+          indexed: false,
+          fallbackUsed: false,
+          indexError: indexedResult && indexedResult.reason,
+        };
+      }
+
+      logger.warn('auditLogSearch: falling back to full scan', {
+        reason: indexedResult && indexedResult.reason,
+      });
+      const fallback = await fullScanSearchActions(options);
+      return { ...fallback, indexed: false, fallbackUsed: true };
+    } catch (err) {
+      logger.warn('auditLogSearch: indexed path failed, falling back', { error: err.message });
+      if (config.AUDIT_INDEX.fallbackToFullScan) {
+        const fallback = await fullScanSearchActions(options);
+        return { ...fallback, indexed: false, fallbackUsed: true };
+      }
+      return {
+        entries: [],
+        total: 0,
+        nextCursor: null,
+        hasMore: false,
+        cursorExpired: false,
+        indexed: false,
+        fallbackUsed: false,
+        indexError: err.message,
+      };
+    }
+  }
+
+  const result = await fullScanSearchActions(options);
+  return { ...result, indexed: false, fallbackUsed: false };
+}
+
+/**
+ * Original Phase 47/48/49 full-scan implementation.
+ * Kept intact as correctness fallback for missing/corrupt/stale audit index.
+ */
+async function fullScanSearchActions(options = {}) {
   const auditDir = getCollectionPath('audit');
   let entries;
   try {
     entries = await listJSON(auditDir);
   } catch (err) {
     logger.warn('auditLogSearch: listJSON failed', { error: err.message });
-    return { entries: [], total: 0, nextCursor: null, hasMore: false };
+    return { entries: [], total: 0, nextCursor: null, hasMore: false, cursorExpired: false };
   }
 
   // Filter to audit records only
@@ -93,17 +153,14 @@ export async function searchActions(options = {}) {
   // Sort newest first
   entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  // ── Phase 48 NEW: Cursor support ──
-  // Apply cursor AFTER sort, BEFORE slice — preserves newest-first ordering
+  // Cursor support
   const cursor = options.cursor;
-  let cursorExpired = false; // Phase 49 — detect stale cursor after retention cleanup
+  let cursorExpired = false;
   if (cursor && entries.length > 0) {
     const cursorIdx = entries.findIndex(e => e.id === cursor);
     if (cursorIdx >= 0) {
       entries = entries.slice(cursorIdx + 1);
     } else {
-      // Phase 49: cursor not found — keep Phase 48 graceful fallback,
-      // but signal frontend so it can show a "page expired" toast.
       cursorExpired = true;
     }
   }
@@ -113,7 +170,6 @@ export async function searchActions(options = {}) {
   const limit = Math.min(Math.max(1, options.limit || 50), maxResults);
   const sliced = entries.slice(0, limit);
 
-  // ── Phase 48 NEW: Pagination metadata ──
   const nextCursor = (sliced.length === limit && total > limit)
     ? sliced[sliced.length - 1].id
     : null;
@@ -134,13 +190,52 @@ async function* generateCsvChunks(options = {}) {
   const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
   const exportId = options.exportId || null; // Phase 49 — CSV export progress tracking
 
-  async function updateExportProgress(rowCount, completed = false) {
+  async function updateExportProgress(rowCount, completed = false, failedError = null) {
     if (!exportId) return;
     try {
       const progress = await import('./csvExportProgress.js');
       if (completed) progress.completeExport(exportId);
       else progress.updateProgress(exportId, rowCount);
-    } catch (_) { /* progress tracking is non-fatal */ }
+    } catch (_) { /* in-memory progress tracking is non-fatal */ }
+
+    // Phase 50: persistent registry progress.
+    try {
+      const registry = await import('./exportRegistry.js');
+      if (failedError) {
+        await registry.failExport(exportId, failedError);
+      } else if (completed) {
+        await registry.completeExport(exportId, { rowsProcessed: rowCount });
+      } else {
+        await registry.updateExportProgress(exportId, { rowsProcessed: rowCount });
+      }
+    } catch (_) { /* registry tracking is non-fatal */ }
+  }
+
+  async function isCancelled() {
+    if (!exportId) return false;
+    try {
+      const registry = await import('./exportRegistry.js');
+      return await registry.isCancellationRequested(exportId);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function persistChunk(chunk) {
+    if (!options.persistFilePath) return;
+    try {
+      await mkdir(dirname(options.persistFilePath), { recursive: true });
+      await appendFile(options.persistFilePath, chunk, 'utf-8');
+    } catch (_) {
+      // Persistence is useful for download retry, but response streaming remains primary.
+    }
+  }
+
+  // Persisted CSV retry file (Phase 50). Remove stale partial file first.
+  if (options.persistFilePath) {
+    try {
+      await rm(options.persistFilePath, { force: true });
+    } catch (_) { /* non-fatal */ }
   }
 
   // Yield header with BOM
@@ -148,7 +243,9 @@ async function* generateCsvChunks(options = {}) {
     'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
     'IP', 'التفاصيل', 'التاريخ',
   ]);
-  yield BOM + headers + '\n';
+  const headerChunk = BOM + headers + '\n';
+  await persistChunk(headerChunk);
+  yield headerChunk;
 
   // Load file list
   const auditDirPath = getCollectionPath('audit');
@@ -200,12 +297,18 @@ async function* generateCsvChunks(options = {}) {
       data.createdAt || '',
     ]);
 
-    yield row + '\n';
+    const chunk = row + '\n';
+    await persistChunk(chunk);
+    yield chunk;
     rowCount++;
 
-    // Phase 49: emit CSV progress every 1000 rows
+    // Phase 49 + 50: emit progress and check cancellation every 1000 rows
     if (rowCount % 1000 === 0) {
       await updateExportProgress(rowCount, false);
+
+      if (await isCancelled()) {
+        return;
+      }
     }
 
     // Yield to event loop every 1000 rows
@@ -272,4 +375,5 @@ export async function exportToCSV(options = {}) {
 export const _testHelpers = {
   csvEscape,
   csvRow,
+  fullScanSearchActions,
 };

@@ -319,6 +319,21 @@ const builtInMigrations = [
       logger.info('Migration v9: Phase 49 infrastructure registered (no schema changes)');
     },
   },
+  {
+    version: 10,
+    name: 'Phase 50: Audit Indexed Search + Counter Hygiene + Export Registry',
+    up: async () => {
+      // Phase 50 registers new file-backed operational hygiene structures:
+      //   - audit/indexes          (rebuildable audit search indexes)
+      //   - exports                (persistent export registry + optional CSV files)
+      //   - metrics/counter-archives (counter compaction archives)
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy rebuild is performed here by design.
+      // Use: node scripts/rebuild-audit-index.js
+      logger.info('Migration v10: Phase 50 directories registered (audit indexes, exports, counter archives)');
+    },
+  },
 ];
 
 /**

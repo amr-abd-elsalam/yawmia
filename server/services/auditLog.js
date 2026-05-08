@@ -5,6 +5,7 @@
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
+import { eventBus } from './eventBus.js';
 
 /**
  * Log an admin action (append-only — no update or delete)
@@ -32,6 +33,12 @@ export async function logAction({ adminId, action, targetType, targetId, details
 
   const recordPath = getRecordPath('audit', id);
   await atomicWrite(recordPath, record);
+
+  // Phase 50: fire-and-forget incremental audit index update.
+  // Indexing is acceleration only — logAction must never fail if indexing fails.
+  try {
+    eventBus.emit('audit:logged', { auditId: id, record });
+  } catch (_) { /* non-fatal */ }
 
   return record;
 }

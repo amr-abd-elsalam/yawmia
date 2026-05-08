@@ -117,6 +117,9 @@ var AdminApp = (function () {
         loadMonitoring(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
+        loadAuditIndexStatus(),
+        loadExports(),
+        loadCounterHygiene(),
         loadTrustDashboard(),
       ]).catch(function () {});
     } catch (err) {
@@ -1557,6 +1560,228 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 50 — Audit Index + Export Registry + Counter Hygiene
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadAuditIndexStatus() {
+    var el = document.getElementById('auditIndexStatus');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/audit-index/status');
+      var idx = data.auditIndex || {};
+
+      var statusClass = idx.status === 'healthy'
+        ? 'admin-health-pill--ok'
+        : (idx.status === 'stale' ? 'admin-health-pill--warn' : 'admin-health-pill--bad');
+
+      el.innerHTML =
+        '<div class="health-row">' +
+          '<span class="health-row__label">الحالة</span>' +
+          '<span class="admin-health-pill ' + statusClass + '">' + escapeHtml(idx.status || 'unknown') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">عدد السجلات المفهرسة</span>' +
+          '<span class="health-row__value">' + escapeHtml(String(idx.recordCount || 0)) + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">آخر بناء</span>' +
+          '<span class="health-row__value">' + escapeHtml(idx.lastBuiltAt ? new Date(idx.lastBuiltAt).toLocaleString('ar-EG') : '-') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">Stale</span>' +
+          '<span class="health-row__value">' + (idx.stale ? 'نعم — ' + escapeHtml(idx.staleReason || '') : 'لا') + '</span>' +
+        '</div>';
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حالة الفهرس</p>';
+    }
+  }
+
+  async function rebuildAuditIndex() {
+    var resultEl = document.getElementById('auditIndexActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إعادة بناء الفهرس...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/audit-index/rebuild', {});
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم بناء الفهرس — ' +
+          escapeHtml(String(data.indexed || 0)) +
+          ' سجل في ' +
+          escapeHtml(String(data.durationMs || 0)) +
+          'ms</p>';
+      }
+      loadAuditIndexStatus();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  async function verifyAuditIndex() {
+    var resultEl = document.getElementById('auditIndexActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري فحص الفهرس...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/audit-index/verify', {});
+      if (resultEl) {
+        if (data.ok && (!data.warnings || data.warnings.length === 0)) {
+          resultEl.innerHTML = '<p style="color:var(--color-success);">✓ الفهرس سليم — تم فحص ' + escapeHtml(String(data.checked || 0)) + ' سجل</p>';
+        } else {
+          var warnings = data.warnings || [];
+          resultEl.innerHTML =
+            '<p style="color:var(--color-warning);">⚠️ تحذيرات: ' + warnings.length + '</p>' +
+            '<ul style="font-size:0.8rem;color:var(--color-text-muted);">' +
+            warnings.slice(0, 5).map(function (w) { return '<li>' + escapeHtml(w) + '</li>'; }).join('') +
+            '</ul>';
+        }
+      }
+      loadAuditIndexStatus();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  async function loadExports() {
+    var el = document.getElementById('exportsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/exports?limit=20');
+      var rows = data.exports || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد تصديرات بعد</p>';
+        return;
+      }
+
+      var statusLabels = {
+        pending: 'في الانتظار',
+        running: 'جاري',
+        completed: 'مكتمل',
+        failed: 'فشل',
+        cancelled: 'ملغي',
+        expired: 'منتهي',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المعرّف</th><th>النوع</th><th>الحالة</th><th>التقدم</th><th>الصفوف</th><th>التاريخ</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      rows.forEach(function (x) {
+        var status = x.status || 'pending';
+        var canDownload = status === 'completed' && x.filePath;
+        var canCancel = status === 'pending' || status === 'running';
+
+        var actions = '';
+        if (canDownload) {
+          actions += '<button class="btn btn--ghost btn--sm" onclick="AdminApp.downloadExport(\'' + escapeHtml(x.id) + '\')">تحميل</button> ';
+        }
+        if (canCancel) {
+          actions += '<button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.cancelExport(\'' + escapeHtml(x.id) + '\')">إلغاء</button>';
+        }
+
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(x.id || '') + '</small></td>' +
+          '<td>' + escapeHtml(x.type || '-') + '</td>' +
+          '<td><span class="export-status-badge export-status-badge--' + escapeHtml(status) + '">' + escapeHtml(statusLabels[status] || status) + '</span></td>' +
+          '<td>' + escapeHtml(String(x.percentage || 0)) + '%</td>' +
+          '<td>' + escapeHtml(String(x.rowsProcessed || 0)) + '/' + escapeHtml(String(x.totalEstimate || 0)) + '</td>' +
+          '<td>' + escapeHtml(x.createdAt ? new Date(x.createdAt).toLocaleString('ar-EG') : '-') + '</td>' +
+          '<td>' + actions + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل التصديرات</p>';
+    }
+  }
+
+  async function cancelExport(exportId) {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'إلغاء التصدير',
+      message: 'متأكد إنك عايز تلغي هذا التصدير؟',
+      confirmText: 'إلغاء',
+      cancelText: 'رجوع',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiWrite('POST', '/api/admin/exports/' + exportId + '/cancel', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم طلب إلغاء التصدير');
+      loadExports();
+    } catch (err) {
+      showError(err.message || 'خطأ في إلغاء التصدير');
+    }
+  }
+
+  function downloadExport(exportId) {
+    var url = API + '/api/admin/exports/' + encodeURIComponent(exportId) + '/download?_token=' + encodeURIComponent(token);
+    var link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function loadCounterHygiene() {
+    var el = document.getElementById('counterHygieneInfo');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/counters/hygiene');
+      var mb = data.fileSizeMB || 0;
+      var sizeClass = mb >= 70 ? 'counter-size-critical' : (mb >= 40 ? 'counter-size-warning' : '');
+      var last = data.lastCompaction || null;
+
+      el.innerHTML =
+        '<div class="health-row">' +
+          '<span class="health-row__label">حجم ملف العدادات</span>' +
+          '<span class="health-row__value ' + sizeClass + '">' + escapeHtml(String(mb)) + ' MB</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">آخر ضغط</span>' +
+          '<span class="health-row__value">' + escapeHtml(last && last.completedAt ? new Date(last.completedAt).toLocaleString('ar-EG') : '-') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">أرشفة آخر تشغيل</span>' +
+          '<span class="health-row__value">' +
+            escapeHtml(last ? ((last.archivedEmployers || 0) + ' أصحاب عمل، ' + (last.archivedWorkers || 0) + ' عمال') : '-') +
+          '</span>' +
+        '</div>';
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حالة العدادات</p>';
+    }
+  }
+
+  async function compactCounters() {
+    var resultEl = document.getElementById('counterHygieneActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري ضغط العدادات...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/counters/compact', {});
+      var beforeMB = ((data.beforeSizeBytes || 0) / 1048576).toFixed(2);
+      var afterMB = ((data.afterSizeBytes || 0) / 1048576).toFixed(2);
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم الضغط: ' +
+          escapeHtml(beforeMB) +
+          'MB → ' +
+          escapeHtml(afterMB) +
+          'MB</p>';
+      }
+
+      loadCounterHygiene();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 49 — Trust Analytics Dashboard
   // ═══════════════════════════════════════════════════════════════
 
@@ -1778,6 +2003,12 @@ var AdminApp = (function () {
     if (data.completed) {
       if (fill) fill.style.width = '100%';
       if (text) text.textContent = '100% — اكتمل التصدير';
+
+      // Phase 50: refresh persistent export registry view after completion.
+      try {
+        if (typeof loadExports === 'function') loadExports();
+      } catch (_) {}
+
       setTimeout(function () {
         if (container) container.classList.add('hidden');
         if (fill) fill.style.width = '0%';
@@ -1855,6 +2086,15 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 50 — Scale & Search Hygiene
+    loadAuditIndexStatus: loadAuditIndexStatus,
+    rebuildAuditIndex: rebuildAuditIndex,
+    verifyAuditIndex: verifyAuditIndex,
+    loadExports: loadExports,
+    cancelExport: cancelExport,
+    downloadExport: downloadExport,
+    loadCounterHygiene: loadCounterHygiene,
+    compactCounters: compactCounters,
     // Phase 49 — Trust Analytics + Alert Channels
     loadTrustDashboard: loadTrustDashboard,
     setTrustPeriod: setTrustPeriod,

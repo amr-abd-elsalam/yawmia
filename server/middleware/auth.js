@@ -4,6 +4,7 @@
 
 import { verifySession } from '../services/sessions.js';
 import { findById } from '../services/users.js';
+import { checkUserRateLimit } from './rateLimit.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -43,6 +44,10 @@ export function requireAuth(req, res, next) {
         }
         req.user = user;
         req.session = session;
+
+        // Phase 50: enforce per-user rate limit after authentication.
+        if (!checkUserRateLimit(req, res)) return;
+
         next();
       });
     })
@@ -79,11 +84,19 @@ export function requireAdmin(req, res, next) {
     return next();
   }
 
-  // Phase 49: allow admin token via query for direct-download links
-  // e.g. /api/admin/export/payments?_token=...
-  // Backward-compatible with Phase 48 adminSSE self-auth pattern.
+  // Phase 50: allow admin token via query only for direct-download endpoints.
+  // Query tokens are risky because URLs can leak via logs/history/referrers.
+  // Keep backward compatibility for CSV downloads while avoiding broad admin API access.
   const queryToken = req.query && (req.query.token || req.query._token);
-  if (queryToken && queryToken === process.env.ADMIN_TOKEN) {
+  const queryTokenAllowed =
+    req.method === 'GET' &&
+    (
+      req.pathname === '/api/admin/audit-log/export' ||
+      req.pathname.startsWith('/api/admin/export/') ||
+      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
+    );
+
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && queryTokenAllowed) {
     req.isAdmin = true;
     return next();
   }

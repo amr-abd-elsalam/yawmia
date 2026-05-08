@@ -9,6 +9,7 @@
 
 const PORT = process.env.PORT || 3002;
 const BASE = `http://localhost:${PORT}`;
+const RUN_AUDIT_INDEX_BENCH = process.argv.includes('--audit-index');
 
 async function measure(label, fn, iterations = 10) {
   const times = [];
@@ -59,6 +60,26 @@ async function main() {
   await measure('10 parallel /api/jobs', async () => {
     await Promise.all(Array.from({ length: 10 }, () => fetch(`${BASE}/api/jobs`)));
   }, 5);
+
+  if (RUN_AUDIT_INDEX_BENCH) {
+    console.log('── Phase 50 Audit Index Admin Search ──');
+    const token = process.env.ADMIN_TOKEN;
+    if (!token) {
+      console.log('  Skipped: ADMIN_TOKEN env required');
+    } else {
+      await measure('GET /api/admin/audit-log/search?action=user_banned', () =>
+        fetch(`${BASE}/api/admin/audit-log/search?action=user_banned&limit=50`, {
+          headers: { 'X-Admin-Token': token },
+        })
+      , 5);
+
+      await measure('GET /api/admin/audit-index/status', () =>
+        fetch(`${BASE}/api/admin/audit-index/status`, {
+          headers: { 'X-Admin-Token': token },
+        })
+      , 5);
+    }
+  }
 
   console.log('\n✅ Benchmark complete\n');
 }

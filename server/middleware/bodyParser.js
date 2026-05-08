@@ -6,7 +6,7 @@ const MAX_BODY_SIZE = 4 * 1024 * 1024; // 4MB (supports base64 image upload for 
 
 export function bodyParserMiddleware(req, res, next) {
   const method = req.method;
-  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH' && method !== 'DELETE') {
     req.body = {};
     return next();
   }

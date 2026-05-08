@@ -267,6 +267,9 @@ const config = {
       availability_ads: 'availability_ads',
       direct_offers: 'direct_offers',
       abuse_flag_reviews: 'abuse_flag_reviews',
+      audit_indexes: 'audit/indexes',
+      exports: 'exports',
+      counter_archives: 'metrics/counter-archives',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -455,7 +458,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.45.0',
+    cacheName: 'yawmia-v0.46.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1031,6 +1034,48 @@ const config = {
       'audit_retention:cleanup_failed_threshold': { enabled: true, minSeverity: 'medium' },
       'counters:file_size_critical': { enabled: true, minSeverity: 'high' },
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 65. فهرسة سجل العمليات (AUDIT_INDEX) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  AUDIT_INDEX: {
+    enabled: true,
+    incrementalUpdates: true,
+    basePath: 'audit/indexes',
+    tokenIndexEnabled: true,
+    tokenMinLength: 2,
+    tokenMaxPerRecord: 50,
+    maxCandidateIds: 5000,
+    fallbackToFullScan: true,
+    rebuildOnStartup: false,
+    verifySampleSize: 100,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 66. سجل التصديرات (EXPORTS) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  EXPORTS: {
+    enabled: true,
+    basePath: 'exports',
+    retentionHours: 48,
+    maxConcurrentExports: 2,
+    cancellationEnabled: true,
+    persistCsvFiles: true,
+    cleanupIntervalMs: 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 67. نظافة ملف العدادات (COUNTER_HYGIENE) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  COUNTER_HYGIENE: {
+    enabled: true,
+    compactOnSnapshot: true,
+    compactIfFileSizeMB: 40,
+    inactiveEntityDays: 90,
+    maxEntitiesPerCompactRun: 10000,
+    archiveEnabled: true,
+    archivePath: 'metrics/counter-archives',
   },
 
 };

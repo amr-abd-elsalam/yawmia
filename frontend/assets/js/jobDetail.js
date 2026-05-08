@@ -166,7 +166,7 @@
     }
 
     // Report button (for non-owners)
-    if (isLoggedIn && job.employerId !== userId) {
+    if (isLoggedIn && user && job.employerId !== user.id) {
       html += '<button class="btn report-btn btn--sm" id="btnReportJob">🚩 بلّغ عن مخالفة</button>';
     }
 

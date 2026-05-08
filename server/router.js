@@ -35,6 +35,16 @@ import {
   handleAdminTrustAbuseTrend,
   handleAdminTrustDashboard,
   handleAdminTestWebhook,
+  // Phase 50 — Scale & Search Hygiene
+  handleAdminAuditIndexStatus,
+  handleAdminAuditIndexRebuild,
+  handleAdminAuditIndexVerify,
+  handleAdminListExports,
+  handleAdminGetExport,
+  handleAdminDownloadExport,
+  handleAdminCancelExport,
+  handleAdminCounterHygiene,
+  handleAdminCompactCounters,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -85,7 +95,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.45.0',
+        version: '0.46.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -139,6 +149,13 @@ const routes = [
       } catch (_) {
         response.searchIndex = { size: 0, lastBuilt: null };
       }
+      // Phase 50 — Audit index stats (non-blocking)
+      try {
+        const { getAuditIndexStats } = await import('./services/auditLogIndex.js');
+        response.auditIndex = await getAuditIndexStats();
+      } catch (_) {
+        response.auditIndex = { enabled: false, status: 'unknown', recordCount: 0, lastBuiltAt: null, stale: false };
+      }
       // Phase 40 — Presence stats (non-blocking)
       try {
         const { getStats: presenceStats } = await import('./services/presenceService.js');
@@ -181,6 +198,14 @@ const routes = [
       } catch (_) {
         response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
       }
+      // Phase 50 — Export registry stats (non-blocking)
+      try {
+        const { getStats: exportStats } = await import('./services/exportRegistry.js');
+        response.exports = exportStats();
+      } catch (_) {
+        response.exports = { enabled: false };
+      }
+
       // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
@@ -247,7 +272,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.45.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.46.0' });
     },
   },
 
@@ -458,6 +483,21 @@ const routes = [
   { method: 'GET', path: '/api/admin/trust/abuse-trend', middlewares: [requireAdmin], handler: handleAdminTrustAbuseTrend },
   { method: 'GET', path: '/api/admin/trust/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustDashboard },
   { method: 'POST', path: '/api/admin/alerts/test-webhook', middlewares: [requireAdmin], handler: handleAdminTestWebhook },
+
+  // ── Phase 50 — Audit Indexed Search Admin Ops ──
+  { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },
+  { method: 'POST', path: '/api/admin/audit-index/rebuild', middlewares: [requireAdmin], handler: handleAdminAuditIndexRebuild },
+  { method: 'POST', path: '/api/admin/audit-index/verify', middlewares: [requireAdmin], handler: handleAdminAuditIndexVerify },
+
+  // ── Phase 50 — Persistent Export Registry (static before :id) ──
+  { method: 'GET', path: '/api/admin/exports', middlewares: [requireAdmin], handler: handleAdminListExports },
+  { method: 'GET', path: '/api/admin/exports/:id/download', middlewares: [requireAdmin], handler: handleAdminDownloadExport },
+  { method: 'POST', path: '/api/admin/exports/:id/cancel', middlewares: [requireAdmin], handler: handleAdminCancelExport },
+  { method: 'GET', path: '/api/admin/exports/:id', middlewares: [requireAdmin], handler: handleAdminGetExport },
+
+  // ── Phase 50 — Counter Hygiene ──
+  { method: 'GET', path: '/api/admin/counters/hygiene', middlewares: [requireAdmin], handler: handleAdminCounterHygiene },
+  { method: 'POST', path: '/api/admin/counters/compact', middlewares: [requireAdmin], handler: handleAdminCompactCounters },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

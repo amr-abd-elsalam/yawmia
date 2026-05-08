@@ -74,6 +74,16 @@ export async function runRetentionCleanup() {
       if (data && data.createdAt && data.createdAt < cutoffIso) {
         await unlink(filePath);
         cleaned++;
+
+        // Phase 50: keep audit index coherent. If listener removal fails,
+        // auditLogIndex marks itself stale and search safely falls back.
+        try {
+          eventBus.emit('audit:deleted', {
+            auditId: data.id,
+            record: data,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (_) { /* fire-and-forget */ }
       }
     } catch (err) {
       // Phase 49: track per-file failures instead of silently skipping them.

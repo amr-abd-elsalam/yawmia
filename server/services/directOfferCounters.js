@@ -22,7 +22,7 @@ import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
-const COUNTER_LOCK_KEY = 'direct-offer-counters';
+export const COUNTER_LOCK_KEY = 'direct-offer-counters';
 
 // ── Phase 46 — Event Batching State ─────────────────────────
 let eventQueue = [];
@@ -37,7 +37,7 @@ const _replayQueue = [];
  * Get the absolute path to the counter file.
  * @returns {string}
  */
-function getCounterFilePath() {
+export function getCounterFilePath() {
   const relPath = (config.COUNTERS && config.COUNTERS.filePath) || 'metrics/direct-offer-counters.json';
   return join(BASE_PATH, relPath);
 }
@@ -108,6 +108,16 @@ export async function readCounters() {
     logger.warn('directOfferCounters: readCounters failed, returning empty', { error: err.message });
     return emptyCounters();
   }
+}
+
+/**
+ * Phase 50: Write counters atomically.
+ * Used by counterCompaction while holding COUNTER_LOCK_KEY.
+ *
+ * @param {object} counters
+ */
+export async function writeCounters(counters) {
+  await atomicWrite(getCounterFilePath(), counters || emptyCounters());
 }
 
 /**
@@ -1156,6 +1166,25 @@ export async function maybeTriggerAutoRebuild(snapshot) {
   const criticalThreshold = (thresholds && thresholds.critical) || 70;
 
   if (sizeMB < criticalThreshold) return;
+
+  // Phase 50: try size-aware compaction before expensive auto-rebuild.
+  // If compaction brings the file below critical threshold, skip rebuild.
+  if (config.COUNTER_HYGIENE && config.COUNTER_HYGIENE.enabled) {
+    try {
+      const { maybeCompactCounters } = await import('./counterCompaction.js');
+      await maybeCompactCounters(snapshot).catch(() => {});
+      const sizeAfterBytes = await getFileSize();
+      const sizeAfterMB = +(sizeAfterBytes / 1048576).toFixed(2);
+      if (sizeAfterMB < criticalThreshold) {
+        logger.info('Counter file below critical after compaction — skipping auto-rebuild', {
+          beforeMB: sizeMB,
+          afterMB: sizeAfterMB,
+          threshold: criticalThreshold,
+        });
+        return;
+      }
+    } catch (_) { /* compaction failure falls through to rebuild */ }
+  }
 
   // Phase 49: if a rebuild is already in progress, retry immediately after it completes
   // instead of waiting for the next hourly monitor cycle.

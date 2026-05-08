@@ -618,6 +618,12 @@ export async function handleAdminAuditLogExport(req, res) {
   try {
     const { createCsvExportStream } = await import('../services/auditLogSearch.js');
     const { startExport } = await import('../services/csvExportProgress.js');
+    const {
+      createExport,
+      updateExportProgress,
+      failExport,
+      getExportCsvAbsolutePath,
+    } = await import('../services/exportRegistry.js');
     const { logger } = await import('../services/logger.js');
     const { getCollectionPath } = await import('../services/database.js');
     const { readdir } = await import('node:fs/promises');
@@ -625,11 +631,13 @@ export async function handleAdminAuditLogExport(req, res) {
     const dateStr = new Date().toISOString().slice(0, 10);
     const filename = `audit-log-${dateStr}.csv`;
 
-    // Phase 49 — per-export progress tracking ID.
-    const exportId = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const filters = {
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      action: req.query.action || undefined,
+    };
 
-    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows,
-    // so this is intentionally approximate.
+    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows.
     let totalEstimate = 0;
     try {
       const auditDir = getCollectionPath('audit');
@@ -641,7 +649,22 @@ export async function handleAdminAuditLogExport(req, res) {
       totalEstimate = 0;
     }
 
+    const requestedBy = req.user?.id || 'admin_token';
+    const exportRecord = await createExport({
+      type: 'audit_csv',
+      filters,
+      requestedBy,
+      totalEstimate,
+    });
+
+    const exportId = exportRecord?.id || ('exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+
     startExport(exportId, totalEstimate);
+    await updateExportProgress(exportId, {
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      rowsProcessed: 0,
+    }).catch(() => {});
 
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -651,14 +674,16 @@ export async function handleAdminAuditLogExport(req, res) {
     });
 
     const stream = createCsvExportStream({
-      from: req.query.from,
-      to: req.query.to,
-      action: req.query.action,
-      exportId, // Phase 49
+      from: filters.from,
+      to: filters.to,
+      action: filters.action,
+      exportId,
+      persistFilePath: exportRecord && exportRecord.filePath ? getExportCsvAbsolutePath(exportId) : null,
     });
 
     stream.on('error', (err) => {
       logger.error('CSV stream error', { error: err.message, exportId });
+      failExport(exportId, err.message).catch(() => {});
       if (!res.writableEnded) {
         try { res.end(); } catch (_) {}
       }
@@ -797,5 +822,166 @@ export async function handleAdminTestWebhook(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في اختبار Webhook', code: 'WEBHOOK_TEST_ERROR' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 50 — Audit Index + Export Registry + Counter Hygiene
+// ═══════════════════════════════════════════════════════════════
+
+export async function handleAdminAuditIndexStatus(req, res) {
+  try {
+    const { getAuditIndexStats } = await import('../services/auditLogIndex.js');
+    const stats = await getAuditIndexStats();
+    return sendJSON(res, 200, { ok: true, auditIndex: stats });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب حالة فهرس سجل العمليات', code: 'AUDIT_INDEX_STATUS_ERROR' });
+  }
+}
+
+export async function handleAdminAuditIndexRebuild(req, res) {
+  try {
+    const { rebuildAuditIndex } = await import('../services/auditLogIndex.js');
+    const result = await rebuildAuditIndex();
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'audit_index_rebuilt',
+      targetType: 'audit_index',
+      targetId: 'audit_index',
+      details: result,
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إعادة بناء الفهرس', code: 'AUDIT_INDEX_REBUILD_ERROR' });
+  }
+}
+
+export async function handleAdminAuditIndexVerify(req, res) {
+  try {
+    const { verifyAuditIndex } = await import('../services/auditLogIndex.js');
+    const result = await verifyAuditIndex();
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في فحص الفهرس', code: 'AUDIT_INDEX_VERIFY_ERROR' });
+  }
+}
+
+export async function handleAdminListExports(req, res) {
+  try {
+    const { listExports } = await import('../services/exportRegistry.js');
+    const result = await listExports({
+      status: req.query.status || undefined,
+      type: req.query.type || undefined,
+      limit: parseInt(req.query.limit) || 20,
+      offset: parseInt(req.query.offset) || 0,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب سجل التصديرات', code: 'EXPORTS_LIST_ERROR' });
+  }
+}
+
+export async function handleAdminGetExport(req, res) {
+  try {
+    const { getExport, exportFileExists } = await import('../services/exportRegistry.js');
+    const exportId = req.params.id;
+    const exp = await getExport(exportId);
+    if (!exp) {
+      return sendJSON(res, 404, { error: 'التصدير غير موجود', code: 'EXPORT_NOT_FOUND' });
+    }
+    const fileExists = await exportFileExists(exportId);
+    return sendJSON(res, 200, { ok: true, export: { ...exp, fileExists } });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب التصدير', code: 'EXPORT_GET_ERROR' });
+  }
+}
+
+export async function handleAdminDownloadExport(req, res) {
+  try {
+    const { getExport, getExportCsvAbsolutePath, exportFileExists } = await import('../services/exportRegistry.js');
+    const { createReadStream } = await import('node:fs');
+    const exportId = req.params.id;
+
+    const exp = await getExport(exportId);
+    if (!exp) {
+      return sendJSON(res, 404, { error: 'التصدير غير موجود', code: 'EXPORT_NOT_FOUND' });
+    }
+    if (exp.status !== 'completed') {
+      return sendJSON(res, 400, { error: 'التصدير لم يكتمل بعد', code: 'EXPORT_NOT_COMPLETED' });
+    }
+
+    const exists = await exportFileExists(exportId);
+    if (!exists) {
+      return sendJSON(res, 404, { error: 'ملف التصدير غير موجود أو انتهت صلاحيته', code: 'EXPORT_FILE_NOT_FOUND' });
+    }
+
+    const filename = `${exportId}.csv`;
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+
+    createReadStream(getExportCsvAbsolutePath(exportId)).pipe(res);
+  } catch (err) {
+    if (!res.writableEnded) {
+      return sendJSON(res, 500, { error: 'خطأ في تحميل التصدير', code: 'EXPORT_DOWNLOAD_ERROR' });
+    }
+  }
+}
+
+export async function handleAdminCancelExport(req, res) {
+  try {
+    const { cancelExport } = await import('../services/exportRegistry.js');
+    const exportId = req.params.id;
+    const result = await cancelExport(exportId, req.user?.id || 'admin_token');
+
+    if (!result.ok) {
+      const status = result.error === 'EXPORT_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.error });
+    }
+
+    return sendJSON(res, 200, { ok: true, export: result.export });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إلغاء التصدير', code: 'EXPORT_CANCEL_ERROR' });
+  }
+}
+
+export async function handleAdminCounterHygiene(req, res) {
+  try {
+    const { getLastCompactionStats } = await import('../services/counterCompaction.js');
+    const counters = await import('../services/directOfferCounters.js');
+
+    const sizeBytes = await counters.getFileSize();
+    return sendJSON(res, 200, {
+      ok: true,
+      fileSizeBytes: sizeBytes,
+      fileSizeMB: +(sizeBytes / 1048576).toFixed(2),
+      lastCompaction: getLastCompactionStats(),
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب حالة العدادات', code: 'COUNTER_HYGIENE_ERROR' });
+  }
+}
+
+export async function handleAdminCompactCounters(req, res) {
+  try {
+    const { compactCounters } = await import('../services/counterCompaction.js');
+    const result = await compactCounters();
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'counters_compacted',
+      targetType: 'counters',
+      targetId: 'direct_offer_counters',
+      details: result,
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في ضغط العدادات', code: 'COUNTER_COMPACT_ERROR' });
   }
 }

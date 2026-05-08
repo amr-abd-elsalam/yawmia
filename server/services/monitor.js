@@ -145,6 +145,31 @@ export async function captureSnapshot() {
     }
   } catch (_) { /* non-fatal — defaults preserved */ }
 
+  // Phase 50: Audit index stats
+  let auditIndex = { enabled: false, status: 'unknown', recordCount: 0, lastBuiltAt: null, stale: false };
+  try {
+    const auditIdx = await import('./auditLogIndex.js');
+    if (auditIdx.getAuditIndexStats) {
+      auditIndex = await auditIdx.getAuditIndexStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
+  // Phase 50: Counter hygiene stats
+  let counterHygiene = { lastCompactionAt: null, beforeSizeBytes: 0, afterSizeBytes: 0 };
+  try {
+    const compaction = await import('./counterCompaction.js');
+    const last = compaction.getLastCompactionStats ? compaction.getLastCompactionStats() : null;
+    if (last) {
+      counterHygiene = {
+        lastCompactionAt: last.completedAt || last.failedAt || null,
+        beforeSizeBytes: last.beforeSizeBytes || 0,
+        afterSizeBytes: last.afterSizeBytes || 0,
+        archivedEmployers: last.archivedEmployers || 0,
+        archivedWorkers: last.archivedWorkers || 0,
+      };
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -160,6 +185,8 @@ export async function captureSnapshot() {
     counterFileSizeMB, // Phase 46
     snoozeReminders,   // Phase 48
     auditRetention,    // Phase 48
+    auditIndex,        // Phase 50
+    counterHygiene,    // Phase 50
   };
 
   // Phase 49 — Emit critical counter size event on threshold crossing.
@@ -175,6 +202,16 @@ export async function captureSnapshot() {
     }
     lastCounterFileSizeMB = counterFileSizeMB;
   } catch (_) { /* fire-and-forget */ }
+
+  // Phase 50 — Counter file compaction check (fire-and-forget)
+  try {
+    if (config.COUNTER_HYGIENE && config.COUNTER_HYGIENE.enabled && config.COUNTER_HYGIENE.compactOnSnapshot) {
+      const compaction = await import('./counterCompaction.js');
+      if (compaction.maybeCompactCounters) {
+        compaction.maybeCompactCounters(snapshot).catch(() => {});
+      }
+    }
+  } catch (_) { /* non-fatal */ }
 
   // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
   try {

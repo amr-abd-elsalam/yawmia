@@ -5,9 +5,11 @@
 import config from '../../config.js';
 
 /**
- * Adds security headers to every response
+ * Apply configured security headers to a response.
+ * Phase 50: exported so staticMiddleware can set headers even though static
+ * files are served before the global middleware chain.
  */
-export function securityMiddleware(req, res, next) {
+export function applySecurityHeaders(res) {
   const headers = config.SECURITY.headers;
 
   if (headers.xContentTypeOptions) {
@@ -22,6 +24,12 @@ export function securityMiddleware(req, res, next) {
   if (headers.contentSecurityPolicy) {
     res.setHeader('Content-Security-Policy', headers.contentSecurityPolicy);
   }
+}
 
+/**
+ * Adds security headers to every response
+ */
+export function securityMiddleware(req, res, next) {
+  applySecurityHeaders(res);
   next();
 }

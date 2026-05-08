@@ -5,6 +5,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import config from '../../config.js';
+import { applySecurityHeaders } from './security.js';
 
 const STATIC_ROOT = resolve(config.STATIC.root);
 
@@ -28,6 +29,7 @@ async function serve404(res, next) {
   try {
     const notFoundPath = resolve(join(STATIC_ROOT, '404.html'));
     const content = await readFile(notFoundPath);
+    applySecurityHeaders(res);
     res.writeHead(404, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': content.length,
@@ -79,6 +81,7 @@ async function serveStatic(req, res, next) {
   // Read and serve file
   const content = await readFile(filePath);
 
+  applySecurityHeaders(res);
   res.writeHead(200, {
     'Content-Type': contentType,
     'Content-Length': content.length,
