@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.45.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-05T23:44:06.885Z
+# يوميّة (Yawmia) v0.46.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-08T22:16:54.445Z
 > Files in this part: 6
 
 ## Files
@@ -342,6 +342,9 @@ const config = {
       availability_ads: 'availability_ads',
       direct_offers: 'direct_offers',
       abuse_flag_reviews: 'abuse_flag_reviews',
+      audit_indexes: 'audit/indexes',
+      exports: 'exports',
+      counter_archives: 'metrics/counter-archives',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -530,7 +533,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.45.0',
+    cacheName: 'yawmia-v0.46.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1108,6 +1111,48 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 65. فهرسة سجل العمليات (AUDIT_INDEX) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  AUDIT_INDEX: {
+    enabled: true,
+    incrementalUpdates: true,
+    basePath: 'audit/indexes',
+    tokenIndexEnabled: true,
+    tokenMinLength: 2,
+    tokenMaxPerRecord: 50,
+    maxCandidateIds: 5000,
+    fallbackToFullScan: true,
+    rebuildOnStartup: false,
+    verifySampleSize: 100,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 66. سجل التصديرات (EXPORTS) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  EXPORTS: {
+    enabled: true,
+    basePath: 'exports',
+    retentionHours: 48,
+    maxConcurrentExports: 2,
+    cancellationEnabled: true,
+    persistCsvFiles: true,
+    cleanupIntervalMs: 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 67. نظافة ملف العدادات (COUNTER_HYGIENE) — Phase 50
+  // ═══════════════════════════════════════════════════════════════
+  COUNTER_HYGIENE: {
+    enabled: true,
+    compactOnSnapshot: true,
+    compactIfFileSizeMB: 40,
+    inactiveEntityDays: 90,
+    maxEntitiesPerCompactRun: 10000,
+    archiveEnabled: true,
+    archivePath: 'metrics/counter-archives',
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1156,7 +1201,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.45.0",
+  "version": "0.46.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1229,6 +1274,23 @@ try {
   }
 } catch (err) {
   logger.warn('Startup: migration error', { error: err.message });
+}
+
+// ── Phase 50 — Audit Log Index Listener Registration ─────────
+// Importing the module registers audit:logged/audit:deleted listeners.
+// Optional rebuild is controlled by config.AUDIT_INDEX.rebuildOnStartup.
+try {
+  if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
+    const auditIdx = await import('./server/services/auditLogIndex.js');
+    if (config.AUDIT_INDEX.rebuildOnStartup) {
+      const result = await auditIdx.rebuildAuditIndex();
+      logger.info('Startup: audit index rebuilt', result);
+    } else {
+      logger.info('Startup: audit index listeners registered');
+    }
+  }
+} catch (err) {
+  logger.warn('Startup: audit index init error', { error: err.message });
 }
 
 // ── Build Search Index (conditional — skip if recently built) ─
@@ -1528,6 +1590,20 @@ if (config.MONITORING && config.MONITORING.enabled) {
   if (monitorTimer.unref) monitorTimer.unref();
 }
 
+// ── Phase 50 — Export Registry Cleanup Timer ────────────────
+if (config.EXPORTS && config.EXPORTS.enabled) {
+  const exportCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupExpiredExports } = await import('./server/services/exportRegistry.js');
+      const cleaned = await cleanupExpiredExports();
+      if (cleaned > 0) logger.info(`Exports: cleaned ${cleaned} expired export(s)`);
+    } catch (err) {
+      logger.warn('Export registry cleanup error', { error: err.message });
+    }
+  }, config.EXPORTS.cleanupIntervalMs || (60 * 60 * 1000));
+  if (exportCleanupTimer.unref) exportCleanupTimer.unref();
+}
+
 // ── Backup Scheduler Timer (separate — checks hourly if backup is due) ──
 if (config.BACKUP && config.BACKUP.enabled) {
   const backupTimer = setInterval(async () => {
@@ -1731,6 +1807,16 @@ import {
   handleAdminTrustAbuseTrend,
   handleAdminTrustDashboard,
   handleAdminTestWebhook,
+  // Phase 50 — Scale & Search Hygiene
+  handleAdminAuditIndexStatus,
+  handleAdminAuditIndexRebuild,
+  handleAdminAuditIndexVerify,
+  handleAdminListExports,
+  handleAdminGetExport,
+  handleAdminDownloadExport,
+  handleAdminCancelExport,
+  handleAdminCounterHygiene,
+  handleAdminCompactCounters,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
@@ -1781,7 +1867,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.45.0',
+        version: '0.46.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1835,6 +1921,13 @@ const routes = [
       } catch (_) {
         response.searchIndex = { size: 0, lastBuilt: null };
       }
+      // Phase 50 — Audit index stats (non-blocking)
+      try {
+        const { getAuditIndexStats } = await import('./services/auditLogIndex.js');
+        response.auditIndex = await getAuditIndexStats();
+      } catch (_) {
+        response.auditIndex = { enabled: false, status: 'unknown', recordCount: 0, lastBuiltAt: null, stale: false };
+      }
       // Phase 40 — Presence stats (non-blocking)
       try {
         const { getStats: presenceStats } = await import('./services/presenceService.js');
@@ -1877,6 +1970,14 @@ const routes = [
       } catch (_) {
         response.directOffers = { activePending: 0, expiredLastHour: 0, acceptedLastHour: 0, declinedLastHour: 0 };
       }
+      // Phase 50 — Export registry stats (non-blocking)
+      try {
+        const { getStats: exportStats } = await import('./services/exportRegistry.js');
+        response.exports = exportStats();
+      } catch (_) {
+        response.exports = { enabled: false };
+      }
+
       // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
@@ -1943,7 +2044,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.45.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.46.0' });
     },
   },
 
@@ -2154,6 +2255,21 @@ const routes = [
   { method: 'GET', path: '/api/admin/trust/abuse-trend', middlewares: [requireAdmin], handler: handleAdminTrustAbuseTrend },
   { method: 'GET', path: '/api/admin/trust/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustDashboard },
   { method: 'POST', path: '/api/admin/alerts/test-webhook', middlewares: [requireAdmin], handler: handleAdminTestWebhook },
+
+  // ── Phase 50 — Audit Indexed Search Admin Ops ──
+  { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },
+  { method: 'POST', path: '/api/admin/audit-index/rebuild', middlewares: [requireAdmin], handler: handleAdminAuditIndexRebuild },
+  { method: 'POST', path: '/api/admin/audit-index/verify', middlewares: [requireAdmin], handler: handleAdminAuditIndexVerify },
+
+  // ── Phase 50 — Persistent Export Registry (static before :id) ──
+  { method: 'GET', path: '/api/admin/exports', middlewares: [requireAdmin], handler: handleAdminListExports },
+  { method: 'GET', path: '/api/admin/exports/:id/download', middlewares: [requireAdmin], handler: handleAdminDownloadExport },
+  { method: 'POST', path: '/api/admin/exports/:id/cancel', middlewares: [requireAdmin], handler: handleAdminCancelExport },
+  { method: 'GET', path: '/api/admin/exports/:id', middlewares: [requireAdmin], handler: handleAdminGetExport },
+
+  // ── Phase 50 — Counter Hygiene ──
+  { method: 'GET', path: '/api/admin/counters/hygiene', middlewares: [requireAdmin], handler: handleAdminCounterHygiene },
+  { method: 'POST', path: '/api/admin/counters/compact', middlewares: [requireAdmin], handler: handleAdminCompactCounters },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

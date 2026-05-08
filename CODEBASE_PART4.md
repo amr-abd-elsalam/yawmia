@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.45.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-05T23:44:06.920Z
-> Files in this part: 41
+# يوميّة (Yawmia) v0.46.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-08T22:16:54.482Z
+> Files in this part: 44
 
 ## Files
 1. `frontend/404.html`
@@ -40,10 +40,13 @@
 35. `scripts/backup.js`
 36. `scripts/benchmark.js`
 37. `scripts/bundle-for-review.js`
-38. `scripts/generate-vapid-keys.js`
-39. `scripts/migrate.js`
-40. `scripts/rebuild-counters.js`
-41. `scripts/repair-indexes.js`
+38. `scripts/compact-counters.js`
+39. `scripts/generate-vapid-keys.js`
+40. `scripts/migrate.js`
+41. `scripts/rebuild-audit-index.js`
+42. `scripts/rebuild-counters.js`
+43. `scripts/repair-indexes.js`
+44. `scripts/verify-audit-index.js`
 
 ---
 
@@ -324,6 +327,55 @@
           <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
         </div>
       </div>
+      <!-- Phase 50 — Audit Index Health -->
+      <div class="admin-section" id="auditIndexSection">
+        <div class="admin-section__header">
+          <h2>🧭 فهرس سجل العمليات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadAuditIndexStatus()">تحديث</button>
+        </div>
+
+        <div id="auditIndexStatus">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.rebuildAuditIndex()">إعادة بناء الفهرس</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyAuditIndex()">فحص الفهرس</button>
+        </div>
+
+        <div id="auditIndexActionResult" style="margin-block-start:0.75rem;"></div>
+      </div>
+
+      <!-- Phase 50 — Persistent Export Registry -->
+      <div class="admin-section" id="exportsSection">
+        <div class="admin-section__header">
+          <h2>📦 سجل التصديرات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadExports()">تحديث</button>
+        </div>
+
+        <div id="exportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 50 — Counter Hygiene -->
+      <div class="admin-section" id="counterHygieneSection">
+        <div class="admin-section__header">
+          <h2>🧹 نظافة العدادات</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadCounterHygiene()">تحديث</button>
+        </div>
+
+        <div id="counterHygieneInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:1rem;">
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.compactCounters()">ضغط العدادات</button>
+        </div>
+
+        <div id="counterHygieneActionResult" style="margin-block-start:0.75rem;"></div>
+      </div>
+
       <!-- Phase 49 — Trust Analytics Dashboard -->
       <div class="admin-section" id="trustAnalyticsSection">
         <div class="admin-section__header">
@@ -4316,6 +4368,80 @@ textarea:focus:not(:focus-visible) {
 .audit-load-more {
   margin-block-start: 1rem;
 }
+
+/* ═══ Phase 50 — Scale & Search Hygiene Admin UI ═══ */
+.admin-health-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+}
+
+.admin-health-pill--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.admin-health-pill--warn {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.admin-health-pill--bad {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.export-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.export-status-badge--pending {
+  background: rgba(139, 143, 163, 0.15);
+  color: var(--color-text-muted);
+}
+
+.export-status-badge--running {
+  background: rgba(37, 99, 235, 0.15);
+  color: #60a5fa;
+}
+
+.export-status-badge--completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+}
+
+.export-status-badge--failed,
+.export-status-badge--cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}
+
+.export-status-badge--expired {
+  background: rgba(139, 143, 163, 0.12);
+  color: var(--color-text-muted);
+}
+
+.counter-size-warning {
+  color: var(--color-warning) !important;
+}
+
+.counter-size-critical {
+  color: var(--color-error) !important;
+  font-weight: 700;
+}
 ```
 
 ---
@@ -5037,6 +5163,9 @@ var AdminApp = (function () {
         loadMonitoring(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
+        loadAuditIndexStatus(),
+        loadExports(),
+        loadCounterHygiene(),
         loadTrustDashboard(),
       ]).catch(function () {});
     } catch (err) {
@@ -6477,6 +6606,228 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 50 — Audit Index + Export Registry + Counter Hygiene
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadAuditIndexStatus() {
+    var el = document.getElementById('auditIndexStatus');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/audit-index/status');
+      var idx = data.auditIndex || {};
+
+      var statusClass = idx.status === 'healthy'
+        ? 'admin-health-pill--ok'
+        : (idx.status === 'stale' ? 'admin-health-pill--warn' : 'admin-health-pill--bad');
+
+      el.innerHTML =
+        '<div class="health-row">' +
+          '<span class="health-row__label">الحالة</span>' +
+          '<span class="admin-health-pill ' + statusClass + '">' + escapeHtml(idx.status || 'unknown') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">عدد السجلات المفهرسة</span>' +
+          '<span class="health-row__value">' + escapeHtml(String(idx.recordCount || 0)) + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">آخر بناء</span>' +
+          '<span class="health-row__value">' + escapeHtml(idx.lastBuiltAt ? new Date(idx.lastBuiltAt).toLocaleString('ar-EG') : '-') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">Stale</span>' +
+          '<span class="health-row__value">' + (idx.stale ? 'نعم — ' + escapeHtml(idx.staleReason || '') : 'لا') + '</span>' +
+        '</div>';
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حالة الفهرس</p>';
+    }
+  }
+
+  async function rebuildAuditIndex() {
+    var resultEl = document.getElementById('auditIndexActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إعادة بناء الفهرس...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/audit-index/rebuild', {});
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم بناء الفهرس — ' +
+          escapeHtml(String(data.indexed || 0)) +
+          ' سجل في ' +
+          escapeHtml(String(data.durationMs || 0)) +
+          'ms</p>';
+      }
+      loadAuditIndexStatus();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  async function verifyAuditIndex() {
+    var resultEl = document.getElementById('auditIndexActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري فحص الفهرس...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/audit-index/verify', {});
+      if (resultEl) {
+        if (data.ok && (!data.warnings || data.warnings.length === 0)) {
+          resultEl.innerHTML = '<p style="color:var(--color-success);">✓ الفهرس سليم — تم فحص ' + escapeHtml(String(data.checked || 0)) + ' سجل</p>';
+        } else {
+          var warnings = data.warnings || [];
+          resultEl.innerHTML =
+            '<p style="color:var(--color-warning);">⚠️ تحذيرات: ' + warnings.length + '</p>' +
+            '<ul style="font-size:0.8rem;color:var(--color-text-muted);">' +
+            warnings.slice(0, 5).map(function (w) { return '<li>' + escapeHtml(w) + '</li>'; }).join('') +
+            '</ul>';
+        }
+      }
+      loadAuditIndexStatus();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  async function loadExports() {
+    var el = document.getElementById('exportsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/exports?limit=20');
+      var rows = data.exports || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color: var(--color-text-muted); text-align: center;">لا توجد تصديرات بعد</p>';
+        return;
+      }
+
+      var statusLabels = {
+        pending: 'في الانتظار',
+        running: 'جاري',
+        completed: 'مكتمل',
+        failed: 'فشل',
+        cancelled: 'ملغي',
+        expired: 'منتهي',
+      };
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>المعرّف</th><th>النوع</th><th>الحالة</th><th>التقدم</th><th>الصفوف</th><th>التاريخ</th><th>إجراء</th>' +
+        '</tr></thead><tbody>';
+
+      rows.forEach(function (x) {
+        var status = x.status || 'pending';
+        var canDownload = status === 'completed' && x.filePath;
+        var canCancel = status === 'pending' || status === 'running';
+
+        var actions = '';
+        if (canDownload) {
+          actions += '<button class="btn btn--ghost btn--sm" onclick="AdminApp.downloadExport(\'' + escapeHtml(x.id) + '\')">تحميل</button> ';
+        }
+        if (canCancel) {
+          actions += '<button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.cancelExport(\'' + escapeHtml(x.id) + '\')">إلغاء</button>';
+        }
+
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(x.id || '') + '</small></td>' +
+          '<td>' + escapeHtml(x.type || '-') + '</td>' +
+          '<td><span class="export-status-badge export-status-badge--' + escapeHtml(status) + '">' + escapeHtml(statusLabels[status] || status) + '</span></td>' +
+          '<td>' + escapeHtml(String(x.percentage || 0)) + '%</td>' +
+          '<td>' + escapeHtml(String(x.rowsProcessed || 0)) + '/' + escapeHtml(String(x.totalEstimate || 0)) + '</td>' +
+          '<td>' + escapeHtml(x.createdAt ? new Date(x.createdAt).toLocaleString('ar-EG') : '-') + '</td>' +
+          '<td>' + actions + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل التصديرات</p>';
+    }
+  }
+
+  async function cancelExport(exportId) {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'إلغاء التصدير',
+      message: 'متأكد إنك عايز تلغي هذا التصدير؟',
+      confirmText: 'إلغاء',
+      cancelText: 'رجوع',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiWrite('POST', '/api/admin/exports/' + exportId + '/cancel', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم طلب إلغاء التصدير');
+      loadExports();
+    } catch (err) {
+      showError(err.message || 'خطأ في إلغاء التصدير');
+    }
+  }
+
+  function downloadExport(exportId) {
+    var url = API + '/api/admin/exports/' + encodeURIComponent(exportId) + '/download?_token=' + encodeURIComponent(token);
+    var link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function loadCounterHygiene() {
+    var el = document.getElementById('counterHygieneInfo');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/counters/hygiene');
+      var mb = data.fileSizeMB || 0;
+      var sizeClass = mb >= 70 ? 'counter-size-critical' : (mb >= 40 ? 'counter-size-warning' : '');
+      var last = data.lastCompaction || null;
+
+      el.innerHTML =
+        '<div class="health-row">' +
+          '<span class="health-row__label">حجم ملف العدادات</span>' +
+          '<span class="health-row__value ' + sizeClass + '">' + escapeHtml(String(mb)) + ' MB</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">آخر ضغط</span>' +
+          '<span class="health-row__value">' + escapeHtml(last && last.completedAt ? new Date(last.completedAt).toLocaleString('ar-EG') : '-') + '</span>' +
+        '</div>' +
+        '<div class="health-row">' +
+          '<span class="health-row__label">أرشفة آخر تشغيل</span>' +
+          '<span class="health-row__value">' +
+            escapeHtml(last ? ((last.archivedEmployers || 0) + ' أصحاب عمل، ' + (last.archivedWorkers || 0) + ' عمال') : '-') +
+          '</span>' +
+        '</div>';
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حالة العدادات</p>';
+    }
+  }
+
+  async function compactCounters() {
+    var resultEl = document.getElementById('counterHygieneActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري ضغط العدادات...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/counters/compact', {});
+      var beforeMB = ((data.beforeSizeBytes || 0) / 1048576).toFixed(2);
+      var afterMB = ((data.afterSizeBytes || 0) / 1048576).toFixed(2);
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم الضغط: ' +
+          escapeHtml(beforeMB) +
+          'MB → ' +
+          escapeHtml(afterMB) +
+          'MB</p>';
+      }
+
+      loadCounterHygiene();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 49 — Trust Analytics Dashboard
   // ═══════════════════════════════════════════════════════════════
 
@@ -6698,6 +7049,12 @@ var AdminApp = (function () {
     if (data.completed) {
       if (fill) fill.style.width = '100%';
       if (text) text.textContent = '100% — اكتمل التصدير';
+
+      // Phase 50: refresh persistent export registry view after completion.
+      try {
+        if (typeof loadExports === 'function') loadExports();
+      } catch (_) {}
+
       setTimeout(function () {
         if (container) container.classList.add('hidden');
         if (fill) fill.style.width = '0%';
@@ -6775,6 +7132,15 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 50 — Scale & Search Hygiene
+    loadAuditIndexStatus: loadAuditIndexStatus,
+    rebuildAuditIndex: rebuildAuditIndex,
+    verifyAuditIndex: verifyAuditIndex,
+    loadExports: loadExports,
+    cancelExport: cancelExport,
+    downloadExport: downloadExport,
+    loadCounterHygiene: loadCounterHygiene,
+    compactCounters: compactCounters,
     // Phase 49 — Trust Analytics + Alert Channels
     loadTrustDashboard: loadTrustDashboard,
     setTrustPeriod: setTrustPeriod,
@@ -8848,7 +9214,7 @@ var YawmiaJobCard = (function () {
     }
 
     // Report button (for non-owners)
-    if (isLoggedIn && job.employerId !== userId) {
+    if (isLoggedIn && user && job.employerId !== user.id) {
       html += '<button class="btn report-btn btn--sm" id="btnReportJob">🚩 بلّغ عن مخالفة</button>';
     }
 
@@ -14890,7 +15256,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.45.0';
+const CACHE_NAME = 'yawmia-v0.46.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15370,6 +15736,7 @@ backup().catch(err => {
 
 const PORT = process.env.PORT || 3002;
 const BASE = `http://localhost:${PORT}`;
+const RUN_AUDIT_INDEX_BENCH = process.argv.includes('--audit-index');
 
 async function measure(label, fn, iterations = 10) {
   const times = [];
@@ -15420,6 +15787,26 @@ async function main() {
   await measure('10 parallel /api/jobs', async () => {
     await Promise.all(Array.from({ length: 10 }, () => fetch(`${BASE}/api/jobs`)));
   }, 5);
+
+  if (RUN_AUDIT_INDEX_BENCH) {
+    console.log('── Phase 50 Audit Index Admin Search ──');
+    const token = process.env.ADMIN_TOKEN;
+    if (!token) {
+      console.log('  Skipped: ADMIN_TOKEN env required');
+    } else {
+      await measure('GET /api/admin/audit-log/search?action=user_banned', () =>
+        fetch(`${BASE}/api/admin/audit-log/search?action=user_banned&limit=50`, {
+          headers: { 'X-Admin-Token': token },
+        })
+      , 5);
+
+      await measure('GET /api/admin/audit-index/status', () =>
+        fetch(`${BASE}/api/admin/audit-index/status`, {
+          headers: { 'X-Admin-Token': token },
+        })
+      , 5);
+    }
+  }
 
   console.log('\n✅ Benchmark complete\n');
 }
@@ -15591,6 +15978,60 @@ main().catch(err => {
 
 ---
 
+## `scripts/compact-counters.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/compact-counters.js — Counter Compaction CLI (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/compact-counters.js
+// Safely compacts direct-offer counter file.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🧹 يوميّة Counter Compaction\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { compactCounters } = await import('../server/services/counterCompaction.js');
+
+  const result = await compactCounters();
+
+  if (result.skipped) {
+    console.log(`⚠️ Skipped: ${result.reason}`);
+    process.exit(0);
+  }
+
+  const beforeMB = ((result.beforeSizeBytes || 0) / 1048576).toFixed(2);
+  const afterMB = ((result.afterSizeBytes || 0) / 1048576).toFixed(2);
+
+  console.log('✅ Compaction complete');
+  console.log(`   Before: ${beforeMB} MB`);
+  console.log(`   After:  ${afterMB} MB`);
+  console.log(`   Removed platform buckets: ${result.removedPlatformBuckets || 0}`);
+  console.log(`   Removed employer buckets: ${result.removedEmployerBuckets || 0}`);
+  console.log(`   Removed worker buckets: ${result.removedWorkerBuckets || 0}`);
+  console.log(`   Archived employers: ${result.archivedEmployers || 0}`);
+  console.log(`   Archived workers: ${result.archivedWorkers || 0}`);
+  console.log(`   Duration: ${result.durationMs || 0}ms\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Counter compaction failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/generate-vapid-keys.js`
 
 ```javascript
@@ -15688,6 +16129,59 @@ async function main() {
 
 main().catch(err => {
   console.error('❌', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/rebuild-audit-index.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/rebuild-audit-index.js — Audit Index Rebuild CLI (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/rebuild-audit-index.js
+// Rebuilds filesystem audit indexes from raw aud_*.json records.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🧭 يوميّة Audit Index Rebuild\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { rebuildAuditIndex, verifyAuditIndex } = await import('../server/services/auditLogIndex.js');
+
+  const started = Date.now();
+  const result = await rebuildAuditIndex();
+
+  console.log(`✅ Rebuild complete`);
+  console.log(`   Records indexed: ${result.indexed || 0}`);
+  console.log(`   Duration: ${result.durationMs || (Date.now() - started)}ms`);
+
+  const verify = await verifyAuditIndex();
+  if (verify.warnings && verify.warnings.length > 0) {
+    console.log(`\n⚠️ Verify warnings: ${verify.warnings.length}`);
+    for (const w of verify.warnings.slice(0, 10)) {
+      console.log(`   - ${w}`);
+    }
+  } else {
+    console.log('\n✅ Verify passed');
+  }
+
+  console.log('');
+}
+
+main().catch(err => {
+  console.error('\n❌ Audit index rebuild failed:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });
 ```
@@ -15844,6 +16338,7 @@ async function repair() {
       category: job.category,
       governorate: job.governorate,
       status: job.status,
+      urgency: job.urgency || 'normal',
       createdAt: job.createdAt,
     };
   }
@@ -16146,11 +16641,69 @@ async function repair() {
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.
   console.log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
+
+  // Phase 50: audit index is a directory tree and can be rebuilt separately.
+  console.log(`📌 Audit index: run "node scripts/rebuild-audit-index.js" to rebuild Phase 50 audit search indexes.`);
+
   console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
 }
 
 repair().catch(err => {
   console.error('❌ Repair failed:', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/verify-audit-index.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-audit-index.js — Audit Index Verify CLI (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// Usage: node scripts/verify-audit-index.js
+// Exits 1 if audit index verification fails.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🧪 يوميّة Audit Index Verify\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { verifyAuditIndex, getAuditIndexStats } = await import('../server/services/auditLogIndex.js');
+
+  const stats = await getAuditIndexStats();
+  console.log(`   Status: ${stats.status}`);
+  console.log(`   Records: ${stats.recordCount || 0}`);
+  console.log(`   Last built: ${stats.lastBuiltAt || '-'}`);
+  if (stats.stale) console.log(`   Stale reason: ${stats.staleReason || 'unknown'}`);
+
+  const result = await verifyAuditIndex();
+
+  if (!result.ok) {
+    console.log(`\n❌ Verify failed — warnings: ${result.warnings.length}`);
+    for (const w of result.warnings.slice(0, 20)) {
+      console.log(`   - ${w}`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`\n✅ Verify passed`);
+  console.log(`   Checked: ${result.checked || 0}`);
+  console.log(`   Total raw records: ${result.totalRecords || 0}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Audit index verify failed:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });
 ```

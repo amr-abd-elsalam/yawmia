@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.45.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-05T23:44:06.912Z
+# يوميّة (Yawmia) v0.46.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-08T22:16:54.472Z
 > Files in this part: 32
 
 ## Files
@@ -661,6 +661,12 @@ export async function handleAdminAuditLogExport(req, res) {
   try {
     const { createCsvExportStream } = await import('../services/auditLogSearch.js');
     const { startExport } = await import('../services/csvExportProgress.js');
+    const {
+      createExport,
+      updateExportProgress,
+      failExport,
+      getExportCsvAbsolutePath,
+    } = await import('../services/exportRegistry.js');
     const { logger } = await import('../services/logger.js');
     const { getCollectionPath } = await import('../services/database.js');
     const { readdir } = await import('node:fs/promises');
@@ -668,11 +674,13 @@ export async function handleAdminAuditLogExport(req, res) {
     const dateStr = new Date().toISOString().slice(0, 10);
     const filename = `audit-log-${dateStr}.csv`;
 
-    // Phase 49 — per-export progress tracking ID.
-    const exportId = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const filters = {
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      action: req.query.action || undefined,
+    };
 
-    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows,
-    // so this is intentionally approximate.
+    // Fast estimate: file count only, no JSON reads. Filters may reduce actual rows.
     let totalEstimate = 0;
     try {
       const auditDir = getCollectionPath('audit');
@@ -684,7 +692,22 @@ export async function handleAdminAuditLogExport(req, res) {
       totalEstimate = 0;
     }
 
+    const requestedBy = req.user?.id || 'admin_token';
+    const exportRecord = await createExport({
+      type: 'audit_csv',
+      filters,
+      requestedBy,
+      totalEstimate,
+    });
+
+    const exportId = exportRecord?.id || ('exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+
     startExport(exportId, totalEstimate);
+    await updateExportProgress(exportId, {
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      rowsProcessed: 0,
+    }).catch(() => {});
 
     res.writeHead(200, {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -694,14 +717,16 @@ export async function handleAdminAuditLogExport(req, res) {
     });
 
     const stream = createCsvExportStream({
-      from: req.query.from,
-      to: req.query.to,
-      action: req.query.action,
-      exportId, // Phase 49
+      from: filters.from,
+      to: filters.to,
+      action: filters.action,
+      exportId,
+      persistFilePath: exportRecord && exportRecord.filePath ? getExportCsvAbsolutePath(exportId) : null,
     });
 
     stream.on('error', (err) => {
       logger.error('CSV stream error', { error: err.message, exportId });
+      failExport(exportId, err.message).catch(() => {});
       if (!res.writableEnded) {
         try { res.end(); } catch (_) {}
       }
@@ -840,6 +865,167 @@ export async function handleAdminTestWebhook(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في اختبار Webhook', code: 'WEBHOOK_TEST_ERROR' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 50 — Audit Index + Export Registry + Counter Hygiene
+// ═══════════════════════════════════════════════════════════════
+
+export async function handleAdminAuditIndexStatus(req, res) {
+  try {
+    const { getAuditIndexStats } = await import('../services/auditLogIndex.js');
+    const stats = await getAuditIndexStats();
+    return sendJSON(res, 200, { ok: true, auditIndex: stats });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب حالة فهرس سجل العمليات', code: 'AUDIT_INDEX_STATUS_ERROR' });
+  }
+}
+
+export async function handleAdminAuditIndexRebuild(req, res) {
+  try {
+    const { rebuildAuditIndex } = await import('../services/auditLogIndex.js');
+    const result = await rebuildAuditIndex();
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'audit_index_rebuilt',
+      targetType: 'audit_index',
+      targetId: 'audit_index',
+      details: result,
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إعادة بناء الفهرس', code: 'AUDIT_INDEX_REBUILD_ERROR' });
+  }
+}
+
+export async function handleAdminAuditIndexVerify(req, res) {
+  try {
+    const { verifyAuditIndex } = await import('../services/auditLogIndex.js');
+    const result = await verifyAuditIndex();
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في فحص الفهرس', code: 'AUDIT_INDEX_VERIFY_ERROR' });
+  }
+}
+
+export async function handleAdminListExports(req, res) {
+  try {
+    const { listExports } = await import('../services/exportRegistry.js');
+    const result = await listExports({
+      status: req.query.status || undefined,
+      type: req.query.type || undefined,
+      limit: parseInt(req.query.limit) || 20,
+      offset: parseInt(req.query.offset) || 0,
+    });
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب سجل التصديرات', code: 'EXPORTS_LIST_ERROR' });
+  }
+}
+
+export async function handleAdminGetExport(req, res) {
+  try {
+    const { getExport, exportFileExists } = await import('../services/exportRegistry.js');
+    const exportId = req.params.id;
+    const exp = await getExport(exportId);
+    if (!exp) {
+      return sendJSON(res, 404, { error: 'التصدير غير موجود', code: 'EXPORT_NOT_FOUND' });
+    }
+    const fileExists = await exportFileExists(exportId);
+    return sendJSON(res, 200, { ok: true, export: { ...exp, fileExists } });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب التصدير', code: 'EXPORT_GET_ERROR' });
+  }
+}
+
+export async function handleAdminDownloadExport(req, res) {
+  try {
+    const { getExport, getExportCsvAbsolutePath, exportFileExists } = await import('../services/exportRegistry.js');
+    const { createReadStream } = await import('node:fs');
+    const exportId = req.params.id;
+
+    const exp = await getExport(exportId);
+    if (!exp) {
+      return sendJSON(res, 404, { error: 'التصدير غير موجود', code: 'EXPORT_NOT_FOUND' });
+    }
+    if (exp.status !== 'completed') {
+      return sendJSON(res, 400, { error: 'التصدير لم يكتمل بعد', code: 'EXPORT_NOT_COMPLETED' });
+    }
+
+    const exists = await exportFileExists(exportId);
+    if (!exists) {
+      return sendJSON(res, 404, { error: 'ملف التصدير غير موجود أو انتهت صلاحيته', code: 'EXPORT_FILE_NOT_FOUND' });
+    }
+
+    const filename = `${exportId}.csv`;
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+
+    createReadStream(getExportCsvAbsolutePath(exportId)).pipe(res);
+  } catch (err) {
+    if (!res.writableEnded) {
+      return sendJSON(res, 500, { error: 'خطأ في تحميل التصدير', code: 'EXPORT_DOWNLOAD_ERROR' });
+    }
+  }
+}
+
+export async function handleAdminCancelExport(req, res) {
+  try {
+    const { cancelExport } = await import('../services/exportRegistry.js');
+    const exportId = req.params.id;
+    const result = await cancelExport(exportId, req.user?.id || 'admin_token');
+
+    if (!result.ok) {
+      const status = result.error === 'EXPORT_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.error });
+    }
+
+    return sendJSON(res, 200, { ok: true, export: result.export });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إلغاء التصدير', code: 'EXPORT_CANCEL_ERROR' });
+  }
+}
+
+export async function handleAdminCounterHygiene(req, res) {
+  try {
+    const { getLastCompactionStats } = await import('../services/counterCompaction.js');
+    const counters = await import('../services/directOfferCounters.js');
+
+    const sizeBytes = await counters.getFileSize();
+    return sendJSON(res, 200, {
+      ok: true,
+      fileSizeBytes: sizeBytes,
+      fileSizeMB: +(sizeBytes / 1048576).toFixed(2),
+      lastCompaction: getLastCompactionStats(),
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب حالة العدادات', code: 'COUNTER_HYGIENE_ERROR' });
+  }
+}
+
+export async function handleAdminCompactCounters(req, res) {
+  try {
+    const { compactCounters } = await import('../services/counterCompaction.js');
+    const result = await compactCounters();
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'counters_compacted',
+      targetType: 'counters',
+      targetId: 'direct_offer_counters',
+      details: result,
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في ضغط العدادات', code: 'COUNTER_COMPACT_ERROR' });
   }
 }
 ```
@@ -4683,6 +4869,7 @@ export async function handleQuickOffer(req, res) {
 
 import { verifySession } from '../services/sessions.js';
 import { findById } from '../services/users.js';
+import { checkUserRateLimit } from './rateLimit.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -4722,6 +4909,10 @@ export function requireAuth(req, res, next) {
         }
         req.user = user;
         req.session = session;
+
+        // Phase 50: enforce per-user rate limit after authentication.
+        if (!checkUserRateLimit(req, res)) return;
+
         next();
       });
     })
@@ -4758,11 +4949,19 @@ export function requireAdmin(req, res, next) {
     return next();
   }
 
-  // Phase 49: allow admin token via query for direct-download links
-  // e.g. /api/admin/export/payments?_token=...
-  // Backward-compatible with Phase 48 adminSSE self-auth pattern.
+  // Phase 50: allow admin token via query only for direct-download endpoints.
+  // Query tokens are risky because URLs can leak via logs/history/referrers.
+  // Keep backward compatibility for CSV downloads while avoiding broad admin API access.
   const queryToken = req.query && (req.query.token || req.query._token);
-  if (queryToken && queryToken === process.env.ADMIN_TOKEN) {
+  const queryTokenAllowed =
+    req.method === 'GET' &&
+    (
+      req.pathname === '/api/admin/audit-log/export' ||
+      req.pathname.startsWith('/api/admin/export/') ||
+      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
+    );
+
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && queryTokenAllowed) {
     req.isAdmin = true;
     return next();
   }
@@ -4815,7 +5014,7 @@ const MAX_BODY_SIZE = 4 * 1024 * 1024; // 4MB (supports base64 image upload for 
 
 export function bodyParserMiddleware(req, res, next) {
   const method = req.method;
-  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH' && method !== 'DELETE') {
     req.body = {};
     return next();
   }
@@ -5105,6 +5304,49 @@ function recordViolation(ip) {
 }
 
 /**
+ * Check authenticated per-user rate limit.
+ * Phase 50: global rateLimitMiddleware runs before route auth, so req.user is
+ * usually unavailable there. requireAuth calls this after loading the user.
+ *
+ * @param {object} req
+ * @param {object} res
+ * @returns {boolean} true if allowed, false if response was sent
+ */
+export function checkUserRateLimit(req, res) {
+  if (!config.RATE_LIMIT.enabled || !config.RATE_LIMIT.perUserEnabled) return true;
+  if (!req.user || !req.user.id) return true;
+
+  const now = Date.now();
+  const userId = req.user.id;
+  const userKey = `user:${userId}`;
+  const userWindowMs = config.RATE_LIMIT.perUserWindowMs;
+  const userMaxRequests = config.RATE_LIMIT.perUserMaxRequests;
+
+  let userEntry = store.get(userKey);
+  if (!userEntry || now > userEntry.resetAt) {
+    userEntry = { count: 0, resetAt: now + userWindowMs };
+    store.set(userKey, userEntry);
+  }
+
+  userEntry.count++;
+
+  res.setHeader('X-RateLimit-User-Limit', String(userMaxRequests));
+  res.setHeader('X-RateLimit-User-Remaining', String(Math.max(0, userMaxRequests - userEntry.count)));
+  res.setHeader('X-RateLimit-User-Reset', String(Math.ceil(userEntry.resetAt / 1000)));
+
+  if (userEntry.count > userMaxRequests) {
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: config.RATE_LIMIT.message,
+      code: 'USER_RATE_LIMITED',
+    }));
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Reset store — useful for testing
  */
 export function resetRateLimit() {
@@ -5143,9 +5385,11 @@ export function requestIdMiddleware(req, res, next) {
 import config from '../../config.js';
 
 /**
- * Adds security headers to every response
+ * Apply configured security headers to a response.
+ * Phase 50: exported so staticMiddleware can set headers even though static
+ * files are served before the global middleware chain.
  */
-export function securityMiddleware(req, res, next) {
+export function applySecurityHeaders(res) {
   const headers = config.SECURITY.headers;
 
   if (headers.xContentTypeOptions) {
@@ -5160,7 +5404,13 @@ export function securityMiddleware(req, res, next) {
   if (headers.contentSecurityPolicy) {
     res.setHeader('Content-Security-Policy', headers.contentSecurityPolicy);
   }
+}
 
+/**
+ * Adds security headers to every response
+ */
+export function securityMiddleware(req, res, next) {
+  applySecurityHeaders(res);
   next();
 }
 ```
@@ -5177,6 +5427,7 @@ export function securityMiddleware(req, res, next) {
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
 import config from '../../config.js';
+import { applySecurityHeaders } from './security.js';
 
 const STATIC_ROOT = resolve(config.STATIC.root);
 
@@ -5200,6 +5451,7 @@ async function serve404(res, next) {
   try {
     const notFoundPath = resolve(join(STATIC_ROOT, '404.html'));
     const content = await readFile(notFoundPath);
+    applySecurityHeaders(res);
     res.writeHead(404, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': content.length,
@@ -5251,6 +5503,7 @@ async function serveStatic(req, res, next) {
   // Read and serve file
   const content = await readFile(filePath);
 
+  applySecurityHeaders(res);
   res.writeHead(200, {
     'Content-Type': contentType,
     'Content-Length': content.length,

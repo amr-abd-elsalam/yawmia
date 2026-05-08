@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.45.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-05T23:44:06.888Z
-> Files in this part: 67
+# يوميّة (Yawmia) v0.46.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-08T22:16:54.449Z
+> Files in this part: 70
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -12,64 +12,67 @@
 7. `server/services/arabicNormalizer.js`
 8. `server/services/attendance.js`
 9. `server/services/auditLog.js`
-10. `server/services/auditLogRetention.js`
-11. `server/services/auditLogSearch.js`
-12. `server/services/auth.js`
-13. `server/services/availabilityAd.js`
-14. `server/services/availabilityWindow.js`
-15. `server/services/backupScheduler.js`
-16. `server/services/cache.js`
-17. `server/services/cacheDebouncer.js`
-18. `server/services/channels/sms.js`
-19. `server/services/channels/whatsapp.js`
-20. `server/services/contentFilter.js`
-21. `server/services/csvExportProgress.js`
-22. `server/services/database.js`
-23. `server/services/directOffer.js`
-24. `server/services/directOfferAnalytics.js`
-25. `server/services/directOfferCounters.js`
-26. `server/services/errorAggregator.js`
-27. `server/services/eventBus.js`
-28. `server/services/eventReplayBuffer.js`
-29. `server/services/favorites.js`
-30. `server/services/financialExport.js`
-31. `server/services/geo.js`
-32. `server/services/imageStore.js`
-33. `server/services/indexHealth.js`
-34. `server/services/instantMatch.js`
-35. `server/services/jobAlerts.js`
-36. `server/services/jobMatcher.js`
-37. `server/services/jobs.js`
-38. `server/services/liveFeed.js`
-39. `server/services/logWriter.js`
-40. `server/services/logger.js`
-41. `server/services/messages.js`
-42. `server/services/messaging.js`
-43. `server/services/migration.js`
-44. `server/services/monitor.js`
-45. `server/services/notificationMessenger.js`
-46. `server/services/notifications.js`
-47. `server/services/offerAbuseDetector.js`
-48. `server/services/payments.js`
-49. `server/services/presenceService.js`
-50. `server/services/profileCompleteness.js`
-51. `server/services/queryIndex.js`
-52. `server/services/ratings.js`
-53. `server/services/reports.js`
-54. `server/services/resourceLock.js`
-55. `server/services/sanitizer.js`
-56. `server/services/scheduledAbuseDetection.js`
-57. `server/services/searchIndex.js`
-58. `server/services/sessions.js`
-59. `server/services/snoozeReminders.js`
-60. `server/services/sseManager.js`
-61. `server/services/trust.js`
-62. `server/services/trustAnalytics.js`
-63. `server/services/users.js`
-64. `server/services/validators.js`
-65. `server/services/verification.js`
-66. `server/services/webpush.js`
-67. `server/services/workerDiscovery.js`
+10. `server/services/auditLogIndex.js`
+11. `server/services/auditLogRetention.js`
+12. `server/services/auditLogSearch.js`
+13. `server/services/auth.js`
+14. `server/services/availabilityAd.js`
+15. `server/services/availabilityWindow.js`
+16. `server/services/backupScheduler.js`
+17. `server/services/cache.js`
+18. `server/services/cacheDebouncer.js`
+19. `server/services/channels/sms.js`
+20. `server/services/channels/whatsapp.js`
+21. `server/services/contentFilter.js`
+22. `server/services/counterCompaction.js`
+23. `server/services/csvExportProgress.js`
+24. `server/services/database.js`
+25. `server/services/directOffer.js`
+26. `server/services/directOfferAnalytics.js`
+27. `server/services/directOfferCounters.js`
+28. `server/services/errorAggregator.js`
+29. `server/services/eventBus.js`
+30. `server/services/eventReplayBuffer.js`
+31. `server/services/exportRegistry.js`
+32. `server/services/favorites.js`
+33. `server/services/financialExport.js`
+34. `server/services/geo.js`
+35. `server/services/imageStore.js`
+36. `server/services/indexHealth.js`
+37. `server/services/instantMatch.js`
+38. `server/services/jobAlerts.js`
+39. `server/services/jobMatcher.js`
+40. `server/services/jobs.js`
+41. `server/services/liveFeed.js`
+42. `server/services/logWriter.js`
+43. `server/services/logger.js`
+44. `server/services/messages.js`
+45. `server/services/messaging.js`
+46. `server/services/migration.js`
+47. `server/services/monitor.js`
+48. `server/services/notificationMessenger.js`
+49. `server/services/notifications.js`
+50. `server/services/offerAbuseDetector.js`
+51. `server/services/payments.js`
+52. `server/services/presenceService.js`
+53. `server/services/profileCompleteness.js`
+54. `server/services/queryIndex.js`
+55. `server/services/ratings.js`
+56. `server/services/reports.js`
+57. `server/services/resourceLock.js`
+58. `server/services/sanitizer.js`
+59. `server/services/scheduledAbuseDetection.js`
+60. `server/services/searchIndex.js`
+61. `server/services/sessions.js`
+62. `server/services/snoozeReminders.js`
+63. `server/services/sseManager.js`
+64. `server/services/trust.js`
+65. `server/services/trustAnalytics.js`
+66. `server/services/users.js`
+67. `server/services/validators.js`
+68. `server/services/verification.js`
+69. `server/services/webpush.js`
+70. `server/services/workerDiscovery.js`
 
 ---
 
@@ -3203,6 +3206,7 @@ export async function autoDetectNoShows() {
 import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, getRecordPath, getCollectionPath, listJSON } from './database.js';
+import { eventBus } from './eventBus.js';
 
 /**
  * Log an admin action (append-only — no update or delete)
@@ -3230,6 +3234,12 @@ export async function logAction({ adminId, action, targetType, targetId, details
 
   const recordPath = getRecordPath('audit', id);
   await atomicWrite(recordPath, record);
+
+  // Phase 50: fire-and-forget incremental audit index update.
+  // Indexing is acceleration only — logAction must never fail if indexing fails.
+  try {
+    eventBus.emit('audit:logged', { auditId: id, record });
+  } catch (_) { /* non-fatal */ }
 
   return record;
 }
@@ -3280,6 +3290,632 @@ export async function countActions() {
   const records = await listJSON(auditDir);
   return records.filter(r => r.id && r.id.startsWith('aud_')).length;
 }
+```
+
+---
+
+## `server/services/auditLogIndex.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/auditLogIndex.js — Filesystem Audit Log Index (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// Indexes audit log records by:
+//   - action
+//   - adminId
+//   - targetType
+//   - date YYYY-MM-DD
+//   - q tokens (bounded)
+// Search is acceleration only:
+//   - final records are always re-read and re-filtered
+//   - corrupt/missing/stale index returns fallbackRequired
+//   - full-scan fallback lives in auditLogSearch.js
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { mkdir, readdir, rm } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const INDEX_VERSION = 1;
+const MAX_SAFE_SEGMENT_LENGTH = 96;
+
+function isEnabled() {
+  return !!(config.AUDIT_INDEX && config.AUDIT_INDEX.enabled);
+}
+
+function indexRoot() {
+  return getCollectionPath('audit_indexes');
+}
+
+function metaPath() {
+  return join(indexRoot(), 'meta.json');
+}
+
+function safeSegment(value) {
+  const raw = String(value || 'unknown').trim().toLowerCase();
+  if (!raw) return 'unknown';
+
+  const normalized = raw
+    .replace(/[\\/]/g, '_')
+    .replace(/\.\./g, '_')
+    .replace(/[^\p{L}\p{N}_\-:.@]+/gu, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  const safe = normalized || 'unknown';
+  if (safe.length <= MAX_SAFE_SEGMENT_LENGTH) return safe;
+
+  const hash = crypto.createHash('sha256').update(raw).digest('hex').slice(0, 12);
+  return safe.slice(0, MAX_SAFE_SEGMENT_LENGTH - 13) + '_' + hash;
+}
+
+function hashPrefix(token) {
+  return crypto.createHash('sha256').update(token).digest('hex').slice(0, 2);
+}
+
+function indexFile(kind, key) {
+  const safe = safeSegment(key);
+  if (kind === 'token') {
+    return join(indexRoot(), 'by-token', hashPrefix(safe), `${safe}.json`);
+  }
+  return join(indexRoot(), `by-${kind}`, `${safe}.json`);
+}
+
+function dateKeyFromIso(iso) {
+  if (!iso || typeof iso !== 'string') return '';
+  return iso.slice(0, 10);
+}
+
+function buildHaystack(record) {
+  const details = record.details ? JSON.stringify(record.details).slice(0, 2000) : '';
+  return [
+    record.action || '',
+    record.targetId || '',
+    record.targetType || '',
+    record.adminId || '',
+    record.ip || '',
+    details,
+  ].join(' ').toLowerCase();
+}
+
+function tokenizeRecord(record) {
+  if (!config.AUDIT_INDEX?.tokenIndexEnabled) return [];
+
+  const min = config.AUDIT_INDEX.tokenMinLength || 2;
+  const maxTokens = config.AUDIT_INDEX.tokenMaxPerRecord || 50;
+  const text = buildHaystack(record);
+  const tokens = text
+    .split(/[^\p{L}\p{N}_@.\-]+/gu)
+    .map(t => t.trim().toLowerCase())
+    .filter(t => t.length >= min && t.length <= 80)
+    .map(safeSegment);
+
+  return Array.from(new Set(tokens)).slice(0, maxTokens);
+}
+
+function tokenizeQuery(q) {
+  if (!q || typeof q !== 'string') return [];
+  const min = config.AUDIT_INDEX?.tokenMinLength || 2;
+  return Array.from(new Set(
+    q.toLowerCase()
+      .split(/[^\p{L}\p{N}_@.\-]+/gu)
+      .map(t => t.trim())
+      .filter(t => t.length >= min && t.length <= 80)
+      .map(safeSegment)
+  ));
+}
+
+async function ensureDirFor(filePath) {
+  await mkdir(dirname(filePath), { recursive: true });
+}
+
+async function readIndexFile(filePath) {
+  const data = await readJSON(filePath);
+  if (!data || !Array.isArray(data.ids)) {
+    return { ids: [], updatedAt: null };
+  }
+  return data;
+}
+
+async function writeIndexFile(filePath, ids) {
+  await ensureDirFor(filePath);
+  await atomicWrite(filePath, {
+    ids: Array.from(new Set(ids)),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+async function addId(filePath, id) {
+  const idx = await readIndexFile(filePath);
+  if (!idx.ids.includes(id)) idx.ids.push(id);
+  await writeIndexFile(filePath, idx.ids);
+}
+
+async function removeId(filePath, id) {
+  const idx = await readIndexFile(filePath);
+  const next = idx.ids.filter(x => x !== id);
+  if (next.length !== idx.ids.length) {
+    await writeIndexFile(filePath, next);
+  }
+}
+
+async function readMeta() {
+  const meta = await readJSON(metaPath());
+  if (!meta || meta.version !== INDEX_VERSION) {
+    return null;
+  }
+  return meta;
+}
+
+async function writeMeta(patch = {}) {
+  const previous = await readJSON(metaPath()).catch(() => null);
+  const next = {
+    version: INDEX_VERSION,
+    enabled: isEnabled(),
+    recordCount: previous?.recordCount || 0,
+    lastBuiltAt: previous?.lastBuiltAt || null,
+    lastUpdatedAt: new Date().toISOString(),
+    stale: false,
+    staleReason: null,
+    ids: Array.isArray(previous?.ids) ? previous.ids : [],
+    dates: Array.isArray(previous?.dates) ? previous.dates : [],
+    ...patch,
+  };
+  await ensureDirFor(metaPath());
+  await atomicWrite(metaPath(), next);
+  return next;
+}
+
+function recordIndexFiles(record) {
+  const files = [];
+
+  if (record.action) files.push(indexFile('action', record.action));
+  if (record.adminId) files.push(indexFile('admin', record.adminId));
+  if (record.targetType) files.push(indexFile('target-type', record.targetType));
+
+  const d = dateKeyFromIso(record.createdAt);
+  if (d) files.push(indexFile('date', d));
+
+  for (const token of tokenizeRecord(record)) {
+    files.push(indexFile('token', token));
+  }
+
+  return files;
+}
+
+/**
+ * Incrementally index one audit record.
+ * @param {object} record
+ */
+export async function indexAuditRecord(record) {
+  if (!isEnabled()) return { indexed: false };
+  if (!record || !record.id || !record.id.startsWith('aud_')) return { indexed: false };
+
+  try {
+    for (const file of recordIndexFiles(record)) {
+      await addId(file, record.id);
+    }
+
+    const meta = await readMeta() || await writeMeta();
+    const ids = Array.isArray(meta.ids) ? meta.ids : [];
+    if (!ids.includes(record.id)) ids.push(record.id);
+
+    const d = dateKeyFromIso(record.createdAt);
+    const dates = Array.isArray(meta.dates) ? meta.dates : [];
+    if (d && !dates.includes(d)) dates.push(d);
+
+    await writeMeta({
+      ids,
+      dates: dates.sort(),
+      recordCount: ids.length,
+      lastUpdatedAt: new Date().toISOString(),
+      stale: false,
+      staleReason: null,
+    });
+
+    return { indexed: true };
+  } catch (err) {
+    logger.warn('auditLogIndex: indexAuditRecord failed', {
+      auditId: record.id,
+      error: err.message,
+    });
+    await markAuditIndexStale('incremental_index_failed').catch(() => {});
+    return { indexed: false, error: err.message };
+  }
+}
+
+/**
+ * Remove one audit record from indexes.
+ * Used by retention cleanup.
+ * @param {object} record
+ */
+export async function removeAuditRecord(record) {
+  if (!isEnabled()) return { removed: false };
+  if (!record || !record.id) return { removed: false };
+
+  try {
+    for (const file of recordIndexFiles(record)) {
+      await removeId(file, record.id);
+    }
+
+    const meta = await readMeta();
+    if (meta) {
+      const ids = (meta.ids || []).filter(id => id !== record.id);
+      await writeMeta({
+        ids,
+        recordCount: ids.length,
+        lastUpdatedAt: new Date().toISOString(),
+      });
+    }
+
+    return { removed: true };
+  } catch (err) {
+    logger.warn('auditLogIndex: removeAuditRecord failed', {
+      auditId: record.id,
+      error: err.message,
+    });
+    await markAuditIndexStale('incremental_remove_failed').catch(() => {});
+    return { removed: false, error: err.message };
+  }
+}
+
+function intersectSets(a, b) {
+  if (!a || !b) return new Set();
+  const result = new Set();
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+  for (const id of small) {
+    if (large.has(id)) result.add(id);
+  }
+  return result;
+}
+
+function unionSets(sets) {
+  const result = new Set();
+  for (const s of sets) {
+    for (const id of s) result.add(id);
+  }
+  return result;
+}
+
+async function idsFromIndex(kind, key) {
+  const file = indexFile(kind, key);
+  const data = await readIndexFile(file);
+  return new Set(data.ids || []);
+}
+
+function enumerateDateKeys(from, to, metaDates) {
+  if (!from && !to) return null;
+
+  const fromDate = from ? String(from).slice(0, 10) : null;
+  const toDate = to ? String(to).slice(0, 10) : null;
+
+  if (Array.isArray(metaDates) && metaDates.length > 0) {
+    return metaDates.filter(d => (!fromDate || d >= fromDate) && (!toDate || d <= toDate));
+  }
+
+  if (!fromDate || !toDate) return null;
+
+  const keys = [];
+  let cur = new Date(`${fromDate}T00:00:00.000Z`);
+  const end = new Date(`${toDate}T00:00:00.000Z`);
+  let guard = 0;
+
+  while (cur <= end && guard < 3660) {
+    keys.push(cur.toISOString().slice(0, 10));
+    cur = new Date(cur.getTime() + 86400000);
+    guard++;
+  }
+
+  return keys;
+}
+
+function finalMatches(record, options = {}) {
+  if (!record || !record.id || !record.id.startsWith('aud_')) return false;
+
+  if (options.action && record.action !== options.action) return false;
+  if (options.adminId && record.adminId !== options.adminId) return false;
+  if (options.targetType && record.targetType !== options.targetType) return false;
+  if (options.from && record.createdAt && record.createdAt < options.from) return false;
+  if (options.to && record.createdAt && record.createdAt > options.to) return false;
+
+  if (options.q && typeof options.q === 'string') {
+    const q = options.q.toLowerCase().trim();
+    if (q.length > 0 && !buildHaystack(record).includes(q)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Search using audit index. Returns fallbackRequired on stale/missing/corrupt index.
+ * @param {object} options
+ */
+export async function searchAuditIndex(options = {}) {
+  if (!isEnabled()) {
+    return { fallbackRequired: true, reason: 'disabled' };
+  }
+
+  try {
+    const meta = await readMeta();
+    if (!meta) return { fallbackRequired: true, reason: 'missing_meta' };
+    if (meta.stale) return { fallbackRequired: true, reason: 'stale', staleReason: meta.staleReason };
+
+    const candidateSets = [];
+
+    if (options.action) {
+      candidateSets.push(await idsFromIndex('action', options.action));
+    }
+
+    if (options.adminId) {
+      candidateSets.push(await idsFromIndex('admin', options.adminId));
+    }
+
+    if (options.targetType) {
+      candidateSets.push(await idsFromIndex('target-type', options.targetType));
+    }
+
+    const dateKeys = enumerateDateKeys(options.from, options.to, meta.dates);
+    if (dateKeys && dateKeys.length > 0) {
+      const dateSets = [];
+      for (const d of dateKeys) {
+        dateSets.push(await idsFromIndex('date', d));
+      }
+      candidateSets.push(unionSets(dateSets));
+    } else if (options.from || options.to) {
+      // Date filtering requested but date index cannot enumerate safely.
+      return { fallbackRequired: true, reason: 'date_range_not_indexable' };
+    }
+
+    if (options.q && config.AUDIT_INDEX.tokenIndexEnabled) {
+      const tokens = tokenizeQuery(options.q);
+      if (tokens.length > 0) {
+        let tokenSet = null;
+        for (const token of tokens) {
+          const s = await idsFromIndex('token', token);
+          tokenSet = tokenSet === null ? s : intersectSets(tokenSet, s);
+        }
+        candidateSets.push(tokenSet || new Set());
+      }
+    }
+
+    let candidateIds;
+    if (candidateSets.length === 0) {
+      candidateIds = new Set(meta.ids || []);
+    } else {
+      candidateIds = candidateSets[0];
+      for (let i = 1; i < candidateSets.length; i++) {
+        candidateIds = intersectSets(candidateIds, candidateSets[i]);
+      }
+    }
+
+    const maxCandidates = config.AUDIT_INDEX.maxCandidateIds || 5000;
+    if (candidateIds.size > maxCandidates) {
+      return {
+        fallbackRequired: true,
+        reason: 'candidate_cap_exceeded',
+        candidateCount: candidateIds.size,
+      };
+    }
+
+    const records = [];
+    for (const id of candidateIds) {
+      const rec = await readJSON(getRecordPath('audit', id));
+      if (rec && finalMatches(rec, options)) records.push(rec);
+    }
+
+    records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    let entries = records;
+    let cursorExpired = false;
+
+    if (options.cursor && entries.length > 0) {
+      const idx = entries.findIndex(e => e.id === options.cursor);
+      if (idx >= 0) {
+        entries = entries.slice(idx + 1);
+      } else {
+        cursorExpired = true;
+      }
+    }
+
+    const maxResults = (config.ADMIN_OPERATIONS && config.ADMIN_OPERATIONS.auditLogSearchMaxResults) || 200;
+    const limit = Math.min(Math.max(1, options.limit || 50), maxResults);
+    const total = entries.length;
+    const sliced = entries.slice(0, limit);
+    const nextCursor = (sliced.length === limit && total > limit)
+      ? sliced[sliced.length - 1].id
+      : null;
+
+    return {
+      entries: sliced,
+      total,
+      nextCursor,
+      hasMore: nextCursor !== null,
+      cursorExpired,
+      indexed: true,
+      fallbackUsed: false,
+    };
+  } catch (err) {
+    logger.warn('auditLogIndex: indexed search failed', { error: err.message });
+    return { fallbackRequired: true, reason: 'search_failed', error: err.message };
+  }
+}
+
+/**
+ * Rebuild all audit indexes from raw audit records.
+ */
+export async function rebuildAuditIndex(options = {}) {
+  if (!isEnabled()) return { indexed: 0, skipped: true };
+
+  const started = Date.now();
+  const root = indexRoot();
+
+  await rm(root, { recursive: true, force: true });
+  await mkdir(root, { recursive: true });
+
+  const auditDir = getCollectionPath('audit');
+  const all = await listJSON(auditDir);
+  const records = all.filter(r => r && r.id && r.id.startsWith('aud_'));
+
+  const BATCH_SIZE = options.batchSize || 250;
+  const ids = [];
+  const dates = new Set();
+
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+
+    for (const file of recordIndexFiles(record)) {
+      await addId(file, record.id);
+    }
+
+    ids.push(record.id);
+    const d = dateKeyFromIso(record.createdAt);
+    if (d) dates.add(d);
+
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  await writeMeta({
+    ids,
+    dates: Array.from(dates).sort(),
+    recordCount: ids.length,
+    lastBuiltAt: new Date().toISOString(),
+    lastUpdatedAt: new Date().toISOString(),
+    stale: false,
+    staleReason: null,
+  });
+
+  return {
+    indexed: ids.length,
+    durationMs: Date.now() - started,
+    lastBuiltAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Verify sample records against indexes.
+ */
+export async function verifyAuditIndex(options = {}) {
+  if (!isEnabled()) return { ok: true, disabled: true, warnings: [] };
+
+  const warnings = [];
+  const sampleSize = options.sampleSize || config.AUDIT_INDEX.verifySampleSize || 100;
+
+  const meta = await readMeta();
+  if (!meta) {
+    return { ok: false, warnings: ['audit index meta missing'] };
+  }
+
+  const auditDir = getCollectionPath('audit');
+  const all = await listJSON(auditDir);
+  const records = all.filter(r => r && r.id && r.id.startsWith('aud_'));
+
+  const sample = records.slice(0, sampleSize);
+
+  for (const record of sample) {
+    const checks = [
+      ['action', record.action],
+      ['admin', record.adminId],
+      ['target-type', record.targetType],
+      ['date', dateKeyFromIso(record.createdAt)],
+    ];
+
+    for (const [kind, key] of checks) {
+      if (!key) continue;
+      const ids = await idsFromIndex(kind, key);
+      if (!ids.has(record.id)) {
+        warnings.push(`${kind}:${key} missing ${record.id}`);
+      }
+    }
+  }
+
+  return {
+    ok: warnings.length === 0,
+    checked: sample.length,
+    totalRecords: records.length,
+    warnings,
+  };
+}
+
+/**
+ * Stats for admin/health.
+ */
+export async function getAuditIndexStats() {
+  if (!isEnabled()) {
+    return { enabled: false, status: 'disabled', recordCount: 0, lastBuiltAt: null, stale: false };
+  }
+
+  const meta = await readMeta();
+  if (!meta) {
+    return { enabled: true, status: 'missing', recordCount: 0, lastBuiltAt: null, stale: true };
+  }
+
+  return {
+    enabled: true,
+    status: meta.stale ? 'stale' : 'healthy',
+    recordCount: meta.recordCount || 0,
+    lastBuiltAt: meta.lastBuiltAt || null,
+    lastUpdatedAt: meta.lastUpdatedAt || null,
+    stale: !!meta.stale,
+    staleReason: meta.staleReason || null,
+  };
+}
+
+/**
+ * Mark index stale so callers can safely fallback to full scan.
+ */
+export async function markAuditIndexStale(reason) {
+  if (!isEnabled()) return null;
+  const meta = await readMeta() || await writeMeta();
+  return await writeMeta({
+    ...meta,
+    stale: true,
+    staleReason: reason || 'unknown',
+    lastUpdatedAt: new Date().toISOString(),
+  });
+}
+
+// ── EventBus Integration ─────────────────────────────────────
+// Registered when this module is imported at startup/search.
+if (isEnabled() && config.AUDIT_INDEX.incrementalUpdates) {
+  eventBus.on('audit:logged', (data) => {
+    if (!data || !data.record) return;
+    indexAuditRecord(data.record).catch(err => {
+      logger.warn('auditLogIndex: audit:logged listener failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('audit:deleted', (data) => {
+    if (!data || !data.record) {
+      markAuditIndexStale('audit_deleted_without_record').catch(() => {});
+      return;
+    }
+    removeAuditRecord(data.record).catch(err => {
+      logger.warn('auditLogIndex: audit:deleted listener failed', { error: err.message });
+    });
+  });
+}
+
+export const _testHelpers = {
+  safeSegment,
+  tokenizeRecord,
+  tokenizeQuery,
+  buildHaystack,
+  finalMatches,
+  indexFile,
+  metaPath,
+};
 ```
 
 ---
@@ -3363,6 +3999,16 @@ export async function runRetentionCleanup() {
       if (data && data.createdAt && data.createdAt < cutoffIso) {
         await unlink(filePath);
         cleaned++;
+
+        // Phase 50: keep audit index coherent. If listener removal fails,
+        // auditLogIndex marks itself stale and search safely falls back.
+        try {
+          eventBus.emit('audit:deleted', {
+            auditId: data.id,
+            record: data,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (_) { /* fire-and-forget */ }
       }
     } catch (err) {
       // Phase 49: track per-file failures instead of silently skipping them.
@@ -3485,7 +4131,8 @@ export const _testHelpers = {
 
 import { Readable } from 'node:stream';
 import { join } from 'node:path';
-import { readdir } from 'node:fs/promises';
+import { readdir, appendFile, rm, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import config from '../../config.js';
 import { getCollectionPath, listJSON, readJSON } from './database.js';
 import { logger } from './logger.js';
@@ -3518,13 +4165,72 @@ function csvRow(fields) {
  * @returns {Promise<{ entries: object[], total: number, nextCursor: string|null, hasMore: boolean }>}
  */
 export async function searchActions(options = {}) {
+  // Phase 50: indexed-first path with safe full-scan fallback.
+  if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
+    try {
+      const { searchAuditIndex } = await import('./auditLogIndex.js');
+      const indexedResult = await searchAuditIndex(options);
+
+      if (indexedResult && !indexedResult.fallbackRequired) {
+        return indexedResult;
+      }
+
+      if (!config.AUDIT_INDEX.fallbackToFullScan) {
+        logger.warn('auditLogSearch: audit index requested fallback but fallback disabled', {
+          reason: indexedResult && indexedResult.reason,
+        });
+        return {
+          entries: [],
+          total: 0,
+          nextCursor: null,
+          hasMore: false,
+          cursorExpired: false,
+          indexed: false,
+          fallbackUsed: false,
+          indexError: indexedResult && indexedResult.reason,
+        };
+      }
+
+      logger.warn('auditLogSearch: falling back to full scan', {
+        reason: indexedResult && indexedResult.reason,
+      });
+      const fallback = await fullScanSearchActions(options);
+      return { ...fallback, indexed: false, fallbackUsed: true };
+    } catch (err) {
+      logger.warn('auditLogSearch: indexed path failed, falling back', { error: err.message });
+      if (config.AUDIT_INDEX.fallbackToFullScan) {
+        const fallback = await fullScanSearchActions(options);
+        return { ...fallback, indexed: false, fallbackUsed: true };
+      }
+      return {
+        entries: [],
+        total: 0,
+        nextCursor: null,
+        hasMore: false,
+        cursorExpired: false,
+        indexed: false,
+        fallbackUsed: false,
+        indexError: err.message,
+      };
+    }
+  }
+
+  const result = await fullScanSearchActions(options);
+  return { ...result, indexed: false, fallbackUsed: false };
+}
+
+/**
+ * Original Phase 47/48/49 full-scan implementation.
+ * Kept intact as correctness fallback for missing/corrupt/stale audit index.
+ */
+async function fullScanSearchActions(options = {}) {
   const auditDir = getCollectionPath('audit');
   let entries;
   try {
     entries = await listJSON(auditDir);
   } catch (err) {
     logger.warn('auditLogSearch: listJSON failed', { error: err.message });
-    return { entries: [], total: 0, nextCursor: null, hasMore: false };
+    return { entries: [], total: 0, nextCursor: null, hasMore: false, cursorExpired: false };
   }
 
   // Filter to audit records only
@@ -3570,17 +4276,14 @@ export async function searchActions(options = {}) {
   // Sort newest first
   entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  // ── Phase 48 NEW: Cursor support ──
-  // Apply cursor AFTER sort, BEFORE slice — preserves newest-first ordering
+  // Cursor support
   const cursor = options.cursor;
-  let cursorExpired = false; // Phase 49 — detect stale cursor after retention cleanup
+  let cursorExpired = false;
   if (cursor && entries.length > 0) {
     const cursorIdx = entries.findIndex(e => e.id === cursor);
     if (cursorIdx >= 0) {
       entries = entries.slice(cursorIdx + 1);
     } else {
-      // Phase 49: cursor not found — keep Phase 48 graceful fallback,
-      // but signal frontend so it can show a "page expired" toast.
       cursorExpired = true;
     }
   }
@@ -3590,7 +4293,6 @@ export async function searchActions(options = {}) {
   const limit = Math.min(Math.max(1, options.limit || 50), maxResults);
   const sliced = entries.slice(0, limit);
 
-  // ── Phase 48 NEW: Pagination metadata ──
   const nextCursor = (sliced.length === limit && total > limit)
     ? sliced[sliced.length - 1].id
     : null;
@@ -3611,13 +4313,52 @@ async function* generateCsvChunks(options = {}) {
   const maxRows = (cfg && cfg.auditLogExportMaxRows) || 100000;
   const exportId = options.exportId || null; // Phase 49 — CSV export progress tracking
 
-  async function updateExportProgress(rowCount, completed = false) {
+  async function updateExportProgress(rowCount, completed = false, failedError = null) {
     if (!exportId) return;
     try {
       const progress = await import('./csvExportProgress.js');
       if (completed) progress.completeExport(exportId);
       else progress.updateProgress(exportId, rowCount);
-    } catch (_) { /* progress tracking is non-fatal */ }
+    } catch (_) { /* in-memory progress tracking is non-fatal */ }
+
+    // Phase 50: persistent registry progress.
+    try {
+      const registry = await import('./exportRegistry.js');
+      if (failedError) {
+        await registry.failExport(exportId, failedError);
+      } else if (completed) {
+        await registry.completeExport(exportId, { rowsProcessed: rowCount });
+      } else {
+        await registry.updateExportProgress(exportId, { rowsProcessed: rowCount });
+      }
+    } catch (_) { /* registry tracking is non-fatal */ }
+  }
+
+  async function isCancelled() {
+    if (!exportId) return false;
+    try {
+      const registry = await import('./exportRegistry.js');
+      return await registry.isCancellationRequested(exportId);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function persistChunk(chunk) {
+    if (!options.persistFilePath) return;
+    try {
+      await mkdir(dirname(options.persistFilePath), { recursive: true });
+      await appendFile(options.persistFilePath, chunk, 'utf-8');
+    } catch (_) {
+      // Persistence is useful for download retry, but response streaming remains primary.
+    }
+  }
+
+  // Persisted CSV retry file (Phase 50). Remove stale partial file first.
+  if (options.persistFilePath) {
+    try {
+      await rm(options.persistFilePath, { force: true });
+    } catch (_) { /* non-fatal */ }
   }
 
   // Yield header with BOM
@@ -3625,7 +4366,9 @@ async function* generateCsvChunks(options = {}) {
     'المعرّف', 'الأدمن', 'الإجراء', 'نوع الهدف', 'معرّف الهدف',
     'IP', 'التفاصيل', 'التاريخ',
   ]);
-  yield BOM + headers + '\n';
+  const headerChunk = BOM + headers + '\n';
+  await persistChunk(headerChunk);
+  yield headerChunk;
 
   // Load file list
   const auditDirPath = getCollectionPath('audit');
@@ -3677,12 +4420,18 @@ async function* generateCsvChunks(options = {}) {
       data.createdAt || '',
     ]);
 
-    yield row + '\n';
+    const chunk = row + '\n';
+    await persistChunk(chunk);
+    yield chunk;
     rowCount++;
 
-    // Phase 49: emit CSV progress every 1000 rows
+    // Phase 49 + 50: emit progress and check cancellation every 1000 rows
     if (rowCount % 1000 === 0) {
       await updateExportProgress(rowCount, false);
+
+      if (await isCancelled()) {
+        return;
+      }
     }
 
     // Yield to event loop every 1000 rows
@@ -3749,6 +4498,7 @@ export async function exportToCSV(options = {}) {
 export const _testHelpers = {
   csvEscape,
   csvRow,
+  fullScanSearchActions,
 };
 ```
 
@@ -5747,6 +6497,270 @@ export function checkContent(text) {
 export function isContentSafe(text) {
   return checkContent(text).safe;
 }
+```
+
+---
+
+## `server/services/counterCompaction.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/counterCompaction.js — Counter File Hygiene (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// Safely compacts direct-offer counter file:
+//   - forceFlush pending batched events first
+//   - use same direct-offer counter lock
+//   - prune stale hourly buckets
+//   - remove empty hourlyBuckets objects
+//   - archive inactive entity stats
+//   - preserve platform totals exactly
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import { atomicWrite, readJSON } from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+import {
+  COUNTER_LOCK_KEY,
+  forceFlush,
+  readCounters,
+  writeCounters,
+  getFileSize,
+} from './directOfferCounters.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+let lastCompactionStats = null;
+
+function isEnabled() {
+  return !!(config.COUNTER_HYGIENE && config.COUNTER_HYGIENE.enabled);
+}
+
+function hourKeyToMs(hourKey) {
+  return new Date(hourKey + ':00:00Z').getTime();
+}
+
+function getLatestEntityActivity(entity) {
+  if (!entity) return 0;
+
+  if (entity.lastOfferAt) {
+    const ms = new Date(entity.lastOfferAt).getTime();
+    if (!Number.isNaN(ms)) return ms;
+  }
+
+  if (entity.hourlyBuckets) {
+    let latest = 0;
+    for (const key of Object.keys(entity.hourlyBuckets)) {
+      latest = Math.max(latest, hourKeyToMs(key));
+    }
+    return latest;
+  }
+
+  return 0;
+}
+
+function pruneBucketObject(bucketObj, cutoffMs) {
+  if (!bucketObj || typeof bucketObj !== 'object') return 0;
+  let removed = 0;
+  for (const key of Object.keys(bucketObj)) {
+    const ms = hourKeyToMs(key);
+    if (ms < cutoffMs) {
+      delete bucketObj[key];
+      removed++;
+    }
+  }
+  return removed;
+}
+
+function archiveFilePath(kind) {
+  const month = new Date().toISOString().slice(0, 7);
+  const archiveRel = config.COUNTER_HYGIENE.archivePath || 'metrics/counter-archives';
+  return join(BASE_PATH, archiveRel, `${kind}-${month}.json`);
+}
+
+async function appendArchive(kind, id, data) {
+  if (!config.COUNTER_HYGIENE.archiveEnabled) return;
+
+  const filePath = archiveFilePath(kind);
+  const existing = (await readJSON(filePath).catch(() => null)) || {
+    kind,
+    month: new Date().toISOString().slice(0, 7),
+    archivedAt: new Date().toISOString(),
+    entries: {},
+  };
+
+  existing.entries[id] = {
+    ...data,
+    archivedAt: new Date().toISOString(),
+  };
+
+  await atomicWrite(filePath, existing);
+}
+
+/**
+ * Compact counters file.
+ */
+export async function compactCounters(options = {}) {
+  if (!isEnabled()) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const started = Date.now();
+
+  eventBus.emit('counters:compaction_started', {
+    timestamp: new Date().toISOString(),
+  });
+
+  try {
+    await forceFlush();
+
+    const beforeSizeBytes = await getFileSize();
+
+    const result = await withLock(COUNTER_LOCK_KEY, async () => {
+      const counters = await readCounters();
+
+      // Preserve platform totals exactly.
+      const platformBefore = JSON.stringify(counters.platform || {});
+
+      const retentionHours = config.COUNTERS?.hourlyBucketsRetentionHours || 48;
+      const cutoffMs = Date.now() - retentionHours * 60 * 60 * 1000;
+
+      let removedPlatformBuckets = 0;
+      let removedEmployerBuckets = 0;
+      let removedWorkerBuckets = 0;
+      let archivedEmployers = 0;
+      let archivedWorkers = 0;
+
+      removedPlatformBuckets += pruneBucketObject(counters.hourlyBuckets, cutoffMs);
+
+      for (const [empId, entity] of Object.entries(counters.byEmployer || {})) {
+        if (entity.hourlyBuckets) {
+          removedEmployerBuckets += pruneBucketObject(entity.hourlyBuckets, cutoffMs);
+          if (Object.keys(entity.hourlyBuckets).length === 0) {
+            delete entity.hourlyBuckets;
+          }
+        }
+      }
+
+      for (const [workerId, entity] of Object.entries(counters.byWorker || {})) {
+        if (entity.hourlyBuckets) {
+          removedWorkerBuckets += pruneBucketObject(entity.hourlyBuckets, cutoffMs);
+          if (Object.keys(entity.hourlyBuckets).length === 0) {
+            delete entity.hourlyBuckets;
+          }
+        }
+      }
+
+      // Archive inactive entities.
+      const inactiveDays = options.inactiveEntityDays || config.COUNTER_HYGIENE.inactiveEntityDays || 90;
+      const inactiveCutoff = Date.now() - inactiveDays * 24 * 60 * 60 * 1000;
+      const maxEntities = options.maxEntitiesPerCompactRun || config.COUNTER_HYGIENE.maxEntitiesPerCompactRun || 10000;
+
+      let processed = 0;
+
+      for (const [empId, entity] of Object.entries(counters.byEmployer || {})) {
+        if (processed >= maxEntities) break;
+        processed++;
+
+        const lastMs = getLatestEntityActivity(entity);
+        if (lastMs > 0 && lastMs < inactiveCutoff) {
+          await appendArchive('employer', empId, entity);
+          delete counters.byEmployer[empId];
+          archivedEmployers++;
+        }
+      }
+
+      processed = 0;
+      for (const [workerId, entity] of Object.entries(counters.byWorker || {})) {
+        if (processed >= maxEntities) break;
+        processed++;
+
+        const lastMs = getLatestEntityActivity(entity);
+        if (lastMs > 0 && lastMs < inactiveCutoff) {
+          await appendArchive('worker', workerId, entity);
+          delete counters.byWorker[workerId];
+          archivedWorkers++;
+        }
+      }
+
+      // Hard guard: platform totals must not drift.
+      const platformAfter = JSON.stringify(counters.platform || {});
+      if (platformBefore !== platformAfter) {
+        throw new Error('Counter compaction attempted to modify platform totals');
+      }
+
+      counters.lastCompactedAt = new Date().toISOString();
+      await writeCounters(counters);
+
+      const afterSizeBytes = await getFileSize();
+
+      return {
+        beforeSizeBytes,
+        afterSizeBytes,
+        removedPlatformBuckets,
+        removedEmployerBuckets,
+        removedWorkerBuckets,
+        archivedEmployers,
+        archivedWorkers,
+        durationMs: Date.now() - started,
+      };
+    });
+
+    lastCompactionStats = {
+      ...result,
+      completedAt: new Date().toISOString(),
+    };
+
+    eventBus.emit('counters:compaction_completed', lastCompactionStats);
+
+    logger.info('Counter compaction complete', lastCompactionStats);
+
+    return lastCompactionStats;
+  } catch (err) {
+    const failure = {
+      error: err.message,
+      durationMs: Date.now() - started,
+      failedAt: new Date().toISOString(),
+    };
+
+    lastCompactionStats = failure;
+    eventBus.emit('counters:compaction_failed', failure);
+    logger.warn('Counter compaction failed', failure);
+
+    throw err;
+  }
+}
+
+/**
+ * Maybe compact based on monitor snapshot/file size.
+ */
+export async function maybeCompactCounters(snapshot) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+  if (!config.COUNTER_HYGIENE.compactOnSnapshot) return { skipped: true, reason: 'compact_on_snapshot_disabled' };
+
+  const sizeMB = snapshot && typeof snapshot.counterFileSizeMB === 'number'
+    ? snapshot.counterFileSizeMB
+    : +(await getFileSize() / 1048576).toFixed(2);
+
+  const threshold = config.COUNTER_HYGIENE.compactIfFileSizeMB || 40;
+  if (sizeMB < threshold) {
+    return { skipped: true, reason: 'below_threshold', sizeMB, threshold };
+  }
+
+  return await compactCounters();
+}
+
+export function getLastCompactionStats() {
+  return lastCompactionStats;
+}
+
+export const _testHelpers = {
+  pruneBucketObject,
+  getLatestEntityActivity,
+  hourKeyToMs,
+};
 ```
 
 ---
@@ -8272,7 +9286,7 @@ import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
 
 const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
-const COUNTER_LOCK_KEY = 'direct-offer-counters';
+export const COUNTER_LOCK_KEY = 'direct-offer-counters';
 
 // ── Phase 46 — Event Batching State ─────────────────────────
 let eventQueue = [];
@@ -8287,7 +9301,7 @@ const _replayQueue = [];
  * Get the absolute path to the counter file.
  * @returns {string}
  */
-function getCounterFilePath() {
+export function getCounterFilePath() {
   const relPath = (config.COUNTERS && config.COUNTERS.filePath) || 'metrics/direct-offer-counters.json';
   return join(BASE_PATH, relPath);
 }
@@ -8358,6 +9372,16 @@ export async function readCounters() {
     logger.warn('directOfferCounters: readCounters failed, returning empty', { error: err.message });
     return emptyCounters();
   }
+}
+
+/**
+ * Phase 50: Write counters atomically.
+ * Used by counterCompaction while holding COUNTER_LOCK_KEY.
+ *
+ * @param {object} counters
+ */
+export async function writeCounters(counters) {
+  await atomicWrite(getCounterFilePath(), counters || emptyCounters());
 }
 
 /**
@@ -9407,6 +10431,25 @@ export async function maybeTriggerAutoRebuild(snapshot) {
 
   if (sizeMB < criticalThreshold) return;
 
+  // Phase 50: try size-aware compaction before expensive auto-rebuild.
+  // If compaction brings the file below critical threshold, skip rebuild.
+  if (config.COUNTER_HYGIENE && config.COUNTER_HYGIENE.enabled) {
+    try {
+      const { maybeCompactCounters } = await import('./counterCompaction.js');
+      await maybeCompactCounters(snapshot).catch(() => {});
+      const sizeAfterBytes = await getFileSize();
+      const sizeAfterMB = +(sizeAfterBytes / 1048576).toFixed(2);
+      if (sizeAfterMB < criticalThreshold) {
+        logger.info('Counter file below critical after compaction — skipping auto-rebuild', {
+          beforeMB: sizeMB,
+          afterMB: sizeAfterMB,
+          threshold: criticalThreshold,
+        });
+        return;
+      }
+    } catch (_) { /* compaction failure falls through to rebuild */ }
+  }
+
   // Phase 49: if a rebuild is already in progress, retry immediately after it completes
   // instead of waiting for the next hourly monitor cycle.
   if (_rebuildInProgress) {
@@ -9818,6 +10861,399 @@ if (isEnabled()) {
   const cleanupTimer = setInterval(cleanup, cleanupIntervalMs);
   if (cleanupTimer.unref) cleanupTimer.unref();
 }
+```
+
+---
+
+## `server/services/exportRegistry.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/exportRegistry.js — Persistent Export Registry (Phase 50)
+// ═══════════════════════════════════════════════════════════════
+// File-backed export lifecycle registry.
+// Storage: data/exports/{exportId}.json
+// Optional CSV files: data/exports/{exportId}.csv
+//
+// Status lifecycle:
+//   pending → running → completed | failed | cancelled | expired
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { readdir, unlink, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function isEnabled() {
+  return !!(config.EXPORTS && config.EXPORTS.enabled);
+}
+
+function generateId() {
+  return 'exp_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function defaultExpiresAt() {
+  const hours = config.EXPORTS?.retentionHours || 48;
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+}
+
+function registryPath(exportId) {
+  return getRecordPath('exports', exportId);
+}
+
+export function getExportCsvRelativePath(exportId) {
+  return `${config.EXPORTS?.basePath || 'exports'}/${exportId}.csv`;
+}
+
+export function getExportCsvAbsolutePath(exportId) {
+  return join(BASE_PATH, getExportCsvRelativePath(exportId));
+}
+
+function safePublicExport(record) {
+  if (!record) return null;
+  return {
+    id: record.id,
+    type: record.type,
+    status: record.status,
+    requestedBy: record.requestedBy,
+    filters: record.filters || {},
+    rowsProcessed: record.rowsProcessed || 0,
+    totalEstimate: record.totalEstimate || 0,
+    percentage: record.percentage || 0,
+    filePath: record.filePath || null,
+    error: record.error || null,
+    cancelRequested: !!record.cancelRequested,
+    createdAt: record.createdAt,
+    startedAt: record.startedAt || null,
+    completedAt: record.completedAt || null,
+    expiresAt: record.expiresAt || null,
+  };
+}
+
+/**
+ * Create a persistent export record.
+ */
+export async function createExport({ type, filters, requestedBy, totalEstimate } = {}) {
+  if (!isEnabled()) return null;
+
+  const id = generateId();
+  const persistCsv = config.EXPORTS.persistCsvFiles !== false;
+  const now = nowIso();
+
+  const record = {
+    id,
+    type: type || 'unknown',
+    status: 'pending',
+    requestedBy: requestedBy || 'unknown',
+    filters: filters || {},
+    rowsProcessed: 0,
+    totalEstimate: Math.max(0, Number(totalEstimate) || 0),
+    percentage: 0,
+    filePath: persistCsv ? getExportCsvRelativePath(id) : null,
+    error: null,
+    cancelRequested: false,
+    createdAt: now,
+    startedAt: null,
+    completedAt: null,
+    expiresAt: defaultExpiresAt(),
+  };
+
+  await atomicWrite(registryPath(id), record);
+
+  eventBus.emit('export:created', {
+    exportId: id,
+    type: record.type,
+    requestedBy: record.requestedBy,
+    timestamp: now,
+  });
+
+  return safePublicExport(record);
+}
+
+/**
+ * Patch export progress/status.
+ */
+export async function updateExportProgress(exportId, patch = {}) {
+  if (!isEnabled() || !exportId) return null;
+
+  const path = registryPath(exportId);
+  const record = await readJSON(path);
+  if (!record) return null;
+
+  const rowsProcessed = patch.rowsProcessed !== undefined
+    ? Math.max(0, Number(patch.rowsProcessed) || 0)
+    : record.rowsProcessed || 0;
+
+  const totalEstimate = patch.totalEstimate !== undefined
+    ? Math.max(0, Number(patch.totalEstimate) || 0)
+    : record.totalEstimate || 0;
+
+  let percentage = patch.percentage;
+  if (percentage === undefined) {
+    percentage = totalEstimate > 0
+      ? Math.min(99, Math.round((rowsProcessed / totalEstimate) * 100))
+      : (record.percentage || 0);
+  }
+
+  const next = {
+    ...record,
+    ...patch,
+    rowsProcessed,
+    totalEstimate,
+    percentage,
+    status: patch.status || (record.status === 'pending' ? 'running' : record.status),
+    startedAt: record.startedAt || patch.startedAt || nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  await atomicWrite(path, next);
+
+  eventBus.emit('export:progress', {
+    exportId,
+    status: next.status,
+    rowsProcessed: next.rowsProcessed,
+    totalEstimate: next.totalEstimate,
+    percentage: next.percentage,
+    timestamp: nowIso(),
+  });
+
+  return safePublicExport(next);
+}
+
+/**
+ * Mark an export as completed.
+ */
+export async function completeExport(exportId, patch = {}) {
+  if (!isEnabled() || !exportId) return null;
+
+  const path = registryPath(exportId);
+  const record = await readJSON(path);
+  if (!record) return null;
+
+  if (record.status === 'cancelled') return safePublicExport(record);
+
+  const next = {
+    ...record,
+    ...patch,
+    status: 'completed',
+    percentage: 100,
+    cancelRequested: false,
+    completedAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  await atomicWrite(path, next);
+
+  eventBus.emit('export:completed', {
+    exportId,
+    type: next.type,
+    rowsProcessed: next.rowsProcessed,
+    timestamp: next.completedAt,
+  });
+
+  return safePublicExport(next);
+}
+
+/**
+ * Mark an export as failed.
+ */
+export async function failExport(exportId, error) {
+  if (!isEnabled() || !exportId) return null;
+
+  const path = registryPath(exportId);
+  const record = await readJSON(path);
+  if (!record) return null;
+
+  if (record.status === 'completed' || record.status === 'cancelled') {
+    return safePublicExport(record);
+  }
+
+  const next = {
+    ...record,
+    status: 'failed',
+    error: error ? String(error).slice(0, 1000) : 'Unknown export error',
+    completedAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  await atomicWrite(path, next);
+
+  eventBus.emit('export:failed', {
+    exportId,
+    error: next.error,
+    timestamp: next.completedAt,
+  });
+
+  return safePublicExport(next);
+}
+
+/**
+ * Request cancellation.
+ */
+export async function cancelExport(exportId, requestedBy) {
+  if (!isEnabled() || !config.EXPORTS.cancellationEnabled) {
+    return { ok: false, error: 'EXPORT_CANCELLATION_DISABLED' };
+  }
+
+  const path = registryPath(exportId);
+  const record = await readJSON(path);
+  if (!record) return { ok: false, error: 'EXPORT_NOT_FOUND' };
+
+  if (record.status === 'completed' || record.status === 'failed' || record.status === 'expired') {
+    return { ok: false, error: 'EXPORT_ALREADY_FINISHED', export: safePublicExport(record) };
+  }
+
+  const next = {
+    ...record,
+    status: 'cancelled',
+    cancelRequested: true,
+    cancelledBy: requestedBy || 'unknown',
+    completedAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  await atomicWrite(path, next);
+
+  eventBus.emit('export:cancelled', {
+    exportId,
+    requestedBy: requestedBy || 'unknown',
+    timestamp: next.completedAt,
+  });
+
+  return { ok: true, export: safePublicExport(next) };
+}
+
+/**
+ * Check cancellation flag.
+ */
+export async function isCancellationRequested(exportId) {
+  if (!isEnabled() || !exportId) return false;
+  const record = await readJSON(registryPath(exportId));
+  return !!(record && (record.cancelRequested || record.status === 'cancelled'));
+}
+
+/**
+ * Get export by ID.
+ */
+export async function getExport(exportId) {
+  if (!isEnabled() || !exportId) return null;
+  const record = await readJSON(registryPath(exportId));
+  return safePublicExport(record);
+}
+
+/**
+ * List exports newest first.
+ */
+export async function listExports(options = {}) {
+  if (!isEnabled()) return { exports: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('exports');
+  const all = await listJSON(dir);
+  let rows = all.filter(e => e && e.id && e.id.startsWith('exp_'));
+
+  if (options.type) rows = rows.filter(e => e.type === options.type);
+  if (options.status) rows = rows.filter(e => e.status === options.status);
+  if (options.requestedBy) rows = rows.filter(e => e.requestedBy === options.requestedBy);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    exports: rows.slice(offset, offset + limit).map(safePublicExport),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Cleanup expired export records and CSV files.
+ */
+export async function cleanupExpiredExports() {
+  if (!isEnabled()) return 0;
+
+  const dir = getCollectionPath('exports');
+  let files;
+  try {
+    files = await readdir(dir);
+  } catch (_) {
+    return 0;
+  }
+
+  const now = Date.now();
+  let cleaned = 0;
+
+  for (const file of files) {
+    if (!file.startsWith('exp_') || !file.endsWith('.json') || file.endsWith('.tmp')) continue;
+
+    const exportId = file.replace('.json', '');
+    const record = await readJSON(registryPath(exportId)).catch(() => null);
+    if (!record || !record.expiresAt) continue;
+
+    if (new Date(record.expiresAt).getTime() <= now) {
+      try {
+        if (record.filePath) {
+          await unlink(join(BASE_PATH, record.filePath)).catch(() => {});
+        }
+        await unlink(join(dir, file)).catch(() => {});
+        cleaned++;
+      } catch (err) {
+        logger.warn('exportRegistry: cleanup failed', { exportId, error: err.message });
+      }
+    }
+  }
+
+  if (cleaned > 0) {
+    logger.info('exportRegistry: cleaned expired exports', { cleaned });
+  }
+
+  return cleaned;
+}
+
+/**
+ * Check if persisted CSV file exists.
+ */
+export async function exportFileExists(exportId) {
+  try {
+    await stat(getExportCsvAbsolutePath(exportId));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+export function getStats() {
+  return {
+    enabled: isEnabled(),
+    basePath: config.EXPORTS?.basePath || 'exports',
+    persistCsvFiles: config.EXPORTS?.persistCsvFiles !== false,
+  };
+}
+
+export const _testHelpers = {
+  generateId,
+  safePublicExport,
+  registryPath,
+  getExportCsvAbsolutePath,
+};
 ```
 
 ---
@@ -14242,6 +15678,21 @@ const builtInMigrations = [
       logger.info('Migration v9: Phase 49 infrastructure registered (no schema changes)');
     },
   },
+  {
+    version: 10,
+    name: 'Phase 50: Audit Indexed Search + Counter Hygiene + Export Registry',
+    up: async () => {
+      // Phase 50 registers new file-backed operational hygiene structures:
+      //   - audit/indexes          (rebuildable audit search indexes)
+      //   - exports                (persistent export registry + optional CSV files)
+      //   - metrics/counter-archives (counter compaction archives)
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy rebuild is performed here by design.
+      // Use: node scripts/rebuild-audit-index.js
+      logger.info('Migration v10: Phase 50 directories registered (audit indexes, exports, counter archives)');
+    },
+  },
 ];
 
 /**
@@ -14453,6 +15904,31 @@ export async function captureSnapshot() {
     }
   } catch (_) { /* non-fatal — defaults preserved */ }
 
+  // Phase 50: Audit index stats
+  let auditIndex = { enabled: false, status: 'unknown', recordCount: 0, lastBuiltAt: null, stale: false };
+  try {
+    const auditIdx = await import('./auditLogIndex.js');
+    if (auditIdx.getAuditIndexStats) {
+      auditIndex = await auditIdx.getAuditIndexStats();
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
+  // Phase 50: Counter hygiene stats
+  let counterHygiene = { lastCompactionAt: null, beforeSizeBytes: 0, afterSizeBytes: 0 };
+  try {
+    const compaction = await import('./counterCompaction.js');
+    const last = compaction.getLastCompactionStats ? compaction.getLastCompactionStats() : null;
+    if (last) {
+      counterHygiene = {
+        lastCompactionAt: last.completedAt || last.failedAt || null,
+        beforeSizeBytes: last.beforeSizeBytes || 0,
+        afterSizeBytes: last.afterSizeBytes || 0,
+        archivedEmployers: last.archivedEmployers || 0,
+        archivedWorkers: last.archivedWorkers || 0,
+      };
+    }
+  } catch (_) { /* non-fatal — defaults preserved */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -14468,6 +15944,8 @@ export async function captureSnapshot() {
     counterFileSizeMB, // Phase 46
     snoozeReminders,   // Phase 48
     auditRetention,    // Phase 48
+    auditIndex,        // Phase 50
+    counterHygiene,    // Phase 50
   };
 
   // Phase 49 — Emit critical counter size event on threshold crossing.
@@ -14483,6 +15961,16 @@ export async function captureSnapshot() {
     }
     lastCounterFileSizeMB = counterFileSizeMB;
   } catch (_) { /* fire-and-forget */ }
+
+  // Phase 50 — Counter file compaction check (fire-and-forget)
+  try {
+    if (config.COUNTER_HYGIENE && config.COUNTER_HYGIENE.enabled && config.COUNTER_HYGIENE.compactOnSnapshot) {
+      const compaction = await import('./counterCompaction.js');
+      if (compaction.maybeCompactCounters) {
+        compaction.maybeCompactCounters(snapshot).catch(() => {});
+      }
+    }
+  } catch (_) { /* non-fatal */ }
 
   // Phase 48 — Counter file auto-rebuild check (fire-and-forget)
   try {
