@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.46.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-08T22:52:49.509Z
-> Files in this part: 44
+# يوميّة (Yawmia) v0.47.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-09T23:50:50.223Z
+> Files in this part: 45
 
 ## Files
 1. `frontend/404.html`
@@ -26,27 +26,28 @@
 21. `frontend/assets/js/toast.js`
 22. `frontend/assets/js/user.js`
 23. `frontend/assets/js/utils.js`
-24. `frontend/dashboard.html`
-25. `frontend/index.html`
-26. `frontend/job.html`
-27. `frontend/manifest.json`
-28. `frontend/offline.html`
-29. `frontend/profile.html`
-30. `frontend/robots.txt`
-31. `frontend/sitemap.xml`
-32. `frontend/sw.js`
-33. `frontend/terms.html`
-34. `frontend/user.html`
-35. `scripts/backup.js`
-36. `scripts/benchmark.js`
-37. `scripts/bundle-for-review.js`
-38. `scripts/compact-counters.js`
-39. `scripts/generate-vapid-keys.js`
-40. `scripts/migrate.js`
-41. `scripts/rebuild-audit-index.js`
-42. `scripts/rebuild-counters.js`
-43. `scripts/repair-indexes.js`
-44. `scripts/verify-audit-index.js`
+24. `frontend/assets/js/workroom.js`
+25. `frontend/dashboard.html`
+26. `frontend/index.html`
+27. `frontend/job.html`
+28. `frontend/manifest.json`
+29. `frontend/offline.html`
+30. `frontend/profile.html`
+31. `frontend/robots.txt`
+32. `frontend/sitemap.xml`
+33. `frontend/sw.js`
+34. `frontend/terms.html`
+35. `frontend/user.html`
+36. `scripts/backup.js`
+37. `scripts/benchmark.js`
+38. `scripts/bundle-for-review.js`
+39. `scripts/compact-counters.js`
+40. `scripts/generate-vapid-keys.js`
+41. `scripts/migrate.js`
+42. `scripts/rebuild-audit-index.js`
+43. `scripts/rebuild-counters.js`
+44. `scripts/repair-indexes.js`
+45. `scripts/verify-audit-index.js`
 
 ---
 
@@ -285,6 +286,44 @@
         </div>
 
         <div id="abuseSignalsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 51 — Predictive Abuse Intelligence -->
+      <div class="admin-section" id="predictiveAbuseSection">
+        <div class="admin-section__header">
+          <h2>🧠 إشارات المخاطر التنبؤية</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="AdminApp.loadPredictiveAbuseDashboard()">تحديث</button>
+            <button class="btn btn--primary btn--sm" onclick="AdminApp.runPredictiveAbuseScan()">تشغيل فحص الآن</button>
+          </div>
+        </div>
+
+        <div id="predictiveAbuseMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="predictiveAbuseSignals">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 51 — Admin Decision Quality -->
+      <div class="admin-section" id="decisionQualitySection">
+        <div class="admin-section__header">
+          <h2>⚖️ جودة قرارات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadDecisionQuality()">تحديث</button>
+        </div>
+
+        <div id="decisionQualityMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h3 style="margin-block-end:0.75rem;font-size:1rem;color:var(--color-text);">أولوية المراجعة</h3>
+        <div id="backlogPriorityTable">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
@@ -4442,6 +4481,310 @@ textarea:focus:not(:focus-visible) {
   color: var(--color-error) !important;
   font-weight: 700;
 }
+
+/* ═══ Phase 51 — Predictive Risk Signals ═══ */
+.risk-signal-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-block-end: 0.75rem;
+}
+
+.risk-signal-card--low {
+  border-inline-start-color: var(--color-text-muted);
+}
+
+.risk-signal-card--medium {
+  border-inline-start-color: var(--color-warning);
+}
+
+.risk-signal-card--high {
+  border-inline-start-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.risk-signal-card--critical {
+  border-inline-start-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25);
+}
+
+.risk-signal-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-block-end: 0.75rem;
+}
+
+.risk-signal-card__explanations {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.risk-signal-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.75rem;
+}
+
+.risk-score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  white-space: nowrap;
+}
+
+.risk-score-pill--low {
+  background: rgba(139, 143, 163, 0.12);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.risk-score-pill--medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.risk-score-pill--high,
+.risk-score-pill--critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ═══ Phase 51 — Workroom UX ═══ */
+.workroom-list-section {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.workroom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workroom-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition), background var(--transition);
+}
+
+.workroom-card:hover,
+.workroom-card:focus-visible {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.workroom-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.workroom-card__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin-block-end: 0.25rem;
+}
+
+.workroom-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.workroom-card__actions {
+  flex-shrink: 0;
+}
+
+.workroom-detail-card {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.workroom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-block-end: 1rem;
+}
+
+.workroom-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-block-end: 1px solid var(--color-border);
+  margin-block-end: 1rem;
+  overflow-x: auto;
+}
+
+.workroom-tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  border-block-end: 2px solid transparent;
+  transition: color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+}
+
+.workroom-tab:hover {
+  color: var(--color-text);
+}
+
+.workroom-tab--active {
+  color: var(--color-primary);
+  border-block-end-color: var(--color-primary);
+}
+
+.workroom-tab-panel {
+  min-height: 160px;
+}
+
+.workroom-details-grid {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.workroom-message-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-block-end: 0.75rem;
+}
+
+.workroom-composer {
+  margin-block-start: 0.75rem;
+}
+
+.workroom-template-row {
+  margin-block-end: 0.75rem;
+}
+
+.workroom-template-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block-start: 0.5rem;
+}
+
+.workroom-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-block: 0.25rem;
+}
+
+.timeline-event {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.timeline-event__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  margin-block-start: 0.35rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.timeline-event__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-event__label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.timeline-event__time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.15rem;
+}
+
+.timeline-event--attendance_noshow .timeline-event__dot,
+.timeline-event--payment_disputed .timeline-event__dot {
+  background: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.timeline-event--attendance_confirmed .timeline-event__dot,
+.timeline-event--payment_completed .timeline-event__dot,
+.timeline-event--job_completed .timeline-event__dot {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+@media (max-width: 600px) {
+  .risk-signal-card__header,
+  .workroom-card,
+  .workroom-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workroom-card__actions {
+    width: 100%;
+  }
+
+  .workroom-card__actions .btn {
+    width: 100%;
+  }
+
+  .workroom-tabs {
+    gap: 0;
+  }
+
+  .workroom-tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  .workroom-message-list {
+    max-height: 360px;
+  }
+}
 ```
 
 ---
@@ -5163,6 +5506,8 @@ var AdminApp = (function () {
         loadMonitoring(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
+        loadPredictiveAbuseDashboard(),
+        loadDecisionQuality(),
         loadAuditIndexStatus(),
         loadExports(),
         loadCounterHygiene(),
@@ -5243,6 +5588,37 @@ var AdminApp = (function () {
           }
           if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
           if (typeof loadTrustDashboard === 'function') loadTrustDashboard();
+        } catch (_) {}
+      });
+
+      // Phase 51 — Predictive Abuse Intelligence events
+      adminSseSource.addEventListener('predictive_abuse:signal_created', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('🧠 إشارة خطر تنبؤية: ' + (data.riskType || '?'));
+          }
+          if (typeof loadPredictiveAbuseDashboard === 'function') loadPredictiveAbuseDashboard();
+          if (typeof loadDecisionQuality === 'function') loadDecisionQuality();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('predictive_abuse:signal_escalated', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('🚨 تم تصعيد إشارة تنبؤية: ' + (data.riskType || '?'));
+          }
+          if (typeof loadPredictiveAbuseDashboard === 'function') loadPredictiveAbuseDashboard();
+          if (typeof loadDecisionQuality === 'function') loadDecisionQuality();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('predictive_abuse:scan_failed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('فشل فحص المخاطر التنبؤية');
+          }
         } catch (_) {}
       });
 
@@ -6606,6 +6982,242 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 51 — Predictive Abuse Intelligence + Decision Quality
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadPredictiveAbuseDashboard() {
+    var metricsEl = document.getElementById('predictiveAbuseMetrics');
+    var signalsEl = document.getElementById('predictiveAbuseSignals');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (signalsEl) {
+      signalsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/predictive-abuse/dashboard?status=active&limit=20');
+      var metrics = data.metrics || {};
+
+      if (metricsEl) {
+        var cards = [
+          { value: metrics.activeSignals || 0, label: 'إشارات نشطة' },
+          { value: metrics.highOrCritical || 0, label: 'عالية/حرجة' },
+          { value: Math.round((metrics.avgRiskScore || 0) * 100) + '%', label: 'متوسط الخطر' },
+          { value: metrics.lastScanDurationMs || 0, label: 'مدة آخر فحص ms' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      renderPredictiveSignals(data.signals || []);
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل المؤشرات</p>';
+      if (signalsEl) signalsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الإشارات</p>';
+    }
+  }
+
+  function renderPredictiveSignals(signals) {
+    var el = document.getElementById('predictiveAbuseSignals');
+    if (!el) return;
+
+    if (!signals || signals.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد إشارات خطر تنبؤية نشطة</p>';
+      return;
+    }
+
+    var riskLabels = {
+      employer_decline_spike: 'ارتفاع مفاجئ في رفض/انتهاء عروض صاحب العمل',
+      worker_offer_bombing_probability: 'احتمال ضغط عروض على عامل',
+      same_worker_harassment_likelihood: 'احتمال مضايقة عامل بعروض متكررة',
+      employer_toxic_offer_behavior: 'سلوك عروض سلبي لصاحب العمل',
+      worker_reliability_anomaly: 'انحراف في موثوقية رد العامل',
+    };
+
+    var html = '';
+    signals.forEach(function (s) {
+      var sev = s.severity || 'medium';
+      var scorePct = Math.round((s.riskScore || 0) * 100);
+
+      html += '<div class="risk-signal-card risk-signal-card--' + escapeHtml(sev) + '">' +
+        '<div class="risk-signal-card__header">' +
+          '<div>' +
+            '<strong>' + escapeHtml(riskLabels[s.riskType] || s.riskType || 'Signal') + '</strong>' +
+            '<div style="font-size:0.8rem;color:var(--color-text-muted);margin-block-start:0.25rem;">' +
+              escapeHtml(s.entityType || '') + ': <a href="/user.html?id=' + escapeHtml(s.entityId || '') + '" class="worker-link">' + escapeHtml(s.entityId || '-') + '</a>' +
+              (s.relatedUserId ? ' · related: <a href="/user.html?id=' + escapeHtml(s.relatedUserId) + '" class="worker-link">' + escapeHtml(s.relatedUserId) + '</a>' : '') +
+            '</div>' +
+          '</div>' +
+          '<span class="risk-score-pill risk-score-pill--' + escapeHtml(sev) + '">' + scorePct + '%</span>' +
+        '</div>';
+
+      if (s.explanations && s.explanations.length > 0) {
+        html += '<ul class="risk-signal-card__explanations">';
+        s.explanations.slice(0, 4).forEach(function (ex) {
+          html += '<li>' + escapeHtml(ex) + '</li>';
+        });
+        html += '</ul>';
+      }
+
+      html += '<div class="risk-signal-card__actions">' +
+        '<button class="btn btn--ghost btn--sm" onclick="AdminApp.dismissPredictiveSignal(\'' + escapeHtml(s.id) + '\')">رفض</button>' +
+        '<button class="btn btn--primary btn--sm" onclick="AdminApp.escalatePredictiveSignal(\'' + escapeHtml(s.id) + '\')">تصعيد للمراجعة</button>' +
+      '</div>' +
+      '</div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  async function runPredictiveAbuseScan() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري تشغيل فحص المخاطر...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/run-scan', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('اكتمل الفحص — إشارات: ' + (data.signalCount || 0));
+        }
+        loadPredictiveAbuseDashboard();
+        loadDecisionQuality();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل الفحص');
+    }
+  }
+
+  async function dismissPredictiveSignal(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'رفض الإشارة',
+        message: 'ملاحظة اختيارية لسبب الرفض',
+        placeholder: 'مثال: نشاط طبيعي أو false positive...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/dismiss', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم رفض الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في رفض الإشارة');
+    }
+  }
+
+  async function escalatePredictiveSignal(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'تصعيد الإشارة',
+        message: 'اكتب سبب التصعيد أو الإجراء المطلوب',
+        placeholder: 'مثال: يحتاج مراجعة فورية...',
+        required: false,
+      });
+      if (note === null) return;
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/escalate', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تصعيد الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تصعيد الإشارة');
+    }
+  }
+
+  async function loadDecisionQuality() {
+    var metricsEl = document.getElementById('decisionQualityMetrics');
+    var backlogEl = document.getElementById('backlogPriorityTable');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (backlogEl) {
+      backlogEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/trust/decision-quality');
+
+      var warning = data.warningEffectiveness || {};
+      var calibration = data.calibration || {};
+      var backlog = data.backlogSummary || {};
+
+      if (metricsEl) {
+        var cards = [
+          { value: warning.totalWarnings || 0, label: 'تحذيرات مرسلة' },
+          { value: (warning.effectivenessRate || 0) + '%', label: 'فعالية التحذير' },
+          { value: (warning.conversionRate || 0) + '%', label: 'تحذير → إجراء' },
+          { value: calibration.avgCalibrationScore || 0, label: 'متوسط calibration' },
+          { value: backlog.total || 0, label: 'عناصر backlog' },
+          { value: backlog.highPriority || 0, label: 'أولوية عالية' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      await loadBacklogPriority();
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جودة القرارات</p>';
+      if (backlogEl) backlogEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل أولوية المراجعة</p>';
+    }
+  }
+
+  async function loadBacklogPriority() {
+    var el = document.getElementById('backlogPriorityTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/trust/backlog-priority?limit=20');
+      var items = data.items || [];
+
+      if (items.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد عناصر مراجعة عاجلة</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>النوع</th><th>الخطر</th><th>الأولوية</th><th>المستخدم</th><th>العمر</th><th>شرح</th>' +
+      '</tr></thead><tbody>';
+
+      items.forEach(function (item) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(item.type || '-') + '<br><small>' + escapeHtml(item.riskType || '') + '</small></td>' +
+          '<td><span class="risk-score-pill risk-score-pill--' + escapeHtml(item.severity || 'medium') + '">' + Math.round((item.riskScore || 0) * 100) + '%</span></td>' +
+          '<td>' + Math.round((item.priorityScore || 0) * 100) + '%</td>' +
+          '<td><a href="/user.html?id=' + escapeHtml(item.entityId || '') + '" class="worker-link">' + escapeHtml(item.entityId || '-') + '</a></td>' +
+          '<td>' + escapeHtml(String(item.ageHours || 0)) + ' س</td>' +
+          '<td><small>' + escapeHtml((item.explanations || []).slice(0, 2).join(' · ')) + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل أولوية المراجعة</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 50 — Audit Index + Export Registry + Counter Hygiene
   // ═══════════════════════════════════════════════════════════════
 
@@ -7132,6 +7744,13 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 51 — Predictive Abuse + Decision Quality
+    loadPredictiveAbuseDashboard: loadPredictiveAbuseDashboard,
+    runPredictiveAbuseScan: runPredictiveAbuseScan,
+    dismissPredictiveSignal: dismissPredictiveSignal,
+    escalatePredictiveSignal: escalatePredictiveSignal,
+    loadDecisionQuality: loadDecisionQuality,
+    loadBacklogPriority: loadBacklogPriority,
     // Phase 50 — Scale & Search Hygiene
     loadAuditIndexStatus: loadAuditIndexStatus,
     rebuildAuditIndex: rebuildAuditIndex,
@@ -7181,7 +7800,7 @@ var Yawmia = (function () {
       headers['Authorization'] = 'Bearer ' + state.token;
     }
     const opts = { method, headers };
-    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (body && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(API_BASE + path, opts);
@@ -9098,6 +9717,11 @@ var YawmiaJobCard = (function () {
         loadPaymentInfo(job.id);
       }
 
+      // Phase 51 — Workroom detail tabs (only renders if user is involved)
+      if (typeof YawmiaWorkroom !== 'undefined' && Yawmia.isLoggedIn()) {
+        YawmiaWorkroom.initJobDetail(job.id, 'jobWorkroomMount');
+      }
+
     } catch (err) {
       showError();
     }
@@ -9598,6 +10222,11 @@ var YawmiaJobCard = (function () {
   var btnLogout = Yawmia.$id('btnLogout');
   if (btnLogout) {
     btnLogout.addEventListener('click', function () { Yawmia.logout(); });
+  }
+
+  // ── Phase 51 — Workroom List Mount ─────────────────────────
+  if (typeof YawmiaWorkroom !== 'undefined') {
+    YawmiaWorkroom.initList('workroomListMount');
   }
 
   // ── Welcome Card ──────────────────────────────────────────
@@ -11204,6 +11833,11 @@ var YawmiaPanels = (function () {
         // Availability toggle (worker only)
         if (user.role === 'worker') {
           renderAvailabilityToggle(user);
+        }
+
+        // Phase 51 — Workroom list on profile
+        if (typeof YawmiaWorkroom !== 'undefined') {
+          YawmiaWorkroom.initList('profileWorkroomListMount');
         }
 
         // Job alerts management (all roles)
@@ -14281,6 +14915,573 @@ var YawmiaUtils = (function () {
 
 ---
 
+## `frontend/assets/js/workroom.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// frontend/assets/js/workroom.js — Workroom Messaging UX (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// IIFE module.
+// Provides:
+//   - active workrooms list
+//   - workroom detail tabs: Details / Messages / Timeline
+//   - quick positive templates
+//   - message sending via /api/workrooms/:id/messages
+//   - read-all support
+//
+// Does not replace existing inline job-card messaging panels.
+// ═══════════════════════════════════════════════════════════════
+
+var YawmiaWorkroom = (function () {
+  'use strict';
+
+  var listMountEl = null;
+  var detailMountEl = null;
+  var currentWorkroom = null;
+  var currentJobId = null;
+  var activeTab = 'details';
+  var refreshTimer = null;
+
+  function escapeHtml(str) {
+    return (typeof YawmiaUtils !== 'undefined') ? YawmiaUtils.escapeHtml(str) : (str || '');
+  }
+
+  function formatDateTime(iso) {
+    if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.formatDateTime) {
+      return YawmiaUtils.formatDateTime(iso);
+    }
+    try { return new Date(iso).toLocaleString('ar-EG'); } catch (_) { return iso || ''; }
+  }
+
+  function timeAgo(iso) {
+    if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.timeAgo) {
+      return YawmiaUtils.timeAgo(iso);
+    }
+    return formatDateTime(iso);
+  }
+
+  function statusLabel(status) {
+    if (typeof YawmiaUtils !== 'undefined' && YawmiaUtils.statusLabel) {
+      return YawmiaUtils.statusLabel(status);
+    }
+    return status || '';
+  }
+
+  function getUser() {
+    return (typeof Yawmia !== 'undefined') ? Yawmia.getUser() : null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Workroom List
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Initialize active workrooms list.
+   *
+   * @param {string} mountId
+   */
+  function initList(mountId) {
+    listMountEl = document.getElementById(mountId);
+    if (!listMountEl) return;
+
+    loadWorkrooms();
+
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(function () {
+      if (document.visibilityState === 'visible') loadWorkrooms({ silent: true });
+    }, 30000);
+
+    if (refreshTimer.unref) refreshTimer.unref();
+  }
+
+  async function loadWorkrooms(options) {
+    if (!listMountEl) return;
+    var opts = options || {};
+
+    if (!opts.silent) {
+      listMountEl.innerHTML = renderListSkeleton();
+    }
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms?activeOnly=true&limit=20');
+      if (!res.data || !res.data.ok) {
+        listMountEl.innerHTML = '';
+        return;
+      }
+
+      var workrooms = res.data.workrooms || [];
+      if (workrooms.length === 0) {
+        listMountEl.innerHTML = '';
+        return;
+      }
+
+      renderWorkroomList(workrooms);
+    } catch (_) {
+      if (!opts.silent) {
+        listMountEl.innerHTML = '';
+      }
+    }
+  }
+
+  function renderListSkeleton() {
+    return '<section class="card workroom-list-section">' +
+      '<h2 class="card__title">💬 مساحات العمل</h2>' +
+      '<div class="skeleton-card" style="margin-block-start:0.75rem;"></div>' +
+      '</section>';
+  }
+
+  function renderWorkroomList(workrooms) {
+    var user = getUser();
+    var title = user && user.role === 'employer'
+      ? '💬 مساحات العمل النشطة'
+      : '💬 شغلي الحالي';
+
+    var html = '<section class="card workroom-list-section">' +
+      '<div class="section-header">' +
+        '<h2 class="card__title">' + title + '</h2>' +
+        '<button class="btn btn--ghost btn--sm" id="btnRefreshWorkrooms">تحديث</button>' +
+      '</div>' +
+      '<div class="workroom-list">';
+
+    workrooms.forEach(function (w) {
+      html += renderWorkroomListCard(w);
+    });
+
+    html += '</div></section>';
+
+    listMountEl.innerHTML = html;
+
+    var refreshBtn = document.getElementById('btnRefreshWorkrooms');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        loadWorkrooms();
+      });
+    }
+
+    listMountEl.querySelectorAll('.workroom-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target && e.target.closest('button')) return;
+        var jobId = card.getAttribute('data-job-id');
+        if (jobId) {
+          window.location.href = '/job.html?id=' + encodeURIComponent(jobId) + '#workroom';
+        }
+      });
+    });
+  }
+
+  function renderWorkroomListCard(w) {
+    var unread = w.unreadMessages || 0;
+    var unreadHtml = unread > 0
+      ? '<span class="notification-bell__badge" style="position:static;display:inline-flex;">' + unread + '</span>'
+      : '';
+
+    var lastMsg = w.lastMessageAt
+      ? '<span>آخر رسالة: ' + escapeHtml(timeAgo(w.lastMessageAt)) + '</span>'
+      : '<span>لا توجد رسائل بعد</span>';
+
+    return '<article class="workroom-card" data-job-id="' + escapeHtml(w.jobId) + '" tabindex="0" role="button" aria-label="فتح مساحة عمل ' + escapeHtml(w.title) + '">' +
+      '<div class="workroom-card__main">' +
+        '<div class="workroom-card__title">' + escapeHtml(w.title || 'فرصة') + ' ' + unreadHtml + '</div>' +
+        '<div class="workroom-card__meta">' +
+          '<span>' + escapeHtml(statusLabel(w.status)) + '</span>' +
+          '<span> • </span>' +
+          lastMsg +
+        '</div>' +
+      '</div>' +
+      '<div class="workroom-card__actions">' +
+        '<a class="btn btn--primary btn--sm" href="/job.html?id=' + encodeURIComponent(w.jobId) + '#workroom">فتح</a>' +
+      '</div>' +
+    '</article>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Workroom Detail
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Initialize workroom detail for a job.
+   *
+   * @param {string} jobId
+   * @param {string} mountId
+   */
+  function initJobDetail(jobId, mountId) {
+    currentJobId = jobId;
+    detailMountEl = document.getElementById(mountId);
+    if (!detailMountEl || !jobId) return;
+
+    loadWorkroomDetail();
+
+    // If URL has #workroom, scroll after load.
+    if (window.location.hash === '#workroom') {
+      setTimeout(function () {
+        if (detailMountEl) detailMountEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    }
+  }
+
+  async function loadWorkroomDetail() {
+    if (!detailMountEl || !currentJobId) return;
+
+    detailMountEl.innerHTML = '';
+
+    if (!Yawmia.isLoggedIn()) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentJobId);
+      if (!res.data || !res.data.ok || !res.data.workroom) {
+        detailMountEl.innerHTML = '';
+        return;
+      }
+
+      currentWorkroom = res.data.workroom;
+      activeTab = window.location.hash === '#workroom-messages' ? 'messages' :
+                  window.location.hash === '#workroom-timeline' ? 'timeline' :
+                  'details';
+
+      renderWorkroomDetail();
+      if (activeTab === 'messages') loadMessages();
+      if (activeTab === 'timeline') loadTimeline();
+    } catch (_) {
+      detailMountEl.innerHTML = '';
+    }
+  }
+
+  function renderWorkroomDetail() {
+    if (!detailMountEl || !currentWorkroom) return;
+
+    var html = '<section class="card workroom-detail-card" id="workroom">' +
+      '<div class="workroom-header">' +
+        '<div>' +
+          '<h2 class="card__title">💬 مساحة العمل</h2>' +
+          '<p class="card__desc">' + escapeHtml(currentWorkroom.title || '') + ' — ' + escapeHtml(statusLabel(currentWorkroom.status)) + '</p>' +
+        '</div>' +
+        '<span class="risk-score-pill">' + escapeHtml(currentWorkroom.userRoleInWorkroom === 'employer' ? 'صاحب العمل' : 'عامل') + '</span>' +
+      '</div>' +
+
+      '<div class="workroom-tabs" role="tablist" aria-label="تبويبات مساحة العمل">' +
+        '<button class="workroom-tab' + (activeTab === 'details' ? ' workroom-tab--active' : '') + '" data-tab="details" role="tab">التفاصيل</button>' +
+        '<button class="workroom-tab' + (activeTab === 'messages' ? ' workroom-tab--active' : '') + '" data-tab="messages" role="tab">الرسائل</button>' +
+        '<button class="workroom-tab' + (activeTab === 'timeline' ? ' workroom-tab--active' : '') + '" data-tab="timeline" role="tab">السجل</button>' +
+      '</div>' +
+
+      '<div class="workroom-tab-panel" id="workroomTabPanel"></div>' +
+    '</section>';
+
+    detailMountEl.innerHTML = html;
+
+    detailMountEl.querySelectorAll('.workroom-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        activeTab = btn.getAttribute('data-tab') || 'details';
+        detailMountEl.querySelectorAll('.workroom-tab').forEach(function (b) {
+          b.classList.remove('workroom-tab--active');
+        });
+        btn.classList.add('workroom-tab--active');
+
+        if (activeTab === 'details') renderDetailsTab();
+        if (activeTab === 'messages') loadMessages();
+        if (activeTab === 'timeline') loadTimeline();
+      });
+    });
+
+    if (activeTab === 'details') renderDetailsTab();
+  }
+
+  function renderDetailsTab() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    var job = currentWorkroom.job || {};
+    var templates = currentWorkroom.quickTemplates || [];
+
+    var templateHtml = '';
+    if (templates.length > 0) {
+      templateHtml = '<div class="workroom-template-row" style="margin-block-start:1rem;">' +
+        '<strong style="font-size:0.9rem;color:var(--color-text-muted);">رسائل سريعة:</strong>' +
+        '<div class="workroom-template-buttons">';
+      templates.forEach(function (t, idx) {
+        templateHtml += '<button class="btn btn--ghost btn--sm workroom-template-btn" data-text="' + escapeHtml(t) + '" data-template-key="' + escapeHtml(currentWorkroom.userRoleInWorkroom + '_' + idx) + '">' + escapeHtml(t) + '</button>';
+      });
+      templateHtml += '</div></div>';
+    }
+
+    panel.innerHTML =
+      '<div class="workroom-details-grid">' +
+        '<div class="health-row"><span class="health-row__label">الحالة</span><span class="health-row__value">' + escapeHtml(statusLabel(job.status)) + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">الأجر</span><span class="health-row__value">' + escapeHtml(String(job.dailyWage || 0)) + ' جنيه/يوم</span></div>' +
+        '<div class="health-row"><span class="health-row__label">تاريخ البدء</span><span class="health-row__value">' + escapeHtml(job.startDate || '-') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">المدة</span><span class="health-row__value">' + escapeHtml(String(job.durationDays || 0)) + ' يوم</span></div>' +
+        '<div class="health-row"><span class="health-row__label">الرسائل غير المقروءة</span><span class="health-row__value">' + escapeHtml(String(currentWorkroom.unreadMessages || 0)) + '</span></div>' +
+      '</div>' +
+      templateHtml +
+      '<div style="margin-block-start:1rem;">' +
+        '<button class="btn btn--primary btn--sm" id="btnOpenWorkroomMessages">فتح الرسائل</button>' +
+        '<button class="btn btn--ghost btn--sm" id="btnOpenWorkroomTimeline" style="margin-inline-start:0.5rem;">عرض السجل</button>' +
+      '</div>';
+
+    var msgBtn = document.getElementById('btnOpenWorkroomMessages');
+    if (msgBtn) {
+      msgBtn.addEventListener('click', function () {
+        activeTab = 'messages';
+        renderWorkroomDetail();
+        loadMessages();
+      });
+    }
+
+    var timelineBtn = document.getElementById('btnOpenWorkroomTimeline');
+    if (timelineBtn) {
+      timelineBtn.addEventListener('click', function () {
+        activeTab = 'timeline';
+        renderWorkroomDetail();
+        loadTimeline();
+      });
+    }
+
+    wireTemplateButtons();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Messages
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadMessages() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML =
+      '<div class="workroom-message-list" id="workroomMessageList">' +
+        '<p class="empty-state">جاري تحميل الرسائل...</p>' +
+      '</div>' +
+      renderMessageComposer();
+
+    wireComposer();
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/messages?limit=100&offset=0');
+      var listEl = document.getElementById('workroomMessageList');
+      if (!listEl) return;
+
+      if (!res.data || !res.data.ok || !res.data.items || res.data.items.length === 0) {
+        listEl.innerHTML = '<p class="empty-state">لا توجد رسائل بعد</p>';
+      } else {
+        renderMessages(res.data.items);
+      }
+
+      // Mark read in background.
+      Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages/read-all').catch(function () {});
+    } catch (_) {
+      var el = document.getElementById('workroomMessageList');
+      if (el) el.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل</p>';
+    }
+  }
+
+  function renderMessages(items) {
+    var user = getUser();
+    var listEl = document.getElementById('workroomMessageList');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+
+    var ordered = items.slice().reverse();
+    ordered.forEach(function (msg) {
+      var isMine = user && msg.senderId === user.id;
+      var bubble = document.createElement('div');
+      bubble.className = 'message-bubble' + (isMine ? ' message-bubble--mine' : ' message-bubble--other');
+
+      var sourceLabel = msg.source === 'workroom'
+        ? '<span style="color:var(--color-primary);font-size:0.65rem;">workroom</span>'
+        : '';
+
+      bubble.innerHTML =
+        '<div class="message-bubble__sender">' + escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') + ' ' + sourceLabel + '</div>' +
+        '<div class="message-bubble__text">' + escapeHtml(msg.text || '') + '</div>' +
+        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + '</div>';
+
+      listEl.appendChild(bubble);
+    });
+
+    listEl.scrollTop = listEl.scrollHeight;
+  }
+
+  function renderMessageComposer() {
+    var templates = currentWorkroom.quickTemplates || [];
+    var templateHtml = '';
+
+    if (templates.length > 0) {
+      templateHtml = '<div class="workroom-template-row">' +
+        '<div class="workroom-template-buttons">';
+      templates.forEach(function (t, idx) {
+        templateHtml += '<button class="btn btn--ghost btn--sm workroom-template-btn" data-text="' + escapeHtml(t) + '" data-template-key="' + escapeHtml(currentWorkroom.userRoleInWorkroom + '_' + idx) + '">' + escapeHtml(t) + '</button>';
+      });
+      templateHtml += '</div></div>';
+    }
+
+    return templateHtml +
+      '<div class="message-send-form workroom-composer">' +
+        '<input type="text" class="message-input" id="workroomMessageInput" placeholder="اكتب رسالة..." maxlength="500">' +
+        '<button class="btn btn--primary btn--sm" id="btnSendWorkroomMessage">إرسال</button>' +
+      '</div>' +
+      '<div class="message" id="workroomMessageError"></div>';
+  }
+
+  function wireComposer() {
+    var input = document.getElementById('workroomMessageInput');
+    var btn = document.getElementById('btnSendWorkroomMessage');
+
+    async function send() {
+      if (!currentWorkroom || !input) return;
+      var text = input.value.trim();
+      if (!text) return;
+
+      await sendMessage(text, null, btn, function () {
+        input.value = '';
+        loadMessages();
+      });
+    }
+
+    if (btn) btn.addEventListener('click', send);
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') send();
+      });
+    }
+
+    wireTemplateButtons();
+  }
+
+  function wireTemplateButtons() {
+    document.querySelectorAll('.workroom-template-btn').forEach(function (btn) {
+      if (btn.dataset.wired === '1') return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', async function () {
+        var text = btn.getAttribute('data-text');
+        var templateKey = btn.getAttribute('data-template-key');
+        await sendMessage(text, templateKey, btn, function () {
+          if (activeTab === 'messages') loadMessages();
+          else if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إرسال الرسالة');
+        });
+      });
+    });
+  }
+
+  async function sendMessage(text, templateKey, btn, onSuccess) {
+    if (!currentWorkroom || !text) return;
+
+    var errorEl = document.getElementById('workroomMessageError');
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.className = 'message';
+    }
+
+    if (btn) Yawmia.setLoading(btn, true);
+
+    try {
+      var body = { text: text };
+      if (templateKey) body.templateKey = templateKey;
+
+      var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages', body);
+
+      if (res.data && res.data.ok) {
+        if (typeof onSuccess === 'function') onSuccess(res.data.message);
+      } else {
+        var msg = (res.data && res.data.error) || 'خطأ في إرسال الرسالة';
+        if (errorEl) Yawmia.showMessage('workroomMessageError', msg, 'error');
+        else if (typeof YawmiaToast !== 'undefined') YawmiaToast.error(msg);
+      }
+    } catch (_) {
+      if (errorEl) Yawmia.showMessage('workroomMessageError', 'خطأ في الاتصال', 'error');
+      else if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+    } finally {
+      if (btn) Yawmia.setLoading(btn, false);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Timeline
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadTimeline() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML = '<div class="workroom-timeline"><p class="empty-state">جاري تحميل السجل...</p></div>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/timeline?limit=200');
+      if (!res.data || !res.data.ok) {
+        panel.innerHTML = '<p class="empty-state">تعذّر تحميل السجل</p>';
+        return;
+      }
+
+      var timeline = res.data.timeline || [];
+      renderTimeline(timeline);
+    } catch (_) {
+      panel.innerHTML = '<p class="empty-state">خطأ في تحميل السجل</p>';
+    }
+  }
+
+  function renderTimeline(timeline) {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel) return;
+
+    if (!timeline || timeline.length === 0) {
+      panel.innerHTML = '<p class="empty-state">لا توجد أحداث بعد</p>';
+      return;
+    }
+
+    var html = '<div class="workroom-timeline">';
+    timeline.forEach(function (evt) {
+      html += '<div class="timeline-event timeline-event--' + escapeHtml(evt.type || 'event') + '">' +
+        '<div class="timeline-event__dot"></div>' +
+        '<div class="timeline-event__body">' +
+          '<div class="timeline-event__label">' + escapeHtml(evt.label || evt.type || 'حدث') + '</div>' +
+          '<div class="timeline-event__time">' + escapeHtml(formatDateTime(evt.timestamp)) + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+
+    panel.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Events
+  // ═══════════════════════════════════════════════════════════════
+
+  window.addEventListener('yawmia:notification', function (e) {
+    try {
+      if (!e.detail) return;
+      if (e.detail.type === 'new_message') {
+        if (listMountEl) loadWorkrooms({ silent: true });
+        if (currentWorkroom && activeTab === 'messages') {
+          loadMessages();
+        }
+      }
+    } catch (_) {}
+  });
+
+  function destroy() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+    listMountEl = null;
+    detailMountEl = null;
+    currentWorkroom = null;
+    currentJobId = null;
+  }
+
+  return {
+    initList: initList,
+    initJobDetail: initJobDetail,
+    loadWorkrooms: loadWorkrooms,
+    loadWorkroomDetail: loadWorkroomDetail,
+    destroy: destroy,
+  };
+})();
+```
+
+---
+
 ## `frontend/dashboard.html`
 
 ```html
@@ -14340,6 +15541,9 @@ var YawmiaUtils = (function () {
           <h2 id="welcomeTitle">أهلاً بيك!</h2>
           <p id="welcomeDesc"></p>
         </section>
+
+        <!-- Phase 51 — Workroom List (worker/employer, mounted by JS) -->
+        <div id="workroomListMount"></div>
 
         <!-- Phase 40 — Live Presence Toggle (worker only, mounted by JS) -->
         <div id="livePresenceMount"></div>
@@ -14561,6 +15765,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/panels.js"></script>
   <script src="./assets/js/ratingModal.js"></script>
   <script src="./assets/js/directOffer.js"></script>
+  <script src="./assets/js/workroom.js"></script>
   <script src="./assets/js/jobs.js"></script>
 </body>
 </html>
@@ -14877,6 +16082,9 @@ var YawmiaUtils = (function () {
             </div>
           </section>
 
+          <!-- Phase 51 — Workroom Detail Tabs (shown only if user is involved) -->
+          <div id="jobWorkroomMount"></div>
+
         </div>
 
       </div>
@@ -14915,6 +16123,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/utils.js"></script>
   <script src="./assets/js/toast.js"></script>
   <script src="./assets/js/modal.js"></script>
+  <script src="./assets/js/workroom.js"></script>
   <script src="./assets/js/jobDetail.js"></script>
 </body>
 </html>
@@ -15095,6 +16304,9 @@ var YawmiaUtils = (function () {
         <!-- Phase 41 — Availability Ad Form (worker only, mounted by JS) -->
         <div id="adFormMount" data-role="worker"></div>
 
+        <!-- Phase 51 — Workroom List -->
+        <div id="profileWorkroomListMount"></div>
+
         <!-- Job Alerts Management -->
         <div id="alerts-section"></div>
 
@@ -15195,6 +16407,7 @@ var YawmiaUtils = (function () {
   <script src="./assets/js/livePresence.js"></script>
   <script src="./assets/js/adForm.js"></script>
   <script src="./assets/js/directOffer.js"></script>
+  <script src="./assets/js/workroom.js"></script>
   <script src="./assets/js/profile.js"></script>
 </body>
 </html>
@@ -15256,7 +16469,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.46.0';
+const CACHE_NAME = 'yawmia-v0.47.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15284,6 +16497,7 @@ const STATIC_ASSETS = [
   '/assets/js/talentRadar.js',
   '/assets/js/adForm.js',
   '/assets/js/directOffer.js',
+  '/assets/js/workroom.js',
   '/job.html',
   '/assets/js/jobDetail.js',
   '/assets/css/tokens.css',
@@ -15614,7 +16828,7 @@ self.addEventListener('notificationclick', (event) => {
           </section>
 
           <!-- Trust Score -->
-          <section class="card" id="pubTrustSection" class="hidden">
+          <section class="card hidden" id="pubTrustSection">
             <h2 class="card__title">نقاط الثقة</h2>
             <div id="pubTrustScore"></div>
           </section>

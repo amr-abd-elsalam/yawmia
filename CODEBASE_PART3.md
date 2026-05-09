@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.46.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-08T22:52:49.501Z
-> Files in this part: 32
+# يوميّة (Yawmia) v0.47.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-09T23:50:50.215Z
+> Files in this part: 33
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -27,14 +27,15 @@
 22. `server/handlers/sseHandler.js`
 23. `server/handlers/verificationHandler.js`
 24. `server/handlers/workerDiscoveryHandler.js`
-25. `server/middleware/auth.js`
-26. `server/middleware/bodyParser.js`
-27. `server/middleware/cors.js`
-28. `server/middleware/rateLimit.js`
-29. `server/middleware/requestId.js`
-30. `server/middleware/security.js`
-31. `server/middleware/static.js`
-32. `server/middleware/timing.js`
+25. `server/handlers/workroomHandler.js`
+26. `server/middleware/auth.js`
+27. `server/middleware/bodyParser.js`
+28. `server/middleware/cors.js`
+29. `server/middleware/rateLimit.js`
+30. `server/middleware/requestId.js`
+31. `server/middleware/security.js`
+32. `server/middleware/static.js`
+33. `server/middleware/timing.js`
 
 ---
 
@@ -1028,6 +1029,222 @@ export async function handleAdminCompactCounters(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في ضغط العدادات', code: 'COUNTER_COMPACT_ERROR' });
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 51 — Predictive Abuse Intelligence Admin Handlers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/predictive-abuse/dashboard
+ * Admin predictive risk dashboard.
+ */
+export async function handleAdminPredictiveAbuseDashboard(req, res) {
+  try {
+    const { getPredictiveDashboard } = await import('../services/predictiveAbuse.js');
+
+    const result = await getPredictiveDashboard({
+      status: req.query.status || 'active',
+      limit: parseInt(req.query.limit) || 20,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب لوحة المخاطر التنبؤية', code: 'PREDICTIVE_DASHBOARD_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/predictive-abuse/signals
+ * List predictive signals with filters.
+ */
+export async function handleAdminPredictiveAbuseSignals(req, res) {
+  try {
+    const { listPredictiveSignals } = await import('../services/predictiveAbuse.js');
+
+    const result = await listPredictiveSignals({
+      status: req.query.status || undefined,
+      severity: req.query.severity || undefined,
+      riskType: req.query.riskType || undefined,
+      entityId: req.query.entityId || undefined,
+      limit: parseInt(req.query.limit) || 20,
+      offset: parseInt(req.query.offset) || 0,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب إشارات المخاطر', code: 'PREDICTIVE_SIGNALS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/run-scan
+ * Force-run predictive scan.
+ */
+export async function handleAdminRunPredictiveAbuseScan(req, res) {
+  try {
+    const { runPredictiveScan } = await import('../services/predictiveAbuse.js');
+
+    const result = await runPredictiveScan({ force: true, persist: true });
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'predictive_abuse_scan_run',
+      targetType: 'predictive_abuse',
+      targetId: 'scan',
+      details: {
+        signalCount: result.signalCount || 0,
+        created: result.created || 0,
+        updated: result.updated || 0,
+        scannedOffers: result.scannedOffers || 0,
+        durationMs: result.durationMs || 0,
+      },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تشغيل فحص المخاطر', code: 'PREDICTIVE_SCAN_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/signals/:id/dismiss
+ * Body: { note? }
+ */
+export async function handleAdminDismissPredictiveSignal(req, res) {
+  try {
+    const { dismissSignal } = await import('../services/predictiveAbuse.js');
+
+    const signalId = req.params.id;
+    const note = req.body && typeof req.body.note === 'string'
+      ? req.body.note.trim().slice(0, 500)
+      : null;
+
+    const adminId = req.user?.id || 'admin_token';
+    const result = await dismissSignal(signalId, adminId, note);
+
+    if (!result.ok) {
+      const status = result.code === 'SIGNAL_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    logAction({
+      adminId,
+      action: 'predictive_signal_dismissed',
+      targetType: 'predictive_signal',
+      targetId: signalId,
+      details: { note },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, signal: result.signal });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في رفض الإشارة', code: 'PREDICTIVE_DISMISS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/signals/:id/escalate
+ * Body: { note? }
+ */
+export async function handleAdminEscalatePredictiveSignal(req, res) {
+  try {
+    const { escalateSignal } = await import('../services/predictiveAbuse.js');
+
+    const signalId = req.params.id;
+    const note = req.body && typeof req.body.note === 'string'
+      ? req.body.note.trim().slice(0, 500)
+      : null;
+
+    const adminId = req.user?.id || 'admin_token';
+    const result = await escalateSignal(signalId, adminId, note);
+
+    if (!result.ok) {
+      const status = result.code === 'SIGNAL_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    logAction({
+      adminId,
+      action: 'predictive_signal_escalated',
+      targetType: 'predictive_signal',
+      targetId: signalId,
+      details: { note, severity: result.signal?.severity, riskScore: result.signal?.riskScore },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, signal: result.signal });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تصعيد الإشارة', code: 'PREDICTIVE_ESCALATE_ERROR' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 51 — Trust Score V2 + Admin Decision Quality Handlers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/users/:id/trust-v2
+ * Admin-rich Trust Score V2.
+ */
+export async function handleAdminUserTrustV2(req, res) {
+  try {
+    const { getTrustScoreV2 } = await import('../services/trustScoreV2.js');
+
+    const result = await getTrustScoreV2(req.params.id, {
+      admin: true,
+      force: req.query.force === '1' || req.query.force === 'true',
+    });
+
+    if (!result) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, { ok: true, trust: result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة V2', code: 'TRUST_V2_ADMIN_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/decision-quality?from=&to=&adminId=
+ * Admin decision quality dashboard.
+ */
+export async function handleAdminTrustDecisionQuality(req, res) {
+  try {
+    const { getDecisionQuality } = await import('../services/adminDecisionAnalytics.js');
+
+    const result = await getDecisionQuality({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      adminId: req.query.adminId || undefined,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب جودة قرارات الأدمن', code: 'DECISION_QUALITY_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/backlog-priority
+ * Prioritized review queue.
+ */
+export async function handleAdminTrustBacklogPriority(req, res) {
+  try {
+    const { getBacklogPriority } = await import('../services/adminDecisionAnalytics.js');
+
+    const result = await getBacklogPriority({
+      limit: parseInt(req.query.limit) || 50,
+      includeAbuseFlags: req.query.includeAbuseFlags === 'false' ? false : true,
+      includePredictiveSignals: req.query.includePredictiveSignals === 'false' ? false : true,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب أولوية المراجعة', code: 'BACKLOG_PRIORITY_ERROR' });
+  }
+}
 ```
 
 ---
@@ -1043,9 +1260,13 @@ export async function handleAdminCompactCounters(req, res) {
 // Subscribed events:
 //   - abuse_flag:snooze_expiring (Phase 47)
 //   - abuse_flag:snooze_expired (Phase 47)
-//   - abuse_flag:detected_high_severity (Phase 48 NEW)
-//   - direct_offer:abuse_threshold_crossed (Phase 48 NEW — reserved for Phase 49+)
-//   - counters:auto_rebuild_triggered (Phase 48 NEW)
+//   - abuse_flag:detected_high_severity (Phase 48)
+//   - direct_offer:abuse_threshold_crossed (Phase 49)
+//   - counters:auto_rebuild_triggered (Phase 48)
+//   - csv_export:progress (Phase 49)
+//   - predictive_abuse:signal_created (Phase 51)
+//   - predictive_abuse:signal_escalated (Phase 51)
+//   - predictive_abuse:scan_failed (Phase 51)
 // In-memory connection map per admin, lazy event listener registration.
 // ═══════════════════════════════════════════════════════════════
 
@@ -1064,6 +1285,10 @@ const SUBSCRIBED_EVENTS = [
   'direct_offer:abuse_threshold_crossed',
   'counters:auto_rebuild_triggered',
   'csv_export:progress', // Phase 49 — streaming CSV export progress
+  // Phase 51 — Predictive Abuse Intelligence
+  'predictive_abuse:signal_created',
+  'predictive_abuse:signal_escalated',
+  'predictive_abuse:scan_failed',
 ];
 
 let listenersRegistered = false;
@@ -4357,6 +4582,34 @@ export async function handleGetTrustScore(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة', code: 'TRUST_SCORE_ERROR' });
   }
 }
+
+/**
+ * GET /api/users/:id/trust-v2
+ * Public-safe Trust Score V2.
+ * No PII, no admin notes, no raw abuse details.
+ */
+export async function handleGetTrustScoreV2(req, res) {
+  try {
+    const userId = req.params.id;
+    const { getTrustScoreV2 } = await import('../services/trustScoreV2.js');
+
+    const result = await getTrustScoreV2(userId, {
+      admin: false,
+      force: req.query.force === '1' || req.query.force === 'true',
+    });
+
+    if (!result) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      trust: result,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة V2', code: 'TRUST_SCORE_V2_ERROR' });
+  }
+}
 ```
 
 ---
@@ -4854,6 +5107,197 @@ export async function handleQuickOffer(req, res) {
     sendJSON(res, 201, { ok: true, offer: result.offer });
   } catch (err) {
     sendJSON(res, 500, { error: 'خطأ داخلي في السيرفر', code: 'INTERNAL_ERROR' });
+  }
+}
+```
+
+---
+
+## `server/handlers/workroomHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/workroomHandler.js — Workroom API Handlers (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// Job-scoped workroom endpoints.
+// Builds on existing messages service without breaking old APIs.
+// ═══════════════════════════════════════════════════════════════
+
+import {
+  getUserWorkrooms,
+  getWorkroom,
+  listWorkroomMessages,
+  sendWorkroomMessage,
+  markWorkroomRead,
+  getWorkroomTimeline,
+} from '../services/workroom.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const ERROR_STATUS = {
+  WORKROOM_DISABLED: 503,
+  INVALID_REQUEST: 400,
+  JOB_NOT_FOUND: 404,
+  WORKROOM_NOT_AVAILABLE: 400,
+  NOT_WORKROOM_PARTICIPANT: 403,
+  TEXT_REQUIRED: 400,
+  TEXT_TOO_LONG: 400,
+  RECIPIENT_REQUIRED: 400,
+  RECIPIENT_NOT_INVOLVED: 403,
+  CANNOT_MESSAGE_SELF: 400,
+  DAILY_MESSAGE_LIMIT: 429,
+  CONTENT_BLOCKED: 400,
+  MESSAGES_DISABLED: 503,
+  JOB_STATUS_NOT_ELIGIBLE: 400,
+  NOT_INVOLVED: 403,
+  RECIPIENT_NOT_INVOLVED: 403,
+};
+
+function errorStatus(code) {
+  return ERROR_STATUS[code] || 400;
+}
+
+/**
+ * GET /api/workrooms
+ * List current user's workrooms.
+ * Requires: requireAuth
+ */
+export async function handleListWorkrooms(req, res) {
+  try {
+    const result = await getUserWorkrooms(req.user.id, {
+      status: req.query.status || undefined,
+      activeOnly: req.query.activeOnly === 'false' ? false : true,
+      limit: parseInt(req.query.limit) || 20,
+      offset: parseInt(req.query.offset) || 0,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب مساحات العمل', code: 'WORKROOM_LIST_ERROR' });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id
+ * Get one workroom by jobId.
+ * Requires: requireAuth
+ */
+export async function handleGetWorkroom(req, res) {
+  try {
+    const jobId = req.params.id;
+    const result = await getWorkroom(jobId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, workroom: result.workroom });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب مساحة العمل', code: 'WORKROOM_GET_ERROR' });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id/messages
+ * List workroom messages.
+ * Requires: requireAuth
+ */
+export async function handleListWorkroomMessages(req, res) {
+  try {
+    const jobId = req.params.id;
+    const result = await listWorkroomMessages(jobId, req.user.id, {
+      limit: Math.min(100, Math.max(1, parseInt(req.query.limit) || 50)),
+      offset: Math.max(0, parseInt(req.query.offset) || 0),
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      items: result.items || [],
+      total: result.total || 0,
+      limit: result.limit || 50,
+      offset: result.offset || 0,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب رسائل مساحة العمل', code: 'WORKROOM_MESSAGES_ERROR' });
+  }
+}
+
+/**
+ * POST /api/workrooms/:id/messages
+ * Body: { text, recipientId?, templateKey? }
+ * Requires: requireAuth
+ */
+export async function handleSendWorkroomMessage(req, res) {
+  try {
+    const jobId = req.params.id;
+    const body = req.body || {};
+
+    const result = await sendWorkroomMessage(jobId, req.user.id, {
+      text: body.text,
+      recipientId: body.recipientId || null,
+      templateKey: body.templateKey || null,
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 201, { ok: true, message: result.message });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إرسال رسالة مساحة العمل', code: 'WORKROOM_SEND_ERROR' });
+  }
+}
+
+/**
+ * POST /api/workrooms/:id/messages/read-all
+ * Mark all workroom messages as read for current user.
+ * Requires: requireAuth
+ */
+export async function handleMarkWorkroomRead(req, res) {
+  try {
+    const jobId = req.params.id;
+    const result = await markWorkroomRead(jobId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, count: result.count || 0 });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تحديث قراءة الرسائل', code: 'WORKROOM_READ_ERROR' });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id/timeline
+ * Get workroom timeline.
+ * Requires: requireAuth
+ */
+export async function handleGetWorkroomTimeline(req, res) {
+  try {
+    const jobId = req.params.id;
+    const result = await getWorkroomTimeline(jobId, req.user.id, {
+      limit: Math.min(500, Math.max(1, parseInt(req.query.limit) || 200)),
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      timeline: result.timeline || [],
+      total: result.total || 0,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب سجل مساحة العمل', code: 'WORKROOM_TIMELINE_ERROR' });
   }
 }
 ```

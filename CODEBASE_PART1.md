@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.46.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-08T22:52:49.475Z
+# يوميّة (Yawmia) v0.47.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-09T23:50:50.189Z
 > Files in this part: 6
 
 ## Files
@@ -345,6 +345,9 @@ const config = {
       audit_indexes: 'audit/indexes',
       exports: 'exports',
       counter_archives: 'metrics/counter-archives',
+      predictive_signals: 'predictive_signals',
+      workrooms: 'workrooms',
+      trust_snapshots: 'metrics/trust-v2-snapshots',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -533,7 +536,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.46.0',
+    cacheName: 'yawmia-v0.47.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1153,6 +1156,93 @@ const config = {
     archivePath: 'metrics/counter-archives',
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 68. الذكاء التنبؤي للإساءة (PREDICTIVE_ABUSE) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_ABUSE: {
+    enabled: true,
+    scheduledScanEnabled: true,
+    scanIntervalMs: 15 * 60 * 1000,
+    cacheTtlMs: 5 * 60 * 1000,
+    minSamples: {
+      employerOffers: 10,
+      workerReceivedOffers: 10,
+      sameWorkerPairOffers: 4,
+    },
+    windows: {
+      shortHours: 24,
+      baselineDays: 14,
+      bombingMinutes: 60,
+    },
+    thresholds: {
+      zScoreWarning: 2.0,
+      zScoreCritical: 3.0,
+      riskMedium: 0.5,
+      riskHigh: 0.75,
+      riskCritical: 0.9,
+    },
+    maxSignalsPerScan: 100,
+    noAutoBan: true,
+    persistSignals: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 69. مؤشر الثقة V2 (TRUST_SCORE_V2) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_SCORE_V2: {
+    enabled: true,
+    cacheTtlMs: 5 * 60 * 1000,
+    minRatingConfidenceCount: 5,
+    publicExposeComponents: true,
+    weights: {
+      worker: {
+        ratingConfidence: 0.20,
+        attendanceReliability: 0.25,
+        completionReliability: 0.20,
+        abusePenalty: 0.15,
+        verification: 0.10,
+        accountAge: 0.05,
+        profileCompleteness: 0.05,
+      },
+      employer: {
+        ratingConfidence: 0.20,
+        paymentReliability: 0.25,
+        disputeRate: 0.15,
+        cancellationRate: 0.10,
+        offerBehavior: 0.15,
+        abusePenalty: 0.05,
+        verification: 0.05,
+        accountAge: 0.05,
+      },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 70. مساحة العمل والرسائل (WORKROOM) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM: {
+    enabled: true,
+    quickTemplatesEnabled: true,
+    showTimelineEvents: true,
+    retainAfterCompletionDays: 365,
+    maxTimelineEvents: 200,
+    messageTabEnabled: true,
+    positiveTemplates: {
+      worker: [
+        'أنا في الطريق',
+        'وصلت للموقع',
+        'محتاج توضيح للمكان',
+        'تم استلام اليومية',
+      ],
+      employer: [
+        'تمام، مستنيك في المعاد',
+        'لو وصلت ابعتلي رسالة',
+        'تم تأكيد حضورك',
+        'شكراً على الشغل النهارده',
+      ],
+    },
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1201,7 +1291,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1659,6 +1749,32 @@ if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) 
   }
 }
 
+// ── Phase 51 — Scheduled Predictive Abuse Intelligence Scanner ──
+if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICTIVE_ABUSE.scheduledScanEnabled) {
+  const predictiveScanTimer = setInterval(async () => {
+    try {
+      const predictive = await import('./server/services/predictiveAbuse.js');
+      const result = await predictive.runPredictiveScan({ persist: true });
+      if (result && result.signalCount > 0) {
+        logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
+          signalCount: result.signalCount,
+          created: result.created || 0,
+          updated: result.updated || 0,
+        });
+      }
+    } catch (err) {
+      logger.warn('Phase 51: predictive abuse scan failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.PREDICTIVE_ABUSE.scanIntervalMs || (15 * 60 * 1000));
+  if (predictiveScanTimer.unref) predictiveScanTimer.unref();
+
+  logger.info('Phase 51: predictive abuse scanner scheduled', {
+    intervalMs: config.PREDICTIVE_ABUSE.scanIntervalMs || (15 * 60 * 1000),
+  });
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)
@@ -1817,12 +1933,21 @@ import {
   handleAdminCancelExport,
   handleAdminCounterHygiene,
   handleAdminCompactCounters,
+  // Phase 51 — Predictive Trust Intelligence
+  handleAdminPredictiveAbuseDashboard,
+  handleAdminPredictiveAbuseSignals,
+  handleAdminRunPredictiveAbuseScan,
+  handleAdminDismissPredictiveSignal,
+  handleAdminEscalatePredictiveSignal,
+  handleAdminUserTrustV2,
+  handleAdminTrustDecisionQuality,
+  handleAdminTrustBacklogPriority,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
-import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
+import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
@@ -1837,6 +1962,14 @@ import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './han
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
 import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
+import {
+  handleListWorkrooms,
+  handleGetWorkroom,
+  handleListWorkroomMessages,
+  handleSendWorkroomMessage,
+  handleMarkWorkroomRead,
+  handleGetWorkroomTimeline,
+} from './handlers/workroomHandler.js';
 import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer, handleEmployerOfferStats, handleWorkerOfferStats } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
@@ -1867,7 +2000,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.46.0',
+        version: '0.47.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -1978,6 +2111,27 @@ const routes = [
         response.exports = { enabled: false };
       }
 
+      // Phase 51 — Predictive abuse stats (non-blocking)
+      try {
+        const { getPredictiveStats } = await import('./services/predictiveAbuse.js');
+        response.predictiveAbuse = await getPredictiveStats();
+      } catch (_) {
+        response.predictiveAbuse = { enabled: false, totalSignals: 0, activeSignals: 0 };
+      }
+
+      // Phase 51 — Workroom stats (non-blocking)
+      try {
+        const { getWorkroomStats } = await import('./services/workroom.js');
+        response.workrooms = await getWorkroomStats();
+      } catch (_) {
+        response.workrooms = { enabled: false, totalWorkrooms: 0 };
+      }
+
+      // Phase 51 — Trust Score V2 config visibility (non-blocking)
+      response.trustScoreV2 = {
+        enabled: !!(config.TRUST_SCORE_V2 && config.TRUST_SCORE_V2.enabled),
+      };
+
       // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
@@ -2044,7 +2198,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.46.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.47.0' });
     },
   },
 
@@ -2107,6 +2261,7 @@ const routes = [
   { method: 'GET', path: '/api/users/:id/ratings', middlewares: [], handler: handleListUserRatings },
   { method: 'GET', path: '/api/users/:id/rating-summary', middlewares: [], handler: handleUserRatingSummary },
   { method: 'GET', path: '/api/users/:id/trust-score', middlewares: [], handler: handleGetTrustScore },
+  { method: 'GET', path: '/api/users/:id/trust-v2', middlewares: [], handler: handleGetTrustScoreV2 },
   { method: 'GET', path: '/api/users/:id/public-profile', middlewares: [], handler: handleGetPublicProfile },
 
   // ── Report Routes ──
@@ -2177,6 +2332,14 @@ const routes = [
   { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
   { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
+  // ── Phase 51 — Workroom Messaging Routes ──
+  { method: 'GET', path: '/api/workrooms', middlewares: [requireAuth], handler: handleListWorkrooms },
+  { method: 'GET', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleListWorkroomMessages },
+  { method: 'POST', path: '/api/workrooms/:id/messages/read-all', middlewares: [requireAuth], handler: handleMarkWorkroomRead },
+  { method: 'POST', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleSendWorkroomMessage },
+  { method: 'GET', path: '/api/workrooms/:id/timeline', middlewares: [requireAuth], handler: handleGetWorkroomTimeline },
+  { method: 'GET', path: '/api/workrooms/:id', middlewares: [requireAuth], handler: handleGetWorkroom },
+
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
 
@@ -2242,6 +2405,7 @@ const routes = [
   { method: 'POST', path: '/api/admin/abuse-flags/bulk-action', middlewares: [requireAdmin], handler: handleAdminBulkFlagAction },
   { method: 'GET', path: '/api/admin/abuse-flags/snooze-expiring', middlewares: [requireAdmin], handler: handleAdminSnoozeExpiring },
   { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
+  { method: 'GET', path: '/api/admin/users/:id/trust-v2', middlewares: [requireAdmin], handler: handleAdminUserTrustV2 },
   { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
   { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
 
@@ -2270,6 +2434,17 @@ const routes = [
   // ── Phase 50 — Counter Hygiene ──
   { method: 'GET', path: '/api/admin/counters/hygiene', middlewares: [requireAdmin], handler: handleAdminCounterHygiene },
   { method: 'POST', path: '/api/admin/counters/compact', middlewares: [requireAdmin], handler: handleAdminCompactCounters },
+
+  // ── Phase 51 — Predictive Abuse Intelligence ──
+  { method: 'GET', path: '/api/admin/predictive-abuse/dashboard', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseDashboard },
+  { method: 'GET', path: '/api/admin/predictive-abuse/signals', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseSignals },
+  { method: 'POST', path: '/api/admin/predictive-abuse/run-scan', middlewares: [requireAdmin], handler: handleAdminRunPredictiveAbuseScan },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireAdmin], handler: handleAdminDismissPredictiveSignal },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireAdmin], handler: handleAdminEscalatePredictiveSignal },
+
+  // ── Phase 51 — Admin Decision Quality ──
+  { method: 'GET', path: '/api/admin/trust/decision-quality', middlewares: [requireAdmin], handler: handleAdminTrustDecisionQuality },
+  { method: 'GET', path: '/api/admin/trust/backlog-priority', middlewares: [requireAdmin], handler: handleAdminTrustBacklogPriority },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

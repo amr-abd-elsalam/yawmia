@@ -1,78 +1,82 @@
-# يوميّة (Yawmia) v0.46.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-08T22:52:49.479Z
-> Files in this part: 70
+# يوميّة (Yawmia) v0.47.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-09T23:50:50.193Z
+> Files in this part: 74
 
 ## Files
 1. `server/services/abuseFlagReview.js`
 2. `server/services/activitySummary.js`
 3. `server/services/adMatcher.js`
 4. `server/services/adminAlertChannels.js`
-5. `server/services/analytics.js`
-6. `server/services/applications.js`
-7. `server/services/arabicNormalizer.js`
-8. `server/services/attendance.js`
-9. `server/services/auditLog.js`
-10. `server/services/auditLogIndex.js`
-11. `server/services/auditLogRetention.js`
-12. `server/services/auditLogSearch.js`
-13. `server/services/auth.js`
-14. `server/services/availabilityAd.js`
-15. `server/services/availabilityWindow.js`
-16. `server/services/backupScheduler.js`
-17. `server/services/cache.js`
-18. `server/services/cacheDebouncer.js`
-19. `server/services/channels/sms.js`
-20. `server/services/channels/whatsapp.js`
-21. `server/services/contentFilter.js`
-22. `server/services/counterCompaction.js`
-23. `server/services/csvExportProgress.js`
-24. `server/services/database.js`
-25. `server/services/directOffer.js`
-26. `server/services/directOfferAnalytics.js`
-27. `server/services/directOfferCounters.js`
-28. `server/services/errorAggregator.js`
-29. `server/services/eventBus.js`
-30. `server/services/eventReplayBuffer.js`
-31. `server/services/exportRegistry.js`
-32. `server/services/favorites.js`
-33. `server/services/financialExport.js`
-34. `server/services/geo.js`
-35. `server/services/imageStore.js`
-36. `server/services/indexHealth.js`
-37. `server/services/instantMatch.js`
-38. `server/services/jobAlerts.js`
-39. `server/services/jobMatcher.js`
-40. `server/services/jobs.js`
-41. `server/services/liveFeed.js`
-42. `server/services/logWriter.js`
-43. `server/services/logger.js`
-44. `server/services/messages.js`
-45. `server/services/messaging.js`
-46. `server/services/migration.js`
-47. `server/services/monitor.js`
-48. `server/services/notificationMessenger.js`
-49. `server/services/notifications.js`
-50. `server/services/offerAbuseDetector.js`
-51. `server/services/payments.js`
-52. `server/services/presenceService.js`
-53. `server/services/profileCompleteness.js`
-54. `server/services/queryIndex.js`
-55. `server/services/ratings.js`
-56. `server/services/reports.js`
-57. `server/services/resourceLock.js`
-58. `server/services/sanitizer.js`
-59. `server/services/scheduledAbuseDetection.js`
-60. `server/services/searchIndex.js`
-61. `server/services/sessions.js`
-62. `server/services/snoozeReminders.js`
-63. `server/services/sseManager.js`
-64. `server/services/trust.js`
-65. `server/services/trustAnalytics.js`
-66. `server/services/users.js`
-67. `server/services/validators.js`
-68. `server/services/verification.js`
-69. `server/services/webpush.js`
-70. `server/services/workerDiscovery.js`
+5. `server/services/adminDecisionAnalytics.js`
+6. `server/services/analytics.js`
+7. `server/services/applications.js`
+8. `server/services/arabicNormalizer.js`
+9. `server/services/attendance.js`
+10. `server/services/auditLog.js`
+11. `server/services/auditLogIndex.js`
+12. `server/services/auditLogRetention.js`
+13. `server/services/auditLogSearch.js`
+14. `server/services/auth.js`
+15. `server/services/availabilityAd.js`
+16. `server/services/availabilityWindow.js`
+17. `server/services/backupScheduler.js`
+18. `server/services/cache.js`
+19. `server/services/cacheDebouncer.js`
+20. `server/services/channels/sms.js`
+21. `server/services/channels/whatsapp.js`
+22. `server/services/contentFilter.js`
+23. `server/services/counterCompaction.js`
+24. `server/services/csvExportProgress.js`
+25. `server/services/database.js`
+26. `server/services/directOffer.js`
+27. `server/services/directOfferAnalytics.js`
+28. `server/services/directOfferCounters.js`
+29. `server/services/errorAggregator.js`
+30. `server/services/eventBus.js`
+31. `server/services/eventReplayBuffer.js`
+32. `server/services/exportRegistry.js`
+33. `server/services/favorites.js`
+34. `server/services/financialExport.js`
+35. `server/services/geo.js`
+36. `server/services/imageStore.js`
+37. `server/services/indexHealth.js`
+38. `server/services/instantMatch.js`
+39. `server/services/jobAlerts.js`
+40. `server/services/jobMatcher.js`
+41. `server/services/jobs.js`
+42. `server/services/liveFeed.js`
+43. `server/services/logWriter.js`
+44. `server/services/logger.js`
+45. `server/services/messages.js`
+46. `server/services/messaging.js`
+47. `server/services/migration.js`
+48. `server/services/monitor.js`
+49. `server/services/notificationMessenger.js`
+50. `server/services/notifications.js`
+51. `server/services/offerAbuseDetector.js`
+52. `server/services/payments.js`
+53. `server/services/predictiveAbuse.js`
+54. `server/services/presenceService.js`
+55. `server/services/profileCompleteness.js`
+56. `server/services/queryIndex.js`
+57. `server/services/ratings.js`
+58. `server/services/reports.js`
+59. `server/services/resourceLock.js`
+60. `server/services/sanitizer.js`
+61. `server/services/scheduledAbuseDetection.js`
+62. `server/services/searchIndex.js`
+63. `server/services/sessions.js`
+64. `server/services/snoozeReminders.js`
+65. `server/services/sseManager.js`
+66. `server/services/trust.js`
+67. `server/services/trustAnalytics.js`
+68. `server/services/trustScoreV2.js`
+69. `server/services/users.js`
+70. `server/services/validators.js`
+71. `server/services/verification.js`
+72. `server/services/webpush.js`
+73. `server/services/workerDiscovery.js`
+74. `server/services/workroom.js`
 
 ---
 
@@ -1408,6 +1412,588 @@ export const _testHelpers = {
     alertQueue.length = 0;
     listenersRegistered = false;
   },
+};
+```
+
+---
+
+## `server/services/adminDecisionAnalytics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/adminDecisionAnalytics.js — Admin Decision Quality (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// Admin-only analytics layer.
+// Measures:
+//   - warning effectiveness
+//   - admin calibration
+//   - decision quality
+//   - backlog priority
+//
+// Sources:
+//   - abuseFlagReview review states
+//   - predictiveAbuse persisted signals
+//   - admin_warning notifications
+//
+// Privacy:
+//   - admin-only endpoints consume this service
+//   - IDs only, no phone/name leakage
+//
+// No auto-ban. No external dependencies.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+
+/** @type {Map<string, { value: *, expiresAt: number }>} */
+const cache = new Map();
+
+function cacheKey(prefix, options = {}) {
+  return `${prefix}:${options.from || 'all'}:${options.to || 'all'}:${options.adminId || 'all'}`;
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = config.TRUST_ANALYTICS?.cacheTtlMs || 300000;
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+export function clearAdminDecisionAnalyticsCache() {
+  cache.clear();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function inDateRange(iso, from, to) {
+  if (!iso) return false;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+function hoursBetween(fromIso, toIso) {
+  if (!fromIso || !toIso) return 0;
+  const ms = new Date(toIso).getTime() - new Date(fromIso).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.round((ms / 3600000) * 10) / 10;
+}
+
+function avg(values) {
+  if (!Array.isArray(values) || values.length === 0) return 0;
+  return Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+}
+
+function severityWeight(severity) {
+  return {
+    low: 0.25,
+    medium: 0.5,
+    high: 0.8,
+    critical: 1,
+  }[severity] || 0.4;
+}
+
+function decisionRiskWeight(decision) {
+  return {
+    dismissed: 0.2,
+    snoozed: 0.4,
+    warning: 0.6,
+    actioned: 1,
+  }[decision] || 0.3;
+}
+
+function getLatestReview(state) {
+  if (!state || !Array.isArray(state.reviews) || state.reviews.length === 0) return null;
+  return state.reviews[state.reviews.length - 1];
+}
+
+async function loadReviewStates() {
+  try {
+    const { listAllReviewStates } = await import('./abuseFlagReview.js');
+    const states = await listAllReviewStates();
+    return Array.isArray(states) ? states : [];
+  } catch (err) {
+    logger.warn('adminDecisionAnalytics: loadReviewStates failed', { error: err.message });
+    return [];
+  }
+}
+
+async function loadPredictiveSignals() {
+  try {
+    const { listPredictiveSignals } = await import('./predictiveAbuse.js');
+    const result = await listPredictiveSignals({ limit: 10000, offset: 0 });
+    return result.signals || [];
+  } catch (err) {
+    logger.warn('adminDecisionAnalytics: loadPredictiveSignals failed', { error: err.message });
+    return [];
+  }
+}
+
+function filterReviewsByRange(states, options = {}) {
+  const rows = [];
+  for (const state of states) {
+    const reviews = Array.isArray(state.reviews) ? state.reviews : [];
+    for (const review of reviews) {
+      if (!inDateRange(review.createdAt, options.from, options.to)) continue;
+      if (options.adminId && review.adminId !== options.adminId) continue;
+      rows.push({ state, review });
+    }
+  }
+  return rows;
+}
+
+function getTargetUserIdFromState(state) {
+  if (!state) return null;
+  if (state.flagType === 'worker_offer_bombing') return state.workerId || null;
+  return state.employerId || state.workerId || null;
+}
+
+function getTargetUserIdFromSignal(signal) {
+  if (!signal) return null;
+  return signal.entityId || signal.relatedUserId || null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Warning Effectiveness
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Calculate warning effectiveness.
+ *
+ * Definitions:
+ *   - totalWarnings: review decisions with decision='warning'
+ *   - convertedToAction: later actioned review within configured window
+ *   - repeatedFlagAfterWarning: occurrenceCount increased or later review exists after warning
+ *   - cleanAfterWarning: no later action/repeat inside window
+ *
+ * @param {{ from?: string, to?: string, adminId?: string }} options
+ */
+export async function getWarningEffectiveness(options = {}) {
+  const key = cacheKey('warningEffectiveness', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const states = await loadReviewStates();
+  const windowDays = config.TRUST_ANALYTICS?.warningConversionWindowDays || 30;
+  const windowMs = windowDays * 24 * 60 * 60 * 1000;
+
+  let totalWarnings = 0;
+  let convertedToAction = 0;
+  let repeatedFlagAfterWarning = 0;
+  let cleanAfterWarning = 0;
+  let pendingWindow = 0;
+
+  const byAdmin = {};
+
+  for (const state of states) {
+    const reviews = Array.isArray(state.reviews) ? state.reviews : [];
+    const warnings = reviews.filter(r =>
+      r.decision === 'warning' &&
+      inDateRange(r.createdAt, options.from, options.to) &&
+      (!options.adminId || r.adminId === options.adminId)
+    );
+
+    for (const warning of warnings) {
+      totalWarnings++;
+
+      if (!byAdmin[warning.adminId]) {
+        byAdmin[warning.adminId] = {
+          adminId: warning.adminId,
+          totalWarnings: 0,
+          convertedToAction: 0,
+          repeatedFlagAfterWarning: 0,
+          cleanAfterWarning: 0,
+          pendingWindow: 0,
+          effectivenessRate: 0,
+        };
+      }
+
+      const row = byAdmin[warning.adminId];
+      row.totalWarnings++;
+
+      const warningMs = new Date(warning.createdAt).getTime();
+      const windowEndMs = warningMs + windowMs;
+
+      const laterReviews = reviews.filter(r => {
+        const t = new Date(r.createdAt).getTime();
+        return t > warningMs && t <= windowEndMs;
+      });
+
+      const laterAction = laterReviews.find(r => r.decision === 'actioned');
+
+      const laterRepeat = laterReviews.length > 0 ||
+        ((state.occurrenceCount || 1) > 1 && Date.now() <= windowEndMs);
+
+      if (laterAction) {
+        convertedToAction++;
+        row.convertedToAction++;
+      } else if (Date.now() < windowEndMs) {
+        pendingWindow++;
+        row.pendingWindow++;
+      } else if (laterRepeat) {
+        repeatedFlagAfterWarning++;
+        row.repeatedFlagAfterWarning++;
+      } else {
+        cleanAfterWarning++;
+        row.cleanAfterWarning++;
+      }
+    }
+  }
+
+  for (const row of Object.values(byAdmin)) {
+    const decided = row.cleanAfterWarning + row.repeatedFlagAfterWarning + row.convertedToAction;
+    row.effectivenessRate = decided > 0
+      ? Math.round((row.cleanAfterWarning / decided) * 100)
+      : 0;
+  }
+
+  const decided = cleanAfterWarning + repeatedFlagAfterWarning + convertedToAction;
+  const effectivenessRate = decided > 0
+    ? Math.round((cleanAfterWarning / decided) * 100)
+    : 0;
+
+  const conversionRate = decided > 0
+    ? Math.round((convertedToAction / decided) * 100)
+    : 0;
+
+  const result = {
+    totalWarnings,
+    cleanAfterWarning,
+    repeatedFlagAfterWarning,
+    convertedToAction,
+    pendingWindow,
+    effectivenessRate,
+    conversionRate,
+    windowDays,
+    byAdmin: Object.values(byAdmin).sort((a, b) => b.totalWarnings - a.totalWarnings),
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Admin Calibration
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Admin calibration metrics:
+ *   - decisions by admin
+ *   - high-risk predictive signals dismissed
+ *   - low-risk predictive signals escalated/actioned
+ *   - average time to decision
+ *
+ * @param {{ from?: string, to?: string, adminId?: string }} options
+ */
+export async function getAdminCalibration(options = {}) {
+  const key = cacheKey('adminCalibration', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const states = await loadReviewStates();
+  const signals = await loadPredictiveSignals();
+  const reviewRows = filterReviewsByRange(states, options);
+
+  const byAdmin = {};
+
+  function ensure(adminId) {
+    const id = adminId || 'unknown';
+    if (!byAdmin[id]) {
+      byAdmin[id] = {
+        adminId: id,
+        totalDecisions: 0,
+        byDecision: { dismissed: 0, snoozed: 0, warning: 0, actioned: 0, escalated: 0 },
+        avgTimeToDecisionHours: 0,
+        totalDecisionHours: 0,
+        decisionTimeCount: 0,
+        highRiskDismissed: 0,
+        lowRiskActioned: 0,
+        calibrationScore: 0,
+      };
+    }
+    return byAdmin[id];
+  }
+
+  for (const { state, review } of reviewRows) {
+    const row = ensure(review.adminId);
+    row.totalDecisions++;
+    if (row.byDecision[review.decision] !== undefined) row.byDecision[review.decision]++;
+
+    if (state.firstSeenAt && review.createdAt) {
+      const h = hoursBetween(state.firstSeenAt, review.createdAt);
+      if (h > 0) {
+        row.totalDecisionHours += h;
+        row.decisionTimeCount++;
+      }
+    }
+  }
+
+  // Predictive signal reviews: dismissed/escalated.
+  for (const sig of signals) {
+    if (!sig.reviewedBy || !sig.reviewedAt) continue;
+    if (!inDateRange(sig.reviewedAt, options.from, options.to)) continue;
+    if (options.adminId && sig.reviewedBy !== options.adminId) continue;
+
+    const row = ensure(sig.reviewedBy);
+    row.totalDecisions++;
+    if (sig.reviewDecision === 'dismissed') row.byDecision.dismissed++;
+    if (sig.reviewDecision === 'escalated') row.byDecision.escalated++;
+
+    if ((sig.severity === 'high' || sig.severity === 'critical') && sig.reviewDecision === 'dismissed') {
+      row.highRiskDismissed++;
+    }
+
+    if ((sig.severity === 'low' || sig.riskScore < 0.5) && sig.reviewDecision === 'escalated') {
+      row.lowRiskActioned++;
+    }
+
+    if (sig.createdAt && sig.reviewedAt) {
+      const h = hoursBetween(sig.createdAt, sig.reviewedAt);
+      if (h > 0) {
+        row.totalDecisionHours += h;
+        row.decisionTimeCount++;
+      }
+    }
+  }
+
+  for (const row of Object.values(byAdmin)) {
+    row.avgTimeToDecisionHours = row.decisionTimeCount > 0
+      ? Math.round((row.totalDecisionHours / row.decisionTimeCount) * 10) / 10
+      : 0;
+
+    // Calibration score: starts at 100, penalize questionable decisions.
+    const questionable = row.highRiskDismissed + row.lowRiskActioned;
+    const ratio = row.totalDecisions > 0 ? questionable / row.totalDecisions : 0;
+    row.calibrationScore = Math.max(0, Math.round((1 - ratio) * 100));
+
+    delete row.totalDecisionHours;
+    delete row.decisionTimeCount;
+  }
+
+  const admins = Object.values(byAdmin)
+    .sort((a, b) => b.totalDecisions - a.totalDecisions);
+
+  const result = {
+    admins,
+    totalAdmins: admins.length,
+    totalDecisions: admins.reduce((sum, a) => sum + a.totalDecisions, 0),
+    avgCalibrationScore: admins.length > 0 ? avg(admins.map(a => a.calibrationScore)) : 0,
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Backlog Priority
+// ─────────────────────────────────────────────────────────────
+
+function priorityAgeWeight(createdAt) {
+  if (!createdAt) return 0;
+  const ageHours = Math.max(0, (Date.now() - new Date(createdAt).getTime()) / 3600000);
+  // slowly increases up to 1 over 72 hours
+  return Math.min(1, ageHours / 72);
+}
+
+function repeatWeight(count) {
+  return Math.min(1, Math.max(0, (count || 1) / 5));
+}
+
+function calculatePriorityScore({ riskScore = 0.5, severity = 'medium', createdAt, repeatCount = 1 }) {
+  const score =
+    clamp01(riskScore) * 0.5 +
+    severityWeight(severity) * 0.25 +
+    priorityAgeWeight(createdAt) * 0.15 +
+    repeatWeight(repeatCount) * 0.10;
+
+  return Math.round(score * 100) / 100;
+}
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+/**
+ * Backlog priority queue combining:
+ *   riskScore × severityWeight × ageWeight × repeatWeight
+ *
+ * @param {{ limit?: number, includeAbuseFlags?: boolean, includePredictiveSignals?: boolean }} options
+ */
+export async function getBacklogPriority(options = {}) {
+  const key = cacheKey('backlogPriority', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const includeAbuseFlags = options.includeAbuseFlags !== false;
+  const includePredictiveSignals = options.includePredictiveSignals !== false;
+  const items = [];
+
+  if (includePredictiveSignals) {
+    const signals = await loadPredictiveSignals();
+    for (const sig of signals) {
+      if (sig.status !== 'active') continue;
+
+      const priorityScore = calculatePriorityScore({
+        riskScore: sig.riskScore || 0.5,
+        severity: sig.severity || 'medium',
+        createdAt: sig.createdAt,
+        repeatCount: 1,
+      });
+
+      items.push({
+        type: 'predictive_signal',
+        id: sig.id,
+        riskType: sig.riskType,
+        entityType: sig.entityType,
+        entityId: sig.entityId,
+        relatedUserId: sig.relatedUserId || null,
+        priorityScore,
+        riskScore: sig.riskScore || 0,
+        severity: sig.severity || 'medium',
+        ageHours: Math.round(((Date.now() - new Date(sig.createdAt).getTime()) / 3600000) * 10) / 10,
+        explanations: sig.explanations || [],
+        createdAt: sig.createdAt,
+        updatedAt: sig.updatedAt,
+      });
+    }
+  }
+
+  if (includeAbuseFlags) {
+    const states = await loadReviewStates();
+    for (const state of states) {
+      if (!state || state.currentStatus !== 'active') continue;
+
+      const repeat = state.occurrenceCount || 1;
+      const priorityScore = calculatePriorityScore({
+        riskScore: repeat >= 5 ? 0.85 : repeat >= 3 ? 0.65 : 0.5,
+        severity: repeat >= 5 ? 'high' : 'medium',
+        createdAt: state.firstSeenAt,
+        repeatCount: repeat,
+      });
+
+      items.push({
+        type: 'abuse_flag',
+        id: state.fingerprint,
+        riskType: state.flagType,
+        entityType: state.employerId ? 'employer' : 'worker',
+        entityId: state.employerId || state.workerId || null,
+        relatedUserId: state.employerId ? state.workerId || null : null,
+        priorityScore,
+        riskScore: repeat >= 5 ? 0.85 : repeat >= 3 ? 0.65 : 0.5,
+        severity: repeat >= 5 ? 'high' : 'medium',
+        ageHours: Math.round(((Date.now() - new Date(state.firstSeenAt).getTime()) / 3600000) * 10) / 10,
+        explanations: [
+          `active abuse flag: ${state.flagType}`,
+          `occurrenceCount=${repeat}`,
+          `reviews=${Array.isArray(state.reviews) ? state.reviews.length : 0}`,
+        ],
+        createdAt: state.firstSeenAt,
+        updatedAt: getLatestReview(state)?.createdAt || state.firstSeenAt,
+      });
+    }
+  }
+
+  items.sort((a, b) =>
+    b.priorityScore - a.priorityScore ||
+    severityWeight(b.severity) - severityWeight(a.severity) ||
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 50));
+
+  const result = {
+    items: items.slice(0, limit),
+    total: items.length,
+    limit,
+    generatedAt: new Date().toISOString(),
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Decision Quality Aggregator
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Unified decision quality dashboard.
+ *
+ * @param {{ from?: string, to?: string, adminId?: string }} options
+ */
+export async function getDecisionQuality(options = {}) {
+  const key = cacheKey('decisionQuality', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const [warningEffectiveness, calibration, backlog] = await Promise.all([
+    getWarningEffectiveness(options),
+    getAdminCalibration(options),
+    getBacklogPriority({ limit: 25 }),
+  ]);
+
+  const result = {
+    warningEffectiveness,
+    calibration,
+    backlogSummary: {
+      total: backlog.total,
+      highPriority: backlog.items.filter(i => i.priorityScore >= 0.75).length,
+      topItems: backlog.items.slice(0, 5),
+    },
+    generatedAt: new Date().toISOString(),
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// EventBus invalidation
+// ─────────────────────────────────────────────────────────────
+
+const INVALIDATION_EVENTS = [
+  'abuse_flag:state_changed',
+  'predictive_abuse:signal_created',
+  'predictive_abuse:signal_updated',
+  'predictive_abuse:signal_escalated',
+  'notification:created',
+];
+
+for (const eventName of INVALIDATION_EVENTS) {
+  eventBus.on(eventName, () => {
+    clearAdminDecisionAnalyticsCache();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Test helpers
+// ─────────────────────────────────────────────────────────────
+
+export const _testHelpers = {
+  inDateRange,
+  hoursBetween,
+  avg,
+  severityWeight,
+  decisionRiskWeight,
+  getLatestReview,
+  getTargetUserIdFromState,
+  getTargetUserIdFromSignal,
+  priorityAgeWeight,
+  repeatWeight,
+  calculatePriorityScore,
+  clearAdminDecisionAnalyticsCache,
+  cache,
 };
 ```
 
@@ -14814,7 +15400,7 @@ export async function canMessage(jobId, userId) {
  * @param {{ recipientId: string, text: string }} fields
  * @returns {Promise<{ ok: boolean, message?: object, error?: string, code?: string }>}
  */
-export async function sendMessage(jobId, senderId, { recipientId, text }) {
+export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey }) {
   // 1. canMessage check for sender
   const senderCheck = await canMessage(jobId, senderId);
   if (!senderCheck.allowed) {
@@ -14882,6 +15468,8 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     text: sanitized,
     read: false,
     readAt: null,
+    source: source === 'workroom' ? 'workroom' : 'job_messages',
+    templateKey: (templateKey && typeof templateKey === 'string') ? templateKey.substring(0, 80) : null,
     createdAt: now,
   };
 
@@ -15714,6 +16302,21 @@ const builtInMigrations = [
       // No heavy rebuild is performed here by design.
       // Use: node scripts/rebuild-audit-index.js
       logger.info('Migration v10: Phase 50 directories registered (audit indexes, exports, counter archives)');
+    },
+  },
+  {
+    version: 11,
+    name: 'Phase 51: Predictive Trust Intelligence + Workroom Messaging',
+    up: async () => {
+      // Phase 51 registers new additive structures:
+      //   - predictive_signals       (explainable persisted predictive risk signals)
+      //   - workrooms                (lightweight metadata for job-scoped workrooms)
+      //   - metrics/trust-v2-snapshots (optional future trust score snapshots)
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      // Predictive signals are generated by scheduled/admin scans.
+      logger.info('Migration v11: Phase 51 directories registered (predictive signals + workrooms + trust v2 snapshots)');
     },
   },
 ];
@@ -17955,6 +18558,1194 @@ export async function countByStatus() {
   }
   return counts;
 }
+```
+
+---
+
+## `server/services/predictiveAbuse.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/predictiveAbuse.js — Predictive Abuse Intelligence (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// Explainable predictive abuse signals without ML dependencies.
+// Uses deterministic rolling baselines + z-score + rule blending.
+// No auto-ban. Admin review only.
+//
+// Signal persistence:
+//   data/predictive_signals/sig_xxx.json
+//
+// EventBus:
+//   predictive_abuse:signal_created
+//   predictive_abuse:signal_updated
+//   predictive_abuse:signal_escalated
+//   predictive_abuse:scan_completed
+//   predictive_abuse:scan_failed
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const SIGNAL_PREFIX = 'sig_';
+
+/** @type {Map<string, { value: *, expiresAt: number }>} */
+const cache = new Map();
+
+let lastScanAt = null;
+let lastScanDurationMs = 0;
+let lastScanSignalCount = 0;
+let lastScanError = null;
+
+// ─────────────────────────────────────────────────────────────
+// Cache helpers
+// ─────────────────────────────────────────────────────────────
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = config.PREDICTIVE_ABUSE?.cacheTtlMs || (5 * 60 * 1000);
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+function clearCache() {
+  cache.clear();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pure math helpers
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Calculate z-score for a current rate against baseline binomial variance.
+ * Safe for small/edge values.
+ *
+ * @param {number} currentRate 0..1
+ * @param {number} baselineRate 0..1
+ * @param {number} sampleSize current sample size
+ * @returns {number}
+ */
+export function calculateZScore(currentRate, baselineRate, sampleSize) {
+  const n = Math.max(1, Number(sampleSize) || 1);
+  const p = Math.max(0.01, Math.min(0.99, Number(baselineRate) || 0.01));
+  const variance = (p * (1 - p)) / n;
+  const sd = Math.sqrt(Math.max(variance, 0.0001));
+  const z = (Number(currentRate || 0) - p) / sd;
+  return Math.round(z * 100) / 100;
+}
+
+/**
+ * Normalize risk score to 0..1 from z-score + rate delta + volume factor.
+ *
+ * @param {{ zScore?: number, delta?: number, volumeFactor?: number, base?: number }} input
+ * @returns {number}
+ */
+export function normalizeRiskScore(input = {}) {
+  const z = Math.max(0, Number(input.zScore) || 0);
+  const delta = Math.max(0, Number(input.delta) || 0);
+  const volume = Math.max(0, Math.min(1, Number(input.volumeFactor) || 0));
+  const base = Math.max(0, Math.min(1, Number(input.base) || 0));
+
+  // z contributes up to 0.45, delta up to 0.35, volume/base up to 0.20.
+  const zPart = Math.min(z / 4, 1) * 0.45;
+  const deltaPart = Math.min(delta, 1) * 0.35;
+  const volumePart = Math.max(volume, base) * 0.20;
+
+  const score = Math.max(0, Math.min(1, zPart + deltaPart + volumePart));
+  return Math.round(score * 100) / 100;
+}
+
+/**
+ * Classify severity from risk score + z-score.
+ *
+ * @param {number} riskScore
+ * @param {number} [zScore]
+ * @returns {'low'|'medium'|'high'|'critical'}
+ */
+export function classifySeverity(riskScore, zScore = 0) {
+  const thresholds = config.PREDICTIVE_ABUSE?.thresholds || {};
+  const medium = thresholds.riskMedium ?? 0.5;
+  const high = thresholds.riskHigh ?? 0.75;
+  const critical = thresholds.riskCritical ?? 0.9;
+  const zCritical = thresholds.zScoreCritical ?? 3.0;
+
+  if (riskScore >= critical || zScore >= zCritical + 1) return 'critical';
+  if (riskScore >= high || zScore >= zCritical) return 'high';
+  if (riskScore >= medium) return 'medium';
+  return 'low';
+}
+
+function safeRate(num, den) {
+  if (!den || den <= 0) return 0;
+  return Math.max(0, Math.min(1, num / den));
+}
+
+function hoursAgo(hours, nowMs) {
+  return nowMs - hours * 60 * 60 * 1000;
+}
+
+function daysAgo(days, nowMs) {
+  return nowMs - days * 24 * 60 * 60 * 1000;
+}
+
+function offerTimeMs(offer) {
+  return new Date(offer.createdAt || offer.notifiedAt || 0).getTime();
+}
+
+function decisionTimeMs(offer) {
+  return new Date(offer.acceptedAt || offer.declinedAt || offer.expiredAt || offer.withdrawnAt || offer.updatedAt || offer.createdAt || 0).getTime();
+}
+
+function isNegativeOffer(offer) {
+  return offer && (offer.status === 'declined' || offer.status === 'expired');
+}
+
+function isDecidedOffer(offer) {
+  return offer && (offer.status === 'accepted' || offer.status === 'declined' || offer.status === 'expired');
+}
+
+function dateWindowKey(toMs, shortHours) {
+  const d = new Date(toMs);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const h = String(d.getUTCHours()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:last${shortHours}h`;
+}
+
+function buildFingerprint({ riskType, entityType, entityId, relatedUserId, windowKey }) {
+  const raw = `${riskType}:${entityType}:${entityId || ''}:${relatedUserId || ''}:${windowKey || ''}`;
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
+
+function buildSignal(fields) {
+  const nowIso = new Date().toISOString();
+  return {
+    riskType: fields.riskType,
+    entityType: fields.entityType,
+    entityId: fields.entityId,
+    relatedUserId: fields.relatedUserId || null,
+    riskScore: fields.riskScore,
+    severity: fields.severity,
+    window: fields.window,
+    metrics: fields.metrics || {},
+    explanations: fields.explanations || [],
+    fingerprint: fields.fingerprint,
+    status: 'active',
+    reviewedAt: null,
+    reviewedBy: null,
+    reviewDecision: null,
+    reviewNote: null,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Data loading
+// ─────────────────────────────────────────────────────────────
+
+async function listAllOffers() {
+  try {
+    const dir = getCollectionPath('direct_offers');
+    const all = await listJSON(dir);
+    return all.filter(o => o && o.id && o.id.startsWith('dof_'));
+  } catch (err) {
+    logger.warn('predictiveAbuse: listAllOffers failed', { error: err.message });
+    return [];
+  }
+}
+
+async function listAllSignalsRaw() {
+  try {
+    const dir = getCollectionPath('predictive_signals');
+    const all = await listJSON(dir);
+    return all.filter(s => s && s.id && s.id.startsWith(SIGNAL_PREFIX));
+  } catch (err) {
+    logger.warn('predictiveAbuse: listAllSignalsRaw failed', { error: err.message });
+    return [];
+  }
+}
+
+async function loadReviewStates() {
+  try {
+    const mod = await import('./abuseFlagReview.js');
+    const states = await mod.listAllReviewStates();
+    return Array.isArray(states) ? states : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+async function loadWarningsByUser(userId) {
+  if (!userId) return 0;
+  try {
+    const { listByUser } = await import('./notifications.js');
+    const result = await listByUser(userId, { limit: 200, offset: 0 });
+    const items = result?.items || [];
+    const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return items.filter(n =>
+      n.type === 'admin_warning' &&
+      n.createdAt &&
+      new Date(n.createdAt).getTime() >= monthAgo
+    ).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function getActiveReviewStateCount(states, userId) {
+  if (!userId) return 0;
+  return states.filter(s =>
+    s &&
+    s.currentStatus !== 'dismissed' &&
+    s.currentStatus !== 'actioned' &&
+    (s.employerId === userId || s.workerId === userId)
+  ).length;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Detection helpers
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Detect employer decline/expire spike vs rolling baseline.
+ *
+ * @param {object[]} offers
+ * @param {object} opts
+ * @returns {Array<object>}
+ */
+export function detectEmployerDeclineSpike(offers, opts = {}) {
+  const cfg = opts.config || config.PREDICTIVE_ABUSE || {};
+  const nowMs = opts.nowMs || Date.now();
+  const shortHours = cfg.windows?.shortHours || 24;
+  const baselineDays = cfg.windows?.baselineDays || 14;
+  const minSamples = cfg.minSamples?.employerOffers || 10;
+  const zWarn = cfg.thresholds?.zScoreWarning || 2.0;
+  const windowFromMs = hoursAgo(shortHours, nowMs);
+  const baselineFromMs = daysAgo(baselineDays, nowMs);
+  const windowKey = dateWindowKey(nowMs, shortHours);
+
+  const byEmployer = new Map();
+
+  for (const offer of offers) {
+    if (!offer || !offer.employerId || !offer.createdAt) continue;
+    const t = offerTimeMs(offer);
+    if (t < baselineFromMs || t > nowMs) continue;
+
+    if (!byEmployer.has(offer.employerId)) {
+      byEmployer.set(offer.employerId, {
+        currentTotal: 0,
+        currentNegative: 0,
+        baselineTotal: 0,
+        baselineNegative: 0,
+      });
+    }
+
+    const row = byEmployer.get(offer.employerId);
+    const negative = isNegativeOffer(offer);
+
+    if (t >= windowFromMs) {
+      row.currentTotal++;
+      if (negative) row.currentNegative++;
+    } else {
+      row.baselineTotal++;
+      if (negative) row.baselineNegative++;
+    }
+  }
+
+  const signals = [];
+  for (const [employerId, m] of byEmployer) {
+    if (m.currentTotal < minSamples) continue;
+
+    const currentRate = safeRate(m.currentNegative, m.currentTotal);
+    const baselineRate = m.baselineTotal > 0
+      ? safeRate(m.baselineNegative, m.baselineTotal)
+      : 0.25;
+
+    const zScore = calculateZScore(currentRate, baselineRate, m.currentTotal);
+    if (zScore < zWarn) continue;
+
+    const delta = Math.max(0, currentRate - baselineRate);
+    const volumeFactor = Math.min(1, m.currentTotal / (minSamples * 3));
+    const riskScore = normalizeRiskScore({ zScore, delta, volumeFactor });
+    const severity = classifySeverity(riskScore, zScore);
+
+    signals.push(buildSignal({
+      riskType: 'employer_decline_spike',
+      entityType: 'employer',
+      entityId: employerId,
+      riskScore,
+      severity,
+      window: {
+        from: new Date(windowFromMs).toISOString(),
+        to: new Date(nowMs).toISOString(),
+      },
+      metrics: {
+        currentRate: Math.round(currentRate * 100) / 100,
+        baselineRate: Math.round(baselineRate * 100) / 100,
+        zScore,
+        sampleSize: m.currentTotal,
+        currentNegative: m.currentNegative,
+        baselineSampleSize: m.baselineTotal,
+      },
+      explanations: [
+        `decline/expire rate ${Math.round(currentRate * 100)}% over ${shortHours}h vs baseline ${Math.round(baselineRate * 100)}%`,
+        `zScore=${zScore}`,
+        `sampleSize=${m.currentTotal}`,
+      ],
+      fingerprint: buildFingerprint({
+        riskType: 'employer_decline_spike',
+        entityType: 'employer',
+        entityId: employerId,
+        windowKey,
+      }),
+    }));
+  }
+
+  return signals;
+}
+
+/**
+ * Detect worker offer bombing risk: high volume + unique employers + baseline anomaly.
+ *
+ * @param {object[]} offers
+ * @param {object} opts
+ * @returns {Array<object>}
+ */
+export function detectWorkerOfferBombingRisk(offers, opts = {}) {
+  const cfg = opts.config || config.PREDICTIVE_ABUSE || {};
+  const nowMs = opts.nowMs || Date.now();
+  const bombingMinutes = cfg.windows?.bombingMinutes || 60;
+  const baselineDays = cfg.windows?.baselineDays || 14;
+  const minSamples = cfg.minSamples?.workerReceivedOffers || 10;
+  const zWarn = cfg.thresholds?.zScoreWarning || 2.0;
+  const windowFromMs = nowMs - bombingMinutes * 60 * 1000;
+  const baselineFromMs = daysAgo(baselineDays, nowMs);
+  const windowKey = `${new Date(nowMs).toISOString().slice(0, 13)}:last${bombingMinutes}m`;
+
+  const byWorker = new Map();
+
+  for (const offer of offers) {
+    if (!offer || !offer.workerId || !offer.createdAt) continue;
+    const t = offerTimeMs(offer);
+    if (t < baselineFromMs || t > nowMs) continue;
+
+    if (!byWorker.has(offer.workerId)) {
+      byWorker.set(offer.workerId, {
+        currentTotal: 0,
+        currentEmployers: new Set(),
+        baselineTotal: 0,
+        baselineHours: Math.max(1, baselineDays * 24),
+      });
+    }
+
+    const row = byWorker.get(offer.workerId);
+
+    if (t >= windowFromMs) {
+      row.currentTotal++;
+      if (offer.employerId) row.currentEmployers.add(offer.employerId);
+    } else {
+      row.baselineTotal++;
+    }
+  }
+
+  const signals = [];
+
+  for (const [workerId, m] of byWorker) {
+    if (m.currentTotal < minSamples) continue;
+
+    const baselinePerWindow = Math.max(
+      0.1,
+      (m.baselineTotal / m.baselineHours) * (bombingMinutes / 60)
+    );
+
+    const currentRate = m.currentTotal;
+    const baselineRate = baselinePerWindow;
+    const zScore = Math.round(((currentRate - baselineRate) / Math.sqrt(Math.max(baselineRate, 1))) * 100) / 100;
+
+    const uniqueEmployers = m.currentEmployers.size;
+    const uniqueFactor = Math.min(1, uniqueEmployers / Math.max(3, minSamples / 2));
+    const volumeFactor = Math.min(1, m.currentTotal / (minSamples * 3));
+    const delta = Math.min(1, Math.max(0, (m.currentTotal - baselinePerWindow) / Math.max(minSamples, 1)));
+
+    const riskScore = normalizeRiskScore({
+      zScore,
+      delta,
+      volumeFactor: Math.max(uniqueFactor, volumeFactor),
+    });
+
+    if (zScore < zWarn && riskScore < (cfg.thresholds?.riskMedium || 0.5)) continue;
+
+    const severity = classifySeverity(riskScore, zScore);
+
+    signals.push(buildSignal({
+      riskType: 'worker_offer_bombing_probability',
+      entityType: 'worker',
+      entityId: workerId,
+      riskScore,
+      severity,
+      window: {
+        from: new Date(windowFromMs).toISOString(),
+        to: new Date(nowMs).toISOString(),
+      },
+      metrics: {
+        receivedOffers: m.currentTotal,
+        uniqueEmployers,
+        baselineExpectedOffers: Math.round(baselinePerWindow * 100) / 100,
+        zScore,
+        sampleSize: m.currentTotal,
+      },
+      explanations: [
+        `worker received ${m.currentTotal} offers in ${bombingMinutes} minutes`,
+        `${uniqueEmployers} unique employers`,
+        `baselineExpected=${Math.round(baselinePerWindow * 100) / 100}`,
+        `zScore=${zScore}`,
+      ],
+      fingerprint: buildFingerprint({
+        riskType: 'worker_offer_bombing_probability',
+        entityType: 'worker',
+        entityId: workerId,
+        windowKey,
+      }),
+    }));
+  }
+
+  return signals;
+}
+
+/**
+ * Detect same-worker harassment likelihood.
+ *
+ * @param {object[]} offers
+ * @param {object} opts
+ * @returns {Array<object>}
+ */
+export function detectSameWorkerHarassmentRisk(offers, opts = {}) {
+  const cfg = opts.config || config.PREDICTIVE_ABUSE || {};
+  const nowMs = opts.nowMs || Date.now();
+  const shortHours = cfg.windows?.shortHours || 24;
+  const minSamples = cfg.minSamples?.sameWorkerPairOffers || 4;
+  const windowFromMs = hoursAgo(shortHours, nowMs);
+  const windowKey = dateWindowKey(nowMs, shortHours);
+
+  const pairs = new Map();
+
+  for (const offer of offers) {
+    if (!offer || !offer.employerId || !offer.workerId || !offer.createdAt) continue;
+    const t = offerTimeMs(offer);
+    if (t < windowFromMs || t > nowMs) continue;
+
+    const key = `${offer.employerId}:${offer.workerId}`;
+    if (!pairs.has(key)) {
+      pairs.set(key, {
+        employerId: offer.employerId,
+        workerId: offer.workerId,
+        total: 0,
+        declined: 0,
+        expired: 0,
+        viewed: 0,
+      });
+    }
+
+    const row = pairs.get(key);
+    row.total++;
+    if (offer.status === 'declined') row.declined++;
+    if (offer.status === 'expired') row.expired++;
+    if (offer.viewedAt) row.viewed++;
+  }
+
+  const signals = [];
+  for (const p of pairs.values()) {
+    if (p.total < minSamples) continue;
+
+    const negative = p.declined + p.expired;
+    const negativeRate = safeRate(negative, p.total);
+    const viewedRate = safeRate(p.viewed, p.total);
+
+    // repeated offers + repeated negative response = likely unwanted pressure.
+    const base = Math.min(1, p.total / (minSamples * 2));
+    const delta = Math.max(0, negativeRate - 0.5);
+    const zScore = calculateZScore(negativeRate, 0.5, p.total);
+    const riskScore = normalizeRiskScore({
+      zScore,
+      delta,
+      volumeFactor: Math.max(base, viewedRate * 0.5),
+    });
+
+    if (riskScore < (cfg.thresholds?.riskMedium || 0.5)) continue;
+
+    const severity = classifySeverity(riskScore, zScore);
+
+    signals.push(buildSignal({
+      riskType: 'same_worker_harassment_likelihood',
+      entityType: 'employer',
+      entityId: p.employerId,
+      relatedUserId: p.workerId,
+      riskScore,
+      severity,
+      window: {
+        from: new Date(windowFromMs).toISOString(),
+        to: new Date(nowMs).toISOString(),
+      },
+      metrics: {
+        pairOfferCount: p.total,
+        declinedOrExpired: negative,
+        negativeRate: Math.round(negativeRate * 100) / 100,
+        viewedRate: Math.round(viewedRate * 100) / 100,
+        zScore,
+        sampleSize: p.total,
+      },
+      explanations: [
+        `employer sent ${p.total} offers to same worker over ${shortHours}h`,
+        `${negative} declined/expired`,
+        `negativeRate=${Math.round(negativeRate * 100)}%`,
+      ],
+      fingerprint: buildFingerprint({
+        riskType: 'same_worker_harassment_likelihood',
+        entityType: 'employer',
+        entityId: p.employerId,
+        relatedUserId: p.workerId,
+        windowKey,
+      }),
+    }));
+  }
+
+  return signals;
+}
+
+async function detectEmployerToxicOfferBehavior(offers, reviewStates, nowMs) {
+  const cfg = config.PREDICTIVE_ABUSE || {};
+  const shortHours = cfg.windows?.shortHours || 24;
+  const baselineDays = cfg.windows?.baselineDays || 14;
+  const fromMs = daysAgo(baselineDays, nowMs);
+  const windowKey = dateWindowKey(nowMs, shortHours);
+
+  const byEmployer = new Map();
+
+  for (const offer of offers) {
+    if (!offer || !offer.employerId || !offer.createdAt) continue;
+    const t = offerTimeMs(offer);
+    if (t < fromMs || t > nowMs) continue;
+
+    if (!byEmployer.has(offer.employerId)) {
+      byEmployer.set(offer.employerId, {
+        total: 0,
+        accepted: 0,
+        declined: 0,
+        expired: 0,
+        withdrawn: 0,
+      });
+    }
+
+    const row = byEmployer.get(offer.employerId);
+    row.total++;
+    if (offer.status === 'accepted') row.accepted++;
+    else if (offer.status === 'declined') row.declined++;
+    else if (offer.status === 'expired') row.expired++;
+    else if (offer.status === 'withdrawn') row.withdrawn++;
+  }
+
+  const signals = [];
+
+  for (const [employerId, m] of byEmployer) {
+    if (m.total < (cfg.minSamples?.employerOffers || 10)) continue;
+
+    const negative = m.declined + m.expired;
+    const negativeRate = safeRate(negative, m.total);
+    const acceptRate = safeRate(m.accepted, m.accepted + m.declined + m.expired);
+    const warnings = await loadWarningsByUser(employerId);
+    const activeFlags = getActiveReviewStateCount(reviewStates, employerId);
+
+    const behaviorPenalty = Math.min(1,
+      negativeRate * 0.45 +
+      (1 - acceptRate) * 0.25 +
+      Math.min(warnings / 3, 1) * 0.15 +
+      Math.min(activeFlags / 3, 1) * 0.15
+    );
+
+    const riskScore = Math.round(behaviorPenalty * 100) / 100;
+    if (riskScore < (cfg.thresholds?.riskMedium || 0.5)) continue;
+
+    const severity = classifySeverity(riskScore, calculateZScore(negativeRate, 0.4, m.total));
+
+    signals.push(buildSignal({
+      riskType: 'employer_toxic_offer_behavior',
+      entityType: 'employer',
+      entityId: employerId,
+      riskScore,
+      severity,
+      window: {
+        from: new Date(fromMs).toISOString(),
+        to: new Date(nowMs).toISOString(),
+      },
+      metrics: {
+        totalOffers: m.total,
+        accepted: m.accepted,
+        declined: m.declined,
+        expired: m.expired,
+        negativeRate: Math.round(negativeRate * 100) / 100,
+        acceptRate: Math.round(acceptRate * 100) / 100,
+        warnings,
+        activeFlags,
+      },
+      explanations: [
+        `negative offer rate ${Math.round(negativeRate * 100)}% over ${baselineDays}d`,
+        `acceptRate=${Math.round(acceptRate * 100)}%`,
+        `warnings=${warnings}`,
+        `activeFlags=${activeFlags}`,
+      ],
+      fingerprint: buildFingerprint({
+        riskType: 'employer_toxic_offer_behavior',
+        entityType: 'employer',
+        entityId: employerId,
+        windowKey,
+      }),
+    }));
+  }
+
+  return signals;
+}
+
+async function detectWorkerReliabilityAnomaly(offers, nowMs) {
+  const cfg = config.PREDICTIVE_ABUSE || {};
+  const shortHours = cfg.windows?.shortHours || 24;
+  const fromMs = daysAgo(cfg.windows?.baselineDays || 14, nowMs);
+  const windowKey = dateWindowKey(nowMs, shortHours);
+
+  const byWorker = new Map();
+
+  for (const offer of offers) {
+    if (!offer || !offer.workerId || !offer.createdAt) continue;
+    const t = offerTimeMs(offer);
+    if (t < fromMs || t > nowMs) continue;
+
+    if (!byWorker.has(offer.workerId)) {
+      byWorker.set(offer.workerId, {
+        total: 0,
+        viewed: 0,
+        accepted: 0,
+        declined: 0,
+        expired: 0,
+      });
+    }
+
+    const row = byWorker.get(offer.workerId);
+    row.total++;
+    if (offer.viewedAt) row.viewed++;
+    if (offer.status === 'accepted') row.accepted++;
+    else if (offer.status === 'declined') row.declined++;
+    else if (offer.status === 'expired') row.expired++;
+  }
+
+  const signals = [];
+
+  for (const [workerId, m] of byWorker) {
+    if (m.total < (cfg.minSamples?.workerReceivedOffers || 10)) continue;
+
+    const responseNegative = m.declined + m.expired;
+    const noResponseRate = safeRate(m.expired, m.total);
+    const negativeAfterViewRate = m.viewed > 0 ? safeRate(m.declined + m.expired, m.viewed) : 0;
+    const acceptRate = safeRate(m.accepted, m.accepted + m.declined + m.expired);
+
+    // This does not blame the worker alone; it marks an anomaly for admin review.
+    const riskScore = Math.round(Math.min(1,
+      noResponseRate * 0.35 +
+      negativeAfterViewRate * 0.35 +
+      (1 - acceptRate) * 0.20 +
+      Math.min(m.total / 50, 1) * 0.10
+    ) * 100) / 100;
+
+    if (riskScore < (cfg.thresholds?.riskMedium || 0.5)) continue;
+
+    const zScore = calculateZScore(responseNegative / Math.max(1, m.total), 0.45, m.total);
+    const severity = classifySeverity(riskScore, zScore);
+
+    signals.push(buildSignal({
+      riskType: 'worker_reliability_anomaly',
+      entityType: 'worker',
+      entityId: workerId,
+      riskScore,
+      severity,
+      window: {
+        from: new Date(fromMs).toISOString(),
+        to: new Date(nowMs).toISOString(),
+      },
+      metrics: {
+        totalReceived: m.total,
+        viewed: m.viewed,
+        accepted: m.accepted,
+        declined: m.declined,
+        expired: m.expired,
+        noResponseRate: Math.round(noResponseRate * 100) / 100,
+        negativeAfterViewRate: Math.round(negativeAfterViewRate * 100) / 100,
+        acceptRate: Math.round(acceptRate * 100) / 100,
+        zScore,
+      },
+      explanations: [
+        `worker received ${m.total} offers over baseline window`,
+        `expired/no-response rate ${Math.round(noResponseRate * 100)}%`,
+        `negative-after-view rate ${Math.round(negativeAfterViewRate * 100)}%`,
+        `acceptRate=${Math.round(acceptRate * 100)}%`,
+      ],
+      fingerprint: buildFingerprint({
+        riskType: 'worker_reliability_anomaly',
+        entityType: 'worker',
+        entityId: workerId,
+        windowKey,
+      }),
+    }));
+  }
+
+  return signals;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Persistence
+// ─────────────────────────────────────────────────────────────
+
+function generateSignalId() {
+  return SIGNAL_PREFIX + crypto.randomBytes(6).toString('hex');
+}
+
+async function persistSignals(signals) {
+  if (!config.PREDICTIVE_ABUSE?.persistSignals) {
+    return { created: 0, updated: 0, signals };
+  }
+
+  const existingSignals = await listAllSignalsRaw();
+  const byFingerprint = new Map();
+
+  for (const sig of existingSignals) {
+    if (sig.fingerprint && sig.status === 'active') {
+      byFingerprint.set(sig.fingerprint, sig);
+    }
+  }
+
+  let created = 0;
+  let updated = 0;
+  const persisted = [];
+
+  for (const signal of signals) {
+    if (!signal.fingerprint) continue;
+
+    await withLock(`predictive-signal:${signal.fingerprint}`, async () => {
+      const existing = byFingerprint.get(signal.fingerprint);
+
+      if (existing) {
+        const previousSeverity = existing.severity;
+        const next = {
+          ...existing,
+          riskScore: signal.riskScore,
+          severity: signal.severity,
+          window: signal.window,
+          metrics: signal.metrics,
+          explanations: signal.explanations,
+          updatedAt: new Date().toISOString(),
+        };
+
+        await atomicWrite(getRecordPath('predictive_signals', existing.id), next);
+        updated++;
+        persisted.push(next);
+
+        eventBus.emit('predictive_abuse:signal_updated', {
+          signalId: next.id,
+          riskType: next.riskType,
+          entityType: next.entityType,
+          entityId: next.entityId,
+          severity: next.severity,
+          riskScore: next.riskScore,
+          timestamp: new Date().toISOString(),
+        });
+
+        const severityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+        if ((severityOrder[next.severity] || 0) > (severityOrder[previousSeverity] || 0)) {
+          eventBus.emit('predictive_abuse:signal_escalated', {
+            signalId: next.id,
+            riskType: next.riskType,
+            entityType: next.entityType,
+            entityId: next.entityId,
+            previousSeverity,
+            severity: next.severity,
+            riskScore: next.riskScore,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else {
+        const id = generateSignalId();
+        const next = { id, ...signal };
+
+        await atomicWrite(getRecordPath('predictive_signals', id), next);
+        created++;
+        persisted.push(next);
+        byFingerprint.set(signal.fingerprint, next);
+
+        eventBus.emit('predictive_abuse:signal_created', {
+          signalId: id,
+          riskType: next.riskType,
+          entityType: next.entityType,
+          entityId: next.entityId,
+          relatedUserId: next.relatedUserId || null,
+          severity: next.severity,
+          riskScore: next.riskScore,
+          explanations: next.explanations,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+  }
+
+  return { created, updated, signals: persisted };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Public service API
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Run predictive abuse scan.
+ *
+ * @param {{ force?: boolean, persist?: boolean }} options
+ */
+export async function runPredictiveScan(options = {}) {
+  if (!config.PREDICTIVE_ABUSE || !config.PREDICTIVE_ABUSE.enabled) {
+    return { enabled: false, signals: [], signalCount: 0 };
+  }
+
+  const cacheKey = 'predictive-scan:last';
+  if (!options.force) {
+    const cached = cacheGet(cacheKey);
+    if (cached) return cached;
+  }
+
+  const started = Date.now();
+
+  return withLock('predictive-abuse-scan-global', async () => {
+    try {
+      const nowMs = Date.now();
+      const offers = await listAllOffers();
+      const reviewStates = await loadReviewStates();
+
+      let signals = [
+        ...detectEmployerDeclineSpike(offers, { nowMs }),
+        ...detectWorkerOfferBombingRisk(offers, { nowMs }),
+        ...detectSameWorkerHarassmentRisk(offers, { nowMs }),
+        ...(await detectEmployerToxicOfferBehavior(offers, reviewStates, nowMs)),
+        ...(await detectWorkerReliabilityAnomaly(offers, nowMs)),
+      ];
+
+      // Keep only meaningful risk signals.
+      signals = signals.filter(s =>
+        s &&
+        s.riskScore >= (config.PREDICTIVE_ABUSE.thresholds?.riskMedium || 0.5) &&
+        Array.isArray(s.explanations) &&
+        s.explanations.length > 0
+      );
+
+      // Sort risk-first, then newest.
+      signals.sort((a, b) => b.riskScore - a.riskScore || (severityRank(b.severity) - severityRank(a.severity)));
+
+      const max = config.PREDICTIVE_ABUSE.maxSignalsPerScan || 100;
+      signals = signals.slice(0, max);
+
+      let persistResult = { created: 0, updated: 0, signals };
+      if (options.persist !== false) {
+        persistResult = await persistSignals(signals);
+      }
+
+      const durationMs = Date.now() - started;
+
+      const result = {
+        enabled: true,
+        generatedAt: new Date().toISOString(),
+        durationMs,
+        scannedOffers: offers.length,
+        signalCount: persistResult.signals.length,
+        created: persistResult.created,
+        updated: persistResult.updated,
+        signals: persistResult.signals,
+        noAutoBan: true,
+      };
+
+      lastScanAt = result.generatedAt;
+      lastScanDurationMs = durationMs;
+      lastScanSignalCount = result.signalCount;
+      lastScanError = null;
+
+      eventBus.emit('predictive_abuse:scan_completed', {
+        signalCount: result.signalCount,
+        created: result.created,
+        updated: result.updated,
+        scannedOffers: offers.length,
+        durationMs,
+        timestamp: result.generatedAt,
+      });
+
+      cacheSet(cacheKey, result);
+      clearCache(); // dashboard/list caches should refresh after a scan
+      return result;
+    } catch (err) {
+      const durationMs = Date.now() - started;
+      lastScanAt = new Date().toISOString();
+      lastScanDurationMs = durationMs;
+      lastScanError = err.message;
+
+      eventBus.emit('predictive_abuse:scan_failed', {
+        error: err.message,
+        durationMs,
+        timestamp: lastScanAt,
+      });
+
+      logger.warn('predictiveAbuse: scan failed', { error: err.message });
+      return {
+        enabled: true,
+        generatedAt: lastScanAt,
+        durationMs,
+        signalCount: 0,
+        signals: [],
+        error: err.message,
+        noAutoBan: true,
+      };
+    }
+  });
+}
+
+function severityRank(severity) {
+  return ({ low: 1, medium: 2, high: 3, critical: 4 })[severity] || 0;
+}
+
+/**
+ * List persisted predictive signals.
+ *
+ * @param {{ status?: string, severity?: string, riskType?: string, entityId?: string, limit?: number, offset?: number }} options
+ */
+export async function listPredictiveSignals(options = {}) {
+  if (!config.PREDICTIVE_ABUSE || !config.PREDICTIVE_ABUSE.enabled) {
+    return { signals: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const cacheKey = `signals:${JSON.stringify(options)}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  let signals = await listAllSignalsRaw();
+
+  if (options.status) signals = signals.filter(s => s.status === options.status);
+  if (options.severity) signals = signals.filter(s => s.severity === options.severity);
+  if (options.riskType) signals = signals.filter(s => s.riskType === options.riskType);
+  if (options.entityId) signals = signals.filter(s => s.entityId === options.entityId || s.relatedUserId === options.entityId);
+
+  signals.sort((a, b) =>
+    (severityRank(b.severity) - severityRank(a.severity)) ||
+    ((b.riskScore || 0) - (a.riskScore || 0)) ||
+    (new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+  );
+
+  const total = signals.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  const result = {
+    signals: signals.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+/**
+ * Get predictive dashboard aggregate.
+ */
+export async function getPredictiveDashboard(options = {}) {
+  if (!config.PREDICTIVE_ABUSE || !config.PREDICTIVE_ABUSE.enabled) {
+    return { enabled: false, metrics: {}, signals: [] };
+  }
+
+  const cacheKey = `dashboard:${JSON.stringify(options)}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const list = await listPredictiveSignals({
+    status: options.status || 'active',
+    limit: options.limit || 20,
+    offset: 0,
+  });
+
+  const allActive = await listAllSignalsRaw();
+  const active = allActive.filter(s => s.status === 'active');
+
+  const bySeverity = { low: 0, medium: 0, high: 0, critical: 0 };
+  const byRiskType = {};
+
+  for (const s of active) {
+    if (bySeverity[s.severity] !== undefined) bySeverity[s.severity]++;
+    byRiskType[s.riskType] = (byRiskType[s.riskType] || 0) + 1;
+  }
+
+  const avgRiskScore = active.length > 0
+    ? Math.round((active.reduce((sum, s) => sum + (s.riskScore || 0), 0) / active.length) * 100) / 100
+    : 0;
+
+  const result = {
+    enabled: true,
+    generatedAt: new Date().toISOString(),
+    metrics: {
+      activeSignals: active.length,
+      highOrCritical: active.filter(s => s.severity === 'high' || s.severity === 'critical').length,
+      avgRiskScore,
+      bySeverity,
+      byRiskType,
+      lastScanAt,
+      lastScanDurationMs,
+      lastScanSignalCount,
+      lastScanError,
+    },
+    signals: list.signals,
+    total: list.total,
+  };
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+/**
+ * Dismiss a predictive signal.
+ */
+export async function dismissSignal(signalId, adminId, note) {
+  return reviewSignal(signalId, adminId, 'dismissed', note);
+}
+
+/**
+ * Escalate a predictive signal for admin action.
+ */
+export async function escalateSignal(signalId, adminId, note) {
+  return reviewSignal(signalId, adminId, 'escalated', note);
+}
+
+async function reviewSignal(signalId, adminId, decision, note) {
+  if (!signalId || typeof signalId !== 'string') {
+    throw new Error('signalId is required');
+  }
+
+  return withLock(`predictive-signal-review:${signalId}`, async () => {
+    const path = getRecordPath('predictive_signals', signalId);
+    const signal = await readJSON(path);
+
+    if (!signal) {
+      return { ok: false, error: 'الإشارة غير موجودة', code: 'SIGNAL_NOT_FOUND' };
+    }
+
+    if (signal.status !== 'active') {
+      return { ok: false, error: 'تمت مراجعة الإشارة بالفعل', code: 'SIGNAL_ALREADY_REVIEWED' };
+    }
+
+    signal.status = decision;
+    signal.reviewedAt = new Date().toISOString();
+    signal.reviewedBy = adminId || 'admin_token';
+    signal.reviewDecision = decision;
+    signal.reviewNote = note || null;
+    signal.updatedAt = signal.reviewedAt;
+
+    await atomicWrite(path, signal);
+
+    clearCache();
+
+    if (decision === 'escalated') {
+      eventBus.emit('predictive_abuse:signal_escalated', {
+        signalId: signal.id,
+        riskType: signal.riskType,
+        entityType: signal.entityType,
+        entityId: signal.entityId,
+        relatedUserId: signal.relatedUserId || null,
+        severity: signal.severity,
+        riskScore: signal.riskScore,
+        reviewedBy: signal.reviewedBy,
+        timestamp: signal.reviewedAt,
+      });
+    }
+
+    return { ok: true, signal };
+  });
+}
+
+/**
+ * Get lightweight stats for health/admin.
+ */
+export async function getPredictiveStats() {
+  const all = await listAllSignalsRaw();
+  const active = all.filter(s => s.status === 'active');
+  return {
+    enabled: !!(config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled),
+    totalSignals: all.length,
+    activeSignals: active.length,
+    highOrCritical: active.filter(s => s.severity === 'high' || s.severity === 'critical').length,
+    lastScanAt,
+    lastScanDurationMs,
+    lastScanSignalCount,
+    lastScanError,
+  };
+}
+
+export function clearPredictiveAbuseCache() {
+  clearCache();
+}
+
+// ─────────────────────────────────────────────────────────────
+// EventBus cache invalidation
+// ─────────────────────────────────────────────────────────────
+
+const INVALIDATION_EVENTS = [
+  'direct_offer:created',
+  'direct_offer:accepted',
+  'direct_offer:declined',
+  'direct_offer:expired',
+  'direct_offer:withdrawn',
+  'abuse_flag:state_changed',
+  'attendance:noshow',
+];
+
+for (const evt of INVALIDATION_EVENTS) {
+  eventBus.on(evt, () => {
+    clearCache();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Test helpers
+// ─────────────────────────────────────────────────────────────
+
+export const _testHelpers = {
+  calculateZScore,
+  normalizeRiskScore,
+  classifySeverity,
+  detectEmployerDeclineSpike,
+  detectWorkerOfferBombingRisk,
+  detectSameWorkerHarassmentRisk,
+  buildFingerprint,
+  buildSignal,
+  safeRate,
+  clearCache,
+};
 ```
 
 ---
@@ -21146,6 +22937,723 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/trustScoreV2.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/trustScoreV2.js — Role-Specific Trust Score V2 (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// Additive trust layer — does NOT replace trust.js v1.
+// Provides:
+//   - WorkerTrust
+//   - EmployerTrust
+//   - deterministic weighted scoring
+//   - rating confidence weighting
+//   - public-safe output by default
+//   - admin-rich output via options.admin=true
+//
+// No auto-ban. No PII in public response.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+// ── Module-local cache ────────────────────────────────────────
+/** @type {Map<string, { value: object, expiresAt: number }>} */
+const cache = new Map();
+
+function cacheKey(userId, options = {}) {
+  return `trust-v2:${userId}:${options.admin ? 'admin' : 'public'}`;
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = config.TRUST_SCORE_V2?.cacheTtlMs || (5 * 60 * 1000);
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+/**
+ * Clear Trust Score V2 cache.
+ * If userId is provided, clears both public/admin entries for that user.
+ * Otherwise clears all cache.
+ */
+export function clearTrustScoreV2Cache(userId) {
+  if (!userId) {
+    cache.clear();
+    return;
+  }
+
+  for (const key of cache.keys()) {
+    if (key.startsWith(`trust-v2:${userId}:`)) {
+      cache.delete(key);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pure helpers
+// ─────────────────────────────────────────────────────────────
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function round2(n) {
+  return Math.round(clamp01(n) * 100) / 100;
+}
+
+function score100(score) {
+  return Math.round(clamp01(score) * 100);
+}
+
+function gradeFromScore(score) {
+  if (score >= 0.85) return 'excellent';
+  if (score >= 0.70) return 'good';
+  if (score >= 0.50) return 'fair';
+  return 'risky';
+}
+
+/**
+ * Rating confidence weighting.
+ * Low rating count should not over-inflate trust.
+ *
+ * If no ratings: neutral 0.5.
+ * If low ratings: blend rating score with neutral baseline.
+ *
+ * @param {number} avg 0..5
+ * @param {number} count
+ * @param {number} minCount
+ * @returns {number} 0..1
+ */
+export function calculateRatingConfidence(avg, count, minCount) {
+  const safeCount = Math.max(0, Number(count) || 0);
+  if (safeCount === 0) return 0.5;
+
+  const ratingNorm = clamp01((Number(avg) || 0) / 5);
+  const confidence = clamp01(safeCount / Math.max(1, minCount || 5));
+
+  // Blend toward neutral while count is low.
+  return round2((ratingNorm * confidence) + (0.5 * (1 - confidence)));
+}
+
+export function calculateAccountAgeScore(accountAgeDays, capDays = 365) {
+  return round2(Math.min(Math.max(0, accountAgeDays || 0), capDays) / capDays);
+}
+
+export function calculateVerificationScore(status) {
+  if (status === 'verified') return 1;
+  if (status === 'pending') return 0.6;
+  return 0.3;
+}
+
+export function calculateAbusePenalty({ confirmedReports = 0, activeFlags = 0, warnings = 0, predictiveSignals = 0 } = {}) {
+  const penalty =
+    Math.min(confirmedReports, 5) * 0.12 +
+    Math.min(activeFlags, 5) * 0.10 +
+    Math.min(warnings, 5) * 0.06 +
+    Math.min(predictiveSignals, 5) * 0.08;
+
+  return round2(1 - Math.min(0.8, penalty));
+}
+
+function weightedScore(components, weights) {
+  let totalWeight = 0;
+  let total = 0;
+
+  for (const [key, weight] of Object.entries(weights || {})) {
+    const w = Number(weight) || 0;
+    if (w <= 0) continue;
+    totalWeight += w;
+    total += clamp01(components[key] ?? 0.5) * w;
+  }
+
+  if (totalWeight <= 0) return 0.5;
+  return round2(total / totalWeight);
+}
+
+function publicComponents(components) {
+  if (!config.TRUST_SCORE_V2?.publicExposeComponents) return undefined;
+  return { ...components };
+}
+
+function safeOutput(result, options = {}) {
+  const out = {
+    userId: result.userId,
+    role: result.role,
+    score: result.score,
+    score100: result.score100,
+    grade: result.grade,
+    components: options.admin ? result.components : publicComponents(result.components),
+    explanations: result.explanations,
+    computedAt: result.computedAt,
+  };
+
+  if (options.admin) {
+    out.rawMetrics = result.rawMetrics || {};
+    out.adminExplanations = result.adminExplanations || [];
+  }
+
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pure score calculators
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Calculate WorkerTrust from normalized inputs.
+ *
+ * @param {object} input
+ * @returns {object}
+ */
+export function calculateWorkerTrustScore(input = {}) {
+  const weights = config.TRUST_SCORE_V2?.weights?.worker || {};
+  const minRatingCount = config.TRUST_SCORE_V2?.minRatingConfidenceCount || 5;
+
+  const ratingConfidence = calculateRatingConfidence(
+    input.ratingAvg || 0,
+    input.ratingCount || 0,
+    minRatingCount
+  );
+
+  const attendanceReliability = input.totalAttendanceRecords > 0
+    ? round2((input.attendedDays || 0) / input.totalAttendanceRecords)
+    : 0.5;
+
+  const completionReliability = input.totalAcceptedJobs > 0
+    ? round2((input.completedJobs || 0) / input.totalAcceptedJobs)
+    : 0.5;
+
+  const abusePenalty = calculateAbusePenalty({
+    confirmedReports: input.confirmedReports || 0,
+    activeFlags: input.activeFlags || 0,
+    warnings: input.warnings || 0,
+    predictiveSignals: input.predictiveSignals || 0,
+  });
+
+  const verification = calculateVerificationScore(input.verificationStatus);
+  const accountAge = calculateAccountAgeScore(input.accountAgeDays || 0, config.TRUST.accountAgeCap || 365);
+  const profileCompleteness = round2((input.profileCompletenessScore || 0) / 100);
+
+  const components = {
+    ratingConfidence,
+    attendanceReliability,
+    completionReliability,
+    abusePenalty,
+    verification,
+    accountAge,
+    profileCompleteness,
+  };
+
+  const score = weightedScore(components, weights);
+
+  const explanations = [];
+  if (attendanceReliability >= 0.8) explanations.push('نسبة حضور قوية');
+  else if (attendanceReliability < 0.5) explanations.push('نسبة الحضور تحتاج متابعة');
+
+  if (completionReliability >= 0.8) explanations.push('معدل إكمال جيد للفرص المقبولة');
+  else if (completionReliability < 0.5) explanations.push('معدل الإكمال منخفض مقارنة بالفرص المقبولة');
+
+  if ((input.ratingCount || 0) >= minRatingCount) explanations.push('عدد تقييمات كافي لثقة أعلى');
+  else explanations.push('عدد التقييمات ما زال محدوداً');
+
+  if (abusePenalty >= 0.9) explanations.push('لا توجد مؤشرات إساءة مؤثرة');
+  else explanations.push('توجد تحذيرات أو إشارات تحتاج مراجعة');
+
+  if (verification === 1) explanations.push('الهوية محققة');
+
+  return {
+    score,
+    score100: score100(score),
+    grade: gradeFromScore(score),
+    components,
+    explanations,
+  };
+}
+
+/**
+ * Calculate EmployerTrust from normalized inputs.
+ *
+ * @param {object} input
+ * @returns {object}
+ */
+export function calculateEmployerTrustScore(input = {}) {
+  const weights = config.TRUST_SCORE_V2?.weights?.employer || {};
+  const minRatingCount = config.TRUST_SCORE_V2?.minRatingConfidenceCount || 5;
+
+  const ratingConfidence = calculateRatingConfidence(
+    input.ratingAvg || 0,
+    input.ratingCount || 0,
+    minRatingCount
+  );
+
+  const paymentReliability = input.totalPayments > 0
+    ? round2(((input.completedPayments || 0) + (input.employerConfirmedPayments || 0)) / input.totalPayments)
+    : 0.5;
+
+  const disputeRate = input.totalPayments > 0
+    ? round2(1 - ((input.disputedPayments || 0) / input.totalPayments))
+    : 0.5;
+
+  const cancellationRate = input.totalJobs > 0
+    ? round2(1 - ((input.cancelledJobs || 0) / input.totalJobs))
+    : 0.5;
+
+  const offerBehavior = input.totalDirectOffers > 0
+    ? round2(
+        ((input.directOfferAcceptRate || 0) / 100) * 0.65 +
+        (1 - ((input.directOfferNegativeRate || 0) / 100)) * 0.35
+      )
+    : 0.5;
+
+  const abusePenalty = calculateAbusePenalty({
+    confirmedReports: input.confirmedReports || 0,
+    activeFlags: input.activeFlags || 0,
+    warnings: input.warnings || 0,
+    predictiveSignals: input.predictiveSignals || 0,
+  });
+
+  const verification = calculateVerificationScore(input.verificationStatus);
+  const accountAge = calculateAccountAgeScore(input.accountAgeDays || 0, config.TRUST.accountAgeCap || 365);
+
+  const components = {
+    ratingConfidence,
+    paymentReliability,
+    disputeRate,
+    cancellationRate,
+    offerBehavior,
+    abusePenalty,
+    verification,
+    accountAge,
+  };
+
+  const score = weightedScore(components, weights);
+
+  const explanations = [];
+  if (paymentReliability >= 0.8) explanations.push('سلوك الدفع موثوق');
+  else if (paymentReliability < 0.5) explanations.push('سلوك الدفع يحتاج متابعة');
+
+  if (disputeRate >= 0.85) explanations.push('معدل النزاعات منخفض');
+  else explanations.push('معدل النزاعات يؤثر على الثقة');
+
+  if (cancellationRate >= 0.8) explanations.push('معدل إلغاء الفرص منخفض');
+  else explanations.push('إلغاء الفرص المتكرر يقلل الثقة');
+
+  if (offerBehavior >= 0.7) explanations.push('سلوك العروض المباشرة جيد');
+  else explanations.push('سلوك العروض المباشرة يحتاج مراجعة');
+
+  if (abusePenalty >= 0.9) explanations.push('لا توجد مؤشرات إساءة مؤثرة');
+  else explanations.push('توجد تحذيرات أو إشارات تحتاج مراجعة');
+
+  if (verification === 1) explanations.push('الهوية محققة');
+
+  return {
+    score,
+    score100: score100(score),
+    grade: gradeFromScore(score),
+    components,
+    explanations,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Data gathering helpers
+// ─────────────────────────────────────────────────────────────
+
+async function countWarnings(userId) {
+  try {
+    const { listByUser } = await import('./notifications.js');
+    const result = await listByUser(userId, { limit: 200, offset: 0 });
+    const items = result?.items || [];
+    const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return items.filter(n =>
+      n.type === 'admin_warning' &&
+      n.createdAt &&
+      new Date(n.createdAt).getTime() >= monthAgo
+    ).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function getAbuseStateCounts(userId) {
+  let activeFlags = 0;
+
+  try {
+    const { listAllReviewStates } = await import('./abuseFlagReview.js');
+    const states = await listAllReviewStates();
+    activeFlags = states.filter(s =>
+      s &&
+      s.currentStatus !== 'dismissed' &&
+      s.currentStatus !== 'actioned' &&
+      (s.employerId === userId || s.workerId === userId)
+    ).length;
+  } catch (_) {
+    activeFlags = 0;
+  }
+
+  let predictiveSignals = 0;
+  try {
+    const { listPredictiveSignals } = await import('./predictiveAbuse.js');
+    const result = await listPredictiveSignals({ status: 'active', entityId: userId, limit: 100, offset: 0 });
+    predictiveSignals = result.total || 0;
+  } catch (_) {
+    predictiveSignals = 0;
+  }
+
+  return { activeFlags, predictiveSignals };
+}
+
+async function getReportCounts(userId) {
+  try {
+    const { listByTarget } = await import('./reports.js');
+    const reports = await listByTarget(userId);
+    return {
+      totalReports: reports.length,
+      confirmedReports: reports.filter(r => r.status === 'action_taken').length,
+    };
+  } catch (_) {
+    return { totalReports: 0, confirmedReports: 0 };
+  }
+}
+
+function getAccountAgeDays(user) {
+  if (!user || !user.createdAt) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000));
+}
+
+function buildAdminExplanations(input) {
+  const out = [];
+  for (const [key, value] of Object.entries(input || {})) {
+    out.push(`${key}=${value}`);
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────
+// WorkerTrust data path
+// ─────────────────────────────────────────────────────────────
+
+export async function getWorkerTrustScore(userId, options = {}) {
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+
+  if (!user || user.role !== 'worker') return null;
+
+  let totalAcceptedJobs = 0;
+  let completedJobs = 0;
+
+  try {
+    const { listByWorker } = await import('./applications.js');
+    const { findById: findJob } = await import('./jobs.js');
+
+    const apps = await listByWorker(userId);
+    const acceptedApps = apps.filter(a => a.status === 'accepted' || a.status === 'worker_confirmed');
+    totalAcceptedJobs = acceptedApps.length;
+
+    for (const app of acceptedApps) {
+      const job = await findJob(app.jobId);
+      if (job && job.status === 'completed') completedJobs++;
+    }
+  } catch (err) {
+    logger.warn('trustScoreV2: worker applications aggregation failed', { userId, error: err.message });
+  }
+
+  let totalAttendanceRecords = 0;
+  let attendedDays = 0;
+  let noShows = 0;
+
+  try {
+    const { listByWorker: listAttendanceByWorker } = await import('./attendance.js');
+    const records = await listAttendanceByWorker(userId);
+    totalAttendanceRecords = records.length;
+    attendedDays = records.filter(r =>
+      r.status === 'checked_in' ||
+      r.status === 'checked_out' ||
+      r.status === 'confirmed' ||
+      r.employerConfirmed
+    ).length;
+    noShows = records.filter(r => r.status === 'no_show').length;
+  } catch (_) {
+    // Attendance data is optional enrichment.
+  }
+
+  const reports = await getReportCounts(userId);
+  const warnings = await countWarnings(userId);
+  const abuse = await getAbuseStateCounts(userId);
+
+  let profileCompletenessScore = 0;
+  try {
+    const { calculateCompleteness } = await import('./profileCompleteness.js');
+    const completeness = calculateCompleteness(user);
+    profileCompletenessScore = completeness.score || 0;
+  } catch (_) {
+    profileCompletenessScore = 0;
+  }
+
+  const input = {
+    ratingAvg: user.rating?.avg || 0,
+    ratingCount: user.rating?.count || 0,
+    totalAcceptedJobs,
+    completedJobs,
+    totalAttendanceRecords,
+    attendedDays,
+    noShows,
+    confirmedReports: reports.confirmedReports,
+    totalReports: reports.totalReports,
+    warnings,
+    activeFlags: abuse.activeFlags,
+    predictiveSignals: abuse.predictiveSignals,
+    verificationStatus: user.verificationStatus || 'unverified',
+    accountAgeDays: getAccountAgeDays(user),
+    profileCompletenessScore,
+  };
+
+  const calc = calculateWorkerTrustScore(input);
+  const result = {
+    userId,
+    role: 'worker',
+    ...calc,
+    rawMetrics: input,
+    adminExplanations: buildAdminExplanations(input),
+    computedAt: new Date().toISOString(),
+  };
+
+  return safeOutput(result, options);
+}
+
+// ─────────────────────────────────────────────────────────────
+// EmployerTrust data path
+// ─────────────────────────────────────────────────────────────
+
+export async function getEmployerTrustScore(userId, options = {}) {
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+
+  if (!user || user.role !== 'employer') return null;
+
+  let totalJobs = 0;
+  let completedJobs = 0;
+  let cancelledJobs = 0;
+
+  try {
+    const { getFromSetIndex, readJSON, getRecordPath } = await import('./database.js');
+    const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+    totalJobs = jobIds.length;
+
+    for (const jobId of jobIds) {
+      const job = await readJSON(getRecordPath('jobs', jobId));
+      if (!job) continue;
+      if (job.status === 'completed') completedJobs++;
+      if (job.status === 'cancelled') cancelledJobs++;
+    }
+  } catch (err) {
+    logger.warn('trustScoreV2: employer jobs aggregation failed', { userId, error: err.message });
+  }
+
+  let totalPayments = 0;
+  let completedPayments = 0;
+  let employerConfirmedPayments = 0;
+  let disputedPayments = 0;
+
+  try {
+    const { listAll: listAllPayments } = await import('./payments.js');
+    const payments = await listAllPayments();
+    const mine = payments.filter(p => p.employerId === userId);
+
+    totalPayments = mine.length;
+    completedPayments = mine.filter(p => p.status === 'completed').length;
+    employerConfirmedPayments = mine.filter(p => p.status === 'employer_confirmed').length;
+    disputedPayments = mine.filter(p => p.status === 'disputed').length;
+  } catch (_) {
+    // Optional enrichment.
+  }
+
+  let totalDirectOffers = 0;
+  let directOfferAcceptRate = 0;
+  let directOfferNegativeRate = 0;
+
+  try {
+    const { getEmployerOfferStats } = await import('./directOffer.js');
+    const stats = await getEmployerOfferStats(userId);
+    totalDirectOffers = stats.total || 0;
+    directOfferAcceptRate = stats.acceptRate || 0;
+    const negative = (stats.declined || 0) + (stats.expired || 0);
+    directOfferNegativeRate = stats.total > 0 ? Math.round((negative / stats.total) * 100) : 0;
+  } catch (_) {
+    // Optional enrichment.
+  }
+
+  const reports = await getReportCounts(userId);
+  const warnings = await countWarnings(userId);
+  const abuse = await getAbuseStateCounts(userId);
+
+  const input = {
+    ratingAvg: user.rating?.avg || 0,
+    ratingCount: user.rating?.count || 0,
+    totalJobs,
+    completedJobs,
+    cancelledJobs,
+    totalPayments,
+    completedPayments,
+    employerConfirmedPayments,
+    disputedPayments,
+    totalDirectOffers,
+    directOfferAcceptRate,
+    directOfferNegativeRate,
+    confirmedReports: reports.confirmedReports,
+    totalReports: reports.totalReports,
+    warnings,
+    activeFlags: abuse.activeFlags,
+    predictiveSignals: abuse.predictiveSignals,
+    verificationStatus: user.verificationStatus || 'unverified',
+    accountAgeDays: getAccountAgeDays(user),
+  };
+
+  const calc = calculateEmployerTrustScore(input);
+  const result = {
+    userId,
+    role: 'employer',
+    ...calc,
+    rawMetrics: input,
+    adminExplanations: buildAdminExplanations(input),
+    computedAt: new Date().toISOString(),
+  };
+
+  return safeOutput(result, options);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main entry
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Role-aware Trust Score V2.
+ *
+ * @param {string} userId
+ * @param {{ admin?: boolean, force?: boolean }} options
+ */
+export async function getTrustScoreV2(userId, options = {}) {
+  if (!config.TRUST_SCORE_V2 || !config.TRUST_SCORE_V2.enabled) return null;
+  if (!userId) return null;
+
+  const key = cacheKey(userId, options);
+  if (!options.force) {
+    const cached = cacheGet(key);
+    if (cached) return cached;
+  }
+
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+  if (!user) return null;
+
+  let result = null;
+  if (user.role === 'worker') {
+    result = await getWorkerTrustScore(userId, options);
+  } else if (user.role === 'employer') {
+    result = await getEmployerTrustScore(userId, options);
+  } else {
+    // Admin/system users are not marketplace participants.
+    result = {
+      userId,
+      role: user.role,
+      score: 0.5,
+      score100: 50,
+      grade: 'fair',
+      components: options.admin ? {} : (config.TRUST_SCORE_V2.publicExposeComponents ? {} : undefined),
+      explanations: ['هذا النوع من الحسابات لا يملك مؤشر ثقة سوقي مخصص'],
+      computedAt: new Date().toISOString(),
+    };
+  }
+
+  if (result) cacheSet(key, result);
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// EventBus cache invalidation
+// ─────────────────────────────────────────────────────────────
+
+function invalidateFromEvent(data) {
+  try {
+    if (!data) {
+      clearTrustScoreV2Cache();
+      return;
+    }
+
+    const ids = new Set();
+
+    if (data.userId) ids.add(data.userId);
+    if (data.workerId) ids.add(data.workerId);
+    if (data.employerId) ids.add(data.employerId);
+    if (data.toUserId) ids.add(data.toUserId);
+    if (data.fromUserId) ids.add(data.fromUserId);
+    if (data.targetId) ids.add(data.targetId);
+    if (data.entityId) ids.add(data.entityId);
+    if (data.relatedUserId) ids.add(data.relatedUserId);
+
+    if (ids.size === 0) {
+      clearTrustScoreV2Cache();
+      return;
+    }
+
+    for (const id of ids) clearTrustScoreV2Cache(id);
+  } catch (_) {
+    clearTrustScoreV2Cache();
+  }
+}
+
+const INVALIDATION_EVENTS = [
+  'rating:submitted',
+  'attendance:noshow',
+  'attendance:confirmed',
+  'payment:disputed',
+  'payment:completed',
+  'abuse_flag:state_changed',
+  'verification:reviewed',
+  'report:reviewed',
+  'predictive_abuse:signal_created',
+  'predictive_abuse:signal_updated',
+  'predictive_abuse:signal_escalated',
+];
+
+for (const evt of INVALIDATION_EVENTS) {
+  eventBus.on(evt, invalidateFromEvent);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Test helpers
+// ─────────────────────────────────────────────────────────────
+
+export const _testHelpers = {
+  clamp01,
+  round2,
+  score100,
+  gradeFromScore,
+  calculateRatingConfidence,
+  calculateAccountAgeScore,
+  calculateVerificationScore,
+  calculateAbusePenalty,
+  weightedScore,
+  publicComponents,
+  safeOutput,
+  cache,
+};
+```
+
+---
+
 ## `server/services/users.js`
 
 ```javascript
@@ -23314,6 +25822,789 @@ export const _testHelpers = {
   buildPublicCard,
   computeTileKey,
   clearCache,
+};
+```
+
+---
+
+## `server/services/workroom.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroom.js — Job Workroom Abstraction (Phase 51)
+// ═══════════════════════════════════════════════════════════════
+// First-class job-scoped workroom wrapper.
+// Built on top of existing jobs/applications/messages/attendance/payments.
+//
+// Access rules:
+//   - employer owns job
+//   - accepted/worker_confirmed worker on job
+//   - synthetic direct_offer job accepted worker
+//
+// This service does NOT break existing messages APIs.
+// It adds workroom list/detail/timeline/quick-template support.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  getFromSetIndex,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function isEnabled() {
+  return !!(config.WORKROOM && config.WORKROOM.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function isActiveWorkroomStatus(status) {
+  return status === 'filled' || status === 'in_progress' || status === 'completed';
+}
+
+function isWorkerAcceptedStatus(status) {
+  return status === 'accepted' || status === 'worker_confirmed';
+}
+
+function sortNewestFirst(a, b) {
+  return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+}
+
+function sortTimeline(a, b) {
+  return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
+}
+
+function publicJobSummary(job) {
+  if (!job) return null;
+  return {
+    id: job.id,
+    title: job.title,
+    category: job.category,
+    governorate: job.governorate,
+    status: job.status,
+    urgency: job.urgency || 'normal',
+    dailyWage: job.dailyWage,
+    startDate: job.startDate,
+    durationDays: job.durationDays,
+    workersNeeded: job.workersNeeded,
+    workersAccepted: job.workersAccepted,
+    sourceType: job.sourceType || null,
+    sourceOfferId: job.sourceOfferId || null,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt || null,
+    completedAt: job.completedAt || null,
+  };
+}
+
+function getTemplateKey(text, role) {
+  if (!text || !role) return null;
+  const templates = config.WORKROOM?.positiveTemplates?.[role] || [];
+  const idx = templates.indexOf(text);
+  if (idx === -1) return null;
+  return `${role}_${idx}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Persistent metadata
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Ensure a workroom metadata record exists for a job.
+ * Metadata is lightweight and rebuildable.
+ *
+ * @param {string} jobId
+ * @returns {Promise<object|null>}
+ */
+export async function ensureWorkroomForJob(jobId) {
+  if (!isEnabled()) return null;
+  if (!jobId) return null;
+
+  const { findById: findJob } = await import('./jobs.js');
+  const job = await findJob(jobId);
+  if (!job) return null;
+
+  const path = getRecordPath('workrooms', jobId);
+  let record = await readJSON(path);
+
+  if (!record) {
+    record = {
+      id: jobId,
+      jobId,
+      employerId: job.employerId,
+      status: 'active',
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      lastOpenedAt: null,
+      lastMessageAt: null,
+      metadata: {},
+    };
+    await atomicWrite(path, record);
+    return record;
+  }
+
+  let changed = false;
+  if (record.employerId !== job.employerId) {
+    record.employerId = job.employerId;
+    changed = true;
+  }
+  if (!record.updatedAt) {
+    record.updatedAt = nowIso();
+    changed = true;
+  }
+
+  if (changed) await atomicWrite(path, record);
+  return record;
+}
+
+async function updateWorkroomMetadata(jobId, patch = {}) {
+  if (!isEnabled()) return null;
+
+  const path = getRecordPath('workrooms', jobId);
+  let record = await readJSON(path);
+
+  if (!record) {
+    record = await ensureWorkroomForJob(jobId);
+  }
+
+  if (!record) return null;
+
+  const next = {
+    ...record,
+    ...patch,
+    updatedAt: nowIso(),
+    metadata: {
+      ...(record.metadata || {}),
+      ...(patch.metadata || {}),
+    },
+  };
+
+  await atomicWrite(path, next);
+  return next;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Access control
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Resolve workroom access for a user.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ * @returns {Promise<{ allowed: boolean, code?: string, error?: string, job?: object, role?: 'worker'|'employer', workerIds?: string[] }>}
+ */
+async function resolveAccess(jobId, userId) {
+  if (!isEnabled()) {
+    return { allowed: false, code: 'WORKROOM_DISABLED', error: 'مساحة العمل غير مفعّلة' };
+  }
+
+  if (!jobId || !userId) {
+    return { allowed: false, code: 'INVALID_REQUEST', error: 'طلب غير صالح' };
+  }
+
+  const { findById: findJob } = await import('./jobs.js');
+  const job = await findJob(jobId);
+
+  if (!job) {
+    return { allowed: false, code: 'JOB_NOT_FOUND', error: 'الفرصة غير موجودة' };
+  }
+
+  if (!isActiveWorkroomStatus(job.status)) {
+    return { allowed: false, code: 'WORKROOM_NOT_AVAILABLE', error: 'مساحة العمل غير متاحة لهذه الفرصة حالياً' };
+  }
+
+  if (job.employerId === userId) {
+    const workerIds = await getAcceptedWorkerIds(job);
+    return { allowed: true, job, role: 'employer', workerIds };
+  }
+
+  // Direct offer synthetic job fast path.
+  if (job.sourceType === 'direct_offer' && job.sourceOfferId) {
+    try {
+      const { findById: findOffer } = await import('./directOffer.js');
+      const offer = await findOffer(job.sourceOfferId);
+      if (offer && offer.status === 'accepted' && offer.workerId === userId) {
+        return { allowed: true, job, role: 'worker', workerIds: [userId] };
+      }
+    } catch (_) {
+      // fall through to application lookup
+    }
+  }
+
+  const { listByJob } = await import('./applications.js');
+  const apps = await listByJob(jobId);
+  const accepted = apps.find(a => a.workerId === userId && isWorkerAcceptedStatus(a.status));
+
+  if (!accepted) {
+    return { allowed: false, code: 'NOT_WORKROOM_PARTICIPANT', error: 'أنت غير مشترك في مساحة العمل هذه' };
+  }
+
+  const workerIds = apps
+    .filter(a => isWorkerAcceptedStatus(a.status))
+    .map(a => a.workerId);
+
+  return { allowed: true, job, role: 'worker', workerIds };
+}
+
+/**
+ * Return accepted worker IDs for a job.
+ */
+async function getAcceptedWorkerIds(job) {
+  if (!job) return [];
+
+  // Direct offer synthetic job.
+  if (job.sourceType === 'direct_offer' && job.sourceOfferId) {
+    try {
+      const { findById: findOffer } = await import('./directOffer.js');
+      const offer = await findOffer(job.sourceOfferId);
+      if (offer && offer.status === 'accepted' && offer.workerId) {
+        return [offer.workerId];
+      }
+    } catch (_) {
+      // continue
+    }
+  }
+
+  try {
+    const { listByJob } = await import('./applications.js');
+    const apps = await listByJob(job.id);
+    return apps
+      .filter(a => isWorkerAcceptedStatus(a.status))
+      .map(a => a.workerId);
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Count unread messages in a job for a user.
+ */
+async function countUnreadWorkroomMessages(jobId, userId) {
+  try {
+    const { listByJob } = await import('./messages.js');
+    const result = await listByJob(jobId, userId, { limit: 10000, offset: 0 });
+    const items = result.items || [];
+    return items.filter(m => !m.read && m.senderId !== userId).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+/**
+ * Get latest message timestamp for a job visible to user.
+ */
+async function getLastMessageAt(jobId, userId) {
+  try {
+    const { listByJob } = await import('./messages.js');
+    const result = await listByJob(jobId, userId, { limit: 1, offset: 0 });
+    const item = result.items && result.items[0];
+    return item ? item.createdAt : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Workroom computed model
+// ─────────────────────────────────────────────────────────────
+
+async function buildWorkroom(job, userId, role, workerIds, options = {}) {
+  const unreadMessages = await countUnreadWorkroomMessages(job.id, userId);
+  const lastMessageAt = await getLastMessageAt(job.id, userId);
+
+  const workroom = {
+    jobId: job.id,
+    title: job.title,
+    status: job.status,
+    employerId: job.employerId,
+    workerIds: workerIds || [],
+    userRoleInWorkroom: role,
+    unreadMessages,
+    lastMessageAt,
+    job: publicJobSummary(job),
+    quickTemplates: config.WORKROOM?.quickTemplatesEnabled
+      ? (config.WORKROOM.positiveTemplates?.[role] || [])
+      : [],
+  };
+
+  if (options.includeTimeline) {
+    workroom.timeline = await getWorkroomTimeline(job.id, userId);
+  }
+
+  return workroom;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Public service API
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * List workrooms for a user.
+ *
+ * @param {string} userId
+ * @param {{ status?: string, activeOnly?: boolean, limit?: number, offset?: number }} options
+ */
+export async function getUserWorkrooms(userId, options = {}) {
+  if (!isEnabled()) {
+    return { workrooms: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const { findById: findUser } = await import('./users.js');
+  const user = await findUser(userId);
+  if (!user || user.status !== 'active') {
+    return { workrooms: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  let jobs = [];
+
+  if (user.role === 'employer') {
+    try {
+      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      const { readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+      for (const jobId of jobIds) {
+        const job = await readJSONFn(getRecordPathFn('jobs', jobId));
+        if (job) jobs.push(job);
+      }
+    } catch (err) {
+      logger.warn('workroom: employer jobs lookup failed', { userId, error: err.message });
+    }
+  } else if (user.role === 'worker') {
+    try {
+      const { listByWorker } = await import('./applications.js');
+      const { findById: findJob } = await import('./jobs.js');
+
+      const apps = await listByWorker(userId);
+      const acceptedApps = apps.filter(a => isWorkerAcceptedStatus(a.status));
+      for (const app of acceptedApps) {
+        const job = await findJob(app.jobId);
+        if (job) jobs.push(job);
+      }
+    } catch (err) {
+      logger.warn('workroom: worker apps lookup failed', { userId, error: err.message });
+    }
+  }
+
+  // Filter by workroom-eligible status.
+  jobs = jobs.filter(j => isActiveWorkroomStatus(j.status));
+
+  if (options.status) {
+    jobs = jobs.filter(j => j.status === options.status);
+  }
+
+  if (options.activeOnly !== false) {
+    jobs = jobs.filter(j => j.status === 'filled' || j.status === 'in_progress');
+  }
+
+  const workrooms = [];
+  for (const job of jobs) {
+    try {
+      const access = await resolveAccess(job.id, userId);
+      if (!access.allowed) continue;
+      await ensureWorkroomForJob(job.id);
+      workrooms.push(await buildWorkroom(access.job, userId, access.role, access.workerIds));
+    } catch (_) {
+      // Per-job isolation.
+    }
+  }
+
+  workrooms.sort((a, b) => {
+    const at = a.lastMessageAt || a.job.startedAt || a.job.createdAt || '';
+    const bt = b.lastMessageAt || b.job.startedAt || b.job.createdAt || '';
+    return new Date(bt) - new Date(at);
+  });
+
+  const total = workrooms.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    workrooms: workrooms.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Get one workroom.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ */
+export async function getWorkroom(jobId, userId) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  await ensureWorkroomForJob(jobId);
+  await updateWorkroomMetadata(jobId, { lastOpenedAt: nowIso() }).catch(() => {});
+
+  const workroom = await buildWorkroom(access.job, userId, access.role, access.workerIds, {
+    includeTimeline: false,
+  });
+
+  return { ok: true, workroom };
+}
+
+/**
+ * List messages in a workroom.
+ */
+export async function listWorkroomMessages(jobId, userId, options = {}) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  const { listByJob } = await import('./messages.js');
+  const result = await listByJob(jobId, userId, {
+    limit: options.limit || 50,
+    offset: options.offset || 0,
+  });
+
+  return { ok: true, ...result };
+}
+
+/**
+ * Send a message through workroom wrapper.
+ *
+ * fields:
+ *   - text
+ *   - recipientId? (required for employer if multiple accepted workers)
+ *   - templateKey?
+ */
+export async function sendWorkroomMessage(jobId, senderId, fields = {}) {
+  const access = await resolveAccess(jobId, senderId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  const text = typeof fields.text === 'string' ? fields.text.trim() : '';
+  if (!text) {
+    return { ok: false, error: 'نص الرسالة مطلوب', code: 'TEXT_REQUIRED' };
+  }
+
+  let recipientId = fields.recipientId || null;
+
+  if (access.role === 'worker') {
+    recipientId = access.job.employerId;
+  } else if (access.role === 'employer') {
+    if (!recipientId && access.workerIds.length === 1) {
+      recipientId = access.workerIds[0];
+    }
+
+    if (!recipientId && access.workerIds.length > 1) {
+      return {
+        ok: false,
+        error: 'اختار العامل المستلم للرسالة',
+        code: 'RECIPIENT_REQUIRED',
+      };
+    }
+
+    if (!access.workerIds.includes(recipientId)) {
+      return {
+        ok: false,
+        error: 'المستلم غير مشترك في مساحة العمل',
+        code: 'RECIPIENT_NOT_INVOLVED',
+      };
+    }
+  }
+
+  const templateKey = fields.templateKey || getTemplateKey(text, access.role);
+
+  const { sendMessage } = await import('./messages.js');
+  const result = await sendMessage(jobId, senderId, {
+    recipientId,
+    text,
+    source: 'workroom',
+    templateKey,
+  });
+
+  if (!result.ok) return result;
+
+  await updateWorkroomMetadata(jobId, { lastMessageAt: result.message.createdAt }).catch(() => {});
+
+  eventBus.emit('workroom:message_sent', {
+    jobId,
+    messageId: result.message.id,
+    senderId,
+    recipientId,
+    templateKey: templateKey || null,
+    timestamp: result.message.createdAt,
+  });
+
+  return { ok: true, message: result.message };
+}
+
+/**
+ * Mark all workroom messages as read.
+ */
+export async function markWorkroomRead(jobId, userId) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  const { markAllAsRead } = await import('./messages.js');
+  const result = await markAllAsRead(jobId, userId);
+
+  return { ok: true, count: result.count || 0 };
+}
+
+/**
+ * Build timeline for a workroom.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ * @param {{ limit?: number }} options
+ */
+export async function getWorkroomTimeline(jobId, userId, options = {}) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code, timeline: [] };
+  }
+
+  if (!config.WORKROOM?.showTimelineEvents) {
+    return { ok: true, timeline: [] };
+  }
+
+  const timeline = [];
+  const job = access.job;
+
+  // Job created.
+  if (job.createdAt) {
+    timeline.push({
+      type: 'job_created',
+      label: 'تم إنشاء الفرصة',
+      timestamp: job.createdAt,
+      meta: { jobId: job.id },
+    });
+  }
+
+  // Applications accepted.
+  try {
+    const { listByJob } = await import('./applications.js');
+    const apps = await listByJob(jobId);
+    for (const app of apps) {
+      if (isWorkerAcceptedStatus(app.status)) {
+        timeline.push({
+          type: 'application_accepted',
+          label: 'تم قبول عامل في الفرصة',
+          timestamp: app.workerConfirmedAt || app.respondedAt || app.appliedAt,
+          meta: {
+            applicationId: app.id,
+            workerId: app.workerId,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Job started/completed.
+  if (job.startedAt) {
+    timeline.push({
+      type: 'job_started',
+      label: 'بدأ تنفيذ الفرصة',
+      timestamp: job.startedAt,
+      meta: { jobId: job.id },
+    });
+  }
+
+  // Attendance.
+  try {
+    const { listByJob } = await import('./attendance.js');
+    const records = await listByJob(jobId);
+    for (const r of records) {
+      if (r.checkInAt) {
+        timeline.push({
+          type: 'attendance_checkin',
+          label: 'عامل سجّل حضوره',
+          timestamp: r.checkInAt,
+          meta: {
+            attendanceId: r.id,
+            workerId: r.workerId,
+            status: r.status,
+          },
+        });
+      }
+      if (r.employerConfirmedAt) {
+        timeline.push({
+          type: 'attendance_confirmed',
+          label: 'تم تأكيد الحضور',
+          timestamp: r.employerConfirmedAt,
+          meta: {
+            attendanceId: r.id,
+            workerId: r.workerId,
+          },
+        });
+      }
+      if (r.noShowReportedAt) {
+        timeline.push({
+          type: 'attendance_noshow',
+          label: 'تم تسجيل غياب',
+          timestamp: r.noShowReportedAt,
+          meta: {
+            attendanceId: r.id,
+            workerId: r.workerId,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Payments.
+  try {
+    const { listByJob } = await import('./payments.js');
+    const payments = await listByJob(jobId);
+    for (const p of payments) {
+      if (p.createdAt) {
+        timeline.push({
+          type: 'payment_created',
+          label: 'تم إنشاء سجل دفع',
+          timestamp: p.createdAt,
+          meta: {
+            paymentId: p.id,
+            amount: p.amount,
+            status: p.status,
+          },
+        });
+      }
+      if (p.confirmedAt) {
+        timeline.push({
+          type: 'payment_confirmed',
+          label: 'صاحب العمل أكد الدفع',
+          timestamp: p.confirmedAt,
+          meta: {
+            paymentId: p.id,
+            amount: p.amount,
+          },
+        });
+      }
+      if (p.completedAt) {
+        timeline.push({
+          type: 'payment_completed',
+          label: 'تم إنهاء الدفع',
+          timestamp: p.completedAt,
+          meta: {
+            paymentId: p.id,
+            amount: p.amount,
+          },
+        });
+      }
+      if (p.disputedAt) {
+        timeline.push({
+          type: 'payment_disputed',
+          label: 'تم فتح نزاع على الدفع',
+          timestamp: p.disputedAt,
+          meta: {
+            paymentId: p.id,
+            disputedBy: p.disputedBy,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
+  if (job.completedAt) {
+    timeline.push({
+      type: 'job_completed',
+      label: 'تم إنهاء الفرصة',
+      timestamp: job.completedAt,
+      meta: { jobId: job.id },
+    });
+
+    timeline.push({
+      type: 'rating_prompt',
+      label: 'يمكنك تقييم التجربة',
+      timestamp: job.completedAt,
+      meta: { jobId: job.id },
+    });
+  }
+
+  timeline.sort(sortTimeline);
+
+  const max = Math.min(
+    config.WORKROOM.maxTimelineEvents || 200,
+    Math.max(1, parseInt(options.limit) || config.WORKROOM.maxTimelineEvents || 200)
+  );
+
+  return {
+    ok: true,
+    timeline: timeline.slice(-max),
+    total: timeline.length,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Stats / diagnostics
+// ─────────────────────────────────────────────────────────────
+
+export async function getWorkroomStats() {
+  try {
+    const dir = getCollectionPath('workrooms');
+    const all = await listJSON(dir);
+    const records = all.filter(w => w && w.id);
+    return {
+      enabled: isEnabled(),
+      totalWorkrooms: records.length,
+      activeMetadataRecords: records.filter(w => w.status === 'active').length,
+    };
+  } catch (_) {
+    return { enabled: isEnabled(), totalWorkrooms: 0, activeMetadataRecords: 0 };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// EventBus integration
+// ─────────────────────────────────────────────────────────────
+
+eventBus.on('job:filled', (data) => {
+  if (!data || !data.jobId) return;
+  ensureWorkroomForJob(data.jobId).catch(() => {});
+});
+
+eventBus.on('job:started', (data) => {
+  if (!data || !data.jobId) return;
+  ensureWorkroomForJob(data.jobId).catch(() => {});
+});
+
+eventBus.on('direct_offer:accepted', (data) => {
+  if (!data || !data.jobId) return;
+  ensureWorkroomForJob(data.jobId).catch(() => {});
+});
+
+// ─────────────────────────────────────────────────────────────
+// Test helpers
+// ─────────────────────────────────────────────────────────────
+
+export const _testHelpers = {
+  isEnabled,
+  isActiveWorkroomStatus,
+  isWorkerAcceptedStatus,
+  publicJobSummary,
+  getTemplateKey,
+  resolveAccess,
+  getAcceptedWorkerIds,
+  countUnreadWorkroomMessages,
+  getLastMessageAt,
+  buildWorkroom,
 };
 ```
 
