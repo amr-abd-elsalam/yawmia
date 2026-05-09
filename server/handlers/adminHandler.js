@@ -985,3 +985,219 @@ export async function handleAdminCompactCounters(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في ضغط العدادات', code: 'COUNTER_COMPACT_ERROR' });
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 51 — Predictive Abuse Intelligence Admin Handlers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/predictive-abuse/dashboard
+ * Admin predictive risk dashboard.
+ */
+export async function handleAdminPredictiveAbuseDashboard(req, res) {
+  try {
+    const { getPredictiveDashboard } = await import('../services/predictiveAbuse.js');
+
+    const result = await getPredictiveDashboard({
+      status: req.query.status || 'active',
+      limit: parseInt(req.query.limit) || 20,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب لوحة المخاطر التنبؤية', code: 'PREDICTIVE_DASHBOARD_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/predictive-abuse/signals
+ * List predictive signals with filters.
+ */
+export async function handleAdminPredictiveAbuseSignals(req, res) {
+  try {
+    const { listPredictiveSignals } = await import('../services/predictiveAbuse.js');
+
+    const result = await listPredictiveSignals({
+      status: req.query.status || undefined,
+      severity: req.query.severity || undefined,
+      riskType: req.query.riskType || undefined,
+      entityId: req.query.entityId || undefined,
+      limit: parseInt(req.query.limit) || 20,
+      offset: parseInt(req.query.offset) || 0,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب إشارات المخاطر', code: 'PREDICTIVE_SIGNALS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/run-scan
+ * Force-run predictive scan.
+ */
+export async function handleAdminRunPredictiveAbuseScan(req, res) {
+  try {
+    const { runPredictiveScan } = await import('../services/predictiveAbuse.js');
+
+    const result = await runPredictiveScan({ force: true, persist: true });
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'predictive_abuse_scan_run',
+      targetType: 'predictive_abuse',
+      targetId: 'scan',
+      details: {
+        signalCount: result.signalCount || 0,
+        created: result.created || 0,
+        updated: result.updated || 0,
+        scannedOffers: result.scannedOffers || 0,
+        durationMs: result.durationMs || 0,
+      },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تشغيل فحص المخاطر', code: 'PREDICTIVE_SCAN_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/signals/:id/dismiss
+ * Body: { note? }
+ */
+export async function handleAdminDismissPredictiveSignal(req, res) {
+  try {
+    const { dismissSignal } = await import('../services/predictiveAbuse.js');
+
+    const signalId = req.params.id;
+    const note = req.body && typeof req.body.note === 'string'
+      ? req.body.note.trim().slice(0, 500)
+      : null;
+
+    const adminId = req.user?.id || 'admin_token';
+    const result = await dismissSignal(signalId, adminId, note);
+
+    if (!result.ok) {
+      const status = result.code === 'SIGNAL_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    logAction({
+      adminId,
+      action: 'predictive_signal_dismissed',
+      targetType: 'predictive_signal',
+      targetId: signalId,
+      details: { note },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, signal: result.signal });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في رفض الإشارة', code: 'PREDICTIVE_DISMISS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/predictive-abuse/signals/:id/escalate
+ * Body: { note? }
+ */
+export async function handleAdminEscalatePredictiveSignal(req, res) {
+  try {
+    const { escalateSignal } = await import('../services/predictiveAbuse.js');
+
+    const signalId = req.params.id;
+    const note = req.body && typeof req.body.note === 'string'
+      ? req.body.note.trim().slice(0, 500)
+      : null;
+
+    const adminId = req.user?.id || 'admin_token';
+    const result = await escalateSignal(signalId, adminId, note);
+
+    if (!result.ok) {
+      const status = result.code === 'SIGNAL_NOT_FOUND' ? 404 : 400;
+      return sendJSON(res, status, { error: result.error, code: result.code });
+    }
+
+    logAction({
+      adminId,
+      action: 'predictive_signal_escalated',
+      targetType: 'predictive_signal',
+      targetId: signalId,
+      details: { note, severity: result.signal?.severity, riskScore: result.signal?.riskScore },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, signal: result.signal });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في تصعيد الإشارة', code: 'PREDICTIVE_ESCALATE_ERROR' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 51 — Trust Score V2 + Admin Decision Quality Handlers
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/users/:id/trust-v2
+ * Admin-rich Trust Score V2.
+ */
+export async function handleAdminUserTrustV2(req, res) {
+  try {
+    const { getTrustScoreV2 } = await import('../services/trustScoreV2.js');
+
+    const result = await getTrustScoreV2(req.params.id, {
+      admin: true,
+      force: req.query.force === '1' || req.query.force === 'true',
+    });
+
+    if (!result) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, { ok: true, trust: result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة V2', code: 'TRUST_V2_ADMIN_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/decision-quality?from=&to=&adminId=
+ * Admin decision quality dashboard.
+ */
+export async function handleAdminTrustDecisionQuality(req, res) {
+  try {
+    const { getDecisionQuality } = await import('../services/adminDecisionAnalytics.js');
+
+    const result = await getDecisionQuality({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      adminId: req.query.adminId || undefined,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب جودة قرارات الأدمن', code: 'DECISION_QUALITY_ERROR' });
+  }
+}
+
+/**
+ * GET /api/admin/trust/backlog-priority
+ * Prioritized review queue.
+ */
+export async function handleAdminTrustBacklogPriority(req, res) {
+  try {
+    const { getBacklogPriority } = await import('../services/adminDecisionAnalytics.js');
+
+    const result = await getBacklogPriority({
+      limit: parseInt(req.query.limit) || 50,
+      includeAbuseFlags: req.query.includeAbuseFlags === 'false' ? false : true,
+      includePredictiveSignals: req.query.includePredictiveSignals === 'false' ? false : true,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب أولوية المراجعة', code: 'BACKLOG_PRIORITY_ERROR' });
+  }
+}

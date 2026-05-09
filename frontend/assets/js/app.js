@@ -22,7 +22,7 @@ var Yawmia = (function () {
       headers['Authorization'] = 'Bearer ' + state.token;
     }
     const opts = { method, headers };
-    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (body && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(API_BASE + path, opts);

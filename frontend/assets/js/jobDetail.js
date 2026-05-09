@@ -50,6 +50,11 @@
         loadPaymentInfo(job.id);
       }
 
+      // Phase 51 — Workroom detail tabs (only renders if user is involved)
+      if (typeof YawmiaWorkroom !== 'undefined' && Yawmia.isLoggedIn()) {
+        YawmiaWorkroom.initJobDetail(job.id, 'jobWorkroomMount');
+      }
+
     } catch (err) {
       showError();
     }

@@ -85,7 +85,7 @@ export async function canMessage(jobId, userId) {
  * @param {{ recipientId: string, text: string }} fields
  * @returns {Promise<{ ok: boolean, message?: object, error?: string, code?: string }>}
  */
-export async function sendMessage(jobId, senderId, { recipientId, text }) {
+export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey }) {
   // 1. canMessage check for sender
   const senderCheck = await canMessage(jobId, senderId);
   if (!senderCheck.allowed) {
@@ -153,6 +153,8 @@ export async function sendMessage(jobId, senderId, { recipientId, text }) {
     text: sanitized,
     read: false,
     readAt: null,
+    source: source === 'workroom' ? 'workroom' : 'job_messages',
+    templateKey: (templateKey && typeof templateKey === 'string') ? templateKey.substring(0, 80) : null,
     createdAt: now,
   };
 

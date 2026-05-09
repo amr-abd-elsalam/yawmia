@@ -28,6 +28,11 @@
     btnLogout.addEventListener('click', function () { Yawmia.logout(); });
   }
 
+  // ── Phase 51 — Workroom List Mount ─────────────────────────
+  if (typeof YawmiaWorkroom !== 'undefined') {
+    YawmiaWorkroom.initList('workroomListMount');
+  }
+
   // ── Welcome Card ──────────────────────────────────────────
   var welcomeTitle = Yawmia.$id('welcomeTitle');
   var welcomeDesc = Yawmia.$id('welcomeDesc');

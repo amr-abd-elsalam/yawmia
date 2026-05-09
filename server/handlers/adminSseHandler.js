@@ -6,9 +6,13 @@
 // Subscribed events:
 //   - abuse_flag:snooze_expiring (Phase 47)
 //   - abuse_flag:snooze_expired (Phase 47)
-//   - abuse_flag:detected_high_severity (Phase 48 NEW)
-//   - direct_offer:abuse_threshold_crossed (Phase 48 NEW — reserved for Phase 49+)
-//   - counters:auto_rebuild_triggered (Phase 48 NEW)
+//   - abuse_flag:detected_high_severity (Phase 48)
+//   - direct_offer:abuse_threshold_crossed (Phase 49)
+//   - counters:auto_rebuild_triggered (Phase 48)
+//   - csv_export:progress (Phase 49)
+//   - predictive_abuse:signal_created (Phase 51)
+//   - predictive_abuse:signal_escalated (Phase 51)
+//   - predictive_abuse:scan_failed (Phase 51)
 // In-memory connection map per admin, lazy event listener registration.
 // ═══════════════════════════════════════════════════════════════
 
@@ -27,6 +31,10 @@ const SUBSCRIBED_EVENTS = [
   'direct_offer:abuse_threshold_crossed',
   'counters:auto_rebuild_triggered',
   'csv_export:progress', // Phase 49 — streaming CSV export progress
+  // Phase 51 — Predictive Abuse Intelligence
+  'predictive_abuse:signal_created',
+  'predictive_abuse:signal_escalated',
+  'predictive_abuse:scan_failed',
 ];
 
 let listenersRegistered = false;

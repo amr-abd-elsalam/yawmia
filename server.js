@@ -431,6 +431,32 @@ if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) 
   }
 }
 
+// ── Phase 51 — Scheduled Predictive Abuse Intelligence Scanner ──
+if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICTIVE_ABUSE.scheduledScanEnabled) {
+  const predictiveScanTimer = setInterval(async () => {
+    try {
+      const predictive = await import('./server/services/predictiveAbuse.js');
+      const result = await predictive.runPredictiveScan({ persist: true });
+      if (result && result.signalCount > 0) {
+        logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
+          signalCount: result.signalCount,
+          created: result.created || 0,
+          updated: result.updated || 0,
+        });
+      }
+    } catch (err) {
+      logger.warn('Phase 51: predictive abuse scan failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.PREDICTIVE_ABUSE.scanIntervalMs || (15 * 60 * 1000));
+  if (predictiveScanTimer.unref) predictiveScanTimer.unref();
+
+  logger.info('Phase 51: predictive abuse scanner scheduled', {
+    intervalMs: config.PREDICTIVE_ABUSE.scanIntervalMs || (15 * 60 * 1000),
+  });
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)

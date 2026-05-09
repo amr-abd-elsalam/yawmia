@@ -270,6 +270,9 @@ const config = {
       audit_indexes: 'audit/indexes',
       exports: 'exports',
       counter_archives: 'metrics/counter-archives',
+      predictive_signals: 'predictive_signals',
+      workrooms: 'workrooms',
+      trust_snapshots: 'metrics/trust-v2-snapshots',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -458,7 +461,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.46.0',
+    cacheName: 'yawmia-v0.47.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1076,6 +1079,93 @@ const config = {
     maxEntitiesPerCompactRun: 10000,
     archiveEnabled: true,
     archivePath: 'metrics/counter-archives',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 68. الذكاء التنبؤي للإساءة (PREDICTIVE_ABUSE) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_ABUSE: {
+    enabled: true,
+    scheduledScanEnabled: true,
+    scanIntervalMs: 15 * 60 * 1000,
+    cacheTtlMs: 5 * 60 * 1000,
+    minSamples: {
+      employerOffers: 10,
+      workerReceivedOffers: 10,
+      sameWorkerPairOffers: 4,
+    },
+    windows: {
+      shortHours: 24,
+      baselineDays: 14,
+      bombingMinutes: 60,
+    },
+    thresholds: {
+      zScoreWarning: 2.0,
+      zScoreCritical: 3.0,
+      riskMedium: 0.5,
+      riskHigh: 0.75,
+      riskCritical: 0.9,
+    },
+    maxSignalsPerScan: 100,
+    noAutoBan: true,
+    persistSignals: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 69. مؤشر الثقة V2 (TRUST_SCORE_V2) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_SCORE_V2: {
+    enabled: true,
+    cacheTtlMs: 5 * 60 * 1000,
+    minRatingConfidenceCount: 5,
+    publicExposeComponents: true,
+    weights: {
+      worker: {
+        ratingConfidence: 0.20,
+        attendanceReliability: 0.25,
+        completionReliability: 0.20,
+        abusePenalty: 0.15,
+        verification: 0.10,
+        accountAge: 0.05,
+        profileCompleteness: 0.05,
+      },
+      employer: {
+        ratingConfidence: 0.20,
+        paymentReliability: 0.25,
+        disputeRate: 0.15,
+        cancellationRate: 0.10,
+        offerBehavior: 0.15,
+        abusePenalty: 0.05,
+        verification: 0.05,
+        accountAge: 0.05,
+      },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 70. مساحة العمل والرسائل (WORKROOM) — Phase 51
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM: {
+    enabled: true,
+    quickTemplatesEnabled: true,
+    showTimelineEvents: true,
+    retainAfterCompletionDays: 365,
+    maxTimelineEvents: 200,
+    messageTabEnabled: true,
+    positiveTemplates: {
+      worker: [
+        'أنا في الطريق',
+        'وصلت للموقع',
+        'محتاج توضيح للمكان',
+        'تم استلام اليومية',
+      ],
+      employer: [
+        'تمام، مستنيك في المعاد',
+        'لو وصلت ابعتلي رسالة',
+        'تم تأكيد حضورك',
+        'شكراً على الشغل النهارده',
+      ],
+    },
   },
 
 };

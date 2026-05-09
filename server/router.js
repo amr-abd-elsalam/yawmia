@@ -45,12 +45,21 @@ import {
   handleAdminCancelExport,
   handleAdminCounterHygiene,
   handleAdminCompactCounters,
+  // Phase 51 — Predictive Trust Intelligence
+  handleAdminPredictiveAbuseDashboard,
+  handleAdminPredictiveAbuseSignals,
+  handleAdminRunPredictiveAbuseScan,
+  handleAdminDismissPredictiveSignal,
+  handleAdminEscalatePredictiveSignal,
+  handleAdminUserTrustV2,
+  handleAdminTrustDecisionQuality,
+  handleAdminTrustBacklogPriority,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
-import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore } from './handlers/reportsHandler.js';
+import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
@@ -65,6 +74,14 @@ import { handleCreateWindow, handleListWindows, handleDeleteWindow } from './han
 import { handleLiveFeedStream, handleInstantAccept } from './handlers/liveFeedHandler.js';
 import { handleCreateAd, handleListMyAds, handleWithdrawAd, handleGetAd, handleAdStats } from './handlers/availabilityAdHandler.js';
 import { handleDiscoverWorkers, handleGetWorkerCard, handleQuickOffer } from './handlers/workerDiscoveryHandler.js';
+import {
+  handleListWorkrooms,
+  handleGetWorkroom,
+  handleListWorkroomMessages,
+  handleSendWorkroomMessage,
+  handleMarkWorkroomRead,
+  handleGetWorkroomTimeline,
+} from './handlers/workroomHandler.js';
 import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer, handleEmployerOfferStats, handleWorkerOfferStats } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
 import { logger } from './services/logger.js';
@@ -95,7 +112,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.46.0',
+        version: '0.47.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -206,6 +223,27 @@ const routes = [
         response.exports = { enabled: false };
       }
 
+      // Phase 51 — Predictive abuse stats (non-blocking)
+      try {
+        const { getPredictiveStats } = await import('./services/predictiveAbuse.js');
+        response.predictiveAbuse = await getPredictiveStats();
+      } catch (_) {
+        response.predictiveAbuse = { enabled: false, totalSignals: 0, activeSignals: 0 };
+      }
+
+      // Phase 51 — Workroom stats (non-blocking)
+      try {
+        const { getWorkroomStats } = await import('./services/workroom.js');
+        response.workrooms = await getWorkroomStats();
+      } catch (_) {
+        response.workrooms = { enabled: false, totalWorkrooms: 0 };
+      }
+
+      // Phase 51 — Trust Score V2 config visibility (non-blocking)
+      response.trustScoreV2 = {
+        enabled: !!(config.TRUST_SCORE_V2 && config.TRUST_SCORE_V2.enabled),
+      };
+
       // Phase 45 — Counter file integrity + Phase 46 — File size monitoring (non-blocking)
       try {
         const counters = await directOfferCounters.readCounters();
@@ -272,7 +310,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.46.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.47.0' });
     },
   },
 
@@ -335,6 +373,7 @@ const routes = [
   { method: 'GET', path: '/api/users/:id/ratings', middlewares: [], handler: handleListUserRatings },
   { method: 'GET', path: '/api/users/:id/rating-summary', middlewares: [], handler: handleUserRatingSummary },
   { method: 'GET', path: '/api/users/:id/trust-score', middlewares: [], handler: handleGetTrustScore },
+  { method: 'GET', path: '/api/users/:id/trust-v2', middlewares: [], handler: handleGetTrustScoreV2 },
   { method: 'GET', path: '/api/users/:id/public-profile', middlewares: [], handler: handleGetPublicProfile },
 
   // ── Report Routes ──
@@ -405,6 +444,14 @@ const routes = [
   { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
   { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
+  // ── Phase 51 — Workroom Messaging Routes ──
+  { method: 'GET', path: '/api/workrooms', middlewares: [requireAuth], handler: handleListWorkrooms },
+  { method: 'GET', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleListWorkroomMessages },
+  { method: 'POST', path: '/api/workrooms/:id/messages/read-all', middlewares: [requireAuth], handler: handleMarkWorkroomRead },
+  { method: 'POST', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleSendWorkroomMessage },
+  { method: 'GET', path: '/api/workrooms/:id/timeline', middlewares: [requireAuth], handler: handleGetWorkroomTimeline },
+  { method: 'GET', path: '/api/workrooms/:id', middlewares: [requireAuth], handler: handleGetWorkroom },
+
   // ── Rating Pending Route ──
   { method: 'GET', path: '/api/ratings/pending', middlewares: [requireAuth], handler: handleGetPendingRatings },
 
@@ -470,6 +517,7 @@ const routes = [
   { method: 'POST', path: '/api/admin/abuse-flags/bulk-action', middlewares: [requireAdmin], handler: handleAdminBulkFlagAction },
   { method: 'GET', path: '/api/admin/abuse-flags/snooze-expiring', middlewares: [requireAdmin], handler: handleAdminSnoozeExpiring },
   { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
+  { method: 'GET', path: '/api/admin/users/:id/trust-v2', middlewares: [requireAdmin], handler: handleAdminUserTrustV2 },
   { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
   { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
 
@@ -498,6 +546,17 @@ const routes = [
   // ── Phase 50 — Counter Hygiene ──
   { method: 'GET', path: '/api/admin/counters/hygiene', middlewares: [requireAdmin], handler: handleAdminCounterHygiene },
   { method: 'POST', path: '/api/admin/counters/compact', middlewares: [requireAdmin], handler: handleAdminCompactCounters },
+
+  // ── Phase 51 — Predictive Abuse Intelligence ──
+  { method: 'GET', path: '/api/admin/predictive-abuse/dashboard', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseDashboard },
+  { method: 'GET', path: '/api/admin/predictive-abuse/signals', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseSignals },
+  { method: 'POST', path: '/api/admin/predictive-abuse/run-scan', middlewares: [requireAdmin], handler: handleAdminRunPredictiveAbuseScan },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireAdmin], handler: handleAdminDismissPredictiveSignal },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireAdmin], handler: handleAdminEscalatePredictiveSignal },
+
+  // ── Phase 51 — Admin Decision Quality ──
+  { method: 'GET', path: '/api/admin/trust/decision-quality', middlewares: [requireAdmin], handler: handleAdminTrustDecisionQuality },
+  { method: 'GET', path: '/api/admin/trust/backlog-priority', middlewares: [requireAdmin], handler: handleAdminTrustBacklogPriority },
 
   // ── Phase 45 — Admin Abuse Flag Review Workflow ──
   { method: 'GET', path: '/api/admin/abuse-flags/:id/history', middlewares: [requireAdmin], handler: handleAdminFlagReviewHistory },

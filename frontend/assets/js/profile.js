@@ -61,6 +61,11 @@
           renderAvailabilityToggle(user);
         }
 
+        // Phase 51 — Workroom list on profile
+        if (typeof YawmiaWorkroom !== 'undefined') {
+          YawmiaWorkroom.initList('profileWorkroomListMount');
+        }
+
         // Job alerts management (all roles)
         loadMyAlerts();
 

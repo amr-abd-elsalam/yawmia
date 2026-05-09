@@ -117,6 +117,8 @@ var AdminApp = (function () {
         loadMonitoring(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
+        loadPredictiveAbuseDashboard(),
+        loadDecisionQuality(),
         loadAuditIndexStatus(),
         loadExports(),
         loadCounterHygiene(),
@@ -197,6 +199,37 @@ var AdminApp = (function () {
           }
           if (typeof loadAbuseSignals === 'function') loadAbuseSignals();
           if (typeof loadTrustDashboard === 'function') loadTrustDashboard();
+        } catch (_) {}
+      });
+
+      // Phase 51 — Predictive Abuse Intelligence events
+      adminSseSource.addEventListener('predictive_abuse:signal_created', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('🧠 إشارة خطر تنبؤية: ' + (data.riskType || '?'));
+          }
+          if (typeof loadPredictiveAbuseDashboard === 'function') loadPredictiveAbuseDashboard();
+          if (typeof loadDecisionQuality === 'function') loadDecisionQuality();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('predictive_abuse:signal_escalated', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('🚨 تم تصعيد إشارة تنبؤية: ' + (data.riskType || '?'));
+          }
+          if (typeof loadPredictiveAbuseDashboard === 'function') loadPredictiveAbuseDashboard();
+          if (typeof loadDecisionQuality === 'function') loadDecisionQuality();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('predictive_abuse:scan_failed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('فشل فحص المخاطر التنبؤية');
+          }
         } catch (_) {}
       });
 
@@ -1560,6 +1593,242 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 51 — Predictive Abuse Intelligence + Decision Quality
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadPredictiveAbuseDashboard() {
+    var metricsEl = document.getElementById('predictiveAbuseMetrics');
+    var signalsEl = document.getElementById('predictiveAbuseSignals');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (signalsEl) {
+      signalsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/predictive-abuse/dashboard?status=active&limit=20');
+      var metrics = data.metrics || {};
+
+      if (metricsEl) {
+        var cards = [
+          { value: metrics.activeSignals || 0, label: 'إشارات نشطة' },
+          { value: metrics.highOrCritical || 0, label: 'عالية/حرجة' },
+          { value: Math.round((metrics.avgRiskScore || 0) * 100) + '%', label: 'متوسط الخطر' },
+          { value: metrics.lastScanDurationMs || 0, label: 'مدة آخر فحص ms' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      renderPredictiveSignals(data.signals || []);
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل المؤشرات</p>';
+      if (signalsEl) signalsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الإشارات</p>';
+    }
+  }
+
+  function renderPredictiveSignals(signals) {
+    var el = document.getElementById('predictiveAbuseSignals');
+    if (!el) return;
+
+    if (!signals || signals.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد إشارات خطر تنبؤية نشطة</p>';
+      return;
+    }
+
+    var riskLabels = {
+      employer_decline_spike: 'ارتفاع مفاجئ في رفض/انتهاء عروض صاحب العمل',
+      worker_offer_bombing_probability: 'احتمال ضغط عروض على عامل',
+      same_worker_harassment_likelihood: 'احتمال مضايقة عامل بعروض متكررة',
+      employer_toxic_offer_behavior: 'سلوك عروض سلبي لصاحب العمل',
+      worker_reliability_anomaly: 'انحراف في موثوقية رد العامل',
+    };
+
+    var html = '';
+    signals.forEach(function (s) {
+      var sev = s.severity || 'medium';
+      var scorePct = Math.round((s.riskScore || 0) * 100);
+
+      html += '<div class="risk-signal-card risk-signal-card--' + escapeHtml(sev) + '">' +
+        '<div class="risk-signal-card__header">' +
+          '<div>' +
+            '<strong>' + escapeHtml(riskLabels[s.riskType] || s.riskType || 'Signal') + '</strong>' +
+            '<div style="font-size:0.8rem;color:var(--color-text-muted);margin-block-start:0.25rem;">' +
+              escapeHtml(s.entityType || '') + ': <a href="/user.html?id=' + escapeHtml(s.entityId || '') + '" class="worker-link">' + escapeHtml(s.entityId || '-') + '</a>' +
+              (s.relatedUserId ? ' · related: <a href="/user.html?id=' + escapeHtml(s.relatedUserId) + '" class="worker-link">' + escapeHtml(s.relatedUserId) + '</a>' : '') +
+            '</div>' +
+          '</div>' +
+          '<span class="risk-score-pill risk-score-pill--' + escapeHtml(sev) + '">' + scorePct + '%</span>' +
+        '</div>';
+
+      if (s.explanations && s.explanations.length > 0) {
+        html += '<ul class="risk-signal-card__explanations">';
+        s.explanations.slice(0, 4).forEach(function (ex) {
+          html += '<li>' + escapeHtml(ex) + '</li>';
+        });
+        html += '</ul>';
+      }
+
+      html += '<div class="risk-signal-card__actions">' +
+        '<button class="btn btn--ghost btn--sm" onclick="AdminApp.dismissPredictiveSignal(\'' + escapeHtml(s.id) + '\')">رفض</button>' +
+        '<button class="btn btn--primary btn--sm" onclick="AdminApp.escalatePredictiveSignal(\'' + escapeHtml(s.id) + '\')">تصعيد للمراجعة</button>' +
+      '</div>' +
+      '</div>';
+    });
+
+    el.innerHTML = html;
+  }
+
+  async function runPredictiveAbuseScan() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري تشغيل فحص المخاطر...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/run-scan', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('اكتمل الفحص — إشارات: ' + (data.signalCount || 0));
+        }
+        loadPredictiveAbuseDashboard();
+        loadDecisionQuality();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل الفحص');
+    }
+  }
+
+  async function dismissPredictiveSignal(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'رفض الإشارة',
+        message: 'ملاحظة اختيارية لسبب الرفض',
+        placeholder: 'مثال: نشاط طبيعي أو false positive...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/dismiss', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم رفض الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في رفض الإشارة');
+    }
+  }
+
+  async function escalatePredictiveSignal(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'تصعيد الإشارة',
+        message: 'اكتب سبب التصعيد أو الإجراء المطلوب',
+        placeholder: 'مثال: يحتاج مراجعة فورية...',
+        required: false,
+      });
+      if (note === null) return;
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/escalate', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تصعيد الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تصعيد الإشارة');
+    }
+  }
+
+  async function loadDecisionQuality() {
+    var metricsEl = document.getElementById('decisionQualityMetrics');
+    var backlogEl = document.getElementById('backlogPriorityTable');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (backlogEl) {
+      backlogEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/trust/decision-quality');
+
+      var warning = data.warningEffectiveness || {};
+      var calibration = data.calibration || {};
+      var backlog = data.backlogSummary || {};
+
+      if (metricsEl) {
+        var cards = [
+          { value: warning.totalWarnings || 0, label: 'تحذيرات مرسلة' },
+          { value: (warning.effectivenessRate || 0) + '%', label: 'فعالية التحذير' },
+          { value: (warning.conversionRate || 0) + '%', label: 'تحذير → إجراء' },
+          { value: calibration.avgCalibrationScore || 0, label: 'متوسط calibration' },
+          { value: backlog.total || 0, label: 'عناصر backlog' },
+          { value: backlog.highPriority || 0, label: 'أولوية عالية' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      await loadBacklogPriority();
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جودة القرارات</p>';
+      if (backlogEl) backlogEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل أولوية المراجعة</p>';
+    }
+  }
+
+  async function loadBacklogPriority() {
+    var el = document.getElementById('backlogPriorityTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/trust/backlog-priority?limit=20');
+      var items = data.items || [];
+
+      if (items.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد عناصر مراجعة عاجلة</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>النوع</th><th>الخطر</th><th>الأولوية</th><th>المستخدم</th><th>العمر</th><th>شرح</th>' +
+      '</tr></thead><tbody>';
+
+      items.forEach(function (item) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(item.type || '-') + '<br><small>' + escapeHtml(item.riskType || '') + '</small></td>' +
+          '<td><span class="risk-score-pill risk-score-pill--' + escapeHtml(item.severity || 'medium') + '">' + Math.round((item.riskScore || 0) * 100) + '%</span></td>' +
+          '<td>' + Math.round((item.priorityScore || 0) * 100) + '%</td>' +
+          '<td><a href="/user.html?id=' + escapeHtml(item.entityId || '') + '" class="worker-link">' + escapeHtml(item.entityId || '-') + '</a></td>' +
+          '<td>' + escapeHtml(String(item.ageHours || 0)) + ' س</td>' +
+          '<td><small>' + escapeHtml((item.explanations || []).slice(0, 2).join(' · ')) + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل أولوية المراجعة</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 50 — Audit Index + Export Registry + Counter Hygiene
   // ═══════════════════════════════════════════════════════════════
 
@@ -2086,6 +2355,13 @@ var AdminApp = (function () {
     confirmBulkAction: confirmBulkAction,
     searchAuditLog: searchAuditLog,
     exportAuditLog: exportAuditLog,
+    // Phase 51 — Predictive Abuse + Decision Quality
+    loadPredictiveAbuseDashboard: loadPredictiveAbuseDashboard,
+    runPredictiveAbuseScan: runPredictiveAbuseScan,
+    dismissPredictiveSignal: dismissPredictiveSignal,
+    escalatePredictiveSignal: escalatePredictiveSignal,
+    loadDecisionQuality: loadDecisionQuality,
+    loadBacklogPriority: loadBacklogPriority,
     // Phase 50 — Scale & Search Hygiene
     loadAuditIndexStatus: loadAuditIndexStatus,
     rebuildAuditIndex: rebuildAuditIndex,

@@ -152,3 +152,31 @@ export async function handleGetTrustScore(req, res) {
     return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة', code: 'TRUST_SCORE_ERROR' });
   }
 }
+
+/**
+ * GET /api/users/:id/trust-v2
+ * Public-safe Trust Score V2.
+ * No PII, no admin notes, no raw abuse details.
+ */
+export async function handleGetTrustScoreV2(req, res) {
+  try {
+    const userId = req.params.id;
+    const { getTrustScoreV2 } = await import('../services/trustScoreV2.js');
+
+    const result = await getTrustScoreV2(userId, {
+      admin: false,
+      force: req.query.force === '1' || req.query.force === 'true',
+    });
+
+    if (!result) {
+      return sendJSON(res, 404, { error: 'المستخدم غير موجود', code: 'USER_NOT_FOUND' });
+    }
+
+    return sendJSON(res, 200, {
+      ok: true,
+      trust: result,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في حساب مؤشر الثقة V2', code: 'TRUST_SCORE_V2_ERROR' });
+  }
+}
