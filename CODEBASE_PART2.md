@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.47.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-09T23:50:50.193Z
+> Auto-generated: 2026-05-10T00:08:15.488Z
 > Files in this part: 74
 
 ## Files
@@ -1444,6 +1444,7 @@ export const _testHelpers = {
 
 import config from '../../config.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 /** @type {Map<string, { value: *, expiresAt: number }>} */
 const cache = new Map();
@@ -23206,8 +23207,14 @@ export function calculateEmployerTrustScore(input = {}) {
     ? round2(1 - ((input.disputedPayments || 0) / input.totalPayments))
     : 0.5;
 
+  const rawCancellationReliability = input.totalJobs > 0
+    ? clamp01(1 - ((input.cancelledJobs || 0) / input.totalJobs))
+    : 0.5;
+
+  // High cancellation rates should have a stronger trust impact.
+  // Example: 40% reliability becomes 16%, while perfect reliability remains 100%.
   const cancellationRate = input.totalJobs > 0
-    ? round2(1 - ((input.cancelledJobs || 0) / input.totalJobs))
+    ? round2(rawCancellationReliability * rawCancellationReliability)
     : 0.5;
 
   const offerBehavior = input.totalDirectOffers > 0
