@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.48.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-10T20:28:37.602Z
+> Auto-generated: 2026-05-10T20:40:29.448Z
 > Files in this part: 77
 
 ## Files
@@ -2275,6 +2275,35 @@ export async function createDelivery(params = {}) {
 export async function getDelivery(deliveryId) {
   if (!deliveryId || typeof deliveryId !== 'string') return null;
   return await readJSON(deliveryPath(deliveryId));
+}
+
+/**
+ * Mark delivery as running when a queue worker starts delivery.
+ * @param {string} deliveryId
+ */
+export async function markRunning(deliveryId) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    if (record.status === 'delivered' || record.status === 'dead-letter') {
+      return record;
+    }
+
+    record.status = 'running';
+    record.updatedAt = nowIso();
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    eventBus.emit('alert_delivery:running', {
+      deliveryId,
+      eventType: record.eventType,
+      channel: record.channel,
+      timestamp: record.updatedAt,
+    });
+
+    return record;
+  });
 }
 
 export async function listDeliveries(options = {}) {
@@ -21979,6 +22008,7 @@ import {
 } from './opsQueue.js';
 import {
   getDelivery,
+  markRunning,
   recordAttempt,
   markDelivered,
   markFailed,
@@ -22190,6 +22220,8 @@ async function handleAdminAlertWebhookJob({ job, payload }) {
 
   const startedAt = new Date().toISOString();
 
+  await markRunning(deliveryId).catch(() => {});
+
   try {
     const { sendWebhook } = await import('./adminAlertChannels.js');
     const result = await sendWebhook(payload.payload || delivery.payload || {});
@@ -22246,6 +22278,8 @@ async function handleAdminAlertEmailJob({ job, payload }) {
   }
 
   const startedAt = new Date().toISOString();
+
+  await markRunning(deliveryId).catch(() => {});
 
   try {
     const { sendEmail } = await import('./adminAlertChannels.js');
