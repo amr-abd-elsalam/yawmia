@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.47.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-10T00:08:15.488Z
-> Files in this part: 74
+# يوميّة (Yawmia) v0.48.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-10T20:28:37.602Z
+> Files in this part: 77
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -8,75 +8,78 @@
 3. `server/services/adMatcher.js`
 4. `server/services/adminAlertChannels.js`
 5. `server/services/adminDecisionAnalytics.js`
-6. `server/services/analytics.js`
-7. `server/services/applications.js`
-8. `server/services/arabicNormalizer.js`
-9. `server/services/attendance.js`
-10. `server/services/auditLog.js`
-11. `server/services/auditLogIndex.js`
-12. `server/services/auditLogRetention.js`
-13. `server/services/auditLogSearch.js`
-14. `server/services/auth.js`
-15. `server/services/availabilityAd.js`
-16. `server/services/availabilityWindow.js`
-17. `server/services/backupScheduler.js`
-18. `server/services/cache.js`
-19. `server/services/cacheDebouncer.js`
-20. `server/services/channels/sms.js`
-21. `server/services/channels/whatsapp.js`
-22. `server/services/contentFilter.js`
-23. `server/services/counterCompaction.js`
-24. `server/services/csvExportProgress.js`
-25. `server/services/database.js`
-26. `server/services/directOffer.js`
-27. `server/services/directOfferAnalytics.js`
-28. `server/services/directOfferCounters.js`
-29. `server/services/errorAggregator.js`
-30. `server/services/eventBus.js`
-31. `server/services/eventReplayBuffer.js`
-32. `server/services/exportRegistry.js`
-33. `server/services/favorites.js`
-34. `server/services/financialExport.js`
-35. `server/services/geo.js`
-36. `server/services/imageStore.js`
-37. `server/services/indexHealth.js`
-38. `server/services/instantMatch.js`
-39. `server/services/jobAlerts.js`
-40. `server/services/jobMatcher.js`
-41. `server/services/jobs.js`
-42. `server/services/liveFeed.js`
-43. `server/services/logWriter.js`
-44. `server/services/logger.js`
-45. `server/services/messages.js`
-46. `server/services/messaging.js`
-47. `server/services/migration.js`
-48. `server/services/monitor.js`
-49. `server/services/notificationMessenger.js`
-50. `server/services/notifications.js`
-51. `server/services/offerAbuseDetector.js`
-52. `server/services/payments.js`
-53. `server/services/predictiveAbuse.js`
-54. `server/services/presenceService.js`
-55. `server/services/profileCompleteness.js`
-56. `server/services/queryIndex.js`
-57. `server/services/ratings.js`
-58. `server/services/reports.js`
-59. `server/services/resourceLock.js`
-60. `server/services/sanitizer.js`
-61. `server/services/scheduledAbuseDetection.js`
-62. `server/services/searchIndex.js`
-63. `server/services/sessions.js`
-64. `server/services/snoozeReminders.js`
-65. `server/services/sseManager.js`
-66. `server/services/trust.js`
-67. `server/services/trustAnalytics.js`
-68. `server/services/trustScoreV2.js`
-69. `server/services/users.js`
-70. `server/services/validators.js`
-71. `server/services/verification.js`
-72. `server/services/webpush.js`
-73. `server/services/workerDiscovery.js`
-74. `server/services/workroom.js`
+6. `server/services/alertDeliveryHistory.js`
+7. `server/services/analytics.js`
+8. `server/services/applications.js`
+9. `server/services/arabicNormalizer.js`
+10. `server/services/attendance.js`
+11. `server/services/auditLog.js`
+12. `server/services/auditLogIndex.js`
+13. `server/services/auditLogRetention.js`
+14. `server/services/auditLogSearch.js`
+15. `server/services/auth.js`
+16. `server/services/availabilityAd.js`
+17. `server/services/availabilityWindow.js`
+18. `server/services/backupScheduler.js`
+19. `server/services/cache.js`
+20. `server/services/cacheDebouncer.js`
+21. `server/services/channels/sms.js`
+22. `server/services/channels/whatsapp.js`
+23. `server/services/contentFilter.js`
+24. `server/services/counterCompaction.js`
+25. `server/services/csvExportProgress.js`
+26. `server/services/database.js`
+27. `server/services/directOffer.js`
+28. `server/services/directOfferAnalytics.js`
+29. `server/services/directOfferCounters.js`
+30. `server/services/errorAggregator.js`
+31. `server/services/eventBus.js`
+32. `server/services/eventReplayBuffer.js`
+33. `server/services/exportRegistry.js`
+34. `server/services/favorites.js`
+35. `server/services/financialExport.js`
+36. `server/services/geo.js`
+37. `server/services/imageStore.js`
+38. `server/services/indexHealth.js`
+39. `server/services/instantMatch.js`
+40. `server/services/jobAlerts.js`
+41. `server/services/jobMatcher.js`
+42. `server/services/jobs.js`
+43. `server/services/liveFeed.js`
+44. `server/services/logWriter.js`
+45. `server/services/logger.js`
+46. `server/services/messages.js`
+47. `server/services/messaging.js`
+48. `server/services/migration.js`
+49. `server/services/monitor.js`
+50. `server/services/notificationMessenger.js`
+51. `server/services/notifications.js`
+52. `server/services/offerAbuseDetector.js`
+53. `server/services/opsQueue.js`
+54. `server/services/payments.js`
+55. `server/services/predictiveAbuse.js`
+56. `server/services/presenceService.js`
+57. `server/services/profileCompleteness.js`
+58. `server/services/queryIndex.js`
+59. `server/services/queueWorkers.js`
+60. `server/services/ratings.js`
+61. `server/services/reports.js`
+62. `server/services/resourceLock.js`
+63. `server/services/sanitizer.js`
+64. `server/services/scheduledAbuseDetection.js`
+65. `server/services/searchIndex.js`
+66. `server/services/sessions.js`
+67. `server/services/snoozeReminders.js`
+68. `server/services/sseManager.js`
+69. `server/services/trust.js`
+70. `server/services/trustAnalytics.js`
+71. `server/services/trustScoreV2.js`
+72. `server/services/users.js`
+73. `server/services/validators.js`
+74. `server/services/verification.js`
+75. `server/services/webpush.js`
+76. `server/services/workerDiscovery.js`
+77. `server/services/workroom.js`
 
 ---
 
@@ -1081,6 +1084,7 @@ export const _testHelpers = { notificationDedup, DEDUP_TTL_MS };
 //   - fire-and-forget EventBus listeners
 // ═══════════════════════════════════════════════════════════════
 
+import crypto from 'node:crypto';
 import config from '../../config.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
@@ -1106,7 +1110,10 @@ function severityPasses(actual, minimum) {
 }
 
 function isEnabled() {
-  return !!(config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled);
+  return !!(
+    (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) ||
+    process.env.ADMIN_ALERT_CHANNELS_ENABLED === 'true'
+  );
 }
 
 function enqueue(entry) {
@@ -1263,37 +1270,176 @@ const adapters = {
   email: sendEmail,
 };
 
+function shouldQueueDeliveries(options = {}) {
+  if (options.sync === true) return false;
+  return !!(
+    config.OPS_QUEUE &&
+    config.OPS_QUEUE.enabled &&
+    config.ALERT_DELIVERY &&
+    config.ALERT_DELIVERY.enabled
+  );
+}
+
+function priorityFromSeverity(severity) {
+  if (severity === 'critical') return 'critical';
+  if (severity === 'high') return 'high';
+  if (severity === 'medium') return 'normal';
+  return 'low';
+}
+
+function buildAlertIdentity(event, payload) {
+  const data = event.data || {};
+  const raw = data.fingerprint
+    || data.signalId
+    || data.offerId
+    || data.exportId
+    || data.deliveryId
+    || data.sizeMB
+    || payload.summary
+    || event.type;
+
+  return crypto
+    .createHash('sha256')
+    .update(String(raw || event.type))
+    .digest('hex')
+    .slice(0, 24);
+}
+
+/**
+ * Queue persistent delivery jobs for enabled alert channels.
+ */
+async function queueAlertDeliveries(event, payload, enabledChannels, severity) {
+  const deliveries = [];
+  const results = [];
+
+  const {
+    createDelivery,
+    getDelivery,
+    setDeliveryQueueJobId,
+    markFailed,
+  } = await import('./alertDeliveryHistory.js');
+  const { enqueueJob } = await import('./opsQueue.js');
+
+  const identity = buildAlertIdentity(event, payload);
+
+  for (const channel of enabledChannels) {
+    try {
+      const deliveryId = `adl_${channel}_${identity}`;
+      const existingDelivery = await getDelivery(deliveryId);
+
+      // If the exact same alert/channel is already queued/running/delivered,
+      // do not create an orphan delivery. Return the existing durable record.
+      if (
+        existingDelivery &&
+        ['queued', 'running', 'delivered'].includes(existingDelivery.status)
+      ) {
+        deliveries.push(existingDelivery);
+        results.push({
+          ok: true,
+          channel,
+          queued: existingDelivery.status !== 'delivered',
+          delivered: existingDelivery.status === 'delivered',
+          deliveryId: existingDelivery.id,
+          queueJobId: existingDelivery.queueJobId || null,
+          deduped: true,
+        });
+        continue;
+      }
+
+      const delivery = await createDelivery({
+        id: deliveryId,
+        eventType: event.type,
+        severity,
+        channel,
+        payload,
+      });
+
+      const jobType = channel === 'email' ? 'admin_alert_email' : 'admin_alert_webhook';
+
+      const enqueueResult = await enqueueJob({
+        type: jobType,
+        priority: priorityFromSeverity(severity),
+        payload: {
+          deliveryId: delivery.id,
+          payload,
+        },
+        idempotencyKey: `alert:${event.type}:${channel}:${identity}`,
+        maxAttempts: (config.ALERT_DELIVERY && config.ALERT_DELIVERY.maxAttempts) || (config.OPS_QUEUE && config.OPS_QUEUE.maxAttempts) || 5,
+        backoffMs: (config.ALERT_DELIVERY && config.ALERT_DELIVERY.retryBackoffMs) || (config.OPS_QUEUE && config.OPS_QUEUE.defaultBackoffMs) || 30000,
+        createdBy: 'system',
+      });
+
+      if (enqueueResult && enqueueResult.ok && enqueueResult.job) {
+        const updatedDelivery = await setDeliveryQueueJobId(delivery.id, enqueueResult.job.id);
+        deliveries.push(updatedDelivery || { ...delivery, queueJobId: enqueueResult.job.id });
+        results.push({
+          ok: true,
+          channel,
+          queued: true,
+          deliveryId: delivery.id,
+          queueJobId: enqueueResult.job.id,
+          deduped: !!enqueueResult.deduped,
+        });
+      } else {
+        await markFailed(delivery.id, enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED').catch(() => {});
+        deliveries.push(delivery);
+        results.push({
+          ok: false,
+          channel,
+          queued: false,
+          deliveryId: delivery.id,
+          error: enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        });
+      }
+    } catch (err) {
+      results.push({
+        ok: false,
+        channel,
+        queued: false,
+        error: err.message,
+      });
+    }
+  }
+
+  return {
+    delivered: results.some(r => r.delivered),
+    queued: results.some(r => r.ok && r.queued),
+    deliveries,
+    results,
+  };
+}
+
 /**
  * Main delivery router.
  *
  * @param {{ type: string, severity?: string, data?: object, timestamp?: string }} event
  * @returns {Promise<{ delivered: boolean, rateLimited?: boolean, results: object[] }>}
  */
-export async function deliverAdminAlert(event) {
+export async function deliverAdminAlert(event, options = {}) {
   if (!event || !event.type) {
-    return { delivered: false, results: [{ ok: false, error: 'Invalid event' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Invalid event' }] };
   }
 
   if (!isEnabled()) {
-    return { delivered: false, results: [{ ok: false, error: 'ADMIN_ALERT_CHANNELS disabled' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'ADMIN_ALERT_CHANNELS disabled' }] };
   }
 
   const routing = event.type === 'test'
-    ? { enabled: true, minSeverity: 'low' } // Phase 49: webhook test endpoint
+    ? { enabled: true, minSeverity: 'low' } // webhook test endpoint
     : config.ADMIN_ALERT_CHANNELS.eventRouting?.[event.type];
 
   if (!routing || !routing.enabled) {
-    return { delivered: false, results: [{ ok: false, error: 'Event routing disabled' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Event routing disabled' }] };
   }
 
   const severity = event.severity || 'medium';
   if (!severityPasses(severity, routing.minSeverity || 'medium')) {
-    return { delivered: false, results: [{ ok: false, error: 'Severity below route threshold' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Severity below route threshold' }] };
   }
 
   if (!checkRateLimit(event.type)) {
     logger.warn('Admin alert rate limited', { eventType: event.type });
-    return { delivered: false, rateLimited: true, results: [{ ok: false, error: 'RATE_LIMITED' }] };
+    return { delivered: false, queued: false, rateLimited: true, results: [{ ok: false, error: 'RATE_LIMITED' }] };
   }
 
   const payload = formatPayload({ ...event, severity });
@@ -1303,9 +1449,31 @@ export async function deliverAdminAlert(event) {
   const enabledChannels = configuredChannels.filter(ch => adapters[ch]);
 
   if (enabledChannels.length === 0) {
-    return { delivered: false, results: [{ ok: false, error: 'No configured channels' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'No configured channels' }] };
   }
 
+  // Phase 52 default: durable queued delivery.
+  // Existing direct behavior is preserved via deliverAdminAlert(event, { sync: true }).
+  if (shouldQueueDeliveries(options)) {
+    const queuedResult = await queueAlertDeliveries(event, payload, enabledChannels, severity);
+
+    if (!queuedResult.queued) {
+      logger.warn('Admin alert queueing failed on all channels', {
+        eventType: event.type,
+        results: queuedResult.results,
+      });
+    } else {
+      logger.info('Admin alert queued for durable delivery', {
+        eventType: event.type,
+        deliveries: queuedResult.deliveries.length,
+        channels: enabledChannels,
+      });
+    }
+
+    return queuedResult;
+  }
+
+  // Legacy sync path.
   const settled = await Promise.allSettled(
     enabledChannels.map(channel => adapters[channel](payload))
   );
@@ -1329,7 +1497,7 @@ export async function deliverAdminAlert(event) {
     });
   }
 
-  return { delivered, results };
+  return { delivered, queued: false, results };
 }
 
 /**
@@ -1995,6 +2163,407 @@ export const _testHelpers = {
   calculatePriorityScore,
   clearAdminDecisionAnalyticsCache,
   cache,
+};
+```
+
+---
+
+## `server/services/alertDeliveryHistory.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/alertDeliveryHistory.js — Persistent Alert Delivery History (Phase 52)
+// ═══════════════════════════════════════════════════════════════
+// Durable delivery records for admin alerts.
+// Used by queued webhook/email delivery handlers.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  deleteJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+import { enqueueJob } from './opsQueue.js';
+
+function isEnabled() {
+  return !!(config.ALERT_DELIVERY && config.ALERT_DELIVERY.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'adl_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function deliveryPath(deliveryId) {
+  return getRecordPath('alert_deliveries', deliveryId);
+}
+
+function sanitizePayload(payload) {
+  if (!payload || typeof payload !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined) continue;
+    if (typeof value === 'string') out[key] = value.slice(0, 2000);
+    else if (typeof value === 'number' || typeof value === 'boolean' || value === null) out[key] = value;
+    else {
+      try {
+        out[key] = JSON.parse(JSON.stringify(value));
+      } catch (_) {
+        out[key] = String(value).slice(0, 1000);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Create persistent delivery record.
+ */
+export async function createDelivery(params = {}) {
+  if (!isEnabled()) return null;
+
+  const id = params.id || generateId();
+
+  return withLock(`alert-delivery:${id}`, async () => {
+    const existing = await readJSON(deliveryPath(id));
+    if (existing) return existing;
+
+    const now = nowIso();
+
+    const record = {
+      id,
+      eventType: params.eventType || 'unknown',
+      severity: params.severity || 'medium',
+      channel: params.channel || 'webhook',
+      status: 'queued',
+      payload: sanitizePayload(params.payload || {}),
+      queueJobId: params.queueJobId || null,
+      attempts: [],
+      lastAttemptAt: null,
+      deliveredAt: null,
+      failedAt: null,
+      deadLetteredAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await atomicWrite(deliveryPath(id), record);
+
+    eventBus.emit('alert_delivery:created', {
+      deliveryId: id,
+      eventType: record.eventType,
+      channel: record.channel,
+      severity: record.severity,
+      timestamp: now,
+    });
+
+    return record;
+  });
+}
+
+export async function getDelivery(deliveryId) {
+  if (!deliveryId || typeof deliveryId !== 'string') return null;
+  return await readJSON(deliveryPath(deliveryId));
+}
+
+export async function listDeliveries(options = {}) {
+  if (!isEnabled()) {
+    return { deliveries: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const dir = getCollectionPath('alert_deliveries');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('adl_'));
+
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.channel) rows = rows.filter(r => r.channel === options.channel);
+  if (options.eventType) rows = rows.filter(r => r.eventType === options.eventType);
+  if (options.severity) rows = rows.filter(r => r.severity === options.severity);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    deliveries: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Append one attempt record.
+ */
+export async function recordAttempt(deliveryId, attempt) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    const now = nowIso();
+    record.attempts = Array.isArray(record.attempts) ? record.attempts : [];
+    record.attempts.push({
+      attempt: attempt.attempt || record.attempts.length + 1,
+      startedAt: attempt.startedAt || now,
+      completedAt: attempt.completedAt || now,
+      ok: !!attempt.ok,
+      statusCode: attempt.statusCode || null,
+      error: attempt.error ? String(attempt.error).slice(0, 2000) : null,
+      channel: attempt.channel || record.channel,
+    });
+
+    record.lastAttemptAt = now;
+    record.status = attempt.ok ? record.status : 'failed';
+    record.updatedAt = now;
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    if (!attempt.ok) {
+      eventBus.emit('alert_delivery:failed', {
+        deliveryId,
+        eventType: record.eventType,
+        channel: record.channel,
+        error: attempt.error || null,
+        timestamp: now,
+      });
+    }
+
+    return record;
+  });
+}
+
+export async function markDelivered(deliveryId, result = {}) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    const now = nowIso();
+    record.status = 'delivered';
+    record.deliveredAt = now;
+    record.failedAt = null;
+    record.deadLetteredAt = null;
+    record.result = result || {};
+    record.updatedAt = now;
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    eventBus.emit('alert_delivery:delivered', {
+      deliveryId,
+      eventType: record.eventType,
+      channel: record.channel,
+      timestamp: now,
+    });
+
+    return record;
+  });
+}
+
+export async function markFailed(deliveryId, error) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    const now = nowIso();
+    record.status = 'failed';
+    record.failedAt = now;
+    record.lastError = error ? String(error).slice(0, 2000) : null;
+    record.updatedAt = now;
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    eventBus.emit('alert_delivery:failed', {
+      deliveryId,
+      eventType: record.eventType,
+      channel: record.channel,
+      error: record.lastError,
+      timestamp: now,
+    });
+
+    return record;
+  });
+}
+
+export async function markDeadLettered(deliveryId, reason) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    const now = nowIso();
+    record.status = 'dead-letter';
+    record.deadLetteredAt = now;
+    record.lastError = reason ? String(reason).slice(0, 2000) : record.lastError || null;
+    record.updatedAt = now;
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    eventBus.emit('alert_delivery:dead_lettered', {
+      deliveryId,
+      eventType: record.eventType,
+      channel: record.channel,
+      reason: record.lastError,
+      timestamp: now,
+    });
+
+    return record;
+  });
+}
+
+/**
+ * Attach queue job ID after enqueue.
+ * @param {string} deliveryId
+ * @param {string} queueJobId
+ */
+export async function setDeliveryQueueJobId(deliveryId, queueJobId) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    record.queueJobId = queueJobId || null;
+    record.updatedAt = nowIso();
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+    return record;
+  });
+}
+
+/**
+ * Manual retry for failed/dead-letter delivery.
+ */
+export async function retryDelivery(deliveryId, adminId = 'admin_token') {
+  if (!config.ALERT_DELIVERY?.manualRetryEnabled) {
+    return { ok: false, error: 'MANUAL_RETRY_DISABLED' };
+  }
+
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return { ok: false, error: 'DELIVERY_NOT_FOUND' };
+
+    if (record.status === 'delivered') {
+      return { ok: false, error: 'DELIVERY_ALREADY_DELIVERED', delivery: record };
+    }
+
+    const now = nowIso();
+    record.status = 'queued';
+    record.failedAt = null;
+    record.deadLetteredAt = null;
+    record.updatedAt = now;
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    const type = record.channel === 'email'
+      ? 'admin_alert_email'
+      : 'admin_alert_webhook';
+
+    const enqueueResult = await enqueueJob({
+      type,
+      priority: record.severity === 'critical' || record.severity === 'high' ? 'high' : 'normal',
+      payload: {
+        deliveryId: record.id,
+        payload: record.payload,
+      },
+      idempotencyKey: `alert_delivery_retry:${deliveryId}:${Date.now()}`,
+      maxAttempts: config.ALERT_DELIVERY?.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5,
+      backoffMs: config.ALERT_DELIVERY?.retryBackoffMs || config.OPS_QUEUE?.defaultBackoffMs || 30000,
+      createdBy: adminId || 'admin_token',
+    });
+
+    if (enqueueResult.ok && enqueueResult.job) {
+      record.queueJobId = enqueueResult.job.id;
+      record.updatedAt = nowIso();
+      await atomicWrite(deliveryPath(deliveryId), record);
+    }
+
+    eventBus.emit('alert_delivery:retried', {
+      deliveryId,
+      queueJobId: record.queueJobId,
+      adminId,
+      timestamp: nowIso(),
+    });
+
+    return { ok: true, delivery: record, queueJob: enqueueResult.job || null };
+  });
+}
+
+export async function getAlertDeliveryStats() {
+  if (!isEnabled()) return { enabled: false };
+
+  const dir = getCollectionPath('alert_deliveries');
+  const rows = await listJSON(dir);
+  const deliveries = rows.filter(r => r && r.id && r.id.startsWith('adl_'));
+
+  const byStatus = {
+    queued: 0,
+    running: 0,
+    delivered: 0,
+    failed: 0,
+    'dead-letter': 0,
+    cancelled: 0,
+  };
+
+  const byChannel = {};
+  let attempts = 0;
+
+  for (const d of deliveries) {
+    if (byStatus[d.status] !== undefined) byStatus[d.status]++;
+    byChannel[d.channel] = (byChannel[d.channel] || 0) + 1;
+    attempts += Array.isArray(d.attempts) ? d.attempts.length : 0;
+  }
+
+  return {
+    enabled: true,
+    total: deliveries.length,
+    byStatus,
+    byChannel,
+    attempts,
+    deliveredRate: deliveries.length > 0
+      ? Math.round((byStatus.delivered / deliveries.length) * 100)
+      : 0,
+  };
+}
+
+export async function cleanupOldDeliveries() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.ALERT_DELIVERY?.historyRetentionDays || 90;
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const dir = getCollectionPath('alert_deliveries');
+  const rows = await listJSON(dir);
+
+  let cleaned = 0;
+  for (const d of rows) {
+    if (!d || !d.id) continue;
+    const basis = d.deliveredAt || d.deadLetteredAt || d.failedAt || d.updatedAt || d.createdAt;
+    if (basis && new Date(basis).getTime() < cutoff) {
+      await deleteJSON(deliveryPath(d.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    logger.info('alertDeliveryHistory: cleaned old deliveries', { cleaned });
+  }
+
+  return cleaned;
+}
+
+export const _testHelpers = {
+  generateId,
+  sanitizePayload,
+  deliveryPath,
 };
 ```
 
@@ -11093,7 +11662,31 @@ export async function maybeTriggerAutoRebuild(snapshot) {
     triggeredAt: new Date().toISOString(),
   });
 
-  // Fire-and-forget rebuild (won't block monitor)
+  // Phase 52: prefer durable queue job for auto-rebuild if ops queue is enabled.
+  if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+    try {
+      const { enqueueJob } = await import('./opsQueue.js');
+      const enqueueResult = await enqueueJob({
+        type: 'counter_rebuild',
+        priority: 'critical',
+        payload: { reason: 'counter_file_size_critical', sizeMB, threshold: criticalThreshold },
+        idempotencyKey: 'heavy:counter_rebuild:auto_critical',
+        createdBy: 'monitor',
+      });
+
+      if (enqueueResult.ok) {
+        logger.warn('Counter auto-rebuild queued', {
+          queueJobId: enqueueResult.job.id,
+          deduped: !!enqueueResult.deduped,
+        });
+        return;
+      }
+    } catch (err) {
+      logger.warn('Counter auto-rebuild enqueue failed — falling back to direct rebuild', { error: err.message });
+    }
+  }
+
+  // Fallback fire-and-forget rebuild (won't block monitor)
   rebuildCounters().catch(err => {
     logger.error('Auto-rebuild failed', { error: err.message });
   });
@@ -16320,6 +16913,22 @@ const builtInMigrations = [
       logger.info('Migration v11: Phase 51 directories registered (predictive signals + workrooms + trust v2 snapshots)');
     },
   },
+  {
+    version: 12,
+    name: 'Phase 52: Persistent Ops Queue + Alert Delivery History',
+    up: async () => {
+      // Phase 52 registers durable operational reliability structures:
+      //   - ops_queue
+      //   - ops_queue/idempotency
+      //   - ops_queue/dead-letter
+      //   - alert_deliveries
+      //   - metrics/queue
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      logger.info('Migration v12: Phase 52 directories registered (ops queue + alert deliveries)');
+    },
+  },
 ];
 
 /**
@@ -18180,6 +18789,706 @@ export const _testHelpers = {
   detectSameWorkerSpam,
   detectHighDeclineEmployers,
   detectOfferBombing,
+};
+```
+
+---
+
+## `server/services/opsQueue.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/opsQueue.js — Durable File-Backed Ops Queue (Phase 52)
+// ═══════════════════════════════════════════════════════════════
+// Persistent operational queue:
+//   - survives restart
+//   - idempotency keys
+//   - retry + exponential backoff
+//   - lease-based claiming
+//   - stale running recovery
+//   - dead-letter queue
+//   - atomic JSON writes only
+//
+// Storage:
+//   data/ops_queue/q_xxx.json
+//   data/ops_queue/idempotency/{sha256}.json
+//   data/ops_queue/dead-letter/q_xxx.json
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const VALID_STATUSES = new Set([
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'dead-letter',
+  'cancelled',
+]);
+
+const PRIORITY_WEIGHTS = {
+  low: 25,
+  normal: 50,
+  high: 75,
+  critical: 100,
+};
+
+function isEnabled() {
+  return !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+export function getQueuePaths() {
+  return {
+    base: getCollectionPath('ops_queue'),
+    idempotency: getCollectionPath('ops_queue_idempotency'),
+    deadLetter: getCollectionPath('ops_queue_dead_letter'),
+  };
+}
+
+function queuePath(jobId) {
+  return getRecordPath('ops_queue', jobId);
+}
+
+function deadLetterPath(jobId) {
+  return getRecordPath('ops_queue_dead_letter', jobId);
+}
+
+function idempotencyPath(keyHash) {
+  return getRecordPath('ops_queue_idempotency', keyHash);
+}
+
+function sanitizeError(error) {
+  if (!error) return null;
+  if (typeof error === 'string') return error.slice(0, 2000);
+  if (error.message) return String(error.message).slice(0, 2000);
+  try {
+    return JSON.stringify(error).slice(0, 2000);
+  } catch (_) {
+    return String(error).slice(0, 2000);
+  }
+}
+
+function payloadSizeBytes(payload) {
+  try {
+    return Buffer.byteLength(JSON.stringify(payload || {}), 'utf-8');
+  } catch (_) {
+    return Infinity;
+  }
+}
+
+export function generateJobId() {
+  return 'q_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+export function safeIdempotencyHash(idempotencyKey) {
+  return crypto
+    .createHash('sha256')
+    .update(String(idempotencyKey || ''))
+    .digest('hex');
+}
+
+export function normalizePriority(priority) {
+  const levels = config.OPS_QUEUE?.priorityLevels || ['low', 'normal', 'high', 'critical'];
+  const p = levels.includes(priority) ? priority : 'normal';
+  return {
+    priority: p,
+    priorityWeight: PRIORITY_WEIGHTS[p] || PRIORITY_WEIGHTS.normal,
+  };
+}
+
+export function calculateNextRunAt(attempts, backoffMs) {
+  const base = Number(backoffMs || config.OPS_QUEUE?.defaultBackoffMs || 30000);
+  const max = Number(config.OPS_QUEUE?.maxBackoffMs || 30 * 60 * 1000);
+  const safeAttempts = Math.max(1, Number(attempts) || 1);
+  const delay = Math.min(max, base * Math.pow(2, safeAttempts - 1));
+  return new Date(Date.now() + delay).toISOString();
+}
+
+export function isDue(job, at = Date.now()) {
+  if (!job || job.status !== 'pending') return false;
+  return parseMs(job.nextRunAt) <= at;
+}
+
+export function isLeaseExpired(job, at = Date.now()) {
+  if (!job || job.status !== 'running') return false;
+
+  const leaseUntilMs = parseMs(job.leaseUntil);
+  if (leaseUntilMs > 0 && leaseUntilMs < at) return true;
+
+  const staleMs = config.OPS_QUEUE?.staleRunningMs || (10 * 60 * 1000);
+  const updatedMs = parseMs(job.updatedAt);
+  return updatedMs > 0 && (at - updatedMs) > staleMs;
+}
+
+export function buildInitialJob(params = {}) {
+  if (!params.type || typeof params.type !== 'string') {
+    throw new Error('queue job type is required');
+  }
+
+  const payload = params.payload || {};
+  const maxPayloadBytes = config.OPS_QUEUE?.maxPayloadBytes || (256 * 1024);
+  const size = payloadSizeBytes(payload);
+  if (size > maxPayloadBytes) {
+    const err = new Error(`Queue job payload exceeds maxPayloadBytes (${size} > ${maxPayloadBytes})`);
+    err.code = 'PAYLOAD_TOO_LARGE';
+    throw err;
+  }
+
+  const { priority, priorityWeight } = normalizePriority(params.priority);
+  const now = nowIso();
+
+  return {
+    id: params.id || generateJobId(),
+    type: params.type,
+    status: 'pending',
+    priority,
+    priorityWeight,
+    payload,
+    idempotencyKey: params.idempotencyKey || null,
+    attempts: 0,
+    maxAttempts: Number(params.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5),
+    backoffMs: Number(params.backoffMs || config.OPS_QUEUE?.defaultBackoffMs || 30000),
+    nextRunAt: params.nextRunAt || now,
+    leaseUntil: null,
+    lockedBy: null,
+    lastError: null,
+    result: null,
+    cancelRequested: false,
+    createdBy: params.createdBy || 'system',
+    createdAt: now,
+    updatedAt: now,
+    startedAt: null,
+    completedAt: null,
+    failedAt: null,
+    deadLetteredAt: null,
+    cancelledAt: null,
+  };
+}
+
+/**
+ * Enqueue a durable queue job.
+ */
+export async function enqueueJob(params = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, error: 'OPS_QUEUE_DISABLED' };
+  }
+
+  const idempotencyKey = params.idempotencyKey || null;
+
+  if (idempotencyKey) {
+    const keyHash = safeIdempotencyHash(idempotencyKey);
+
+    return withLock(`queue-idem:${keyHash}`, async () => {
+      const existing = await readJSON(idempotencyPath(keyHash));
+      if (existing && existing.expiresAt && parseMs(existing.expiresAt) > Date.now()) {
+        const existingJob = await getJob(existing.jobId);
+        if (
+          existingJob &&
+          ['pending', 'running', 'completed'].includes(existingJob.status)
+        ) {
+          return { ok: true, job: existingJob, deduped: true };
+        }
+      }
+
+      const job = buildInitialJob(params);
+      await atomicWrite(queuePath(job.id), job);
+
+      const ttlHours = config.OPS_QUEUE?.idempotencyTtlHours || 24;
+      await atomicWrite(idempotencyPath(keyHash), {
+        keyHash,
+        idempotencyKey,
+        jobId: job.id,
+        createdAt: job.createdAt,
+        expiresAt: new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString(),
+      });
+
+      eventBus.emit('ops_queue:job_enqueued', {
+        jobId: job.id,
+        type: job.type,
+        priority: job.priority,
+        timestamp: nowIso(),
+      });
+
+      return { ok: true, job, deduped: false };
+    });
+  }
+
+  const job = buildInitialJob(params);
+  await atomicWrite(queuePath(job.id), job);
+
+  eventBus.emit('ops_queue:job_enqueued', {
+    jobId: job.id,
+    type: job.type,
+    priority: job.priority,
+    timestamp: nowIso(),
+  });
+
+  return { ok: true, job, deduped: false };
+}
+
+/**
+ * Read queue job from active queue or dead-letter dir.
+ */
+export async function getJob(jobId) {
+  if (!jobId || typeof jobId !== 'string') return null;
+
+  const active = await readJSON(queuePath(jobId));
+  if (active) return active;
+
+  return await readJSON(deadLetterPath(jobId));
+}
+
+/**
+ * List queue jobs.
+ */
+export async function listJobs(options = {}) {
+  if (!isEnabled()) {
+    return { jobs: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const includeDeadLetter = options.deadLetter === true || options.status === 'dead-letter';
+  const dir = includeDeadLetter
+    ? getCollectionPath('ops_queue_dead_letter')
+    : getCollectionPath('ops_queue');
+
+  let jobs = await listJSON(dir);
+  jobs = jobs.filter(j => j && j.id && j.id.startsWith('q_'));
+
+  if (options.status) jobs = jobs.filter(j => j.status === options.status);
+  if (options.type) jobs = jobs.filter(j => j.type === options.type);
+  if (options.createdBy) jobs = jobs.filter(j => j.createdBy === options.createdBy);
+
+  jobs.sort((a, b) =>
+    (b.priorityWeight || 0) - (a.priorityWeight || 0) ||
+    parseMs(b.createdAt) - parseMs(a.createdAt)
+  );
+
+  const total = jobs.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    jobs: jobs.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Claim due jobs using lease semantics.
+ */
+export async function claimNextJobs(options = {}) {
+  if (!isEnabled()) return [];
+
+  const workerId = options.workerId || `worker_${process.pid}`;
+  const limit = Math.min(
+    Math.max(1, Number(options.limit) || 1),
+    config.OPS_QUEUE?.maxJobsPerScan || 10
+  );
+
+  await recoverStaleRunningJobs().catch(() => {});
+
+  const all = await listJSON(getCollectionPath('ops_queue'));
+  const due = all
+    .filter(j => j && j.id && j.status === 'pending' && !j.cancelRequested && isDue(j))
+    .sort((a, b) =>
+      (b.priorityWeight || 0) - (a.priorityWeight || 0) ||
+      parseMs(a.nextRunAt) - parseMs(b.nextRunAt) ||
+      parseMs(a.createdAt) - parseMs(b.createdAt)
+    );
+
+  const claimed = [];
+  const leaseMs = config.OPS_QUEUE?.leaseMs || (5 * 60 * 1000);
+
+  for (const candidate of due) {
+    if (claimed.length >= limit) break;
+
+    const claimedJob = await withLock(`queue-job:${candidate.id}`, async () => {
+      const fresh = await readJSON(queuePath(candidate.id));
+      if (!fresh || fresh.status !== 'pending' || fresh.cancelRequested || !isDue(fresh)) return null;
+
+      const now = nowIso();
+
+      fresh.status = 'running';
+      fresh.lockedBy = workerId;
+      fresh.leaseUntil = new Date(Date.now() + leaseMs).toISOString();
+      fresh.attempts = (fresh.attempts || 0) + 1;
+      fresh.startedAt = fresh.startedAt || now;
+      fresh.updatedAt = now;
+      fresh.lastError = null;
+
+      await atomicWrite(queuePath(fresh.id), fresh);
+
+      eventBus.emit('ops_queue:job_started', {
+        jobId: fresh.id,
+        type: fresh.type,
+        attempts: fresh.attempts,
+        lockedBy: workerId,
+        timestamp: now,
+      });
+
+      return fresh;
+    });
+
+    if (claimedJob) claimed.push(claimedJob);
+  }
+
+  return claimed;
+}
+
+/**
+ * Complete a running job.
+ */
+export async function completeJob(jobId, result = {}) {
+  return withLock(`queue-job:${jobId}`, async () => {
+    const job = await readJSON(queuePath(jobId));
+    if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+
+    const now = nowIso();
+    job.status = 'completed';
+    job.result = result || {};
+    job.leaseUntil = null;
+    job.lockedBy = null;
+    job.completedAt = now;
+    job.updatedAt = now;
+    job.lastError = null;
+
+    await atomicWrite(queuePath(job.id), job);
+
+    eventBus.emit('ops_queue:job_completed', {
+      jobId: job.id,
+      type: job.type,
+      timestamp: now,
+    });
+
+    return { ok: true, job };
+  });
+}
+
+/**
+ * Fail a job and schedule retry or move to DLQ.
+ */
+export async function failJob(jobId, error, options = {}) {
+  return withLock(`queue-job:${jobId}`, async () => {
+    const job = await readJSON(queuePath(jobId));
+    if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+
+    const retryable = options.retryable !== false;
+    const now = nowIso();
+
+    job.lastError = sanitizeError(error);
+    job.failedAt = now;
+    job.updatedAt = now;
+    job.leaseUntil = null;
+    job.lockedBy = null;
+
+    const exhausted = (job.attempts || 0) >= (job.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5);
+
+    if (!retryable || exhausted) {
+      await atomicWrite(queuePath(job.id), job);
+      return await moveToDeadLetter(job.id, retryable ? 'MAX_ATTEMPTS_EXHAUSTED' : 'PERMANENT_FAILURE');
+    }
+
+    job.status = 'pending';
+    job.nextRunAt = calculateNextRunAt(job.attempts, job.backoffMs);
+
+    await atomicWrite(queuePath(job.id), job);
+
+    eventBus.emit('ops_queue:job_failed', {
+      jobId: job.id,
+      type: job.type,
+      attempts: job.attempts,
+      nextRunAt: job.nextRunAt,
+      error: job.lastError,
+      timestamp: now,
+    });
+
+    return { ok: true, job, retryScheduled: true };
+  });
+}
+
+/**
+ * Cancel a pending/running job.
+ */
+export async function cancelJob(jobId, reason = 'cancelled') {
+  return withLock(`queue-job:${jobId}`, async () => {
+    const job = await readJSON(queuePath(jobId));
+    if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+
+    if (job.status === 'completed' || job.status === 'dead-letter') {
+      return { ok: false, error: 'JOB_NOT_CANCELABLE', job };
+    }
+
+    const now = nowIso();
+    job.status = 'cancelled';
+    job.cancelRequested = true;
+    job.cancelledAt = now;
+    job.updatedAt = now;
+    job.leaseUntil = null;
+    job.lockedBy = null;
+    job.lastError = reason || null;
+
+    await atomicWrite(queuePath(job.id), job);
+
+    eventBus.emit('ops_queue:job_cancelled', {
+      jobId: job.id,
+      type: job.type,
+      reason,
+      timestamp: now,
+    });
+
+    return { ok: true, job };
+  });
+}
+
+/**
+ * Retry failed/cancelled/dead-letter job.
+ */
+export async function retryJob(jobId, options = {}) {
+  return withLock(`queue-job:${jobId}`, async () => {
+    let job = await readJSON(queuePath(jobId));
+    let fromDeadLetter = false;
+
+    if (!job) {
+      job = await readJSON(deadLetterPath(jobId));
+      fromDeadLetter = !!job;
+    }
+
+    if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+
+    const now = nowIso();
+    const wasDeadLetter = fromDeadLetter || job.status === 'dead-letter';
+
+    job.status = 'pending';
+    job.cancelRequested = false;
+    job.nextRunAt = options.nextRunAt || now;
+    job.leaseUntil = null;
+    job.lockedBy = null;
+    job.updatedAt = now;
+    job.failedAt = null;
+    job.deadLetteredAt = null;
+    job.cancelledAt = null;
+    job.lastError = null;
+
+    if (options.resetAttempts !== false) {
+      job.attempts = 0;
+    }
+
+    await atomicWrite(queuePath(job.id), job);
+
+    if (wasDeadLetter) {
+      await deleteJSON(deadLetterPath(job.id)).catch(() => {});
+    }
+
+    eventBus.emit('ops_queue:job_retried', {
+      jobId: job.id,
+      type: job.type,
+      fromDeadLetter,
+      timestamp: now,
+    });
+
+    return { ok: true, job };
+  });
+}
+
+/**
+ * Move exhausted/permanent-failure job to dead-letter queue.
+ */
+export async function moveToDeadLetter(jobId, reason = 'dead-letter') {
+  const job = await readJSON(queuePath(jobId));
+  if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+
+  const now = nowIso();
+  job.status = 'dead-letter';
+  job.deadLetteredAt = now;
+  job.updatedAt = now;
+  job.leaseUntil = null;
+  job.lockedBy = null;
+  job.lastError = job.lastError || reason;
+
+  await atomicWrite(queuePath(job.id), job);
+  await atomicWrite(deadLetterPath(job.id), job);
+
+  eventBus.emit('ops_queue:job_dead_lettered', {
+    jobId: job.id,
+    type: job.type,
+    reason,
+    attempts: job.attempts || 0,
+    timestamp: now,
+  });
+
+  return { ok: true, job, deadLettered: true };
+}
+
+/**
+ * Recover stale running jobs after crash/restart.
+ */
+export async function recoverStaleRunningJobs() {
+  if (!isEnabled()) return 0;
+
+  const jobs = await listJSON(getCollectionPath('ops_queue'));
+  let recovered = 0;
+
+  for (const job of jobs) {
+    if (!job || job.status !== 'running') continue;
+    if (!isLeaseExpired(job)) continue;
+
+    await withLock(`queue-job:${job.id}`, async () => {
+      const fresh = await readJSON(queuePath(job.id));
+      if (!fresh || fresh.status !== 'running' || !isLeaseExpired(fresh)) return;
+
+      if ((fresh.attempts || 0) >= (fresh.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5)) {
+        await moveToDeadLetter(fresh.id, 'STALE_RUNNING_EXHAUSTED');
+      } else {
+        fresh.status = 'pending';
+        fresh.leaseUntil = null;
+        fresh.lockedBy = null;
+        fresh.nextRunAt = calculateNextRunAt(fresh.attempts || 1, fresh.backoffMs);
+        fresh.lastError = 'Recovered stale running job';
+        fresh.updatedAt = nowIso();
+        await atomicWrite(queuePath(fresh.id), fresh);
+
+        eventBus.emit('ops_queue:job_recovered', {
+          jobId: fresh.id,
+          type: fresh.type,
+          nextRunAt: fresh.nextRunAt,
+          timestamp: nowIso(),
+        });
+      }
+
+      recovered++;
+    });
+  }
+
+  if (recovered > 0) {
+    logger.warn('opsQueue: recovered stale running jobs', { recovered });
+  }
+
+  return recovered;
+}
+
+/**
+ * Cleanup old queue records.
+ */
+export async function cleanupOldJobs() {
+  if (!isEnabled()) return 0;
+
+  const completedCutoff = Date.now() - (config.OPS_QUEUE?.cleanupCompletedAfterHours || 48) * 60 * 60 * 1000;
+  const failedCutoff = Date.now() - (config.OPS_QUEUE?.cleanupFailedAfterDays || 14) * 24 * 60 * 60 * 1000;
+  const dlqCutoff = Date.now() - (config.OPS_QUEUE?.deadLetterRetentionDays || 90) * 24 * 60 * 60 * 1000;
+
+  let cleaned = 0;
+
+  const activeJobs = await listJSON(getCollectionPath('ops_queue'));
+  for (const job of activeJobs) {
+    if (!job || !job.id) continue;
+
+    const completedOld =
+      (job.status === 'completed' || job.status === 'cancelled') &&
+      parseMs(job.updatedAt) < completedCutoff;
+
+    const failedOld =
+      job.status === 'failed' &&
+      parseMs(job.updatedAt) < failedCutoff;
+
+    const activeDeadLetterOld =
+      job.status === 'dead-letter' &&
+      parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff;
+
+    if (completedOld || failedOld || activeDeadLetterOld) {
+      await deleteJSON(queuePath(job.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  const deadJobs = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+  for (const job of deadJobs) {
+    if (!job || !job.id) continue;
+    if (parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff) {
+      await deleteJSON(deadLetterPath(job.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  return cleaned;
+}
+
+/**
+ * Queue aggregate stats.
+ */
+export async function getQueueStats() {
+  if (!isEnabled()) {
+    return { enabled: false };
+  }
+
+  const jobs = await listJSON(getCollectionPath('ops_queue'));
+  const dead = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+
+  const byStatus = {
+    pending: 0,
+    running: 0,
+    completed: 0,
+    failed: 0,
+    'dead-letter': 0,
+    cancelled: 0,
+  };
+
+  const byType = {};
+
+  for (const job of jobs) {
+    if (!job || !job.id) continue;
+    if (byStatus[job.status] !== undefined) byStatus[job.status]++;
+    byType[job.type] = (byType[job.type] || 0) + 1;
+  }
+
+  // Dead-letter dir is the reliable DLQ count.
+  byStatus['dead-letter'] = dead.filter(j => j && j.id).length;
+
+  return {
+    enabled: true,
+    byStatus,
+    byType,
+    totalActiveRecords: jobs.filter(j => j && j.id).length,
+    deadLetter: byStatus['dead-letter'],
+    workerEnabled: !!config.OPS_QUEUE.workerEnabled,
+    workerConcurrency: config.OPS_QUEUE.workerConcurrency,
+    scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
+  };
+}
+
+export const _testHelpers = {
+  generateJobId,
+  safeIdempotencyHash,
+  calculateNextRunAt,
+  normalizePriority,
+  isDue,
+  isLeaseExpired,
+  buildInitialJob,
+  payloadSizeBytes,
+  VALID_STATUSES,
 };
 ```
 
@@ -20635,6 +21944,448 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
     if (data && data.adId) onAdStatusChanged(data.adId, 'matched');
   });
 }
+```
+
+---
+
+## `server/services/queueWorkers.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/queueWorkers.js — Ops Queue Worker Loop (Phase 52)
+// ═══════════════════════════════════════════════════════════════
+// Bounded-concurrency durable queue worker.
+// Built-in handlers:
+//   - admin_alert_webhook
+//   - admin_alert_email
+//   - audit_csv_export
+//   - predictive_scan
+//   - counter_rebuild
+//   - counter_compaction
+//   - audit_index_rebuild
+//   - backup_verify
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+import {
+  claimNextJobs,
+  completeJob,
+  failJob,
+  cancelJob,
+  recoverStaleRunningJobs,
+  cleanupOldJobs,
+} from './opsQueue.js';
+import {
+  getDelivery,
+  recordAttempt,
+  markDelivered,
+  markFailed,
+  markDeadLettered,
+} from './alertDeliveryHistory.js';
+
+const handlers = new Map();
+
+let workerTimer = null;
+let started = false;
+let activeCount = 0;
+let workerId = `queue_worker_${process.pid}_${Math.random().toString(36).slice(2, 8)}`;
+let lastProcessAt = null;
+let processedCount = 0;
+let failedCount = 0;
+let stoppedAt = null;
+
+function isEnabled() {
+  return !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled);
+}
+
+export function registerJobHandler(type, handler) {
+  if (!type || typeof handler !== 'function') {
+    throw new Error('registerJobHandler requires type and handler');
+  }
+  handlers.set(type, handler);
+}
+
+function registerBuiltIns() {
+  if (handlers.has('__builtins_registered__')) return;
+  handlers.set('__builtins_registered__', async () => {});
+
+  registerJobHandler('admin_alert_webhook', handleAdminAlertWebhookJob);
+  registerJobHandler('admin_alert_email', handleAdminAlertEmailJob);
+  registerJobHandler('audit_csv_export', handleAuditCsvExportJob);
+  registerJobHandler('predictive_scan', handlePredictiveScanJob);
+  registerJobHandler('counter_rebuild', handleCounterRebuildJob);
+  registerJobHandler('counter_compaction', handleCounterCompactionJob);
+  registerJobHandler('audit_index_rebuild', handleAuditIndexRebuildJob);
+  registerJobHandler('backup_verify', handleBackupVerifyJob);
+}
+
+export function startQueueWorkers() {
+  if (started) return;
+  if (!isEnabled()) {
+    logger.info('Ops queue workers: disabled via config');
+    return;
+  }
+
+  registerBuiltIns();
+  started = true;
+  stoppedAt = null;
+
+  recoverStaleRunningJobs().catch(err => {
+    logger.warn('Ops queue workers: stale recovery failed', { error: err.message });
+  });
+
+  workerTimer = setInterval(() => {
+    processDueJobs().catch(err => {
+      logger.warn('Ops queue workers: processDueJobs failed', { error: err.message });
+    });
+  }, config.OPS_QUEUE.scanIntervalMs || 5000);
+
+  if (workerTimer.unref) workerTimer.unref();
+
+  logger.info('Ops queue workers: started', {
+    workerId,
+    concurrency: config.OPS_QUEUE.workerConcurrency,
+    scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
+  });
+}
+
+export async function stopQueueWorkers(options = {}) {
+  if (workerTimer) {
+    clearInterval(workerTimer);
+    workerTimer = null;
+  }
+
+  started = false;
+  stoppedAt = new Date().toISOString();
+
+  const drainMs = Math.max(0, Number(options.drainMs) || 0);
+  const deadline = Date.now() + drainMs;
+
+  while (activeCount > 0 && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  logger.info('Ops queue workers: stopped', {
+    activeCount,
+    drainMs,
+  });
+}
+
+export async function processDueJobs() {
+  if (!isEnabled()) return { claimed: 0, activeCount };
+
+  registerBuiltIns();
+  lastProcessAt = new Date().toISOString();
+
+  const concurrency = Math.max(1, config.OPS_QUEUE.workerConcurrency || 2);
+  const availableSlots = Math.max(0, concurrency - activeCount);
+  if (availableSlots <= 0) return { claimed: 0, activeCount };
+
+  const claimed = await claimNextJobs({
+    workerId,
+    limit: Math.min(availableSlots, config.OPS_QUEUE.maxJobsPerScan || 10),
+  });
+
+  for (const job of claimed) {
+    activeCount++;
+    processOneJob(job)
+      .catch(err => {
+        logger.warn('Ops queue worker: unhandled processOneJob error', {
+          jobId: job.id,
+          error: err.message,
+        });
+      })
+      .finally(() => {
+        activeCount--;
+      });
+  }
+
+  // Opportunistic cleanup, bounded by interval.
+  cleanupOldJobs().catch(() => {});
+
+  return { claimed: claimed.length, activeCount };
+}
+
+async function processOneJob(job) {
+  if (!job || !job.id) return;
+
+  if (job.cancelRequested) {
+    await cancelJob(job.id, 'cancel requested before execution');
+    return;
+  }
+
+  const handler = handlers.get(job.type);
+  if (!handler) {
+    failedCount++;
+    await failJob(job.id, new Error(`No queue handler registered for type: ${job.type}`), { retryable: false });
+    return;
+  }
+
+  try {
+    const result = await handler({ job, payload: job.payload || {} });
+    await completeJob(job.id, result || {});
+
+    if (job.type === 'audit_csv_export' && job.payload?.exportId) {
+      eventBus.emit('export:job_completed', {
+        exportId: job.payload.exportId,
+        queueJobId: job.id,
+        result: result || {},
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    processedCount++;
+  } catch (err) {
+    failedCount++;
+
+    const retryable = err && err.retryable === false ? false : true;
+    const result = await failJob(job.id, err, { retryable });
+
+    if (job.type === 'audit_csv_export' && job.payload?.exportId) {
+      eventBus.emit('export:job_failed', {
+        exportId: job.payload.exportId,
+        queueJobId: job.id,
+        error: err && err.message ? err.message : String(err),
+        retryable,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // If alert delivery reached DLQ, mirror delivery status.
+    if (result && result.deadLettered && job.type.startsWith('admin_alert_') && job.payload?.deliveryId) {
+      await markDeadLettered(job.payload.deliveryId, err.message || 'queue job dead-lettered').catch(() => {});
+    }
+  }
+}
+
+export function getWorkerStats() {
+  return {
+    enabled: isEnabled(),
+    started,
+    workerId,
+    activeCount,
+    registeredHandlers: Array.from(handlers.keys()).filter(k => k !== '__builtins_registered__'),
+    lastProcessAt,
+    processedCount,
+    failedCount,
+    stoppedAt,
+    concurrency: config.OPS_QUEUE?.workerConcurrency || 0,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Built-in handlers
+// ═══════════════════════════════════════════════════════════════
+
+async function handleAdminAlertWebhookJob({ job, payload }) {
+  const deliveryId = payload.deliveryId;
+  const delivery = await getDelivery(deliveryId);
+  if (!delivery) {
+    const err = new Error('Alert delivery record not found');
+    err.retryable = false;
+    throw err;
+  }
+
+  const startedAt = new Date().toISOString();
+
+  try {
+    const { sendWebhook } = await import('./adminAlertChannels.js');
+    const result = await sendWebhook(payload.payload || delivery.payload || {});
+
+    await recordAttempt(deliveryId, {
+      attempt: job.attempts || 1,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      ok: !!result.ok,
+      statusCode: result.statusCode || null,
+      error: result.ok ? null : result.error || 'Webhook failed',
+      channel: 'webhook',
+    });
+
+    if (result.ok) {
+      await markDelivered(deliveryId, result);
+      return { delivered: true, channel: 'webhook', statusCode: result.statusCode || null };
+    }
+
+    await markFailed(deliveryId, result.error || 'Webhook failed');
+    const err = new Error(result.error || 'Webhook failed');
+    err.retryable = true;
+    err.__attemptRecorded = true;
+    throw err;
+  } catch (err) {
+    // recordAttempt is best-effort if sendWebhook threw before returning.
+    // If result.ok=false path already recorded attempt, avoid duplicate attempt rows.
+    if (!err.__attemptRecorded) {
+      try {
+        await recordAttempt(deliveryId, {
+          attempt: job.attempts || 1,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          ok: false,
+          error: err.message,
+          channel: 'webhook',
+        });
+        await markFailed(deliveryId, err.message);
+      } catch (_) {}
+    }
+
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
+}
+
+async function handleAdminAlertEmailJob({ job, payload }) {
+  const deliveryId = payload.deliveryId;
+  const delivery = await getDelivery(deliveryId);
+  if (!delivery) {
+    const err = new Error('Alert delivery record not found');
+    err.retryable = false;
+    throw err;
+  }
+
+  const startedAt = new Date().toISOString();
+
+  try {
+    const { sendEmail } = await import('./adminAlertChannels.js');
+    const result = await sendEmail(payload.payload || delivery.payload || {});
+
+    await recordAttempt(deliveryId, {
+      attempt: job.attempts || 1,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      ok: !!result.ok,
+      error: result.ok ? null : result.error || 'Email failed',
+      channel: 'email',
+    });
+
+    if (result.ok) {
+      await markDelivered(deliveryId, result);
+      return { delivered: true, channel: 'email' };
+    }
+
+    await markFailed(deliveryId, result.error || 'Email failed');
+    const err = new Error(result.error || 'Email failed');
+    err.retryable = true;
+    err.__attemptRecorded = true;
+    throw err;
+  } catch (err) {
+    if (!err.__attemptRecorded) {
+      try {
+        await recordAttempt(deliveryId, {
+          attempt: job.attempts || 1,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          ok: false,
+          error: err.message,
+          channel: 'email',
+        });
+        await markFailed(deliveryId, err.message);
+      } catch (_) {}
+    }
+
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
+}
+
+async function handleAuditCsvExportJob({ payload }) {
+  const exportId = payload.exportId;
+  if (!exportId) {
+    const err = new Error('exportId is required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const registry = await import('./exportRegistry.js');
+  const auditSearch = await import('./auditLogSearch.js');
+  const progress = await import('./csvExportProgress.js');
+
+  const exp = await registry.getExport(exportId);
+  if (!exp) {
+    const err = new Error('Export record not found');
+    err.retryable = false;
+    throw err;
+  }
+
+  if (exp.status === 'cancelled' || exp.cancelRequested) {
+    return { cancelled: true, exportId };
+  }
+
+  try {
+    progress.startExport(exportId, exp.totalEstimate || 0);
+
+    await registry.updateExportProgress(exportId, {
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      rowsProcessed: exp.rowsProcessed || 0,
+    });
+
+    const filePath = registry.getExportCsvAbsolutePath(exportId);
+
+    const stream = auditSearch.createCsvExportStream({
+      ...(payload.filters || {}),
+      exportId,
+      persistFilePath: filePath,
+    });
+
+    for await (const _chunk of stream) {
+      if (await registry.isCancellationRequested(exportId)) {
+        return { cancelled: true, exportId };
+      }
+      // chunks are persisted by generator; no memory accumulation.
+    }
+
+    return { exportId, completed: true };
+  } catch (err) {
+    await registry.failExport(exportId, err.message || String(err)).catch(() => {});
+    throw err;
+  }
+}
+
+async function handlePredictiveScanJob({ payload }) {
+  const { runPredictiveScan } = await import('./predictiveAbuse.js');
+  const result = await runPredictiveScan({
+    force: payload.force !== false,
+    persist: payload.persist !== false,
+  });
+  return {
+    signalCount: result.signalCount || 0,
+    created: result.created || 0,
+    updated: result.updated || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleCounterRebuildJob() {
+  const { rebuildCounters } = await import('./directOfferCounters.js');
+  return await rebuildCounters();
+}
+
+async function handleCounterCompactionJob({ payload }) {
+  const { compactCounters } = await import('./counterCompaction.js');
+  return await compactCounters(payload.options || {});
+}
+
+async function handleAuditIndexRebuildJob({ payload }) {
+  const { rebuildAuditIndex } = await import('./auditLogIndex.js');
+  return await rebuildAuditIndex(payload.options || {});
+}
+
+async function handleBackupVerifyJob() {
+  return {
+    skipped: true,
+    reason: 'backup_verify handler is reserved for Phase 54 restore drill',
+  };
+}
+
+export const _testHelpers = {
+  handlers,
+  processOneJob,
+  registerBuiltIns,
+  setWorkerId: (id) => { workerId = id; },
+};
 ```
 
 ---

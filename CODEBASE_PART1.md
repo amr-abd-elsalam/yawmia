@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.47.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-10T00:08:15.484Z
+# يوميّة (Yawmia) v0.48.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-10T20:28:37.598Z
 > Files in this part: 6
 
 ## Files
@@ -348,6 +348,11 @@ const config = {
       predictive_signals: 'predictive_signals',
       workrooms: 'workrooms',
       trust_snapshots: 'metrics/trust-v2-snapshots',
+      ops_queue: 'ops_queue',
+      ops_queue_idempotency: 'ops_queue/idempotency',
+      ops_queue_dead_letter: 'ops_queue/dead-letter',
+      alert_deliveries: 'alert_deliveries',
+      queue_metrics: 'metrics/queue',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -536,7 +541,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.47.0',
+    cacheName: 'yawmia-v0.48.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1243,6 +1248,42 @@ const config = {
     },
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 71. طابور العمليات التشغيلية (OPS_QUEUE) — Phase 52
+  // ═══════════════════════════════════════════════════════════════
+  OPS_QUEUE: {
+    enabled: true,
+    basePath: 'ops_queue',
+    workerEnabled: true,
+    workerConcurrency: 2,
+    scanIntervalMs: 5000,
+    leaseMs: 5 * 60 * 1000,
+    staleRunningMs: 10 * 60 * 1000,
+    maxAttempts: 5,
+    defaultBackoffMs: 30 * 1000,
+    maxBackoffMs: 30 * 60 * 1000,
+    maxPayloadBytes: 256 * 1024,
+    idempotencyTtlHours: 24,
+    cleanupCompletedAfterHours: 48,
+    cleanupFailedAfterDays: 14,
+    deadLetterRetentionDays: 90,
+    maxJobsPerScan: 10,
+    priorityLevels: ['low', 'normal', 'high', 'critical'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 72. سجل تسليم تنبيهات الأدمن (ALERT_DELIVERY) — Phase 52
+  // ═══════════════════════════════════════════════════════════════
+  ALERT_DELIVERY: {
+    enabled: true,
+    persistHistory: true,
+    historyRetentionDays: 90,
+    maxAttempts: 5,
+    retryBackoffMs: 30 * 1000,
+    deadLetterEnabled: true,
+    manualRetryEnabled: true,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1291,7 +1332,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.47.0",
+  "version": "0.48.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1543,6 +1584,13 @@ const cleanupTimer = setInterval(async () => {
     await cleanOldNotifications();
     await autoDetectNoShows();
 
+    // Phase 52 — Alert delivery history cleanup
+    try {
+      const { cleanupOldDeliveries } = await import('./server/services/alertDeliveryHistory.js');
+      const cleanedDeliveries = await cleanupOldDeliveries();
+      if (cleanedDeliveries > 0) logger.info(`Periodic: cleaned ${cleanedDeliveries} old alert delivery record(s)`);
+    } catch (_) { /* non-fatal */ }
+
     // Expiry warnings (fire-and-forget)
     try {
       const { checkExpiryWarnings } = await import('./server/services/jobs.js');
@@ -1739,6 +1787,16 @@ if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
   }
 }
 
+// ── Phase 52 — Persistent Ops Queue Workers ────────────────
+if (config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled) {
+  try {
+    const queueWorkers = await import('./server/services/queueWorkers.js');
+    queueWorkers.startQueueWorkers();
+  } catch (err) {
+    logger.warn('Phase 52: queueWorkers start failed', { error: err.message });
+  }
+}
+
 // ── Phase 49 — Scheduled Abuse Detection Scanner ──
 if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
   try {
@@ -1753,17 +1811,32 @@ if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) 
 if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICTIVE_ABUSE.scheduledScanEnabled) {
   const predictiveScanTimer = setInterval(async () => {
     try {
-      const predictive = await import('./server/services/predictiveAbuse.js');
-      const result = await predictive.runPredictiveScan({ persist: true });
-      if (result && result.signalCount > 0) {
-        logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
-          signalCount: result.signalCount,
-          created: result.created || 0,
-          updated: result.updated || 0,
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+        const bucket = new Date().toISOString().slice(0, 16); // minute bucket
+        const enqueueResult = await enqueueJob({
+          type: 'predictive_scan',
+          priority: 'normal',
+          payload: { force: true, persist: true },
+          idempotencyKey: `predictive_scan:scheduled:${bucket}`,
+          createdBy: 'scheduler',
         });
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 52: predictive abuse scan queued', { queueJobId: enqueueResult.job.id });
+        }
+      } else {
+        const predictive = await import('./server/services/predictiveAbuse.js');
+        const result = await predictive.runPredictiveScan({ persist: true });
+        if (result && result.signalCount > 0) {
+          logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
+            signalCount: result.signalCount,
+            created: result.created || 0,
+            updated: result.updated || 0,
+          });
+        }
       }
     } catch (err) {
-      logger.warn('Phase 51: predictive abuse scan failed', {
+      logger.warn('Phase 51/52: predictive abuse scan scheduling failed', {
         error: err && err.message ? err.message : String(err),
       });
     }
@@ -1839,7 +1912,15 @@ async function gracefulShutdown(signal) {
   // 1. Stop accepting new connections
   server.close(() => {});
 
-  // 2. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
+  // 2. Phase 52: Stop queue workers and drain active jobs briefly.
+  try {
+    const queueWorkers = await import('./server/services/queueWorkers.js');
+    await queueWorkers.stopQueueWorkers({ drainMs: 5000 });
+  } catch (err) {
+    logger.warn('Phase 52: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 3. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
   //    Prevents data loss for events still in in-memory queues.
   try {
     const counters = await import('./server/services/directOfferCounters.js');
@@ -1933,6 +2014,7 @@ import {
   handleAdminCancelExport,
   handleAdminCounterHygiene,
   handleAdminCompactCounters,
+  handleAdminRebuildCounters,
   // Phase 51 — Predictive Trust Intelligence
   handleAdminPredictiveAbuseDashboard,
   handleAdminPredictiveAbuseSignals,
@@ -1944,6 +2026,20 @@ import {
   handleAdminTrustBacklogPriority,
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
+import {
+  handleAdminQueueStats,
+  handleAdminQueueJobs,
+  handleAdminQueueJobDetail,
+  handleAdminRetryQueueJob,
+  handleAdminCancelQueueJob,
+  handleAdminDeadLetterJobs,
+  handleAdminRetryDeadLetterJob,
+  handleAdminAlertDeliveries,
+  handleAdminAlertDeliveryDetail,
+  handleAdminRetryAlertDelivery,
+  handleAdminAlertDeliveryHealth,
+  handleAdminCreateAuditExportJob,
+} from './handlers/queueHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -2000,7 +2096,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.47.0',
+        version: '0.48.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -2111,6 +2207,22 @@ const routes = [
         response.exports = { enabled: false };
       }
 
+      // Phase 52 — Ops queue stats (non-blocking)
+      try {
+        const { getQueueStats } = await import('./services/opsQueue.js');
+        response.opsQueue = await getQueueStats();
+      } catch (_) {
+        response.opsQueue = { enabled: false, status: 'unknown' };
+      }
+
+      // Phase 52 — Alert delivery stats (non-blocking)
+      try {
+        const { getAlertDeliveryStats } = await import('./services/alertDeliveryHistory.js');
+        response.alertDeliveries = await getAlertDeliveryStats();
+      } catch (_) {
+        response.alertDeliveries = { enabled: false, status: 'unknown' };
+      }
+
       // Phase 51 — Predictive abuse stats (non-blocking)
       try {
         const { getPredictiveStats } = await import('./services/predictiveAbuse.js');
@@ -2198,7 +2310,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.47.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.48.0' });
     },
   },
 
@@ -2420,12 +2532,28 @@ const routes = [
   { method: 'GET', path: '/api/admin/trust/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustDashboard },
   { method: 'POST', path: '/api/admin/alerts/test-webhook', middlewares: [requireAdmin], handler: handleAdminTestWebhook },
 
+  // ── Phase 52 — Persistent Alert Delivery History ──
+  { method: 'GET', path: '/api/admin/alerts/health', middlewares: [requireAdmin], handler: handleAdminAlertDeliveryHealth },
+  { method: 'GET', path: '/api/admin/alerts/deliveries', middlewares: [requireAdmin], handler: handleAdminAlertDeliveries },
+  { method: 'POST', path: '/api/admin/alerts/deliveries/:id/retry', middlewares: [requireAdmin], handler: handleAdminRetryAlertDelivery },
+  { method: 'GET', path: '/api/admin/alerts/deliveries/:id', middlewares: [requireAdmin], handler: handleAdminAlertDeliveryDetail },
+
   // ── Phase 50 — Audit Indexed Search Admin Ops ──
   { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },
   { method: 'POST', path: '/api/admin/audit-index/rebuild', middlewares: [requireAdmin], handler: handleAdminAuditIndexRebuild },
   { method: 'POST', path: '/api/admin/audit-index/verify', middlewares: [requireAdmin], handler: handleAdminAuditIndexVerify },
 
-  // ── Phase 50 — Persistent Export Registry (static before :id) ──
+  // ── Phase 52 — Persistent Ops Queue Admin APIs ──
+  { method: 'GET', path: '/api/admin/ops-queue/stats', middlewares: [requireAdmin], handler: handleAdminQueueStats },
+  { method: 'GET', path: '/api/admin/ops-queue/dead-letter', middlewares: [requireAdmin], handler: handleAdminDeadLetterJobs },
+  { method: 'POST', path: '/api/admin/ops-queue/dead-letter/:id/retry', middlewares: [requireAdmin], handler: handleAdminRetryDeadLetterJob },
+  { method: 'GET', path: '/api/admin/ops-queue/jobs', middlewares: [requireAdmin], handler: handleAdminQueueJobs },
+  { method: 'POST', path: '/api/admin/ops-queue/jobs/:id/retry', middlewares: [requireAdmin], handler: handleAdminRetryQueueJob },
+  { method: 'POST', path: '/api/admin/ops-queue/jobs/:id/cancel', middlewares: [requireAdmin], handler: handleAdminCancelQueueJob },
+  { method: 'GET', path: '/api/admin/ops-queue/jobs/:id', middlewares: [requireAdmin], handler: handleAdminQueueJobDetail },
+
+  // ── Phase 50/52 — Persistent Export Registry + Async Export Jobs ──
+  { method: 'POST', path: '/api/admin/exports/audit-log', middlewares: [requireAdmin], handler: handleAdminCreateAuditExportJob },
   { method: 'GET', path: '/api/admin/exports', middlewares: [requireAdmin], handler: handleAdminListExports },
   { method: 'GET', path: '/api/admin/exports/:id/download', middlewares: [requireAdmin], handler: handleAdminDownloadExport },
   { method: 'POST', path: '/api/admin/exports/:id/cancel', middlewares: [requireAdmin], handler: handleAdminCancelExport },
@@ -2434,6 +2562,7 @@ const routes = [
   // ── Phase 50 — Counter Hygiene ──
   { method: 'GET', path: '/api/admin/counters/hygiene', middlewares: [requireAdmin], handler: handleAdminCounterHygiene },
   { method: 'POST', path: '/api/admin/counters/compact', middlewares: [requireAdmin], handler: handleAdminCompactCounters },
+  { method: 'POST', path: '/api/admin/counters/rebuild', middlewares: [requireAdmin], handler: handleAdminRebuildCounters },
 
   // ── Phase 51 — Predictive Abuse Intelligence ──
   { method: 'GET', path: '/api/admin/predictive-abuse/dashboard', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseDashboard },
