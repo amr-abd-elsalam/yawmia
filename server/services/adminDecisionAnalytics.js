@@ -22,6 +22,7 @@
 
 import config from '../../config.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 /** @type {Map<string, { value: *, expiresAt: number }>} */
 const cache = new Map();

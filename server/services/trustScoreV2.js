@@ -264,8 +264,14 @@ export function calculateEmployerTrustScore(input = {}) {
     ? round2(1 - ((input.disputedPayments || 0) / input.totalPayments))
     : 0.5;
 
+  const rawCancellationReliability = input.totalJobs > 0
+    ? clamp01(1 - ((input.cancelledJobs || 0) / input.totalJobs))
+    : 0.5;
+
+  // High cancellation rates should have a stronger trust impact.
+  // Example: 40% reliability becomes 16%, while perfect reliability remains 100%.
   const cancellationRate = input.totalJobs > 0
-    ? round2(1 - ((input.cancelledJobs || 0) / input.totalJobs))
+    ? round2(rawCancellationReliability * rawCancellationReliability)
     : 0.5;
 
   const offerBehavior = input.totalDirectOffers > 0
