@@ -261,6 +261,7 @@
           <input type="date" id="auditToDate" class="form-input form-input--sm">
           <button class="btn btn--primary btn--sm" onclick="AdminApp.searchAuditLog()">🔍 بحث</button>
           <button class="btn btn--ghost btn--sm" onclick="AdminApp.exportAuditLog()">📥 تصدير CSV</button>
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.createAuditExportJob()">🧵 تصدير بالخلفية</button>
         </div>
 
         <!-- Phase 49 — CSV Export Progress -->
@@ -275,6 +276,63 @@
           <p style="color: var(--color-text-muted); text-align: center;">استخدم البحث لعرض السجلات</p>
         </div>
       </div>
+      <!-- Phase 52 — Persistent Ops Queue -->
+      <div class="admin-section" id="opsQueueSection">
+        <div class="admin-section__header">
+          <h2>🧵 طابور العمليات التشغيلية</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadOpsQueueStats()">تحديث</button>
+        </div>
+
+        <div id="opsQueueStats" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="opsQueueStatusFilter" class="form-input form-input--sm" onchange="AdminApp.loadOpsQueueJobs()">
+            <option value="">كل الحالات</option>
+            <option value="pending">pending</option>
+            <option value="running">running</option>
+            <option value="completed">completed</option>
+            <option value="failed">failed</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadOpsQueueJobs()">تحميل الوظائف</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.loadDeadLetterJobs()">Dead Letter</button>
+        </div>
+
+        <div id="opsQueueJobsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 52 — Persistent Alert Delivery History -->
+      <div class="admin-section" id="alertDeliveriesSection">
+        <div class="admin-section__header">
+          <h2>📢 سجل تسليم تنبيهات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadAlertDeliveries()">تحديث</button>
+        </div>
+
+        <div id="alertDeliveryHealth" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="alertDeliveryStatusFilter" class="form-input form-input--sm" onchange="AdminApp.loadAlertDeliveries()">
+            <option value="">كل الحالات</option>
+            <option value="queued">queued</option>
+            <option value="running">running</option>
+            <option value="delivered">delivered</option>
+            <option value="failed">failed</option>
+            <option value="dead-letter">dead-letter</option>
+          </select>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadAlertDeliveries()">تحميل السجل</button>
+        </div>
+
+        <div id="alertDeliveriesTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 50 — Audit Index Health -->
       <div class="admin-section" id="auditIndexSection">
         <div class="admin-section__header">
@@ -319,6 +377,7 @@
 
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:1rem;">
           <button class="btn btn--warning btn--sm" onclick="AdminApp.compactCounters()">ضغط العدادات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.rebuildCounters()">إعادة بناء العدادات بالخلفية</button>
         </div>
 
         <div id="counterHygieneActionResult" style="margin-block-start:0.75rem;"></div>

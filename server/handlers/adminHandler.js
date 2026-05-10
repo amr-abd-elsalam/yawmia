@@ -817,6 +817,8 @@ export async function handleAdminTestWebhook(req, res) {
     return sendJSON(res, 200, {
       ok: true,
       delivered: !!result.delivered,
+      queued: !!result.queued,
+      deliveries: result.deliveries || [],
       rateLimited: !!result.rateLimited,
       results: result.results || [],
     });
@@ -841,6 +843,39 @@ export async function handleAdminAuditIndexStatus(req, res) {
 
 export async function handleAdminAuditIndexRebuild(req, res) {
   try {
+    if (req.query.async === '1' || req.query.async === 'true') {
+      const { enqueueJob } = await import('../services/opsQueue.js');
+
+      const enqueueResult = await enqueueJob({
+        type: 'audit_index_rebuild',
+        priority: 'high',
+        payload: { options: {} },
+        idempotencyKey: 'heavy:audit_index_rebuild:global',
+        createdBy: req.user?.id || 'admin_token',
+      });
+
+      if (!enqueueResult.ok) {
+        return sendJSON(res, 500, { error: enqueueResult.error || 'تعذّر إضافة المهمة للطابور', code: 'QUEUE_ENQUEUE_ERROR' });
+      }
+
+      logAction({
+        adminId: req.user?.id || 'admin_token',
+        action: 'audit_index_rebuild_queued',
+        targetType: 'audit_index',
+        targetId: 'audit_index',
+        details: { queueJobId: enqueueResult.job.id, deduped: !!enqueueResult.deduped },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      }).catch(() => {});
+
+      return sendJSON(res, 202, {
+        ok: true,
+        queued: true,
+        queueJobId: enqueueResult.job.id,
+        job: enqueueResult.job,
+        deduped: !!enqueueResult.deduped,
+      });
+    }
+
     const { rebuildAuditIndex } = await import('../services/auditLogIndex.js');
     const result = await rebuildAuditIndex();
 
@@ -968,6 +1003,39 @@ export async function handleAdminCounterHygiene(req, res) {
 
 export async function handleAdminCompactCounters(req, res) {
   try {
+    if (req.query.async === '1' || req.query.async === 'true') {
+      const { enqueueJob } = await import('../services/opsQueue.js');
+
+      const enqueueResult = await enqueueJob({
+        type: 'counter_compaction',
+        priority: 'high',
+        payload: { options: req.body || {} },
+        idempotencyKey: 'heavy:counter_compaction:global',
+        createdBy: req.user?.id || 'admin_token',
+      });
+
+      if (!enqueueResult.ok) {
+        return sendJSON(res, 500, { error: enqueueResult.error || 'تعذّر إضافة المهمة للطابور', code: 'QUEUE_ENQUEUE_ERROR' });
+      }
+
+      logAction({
+        adminId: req.user?.id || 'admin_token',
+        action: 'counters_compaction_queued',
+        targetType: 'counters',
+        targetId: 'direct_offer_counters',
+        details: { queueJobId: enqueueResult.job.id, deduped: !!enqueueResult.deduped },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      }).catch(() => {});
+
+      return sendJSON(res, 202, {
+        ok: true,
+        queued: true,
+        queueJobId: enqueueResult.job.id,
+        job: enqueueResult.job,
+        deduped: !!enqueueResult.deduped,
+      });
+    }
+
     const { compactCounters } = await import('../services/counterCompaction.js');
     const result = await compactCounters();
 
@@ -983,6 +1051,63 @@ export async function handleAdminCompactCounters(req, res) {
     return sendJSON(res, 200, { ok: true, ...result });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في ضغط العدادات', code: 'COUNTER_COMPACT_ERROR' });
+  }
+}
+
+/**
+ * POST /api/admin/counters/rebuild?async=1
+ * Phase 52 — Queue-based direct offer counter rebuild.
+ */
+export async function handleAdminRebuildCounters(req, res) {
+  try {
+    if (req.query.async === '1' || req.query.async === 'true') {
+      const { enqueueJob } = await import('../services/opsQueue.js');
+
+      const enqueueResult = await enqueueJob({
+        type: 'counter_rebuild',
+        priority: 'critical',
+        payload: { reason: 'admin_requested' },
+        idempotencyKey: 'heavy:counter_rebuild:global',
+        createdBy: req.user?.id || 'admin_token',
+      });
+
+      if (!enqueueResult.ok) {
+        return sendJSON(res, 500, { error: enqueueResult.error || 'تعذّر إضافة المهمة للطابور', code: 'QUEUE_ENQUEUE_ERROR' });
+      }
+
+      logAction({
+        adminId: req.user?.id || 'admin_token',
+        action: 'counters_rebuild_queued',
+        targetType: 'counters',
+        targetId: 'direct_offer_counters',
+        details: { queueJobId: enqueueResult.job.id, deduped: !!enqueueResult.deduped },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      }).catch(() => {});
+
+      return sendJSON(res, 202, {
+        ok: true,
+        queued: true,
+        queueJobId: enqueueResult.job.id,
+        job: enqueueResult.job,
+        deduped: !!enqueueResult.deduped,
+      });
+    }
+
+    const { rebuildCounters } = await import('../services/directOfferCounters.js');
+    const result = await rebuildCounters();
+
+    logAction({
+      adminId: req.user?.id || 'admin_token',
+      action: 'counters_rebuilt',
+      targetType: 'counters',
+      targetId: 'direct_offer_counters',
+      details: result,
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في إعادة بناء العدادات', code: 'COUNTER_REBUILD_ERROR' });
   }
 }
 
@@ -1038,6 +1163,39 @@ export async function handleAdminPredictiveAbuseSignals(req, res) {
  */
 export async function handleAdminRunPredictiveAbuseScan(req, res) {
   try {
+    if (req.query.async === '1' || req.query.async === 'true') {
+      const { enqueueJob } = await import('../services/opsQueue.js');
+
+      const enqueueResult = await enqueueJob({
+        type: 'predictive_scan',
+        priority: 'high',
+        payload: { force: true, persist: true },
+        idempotencyKey: `predictive_scan:manual:${req.user?.id || 'admin_token'}:${new Date().toISOString().slice(0, 16)}`,
+        createdBy: req.user?.id || 'admin_token',
+      });
+
+      if (!enqueueResult.ok) {
+        return sendJSON(res, 500, { error: enqueueResult.error || 'تعذّر إضافة الفحص للطابور', code: 'QUEUE_ENQUEUE_ERROR' });
+      }
+
+      logAction({
+        adminId: req.user?.id || 'admin_token',
+        action: 'predictive_abuse_scan_queued',
+        targetType: 'predictive_abuse',
+        targetId: 'scan',
+        details: { queueJobId: enqueueResult.job.id, deduped: !!enqueueResult.deduped },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown',
+      }).catch(() => {});
+
+      return sendJSON(res, 202, {
+        ok: true,
+        queued: true,
+        queueJobId: enqueueResult.job.id,
+        job: enqueueResult.job,
+        deduped: !!enqueueResult.deduped,
+      });
+    }
+
     const { runPredictiveScan } = await import('../services/predictiveAbuse.js');
 
     const result = await runPredictiveScan({ force: true, persist: true });

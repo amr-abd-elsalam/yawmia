@@ -225,6 +225,13 @@ const cleanupTimer = setInterval(async () => {
     await cleanOldNotifications();
     await autoDetectNoShows();
 
+    // Phase 52 — Alert delivery history cleanup
+    try {
+      const { cleanupOldDeliveries } = await import('./server/services/alertDeliveryHistory.js');
+      const cleanedDeliveries = await cleanupOldDeliveries();
+      if (cleanedDeliveries > 0) logger.info(`Periodic: cleaned ${cleanedDeliveries} old alert delivery record(s)`);
+    } catch (_) { /* non-fatal */ }
+
     // Expiry warnings (fire-and-forget)
     try {
       const { checkExpiryWarnings } = await import('./server/services/jobs.js');
@@ -421,6 +428,16 @@ if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
   }
 }
 
+// ── Phase 52 — Persistent Ops Queue Workers ────────────────
+if (config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled) {
+  try {
+    const queueWorkers = await import('./server/services/queueWorkers.js');
+    queueWorkers.startQueueWorkers();
+  } catch (err) {
+    logger.warn('Phase 52: queueWorkers start failed', { error: err.message });
+  }
+}
+
 // ── Phase 49 — Scheduled Abuse Detection Scanner ──
 if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) {
   try {
@@ -435,17 +452,32 @@ if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) 
 if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICTIVE_ABUSE.scheduledScanEnabled) {
   const predictiveScanTimer = setInterval(async () => {
     try {
-      const predictive = await import('./server/services/predictiveAbuse.js');
-      const result = await predictive.runPredictiveScan({ persist: true });
-      if (result && result.signalCount > 0) {
-        logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
-          signalCount: result.signalCount,
-          created: result.created || 0,
-          updated: result.updated || 0,
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+        const bucket = new Date().toISOString().slice(0, 16); // minute bucket
+        const enqueueResult = await enqueueJob({
+          type: 'predictive_scan',
+          priority: 'normal',
+          payload: { force: true, persist: true },
+          idempotencyKey: `predictive_scan:scheduled:${bucket}`,
+          createdBy: 'scheduler',
         });
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 52: predictive abuse scan queued', { queueJobId: enqueueResult.job.id });
+        }
+      } else {
+        const predictive = await import('./server/services/predictiveAbuse.js');
+        const result = await predictive.runPredictiveScan({ persist: true });
+        if (result && result.signalCount > 0) {
+          logger.warn('Phase 51: predictive abuse scan detected signal(s)', {
+            signalCount: result.signalCount,
+            created: result.created || 0,
+            updated: result.updated || 0,
+          });
+        }
       }
     } catch (err) {
-      logger.warn('Phase 51: predictive abuse scan failed', {
+      logger.warn('Phase 51/52: predictive abuse scan scheduling failed', {
         error: err && err.message ? err.message : String(err),
       });
     }
@@ -521,7 +553,15 @@ async function gracefulShutdown(signal) {
   // 1. Stop accepting new connections
   server.close(() => {});
 
-  // 2. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
+  // 2. Phase 52: Stop queue workers and drain active jobs briefly.
+  try {
+    const queueWorkers = await import('./server/services/queueWorkers.js');
+    await queueWorkers.stopQueueWorkers({ drainMs: 5000 });
+  } catch (err) {
+    logger.warn('Phase 52: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 3. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
   //    Prevents data loss for events still in in-memory queues.
   try {
     const counters = await import('./server/services/directOfferCounters.js');

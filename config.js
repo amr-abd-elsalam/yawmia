@@ -273,6 +273,11 @@ const config = {
       predictive_signals: 'predictive_signals',
       workrooms: 'workrooms',
       trust_snapshots: 'metrics/trust-v2-snapshots',
+      ops_queue: 'ops_queue',
+      ops_queue_idempotency: 'ops_queue/idempotency',
+      ops_queue_dead_letter: 'ops_queue/dead-letter',
+      alert_deliveries: 'alert_deliveries',
+      queue_metrics: 'metrics/queue',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -461,7 +466,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.47.0',
+    cacheName: 'yawmia-v0.48.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1166,6 +1171,42 @@ const config = {
         'شكراً على الشغل النهارده',
       ],
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 71. طابور العمليات التشغيلية (OPS_QUEUE) — Phase 52
+  // ═══════════════════════════════════════════════════════════════
+  OPS_QUEUE: {
+    enabled: true,
+    basePath: 'ops_queue',
+    workerEnabled: true,
+    workerConcurrency: 2,
+    scanIntervalMs: 5000,
+    leaseMs: 5 * 60 * 1000,
+    staleRunningMs: 10 * 60 * 1000,
+    maxAttempts: 5,
+    defaultBackoffMs: 30 * 1000,
+    maxBackoffMs: 30 * 60 * 1000,
+    maxPayloadBytes: 256 * 1024,
+    idempotencyTtlHours: 24,
+    cleanupCompletedAfterHours: 48,
+    cleanupFailedAfterDays: 14,
+    deadLetterRetentionDays: 90,
+    maxJobsPerScan: 10,
+    priorityLevels: ['low', 'normal', 'high', 'critical'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 72. سجل تسليم تنبيهات الأدمن (ALERT_DELIVERY) — Phase 52
+  // ═══════════════════════════════════════════════════════════════
+  ALERT_DELIVERY: {
+    enabled: true,
+    persistHistory: true,
+    historyRetentionDays: 90,
+    maxAttempts: 5,
+    retryBackoffMs: 30 * 1000,
+    deadLetterEnabled: true,
+    manualRetryEnabled: true,
   },
 
 };

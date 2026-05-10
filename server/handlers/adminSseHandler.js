@@ -13,6 +13,12 @@
 //   - predictive_abuse:signal_created (Phase 51)
 //   - predictive_abuse:signal_escalated (Phase 51)
 //   - predictive_abuse:scan_failed (Phase 51)
+//   - ops_queue:job_failed (Phase 52)
+//   - ops_queue:job_dead_lettered (Phase 52)
+//   - alert_delivery:failed (Phase 52)
+//   - alert_delivery:dead_lettered (Phase 52)
+//   - export:job_completed (Phase 52)
+//   - export:job_failed (Phase 52)
 // In-memory connection map per admin, lazy event listener registration.
 // ═══════════════════════════════════════════════════════════════
 
@@ -35,6 +41,14 @@ const SUBSCRIBED_EVENTS = [
   'predictive_abuse:signal_created',
   'predictive_abuse:signal_escalated',
   'predictive_abuse:scan_failed',
+
+  // Phase 52 — Persistent Ops Queue + Alert Delivery
+  'ops_queue:job_failed',
+  'ops_queue:job_dead_lettered',
+  'alert_delivery:failed',
+  'alert_delivery:dead_lettered',
+  'export:job_completed',
+  'export:job_failed',
 ];
 
 let listenersRegistered = false;

@@ -1220,7 +1220,31 @@ export async function maybeTriggerAutoRebuild(snapshot) {
     triggeredAt: new Date().toISOString(),
   });
 
-  // Fire-and-forget rebuild (won't block monitor)
+  // Phase 52: prefer durable queue job for auto-rebuild if ops queue is enabled.
+  if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+    try {
+      const { enqueueJob } = await import('./opsQueue.js');
+      const enqueueResult = await enqueueJob({
+        type: 'counter_rebuild',
+        priority: 'critical',
+        payload: { reason: 'counter_file_size_critical', sizeMB, threshold: criticalThreshold },
+        idempotencyKey: 'heavy:counter_rebuild:auto_critical',
+        createdBy: 'monitor',
+      });
+
+      if (enqueueResult.ok) {
+        logger.warn('Counter auto-rebuild queued', {
+          queueJobId: enqueueResult.job.id,
+          deduped: !!enqueueResult.deduped,
+        });
+        return;
+      }
+    } catch (err) {
+      logger.warn('Counter auto-rebuild enqueue failed — falling back to direct rebuild', { error: err.message });
+    }
+  }
+
+  // Fallback fire-and-forget rebuild (won't block monitor)
   rebuildCounters().catch(err => {
     logger.error('Auto-rebuild failed', { error: err.message });
   });

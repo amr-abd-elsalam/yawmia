@@ -12,6 +12,7 @@
 //   - fire-and-forget EventBus listeners
 // ═══════════════════════════════════════════════════════════════
 
+import crypto from 'node:crypto';
 import config from '../../config.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
@@ -37,7 +38,10 @@ function severityPasses(actual, minimum) {
 }
 
 function isEnabled() {
-  return !!(config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled);
+  return !!(
+    (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) ||
+    process.env.ADMIN_ALERT_CHANNELS_ENABLED === 'true'
+  );
 }
 
 function enqueue(entry) {
@@ -194,37 +198,176 @@ const adapters = {
   email: sendEmail,
 };
 
+function shouldQueueDeliveries(options = {}) {
+  if (options.sync === true) return false;
+  return !!(
+    config.OPS_QUEUE &&
+    config.OPS_QUEUE.enabled &&
+    config.ALERT_DELIVERY &&
+    config.ALERT_DELIVERY.enabled
+  );
+}
+
+function priorityFromSeverity(severity) {
+  if (severity === 'critical') return 'critical';
+  if (severity === 'high') return 'high';
+  if (severity === 'medium') return 'normal';
+  return 'low';
+}
+
+function buildAlertIdentity(event, payload) {
+  const data = event.data || {};
+  const raw = data.fingerprint
+    || data.signalId
+    || data.offerId
+    || data.exportId
+    || data.deliveryId
+    || data.sizeMB
+    || payload.summary
+    || event.type;
+
+  return crypto
+    .createHash('sha256')
+    .update(String(raw || event.type))
+    .digest('hex')
+    .slice(0, 24);
+}
+
+/**
+ * Queue persistent delivery jobs for enabled alert channels.
+ */
+async function queueAlertDeliveries(event, payload, enabledChannels, severity) {
+  const deliveries = [];
+  const results = [];
+
+  const {
+    createDelivery,
+    getDelivery,
+    setDeliveryQueueJobId,
+    markFailed,
+  } = await import('./alertDeliveryHistory.js');
+  const { enqueueJob } = await import('./opsQueue.js');
+
+  const identity = buildAlertIdentity(event, payload);
+
+  for (const channel of enabledChannels) {
+    try {
+      const deliveryId = `adl_${channel}_${identity}`;
+      const existingDelivery = await getDelivery(deliveryId);
+
+      // If the exact same alert/channel is already queued/running/delivered,
+      // do not create an orphan delivery. Return the existing durable record.
+      if (
+        existingDelivery &&
+        ['queued', 'running', 'delivered'].includes(existingDelivery.status)
+      ) {
+        deliveries.push(existingDelivery);
+        results.push({
+          ok: true,
+          channel,
+          queued: existingDelivery.status !== 'delivered',
+          delivered: existingDelivery.status === 'delivered',
+          deliveryId: existingDelivery.id,
+          queueJobId: existingDelivery.queueJobId || null,
+          deduped: true,
+        });
+        continue;
+      }
+
+      const delivery = await createDelivery({
+        id: deliveryId,
+        eventType: event.type,
+        severity,
+        channel,
+        payload,
+      });
+
+      const jobType = channel === 'email' ? 'admin_alert_email' : 'admin_alert_webhook';
+
+      const enqueueResult = await enqueueJob({
+        type: jobType,
+        priority: priorityFromSeverity(severity),
+        payload: {
+          deliveryId: delivery.id,
+          payload,
+        },
+        idempotencyKey: `alert:${event.type}:${channel}:${identity}`,
+        maxAttempts: (config.ALERT_DELIVERY && config.ALERT_DELIVERY.maxAttempts) || (config.OPS_QUEUE && config.OPS_QUEUE.maxAttempts) || 5,
+        backoffMs: (config.ALERT_DELIVERY && config.ALERT_DELIVERY.retryBackoffMs) || (config.OPS_QUEUE && config.OPS_QUEUE.defaultBackoffMs) || 30000,
+        createdBy: 'system',
+      });
+
+      if (enqueueResult && enqueueResult.ok && enqueueResult.job) {
+        const updatedDelivery = await setDeliveryQueueJobId(delivery.id, enqueueResult.job.id);
+        deliveries.push(updatedDelivery || { ...delivery, queueJobId: enqueueResult.job.id });
+        results.push({
+          ok: true,
+          channel,
+          queued: true,
+          deliveryId: delivery.id,
+          queueJobId: enqueueResult.job.id,
+          deduped: !!enqueueResult.deduped,
+        });
+      } else {
+        await markFailed(delivery.id, enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED').catch(() => {});
+        deliveries.push(delivery);
+        results.push({
+          ok: false,
+          channel,
+          queued: false,
+          deliveryId: delivery.id,
+          error: enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        });
+      }
+    } catch (err) {
+      results.push({
+        ok: false,
+        channel,
+        queued: false,
+        error: err.message,
+      });
+    }
+  }
+
+  return {
+    delivered: results.some(r => r.delivered),
+    queued: results.some(r => r.ok && r.queued),
+    deliveries,
+    results,
+  };
+}
+
 /**
  * Main delivery router.
  *
  * @param {{ type: string, severity?: string, data?: object, timestamp?: string }} event
  * @returns {Promise<{ delivered: boolean, rateLimited?: boolean, results: object[] }>}
  */
-export async function deliverAdminAlert(event) {
+export async function deliverAdminAlert(event, options = {}) {
   if (!event || !event.type) {
-    return { delivered: false, results: [{ ok: false, error: 'Invalid event' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Invalid event' }] };
   }
 
   if (!isEnabled()) {
-    return { delivered: false, results: [{ ok: false, error: 'ADMIN_ALERT_CHANNELS disabled' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'ADMIN_ALERT_CHANNELS disabled' }] };
   }
 
   const routing = event.type === 'test'
-    ? { enabled: true, minSeverity: 'low' } // Phase 49: webhook test endpoint
+    ? { enabled: true, minSeverity: 'low' } // webhook test endpoint
     : config.ADMIN_ALERT_CHANNELS.eventRouting?.[event.type];
 
   if (!routing || !routing.enabled) {
-    return { delivered: false, results: [{ ok: false, error: 'Event routing disabled' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Event routing disabled' }] };
   }
 
   const severity = event.severity || 'medium';
   if (!severityPasses(severity, routing.minSeverity || 'medium')) {
-    return { delivered: false, results: [{ ok: false, error: 'Severity below route threshold' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'Severity below route threshold' }] };
   }
 
   if (!checkRateLimit(event.type)) {
     logger.warn('Admin alert rate limited', { eventType: event.type });
-    return { delivered: false, rateLimited: true, results: [{ ok: false, error: 'RATE_LIMITED' }] };
+    return { delivered: false, queued: false, rateLimited: true, results: [{ ok: false, error: 'RATE_LIMITED' }] };
   }
 
   const payload = formatPayload({ ...event, severity });
@@ -234,9 +377,31 @@ export async function deliverAdminAlert(event) {
   const enabledChannels = configuredChannels.filter(ch => adapters[ch]);
 
   if (enabledChannels.length === 0) {
-    return { delivered: false, results: [{ ok: false, error: 'No configured channels' }] };
+    return { delivered: false, queued: false, results: [{ ok: false, error: 'No configured channels' }] };
   }
 
+  // Phase 52 default: durable queued delivery.
+  // Existing direct behavior is preserved via deliverAdminAlert(event, { sync: true }).
+  if (shouldQueueDeliveries(options)) {
+    const queuedResult = await queueAlertDeliveries(event, payload, enabledChannels, severity);
+
+    if (!queuedResult.queued) {
+      logger.warn('Admin alert queueing failed on all channels', {
+        eventType: event.type,
+        results: queuedResult.results,
+      });
+    } else {
+      logger.info('Admin alert queued for durable delivery', {
+        eventType: event.type,
+        deliveries: queuedResult.deliveries.length,
+        channels: enabledChannels,
+      });
+    }
+
+    return queuedResult;
+  }
+
+  // Legacy sync path.
   const settled = await Promise.allSettled(
     enabledChannels.map(channel => adapters[channel](payload))
   );
@@ -260,7 +425,7 @@ export async function deliverAdminAlert(event) {
     });
   }
 
-  return { delivered, results };
+  return { delivered, queued: false, results };
 }
 
 /**

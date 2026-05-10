@@ -349,6 +349,22 @@ const builtInMigrations = [
       logger.info('Migration v11: Phase 51 directories registered (predictive signals + workrooms + trust v2 snapshots)');
     },
   },
+  {
+    version: 12,
+    name: 'Phase 52: Persistent Ops Queue + Alert Delivery History',
+    up: async () => {
+      // Phase 52 registers durable operational reliability structures:
+      //   - ops_queue
+      //   - ops_queue/idempotency
+      //   - ops_queue/dead-letter
+      //   - alert_deliveries
+      //   - metrics/queue
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      logger.info('Migration v12: Phase 52 directories registered (ops queue + alert deliveries)');
+    },
+  },
 ];
 
 /**

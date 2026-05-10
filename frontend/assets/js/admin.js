@@ -119,6 +119,8 @@ var AdminApp = (function () {
         loadAbuseSignals(),
         loadPredictiveAbuseDashboard(),
         loadDecisionQuality(),
+        loadOpsQueueStats(),
+        loadAlertDeliveries(),
         loadAuditIndexStatus(),
         loadExports(),
         loadCounterHygiene(),
@@ -230,6 +232,67 @@ var AdminApp = (function () {
           if (typeof YawmiaToast !== 'undefined') {
             YawmiaToast.error('فشل فحص المخاطر التنبؤية');
           }
+        } catch (_) {}
+      });
+
+      // Phase 52 — Ops Queue + Alert Delivery events
+      adminSseSource.addEventListener('ops_queue:job_failed', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('فشلت وظيفة Queue: ' + (data.type || data.jobId || ''));
+          }
+          loadOpsQueueStats();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('ops_queue:job_dead_lettered', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('DLQ: وظيفة وصلت Dead Letter');
+          }
+          loadOpsQueueStats();
+          loadDeadLetterJobs();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('alert_delivery:failed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('فشل تسليم تنبيه أدمن — سيتم إعادة المحاولة');
+          }
+          loadAlertDeliveries();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('alert_delivery:dead_lettered', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('تنبيه أدمن وصل Dead Letter');
+          }
+          loadAlertDeliveries();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('export:job_completed', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('اكتمل تصدير الخلفية: ' + (data.exportId || ''));
+          }
+          loadExports();
+          loadOpsQueueStats();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('export:job_failed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('فشل تصدير الخلفية');
+          }
+          loadExports();
+          loadOpsQueueStats();
         } catch (_) {}
       });
 
@@ -1695,11 +1758,12 @@ var AdminApp = (function () {
         YawmiaToast.info('جاري تشغيل فحص المخاطر...');
       }
 
-      var data = await apiWrite('POST', '/api/admin/predictive-abuse/run-scan', {});
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/run-scan?async=1', {});
       if (data && data.ok) {
         if (typeof YawmiaToast !== 'undefined') {
-          YawmiaToast.success('اكتمل الفحص — إشارات: ' + (data.signalCount || 0));
+          YawmiaToast.success('تم وضع فحص المخاطر في الطابور — Job: ' + (data.queueJobId || ''));
         }
+        loadOpsQueueStats();
         loadPredictiveAbuseDashboard();
         loadDecisionQuality();
       }
@@ -1829,6 +1893,273 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 52 — Ops Queue + Alert Delivery + Async Export
+  // ═══════════════════════════════════════════════════════════════
+
+  function queueStatusBadge(status) {
+    var s = status || 'pending';
+    return '<span class="queue-status-badge queue-status-badge--' + escapeHtml(s) + '">' + escapeHtml(s) + '</span>';
+  }
+
+  function deliveryStatusBadge(status) {
+    var s = status || 'queued';
+    return '<span class="alert-delivery-status-badge alert-delivery-status-badge--' + escapeHtml(s) + '">' + escapeHtml(s) + '</span>';
+  }
+
+  async function loadOpsQueueStats() {
+    var statsEl = document.getElementById('opsQueueStats');
+    if (statsEl) statsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var data = await api('/api/admin/ops-queue/stats');
+      var stats = data.stats || {};
+      var byStatus = stats.byStatus || {};
+      var workers = data.workers || {};
+
+      if (statsEl) {
+        var cards = [
+          { value: byStatus.pending || 0, label: 'Pending' },
+          { value: byStatus.running || 0, label: 'Running' },
+          { value: byStatus.completed || 0, label: 'Completed' },
+          { value: byStatus.failed || 0, label: 'Failed' },
+          { value: byStatus['dead-letter'] || 0, label: 'Dead Letter' },
+          { value: workers.activeCount || 0, label: 'Active Workers' },
+        ];
+
+        statsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          statsEl.appendChild(card);
+        });
+      }
+
+      loadOpsQueueJobs();
+    } catch (err) {
+      if (statsEl) statsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حالة الطابور</p>';
+    }
+  }
+
+  async function loadOpsQueueJobs() {
+    var el = document.getElementById('opsQueueJobsTable');
+    if (!el) return;
+
+    try {
+      var statusEl = document.getElementById('opsQueueStatusFilter');
+      var status = statusEl ? statusEl.value : '';
+
+      var url = '/api/admin/ops-queue/jobs?limit=20';
+      if (status) url += '&status=' + encodeURIComponent(status);
+
+      var data = await api(url);
+      renderQueueJobsTable(el, data.jobs || [], false);
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل وظائف الطابور</p>';
+    }
+  }
+
+  async function loadDeadLetterJobs() {
+    var el = document.getElementById('opsQueueJobsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/ops-queue/dead-letter?limit=20');
+      renderQueueJobsTable(el, data.jobs || [], true);
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل DLQ</p>';
+    }
+  }
+
+  function renderQueueJobsTable(el, jobs, isDlq) {
+    if (!jobs || jobs.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد وظائف</p>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>Job</th><th>النوع</th><th>الحالة</th><th>الأولوية</th><th>محاولات</th><th>Next Run</th><th>خطأ</th><th>إجراء</th>' +
+      '</tr></thead><tbody>';
+
+    jobs.forEach(function (j) {
+      var nextRun = j.nextRunAt ? new Date(j.nextRunAt).toLocaleString('ar-EG') : '-';
+      var errText = j.lastError ? String(j.lastError).slice(0, 60) : '-';
+
+      var actions = '';
+      if (j.status === 'failed' || j.status === 'dead-letter' || isDlq || j.status === 'cancelled') {
+        actions += '<button class="btn btn--primary btn--sm" onclick="AdminApp.retryQueueJob(\'' + escapeHtml(j.id) + '\')">Retry</button> ';
+      }
+      if (j.status === 'pending' || j.status === 'running') {
+        actions += '<button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.cancelQueueJob(\'' + escapeHtml(j.id) + '\')">Cancel</button>';
+      }
+
+      html += '<tr>' +
+        '<td><small>' + escapeHtml(j.id || '') + '</small></td>' +
+        '<td>' + escapeHtml(j.type || '-') + '</td>' +
+        '<td>' + queueStatusBadge(j.status) + '</td>' +
+        '<td>' + escapeHtml(j.priority || 'normal') + '</td>' +
+        '<td>' + escapeHtml(String(j.attempts || 0)) + '/' + escapeHtml(String(j.maxAttempts || 0)) + '</td>' +
+        '<td><small>' + escapeHtml(nextRun) + '</small></td>' +
+        '<td><small>' + escapeHtml(errText) + '</small></td>' +
+        '<td>' + actions + '</td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  async function retryQueueJob(id) {
+    try {
+      await apiWrite('POST', '/api/admin/ops-queue/jobs/' + id + '/retry', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تمت إعادة وظيفة الطابور');
+      loadOpsQueueStats();
+    } catch (err) {
+      showError(err.message || 'خطأ في retry');
+    }
+  }
+
+  async function cancelQueueJob(id) {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'إلغاء وظيفة الطابور',
+      message: 'متأكد إنك عايز تلغي الوظيفة؟',
+      confirmText: 'إلغاء الوظيفة',
+      cancelText: 'رجوع',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiWrite('POST', '/api/admin/ops-queue/jobs/' + id + '/cancel', { reason: 'cancelled_from_admin_ui' });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إلغاء الوظيفة');
+      loadOpsQueueStats();
+    } catch (err) {
+      showError(err.message || 'خطأ في cancel');
+    }
+  }
+
+  async function loadAlertDeliveries() {
+    await loadAlertDeliveryHealth();
+
+    var el = document.getElementById('alertDeliveriesTable');
+    if (!el) return;
+
+    try {
+      var statusEl = document.getElementById('alertDeliveryStatusFilter');
+      var status = statusEl ? statusEl.value : '';
+
+      var url = '/api/admin/alerts/deliveries?limit=20';
+      if (status) url += '&status=' + encodeURIComponent(status);
+
+      var data = await api(url);
+      var rows = data.deliveries || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد سجلات تسليم</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>Delivery</th><th>Event</th><th>Channel</th><th>Status</th><th>Attempts</th><th>Created</th><th>Action</th>' +
+      '</tr></thead><tbody>';
+
+      rows.forEach(function (d) {
+        var attempts = Array.isArray(d.attempts) ? d.attempts.length : 0;
+        var created = d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '-';
+        var actions = '';
+
+        if (d.status === 'failed' || d.status === 'dead-letter') {
+          actions += '<button class="btn btn--primary btn--sm" onclick="AdminApp.retryAlertDelivery(\'' + escapeHtml(d.id) + '\')">Retry</button>';
+        }
+
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(d.id || '') + '</small></td>' +
+          '<td><small>' + escapeHtml(d.eventType || '-') + '</small></td>' +
+          '<td>' + escapeHtml(d.channel || '-') + '</td>' +
+          '<td>' + deliveryStatusBadge(d.status) + '</td>' +
+          '<td>' + attempts + '</td>' +
+          '<td><small>' + escapeHtml(created) + '</small></td>' +
+          '<td>' + actions + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل التسليم</p>';
+    }
+  }
+
+  async function loadAlertDeliveryHealth() {
+    var el = document.getElementById('alertDeliveryHealth');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/alerts/health');
+      var stats = data.stats || {};
+      var byStatus = stats.byStatus || {};
+
+      var cards = [
+        { value: stats.total || 0, label: 'إجمالي التسليمات' },
+        { value: byStatus.queued || 0, label: 'Queued' },
+        { value: byStatus.delivered || 0, label: 'Delivered' },
+        { value: byStatus.failed || 0, label: 'Failed' },
+        { value: byStatus['dead-letter'] || 0, label: 'Dead Letter' },
+        { value: (stats.deliveredRate || 0) + '%', label: 'Delivery Rate' },
+      ];
+
+      el.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'trust-metric-card';
+        card.innerHTML =
+          '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+        el.appendChild(card);
+      });
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل صحة التنبيهات</p>';
+    }
+  }
+
+  async function retryAlertDelivery(id) {
+    try {
+      await apiWrite('POST', '/api/admin/alerts/deliveries/' + id + '/retry', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تمت إعادة تسليم التنبيه');
+      loadAlertDeliveries();
+    } catch (err) {
+      showError(err.message || 'خطأ في retry alert delivery');
+    }
+  }
+
+  async function createAuditExportJob() {
+    try {
+      var fromEl = document.getElementById('auditFromDate');
+      var toEl = document.getElementById('auditToDate');
+      var actionEl = document.getElementById('auditActionFilter');
+
+      var body = {};
+      if (fromEl && fromEl.value) body.from = fromEl.value;
+      if (toEl && toEl.value) body.to = toEl.value + 'T23:59:59';
+      if (actionEl && actionEl.value) body.action = actionEl.value;
+
+      var data = await apiWrite('POST', '/api/admin/exports/audit-log', body);
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم إنشاء تصدير بالخلفية: ' + data.exportId);
+        }
+        loadExports();
+        loadOpsQueueStats();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء تصدير الخلفية');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 50 — Audit Index + Export Registry + Counter Hygiene
   // ═══════════════════════════════════════════════════════════════
 
@@ -1868,19 +2199,18 @@ var AdminApp = (function () {
 
   async function rebuildAuditIndex() {
     var resultEl = document.getElementById('auditIndexActionResult');
-    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إعادة بناء الفهرس...</p>';
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة إعادة بناء الفهرس للطابور...</p>';
 
     try {
-      var data = await apiWrite('POST', '/api/admin/audit-index/rebuild', {});
+      var data = await apiWrite('POST', '/api/admin/audit-index/rebuild?async=1', {});
       if (resultEl) {
         resultEl.innerHTML =
-          '<p style="color:var(--color-success);">✓ تم بناء الفهرس — ' +
-          escapeHtml(String(data.indexed || 0)) +
-          ' سجل في ' +
-          escapeHtml(String(data.durationMs || 0)) +
-          'ms</p>';
+          '<p style="color:var(--color-success);">✓ تم وضع إعادة بناء الفهرس في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
       }
       loadAuditIndexStatus();
+      loadOpsQueueStats();
     } catch (err) {
       if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
     }
@@ -2031,20 +2361,38 @@ var AdminApp = (function () {
     if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري ضغط العدادات...</p>';
 
     try {
-      var data = await apiWrite('POST', '/api/admin/counters/compact', {});
-      var beforeMB = ((data.beforeSizeBytes || 0) / 1048576).toFixed(2);
-      var afterMB = ((data.afterSizeBytes || 0) / 1048576).toFixed(2);
+      var data = await apiWrite('POST', '/api/admin/counters/compact?async=1', {});
 
       if (resultEl) {
         resultEl.innerHTML =
-          '<p style="color:var(--color-success);">✓ تم الضغط: ' +
-          escapeHtml(beforeMB) +
-          'MB → ' +
-          escapeHtml(afterMB) +
-          'MB</p>';
+          '<p style="color:var(--color-success);">✓ تم وضع ضغط العدادات في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
       }
 
       loadCounterHygiene();
+      loadOpsQueueStats();
+    } catch (err) {
+      if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+    }
+  }
+
+  async function rebuildCounters() {
+    var resultEl = document.getElementById('counterHygieneActionResult');
+    if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة إعادة البناء للطابور...</p>';
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/counters/rebuild?async=1', {});
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم وضع إعادة بناء العدادات في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
+      }
+
+      loadCounterHygiene();
+      loadOpsQueueStats();
     } catch (err) {
       if (resultEl) resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
     }
@@ -2273,9 +2621,10 @@ var AdminApp = (function () {
       if (fill) fill.style.width = '100%';
       if (text) text.textContent = '100% — اكتمل التصدير';
 
-      // Phase 50: refresh persistent export registry view after completion.
+      // Phase 50/52: refresh persistent export registry + queue view after completion.
       try {
         if (typeof loadExports === 'function') loadExports();
+        if (typeof loadOpsQueueStats === 'function') loadOpsQueueStats();
       } catch (_) {}
 
       setTimeout(function () {
@@ -2309,6 +2658,10 @@ var AdminApp = (function () {
       if (resultEl) {
         if (data.ok && data.delivered) {
           resultEl.innerHTML = '<p style="color:var(--color-success);">✓ تم توصيل الاختبار بنجاح</p>';
+        } else if (data.ok && data.queued) {
+          resultEl.innerHTML = '<p style="color:var(--color-success);">✓ تم وضع الاختبار في طابور التسليم</p>';
+          loadAlertDeliveries();
+          loadOpsQueueStats();
         } else if (data.rateLimited) {
           resultEl.innerHTML = '<p style="color:var(--color-warning);">⚠️ تم تجاوز حد الاختبارات مؤقتاً</p>';
         } else {
@@ -2362,6 +2715,16 @@ var AdminApp = (function () {
     escalatePredictiveSignal: escalatePredictiveSignal,
     loadDecisionQuality: loadDecisionQuality,
     loadBacklogPriority: loadBacklogPriority,
+    // Phase 52 — Ops Queue + Alert Delivery + Async Export
+    loadOpsQueueStats: loadOpsQueueStats,
+    loadOpsQueueJobs: loadOpsQueueJobs,
+    loadDeadLetterJobs: loadDeadLetterJobs,
+    retryQueueJob: retryQueueJob,
+    cancelQueueJob: cancelQueueJob,
+    loadAlertDeliveries: loadAlertDeliveries,
+    loadAlertDeliveryHealth: loadAlertDeliveryHealth,
+    retryAlertDelivery: retryAlertDelivery,
+    createAuditExportJob: createAuditExportJob,
     // Phase 50 — Scale & Search Hygiene
     loadAuditIndexStatus: loadAuditIndexStatus,
     rebuildAuditIndex: rebuildAuditIndex,
@@ -2371,6 +2734,7 @@ var AdminApp = (function () {
     downloadExport: downloadExport,
     loadCounterHygiene: loadCounterHygiene,
     compactCounters: compactCounters,
+    rebuildCounters: rebuildCounters,
     // Phase 49 — Trust Analytics + Alert Channels
     loadTrustDashboard: loadTrustDashboard,
     setTrustPeriod: setTrustPeriod,
