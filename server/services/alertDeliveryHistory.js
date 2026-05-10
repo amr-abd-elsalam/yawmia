@@ -104,6 +104,35 @@ export async function getDelivery(deliveryId) {
   return await readJSON(deliveryPath(deliveryId));
 }
 
+/**
+ * Mark delivery as running when a queue worker starts delivery.
+ * @param {string} deliveryId
+ */
+export async function markRunning(deliveryId) {
+  return withLock(`alert-delivery:${deliveryId}`, async () => {
+    const record = await getDelivery(deliveryId);
+    if (!record) return null;
+
+    if (record.status === 'delivered' || record.status === 'dead-letter') {
+      return record;
+    }
+
+    record.status = 'running';
+    record.updatedAt = nowIso();
+
+    await atomicWrite(deliveryPath(deliveryId), record);
+
+    eventBus.emit('alert_delivery:running', {
+      deliveryId,
+      eventType: record.eventType,
+      channel: record.channel,
+      timestamp: record.updatedAt,
+    });
+
+    return record;
+  });
+}
+
 export async function listDeliveries(options = {}) {
   if (!isEnabled()) {
     return { deliveries: [], total: 0, limit: 20, offset: 0 };

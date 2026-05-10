@@ -26,6 +26,7 @@ import {
 } from './opsQueue.js';
 import {
   getDelivery,
+  markRunning,
   recordAttempt,
   markDelivered,
   markFailed,
@@ -237,6 +238,8 @@ async function handleAdminAlertWebhookJob({ job, payload }) {
 
   const startedAt = new Date().toISOString();
 
+  await markRunning(deliveryId).catch(() => {});
+
   try {
     const { sendWebhook } = await import('./adminAlertChannels.js');
     const result = await sendWebhook(payload.payload || delivery.payload || {});
@@ -293,6 +296,8 @@ async function handleAdminAlertEmailJob({ job, payload }) {
   }
 
   const startedAt = new Date().toISOString();
+
+  await markRunning(deliveryId).catch(() => {});
 
   try {
     const { sendEmail } = await import('./adminAlertChannels.js');

@@ -14,6 +14,18 @@ let webhookUrl;
 let received = [];
 let failMode = false;
 
+async function waitForDeliveryStatus(deliveryId, expectedStatus, timeoutMs = 5000) {
+  const started = Date.now();
+
+  while (Date.now() - started < timeoutMs) {
+    const delivery = await deliveries.getDelivery(deliveryId);
+    if (delivery && delivery.status === expectedStatus) return delivery;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  return await deliveries.getDelivery(deliveryId);
+}
+
 test.before(async () => {
   dataDir = await mkdtemp(join(tmpdir(), 'yawmia-phase52-alert-'));
   process.env.YAWMIA_DATA_PATH = dataDir;
@@ -113,9 +125,8 @@ test('webhook failure records attempt and schedules retry', async () => {
   assert.equal(result.queued, true);
 
   await queueWorkers.processDueJobs();
-  await new Promise(resolve => setTimeout(resolve, 250));
 
-  const delivery = await deliveries.getDelivery(result.deliveries[0].id);
+  const delivery = await waitForDeliveryStatus(result.deliveries[0].id, 'failed', 6000);
   assert.equal(delivery.status, 'failed');
   assert.equal(delivery.attempts.length, 1);
   assert.equal(delivery.attempts[0].ok, false);
