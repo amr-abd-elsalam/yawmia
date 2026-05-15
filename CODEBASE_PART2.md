@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.50.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-15T22:29:55.203Z
+> Auto-generated: 2026-05-15T22:38:35.859Z
 > Files in this part: 95
 
 ## Files
@@ -25261,7 +25261,9 @@ export async function startQueueWorkers() {
     });
 
     if (!lockResult.ok) {
-      queueWorkerLock = lockResult.lock || null;
+      // Do NOT store lockResult.lock here: it belongs to another owner.
+      // queueWorkerLock represents the lock held by THIS worker instance only.
+      queueWorkerLock = null;
       logger.warn('Ops queue workers: lock not acquired — workers will not start', {
         lockName: queueWorkerLockName,
         ownerId,
@@ -25445,7 +25447,7 @@ export function getWorkerStats() {
     instance: getInstanceInfo(),
     lock: {
       enabled: !!(config.PROCESS_LOCKS && config.PROCESS_LOCKS.enabled),
-      held: !!queueWorkerLock,
+      held: !!(queueWorkerLock && queueWorkerLock.ownerId === getInstanceId()),
       ownerId: queueWorkerLock ? queueWorkerLock.ownerId : null,
       lockName: queueWorkerLockName,
       heartbeatAt: queueWorkerLock ? queueWorkerLock.heartbeatAt : null,
