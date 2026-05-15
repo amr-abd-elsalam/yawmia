@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.49.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-15T11:31:40.539Z
-> Files in this part: 87
+# يوميّة (Yawmia) v0.50.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-15T22:09:43.864Z
+> Files in this part: 95
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -20,76 +20,84 @@
 15. `server/services/auth.js`
 16. `server/services/availabilityAd.js`
 17. `server/services/availabilityWindow.js`
-18. `server/services/backupScheduler.js`
-19. `server/services/cache.js`
-20. `server/services/cacheDebouncer.js`
-21. `server/services/channels/sms.js`
-22. `server/services/channels/whatsapp.js`
-23. `server/services/contentFilter.js`
-24. `server/services/counterCompaction.js`
-25. `server/services/csvExportProgress.js`
-26. `server/services/database.js`
-27. `server/services/directOffer.js`
-28. `server/services/directOfferAnalytics.js`
-29. `server/services/directOfferCounters.js`
-30. `server/services/errorAggregator.js`
-31. `server/services/eventBus.js`
-32. `server/services/eventReplayBuffer.js`
-33. `server/services/exportRegistry.js`
-34. `server/services/favorites.js`
-35. `server/services/financialExport.js`
-36. `server/services/geo.js`
-37. `server/services/imageStore.js`
-38. `server/services/indexHealth.js`
-39. `server/services/instantMatch.js`
-40. `server/services/jobAlerts.js`
-41. `server/services/jobMatcher.js`
-42. `server/services/jobs.js`
-43. `server/services/liveFeed.js`
-44. `server/services/logWriter.js`
-45. `server/services/logger.js`
-46. `server/services/messages.js`
-47. `server/services/messaging.js`
-48. `server/services/migration.js`
-49. `server/services/monitor.js`
-50. `server/services/notificationActions.js`
-51. `server/services/notificationMessenger.js`
-52. `server/services/notifications.js`
-53. `server/services/offerAbuseDetector.js`
-54. `server/services/opsQueue.js`
-55. `server/services/payments.js`
-56. `server/services/predictiveAbuse.js`
-57. `server/services/predictiveSignalRetention.js`
-58. `server/services/presenceService.js`
-59. `server/services/profileCompleteness.js`
-60. `server/services/profileTasks.js`
-61. `server/services/queryIndex.js`
-62. `server/services/queueWorkers.js`
-63. `server/services/ratings.js`
-64. `server/services/reports.js`
-65. `server/services/resourceLock.js`
-66. `server/services/sanitizer.js`
-67. `server/services/scheduledAbuseDetection.js`
-68. `server/services/searchIndex.js`
-69. `server/services/sessions.js`
-70. `server/services/snoozeReminders.js`
-71. `server/services/sseManager.js`
-72. `server/services/trust.js`
-73. `server/services/trustAnalytics.js`
-74. `server/services/trustCalibration.js`
-75. `server/services/trustScoreV2.js`
-76. `server/services/users.js`
-77. `server/services/validators.js`
-78. `server/services/verification.js`
-79. `server/services/webpush.js`
-80. `server/services/workerDiscovery.js`
-81. `server/services/workroom.js`
-82. `server/services/workroomAttachments.js`
-83. `server/services/workroomChecklist.js`
-84. `server/services/workroomPins.js`
-85. `server/services/workroomReceipts.js`
-86. `server/services/workroomSearch.js`
-87. `server/services/workroomTemplateMetrics.js`
+18. `server/services/backupRestoreDrill.js`
+19. `server/services/backupScheduler.js`
+20. `server/services/cache.js`
+21. `server/services/cacheDebouncer.js`
+22. `server/services/channels/sms.js`
+23. `server/services/channels/whatsapp.js`
+24. `server/services/contentFilter.js`
+25. `server/services/counterCompaction.js`
+26. `server/services/csvExportProgress.js`
+27. `server/services/database.js`
+28. `server/services/directOffer.js`
+29. `server/services/directOfferAnalytics.js`
+30. `server/services/directOfferCounters.js`
+31. `server/services/errorAggregator.js`
+32. `server/services/eventBus.js`
+33. `server/services/eventReplayBuffer.js`
+34. `server/services/exportRegistry.js`
+35. `server/services/favorites.js`
+36. `server/services/financialExport.js`
+37. `server/services/geo.js`
+38. `server/services/imageStore.js`
+39. `server/services/incidentTimeline.js`
+40. `server/services/indexHealth.js`
+41. `server/services/instanceMode.js`
+42. `server/services/instantMatch.js`
+43. `server/services/jobAlerts.js`
+44. `server/services/jobMatcher.js`
+45. `server/services/jobs.js`
+46. `server/services/liveFeed.js`
+47. `server/services/logWriter.js`
+48. `server/services/logger.js`
+49. `server/services/maintenanceMode.js`
+50. `server/services/messages.js`
+51. `server/services/messaging.js`
+52. `server/services/metricsRollups.js`
+53. `server/services/migration.js`
+54. `server/services/monitor.js`
+55. `server/services/notificationActions.js`
+56. `server/services/notificationMessenger.js`
+57. `server/services/notifications.js`
+58. `server/services/offerAbuseDetector.js`
+59. `server/services/opsQueue.js`
+60. `server/services/payments.js`
+61. `server/services/predictiveAbuse.js`
+62. `server/services/predictiveSignalRetention.js`
+63. `server/services/presenceService.js`
+64. `server/services/processLock.js`
+65. `server/services/productionReadiness.js`
+66. `server/services/profileCompleteness.js`
+67. `server/services/profileTasks.js`
+68. `server/services/queryIndex.js`
+69. `server/services/queueWorkers.js`
+70. `server/services/ratings.js`
+71. `server/services/reports.js`
+72. `server/services/resourceLock.js`
+73. `server/services/sanitizer.js`
+74. `server/services/scheduledAbuseDetection.js`
+75. `server/services/schedulerRegistry.js`
+76. `server/services/searchIndex.js`
+77. `server/services/sessions.js`
+78. `server/services/snoozeReminders.js`
+79. `server/services/sseManager.js`
+80. `server/services/trust.js`
+81. `server/services/trustAnalytics.js`
+82. `server/services/trustCalibration.js`
+83. `server/services/trustScoreV2.js`
+84. `server/services/users.js`
+85. `server/services/validators.js`
+86. `server/services/verification.js`
+87. `server/services/webpush.js`
+88. `server/services/workerDiscovery.js`
+89. `server/services/workroom.js`
+90. `server/services/workroomAttachments.js`
+91. `server/services/workroomChecklist.js`
+92. `server/services/workroomPins.js`
+93. `server/services/workroomReceipts.js`
+94. `server/services/workroomSearch.js`
+95. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -6762,6 +6770,396 @@ export const _testHelpers = { isWindowActive, getEgyptNow, validateFields };
 
 ---
 
+## `server/services/backupRestoreDrill.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/backupRestoreDrill.js — Backup Restore Drill (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Verifies latest/manual backup can be restored and parsed.
+// Storage: data/metrics/backup-restore-drills/{brd_x}.json
+// Restore target: config.BACKUP_RESTORE_DRILL.restoreTargetDir/{drillId}
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { cp, readdir, readFile, rm, mkdir, stat } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(config.BACKUP_RESTORE_DRILL && config.BACKUP_RESTORE_DRILL.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'brd_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function drillPath(id) {
+  return getRecordPath('backup_restore_drills', id);
+}
+
+async function pathExists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function findLatestBackup() {
+  const targetDir = config.BACKUP?.targetDir || './backups';
+
+  try {
+    const entries = await readdir(targetDir, { withFileTypes: true });
+    const dirs = entries
+      .filter(e => e.isDirectory() && e.name.startsWith('yawmia-backup-'))
+      .map(e => e.name)
+      .sort()
+      .reverse();
+
+    if (dirs.length === 0) return null;
+    return join(targetDir, dirs[0]);
+  } catch (_) {
+    return null;
+  }
+}
+
+async function walkJsonFiles(root) {
+  const results = [];
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      results.push({ filePath: dir, error: err.message, unreadableDir: true });
+      return;
+    }
+
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+        results.push({ filePath: full });
+      }
+    }
+  }
+
+  await walk(root);
+  return results;
+}
+
+async function verifyJsonParse(root, errors) {
+  const files = await walkJsonFiles(root);
+  let parsed = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const item = files[i];
+
+    if (item.unreadableDir) {
+      errors.push({ check: 'jsonParse', filePath: item.filePath, error: item.error });
+      continue;
+    }
+
+    try {
+      const raw = await readFile(item.filePath, 'utf-8');
+      JSON.parse(raw);
+      parsed++;
+    } catch (err) {
+      errors.push({
+        check: 'jsonParse',
+        filePath: item.filePath,
+        error: err.message,
+      });
+    }
+
+    if ((i + 1) % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return { totalJsonFiles: files.filter(f => !f.unreadableDir).length, parsed };
+}
+
+async function verifyCriticalIndexes(root, errors) {
+  const required = [
+    'users/phone-index.json',
+    'jobs/index.json',
+  ];
+
+  let okCount = 0;
+
+  for (const rel of required) {
+    const filePath = join(root, rel);
+    try {
+      const raw = await readFile(filePath, 'utf-8');
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== 'object') {
+        errors.push({ check: 'criticalIndexes', filePath, error: 'Index is not an object' });
+      } else {
+        okCount++;
+      }
+    } catch (err) {
+      errors.push({ check: 'criticalIndexes', filePath, error: err.message });
+    }
+  }
+
+  return { required: required.length, ok: okCount };
+}
+
+async function verifyMigrationState(root, errors) {
+  const filePath = join(root, config.MIGRATION?.dataFile || 'migration.json');
+
+  try {
+    const raw = await readFile(filePath, 'utf-8');
+    const data = JSON.parse(raw);
+    if (!data || typeof data.version !== 'number') {
+      errors.push({ check: 'migrationState', filePath, error: 'Invalid migration state' });
+      return { ok: false, version: null };
+    }
+    return { ok: true, version: data.version };
+  } catch (err) {
+    errors.push({ check: 'migrationState', filePath, error: err.message });
+    return { ok: false, version: null };
+  }
+}
+
+async function countTopLevelCollections(root) {
+  const counts = {};
+  const dirs = config.DATABASE?.dirs || {};
+
+  for (const [collection, rel] of Object.entries(dirs)) {
+    const dir = join(root, rel);
+    try {
+      const files = await walkJsonFiles(dir);
+      counts[collection] = files.filter(f => !f.unreadableDir).length;
+    } catch (_) {
+      counts[collection] = 0;
+    }
+  }
+
+  return counts;
+}
+
+async function cleanupOldRestoreDrillRecords() {
+  const retentionCount = config.BACKUP_RESTORE_DRILL?.retentionCount || 10;
+  const rows = await listRestoreDrills({ limit: 1000, offset: 0 });
+  const drills = rows.drills || [];
+
+  if (drills.length <= retentionCount) return 0;
+
+  const toDelete = drills.slice(retentionCount);
+  let cleaned = 0;
+
+  for (const d of toDelete) {
+    try {
+      await deleteJSON(drillPath(d.id));
+      cleaned++;
+    } catch (_) {}
+  }
+
+  return cleaned;
+}
+
+export async function runBackupRestoreDrill(options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, code: 'BACKUP_RESTORE_DRILL_DISABLED' };
+  }
+
+  const id = options.id || generateId();
+  const startedAt = nowIso();
+  const startedMs = Date.now();
+  const errors = [];
+
+  const backupPath = options.backupPath || await findLatestBackup();
+
+  const recordBase = {
+    id,
+    status: 'running',
+    backupPath: backupPath || null,
+    restorePath: null,
+    startedAt,
+    completedAt: null,
+    durationMs: 0,
+    checks: {
+      jsonParse: false,
+      criticalIndexes: false,
+      migrationState: false,
+    },
+    counts: {},
+    errors: [],
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  };
+
+  await atomicWrite(drillPath(id), recordBase);
+
+  eventBus.emit('backup_restore_drill:started', {
+    drillId: id,
+    backupPath: backupPath || null,
+    timestamp: startedAt,
+  });
+
+  try {
+    if (!backupPath) {
+      errors.push({ check: 'backupPath', error: 'No backup directory found' });
+      throw new Error('No backup directory found');
+    }
+
+    if (!await pathExists(backupPath)) {
+      errors.push({ check: 'backupPath', backupPath, error: 'Backup path does not exist' });
+      throw new Error('Backup path does not exist');
+    }
+
+    const restoreBase = options.restoreTargetDir || config.BACKUP_RESTORE_DRILL.restoreTargetDir || './test-backups/restore-drills';
+    const restorePath = join(restoreBase, id);
+
+    await rm(restorePath, { recursive: true, force: true }).catch(() => {});
+    await mkdir(restorePath, { recursive: true });
+
+    await cp(backupPath, restorePath, { recursive: true });
+
+    const counts = {};
+
+    if (config.BACKUP_RESTORE_DRILL.verifyJsonParse !== false) {
+      const jsonResult = await verifyJsonParse(restorePath, errors);
+      counts.jsonFiles = jsonResult.totalJsonFiles;
+      counts.jsonParsed = jsonResult.parsed;
+    }
+
+    if (config.BACKUP_RESTORE_DRILL.verifyCriticalIndexes !== false) {
+      counts.criticalIndexes = await verifyCriticalIndexes(restorePath, errors);
+    }
+
+    if (config.BACKUP_RESTORE_DRILL.verifyMigrationState !== false) {
+      counts.migrationState = await verifyMigrationState(restorePath, errors);
+    }
+
+    counts.collections = await countTopLevelCollections(restorePath);
+
+    const passed = errors.length === 0;
+
+    const record = {
+      ...recordBase,
+      status: passed ? 'passed' : 'failed',
+      restorePath,
+      completedAt: nowIso(),
+      durationMs: Date.now() - startedMs,
+      checks: {
+        jsonParse: !errors.some(e => e.check === 'jsonParse'),
+        criticalIndexes: !errors.some(e => e.check === 'criticalIndexes'),
+        migrationState: !errors.some(e => e.check === 'migrationState'),
+      },
+      counts,
+      errors: errors.slice(0, 100),
+      updatedAt: nowIso(),
+    };
+
+    await atomicWrite(drillPath(id), record);
+
+    if (config.BACKUP_RESTORE_DRILL.cleanupRestoreTarget !== false && options.keepRestoreTarget !== true) {
+      await rm(restorePath, { recursive: true, force: true }).catch(() => {});
+      record.restorePathCleaned = true;
+      await atomicWrite(drillPath(id), record);
+    }
+
+    await cleanupOldRestoreDrillRecords().catch(() => {});
+
+    eventBus.emit(passed ? 'backup_restore_drill:passed' : 'backup_restore_drill:failed', {
+      drillId: id,
+      backupPath,
+      errorCount: errors.length,
+      timestamp: record.completedAt,
+    });
+
+    return { ok: passed, drill: record };
+  } catch (err) {
+    const failed = {
+      ...recordBase,
+      status: 'failed',
+      completedAt: nowIso(),
+      durationMs: Date.now() - startedMs,
+      errors: errors.length > 0 ? errors.slice(0, 100) : [{ check: 'internal', error: err.message }],
+      updatedAt: nowIso(),
+    };
+
+    await atomicWrite(drillPath(id), failed).catch(() => {});
+
+    eventBus.emit('backup_restore_drill:failed', {
+      drillId: id,
+      backupPath: backupPath || null,
+      error: err.message,
+      timestamp: failed.completedAt,
+    });
+
+    logger.warn('backupRestoreDrill: failed', { drillId: id, error: err.message });
+
+    return { ok: false, drill: failed, error: err.message };
+  }
+}
+
+export async function listRestoreDrills(options = {}) {
+  if (!isEnabled()) return { drills: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('backup_restore_drills');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('brd_'));
+
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+
+  rows.sort((a, b) => new Date(b.startedAt || b.createdAt) - new Date(a.startedAt || a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    drills: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getRestoreDrill(drillId) {
+  if (!drillId || typeof drillId !== 'string') return null;
+  return await readJSON(drillPath(drillId));
+}
+
+export async function cleanupOldRestoreDrills() {
+  return await cleanupOldRestoreDrillRecords();
+}
+
+export const _testHelpers = {
+  generateId,
+  findLatestBackup,
+  walkJsonFiles,
+  verifyJsonParse,
+  verifyCriticalIndexes,
+  verifyMigrationState,
+  countTopLevelCollections,
+  drillPath,
+};
+```
+
+---
+
 ## `server/services/backupScheduler.js`
 
 ```javascript
@@ -13381,6 +13779,371 @@ export async function imageExists(imageRef) {
 
 ---
 
+## `server/services/incidentTimeline.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/incidentTimeline.js — Incident Timeline (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Admin-only operational incident reconstruction.
+// Auto-opens incidents for critical operational events.
+// Storage: data/metrics/incidents/inc_xxx.json
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+let listenersRegistered = false;
+
+const AUTO_EVENTS = [
+  'counters:file_size_critical',
+  'counters:auto_rebuild_triggered',
+  'ops_queue:job_dead_lettered',
+  'alert_delivery:dead_lettered',
+  'predictive_abuse:scan_failed',
+  'backup_restore_drill:failed',
+  'ops_slo:violated',
+  'scheduler:stale',
+];
+
+function isEnabled() {
+  return !!(config.INCIDENT_TIMELINE && config.INCIDENT_TIMELINE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'inc_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function incidentPath(id) {
+  return getRecordPath('incidents', id);
+}
+
+function sanitizeDetails(data) {
+  if (!data || typeof data !== 'object') return {};
+  const out = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined) continue;
+
+    // Avoid accidental secret leakage.
+    if (/token|secret|password|apikey|api_key|authorization/i.test(key)) {
+      out[key] = '[redacted]';
+      continue;
+    }
+
+    if (typeof value === 'string') out[key] = value.slice(0, 1000);
+    else if (typeof value === 'number' || typeof value === 'boolean' || value === null) out[key] = value;
+    else {
+      try {
+        out[key] = JSON.parse(JSON.stringify(value));
+      } catch (_) {
+        out[key] = String(value).slice(0, 1000);
+      }
+    }
+  }
+
+  return out;
+}
+
+function refsFromEvent(type, data = {}) {
+  return {
+    queueJobId: data.queueJobId || data.jobId || null,
+    deliveryId: data.deliveryId || null,
+    exportId: data.exportId || null,
+    signalId: data.signalId || null,
+    rollupId: data.rollupId || null,
+    drillId: data.drillId || null,
+    lockName: data.lockName || null,
+    schedulerName: data.name || data.schedulerName || null,
+  };
+}
+
+function summarizeEvent(type, data = {}) {
+  const map = {
+    'counters:file_size_critical': 'Counter file size is critical',
+    'counters:auto_rebuild_triggered': 'Counter auto rebuild triggered',
+    'ops_queue:job_dead_lettered': 'Queue job moved to dead-letter',
+    'alert_delivery:dead_lettered': 'Alert delivery moved to dead-letter',
+    'predictive_abuse:scan_failed': 'Predictive abuse scan failed',
+    'backup_restore_drill:failed': 'Backup restore drill failed',
+    'ops_slo:violated': 'Operational SLO violation detected',
+    'scheduler:stale': 'Scheduler job is stale',
+  };
+
+  return data.summary || data.message || map[type] || type;
+}
+
+function severityForEvent(type, data = {}) {
+  if (data.severity) return data.severity;
+  if (type === 'counters:file_size_critical') return 'critical';
+  if (type === 'ops_queue:job_dead_lettered') return 'high';
+  if (type === 'alert_delivery:dead_lettered') return 'high';
+  if (type === 'backup_restore_drill:failed') return 'high';
+  if (type === 'predictive_abuse:scan_failed') return 'medium';
+  if (type === 'ops_slo:violated') return 'medium';
+  return 'medium';
+}
+
+function buildIncidentTitle(type, data = {}) {
+  return summarizeEvent(type, data).slice(0, 140);
+}
+
+async function findOpenIncidentByFingerprint(fingerprint) {
+  if (!fingerprint) return null;
+
+  const result = await listIncidents({ status: 'open', limit: 100, offset: 0 });
+  return result.incidents.find(i => i.fingerprint === fingerprint) || null;
+}
+
+function fingerprintForEvent(type, data = {}) {
+  const refs = refsFromEvent(type, data);
+  const raw = [
+    type,
+    refs.queueJobId,
+    refs.deliveryId,
+    refs.exportId,
+    refs.signalId,
+    refs.rollupId,
+    refs.drillId,
+    refs.schedulerName,
+    refs.lockName,
+  ].filter(Boolean).join(':');
+
+  if (!raw) return null;
+
+  return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
+}
+
+export async function openIncident(params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const id = params.id || generateId();
+  const now = nowIso();
+
+  const incident = {
+    id,
+    title: String(params.title || 'Operational incident').slice(0, 200),
+    severity: params.severity || 'medium',
+    status: 'open',
+    fingerprint: params.fingerprint || null,
+    sourceType: params.sourceType || null,
+    refs: sanitizeDetails(params.refs || {}),
+    events: [],
+    openedAt: now,
+    resolvedAt: null,
+    resolvedBy: null,
+    resolutionNote: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (params.initialEvent) {
+    incident.events.push(normalizeIncidentEvent(params.initialEvent));
+  }
+
+  await atomicWrite(incidentPath(id), incident);
+
+  eventBus.emit('incident:opened', {
+    incidentId: id,
+    severity: incident.severity,
+    title: incident.title,
+    timestamp: now,
+  });
+
+  return { ok: true, incident };
+}
+
+function normalizeIncidentEvent(event = {}) {
+  return {
+    timestamp: event.timestamp || nowIso(),
+    type: event.type || 'unknown',
+    summary: String(event.summary || event.type || 'event').slice(0, 500),
+    refs: sanitizeDetails(event.refs || {}),
+    data: sanitizeDetails(event.data || {}),
+  };
+}
+
+export async function appendIncidentEvent(incidentId, event) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!incidentId) return { ok: false, code: 'INCIDENT_ID_REQUIRED' };
+
+  return withLock(`incident:${incidentId}`, async () => {
+    const path = incidentPath(incidentId);
+    const incident = await readJSON(path);
+
+    if (!incident) return { ok: false, code: 'INCIDENT_NOT_FOUND' };
+
+    const maxEvents = config.INCIDENT_TIMELINE?.maxEventsPerIncident || 500;
+    incident.events = Array.isArray(incident.events) ? incident.events : [];
+    incident.events.push(normalizeIncidentEvent(event));
+
+    while (incident.events.length > maxEvents) {
+      incident.events.shift();
+    }
+
+    incident.updatedAt = nowIso();
+
+    await atomicWrite(path, incident);
+
+    eventBus.emit('incident:event_appended', {
+      incidentId,
+      type: event.type || 'unknown',
+      timestamp: incident.updatedAt,
+    });
+
+    return { ok: true, incident };
+  });
+}
+
+export async function resolveIncident(incidentId, adminId, note) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  return withLock(`incident:${incidentId}`, async () => {
+    const path = incidentPath(incidentId);
+    const incident = await readJSON(path);
+
+    if (!incident) return { ok: false, code: 'INCIDENT_NOT_FOUND' };
+
+    incident.status = 'resolved';
+    incident.resolvedAt = nowIso();
+    incident.resolvedBy = adminId || 'admin_token';
+    incident.resolutionNote = note ? String(note).slice(0, 1000) : null;
+    incident.updatedAt = incident.resolvedAt;
+
+    incident.events = Array.isArray(incident.events) ? incident.events : [];
+    incident.events.push(normalizeIncidentEvent({
+      type: 'incident:resolved',
+      summary: 'Incident resolved by admin',
+      refs: { adminId: incident.resolvedBy },
+      data: { note: incident.resolutionNote },
+    }));
+
+    await atomicWrite(path, incident);
+
+    eventBus.emit('incident:resolved', {
+      incidentId,
+      adminId: incident.resolvedBy,
+      timestamp: incident.resolvedAt,
+    });
+
+    return { ok: true, incident };
+  });
+}
+
+export async function listIncidents(options = {}) {
+  if (!isEnabled()) return { incidents: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('incidents');
+  let rows = await listJSON(dir);
+  rows = rows.filter(i => i && i.id && i.id.startsWith('inc_'));
+
+  if (options.status) rows = rows.filter(i => i.status === options.status);
+  if (options.severity) rows = rows.filter(i => i.severity === options.severity);
+
+  rows.sort((a, b) => new Date(b.openedAt || b.createdAt) - new Date(a.openedAt || a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    incidents: rows.slice(offset, offset + limit).map(i => ({
+      ...i,
+      events: Array.isArray(i.events) ? i.events.slice(-5) : [],
+      eventCount: Array.isArray(i.events) ? i.events.length : 0,
+    })),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getIncident(incidentId) {
+  if (!incidentId || typeof incidentId !== 'string') return null;
+  return await readJSON(incidentPath(incidentId));
+}
+
+export async function autoOpenIncidentForEvent(eventType, data = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!config.INCIDENT_TIMELINE?.autoOpenForCriticalEvents) return { ok: false, skipped: true };
+  if (!AUTO_EVENTS.includes(eventType)) return { ok: false, skipped: true };
+
+  const fingerprint = fingerprintForEvent(eventType, data);
+  const event = {
+    type: eventType,
+    summary: summarizeEvent(eventType, data),
+    refs: refsFromEvent(eventType, data),
+    data,
+    timestamp: data.timestamp || nowIso(),
+  };
+
+  try {
+    const existing = await findOpenIncidentByFingerprint(fingerprint);
+    if (existing) {
+      return await appendIncidentEvent(existing.id, event);
+    }
+
+    return await openIncident({
+      title: buildIncidentTitle(eventType, data),
+      severity: severityForEvent(eventType, data),
+      sourceType: eventType,
+      fingerprint,
+      refs: refsFromEvent(eventType, data),
+      initialEvent: event,
+    });
+  } catch (err) {
+    logger.warn('incidentTimeline: auto-open failed', { eventType, error: err.message });
+    return { ok: false, error: err.message };
+  }
+}
+
+export function registerIncidentListeners() {
+  if (!isEnabled()) return;
+  if (listenersRegistered) return;
+  listenersRegistered = true;
+
+  for (const eventName of AUTO_EVENTS) {
+    eventBus.on(eventName, (data) => {
+      autoOpenIncidentForEvent(eventName, data).catch(err => {
+        logger.warn('incidentTimeline: listener failed', {
+          eventName,
+          error: err.message,
+        });
+      });
+    });
+  }
+
+  logger.info('Incident timeline: listeners registered', { count: AUTO_EVENTS.length });
+}
+
+export const _testHelpers = {
+  AUTO_EVENTS,
+  sanitizeDetails,
+  refsFromEvent,
+  summarizeEvent,
+  severityForEvent,
+  fingerprintForEvent,
+  normalizeIncidentEvent,
+  resetListenersForTest: () => { listenersRegistered = false; },
+};
+```
+
+---
+
 ## `server/services/indexHealth.js`
 
 ```javascript
@@ -13518,6 +14281,162 @@ export function getHealthStatus() {
     warnings: cachedStatus.warnings,
   };
 }
+```
+
+---
+
+## `server/services/instanceMode.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/instanceMode.js — Instance Mode Awareness (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Centralizes deployment-mode decisions for file-based production ops.
+//
+// Modes:
+//   - single_writer: one writer instance, queue workers + schedulers allowed
+//   - read_only_replica: no queue workers, no schedulers, write APIs should be blocked
+//   - experimental_multi_instance: explicit unsafe/experimental mode warning
+//
+// This is readiness/guarding, not full distributed clustering.
+// ═══════════════════════════════════════════════════════════════
+
+import os from 'node:os';
+import config from '../../config.js';
+
+const VALID_MODES = new Set([
+  'single_writer',
+  'read_only_replica',
+  'experimental_multi_instance',
+]);
+
+let cachedInstanceId = null;
+
+function cfg() {
+  return config.INSTANCE_MODE || {};
+}
+
+export function getInstanceId() {
+  if (process.env.INSTANCE_ID) return process.env.INSTANCE_ID;
+
+  if (cfg().instanceId) return cfg().instanceId;
+
+  if (!cachedInstanceId) {
+    const host = os.hostname()
+      .replace(/[^a-zA-Z0-9_-]+/g, '_')
+      .slice(0, 48) || 'host';
+
+    cachedInstanceId = `instance_${host}_${process.pid}`;
+  }
+
+  return cachedInstanceId;
+}
+
+export function getInstanceMode() {
+  const raw = process.env.INSTANCE_MODE || cfg().mode || 'single_writer';
+  return VALID_MODES.has(raw) ? raw : 'single_writer';
+}
+
+export function isSingleWriter() {
+  return getInstanceMode() === 'single_writer';
+}
+
+export function isReadOnlyReplica() {
+  return getInstanceMode() === 'read_only_replica';
+}
+
+export function canRunQueueWorkers() {
+  if (!cfg().enabled) return true;
+  if (isReadOnlyReplica()) return false;
+  if (getInstanceMode() === 'experimental_multi_instance') {
+    return cfg().allowQueueWorkers === true;
+  }
+  return cfg().allowQueueWorkers !== false;
+}
+
+export function canRunSchedulers() {
+  if (!cfg().enabled) return true;
+  if (isReadOnlyReplica()) return false;
+  if (getInstanceMode() === 'experimental_multi_instance') {
+    return cfg().allowSchedulers === true;
+  }
+  return cfg().allowSchedulers !== false;
+}
+
+export function canServeAdminSse() {
+  if (!cfg().enabled) return true;
+  if (isReadOnlyReplica()) return cfg().allowAdminSse === true;
+  return cfg().allowAdminSse !== false;
+}
+
+export function getInstanceWarnings() {
+  const warnings = [];
+  const mode = getInstanceMode();
+
+  if (!cfg().enabled) {
+    warnings.push({
+      code: 'INSTANCE_MODE_DISABLED',
+      level: 'warn',
+      message: 'INSTANCE_MODE is disabled; deployment safety guards are reduced.',
+    });
+  }
+
+  if (!VALID_MODES.has(process.env.INSTANCE_MODE || cfg().mode || 'single_writer')) {
+    warnings.push({
+      code: 'UNKNOWN_INSTANCE_MODE',
+      level: 'warn',
+      message: 'Unknown INSTANCE_MODE value; falling back to single_writer.',
+    });
+  }
+
+  if (config.ENV && config.ENV.isProduction && mode === 'experimental_multi_instance') {
+    warnings.push({
+      code: 'EXPERIMENTAL_MULTI_INSTANCE_IN_PRODUCTION',
+      level: 'critical',
+      message: 'experimental_multi_instance is not safe for production with file-based storage.',
+    });
+  }
+
+  if (config.ENV && config.ENV.isProduction && mode === 'single_writer' && config.INSTANCE_MODE?.warnOnUnsafeMultiInstance) {
+    warnings.push({
+      code: 'SINGLE_WRITER_REQUIRED',
+      level: 'info',
+      message: 'Production must run exactly one writer instance for queue workers and schedulers.',
+    });
+  }
+
+  if (isReadOnlyReplica()) {
+    warnings.push({
+      code: 'READ_ONLY_REPLICA',
+      level: 'info',
+      message: 'This instance is read-only: queue workers and schedulers are disabled.',
+    });
+  }
+
+  return warnings;
+}
+
+export function getInstanceInfo() {
+  return {
+    enabled: !!cfg().enabled,
+    instanceId: getInstanceId(),
+    mode: getInstanceMode(),
+    isSingleWriter: isSingleWriter(),
+    isReadOnlyReplica: isReadOnlyReplica(),
+    canRunQueueWorkers: canRunQueueWorkers(),
+    canRunSchedulers: canRunSchedulers(),
+    canServeAdminSse: canServeAdminSse(),
+    pid: process.pid,
+    hostname: os.hostname(),
+    environment: config.ENV ? config.ENV.current : (process.env.NODE_ENV || 'development'),
+    warnings: getInstanceWarnings(),
+  };
+}
+
+export const _testHelpers = {
+  resetInstanceIdCache: () => { cachedInstanceId = null; },
+  VALID_MODES,
+};
 ```
 
 ---
@@ -15943,6 +16862,199 @@ export const logger = {
 
 ---
 
+## `server/services/maintenanceMode.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/maintenanceMode.js — Maintenance Mode (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Optional deploy safety switch.
+// Disabled by default. Admin can enable/disable via production ops API.
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import { atomicWrite, readJSON } from './database.js';
+import { eventBus } from './eventBus.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function cfg() {
+  return config.MAINTENANCE_MODE || {};
+}
+
+function isFeatureEnabled() {
+  return !!cfg().enabled || process.env.MAINTENANCE_MODE_ENABLED === 'true';
+}
+
+function maintenancePath() {
+  return join(BASE_PATH, cfg().filePath || 'ops/maintenance.json');
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function defaultState() {
+  return {
+    enabled: false,
+    message: cfg().message || 'المنصة تحت الصيانة مؤقتاً. حاول بعد قليل.',
+    enabledBy: null,
+    enabledAt: null,
+    disabledBy: null,
+    disabledAt: null,
+    updatedAt: nowIso(),
+  };
+}
+
+export async function getMaintenanceMode() {
+  if (!isFeatureEnabled()) {
+    return {
+      ...defaultState(),
+      featureEnabled: false,
+    };
+  }
+
+  try {
+    const state = await readJSON(maintenancePath());
+    return {
+      ...defaultState(),
+      ...(state || {}),
+      featureEnabled: true,
+    };
+  } catch (_) {
+    return {
+      ...defaultState(),
+      featureEnabled: true,
+    };
+  }
+}
+
+export async function enableMaintenanceMode(adminId, message) {
+  if (!isFeatureEnabled()) {
+    return { ok: false, disabled: true, code: 'MAINTENANCE_FEATURE_DISABLED' };
+  }
+
+  const now = nowIso();
+  const state = {
+    enabled: true,
+    message: message || cfg().message || 'المنصة تحت الصيانة مؤقتاً. حاول بعد قليل.',
+    enabledBy: adminId || 'admin_token',
+    enabledAt: now,
+    disabledBy: null,
+    disabledAt: null,
+    updatedAt: now,
+  };
+
+  await atomicWrite(maintenancePath(), state);
+
+  eventBus.emit('maintenance:enabled', {
+    enabledBy: state.enabledBy,
+    timestamp: now,
+  });
+
+  return { ok: true, maintenance: { ...state, featureEnabled: true } };
+}
+
+export async function disableMaintenanceMode(adminId) {
+  if (!isFeatureEnabled()) {
+    return { ok: false, disabled: true, code: 'MAINTENANCE_FEATURE_DISABLED' };
+  }
+
+  const previous = await getMaintenanceMode();
+  const now = nowIso();
+
+  const state = {
+    ...previous,
+    enabled: false,
+    disabledBy: adminId || 'admin_token',
+    disabledAt: now,
+    updatedAt: now,
+  };
+
+  await atomicWrite(maintenancePath(), state);
+
+  eventBus.emit('maintenance:disabled', {
+    disabledBy: state.disabledBy,
+    timestamp: now,
+  });
+
+  return { ok: true, maintenance: { ...state, featureEnabled: true } };
+}
+
+export async function isMaintenanceActive() {
+  if (!isFeatureEnabled()) return false;
+  const state = await getMaintenanceMode();
+  return !!state.enabled;
+}
+
+function isAdminRequest(req) {
+  if (!req) return false;
+  if (req.isAdmin) return true;
+  if (req.user && req.user.role === 'admin') return true;
+
+  const token = req.headers && req.headers['x-admin-token'];
+  return !!(token && token === process.env.ADMIN_TOKEN);
+}
+
+function isStaticRequest(req) {
+  if (!req || !req.pathname) return false;
+  if (!req.pathname.startsWith('/api/')) return true;
+  return false;
+}
+
+function isAlwaysAllowedApi(req) {
+  if (!req || !req.pathname) return false;
+
+  const path = req.pathname;
+  if (path === '/api/health') return true;
+  if (path === '/api/config') return true;
+  if (path === '/api/docs') return true;
+  if (path.startsWith('/api/admin/maintenance')) return true;
+  if (path.startsWith('/api/admin/production')) return true;
+
+  return false;
+}
+
+function isReadOnlyApi(req) {
+  if (!req || req.method !== 'GET') return false;
+  if (!req.pathname || !req.pathname.startsWith('/api/')) return false;
+
+  const path = req.pathname;
+
+  if (path === '/api/jobs') return true;
+  if (path.startsWith('/api/jobs/')) return true;
+  if (path.startsWith('/api/users/')) return true;
+  if (path === '/api/health') return true;
+  if (path === '/api/config') return true;
+  if (path === '/api/docs') return true;
+
+  return false;
+}
+
+export function isRouteAllowedDuringMaintenance(req) {
+  if (!isFeatureEnabled()) return true;
+
+  if (cfg().allowAdminBypass && isAdminRequest(req)) return true;
+  if (isStaticRequest(req)) return true;
+  if (isAlwaysAllowedApi(req)) return true;
+  if (cfg().allowReadOnlyApi && isReadOnlyApi(req)) return true;
+
+  return false;
+}
+
+export const _testHelpers = {
+  maintenancePath,
+  isFeatureEnabled,
+  isAdminRequest,
+  isStaticRequest,
+  isAlwaysAllowedApi,
+  isReadOnlyApi,
+};
+```
+
+---
+
 ## `server/services/messages.js`
 
 ```javascript
@@ -16632,6 +17744,430 @@ export async function sendMessage(phone, message, options = {}) {
 
 ---
 
+## `server/services/metricsRollups.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/metricsRollups.js — Ops Metrics Rollups (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Hourly operational rollups for queue, alert delivery, schedulers and locks.
+// No external observability dependencies.
+// Storage: data/metrics/ops-rollups/{YYYY-MM-DDTHH}.json
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(config.OPS_METRICS_ROLLUPS && config.OPS_METRICS_ROLLUPS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function hourKey(date = new Date()) {
+  return date.toISOString().slice(0, 13);
+}
+
+function rollupIdFromHour(hour) {
+  return `or_${hour}`;
+}
+
+function rollupPath(id) {
+  return getRecordPath('ops_rollups', id);
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function inLastHour(iso, nowMs = Date.now()) {
+  const ms = parseMs(iso);
+  return ms > 0 && (nowMs - ms) <= 60 * 60 * 1000;
+}
+
+function percentile(values, p) {
+  if (!Array.isArray(values) || values.length === 0) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+  return Math.round(sorted[idx]);
+}
+
+async function loadQueueJobs() {
+  try {
+    const dir = getCollectionPath('ops_queue');
+    const rows = await listJSON(dir);
+    return rows.filter(j => j && j.id && j.id.startsWith('q_'));
+  } catch (err) {
+    logger.warn('metricsRollups: loadQueueJobs failed', { error: err.message });
+    return [];
+  }
+}
+
+async function loadDeadLetterJobs() {
+  try {
+    const dir = getCollectionPath('ops_queue_dead_letter');
+    const rows = await listJSON(dir);
+    return rows.filter(j => j && j.id && j.id.startsWith('q_'));
+  } catch (_) {
+    return [];
+  }
+}
+
+async function loadAlertDeliveries() {
+  try {
+    const dir = getCollectionPath('alert_deliveries');
+    const rows = await listJSON(dir);
+    return rows.filter(d => d && d.id && d.id.startsWith('adl_'));
+  } catch (err) {
+    logger.warn('metricsRollups: loadAlertDeliveries failed', { error: err.message });
+    return [];
+  }
+}
+
+async function loadSchedulers() {
+  try {
+    const { listSchedulerJobs } = await import('./schedulerRegistry.js');
+    return await listSchedulerJobs();
+  } catch (_) {
+    return [];
+  }
+}
+
+async function loadLocks() {
+  try {
+    const { listProcessLocks } = await import('./processLock.js');
+    return await listProcessLocks();
+  } catch (_) {
+    return [];
+  }
+}
+
+function computeQueueRollup(jobs, deadJobs, nowMs) {
+  const queue = {
+    pending: 0,
+    running: 0,
+    failed: 0,
+    deadLetter: deadJobs.length,
+    completedLastHour: 0,
+    failedLastHour: 0,
+    deadLetterLastHour: 0,
+  };
+
+  for (const job of jobs) {
+    if (job.status === 'pending') queue.pending++;
+    else if (job.status === 'running') queue.running++;
+    else if (job.status === 'failed') queue.failed++;
+
+    if (job.status === 'completed' && inLastHour(job.completedAt || job.updatedAt, nowMs)) {
+      queue.completedLastHour++;
+    }
+    if (job.status === 'failed' && inLastHour(job.failedAt || job.updatedAt, nowMs)) {
+      queue.failedLastHour++;
+    }
+    if (job.status === 'dead-letter' && inLastHour(job.deadLetteredAt || job.updatedAt, nowMs)) {
+      queue.deadLetterLastHour++;
+    }
+  }
+
+  for (const job of deadJobs) {
+    if (inLastHour(job.deadLetteredAt || job.updatedAt, nowMs)) {
+      queue.deadLetterLastHour++;
+    }
+  }
+
+  return queue;
+}
+
+function computeAlertRollup(deliveries, nowMs) {
+  let total = 0;
+  let delivered = 0;
+  let failed = 0;
+  let deadLetter = 0;
+  const deliveryLatencies = [];
+
+  for (const d of deliveries) {
+    total++;
+    if (d.status === 'delivered') delivered++;
+    else if (d.status === 'failed') failed++;
+    else if (d.status === 'dead-letter') deadLetter++;
+
+    if (d.deliveredAt && d.createdAt) {
+      const latency = parseMs(d.deliveredAt) - parseMs(d.createdAt);
+      if (latency > 0) deliveryLatencies.push(latency);
+    }
+  }
+
+  return {
+    total,
+    deliveredRate: total > 0 ? Math.round((delivered / total) * 100) : 100,
+    failed,
+    deadLetter,
+    p95DeliveryMs: percentile(deliveryLatencies, 0.95),
+  };
+}
+
+function computeSchedulerRollup(schedulers) {
+  const now = Date.now();
+  const staleMs = config.OPS_METRICS_ROLLUPS?.slo?.schedulerStaleWarningMs || (2 * 60 * 60 * 1000);
+
+  let stale = 0;
+  let failed = 0;
+
+  for (const s of schedulers) {
+    if (s.lastStatus === 'failed') failed++;
+
+    if (s.enabled && s.nextRunAt) {
+      const nextRunMs = parseMs(s.nextRunAt);
+      if (nextRunMs > 0 && now - nextRunMs > staleMs) stale++;
+    }
+  }
+
+  return {
+    total: schedulers.length,
+    stale,
+    failed,
+  };
+}
+
+function computeLocksRollup(locks) {
+  return {
+    active: locks.length,
+    stale: locks.filter(l => l.stale).length,
+  };
+}
+
+function computeSloViolationsFromRollup(rollup) {
+  const slo = config.OPS_METRICS_ROLLUPS?.slo || {};
+  const violations = [];
+
+  const q = rollup.queue || {};
+  const alerts = rollup.alerts || {};
+  const sched = rollup.schedulers || {};
+
+  if ((q.deadLetter || 0) >= (slo.queueDeadLetterWarning || 5)) {
+    violations.push({
+      metric: 'queue.deadLetter',
+      value: q.deadLetter,
+      threshold: slo.queueDeadLetterWarning || 5,
+      level: 'warning',
+      message: `Queue dead-letter count is ${q.deadLetter}`,
+    });
+  }
+
+  const decidedLastHour = (q.completedLastHour || 0) + (q.failedLastHour || 0) + (q.deadLetterLastHour || 0);
+  const failedRate = decidedLastHour > 0
+    ? Math.round((((q.failedLastHour || 0) + (q.deadLetterLastHour || 0)) / decidedLastHour) * 100)
+    : 0;
+
+  if (decidedLastHour >= 5 && failedRate >= (slo.queueFailedRateWarningPercent || 10)) {
+    violations.push({
+      metric: 'queue.failedRateLastHour',
+      value: failedRate,
+      threshold: slo.queueFailedRateWarningPercent || 10,
+      level: 'warning',
+      message: `Queue failed rate last hour is ${failedRate}%`,
+    });
+  }
+
+  if (alerts.deliveredRate < (slo.alertDeliveryRateWarningPercent || 90)) {
+    violations.push({
+      metric: 'alerts.deliveredRate',
+      value: alerts.deliveredRate,
+      threshold: slo.alertDeliveryRateWarningPercent || 90,
+      level: 'warning',
+      message: `Alert delivery rate is ${alerts.deliveredRate}%`,
+    });
+  }
+
+  if ((alerts.p95DeliveryMs || 0) >= (slo.alertDeliveryP95WarningMs || 30000)) {
+    violations.push({
+      metric: 'alerts.p95DeliveryMs',
+      value: alerts.p95DeliveryMs,
+      threshold: slo.alertDeliveryP95WarningMs || 30000,
+      level: 'warning',
+      message: `Alert delivery p95 is ${alerts.p95DeliveryMs}ms`,
+    });
+  }
+
+  if ((sched.stale || 0) > 0) {
+    violations.push({
+      metric: 'schedulers.stale',
+      value: sched.stale,
+      threshold: 0,
+      level: 'warning',
+      message: `${sched.stale} scheduler job(s) are stale`,
+    });
+  }
+
+  return violations;
+}
+
+export async function captureOpsRollup(options = {}) {
+  if (!isEnabled()) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const started = Date.now();
+  const now = Date.now();
+  const hour = options.hourKey || hourKey();
+  const id = rollupIdFromHour(hour);
+
+  const [jobs, deadJobs, deliveries, schedulers, locks] = await Promise.all([
+    loadQueueJobs(),
+    loadDeadLetterJobs(),
+    loadAlertDeliveries(),
+    loadSchedulers(),
+    loadLocks(),
+  ]);
+
+  const rollup = {
+    id,
+    hour,
+    timestamp: nowIso(),
+    queue: computeQueueRollup(jobs, deadJobs, now),
+    alerts: computeAlertRollup(deliveries, now),
+    schedulers: computeSchedulerRollup(schedulers),
+    locks: computeLocksRollup(locks),
+    sloViolations: [],
+    durationMs: 0,
+  };
+
+  rollup.sloViolations = computeSloViolationsFromRollup(rollup);
+  rollup.durationMs = Date.now() - started;
+
+  await atomicWrite(rollupPath(id), rollup);
+
+  eventBus.emit('ops_rollup:captured', {
+    rollupId: id,
+    hour,
+    sloViolationCount: rollup.sloViolations.length,
+    timestamp: rollup.timestamp,
+  });
+
+  for (const violation of rollup.sloViolations) {
+    eventBus.emit('ops_slo:violated', {
+      rollupId: id,
+      violation,
+      timestamp: rollup.timestamp,
+    });
+  }
+
+  if (rollup.schedulers && rollup.schedulers.stale > 0) {
+    eventBus.emit('scheduler:stale', {
+      stale: rollup.schedulers.stale,
+      total: rollup.schedulers.total,
+      rollupId: id,
+      timestamp: rollup.timestamp,
+    });
+  }
+
+  return rollup;
+}
+
+export async function listOpsRollups(options = {}) {
+  if (!isEnabled()) {
+    return { rollups: [], total: 0, limit: 24, offset: 0 };
+  }
+
+  const dir = getCollectionPath('ops_rollups');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('or_'));
+
+  if (options.from) rows = rows.filter(r => r.timestamp >= options.from);
+  if (options.to) rows = rows.filter(r => r.timestamp <= options.to);
+
+  rows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  const total = rows.length;
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 24));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    rollups: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getLatestOpsRollup() {
+  const result = await listOpsRollups({ limit: 1, offset: 0 });
+  return result.rollups[0] || null;
+}
+
+export async function computeOpsSlo(options = {}) {
+  const latest = options.rollup || await getLatestOpsRollup();
+
+  if (!latest) {
+    return {
+      ok: true,
+      status: 'unknown',
+      latest: null,
+      violations: [],
+      generatedAt: nowIso(),
+    };
+  }
+
+  const violations = latest.sloViolations || [];
+  return {
+    ok: violations.length === 0,
+    status: violations.length === 0 ? 'healthy' : 'violations',
+    latest,
+    violations,
+    generatedAt: nowIso(),
+  };
+}
+
+export async function cleanupOldOpsRollups() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.OPS_METRICS_ROLLUPS?.retentionDays || 30;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const dir = getCollectionPath('ops_rollups');
+  const rows = await listJSON(dir);
+
+  let cleaned = 0;
+  for (const r of rows) {
+    if (!r || !r.id) continue;
+    const ts = parseMs(r.timestamp);
+    if (ts > 0 && ts < cutoffMs) {
+      await deleteJSON(rollupPath(r.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  return cleaned;
+}
+
+export const _testHelpers = {
+  hourKey,
+  rollupIdFromHour,
+  computeQueueRollup,
+  computeAlertRollup,
+  computeSchedulerRollup,
+  computeLocksRollup,
+  computeSloViolationsFromRollup,
+  percentile,
+};
+```
+
+---
+
 ## `server/services/migration.js`
 
 ```javascript
@@ -17023,6 +18559,23 @@ const builtInMigrations = [
       logger.info('Migration v13: Phase 53 directories registered (workroom v2 + trust calibration + predictive signal archives)');
     },
   },
+  {
+    version: 14,
+    name: 'Phase 54: Multi-Instance Readiness + Production Ops Hardening',
+    up: async () => {
+      // Phase 54 registers production operations structures:
+      //   - ops_locks
+      //   - scheduler
+      //   - metrics/ops-rollups
+      //   - metrics/incidents
+      //   - metrics/backup-restore-drills
+      //   - ops
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      logger.info('Migration v14: Phase 54 production ops directories registered (locks, scheduler, ops rollups, incidents, restore drills)');
+    },
+  },
 ];
 
 /**
@@ -17259,6 +18812,48 @@ export async function captureSnapshot() {
     }
   } catch (_) { /* non-fatal — defaults preserved */ }
 
+  // Phase 54: production ops additive visibility (non-blocking)
+  let instanceMode = { enabled: false };
+  try {
+    const inst = await import('./instanceMode.js');
+    instanceMode = inst.getInstanceInfo();
+  } catch (_) { /* non-fatal */ }
+
+  let processLocks = { active: 0, stale: 0 };
+  try {
+    const locksMod = await import('./processLock.js');
+    const rows = await locksMod.listProcessLocks();
+    processLocks = {
+      active: rows.length,
+      stale: rows.filter(l => l.stale).length,
+    };
+  } catch (_) { /* non-fatal */ }
+
+  let schedulerRegistry = { total: 0, stale: 0, failed: 0 };
+  try {
+    const sched = await import('./schedulerRegistry.js');
+    const rows = await sched.listSchedulerJobs();
+    const staleMs = config.OPS_METRICS_ROLLUPS?.slo?.schedulerStaleWarningMs || (2 * 60 * 60 * 1000);
+    schedulerRegistry = {
+      total: rows.length,
+      stale: rows.filter(r => r.enabled && r.nextRunAt && (Date.now() - new Date(r.nextRunAt).getTime()) > staleMs).length,
+      failed: rows.filter(r => r.lastStatus === 'failed').length,
+    };
+  } catch (_) { /* non-fatal */ }
+
+  let opsRollup = null;
+  try {
+    const rollups = await import('./metricsRollups.js');
+    opsRollup = await rollups.getLatestOpsRollup();
+  } catch (_) { /* non-fatal */ }
+
+  let backupRestoreDrill = { latest: null };
+  try {
+    const drills = await import('./backupRestoreDrill.js');
+    const result = await drills.listRestoreDrills({ limit: 1 });
+    backupRestoreDrill = { latest: result.drills && result.drills[0] ? result.drills[0] : null };
+  } catch (_) { /* non-fatal */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -17276,6 +18871,11 @@ export async function captureSnapshot() {
     auditRetention,    // Phase 48
     auditIndex,        // Phase 50
     counterHygiene,    // Phase 50
+    instanceMode,      // Phase 54
+    processLocks,      // Phase 54
+    schedulerRegistry, // Phase 54
+    opsRollup,         // Phase 54
+    backupRestoreDrill,// Phase 54
   };
 
   // Phase 49 — Emit critical counter size event on threshold crossing.
@@ -22105,6 +23705,629 @@ if (config.PRESENCE && config.PRESENCE.enabled) {
 
 ---
 
+## `server/services/processLock.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/processLock.js — File-Backed Process Locks (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Lightweight process/file lock for single-writer discipline.
+// Not distributed consensus; intended for single VPS/shared filesystem guardrails.
+// ═══════════════════════════════════════════════════════════════
+
+import os from 'node:os';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  isValidId,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import { getInstanceId } from './instanceMode.js';
+
+/** @type {Map<string, NodeJS.Timeout>} */
+const heartbeatTimers = new Map();
+
+function cfg() {
+  return config.PROCESS_LOCKS || {};
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function lockPath(lockName) {
+  if (!isValidId(lockName)) {
+    throw new Error(`Invalid process lock name: ${lockName}`);
+  }
+  return getRecordPath('ops_locks', lockName);
+}
+
+function expiresAtFromNow() {
+  const staleAfterMs = cfg().staleAfterMs || (2 * 60 * 1000);
+  return new Date(Date.now() + staleAfterMs).toISOString();
+}
+
+function sanitizeMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (value === undefined) continue;
+    if (typeof value === 'string') out[key] = value.slice(0, 500);
+    else if (typeof value === 'number' || typeof value === 'boolean' || value === null) out[key] = value;
+    else {
+      try {
+        out[key] = JSON.stringify(value).slice(0, 500);
+      } catch (_) {
+        out[key] = '[unserializable]';
+      }
+    }
+  }
+  return out;
+}
+
+export function isLockStale(lock) {
+  if (!lock) return true;
+
+  const expiresMs = lock.expiresAt ? new Date(lock.expiresAt).getTime() : 0;
+  if (expiresMs > 0 && Date.now() > expiresMs) return true;
+
+  const heartbeatMs = lock.heartbeatAt ? new Date(lock.heartbeatAt).getTime() : 0;
+  const staleAfterMs = cfg().staleAfterMs || (2 * 60 * 1000);
+
+  if (heartbeatMs > 0 && Date.now() - heartbeatMs > staleAfterMs) return true;
+
+  return false;
+}
+
+export async function getProcessLock(lockName) {
+  if (!lockName || typeof lockName !== 'string') return null;
+  try {
+    return await readJSON(lockPath(lockName));
+  } catch (err) {
+    logger.warn('processLock: getProcessLock failed', { lockName, error: err.message });
+    return null;
+  }
+}
+
+export async function listProcessLocks() {
+  try {
+    const dir = getCollectionPath('ops_locks');
+    const locks = await listJSON(dir);
+    return locks
+      .filter(l => l && l.lockName)
+      .map(l => ({ ...l, stale: isLockStale(l) }))
+      .sort((a, b) => String(a.lockName).localeCompare(String(b.lockName)));
+  } catch (err) {
+    logger.warn('processLock: listProcessLocks failed', { error: err.message });
+    return [];
+  }
+}
+
+export async function acquireProcessLock(lockName, options = {}) {
+  if (!cfg().enabled) {
+    return {
+      ok: true,
+      disabled: true,
+      lock: null,
+      ownerId: options.ownerId || getInstanceId(),
+    };
+  }
+
+  if (!lockName || typeof lockName !== 'string' || !isValidId(lockName)) {
+    return { ok: false, code: 'INVALID_LOCK_NAME', error: 'Invalid lock name' };
+  }
+
+  const ownerId = options.ownerId || getInstanceId();
+  const metadata = sanitizeMetadata(options.metadata || {});
+  const autoRecover = options.autoRecoverStaleLocks !== undefined
+    ? !!options.autoRecoverStaleLocks
+    : cfg().autoRecoverStaleLocks !== false;
+
+  return withLock(`process-lock:${lockName}`, async () => {
+    const filePath = lockPath(lockName);
+    const existing = await readJSON(filePath);
+
+    const now = nowIso();
+
+    if (!existing || existing.ownerId === ownerId || (autoRecover && isLockStale(existing))) {
+      const recovered = !!(existing && existing.ownerId !== ownerId && isLockStale(existing));
+
+      const lock = {
+        lockName,
+        ownerId,
+        pid: process.pid,
+        hostname: os.hostname(),
+        acquiredAt: existing && existing.ownerId === ownerId ? (existing.acquiredAt || now) : now,
+        heartbeatAt: now,
+        expiresAt: expiresAtFromNow(),
+        metadata,
+        updatedAt: now,
+      };
+
+      await atomicWrite(filePath, lock);
+
+      eventBus.emit(recovered ? 'process_lock:stale_recovered' : 'process_lock:acquired', {
+        lockName,
+        ownerId,
+        previousOwnerId: existing ? existing.ownerId : null,
+        timestamp: now,
+      });
+
+      return { ok: true, lock, recovered };
+    }
+
+    eventBus.emit('process_lock:acquire_failed', {
+      lockName,
+      ownerId,
+      currentOwnerId: existing.ownerId,
+      stale: isLockStale(existing),
+      timestamp: now,
+    });
+
+    return {
+      ok: false,
+      code: 'LOCK_HELD',
+      error: 'Process lock is held by another owner',
+      lock: existing,
+    };
+  });
+}
+
+export async function renewProcessLock(lockName, ownerId) {
+  if (!cfg().enabled) return { ok: true, disabled: true };
+
+  if (!lockName || !ownerId) {
+    return { ok: false, code: 'INVALID_RENEW_REQUEST' };
+  }
+
+  return withLock(`process-lock:${lockName}`, async () => {
+    const filePath = lockPath(lockName);
+    const lock = await readJSON(filePath);
+
+    if (!lock) {
+      return { ok: false, code: 'LOCK_NOT_FOUND' };
+    }
+
+    if (lock.ownerId !== ownerId) {
+      return { ok: false, code: 'LOCK_NOT_OWNER', lock };
+    }
+
+    const now = nowIso();
+    lock.heartbeatAt = now;
+    lock.expiresAt = expiresAtFromNow();
+    lock.updatedAt = now;
+
+    await atomicWrite(filePath, lock);
+
+    eventBus.emit('process_lock:heartbeat', {
+      lockName,
+      ownerId,
+      timestamp: now,
+    });
+
+    return { ok: true, lock };
+  });
+}
+
+export async function releaseProcessLock(lockName, ownerId) {
+  if (!cfg().enabled) return { ok: true, disabled: true };
+
+  if (!lockName || !ownerId) {
+    return { ok: false, code: 'INVALID_RELEASE_REQUEST' };
+  }
+
+  return withLock(`process-lock:${lockName}`, async () => {
+    const filePath = lockPath(lockName);
+    const lock = await readJSON(filePath);
+
+    if (!lock) {
+      return { ok: true, released: false, code: 'LOCK_NOT_FOUND' };
+    }
+
+    if (lock.ownerId !== ownerId) {
+      return { ok: false, code: 'LOCK_NOT_OWNER', lock };
+    }
+
+    stopLockHeartbeat(lockName);
+    await deleteJSON(filePath);
+
+    eventBus.emit('process_lock:released', {
+      lockName,
+      ownerId,
+      timestamp: nowIso(),
+    });
+
+    return { ok: true, released: true };
+  });
+}
+
+export function startLockHeartbeat(lockName, ownerId, options = {}) {
+  if (!cfg().enabled) return null;
+  if (!lockName || !ownerId) return null;
+
+  stopLockHeartbeat(lockName);
+
+  const intervalMs = options.heartbeatMs || cfg().heartbeatMs || 30000;
+
+  const timer = setInterval(() => {
+    renewProcessLock(lockName, ownerId).catch(err => {
+      logger.warn('processLock: heartbeat failed', {
+        lockName,
+        ownerId,
+        error: err.message,
+      });
+    });
+  }, intervalMs);
+
+  if (timer.unref) timer.unref();
+
+  heartbeatTimers.set(lockName, timer);
+  return timer;
+}
+
+export function stopLockHeartbeat(lockName) {
+  const timer = heartbeatTimers.get(lockName);
+  if (timer) {
+    clearInterval(timer);
+    heartbeatTimers.delete(lockName);
+  }
+}
+
+export async function forceReleaseLock(lockName, adminId) {
+  if (!cfg().enabled) return { ok: true, disabled: true };
+
+  if (!lockName || typeof lockName !== 'string' || !isValidId(lockName)) {
+    return { ok: false, code: 'INVALID_LOCK_NAME' };
+  }
+
+  return withLock(`process-lock:${lockName}`, async () => {
+    const filePath = lockPath(lockName);
+    const existing = await readJSON(filePath);
+
+    stopLockHeartbeat(lockName);
+
+    if (existing) {
+      await deleteJSON(filePath);
+    }
+
+    eventBus.emit('process_lock:force_released', {
+      lockName,
+      previousOwnerId: existing ? existing.ownerId : null,
+      adminId: adminId || 'admin_token',
+      timestamp: nowIso(),
+    });
+
+    return { ok: true, released: !!existing, previousLock: existing || null };
+  });
+}
+
+export const _testHelpers = {
+  heartbeatTimers,
+  stopAllHeartbeats: () => {
+    for (const lockName of Array.from(heartbeatTimers.keys())) {
+      stopLockHeartbeat(lockName);
+    }
+  },
+  lockPath,
+};
+```
+
+---
+
+## `server/services/productionReadiness.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/productionReadiness.js — Production Readiness Checks (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// Admin/system readiness assessment. Never exposes secret values.
+// ═══════════════════════════════════════════════════════════════
+
+import { access, constants, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import { readJSON, getCollectionPath } from './database.js';
+import { getInstanceInfo } from './instanceMode.js';
+import { getWorkerStats } from './queueWorkers.js';
+import { getQueueStats } from './opsQueue.js';
+import { getAlertDeliveryStats } from './alertDeliveryHistory.js';
+import { getAuditIndexStats } from './auditLogIndex.js';
+
+function check(id, status, message, details = {}) {
+  return { id, status, message, details };
+}
+
+function safeBool(value) {
+  return !!value;
+}
+
+async function pathWritable(path) {
+  try {
+    await access(path, constants.R_OK | constants.W_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function classifyStatus(checks) {
+  if (checks.some(c => c.status === 'fail')) return 'not_ready';
+  if (checks.some(c => c.status === 'warn')) return 'warnings';
+  return 'ready';
+}
+
+export function classifyReadiness(checks) {
+  const summary = { pass: 0, warn: 0, fail: 0 };
+
+  for (const c of checks || []) {
+    if (summary[c.status] !== undefined) summary[c.status]++;
+  }
+
+  return {
+    ok: summary.fail === 0,
+    status: classifyStatus(checks || []),
+    summary,
+  };
+}
+
+async function checkCriticalDirs() {
+  const ids = [
+    'users',
+    'sessions',
+    'jobs',
+    'applications',
+    'notifications',
+    'audit',
+    'ops_queue',
+    'alert_deliveries',
+    'exports',
+    'ops_locks',
+    'scheduler',
+    'ops_rollups',
+    'incidents',
+    'backup_restore_drills',
+  ];
+
+  const missing = [];
+  for (const id of ids) {
+    try {
+      const dir = getCollectionPath(id);
+      const ok = await pathWritable(dir);
+      if (!ok) missing.push(id);
+    } catch (_) {
+      missing.push(id);
+    }
+  }
+
+  if (missing.length > 0) {
+    return check('critical_dirs', 'fail', 'Some critical data directories are missing or not writable', { missing });
+  }
+
+  return check('critical_dirs', 'pass', 'Critical data directories are present and writable');
+}
+
+async function checkCriticalIndexes() {
+  const basePath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+  const required = [
+    config.DATABASE.indexFiles.phoneIndex,
+    config.DATABASE.indexFiles.jobsIndex,
+    config.DATABASE.indexFiles.workerAppsIndex,
+    config.DATABASE.indexFiles.jobAppsIndex,
+  ];
+
+  const missing = [];
+  const corrupt = [];
+
+  for (const rel of required) {
+    const full = join(basePath, rel);
+    try {
+      const data = await readJSON(full);
+      if (!data || typeof data !== 'object') missing.push(rel);
+    } catch (_) {
+      corrupt.push(rel);
+    }
+  }
+
+  if (corrupt.length > 0) {
+    return check('critical_indexes', 'fail', 'Some critical indexes are corrupt', { corrupt });
+  }
+
+  if (missing.length > 0) {
+    return check('critical_indexes', 'warn', 'Some critical indexes are missing', { missing });
+  }
+
+  return check('critical_indexes', 'pass', 'Critical indexes exist and parse correctly');
+}
+
+async function checkPwaCacheVersion() {
+  try {
+    const swRaw = await readFile('./frontend/sw.js', 'utf-8');
+    const expected = config.PWA?.cacheName || '';
+    const ok = expected && swRaw.includes(`CACHE_NAME = '${expected}'`);
+
+    if (!ok) {
+      return check('pwa_cache_version', 'warn', 'PWA cache version may not match config.PWA.cacheName', {
+        expected,
+      });
+    }
+
+    return check('pwa_cache_version', 'pass', 'PWA cache version matches config');
+  } catch (_) {
+    return check('pwa_cache_version', 'warn', 'Could not read frontend/sw.js');
+  }
+}
+
+export async function runReadinessChecks(options = {}) {
+  const checks = [];
+
+  const env = config.ENV?.current || process.env.NODE_ENV || 'development';
+  const isProd = env === 'production';
+
+  checks.push(check(
+    'node_env',
+    isProd ? 'pass' : 'warn',
+    isProd ? 'NODE_ENV is production' : `NODE_ENV is ${env}`
+  ));
+
+  const adminToken = process.env.ADMIN_TOKEN || '';
+  const defaultTokenBad = !adminToken || adminToken === 'change-me-in-production';
+
+  if (config.PRODUCTION_READINESS?.requireNonDefaultAdminToken && defaultTokenBad) {
+    checks.push(check('admin_token', 'fail', 'ADMIN_TOKEN is missing or uses the default example value'));
+  } else {
+    checks.push(check('admin_token', 'pass', 'ADMIN_TOKEN is configured'));
+  }
+
+  const origins = config.SECURITY?.allowedOrigins || [];
+  if (isProd && config.PRODUCTION_READINESS?.requireRestrictedOriginsInProduction) {
+    if (origins.includes('*')) {
+      checks.push(check('allowed_origins', 'fail', 'Production allowedOrigins must not include wildcard'));
+    } else {
+      checks.push(check('allowed_origins', 'pass', 'Production allowedOrigins are restricted', { count: origins.length }));
+    }
+  } else {
+    checks.push(check('allowed_origins', origins.includes('*') ? 'warn' : 'pass', 'Allowed origins checked', { count: origins.length }));
+  }
+
+  if (isProd && !config.LOGGING?.fileEnabled) {
+    checks.push(check('file_logging', 'warn', 'File logging is disabled in production'));
+  } else {
+    checks.push(check('file_logging', 'pass', 'Logging configuration is acceptable'));
+  }
+
+  const basePath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+  const dataPathWritable = await pathWritable(basePath);
+  checks.push(check(
+    'data_path_writable',
+    dataPathWritable ? 'pass' : 'fail',
+    dataPathWritable ? 'Data path is writable' : 'Data path is not writable',
+    { basePath }
+  ));
+
+  checks.push(await checkCriticalDirs());
+  checks.push(await checkCriticalIndexes());
+
+  try {
+    const auditIndex = await getAuditIndexStats();
+    checks.push(check(
+      'audit_index',
+      auditIndex.stale ? 'warn' : (auditIndex.status === 'missing' ? 'warn' : 'pass'),
+      auditIndex.stale ? 'Audit index is stale' : `Audit index status: ${auditIndex.status}`,
+      { status: auditIndex.status, stale: auditIndex.stale, recordCount: auditIndex.recordCount }
+    ));
+  } catch (_) {
+    checks.push(check('audit_index', 'warn', 'Could not read audit index status'));
+  }
+
+  try {
+    const queueStats = await getQueueStats();
+    const workerStats = getWorkerStats();
+    checks.push(check(
+      'ops_queue',
+      queueStats.enabled ? 'pass' : 'warn',
+      queueStats.enabled ? 'Ops queue is enabled' : 'Ops queue is disabled',
+      { workerStarted: workerStats.started, deadLetter: queueStats.deadLetter || 0 }
+    ));
+  } catch (_) {
+    checks.push(check('ops_queue', 'warn', 'Could not read ops queue stats'));
+  }
+
+  try {
+    const alertStats = await getAlertDeliveryStats();
+    checks.push(check(
+      'alert_delivery',
+      alertStats.enabled !== false ? 'pass' : 'warn',
+      alertStats.enabled !== false ? 'Alert delivery history is enabled' : 'Alert delivery history is disabled'
+    ));
+  } catch (_) {
+    checks.push(check('alert_delivery', 'warn', 'Could not read alert delivery stats'));
+  }
+
+  if (config.WEB_PUSH?.enabled && config.PRODUCTION_READINESS?.requireVapidIfWebPushEnabled) {
+    const hasVapid = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+    checks.push(check(
+      'vapid_keys',
+      hasVapid ? 'pass' : 'fail',
+      hasVapid ? 'VAPID keys are configured' : 'WEB_PUSH is enabled but VAPID keys are missing'
+    ));
+  }
+
+  if (
+    config.ADMIN_ALERT_CHANNELS?.enabled &&
+    config.ADMIN_ALERT_CHANNELS?.webhook?.enabled &&
+    config.PRODUCTION_READINESS?.requireAlertWebhookIfAlertChannelsEnabled
+  ) {
+    const hasWebhook = !!(process.env.ADMIN_ALERT_WEBHOOK_URL || config.ADMIN_ALERT_CHANNELS.webhook.url);
+    checks.push(check(
+      'admin_alert_webhook',
+      hasWebhook ? 'pass' : 'fail',
+      hasWebhook ? 'Admin alert webhook is configured' : 'Admin alert webhook is enabled but URL is missing'
+    ));
+  } else {
+    checks.push(check('admin_alert_webhook', 'pass', 'Admin alert webhook requirement is not enforced'));
+  }
+
+  if (isProd && config.PRODUCTION_READINESS?.requireBackupPlanInProduction && !config.BACKUP?.enabled) {
+    checks.push(check('backup_plan', 'warn', 'BACKUP is disabled in production config'));
+  } else {
+    checks.push(check('backup_plan', 'pass', 'Backup configuration checked'));
+  }
+
+  checks.push(check('instance_mode', 'pass', 'Instance mode evaluated', getInstanceInfo()));
+
+  checks.push(await checkPwaCacheVersion());
+
+  return checks;
+}
+
+export async function getProductionReadiness() {
+  try {
+    if (!config.PRODUCTION_READINESS || !config.PRODUCTION_READINESS.enabled) {
+      return {
+        ok: true,
+        status: 'disabled',
+        environment: config.ENV?.current || process.env.NODE_ENV || 'development',
+        checks: [],
+        summary: { pass: 0, warn: 0, fail: 0 },
+      };
+    }
+
+    const checks = await runReadinessChecks();
+    const classification = classifyReadiness(checks);
+
+    return {
+      ok: classification.ok,
+      status: classification.status,
+      environment: config.ENV?.current || process.env.NODE_ENV || 'development',
+      generatedAt: new Date().toISOString(),
+      checks,
+      summary: classification.summary,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 'not_ready',
+      environment: config.ENV?.current || process.env.NODE_ENV || 'development',
+      generatedAt: new Date().toISOString(),
+      checks: [
+        check('readiness_internal_error', 'fail', 'Production readiness check failed internally'),
+      ],
+      summary: { pass: 0, warn: 0, fail: 1 },
+      error: err.message,
+    };
+  }
+}
+```
+
+---
+
 ## `server/services/profileCompleteness.js`
 
 ```javascript
@@ -22939,6 +25162,14 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
 import config from '../../config.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
+import { getInstanceId, canRunQueueWorkers, getInstanceInfo } from './instanceMode.js';
+import {
+  acquireProcessLock,
+  releaseProcessLock,
+  startLockHeartbeat,
+  stopLockHeartbeat,
+  getProcessLock,
+} from './processLock.js';
 import {
   claimNextJobs,
   completeJob,
@@ -22966,6 +25197,8 @@ let lastProcessAt = null;
 let processedCount = 0;
 let failedCount = 0;
 let stoppedAt = null;
+let queueWorkerLock = null;
+let queueWorkerLockName = 'queue_worker';
 
 function isEnabled() {
   return !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled);
@@ -22990,6 +25223,9 @@ function registerBuiltIns() {
   registerJobHandler('counter_compaction', handleCounterCompactionJob);
   registerJobHandler('audit_index_rebuild', handleAuditIndexRebuildJob);
   registerJobHandler('backup_verify', handleBackupVerifyJob);
+  registerJobHandler('backup_restore_drill', handleBackupRestoreDrillJob);
+  registerJobHandler('ops_rollup_capture', handleOpsRollupCaptureJob);
+  registerJobHandler('production_readiness_check', handleProductionReadinessCheckJob);
 
   // Phase 53 — Trust Calibration + Predictive Hygiene + Workroom Search
   registerJobHandler('trust_snapshot_batch', handleTrustSnapshotBatchJob);
@@ -22998,11 +25234,47 @@ function registerBuiltIns() {
   registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
 }
 
-export function startQueueWorkers() {
+export async function startQueueWorkers() {
   if (started) return;
   if (!isEnabled()) {
     logger.info('Ops queue workers: disabled via config');
     return;
+  }
+
+  if (!canRunQueueWorkers()) {
+    logger.warn('Ops queue workers: refused to start by instance mode', {
+      instance: getInstanceInfo(),
+    });
+    return;
+  }
+
+  const ownerId = getInstanceId();
+
+  if (config.PROCESS_LOCKS && config.PROCESS_LOCKS.enabled) {
+    const lockResult = await acquireProcessLock(queueWorkerLockName, {
+      ownerId,
+      metadata: {
+        workerId,
+        purpose: 'ops_queue_workers',
+        concurrency: config.OPS_QUEUE.workerConcurrency,
+      },
+    });
+
+    if (!lockResult.ok) {
+      queueWorkerLock = lockResult.lock || null;
+      logger.warn('Ops queue workers: lock not acquired — workers will not start', {
+        lockName: queueWorkerLockName,
+        ownerId,
+        code: lockResult.code,
+        currentOwnerId: lockResult.lock && lockResult.lock.ownerId,
+      });
+      return;
+    }
+
+    queueWorkerLock = lockResult.lock || null;
+    startLockHeartbeat(queueWorkerLockName, ownerId);
+  } else if (config.ENV && config.ENV.isProduction) {
+    logger.warn('Ops queue workers: PROCESS_LOCKS disabled in production — unsafe multi-instance deployment');
   }
 
   registerBuiltIns();
@@ -23023,6 +25295,9 @@ export function startQueueWorkers() {
 
   logger.info('Ops queue workers: started', {
     workerId,
+    ownerId,
+    lockName: queueWorkerLockName,
+    lockHeld: !!queueWorkerLock,
     concurrency: config.OPS_QUEUE.workerConcurrency,
     scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
   });
@@ -23044,9 +25319,27 @@ export async function stopQueueWorkers(options = {}) {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
+  const ownerId = getInstanceId();
+
+  try {
+    stopLockHeartbeat(queueWorkerLockName);
+    if (queueWorkerLock && queueWorkerLock.ownerId === ownerId) {
+      await releaseProcessLock(queueWorkerLockName, ownerId);
+    }
+  } catch (err) {
+    logger.warn('Ops queue workers: process lock release failed', {
+      lockName: queueWorkerLockName,
+      ownerId,
+      error: err.message,
+    });
+  } finally {
+    queueWorkerLock = null;
+  }
+
   logger.info('Ops queue workers: stopped', {
     activeCount,
     drainMs,
+    lockName: queueWorkerLockName,
   });
 }
 
@@ -23149,6 +25442,15 @@ export function getWorkerStats() {
     failedCount,
     stoppedAt,
     concurrency: config.OPS_QUEUE?.workerConcurrency || 0,
+    instance: getInstanceInfo(),
+    lock: {
+      enabled: !!(config.PROCESS_LOCKS && config.PROCESS_LOCKS.enabled),
+      held: !!queueWorkerLock,
+      ownerId: queueWorkerLock ? queueWorkerLock.ownerId : null,
+      lockName: queueWorkerLockName,
+      heartbeatAt: queueWorkerLock ? queueWorkerLock.heartbeatAt : null,
+      expiresAt: queueWorkerLock ? queueWorkerLock.expiresAt : null,
+    },
   };
 }
 
@@ -23357,7 +25659,40 @@ async function handleAuditIndexRebuildJob({ payload }) {
 async function handleBackupVerifyJob() {
   return {
     skipped: true,
-    reason: 'backup_verify handler is reserved for Phase 54 restore drill',
+    reason: 'backup_verify handler is deprecated; use backup_restore_drill',
+  };
+}
+
+async function handleBackupRestoreDrillJob({ payload }) {
+  try {
+    const { runBackupRestoreDrill } = await import('./backupRestoreDrill.js');
+    return await runBackupRestoreDrill(payload.options || {});
+  } catch (err) {
+    // Until backupRestoreDrill.js is added in the next batch, fail as retryable.
+    err.retryable = true;
+    throw err;
+  }
+}
+
+async function handleOpsRollupCaptureJob({ payload }) {
+  try {
+    const { captureOpsRollup } = await import('./metricsRollups.js');
+    return await captureOpsRollup(payload.options || {});
+  } catch (err) {
+    // Until metricsRollups.js is added in the next batch, fail as retryable.
+    err.retryable = true;
+    throw err;
+  }
+}
+
+async function handleProductionReadinessCheckJob() {
+  const { getProductionReadiness } = await import('./productionReadiness.js');
+  const result = await getProductionReadiness();
+
+  return {
+    status: result.status,
+    summary: result.summary,
+    generatedAt: result.generatedAt,
   };
 }
 
@@ -23459,6 +25794,13 @@ export const _testHelpers = {
   processOneJob,
   registerBuiltIns,
   setWorkerId: (id) => { workerId = id; },
+  getQueueWorkerLock: () => queueWorkerLock,
+  setQueueWorkerLockName: (name) => { queueWorkerLockName = name; },
+  resetQueueWorkerLockState: () => {
+    stopLockHeartbeat(queueWorkerLockName);
+    queueWorkerLock = null;
+    queueWorkerLockName = 'queue_worker';
+  },
 };
 ```
 
@@ -24317,6 +26659,599 @@ export const _testHelpers = {
     lastEmittedCount = 0;
     stop();
   },
+};
+```
+
+---
+
+## `server/services/schedulerRegistry.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/schedulerRegistry.js — Persistent Scheduler Registry (Phase 54)
+// ═══════════════════════════════════════════════════════════════
+// File-backed recurring job registry.
+// Prevents duplicate scheduled enqueue across accidental multi-process setups
+// by using per-job persistent lease + existing queue idempotency.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  isValidId,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import { getInstanceId, canRunSchedulers, getInstanceInfo } from './instanceMode.js';
+
+let registryTimer = null;
+
+/** @type {Map<string, object>} */
+const definitions = new Map();
+
+function cfg() {
+  return config.SCHEDULER_REGISTRY || {};
+}
+
+function isEnabled() {
+  return !!(cfg().enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function schedulerPath(name) {
+  if (!isValidId(name)) throw new Error(`Invalid scheduler job name: ${name}`);
+  return getRecordPath('scheduler', name);
+}
+
+function payloadSizeBytes(payload) {
+  try {
+    return Buffer.byteLength(JSON.stringify(payload || {}), 'utf-8');
+  } catch (_) {
+    return Infinity;
+  }
+}
+
+function dateBucketForInterval(intervalMs, at = new Date()) {
+  const iso = at.toISOString();
+
+  if (intervalMs >= 24 * 60 * 60 * 1000) {
+    return iso.slice(0, 10);
+  }
+
+  if (intervalMs >= 60 * 60 * 1000) {
+    return iso.slice(0, 13);
+  }
+
+  return iso.slice(0, 16);
+}
+
+function computeNextRunAt(definition, fromMs = Date.now()) {
+  const intervalMs = Math.max(1000, Number(definition.intervalMs || cfg().checkIntervalMs || 60000));
+  return new Date(fromMs + intervalMs).toISOString();
+}
+
+function isLeaseActive(record) {
+  if (!record || !record.leaseUntil) return false;
+  return parseMs(record.leaseUntil) > Date.now();
+}
+
+function isDue(record) {
+  if (!record || record.enabled === false) return false;
+  return parseMs(record.nextRunAt) <= Date.now();
+}
+
+function publicRecord(record) {
+  if (!record) return null;
+  return {
+    name: record.name,
+    enabled: !!record.enabled,
+    queueType: record.queueType,
+    intervalMs: record.intervalMs,
+    priority: record.priority || 'normal',
+    lastRunAt: record.lastRunAt || null,
+    nextRunAt: record.nextRunAt || null,
+    lastStatus: record.lastStatus || null,
+    lastQueueJobId: record.lastQueueJobId || null,
+    leaseOwner: record.leaseOwner || null,
+    leaseUntil: record.leaseUntil || null,
+    leaseActive: isLeaseActive(record),
+    runCount: record.runCount || 0,
+    failCount: record.failCount || 0,
+    lastError: record.lastError || null,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
+}
+
+function defaultEnabled(name) {
+  const jobs = cfg().jobs || {};
+  if (jobs[name] && typeof jobs[name].enabled === 'boolean') return jobs[name].enabled;
+  return true;
+}
+
+function defaultDefinitions() {
+  const day = 24 * 60 * 60 * 1000;
+  const hour = 60 * 60 * 1000;
+  const min15 = 15 * 60 * 1000;
+
+  return [
+    {
+      name: 'predictive_scan',
+      queueType: 'predictive_scan',
+      intervalMs: config.PREDICTIVE_ABUSE?.scanIntervalMs || min15,
+      priority: 'normal',
+      payload: { force: true, persist: true },
+      enabled: defaultEnabled('predictive_scan'),
+      idempotencyKeyFn: (bucket) => `predictive_scan:scheduled:${bucket}`,
+    },
+    {
+      name: 'trust_snapshot_batch',
+      queueType: 'trust_snapshot_batch',
+      intervalMs: config.TRUST_CALIBRATION?.snapshotIntervalMs || day,
+      priority: 'low',
+      payload: { reason: 'scheduled', force: false },
+      enabled: defaultEnabled('trust_snapshot_batch'),
+      idempotencyKeyFn: (bucket) => `trust_snapshot_batch:scheduled:${bucket}`,
+    },
+    {
+      name: 'predictive_signal_retention',
+      queueType: 'predictive_signal_retention',
+      intervalMs: config.PREDICTIVE_SIGNAL_RETENTION?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('predictive_signal_retention'),
+      idempotencyKeyFn: (bucket) => `predictive_signal_retention:scheduled:${bucket}`,
+    },
+    {
+      name: 'ops_rollup_capture',
+      queueType: 'ops_rollup_capture',
+      intervalMs: config.OPS_METRICS_ROLLUPS?.intervalMs || hour,
+      priority: 'low',
+      payload: { reason: 'scheduled' },
+      enabled: defaultEnabled('ops_rollup_capture'),
+      idempotencyKeyFn: (bucket) => `ops_rollup_capture:${bucket}`,
+    },
+    {
+      name: 'backup_restore_drill',
+      queueType: 'backup_restore_drill',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: false,
+      idempotencyKeyFn: (bucket) => `backup_restore_drill:scheduled:${bucket}`,
+    },
+  ];
+}
+
+/**
+ * Register one scheduler definition and ensure persistent record exists.
+ */
+export async function registerSchedulerJob(definition) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!definition || !definition.name || !isValidId(definition.name)) {
+    return { ok: false, code: 'INVALID_SCHEDULER_DEFINITION' };
+  }
+  if (!definition.queueType || typeof definition.queueType !== 'string') {
+    return { ok: false, code: 'QUEUE_TYPE_REQUIRED' };
+  }
+
+  const payloadBytes = payloadSizeBytes(definition.payload || {});
+  const maxBytes = cfg().maxManualRunPayloadBytes || (64 * 1024);
+  if (payloadBytes > maxBytes) {
+    return { ok: false, code: 'PAYLOAD_TOO_LARGE' };
+  }
+
+  definitions.set(definition.name, { ...definition });
+
+  return withLock(`scheduler:${definition.name}`, async () => {
+    const path = schedulerPath(definition.name);
+    const existing = await readJSON(path);
+    const now = nowIso();
+
+    if (existing) {
+      existing.queueType = definition.queueType;
+      existing.intervalMs = Number(definition.intervalMs || existing.intervalMs || 60000);
+      existing.priority = definition.priority || existing.priority || 'normal';
+      if (existing.enabled === undefined) existing.enabled = definition.enabled !== false;
+      existing.updatedAt = now;
+
+      if (!existing.nextRunAt) {
+        existing.nextRunAt = computeNextRunAt(definition);
+      }
+
+      await atomicWrite(path, existing);
+      return { ok: true, record: publicRecord(existing), existing: true };
+    }
+
+    const record = {
+      name: definition.name,
+      enabled: definition.enabled !== false,
+      queueType: definition.queueType,
+      intervalMs: Number(definition.intervalMs || 60000),
+      priority: definition.priority || 'normal',
+      lastRunAt: null,
+      nextRunAt: definition.nextRunAt || computeNextRunAt(definition, Date.now()),
+      lastStatus: 'registered',
+      lastQueueJobId: null,
+      leaseOwner: null,
+      leaseUntil: null,
+      runCount: 0,
+      failCount: 0,
+      lastError: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await atomicWrite(path, record);
+
+    eventBus.emit('scheduler:job_registered', {
+      name: record.name,
+      queueType: record.queueType,
+      timestamp: now,
+    });
+
+    return { ok: true, record: publicRecord(record), existing: false };
+  });
+}
+
+export async function registerDefaultSchedulerJobs() {
+  if (!isEnabled()) return { ok: false, disabled: true, registered: 0 };
+
+  let registered = 0;
+  for (const def of defaultDefinitions()) {
+    const result = await registerSchedulerJob(def);
+    if (result.ok) registered++;
+  }
+
+  return { ok: true, registered };
+}
+
+export async function getSchedulerJob(name) {
+  if (!name || typeof name !== 'string') return null;
+  try {
+    const record = await readJSON(schedulerPath(name));
+    return publicRecord(record);
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function listSchedulerJobs() {
+  if (!isEnabled()) return [];
+
+  try {
+    const dir = getCollectionPath('scheduler');
+    const rows = await listJSON(dir);
+    return rows
+      .filter(r => r && r.name)
+      .map(publicRecord)
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  } catch (err) {
+    logger.warn('schedulerRegistry: list failed', { error: err.message });
+    return [];
+  }
+}
+
+export async function acquireSchedulerLease(name, ownerId) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!name || !isValidId(name)) return { ok: false, code: 'INVALID_SCHEDULER_NAME' };
+
+  const leaseOwner = ownerId || getInstanceId();
+
+  return withLock(`scheduler:${name}`, async () => {
+    const path = schedulerPath(name);
+    const record = await readJSON(path);
+
+    if (!record) return { ok: false, code: 'SCHEDULER_NOT_FOUND' };
+    if (record.enabled === false) return { ok: false, code: 'SCHEDULER_DISABLED', record: publicRecord(record) };
+
+    if (record.leaseOwner && isLeaseActive(record) && record.leaseOwner !== leaseOwner) {
+      return { ok: false, code: 'LEASE_HELD', record: publicRecord(record) };
+    }
+
+    const now = nowIso();
+    record.leaseOwner = leaseOwner;
+    record.leaseUntil = new Date(Date.now() + (cfg().leaseMs || 10 * 60 * 1000)).toISOString();
+    record.updatedAt = now;
+
+    await atomicWrite(path, record);
+
+    return { ok: true, record: publicRecord(record) };
+  });
+}
+
+export async function releaseSchedulerLease(name, ownerId) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const leaseOwner = ownerId || getInstanceId();
+
+  return withLock(`scheduler:${name}`, async () => {
+    const path = schedulerPath(name);
+    const record = await readJSON(path);
+
+    if (!record) return { ok: false, code: 'SCHEDULER_NOT_FOUND' };
+
+    if (record.leaseOwner && record.leaseOwner !== leaseOwner) {
+      return { ok: false, code: 'LEASE_NOT_OWNER', record: publicRecord(record) };
+    }
+
+    record.leaseOwner = null;
+    record.leaseUntil = null;
+    record.updatedAt = nowIso();
+
+    await atomicWrite(path, record);
+
+    return { ok: true, record: publicRecord(record) };
+  });
+}
+
+async function enqueueSchedulerRun(record, definition, options = {}) {
+  const { enqueueJob } = await import('./opsQueue.js');
+
+  const now = new Date();
+  const bucket = options.bucket || dateBucketForInterval(record.intervalMs, now);
+
+  const payload = options.payloadOverride || definition.payload || {};
+  const priority = options.priority || definition.priority || record.priority || 'normal';
+  const idempotencyKey = options.idempotencyKey ||
+    (typeof definition.idempotencyKeyFn === 'function'
+      ? definition.idempotencyKeyFn(bucket)
+      : `${record.queueType}:scheduled:${bucket}`);
+
+  const enqueueResult = await enqueueJob({
+    type: record.queueType,
+    priority,
+    payload,
+    idempotencyKey,
+    createdBy: options.createdBy || 'scheduler',
+  });
+
+  return { enqueueResult, bucket, idempotencyKey };
+}
+
+export async function updateSchedulerAfterRun(name, patch = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  return withLock(`scheduler:${name}`, async () => {
+    const path = schedulerPath(name);
+    const record = await readJSON(path);
+
+    if (!record) return { ok: false, code: 'SCHEDULER_NOT_FOUND' };
+
+    const def = definitions.get(name) || record;
+    const now = nowIso();
+
+    if (patch.lastStatus) record.lastStatus = patch.lastStatus;
+    if (patch.lastQueueJobId !== undefined) record.lastQueueJobId = patch.lastQueueJobId;
+    if (patch.lastError !== undefined) record.lastError = patch.lastError;
+
+    record.lastRunAt = patch.lastRunAt || now;
+    record.nextRunAt = patch.nextRunAt || computeNextRunAt(def, Date.now());
+    record.runCount = (record.runCount || 0) + (patch.incrementRun === false ? 0 : 1);
+
+    if (patch.failed) record.failCount = (record.failCount || 0) + 1;
+
+    record.leaseOwner = null;
+    record.leaseUntil = null;
+    record.updatedAt = now;
+
+    await atomicWrite(path, record);
+
+    return { ok: true, record: publicRecord(record) };
+  });
+}
+
+export async function runSchedulerJobNow(name, options = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!canRunSchedulers() && options.force !== true) {
+    return { ok: false, code: 'SCHEDULERS_DISABLED_BY_INSTANCE_MODE', instance: getInstanceInfo() };
+  }
+
+  const definition = definitions.get(name);
+  const record = await readJSON(schedulerPath(name)).catch(() => null);
+
+  if (!record) return { ok: false, code: 'SCHEDULER_NOT_FOUND' };
+  if (!definition && !record.queueType) return { ok: false, code: 'SCHEDULER_DEFINITION_NOT_REGISTERED' };
+
+  const ownerId = options.ownerId || getInstanceId();
+  const lease = await acquireSchedulerLease(name, ownerId);
+
+  if (!lease.ok) return lease;
+
+  try {
+    const enqueue = await enqueueSchedulerRun(record, definition || record, {
+      createdBy: options.createdBy || ownerId,
+      payloadOverride: options.payload,
+      priority: options.priority,
+      idempotencyKey: options.idempotencyKey,
+      bucket: options.bucket || dateBucketForInterval(record.intervalMs, new Date()),
+    });
+
+    if (!enqueue.enqueueResult || !enqueue.enqueueResult.ok) {
+      await updateSchedulerAfterRun(name, {
+        lastStatus: 'failed',
+        lastError: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        failed: true,
+      });
+
+      eventBus.emit('scheduler:job_failed', {
+        name,
+        error: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        timestamp: nowIso(),
+      });
+
+      return { ok: false, code: 'QUEUE_ENQUEUE_FAILED', result: enqueue.enqueueResult };
+    }
+
+    const updated = await updateSchedulerAfterRun(name, {
+      lastStatus: enqueue.enqueueResult.deduped ? 'deduped' : 'queued',
+      lastQueueJobId: enqueue.enqueueResult.job?.id || null,
+      lastError: null,
+    });
+
+    eventBus.emit('scheduler:job_queued', {
+      name,
+      queueType: record.queueType,
+      queueJobId: enqueue.enqueueResult.job?.id || null,
+      deduped: !!enqueue.enqueueResult.deduped,
+      idempotencyKey: enqueue.idempotencyKey,
+      timestamp: nowIso(),
+    });
+
+    return {
+      ok: true,
+      queued: true,
+      deduped: !!enqueue.enqueueResult.deduped,
+      queueJob: enqueue.enqueueResult.job || null,
+      scheduler: updated.record,
+      idempotencyKey: enqueue.idempotencyKey,
+    };
+  } catch (err) {
+    await updateSchedulerAfterRun(name, {
+      lastStatus: 'failed',
+      lastError: err.message,
+      failed: true,
+    }).catch(() => {});
+
+    eventBus.emit('scheduler:job_failed', {
+      name,
+      error: err.message,
+      timestamp: nowIso(),
+    });
+
+    return { ok: false, code: 'SCHEDULER_RUN_FAILED', error: err.message };
+  } finally {
+    await releaseSchedulerLease(name, ownerId).catch(() => {});
+  }
+}
+
+export async function checkAndRunDueJobs() {
+  if (!isEnabled()) return { checked: 0, queued: 0, disabled: true };
+  if (!canRunSchedulers()) {
+    return { checked: 0, queued: 0, skipped: true, code: 'SCHEDULERS_DISABLED_BY_INSTANCE_MODE' };
+  }
+
+  await registerDefaultSchedulerJobs().catch(() => {});
+
+  const rows = await listSchedulerJobs();
+  let checked = 0;
+  let queued = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const row of rows) {
+    checked++;
+
+    if (!isDue(row)) {
+      skipped++;
+      continue;
+    }
+
+    eventBus.emit('scheduler:job_due', {
+      name: row.name,
+      queueType: row.queueType,
+      timestamp: nowIso(),
+    });
+
+    const result = await runSchedulerJobNow(row.name, { createdBy: 'scheduler' });
+
+    if (result.ok) queued++;
+    else failed++;
+  }
+
+  return { checked, queued, skipped, failed };
+}
+
+export async function enableSchedulerJob(name, enabled = true) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  return withLock(`scheduler:${name}`, async () => {
+    const path = schedulerPath(name);
+    const record = await readJSON(path);
+
+    if (!record) return { ok: false, code: 'SCHEDULER_NOT_FOUND' };
+
+    record.enabled = !!enabled;
+    record.updatedAt = nowIso();
+
+    if (record.enabled && !record.nextRunAt) {
+      record.nextRunAt = computeNextRunAt(record);
+    }
+
+    await atomicWrite(path, record);
+
+    eventBus.emit(record.enabled ? 'scheduler:job_enabled' : 'scheduler:job_disabled', {
+      name,
+      timestamp: record.updatedAt,
+    });
+
+    return { ok: true, record: publicRecord(record) };
+  });
+}
+
+export function startSchedulerRegistry() {
+  if (registryTimer) return;
+  if (!isEnabled()) {
+    logger.info('Scheduler registry: disabled via config');
+    return;
+  }
+
+  if (!canRunSchedulers()) {
+    logger.warn('Scheduler registry: refused to start by instance mode', {
+      instance: getInstanceInfo(),
+    });
+    return;
+  }
+
+  registerDefaultSchedulerJobs().catch(err => {
+    logger.warn('Scheduler registry: default registration failed', { error: err.message });
+  });
+
+  registryTimer = setInterval(() => {
+    checkAndRunDueJobs().catch(err => {
+      logger.warn('Scheduler registry: due check failed', { error: err.message });
+    });
+  }, cfg().checkIntervalMs || 60000);
+
+  if (registryTimer.unref) registryTimer.unref();
+
+  logger.info('Scheduler registry: started', {
+    intervalMs: cfg().checkIntervalMs || 60000,
+    instanceId: getInstanceId(),
+  });
+}
+
+export function stopSchedulerRegistry() {
+  if (registryTimer) {
+    clearInterval(registryTimer);
+    registryTimer = null;
+  }
+}
+
+export const _testHelpers = {
+  definitions,
+  defaultDefinitions,
+  dateBucketForInterval,
+  computeNextRunAt,
+  isDue,
+  isLeaseActive,
+  payloadSizeBytes,
+  getTimer: () => registryTimer,
+  clearDefinitions: () => definitions.clear(),
 };
 ```
 

@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.49.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-15T11:31:40.534Z
+# يوميّة (Yawmia) v0.50.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-15T22:09:43.859Z
 > Files in this part: 6
 
 ## Files
@@ -45,6 +45,12 @@ VAPID_PRIVATE_KEY=
 # Optional: external webhook for critical admin alerts
 # Enable via config.ADMIN_ALERT_CHANNELS.enabled=true + webhook.enabled=true
 ADMIN_ALERT_WEBHOOK_URL=
+
+# ── Phase 54: Instance Mode / Production Ops ─────────────────
+# INSTANCE_MODE=single_writer | read_only_replica | experimental_multi_instance
+INSTANCE_MODE=single_writer
+# Optional stable ID for this process/container
+INSTANCE_ID=
 ```
 
 ---
@@ -360,6 +366,12 @@ const config = {
       workroom_template_metrics: 'metrics/workroom-template-usage',
       trust_calibration: 'metrics/trust-calibration',
       predictive_signal_archives: 'metrics/predictive-signal-archives',
+      ops_locks: 'ops_locks',
+      scheduler: 'scheduler',
+      ops_rollups: 'metrics/ops-rollups',
+      incidents: 'metrics/incidents',
+      backup_restore_drills: 'metrics/backup-restore-drills',
+      ops: 'ops',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -548,7 +560,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.49.0',
+    cacheName: 'yawmia-v0.50.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1362,6 +1374,118 @@ const config = {
     batchSize: 100,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 78. وضع التشغيل متعدد النسخ (INSTANCE_MODE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  INSTANCE_MODE: {
+    enabled: true,
+    mode: process.env.INSTANCE_MODE || 'single_writer', // 'single_writer' | 'read_only_replica' | 'experimental_multi_instance'
+    instanceId: process.env.INSTANCE_ID || null,
+    allowQueueWorkers: true,
+    allowSchedulers: true,
+    allowAdminSse: true,
+    warnOnUnsafeMultiInstance: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 79. أقفال العمليات (PROCESS_LOCKS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  PROCESS_LOCKS: {
+    enabled: true,
+    basePath: 'ops_locks',
+    staleAfterMs: 2 * 60 * 1000,
+    heartbeatMs: 30 * 1000,
+    lockAcquireTimeoutMs: 5000,
+    autoRecoverStaleLocks: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 80. سجل الجدولة الدائم (SCHEDULER_REGISTRY) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  SCHEDULER_REGISTRY: {
+    enabled: true,
+    basePath: 'scheduler',
+    leaseMs: 10 * 60 * 1000,
+    checkIntervalMs: 60 * 1000,
+    maxManualRunPayloadBytes: 64 * 1024,
+    jobs: {
+      predictive_scan: { enabled: true },
+      trust_snapshot_batch: { enabled: true },
+      predictive_signal_retention: { enabled: true },
+      audit_retention_cleanup: { enabled: true },
+      backup_daily: { enabled: false },
+      export_cleanup: { enabled: true },
+      alert_delivery_cleanup: { enabled: true },
+      ops_rollup_capture: { enabled: true },
+      backup_restore_drill: { enabled: true },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 81. Rollups تشغيلية (OPS_METRICS_ROLLUPS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  OPS_METRICS_ROLLUPS: {
+    enabled: true,
+    basePath: 'metrics/ops-rollups',
+    intervalMs: 60 * 60 * 1000,
+    retentionDays: 30,
+    slo: {
+      queueDeadLetterWarning: 5,
+      queueFailedRateWarningPercent: 10,
+      alertDeliveryRateWarningPercent: 90,
+      alertDeliveryP95WarningMs: 30000,
+      schedulerStaleWarningMs: 2 * 60 * 60 * 1000,
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 82. سجل الحوادث التشغيلية (INCIDENT_TIMELINE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  INCIDENT_TIMELINE: {
+    enabled: true,
+    basePath: 'metrics/incidents',
+    autoOpenForCriticalEvents: true,
+    maxEventsPerIncident: 500,
+    retentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 83. تجربة استعادة النسخ الاحتياطي (BACKUP_RESTORE_DRILL) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  BACKUP_RESTORE_DRILL: {
+    enabled: true,
+    basePath: 'metrics/backup-restore-drills',
+    restoreTargetDir: './test-backups/restore-drills',
+    retentionCount: 10,
+    verifyJsonParse: true,
+    verifyCriticalIndexes: true,
+    verifyMigrationState: true,
+    cleanupRestoreTarget: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 84. وضع الصيانة (MAINTENANCE_MODE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  MAINTENANCE_MODE: {
+    enabled: false,
+    filePath: 'ops/maintenance.json',
+    allowReadOnlyApi: true,
+    allowAdminBypass: true,
+    message: 'المنصة تحت الصيانة مؤقتاً. حاول بعد قليل.',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 85. جاهزية الإنتاج (PRODUCTION_READINESS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  PRODUCTION_READINESS: {
+    enabled: true,
+    requireNonDefaultAdminToken: true,
+    requireRestrictedOriginsInProduction: true,
+    requireBackupPlanInProduction: true,
+    requireVapidIfWebPushEnabled: true,
+    requireAlertWebhookIfAlertChannelsEnabled: false,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1410,13 +1534,13 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.49.0",
+  "version": "0.50.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "keywords": ["daily-labor", "egypt", "employment", "platform"],
   "license": "UNLICENSED",
@@ -1459,6 +1583,7 @@ import { requestIdMiddleware } from './server/middleware/requestId.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { timingMiddleware } from './server/middleware/timing.js';
+import { maintenanceMiddleware } from './server/middleware/maintenance.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -1598,6 +1723,7 @@ const globalMiddleware = [
   securityMiddleware,
   requestIdMiddleware,
   rateLimitMiddleware,
+  maintenanceMiddleware,
   bodyParserMiddleware,
 ];
 
@@ -1865,13 +1991,37 @@ if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
   }
 }
 
+// ── Phase 54 — Incident Timeline Listeners ──────────────────
+if (config.INCIDENT_TIMELINE && config.INCIDENT_TIMELINE.enabled) {
+  try {
+    const incidentTimeline = await import('./server/services/incidentTimeline.js');
+    incidentTimeline.registerIncidentListeners();
+    logger.info('Phase 54: incident timeline listeners registered');
+  } catch (err) {
+    logger.warn('Phase 54: incident timeline init failed', { error: err.message });
+  }
+}
+
+// ── Phase 54 — Persistent Scheduler Registry Visibility ─────
+// Register default scheduler records for admin visibility.
+// Runner start is enabled in a later Phase 54 step after scheduled timers are safely routed.
+if (config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled) {
+  try {
+    const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
+    await schedulerRegistry.registerDefaultSchedulerJobs();
+    logger.info('Phase 54: scheduler registry defaults registered');
+  } catch (err) {
+    logger.warn('Phase 54: scheduler registry registration failed', { error: err.message });
+  }
+}
+
 // ── Phase 52 — Persistent Ops Queue Workers ────────────────
 if (config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled) {
   try {
     const queueWorkers = await import('./server/services/queueWorkers.js');
-    queueWorkers.startQueueWorkers();
+    await queueWorkers.startQueueWorkers();
   } catch (err) {
-    logger.warn('Phase 52: queueWorkers start failed', { error: err.message });
+    logger.warn('Phase 52/54: queueWorkers start failed', { error: err.message });
   }
 }
 
@@ -2096,7 +2246,15 @@ async function gracefulShutdown(signal) {
     const queueWorkers = await import('./server/services/queueWorkers.js');
     await queueWorkers.stopQueueWorkers({ drainMs: 5000 });
   } catch (err) {
-    logger.warn('Phase 52: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+    logger.warn('Phase 52/54: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 2b. Phase 54: Stop scheduler registry timer if it was started.
+  try {
+    const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
+    schedulerRegistry.stopSchedulerRegistry();
+  } catch (err) {
+    logger.warn('Phase 54: schedulerRegistry stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
   }
 
   // 3. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.
@@ -2229,6 +2387,28 @@ import {
   handleAdminAlertDeliveryHealth,
   handleAdminCreateAuditExportJob,
 } from './handlers/queueHandler.js';
+import {
+  handleProductionReadiness,
+  handleInstanceMode,
+  handleProcessLocks,
+  handleReleaseProcessLock,
+  handleListSchedulers,
+  handleGetScheduler,
+  handleRunSchedulerNow,
+  handleEnableScheduler,
+  handleDisableScheduler,
+  handleOpsRollups,
+  handleOpsSlo,
+  handleListIncidents,
+  handleGetIncident,
+  handleResolveIncident,
+  handleRunBackupRestoreDrill,
+  handleListBackupRestoreDrills,
+  handleGetBackupRestoreDrill,
+  handleGetMaintenanceMode,
+  handleEnableMaintenanceMode,
+  handleDisableMaintenanceMode,
+} from './handlers/productionOpsHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -2298,7 +2478,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.49.0',
+        version: '0.50.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -2425,6 +2605,73 @@ const routes = [
         response.alertDeliveries = { enabled: false, status: 'unknown' };
       }
 
+      // Phase 54 — Instance mode visibility (non-blocking)
+      try {
+        const { getInstanceInfo } = await import('./services/instanceMode.js');
+        response.instanceMode = getInstanceInfo();
+      } catch (_) {
+        response.instanceMode = { enabled: false, mode: 'unknown', warnings: [] };
+      }
+
+      // Phase 54 — Process locks visibility (non-blocking)
+      try {
+        const { listProcessLocks } = await import('./services/processLock.js');
+        const locks = await listProcessLocks();
+        response.processLocks = {
+          total: locks.length,
+          stale: locks.filter(l => l.stale).length,
+          locks: locks.slice(0, 5).map(l => ({
+            lockName: l.lockName,
+            ownerId: l.ownerId,
+            stale: !!l.stale,
+            heartbeatAt: l.heartbeatAt || null,
+            expiresAt: l.expiresAt || null,
+          })),
+        };
+      } catch (_) {
+        response.processLocks = { total: 0, stale: 0, locks: [] };
+      }
+
+      // Phase 54 — Scheduler registry visibility (non-blocking)
+      try {
+        const { listSchedulerJobs } = await import('./services/schedulerRegistry.js');
+        const schedulers = await listSchedulerJobs();
+        const staleMs = (config.OPS_METRICS_ROLLUPS && config.OPS_METRICS_ROLLUPS.slo && config.OPS_METRICS_ROLLUPS.slo.schedulerStaleWarningMs) || (2 * 60 * 60 * 1000);
+        response.schedulers = {
+          total: schedulers.length,
+          enabled: schedulers.filter(s => s.enabled).length,
+          failed: schedulers.filter(s => s.lastStatus === 'failed').length,
+          stale: schedulers.filter(s => s.enabled && s.nextRunAt && (Date.now() - new Date(s.nextRunAt).getTime()) > staleMs).length,
+        };
+      } catch (_) {
+        response.schedulers = { total: 0, enabled: 0, failed: 0, stale: 0 };
+      }
+
+      // Phase 54 — Latest ops rollup + SLO (non-blocking)
+      try {
+        const { computeOpsSlo } = await import('./services/metricsRollups.js');
+        response.opsSlo = await computeOpsSlo();
+      } catch (_) {
+        response.opsSlo = { status: 'unknown', violations: [] };
+      }
+
+      // Phase 54 — Latest backup restore drill (non-blocking)
+      try {
+        const { listRestoreDrills } = await import('./services/backupRestoreDrill.js');
+        const drills = await listRestoreDrills({ limit: 1 });
+        response.backupRestoreDrill = {
+          latest: drills.drills && drills.drills.length > 0 ? {
+            id: drills.drills[0].id,
+            status: drills.drills[0].status,
+            completedAt: drills.drills[0].completedAt || null,
+            durationMs: drills.drills[0].durationMs || 0,
+            errorCount: Array.isArray(drills.drills[0].errors) ? drills.drills[0].errors.length : 0,
+          } : null,
+        };
+      } catch (_) {
+        response.backupRestoreDrill = { latest: null };
+      }
+
       // Phase 51 — Predictive abuse stats (non-blocking)
       try {
         const { getPredictiveStats } = await import('./services/predictiveAbuse.js');
@@ -2512,7 +2759,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.49.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.50.0' });
     },
   },
 
@@ -2766,6 +3013,33 @@ const routes = [
   { method: 'GET', path: '/api/admin/alerts/deliveries', middlewares: [requireAdmin], handler: handleAdminAlertDeliveries },
   { method: 'POST', path: '/api/admin/alerts/deliveries/:id/retry', middlewares: [requireAdmin], handler: handleAdminRetryAlertDelivery },
   { method: 'GET', path: '/api/admin/alerts/deliveries/:id', middlewares: [requireAdmin], handler: handleAdminAlertDeliveryDetail },
+
+  // ── Phase 54 — Production Ops Hardening APIs ──
+  { method: 'GET', path: '/api/admin/production/readiness', middlewares: [requireAdmin], handler: handleProductionReadiness },
+  { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
+  { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
+  { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  { method: 'GET', path: '/api/admin/schedulers', middlewares: [requireAdmin], handler: handleListSchedulers },
+  { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireAdmin], handler: handleRunSchedulerNow },
+  { method: 'POST', path: '/api/admin/schedulers/:name/enable', middlewares: [requireAdmin], handler: handleEnableScheduler },
+  { method: 'POST', path: '/api/admin/schedulers/:name/disable', middlewares: [requireAdmin], handler: handleDisableScheduler },
+  { method: 'GET', path: '/api/admin/schedulers/:name', middlewares: [requireAdmin], handler: handleGetScheduler },
+
+  { method: 'GET', path: '/api/admin/ops/rollups', middlewares: [requireAdmin], handler: handleOpsRollups },
+  { method: 'GET', path: '/api/admin/ops/slo', middlewares: [requireAdmin], handler: handleOpsSlo },
+
+  { method: 'GET', path: '/api/admin/incidents', middlewares: [requireAdmin], handler: handleListIncidents },
+  { method: 'POST', path: '/api/admin/incidents/:id/resolve', middlewares: [requireAdmin], handler: handleResolveIncident },
+  { method: 'GET', path: '/api/admin/incidents/:id', middlewares: [requireAdmin], handler: handleGetIncident },
+
+  { method: 'POST', path: '/api/admin/backups/restore-drill', middlewares: [requireAdmin], handler: handleRunBackupRestoreDrill },
+  { method: 'GET', path: '/api/admin/backups/restore-drills', middlewares: [requireAdmin], handler: handleListBackupRestoreDrills },
+  { method: 'GET', path: '/api/admin/backups/restore-drills/:id', middlewares: [requireAdmin], handler: handleGetBackupRestoreDrill },
+
+  { method: 'GET', path: '/api/admin/maintenance', middlewares: [requireAdmin], handler: handleGetMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/enable', middlewares: [requireAdmin], handler: handleEnableMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/disable', middlewares: [requireAdmin], handler: handleDisableMaintenanceMode },
 
   // ── Phase 50 — Audit Indexed Search Admin Ops ──
   { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },
