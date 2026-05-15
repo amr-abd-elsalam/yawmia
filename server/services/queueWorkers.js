@@ -655,6 +655,12 @@ export const _testHelpers = {
   getQueueWorkerLock: () => queueWorkerLock,
   setQueueWorkerLockName: (name) => { queueWorkerLockName = name; },
   resetQueueWorkerLockState: () => {
+    if (workerTimer) {
+      clearInterval(workerTimer);
+      workerTimer = null;
+    }
+    started = false;
+    activeCount = 0;
     stopLockHeartbeat(queueWorkerLockName);
     queueWorkerLock = null;
     queueWorkerLockName = 'queue_worker';
