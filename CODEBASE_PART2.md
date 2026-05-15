@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.49.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-15T11:15:47.322Z
+> Auto-generated: 2026-05-15T11:31:40.539Z
 > Files in this part: 87
 
 ## Files
@@ -17660,11 +17660,14 @@ export function buildNotificationAction(type, meta = {}, userRole) {
   const offerId = safeMeta.offerId;
 
   function jobAction(actionType, hash) {
+    const cleanJobId = safeId(jobId);
     return {
       type: actionType,
-      url: buildUrl('/job.html', { id: jobId }, hash || ''),
+      url: cleanJobId
+        ? buildUrl('/job.html', { id: cleanJobId }, hash || '')
+        : buildUrl('/job.html'),
       entityType: 'job',
-      entityId: safeId(jobId) || null,
+      entityId: cleanJobId || null,
     };
   }
 
