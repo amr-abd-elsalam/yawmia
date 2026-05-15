@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.50.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-15T22:09:43.864Z
+> Auto-generated: 2026-05-15T22:21:19.160Z
 > Files in this part: 95
 
 ## Files
@@ -25797,6 +25797,12 @@ export const _testHelpers = {
   getQueueWorkerLock: () => queueWorkerLock,
   setQueueWorkerLockName: (name) => { queueWorkerLockName = name; },
   resetQueueWorkerLockState: () => {
+    if (workerTimer) {
+      clearInterval(workerTimer);
+      workerTimer = null;
+    }
+    started = false;
+    activeCount = 0;
     stopLockHeartbeat(queueWorkerLockName);
     queueWorkerLock = null;
     queueWorkerLockName = 'queue_worker';
