@@ -83,6 +83,87 @@
         </div>
       </div>
 
+      <!-- Phase 54 — Production Readiness -->
+      <div class="admin-section" id="productionReadinessSection">
+        <div class="admin-section__header">
+          <h2>🚦 جاهزية الإنتاج</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadProductionReadiness()">تحديث</button>
+        </div>
+        <div id="productionReadinessSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="productionReadinessChecks"></div>
+      </div>
+
+      <!-- Phase 54 — Instance Mode + Process Locks -->
+      <div class="admin-section" id="instanceModeSection">
+        <div class="admin-section__header">
+          <h2>🧩 وضع التشغيل والأقفال</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadInstanceOps()">تحديث</button>
+        </div>
+        <div id="instanceModeInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="processLocksTable"></div>
+      </div>
+
+      <!-- Phase 54 — Scheduler Registry -->
+      <div class="admin-section" id="schedulerSection">
+        <div class="admin-section__header">
+          <h2>⏱ سجل الجدولة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadSchedulers()">تحديث</button>
+        </div>
+        <div id="schedulerTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 54 — Ops SLO / Rollups -->
+      <div class="admin-section" id="opsSloSection">
+        <div class="admin-section__header">
+          <h2>📈 SLO التشغيل</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadOpsSlo()">تحديث</button>
+        </div>
+        <div id="opsSloMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="opsRollupsTable"></div>
+      </div>
+
+      <!-- Phase 54 — Backup Restore Drills -->
+      <div class="admin-section" id="restoreDrillsSection">
+        <div class="admin-section__header">
+          <h2>🧪 اختبار استعادة النسخ الاحتياطي</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRestoreDrills()">تحديث</button>
+        </div>
+        <button class="btn btn--primary btn--sm" onclick="AdminApp.runBackupRestoreDrill()">تشغيل Restore Drill</button>
+        <div id="restoreDrillsTable" style="margin-block-start:1rem;">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 54 — Incidents -->
+      <div class="admin-section" id="incidentsSection">
+        <div class="admin-section__header">
+          <h2>🚨 سجل الحوادث التشغيلية</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadIncidents()">تحديث</button>
+        </div>
+        <div id="incidentsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 54 — Maintenance Mode -->
+      <div class="admin-section" id="maintenanceSection">
+        <div class="admin-section__header">
+          <h2>🛠 وضع الصيانة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMaintenanceMode()">تحديث</button>
+        </div>
+        <div id="maintenanceInfo">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <div class="admin-section">
         <div class="admin-section__header">
           <h2>آخر المستخدمين</h2>

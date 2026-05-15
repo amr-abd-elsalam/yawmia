@@ -50,6 +50,22 @@ const SUBSCRIBED_EVENTS = [
   'export:job_completed',
   'export:job_failed',
   'workroom:template_used',
+
+  // Phase 54 — Production Ops
+  'ops_rollup:captured',
+  'ops_slo:violated',
+  'incident:opened',
+  'incident:event_appended',
+  'incident:resolved',
+  'backup_restore_drill:started',
+  'backup_restore_drill:passed',
+  'backup_restore_drill:failed',
+  'process_lock:stale_recovered',
+  'process_lock:acquire_failed',
+  'scheduler:job_failed',
+  'scheduler:job_queued',
+  'maintenance:enabled',
+  'maintenance:disabled',
 ];
 
 let listenersRegistered = false;

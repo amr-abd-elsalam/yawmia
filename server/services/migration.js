@@ -386,6 +386,23 @@ const builtInMigrations = [
       logger.info('Migration v13: Phase 53 directories registered (workroom v2 + trust calibration + predictive signal archives)');
     },
   },
+  {
+    version: 14,
+    name: 'Phase 54: Multi-Instance Readiness + Production Ops Hardening',
+    up: async () => {
+      // Phase 54 registers production operations structures:
+      //   - ops_locks
+      //   - scheduler
+      //   - metrics/ops-rollups
+      //   - metrics/incidents
+      //   - metrics/backup-restore-drills
+      //   - ops
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      logger.info('Migration v14: Phase 54 production ops directories registered (locks, scheduler, ops rollups, incidents, restore drills)');
+    },
+  },
 ];
 
 /**

@@ -20,6 +20,14 @@
 import config from '../../config.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
+import { getInstanceId, canRunQueueWorkers, getInstanceInfo } from './instanceMode.js';
+import {
+  acquireProcessLock,
+  releaseProcessLock,
+  startLockHeartbeat,
+  stopLockHeartbeat,
+  getProcessLock,
+} from './processLock.js';
 import {
   claimNextJobs,
   completeJob,
@@ -47,6 +55,8 @@ let lastProcessAt = null;
 let processedCount = 0;
 let failedCount = 0;
 let stoppedAt = null;
+let queueWorkerLock = null;
+let queueWorkerLockName = 'queue_worker';
 
 function isEnabled() {
   return !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled);
@@ -71,6 +81,9 @@ function registerBuiltIns() {
   registerJobHandler('counter_compaction', handleCounterCompactionJob);
   registerJobHandler('audit_index_rebuild', handleAuditIndexRebuildJob);
   registerJobHandler('backup_verify', handleBackupVerifyJob);
+  registerJobHandler('backup_restore_drill', handleBackupRestoreDrillJob);
+  registerJobHandler('ops_rollup_capture', handleOpsRollupCaptureJob);
+  registerJobHandler('production_readiness_check', handleProductionReadinessCheckJob);
 
   // Phase 53 — Trust Calibration + Predictive Hygiene + Workroom Search
   registerJobHandler('trust_snapshot_batch', handleTrustSnapshotBatchJob);
@@ -79,11 +92,47 @@ function registerBuiltIns() {
   registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
 }
 
-export function startQueueWorkers() {
+export async function startQueueWorkers() {
   if (started) return;
   if (!isEnabled()) {
     logger.info('Ops queue workers: disabled via config');
     return;
+  }
+
+  if (!canRunQueueWorkers()) {
+    logger.warn('Ops queue workers: refused to start by instance mode', {
+      instance: getInstanceInfo(),
+    });
+    return;
+  }
+
+  const ownerId = getInstanceId();
+
+  if (config.PROCESS_LOCKS && config.PROCESS_LOCKS.enabled) {
+    const lockResult = await acquireProcessLock(queueWorkerLockName, {
+      ownerId,
+      metadata: {
+        workerId,
+        purpose: 'ops_queue_workers',
+        concurrency: config.OPS_QUEUE.workerConcurrency,
+      },
+    });
+
+    if (!lockResult.ok) {
+      queueWorkerLock = lockResult.lock || null;
+      logger.warn('Ops queue workers: lock not acquired — workers will not start', {
+        lockName: queueWorkerLockName,
+        ownerId,
+        code: lockResult.code,
+        currentOwnerId: lockResult.lock && lockResult.lock.ownerId,
+      });
+      return;
+    }
+
+    queueWorkerLock = lockResult.lock || null;
+    startLockHeartbeat(queueWorkerLockName, ownerId);
+  } else if (config.ENV && config.ENV.isProduction) {
+    logger.warn('Ops queue workers: PROCESS_LOCKS disabled in production — unsafe multi-instance deployment');
   }
 
   registerBuiltIns();
@@ -104,6 +153,9 @@ export function startQueueWorkers() {
 
   logger.info('Ops queue workers: started', {
     workerId,
+    ownerId,
+    lockName: queueWorkerLockName,
+    lockHeld: !!queueWorkerLock,
     concurrency: config.OPS_QUEUE.workerConcurrency,
     scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
   });
@@ -125,9 +177,27 @@ export async function stopQueueWorkers(options = {}) {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
+  const ownerId = getInstanceId();
+
+  try {
+    stopLockHeartbeat(queueWorkerLockName);
+    if (queueWorkerLock && queueWorkerLock.ownerId === ownerId) {
+      await releaseProcessLock(queueWorkerLockName, ownerId);
+    }
+  } catch (err) {
+    logger.warn('Ops queue workers: process lock release failed', {
+      lockName: queueWorkerLockName,
+      ownerId,
+      error: err.message,
+    });
+  } finally {
+    queueWorkerLock = null;
+  }
+
   logger.info('Ops queue workers: stopped', {
     activeCount,
     drainMs,
+    lockName: queueWorkerLockName,
   });
 }
 
@@ -230,6 +300,15 @@ export function getWorkerStats() {
     failedCount,
     stoppedAt,
     concurrency: config.OPS_QUEUE?.workerConcurrency || 0,
+    instance: getInstanceInfo(),
+    lock: {
+      enabled: !!(config.PROCESS_LOCKS && config.PROCESS_LOCKS.enabled),
+      held: !!queueWorkerLock,
+      ownerId: queueWorkerLock ? queueWorkerLock.ownerId : null,
+      lockName: queueWorkerLockName,
+      heartbeatAt: queueWorkerLock ? queueWorkerLock.heartbeatAt : null,
+      expiresAt: queueWorkerLock ? queueWorkerLock.expiresAt : null,
+    },
   };
 }
 
@@ -438,7 +517,40 @@ async function handleAuditIndexRebuildJob({ payload }) {
 async function handleBackupVerifyJob() {
   return {
     skipped: true,
-    reason: 'backup_verify handler is reserved for Phase 54 restore drill',
+    reason: 'backup_verify handler is deprecated; use backup_restore_drill',
+  };
+}
+
+async function handleBackupRestoreDrillJob({ payload }) {
+  try {
+    const { runBackupRestoreDrill } = await import('./backupRestoreDrill.js');
+    return await runBackupRestoreDrill(payload.options || {});
+  } catch (err) {
+    // Until backupRestoreDrill.js is added in the next batch, fail as retryable.
+    err.retryable = true;
+    throw err;
+  }
+}
+
+async function handleOpsRollupCaptureJob({ payload }) {
+  try {
+    const { captureOpsRollup } = await import('./metricsRollups.js');
+    return await captureOpsRollup(payload.options || {});
+  } catch (err) {
+    // Until metricsRollups.js is added in the next batch, fail as retryable.
+    err.retryable = true;
+    throw err;
+  }
+}
+
+async function handleProductionReadinessCheckJob() {
+  const { getProductionReadiness } = await import('./productionReadiness.js');
+  const result = await getProductionReadiness();
+
+  return {
+    status: result.status,
+    summary: result.summary,
+    generatedAt: result.generatedAt,
   };
 }
 
@@ -540,4 +652,11 @@ export const _testHelpers = {
   processOneJob,
   registerBuiltIns,
   setWorkerId: (id) => { workerId = id; },
+  getQueueWorkerLock: () => queueWorkerLock,
+  setQueueWorkerLockName: (name) => { queueWorkerLockName = name; },
+  resetQueueWorkerLockState: () => {
+    stopLockHeartbeat(queueWorkerLockName);
+    queueWorkerLock = null;
+    queueWorkerLockName = 'queue_worker';
+  },
 };

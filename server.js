@@ -22,6 +22,7 @@ import { requestIdMiddleware } from './server/middleware/requestId.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { timingMiddleware } from './server/middleware/timing.js';
+import { maintenanceMiddleware } from './server/middleware/maintenance.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -161,6 +162,7 @@ const globalMiddleware = [
   securityMiddleware,
   requestIdMiddleware,
   rateLimitMiddleware,
+  maintenanceMiddleware,
   bodyParserMiddleware,
 ];
 
@@ -428,13 +430,37 @@ if (config.ADMIN_ALERT_CHANNELS && config.ADMIN_ALERT_CHANNELS.enabled) {
   }
 }
 
+// ── Phase 54 — Incident Timeline Listeners ──────────────────
+if (config.INCIDENT_TIMELINE && config.INCIDENT_TIMELINE.enabled) {
+  try {
+    const incidentTimeline = await import('./server/services/incidentTimeline.js');
+    incidentTimeline.registerIncidentListeners();
+    logger.info('Phase 54: incident timeline listeners registered');
+  } catch (err) {
+    logger.warn('Phase 54: incident timeline init failed', { error: err.message });
+  }
+}
+
+// ── Phase 54 — Persistent Scheduler Registry Visibility ─────
+// Register default scheduler records for admin visibility.
+// Runner start is enabled in a later Phase 54 step after scheduled timers are safely routed.
+if (config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled) {
+  try {
+    const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
+    await schedulerRegistry.registerDefaultSchedulerJobs();
+    logger.info('Phase 54: scheduler registry defaults registered');
+  } catch (err) {
+    logger.warn('Phase 54: scheduler registry registration failed', { error: err.message });
+  }
+}
+
 // ── Phase 52 — Persistent Ops Queue Workers ────────────────
 if (config.OPS_QUEUE && config.OPS_QUEUE.enabled && config.OPS_QUEUE.workerEnabled) {
   try {
     const queueWorkers = await import('./server/services/queueWorkers.js');
-    queueWorkers.startQueueWorkers();
+    await queueWorkers.startQueueWorkers();
   } catch (err) {
-    logger.warn('Phase 52: queueWorkers start failed', { error: err.message });
+    logger.warn('Phase 52/54: queueWorkers start failed', { error: err.message });
   }
 }
 
@@ -659,7 +685,15 @@ async function gracefulShutdown(signal) {
     const queueWorkers = await import('./server/services/queueWorkers.js');
     await queueWorkers.stopQueueWorkers({ drainMs: 5000 });
   } catch (err) {
-    logger.warn('Phase 52: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+    logger.warn('Phase 52/54: queueWorkers stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
+  }
+
+  // 2b. Phase 54: Stop scheduler registry timer if it was started.
+  try {
+    const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
+    schedulerRegistry.stopSchedulerRegistry();
+  } catch (err) {
+    logger.warn('Phase 54: schedulerRegistry stop failed during shutdown', { error: err && err.message ? err.message : String(err) });
   }
 
   // 3. Phase 46: Flush counter batch + cache debouncer BEFORE SSE broadcast.

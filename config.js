@@ -285,6 +285,12 @@ const config = {
       workroom_template_metrics: 'metrics/workroom-template-usage',
       trust_calibration: 'metrics/trust-calibration',
       predictive_signal_archives: 'metrics/predictive-signal-archives',
+      ops_locks: 'ops_locks',
+      scheduler: 'scheduler',
+      ops_rollups: 'metrics/ops-rollups',
+      incidents: 'metrics/incidents',
+      backup_restore_drills: 'metrics/backup-restore-drills',
+      ops: 'ops',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -473,7 +479,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.49.0',
+    cacheName: 'yawmia-v0.50.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1285,6 +1291,118 @@ const config = {
     archivePath: 'metrics/predictive-signal-archives',
     cleanupIntervalMs: 24 * 60 * 60 * 1000,
     batchSize: 100,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 78. وضع التشغيل متعدد النسخ (INSTANCE_MODE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  INSTANCE_MODE: {
+    enabled: true,
+    mode: process.env.INSTANCE_MODE || 'single_writer', // 'single_writer' | 'read_only_replica' | 'experimental_multi_instance'
+    instanceId: process.env.INSTANCE_ID || null,
+    allowQueueWorkers: true,
+    allowSchedulers: true,
+    allowAdminSse: true,
+    warnOnUnsafeMultiInstance: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 79. أقفال العمليات (PROCESS_LOCKS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  PROCESS_LOCKS: {
+    enabled: true,
+    basePath: 'ops_locks',
+    staleAfterMs: 2 * 60 * 1000,
+    heartbeatMs: 30 * 1000,
+    lockAcquireTimeoutMs: 5000,
+    autoRecoverStaleLocks: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 80. سجل الجدولة الدائم (SCHEDULER_REGISTRY) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  SCHEDULER_REGISTRY: {
+    enabled: true,
+    basePath: 'scheduler',
+    leaseMs: 10 * 60 * 1000,
+    checkIntervalMs: 60 * 1000,
+    maxManualRunPayloadBytes: 64 * 1024,
+    jobs: {
+      predictive_scan: { enabled: true },
+      trust_snapshot_batch: { enabled: true },
+      predictive_signal_retention: { enabled: true },
+      audit_retention_cleanup: { enabled: true },
+      backup_daily: { enabled: false },
+      export_cleanup: { enabled: true },
+      alert_delivery_cleanup: { enabled: true },
+      ops_rollup_capture: { enabled: true },
+      backup_restore_drill: { enabled: true },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 81. Rollups تشغيلية (OPS_METRICS_ROLLUPS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  OPS_METRICS_ROLLUPS: {
+    enabled: true,
+    basePath: 'metrics/ops-rollups',
+    intervalMs: 60 * 60 * 1000,
+    retentionDays: 30,
+    slo: {
+      queueDeadLetterWarning: 5,
+      queueFailedRateWarningPercent: 10,
+      alertDeliveryRateWarningPercent: 90,
+      alertDeliveryP95WarningMs: 30000,
+      schedulerStaleWarningMs: 2 * 60 * 60 * 1000,
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 82. سجل الحوادث التشغيلية (INCIDENT_TIMELINE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  INCIDENT_TIMELINE: {
+    enabled: true,
+    basePath: 'metrics/incidents',
+    autoOpenForCriticalEvents: true,
+    maxEventsPerIncident: 500,
+    retentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 83. تجربة استعادة النسخ الاحتياطي (BACKUP_RESTORE_DRILL) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  BACKUP_RESTORE_DRILL: {
+    enabled: true,
+    basePath: 'metrics/backup-restore-drills',
+    restoreTargetDir: './test-backups/restore-drills',
+    retentionCount: 10,
+    verifyJsonParse: true,
+    verifyCriticalIndexes: true,
+    verifyMigrationState: true,
+    cleanupRestoreTarget: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 84. وضع الصيانة (MAINTENANCE_MODE) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  MAINTENANCE_MODE: {
+    enabled: false,
+    filePath: 'ops/maintenance.json',
+    allowReadOnlyApi: true,
+    allowAdminBypass: true,
+    message: 'المنصة تحت الصيانة مؤقتاً. حاول بعد قليل.',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 85. جاهزية الإنتاج (PRODUCTION_READINESS) — Phase 54
+  // ═══════════════════════════════════════════════════════════════
+  PRODUCTION_READINESS: {
+    enabled: true,
+    requireNonDefaultAdminToken: true,
+    requireRestrictedOriginsInProduction: true,
+    requireBackupPlanInProduction: true,
+    requireVapidIfWebPushEnabled: true,
+    requireAlertWebhookIfAlertChannelsEnabled: false,
   },
 
 };

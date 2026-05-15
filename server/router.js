@@ -81,6 +81,28 @@ import {
   handleAdminAlertDeliveryHealth,
   handleAdminCreateAuditExportJob,
 } from './handlers/queueHandler.js';
+import {
+  handleProductionReadiness,
+  handleInstanceMode,
+  handleProcessLocks,
+  handleReleaseProcessLock,
+  handleListSchedulers,
+  handleGetScheduler,
+  handleRunSchedulerNow,
+  handleEnableScheduler,
+  handleDisableScheduler,
+  handleOpsRollups,
+  handleOpsSlo,
+  handleListIncidents,
+  handleGetIncident,
+  handleResolveIncident,
+  handleRunBackupRestoreDrill,
+  handleListBackupRestoreDrills,
+  handleGetBackupRestoreDrill,
+  handleGetMaintenanceMode,
+  handleEnableMaintenanceMode,
+  handleDisableMaintenanceMode,
+} from './handlers/productionOpsHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -150,7 +172,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.49.0',
+        version: '0.50.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -277,6 +299,73 @@ const routes = [
         response.alertDeliveries = { enabled: false, status: 'unknown' };
       }
 
+      // Phase 54 — Instance mode visibility (non-blocking)
+      try {
+        const { getInstanceInfo } = await import('./services/instanceMode.js');
+        response.instanceMode = getInstanceInfo();
+      } catch (_) {
+        response.instanceMode = { enabled: false, mode: 'unknown', warnings: [] };
+      }
+
+      // Phase 54 — Process locks visibility (non-blocking)
+      try {
+        const { listProcessLocks } = await import('./services/processLock.js');
+        const locks = await listProcessLocks();
+        response.processLocks = {
+          total: locks.length,
+          stale: locks.filter(l => l.stale).length,
+          locks: locks.slice(0, 5).map(l => ({
+            lockName: l.lockName,
+            ownerId: l.ownerId,
+            stale: !!l.stale,
+            heartbeatAt: l.heartbeatAt || null,
+            expiresAt: l.expiresAt || null,
+          })),
+        };
+      } catch (_) {
+        response.processLocks = { total: 0, stale: 0, locks: [] };
+      }
+
+      // Phase 54 — Scheduler registry visibility (non-blocking)
+      try {
+        const { listSchedulerJobs } = await import('./services/schedulerRegistry.js');
+        const schedulers = await listSchedulerJobs();
+        const staleMs = (config.OPS_METRICS_ROLLUPS && config.OPS_METRICS_ROLLUPS.slo && config.OPS_METRICS_ROLLUPS.slo.schedulerStaleWarningMs) || (2 * 60 * 60 * 1000);
+        response.schedulers = {
+          total: schedulers.length,
+          enabled: schedulers.filter(s => s.enabled).length,
+          failed: schedulers.filter(s => s.lastStatus === 'failed').length,
+          stale: schedulers.filter(s => s.enabled && s.nextRunAt && (Date.now() - new Date(s.nextRunAt).getTime()) > staleMs).length,
+        };
+      } catch (_) {
+        response.schedulers = { total: 0, enabled: 0, failed: 0, stale: 0 };
+      }
+
+      // Phase 54 — Latest ops rollup + SLO (non-blocking)
+      try {
+        const { computeOpsSlo } = await import('./services/metricsRollups.js');
+        response.opsSlo = await computeOpsSlo();
+      } catch (_) {
+        response.opsSlo = { status: 'unknown', violations: [] };
+      }
+
+      // Phase 54 — Latest backup restore drill (non-blocking)
+      try {
+        const { listRestoreDrills } = await import('./services/backupRestoreDrill.js');
+        const drills = await listRestoreDrills({ limit: 1 });
+        response.backupRestoreDrill = {
+          latest: drills.drills && drills.drills.length > 0 ? {
+            id: drills.drills[0].id,
+            status: drills.drills[0].status,
+            completedAt: drills.drills[0].completedAt || null,
+            durationMs: drills.drills[0].durationMs || 0,
+            errorCount: Array.isArray(drills.drills[0].errors) ? drills.drills[0].errors.length : 0,
+          } : null,
+        };
+      } catch (_) {
+        response.backupRestoreDrill = { latest: null };
+      }
+
       // Phase 51 — Predictive abuse stats (non-blocking)
       try {
         const { getPredictiveStats } = await import('./services/predictiveAbuse.js');
@@ -364,7 +453,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.49.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.50.0' });
     },
   },
 
@@ -618,6 +707,33 @@ const routes = [
   { method: 'GET', path: '/api/admin/alerts/deliveries', middlewares: [requireAdmin], handler: handleAdminAlertDeliveries },
   { method: 'POST', path: '/api/admin/alerts/deliveries/:id/retry', middlewares: [requireAdmin], handler: handleAdminRetryAlertDelivery },
   { method: 'GET', path: '/api/admin/alerts/deliveries/:id', middlewares: [requireAdmin], handler: handleAdminAlertDeliveryDetail },
+
+  // ── Phase 54 — Production Ops Hardening APIs ──
+  { method: 'GET', path: '/api/admin/production/readiness', middlewares: [requireAdmin], handler: handleProductionReadiness },
+  { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
+  { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
+  { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  { method: 'GET', path: '/api/admin/schedulers', middlewares: [requireAdmin], handler: handleListSchedulers },
+  { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireAdmin], handler: handleRunSchedulerNow },
+  { method: 'POST', path: '/api/admin/schedulers/:name/enable', middlewares: [requireAdmin], handler: handleEnableScheduler },
+  { method: 'POST', path: '/api/admin/schedulers/:name/disable', middlewares: [requireAdmin], handler: handleDisableScheduler },
+  { method: 'GET', path: '/api/admin/schedulers/:name', middlewares: [requireAdmin], handler: handleGetScheduler },
+
+  { method: 'GET', path: '/api/admin/ops/rollups', middlewares: [requireAdmin], handler: handleOpsRollups },
+  { method: 'GET', path: '/api/admin/ops/slo', middlewares: [requireAdmin], handler: handleOpsSlo },
+
+  { method: 'GET', path: '/api/admin/incidents', middlewares: [requireAdmin], handler: handleListIncidents },
+  { method: 'POST', path: '/api/admin/incidents/:id/resolve', middlewares: [requireAdmin], handler: handleResolveIncident },
+  { method: 'GET', path: '/api/admin/incidents/:id', middlewares: [requireAdmin], handler: handleGetIncident },
+
+  { method: 'POST', path: '/api/admin/backups/restore-drill', middlewares: [requireAdmin], handler: handleRunBackupRestoreDrill },
+  { method: 'GET', path: '/api/admin/backups/restore-drills', middlewares: [requireAdmin], handler: handleListBackupRestoreDrills },
+  { method: 'GET', path: '/api/admin/backups/restore-drills/:id', middlewares: [requireAdmin], handler: handleGetBackupRestoreDrill },
+
+  { method: 'GET', path: '/api/admin/maintenance', middlewares: [requireAdmin], handler: handleGetMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/enable', middlewares: [requireAdmin], handler: handleEnableMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/disable', middlewares: [requireAdmin], handler: handleDisableMaintenanceMode },
 
   // ── Phase 50 — Audit Indexed Search Admin Ops ──
   { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },

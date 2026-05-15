@@ -115,6 +115,13 @@ var AdminApp = (function () {
         loadVerifications(),
         loadAnalytics(),
         loadMonitoring(),
+        loadProductionReadiness(),
+        loadInstanceOps(),
+        loadSchedulers(),
+        loadOpsSlo(),
+        loadRestoreDrills(),
+        loadIncidents(),
+        loadMaintenanceMode(),
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
         loadPredictiveAbuseDashboard(),
@@ -295,6 +302,81 @@ var AdminApp = (function () {
           }
           loadExports();
           loadOpsQueueStats();
+        } catch (_) {}
+      });
+
+      // Phase 54 — Production Ops events
+      adminSseSource.addEventListener('ops_slo:violated', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('⚠️ تم رصد مخالفة SLO تشغيلية');
+          }
+          loadOpsSlo();
+          loadIncidents();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('incident:opened', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('🚨 تم فتح حادث تشغيلي جديد');
+          }
+          loadIncidents();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('incident:resolved', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('تم حل حادث تشغيلي');
+          }
+          loadIncidents();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('backup_restore_drill:passed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('نجح Restore Drill للنسخة الاحتياطية');
+          }
+          loadRestoreDrills();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('backup_restore_drill:failed', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.error('فشل Restore Drill — راجع التفاصيل');
+          }
+          loadRestoreDrills();
+          loadIncidents();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('process_lock:stale_recovered', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('تم استرداد قفل عملية stale');
+          }
+          loadInstanceOps();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('maintenance:enabled', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.warning('تم تفعيل وضع الصيانة');
+          }
+          loadMaintenanceMode();
+        } catch (_) {}
+      });
+
+      adminSseSource.addEventListener('maintenance:disabled', function (e) {
+        try {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('تم تعطيل وضع الصيانة');
+          }
+          loadMaintenanceMode();
         } catch (_) {}
       });
 
@@ -2959,6 +3041,507 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 54 — Production Ops UI
+  // ═══════════════════════════════════════════════════════════════
+
+  function readinessBadge(status) {
+    var s = status || 'warn';
+    return '<span class="readiness-check readiness-check--' + escapeHtml(s) + '">' + escapeHtml(s) + '</span>';
+  }
+
+  function opsStatusPill(status) {
+    var cls = status === 'ready' || status === 'healthy' || status === 'passed'
+      ? 'ops-status-pill--ready'
+      : (status === 'not_ready' || status === 'failed' || status === 'violations'
+        ? 'ops-status-pill--bad'
+        : 'ops-status-pill--warning');
+
+    return '<span class="ops-status-pill ' + cls + '">' + escapeHtml(status || 'unknown') + '</span>';
+  }
+
+  async function loadProductionReadiness() {
+    var summaryEl = document.getElementById('productionReadinessSummary');
+    var checksEl = document.getElementById('productionReadinessChecks');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (checksEl) checksEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/production/readiness');
+      var r = data.readiness || {};
+      var summary = r.summary || {};
+
+      if (summaryEl) {
+        var cards = [
+          { value: opsStatusPill(r.status || 'unknown'), label: 'الحالة' },
+          { value: summary.pass || 0, label: 'Pass' },
+          { value: summary.warn || 0, label: 'Warn' },
+          { value: summary.fail || 0, label: 'Fail' },
+        ];
+
+        summaryEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + c.value + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          summaryEl.appendChild(card);
+        });
+      }
+
+      if (checksEl) {
+        var checks = r.checks || [];
+        if (checks.length === 0) {
+          checksEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد checks</p>';
+          return;
+        }
+
+        var html = '<table class="admin-table"><thead><tr>' +
+          '<th>Check</th><th>Status</th><th>Message</th>' +
+          '</tr></thead><tbody>';
+
+        checks.forEach(function (c) {
+          html += '<tr>' +
+            '<td><small>' + escapeHtml(c.id || '-') + '</small></td>' +
+            '<td>' + readinessBadge(c.status) + '</td>' +
+            '<td>' + escapeHtml(c.message || '-') + '</td>' +
+          '</tr>';
+        });
+
+        html += '</tbody></table>';
+        checksEl.innerHTML = html;
+      }
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جاهزية الإنتاج</p>';
+    }
+  }
+
+  async function loadInstanceOps() {
+    await Promise.all([
+      loadInstanceModeInfo(),
+      loadProcessLocks(),
+    ]).catch(function () {});
+  }
+
+  async function loadInstanceModeInfo() {
+    var el = document.getElementById('instanceModeInfo');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/production/instance-mode');
+      var inst = data.instance || {};
+      var worker = data.queueWorker || {};
+      var warnings = inst.warnings || [];
+
+      var html =
+        '<div class="health-row"><span class="health-row__label">Instance ID</span><span class="health-row__value"><small>' + escapeHtml(inst.instanceId || '-') + '</small></span></div>' +
+        '<div class="health-row"><span class="health-row__label">Mode</span><span class="health-row__value">' + opsStatusPill(inst.mode || '-') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Queue Workers</span><span class="health-row__value">' + (inst.canRunQueueWorkers ? 'مسموح' : 'ممنوع') + ' · ' + (worker.started ? 'Started' : 'Stopped') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Schedulers</span><span class="health-row__value">' + (inst.canRunSchedulers ? 'مسموح' : 'ممنوع') + '</span></div>';
+
+      if (warnings.length > 0) {
+        html += '<div style="margin-block-start:0.75rem;">';
+        warnings.forEach(function (w) {
+          html += '<div class="drift-warning drift-warning--' + (w.level === 'critical' ? 'high' : 'medium') + '">' +
+            escapeHtml(w.code || 'warning') + ': ' + escapeHtml(w.message || '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل وضع التشغيل</p>';
+    }
+  }
+
+  async function loadProcessLocks() {
+    var el = document.getElementById('processLocksTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/production/process-locks');
+      var locks = data.locks || [];
+
+      if (locks.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;margin-block-start:1rem;">لا توجد أقفال نشطة</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table" style="margin-block-start:1rem;"><thead><tr>' +
+        '<th>Lock</th><th>Owner</th><th>Status</th><th>Heartbeat</th><th>Action</th>' +
+        '</tr></thead><tbody>';
+
+      locks.forEach(function (l) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(l.lockName || '-') + '</td>' +
+          '<td><small>' + escapeHtml(l.ownerId || '-') + '</small></td>' +
+          '<td><span class="lock-status-badge ' + (l.stale ? 'lock-status-badge--stale' : 'lock-status-badge--active') + '">' + (l.stale ? 'stale' : 'active') + '</span></td>' +
+          '<td><small>' + escapeHtml(l.heartbeatAt ? new Date(l.heartbeatAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+          '<td><button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.releaseProcessLock(\'' + escapeHtml(l.lockName) + '\')">Force Release</button></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الأقفال</p>';
+    }
+  }
+
+  async function releaseProcessLock(name) {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'تحرير قفل عملية',
+      message: 'تحرير القفل بالقوة قد يسبب تشغيل مكرر لو العملية المالكة ما زالت تعمل. متأكد؟',
+      confirmText: 'Force Release',
+      cancelText: 'إلغاء',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiWrite('POST', '/api/admin/production/process-locks/' + encodeURIComponent(name) + '/release', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تحرير القفل');
+      loadInstanceOps();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحرير القفل');
+    }
+  }
+
+  async function loadSchedulers() {
+    var el = document.getElementById('schedulerTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/schedulers');
+      var rows = data.schedulers || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد مهام جدولة</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>Name</th><th>Enabled</th><th>Status</th><th>Next Run</th><th>Last Job</th><th>Runs</th><th>Action</th>' +
+      '</tr></thead><tbody>';
+
+      rows.forEach(function (s) {
+        var enabled = !!s.enabled;
+        var status = s.lastStatus || 'registered';
+
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(s.name || '-') + '</small><br><small style="color:var(--color-text-muted);">' + escapeHtml(s.queueType || '') + '</small></td>' +
+          '<td>' + (enabled ? '✓' : '✗') + '</td>' +
+          '<td><span class="scheduler-status-badge scheduler-status-badge--' + escapeHtml(status) + '">' + escapeHtml(status) + '</span></td>' +
+          '<td><small>' + escapeHtml(s.nextRunAt ? new Date(s.nextRunAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+          '<td><small>' + escapeHtml(s.lastQueueJobId || '-') + '</small></td>' +
+          '<td>' + escapeHtml(String(s.runCount || 0)) + '/' + escapeHtml(String(s.failCount || 0)) + '</td>' +
+          '<td>' +
+            '<button class="btn btn--primary btn--sm" onclick="AdminApp.runSchedulerNow(\'' + escapeHtml(s.name) + '\')">Run</button> ' +
+            (enabled
+              ? '<button class="btn btn--ghost btn--sm" onclick="AdminApp.disableScheduler(\'' + escapeHtml(s.name) + '\')">Disable</button>'
+              : '<button class="btn btn--ghost btn--sm" onclick="AdminApp.enableScheduler(\'' + escapeHtml(s.name) + '\')">Enable</button>') +
+          '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل الجدولة</p>';
+    }
+  }
+
+  async function runSchedulerNow(name) {
+    try {
+      var data = await apiWrite('POST', '/api/admin/schedulers/' + encodeURIComponent(name) + '/run', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تشغيل المهمة — Job: ' + (data.queueJob && data.queueJob.id ? data.queueJob.id : 'deduped'));
+        loadSchedulers();
+        loadOpsQueueStats();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل مهمة الجدولة');
+    }
+  }
+
+  async function enableScheduler(name) {
+    try {
+      await apiWrite('POST', '/api/admin/schedulers/' + encodeURIComponent(name) + '/enable', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تفعيل الجدولة');
+      loadSchedulers();
+    } catch (err) {
+      showError(err.message || 'خطأ في تفعيل الجدولة');
+    }
+  }
+
+  async function disableScheduler(name) {
+    try {
+      await apiWrite('POST', '/api/admin/schedulers/' + encodeURIComponent(name) + '/disable', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تعطيل الجدولة');
+      loadSchedulers();
+    } catch (err) {
+      showError(err.message || 'خطأ في تعطيل الجدولة');
+    }
+  }
+
+  async function loadOpsSlo() {
+    var metricsEl = document.getElementById('opsSloMetrics');
+    var rollupsEl = document.getElementById('opsRollupsTable');
+
+    if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var sloData = await api('/api/admin/ops/slo?refresh=1');
+      var slo = sloData.slo || {};
+      var latest = slo.latest || {};
+      var q = latest.queue || {};
+      var alerts = latest.alerts || {};
+      var sched = latest.schedulers || {};
+      var violations = slo.violations || [];
+
+      if (metricsEl) {
+        var cards = [
+          { value: opsStatusPill(slo.status || 'unknown'), label: 'SLO Status' },
+          { value: q.deadLetter || 0, label: 'Queue DLQ' },
+          { value: alerts.deliveredRate != null ? alerts.deliveredRate + '%' : '-', label: 'Alert Delivery' },
+          { value: alerts.p95DeliveryMs || 0, label: 'Alert P95 ms' },
+          { value: sched.stale || 0, label: 'Schedulers Stale' },
+          { value: violations.length || 0, label: 'Violations' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + c.value + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      await loadOpsRollups();
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل SLO التشغيل</p>';
+      if (rollupsEl) rollupsEl.innerHTML = '';
+    }
+  }
+
+  async function loadOpsRollups() {
+    var el = document.getElementById('opsRollupsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/ops/rollups?limit=12');
+      var rows = data.rollups || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد rollups بعد</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>Hour</th><th>Queue</th><th>Alerts</th><th>Schedulers</th><th>SLO</th>' +
+      '</tr></thead><tbody>';
+
+      rows.forEach(function (r) {
+        var q = r.queue || {};
+        var a = r.alerts || {};
+        var s = r.schedulers || {};
+        var v = r.sloViolations || [];
+
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(r.hour || '-') + '</small></td>' +
+          '<td><small>pending ' + (q.pending || 0) + ' · DLQ ' + (q.deadLetter || 0) + '</small></td>' +
+          '<td><small>' + (a.deliveredRate || 0) + '% · p95 ' + (a.p95DeliveryMs || 0) + 'ms</small></td>' +
+          '<td><small>stale ' + (s.stale || 0) + ' · failed ' + (s.failed || 0) + '</small></td>' +
+          '<td>' + (v.length > 0 ? readinessBadge('warn') + ' ' + v.length : readinessBadge('pass')) + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل rollups</p>';
+    }
+  }
+
+  async function runBackupRestoreDrill() {
+    try {
+      var confirmed = await YawmiaModal.confirm({
+        title: 'تشغيل Restore Drill',
+        message: 'سيتم اختبار أحدث نسخة احتياطية في مسار مؤقت. هل تريد المتابعة؟',
+        confirmText: 'تشغيل',
+        cancelText: 'إلغاء',
+      });
+      if (!confirmed) return;
+
+      var data = await apiWrite('POST', '/api/admin/backups/restore-drill', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع Restore Drill في الطابور — Job: ' + (data.queueJobId || ''));
+        loadRestoreDrills();
+        loadOpsQueueStats();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل Restore Drill');
+    }
+  }
+
+  async function loadRestoreDrills() {
+    var el = document.getElementById('restoreDrillsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/backups/restore-drills?limit=10');
+      var rows = data.drills || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد Restore Drills بعد</p>';
+        return;
+      }
+
+      var html = '<table class="admin-table"><thead><tr>' +
+        '<th>ID</th><th>Status</th><th>Backup</th><th>JSON</th><th>Duration</th><th>Errors</th>' +
+      '</tr></thead><tbody>';
+
+      rows.forEach(function (d) {
+        var counts = d.counts || {};
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(d.id || '-') + '</small></td>' +
+          '<td><span class="restore-drill-status restore-drill-status--' + escapeHtml(d.status || 'failed') + '">' + escapeHtml(d.status || '-') + '</span></td>' +
+          '<td><small>' + escapeHtml(d.backupPath || '-') + '</small></td>' +
+          '<td>' + escapeHtml(String(counts.jsonParsed || 0)) + '/' + escapeHtml(String(counts.jsonFiles || 0)) + '</td>' +
+          '<td>' + escapeHtml(String(d.durationMs || 0)) + 'ms</td>' +
+          '<td>' + escapeHtml(String((d.errors || []).length)) + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Restore Drills</p>';
+    }
+  }
+
+  async function loadIncidents() {
+    var el = document.getElementById('incidentsTable');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/incidents?limit=20');
+      var rows = data.incidents || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-success);text-align:center;">✓ لا توجد حوادث تشغيلية</p>';
+        return;
+      }
+
+      var html = '<div class="incident-list">';
+      rows.forEach(function (inc) {
+        var resolved = inc.status === 'resolved';
+        html += '<div class="incident-card incident-card--' + escapeHtml(inc.severity || 'medium') + (resolved ? ' incident-card--resolved' : '') + '">' +
+          '<div class="incident-card__header">' +
+            '<strong>' + escapeHtml(inc.title || inc.id) + '</strong>' +
+            '<span>' + opsStatusPill(inc.status || 'open') + '</span>' +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--color-text-muted);margin-block-start:0.35rem;">' +
+            escapeHtml(inc.openedAt ? new Date(inc.openedAt).toLocaleString('ar-EG') : '-') +
+            ' · أحداث: ' + escapeHtml(String(inc.eventCount || 0)) +
+          '</div>';
+
+        if (!resolved) {
+          html += '<div style="margin-block-start:0.75rem;">' +
+            '<button class="btn btn--primary btn--sm" onclick="AdminApp.resolveIncident(\'' + escapeHtml(inc.id) + '\')">Resolve</button>' +
+          '</div>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الحوادث</p>';
+    }
+  }
+
+  async function resolveIncident(id) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'حل الحادث',
+        message: 'ملاحظة الحل (اختياري)',
+        placeholder: 'ماذا تم عمله؟',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/incidents/' + encodeURIComponent(id) + '/resolve', { note: note });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم حل الحادث');
+      loadIncidents();
+    } catch (err) {
+      showError(err.message || 'خطأ في حل الحادث');
+    }
+  }
+
+  async function loadMaintenanceMode() {
+    var el = document.getElementById('maintenanceInfo');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/maintenance');
+      var m = data.maintenance || {};
+
+      var enabled = !!m.enabled;
+      var featureEnabled = !!m.featureEnabled;
+
+      var html = '<div class="maintenance-banner-admin ' + (enabled ? 'maintenance-banner-admin--active' : '') + '">' +
+        '<strong>' + (enabled ? 'وضع الصيانة مفعل' : 'وضع الصيانة غير مفعل') + '</strong>' +
+        '<p>' + escapeHtml(m.message || '-') + '</p>' +
+        '<p style="font-size:0.8rem;color:var(--color-text-muted);">Feature: ' + (featureEnabled ? 'enabled' : 'disabled in config') + '</p>' +
+        '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-start:0.75rem;">';
+
+      if (enabled) {
+        html += '<button class="btn btn--success btn--sm" onclick="AdminApp.disableMaintenanceMode()">تعطيل الصيانة</button>';
+      } else {
+        html += '<button class="btn btn--warning btn--sm" onclick="AdminApp.enableMaintenanceMode()">تفعيل الصيانة</button>';
+      }
+
+      html += '</div></div>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل وضع الصيانة</p>';
+    }
+  }
+
+  async function enableMaintenanceMode() {
+    try {
+      var msg = await YawmiaModal.prompt({
+        title: 'تفعيل وضع الصيانة',
+        message: 'رسالة تظهر للمستخدمين',
+        placeholder: 'المنصة تحت الصيانة مؤقتاً. حاول بعد قليل.',
+      });
+      if (msg === null) return;
+
+      await apiWrite('POST', '/api/admin/maintenance/enable', { message: msg });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تفعيل وضع الصيانة');
+      loadMaintenanceMode();
+    } catch (err) {
+      showError(err.message || 'خطأ في تفعيل الصيانة');
+    }
+  }
+
+  async function disableMaintenanceMode() {
+    try {
+      await apiWrite('POST', '/api/admin/maintenance/disable', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تعطيل وضع الصيانة');
+      loadMaintenanceMode();
+    } catch (err) {
+      showError(err.message || 'خطأ في تعطيل الصيانة');
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -3028,6 +3611,24 @@ var AdminApp = (function () {
     runTrustCalibrationReport: runTrustCalibrationReport,
     testWebhook: testWebhook,
     renderCsvExportProgress: renderCsvExportProgress,
+    // Phase 54 — Production Ops
+    loadProductionReadiness: loadProductionReadiness,
+    loadInstanceOps: loadInstanceOps,
+    loadProcessLocks: loadProcessLocks,
+    releaseProcessLock: releaseProcessLock,
+    loadSchedulers: loadSchedulers,
+    runSchedulerNow: runSchedulerNow,
+    enableScheduler: enableScheduler,
+    disableScheduler: disableScheduler,
+    loadOpsSlo: loadOpsSlo,
+    loadOpsRollups: loadOpsRollups,
+    runBackupRestoreDrill: runBackupRestoreDrill,
+    loadRestoreDrills: loadRestoreDrills,
+    loadIncidents: loadIncidents,
+    resolveIncident: resolveIncident,
+    loadMaintenanceMode: loadMaintenanceMode,
+    enableMaintenanceMode: enableMaintenanceMode,
+    disableMaintenanceMode: disableMaintenanceMode,
     // Phase 48 — Admin Real-Time Operations
     connectAdminSse: connectAdminSse,
   };

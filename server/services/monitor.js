@@ -170,6 +170,48 @@ export async function captureSnapshot() {
     }
   } catch (_) { /* non-fatal — defaults preserved */ }
 
+  // Phase 54: production ops additive visibility (non-blocking)
+  let instanceMode = { enabled: false };
+  try {
+    const inst = await import('./instanceMode.js');
+    instanceMode = inst.getInstanceInfo();
+  } catch (_) { /* non-fatal */ }
+
+  let processLocks = { active: 0, stale: 0 };
+  try {
+    const locksMod = await import('./processLock.js');
+    const rows = await locksMod.listProcessLocks();
+    processLocks = {
+      active: rows.length,
+      stale: rows.filter(l => l.stale).length,
+    };
+  } catch (_) { /* non-fatal */ }
+
+  let schedulerRegistry = { total: 0, stale: 0, failed: 0 };
+  try {
+    const sched = await import('./schedulerRegistry.js');
+    const rows = await sched.listSchedulerJobs();
+    const staleMs = config.OPS_METRICS_ROLLUPS?.slo?.schedulerStaleWarningMs || (2 * 60 * 60 * 1000);
+    schedulerRegistry = {
+      total: rows.length,
+      stale: rows.filter(r => r.enabled && r.nextRunAt && (Date.now() - new Date(r.nextRunAt).getTime()) > staleMs).length,
+      failed: rows.filter(r => r.lastStatus === 'failed').length,
+    };
+  } catch (_) { /* non-fatal */ }
+
+  let opsRollup = null;
+  try {
+    const rollups = await import('./metricsRollups.js');
+    opsRollup = await rollups.getLatestOpsRollup();
+  } catch (_) { /* non-fatal */ }
+
+  let backupRestoreDrill = { latest: null };
+  try {
+    const drills = await import('./backupRestoreDrill.js');
+    const result = await drills.listRestoreDrills({ limit: 1 });
+    backupRestoreDrill = { latest: result.drills && result.drills[0] ? result.drills[0] : null };
+  } catch (_) { /* non-fatal */ }
+
   const snapshot = {
     id,
     timestamp,
@@ -187,6 +229,11 @@ export async function captureSnapshot() {
     auditRetention,    // Phase 48
     auditIndex,        // Phase 50
     counterHygiene,    // Phase 50
+    instanceMode,      // Phase 54
+    processLocks,      // Phase 54
+    schedulerRegistry, // Phase 54
+    opsRollup,         // Phase 54
+    backupRestoreDrill,// Phase 54
   };
 
   // Phase 49 — Emit critical counter size event on threshold crossing.
