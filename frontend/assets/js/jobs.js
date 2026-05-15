@@ -28,6 +28,9 @@
     btnLogout.addEventListener('click', function () { Yawmia.logout(); });
   }
 
+  // ── Phase 53 — Profile Completion Tasks ────────────────────
+  loadProfileTasks();
+
   // ── Phase 51 — Workroom List Mount ─────────────────────────
   if (typeof YawmiaWorkroom !== 'undefined') {
     YawmiaWorkroom.initList('workroomListMount');
@@ -74,6 +77,73 @@
       var el = Yawmia.$id('onlineWorkersCount');
       if (el) el.textContent = '—';
     }
+  }
+
+  // ── Phase 53 — Profile Completion Tasks ───────────────────
+  async function loadProfileTasks() {
+    var mount = Yawmia.$id('profileTasksMount');
+    if (!mount) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/profile/tasks');
+      if (!res.data || !res.data.ok || !res.data.tasks || res.data.tasks.length === 0) {
+        mount.innerHTML = '';
+        return;
+      }
+
+      renderProfileTasks(mount, res.data.tasks, res.data.completionScore || 0);
+    } catch (_) {
+      mount.innerHTML = '';
+    }
+  }
+
+  function renderProfileTasks(mount, tasks, completionScore) {
+    if (!mount) return;
+
+    var maxVisible = 5;
+    var visible = tasks.slice(0, maxVisible);
+
+    var html =
+      '<section class="card profile-task-card">' +
+        '<div class="profile-task-card__header">' +
+          '<div>' +
+            '<h2 class="card__title">✅ أكمل حسابك</h2>' +
+            '<p class="card__desc">اكتمال الحساب يساعدك توصل لفرص أفضل وثقة أعلى.</p>' +
+          '</div>' +
+          '<span class="profile-task-score">' + completionScore + '%</span>' +
+        '</div>' +
+        '<div class="profile-task-list">';
+
+    visible.forEach(function (task) {
+      html +=
+        '<a class="profile-task-item" href="' + YawmiaUtils.escapeHtml(task.url || '/profile.html') + '">' +
+          '<span class="profile-task-priority profile-task-priority--' + YawmiaUtils.escapeHtml(task.priority || 'low') + '">' + priorityLabel(task.priority) + '</span>' +
+          '<span class="profile-task-item__body">' +
+            '<strong>' + YawmiaUtils.escapeHtml(task.label || '') + '</strong>' +
+            '<small>' + YawmiaUtils.escapeHtml(task.description || '') + '</small>' +
+          '</span>' +
+          '<span class="profile-task-item__arrow">←</span>' +
+        '</a>';
+    });
+
+    html += '</div>';
+
+    if (tasks.length > maxVisible) {
+      html += '<p class="profile-task-more">+' + (tasks.length - maxVisible) + ' مهام أخرى في الملف الشخصي</p>';
+    }
+
+    html += '</section>';
+    mount.innerHTML = html;
+  }
+
+  function priorityLabel(priority) {
+    var labels = {
+      critical: 'مهم جداً',
+      high: 'مهم',
+      medium: 'متوسط',
+      low: 'اختياري',
+    };
+    return labels[priority] || 'مهمة';
   }
 
   // ── Phase 41 — Employer View Mode ─────────────────────────
@@ -299,7 +369,25 @@
           res.data.items.forEach(function (ntf) {
             var item = document.createElement('div'); item.className = 'notification-item' + (ntf.read ? '' : ' notification-item--unread'); item.setAttribute('aria-label', (ntf.read ? '' : 'غير مقروء: ') + ntf.message);
             item.innerHTML = '<p class="notification-item__msg">' + YawmiaUtils.escapeHtml(ntf.message) + '</p><span class="notification-item__time">' + new Date(ntf.createdAt).toLocaleString('ar-EG') + '</span>';
-            if (!ntf.read) { item.addEventListener('click', async function () { try { await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read'); item.classList.remove('notification-item--unread'); loadNotifications(); } catch (e) {} }); }
+            item.addEventListener('click', async function () {
+              try {
+                if (!ntf.read) {
+                  await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read');
+                  item.classList.remove('notification-item--unread');
+                }
+
+                if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
+                  Yawmia.safeNavigate(ntf.action.url);
+                  return;
+                }
+
+                loadNotifications();
+              } catch (e) {
+                if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
+                  Yawmia.safeNavigate(ntf.action.url);
+                }
+              }
+            });
             ntfList.appendChild(item);
           });
         } else if (ntfList) { ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>'; }

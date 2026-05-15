@@ -218,6 +218,26 @@
         </div>
       </div>
 
+      <!-- Phase 53 — Predictive Signal Precision -->
+      <div class="admin-section" id="predictivePrecisionSection">
+        <div class="admin-section__header">
+          <h2>🧪 دقة إشارات المخاطر</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="AdminApp.loadPredictivePrecision()">تحديث</button>
+            <button class="btn btn--warning btn--sm" onclick="AdminApp.runPredictiveSignalRetention()">تشغيل Retention</button>
+          </div>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin-block-end:1rem;">
+          تقيس هذه اللوحة جودة إشارات المخاطر التنبؤية: confirmed مقابل false positives.
+          لا يوجد auto-ban بناءً على predictive signals.
+        </p>
+
+        <div id="predictivePrecisionMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 51 — Admin Decision Quality -->
       <div class="admin-section" id="decisionQualitySection">
         <div class="admin-section__header">
@@ -417,6 +437,40 @@
         <div id="abuseTrendChart">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
+      </div>
+
+      <!-- Phase 53 — Trust Score V2 Calibration -->
+      <div class="admin-section" id="trustCalibrationSection">
+        <div class="admin-section__header">
+          <h2>🎯 معايرة مؤشر الثقة V2</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="AdminApp.loadTrustCalibrationDashboard()">تحديث</button>
+            <button class="btn btn--primary btn--sm" onclick="AdminApp.runTrustSnapshotBatch()">Snapshot Batch</button>
+            <button class="btn btn--warning btn--sm" onclick="AdminApp.runTrustCalibrationReport()">تقرير معايرة</button>
+          </div>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin-block-end:1rem;">
+          هذه اللوحة تقيس مدى تطابق Trust Score V2 مع outcomes الفعلية مثل الحضور، النزاعات، الإلغاءات، والتقييمات.
+          لا يتم تعديل الأوزان تلقائياً في Phase 53.
+        </p>
+
+        <div id="trustCalibrationMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="trustCalibrationWarnings">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h3 style="margin-block-end:0.75rem;font-size:1rem;color:var(--color-text);">آخر Snapshots</h3>
+        <div id="trustSnapshotsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="trustCalibrationActionResult" style="margin-block-start:0.75rem;"></div>
       </div>
 
       <!-- Phase 49 — Multi-Channel Admin Alerting -->

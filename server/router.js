@@ -58,6 +58,16 @@ import {
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import {
+  handleAdminTrustCalibrationDashboard,
+  handleAdminTrustSnapshots,
+  handleAdminRunTrustSnapshotBatch,
+  handleAdminRunTrustCalibrationReport,
+  handleAdminPredictivePrecision,
+  handleAdminRunPredictiveSignalRetention,
+  handleAdminMarkPredictiveFalsePositive,
+  handleAdminMarkPredictiveConfirmed,
+} from './handlers/trustCalibrationHandler.js';
+import {
   handleAdminQueueStats,
   handleAdminQueueJobs,
   handleAdminQueueJobDetail,
@@ -77,6 +87,7 @@ import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, 
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
+import { handleGetProfileTasks } from './handlers/profileTasksHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
@@ -96,6 +107,18 @@ import {
   handleSendWorkroomMessage,
   handleMarkWorkroomRead,
   handleGetWorkroomTimeline,
+  handleSearchWorkroomMessages,
+  handleGetWorkroomReadReceipts,
+  handleMarkWorkroomMessageRead,
+  handleListWorkroomPins,
+  handlePinWorkroomMessage,
+  handleUnpinWorkroomMessage,
+  handleGetWorkroomChecklist,
+  handleCreateWorkroomChecklistItem,
+  handleUpdateWorkroomChecklistItem,
+  handleDeleteWorkroomChecklistItem,
+  handleUploadWorkroomAttachment,
+  handleGetWorkroomSummary,
 } from './handlers/workroomHandler.js';
 import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer, handleEmployerOfferStats, handleWorkerOfferStats } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
@@ -127,7 +150,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.48.0',
+        version: '0.49.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -341,7 +364,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.48.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.49.0' });
     },
   },
 
@@ -352,6 +375,7 @@ const routes = [
   // ── Auth Routes (Protected) ──
   { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
+  { method: 'GET', path: '/api/profile/tasks', middlewares: [requireAuth], handler: handleGetProfileTasks },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
   { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
   { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
@@ -475,8 +499,28 @@ const routes = [
   { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
   { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
-  // ── Phase 51 — Workroom Messaging Routes ──
+  // ── Phase 51/53 — Workroom Messaging + Collaboration V2 Routes ──
   { method: 'GET', path: '/api/workrooms', middlewares: [requireAuth], handler: handleListWorkrooms },
+
+  // Phase 53 — specific Workroom V2 routes BEFORE generic /:id
+  { method: 'GET', path: '/api/workrooms/:id/search', middlewares: [requireAuth], handler: handleSearchWorkroomMessages },
+  { method: 'GET', path: '/api/workrooms/:id/read-receipts', middlewares: [requireAuth], handler: handleGetWorkroomReadReceipts },
+  { method: 'POST', path: '/api/workrooms/:id/messages/:messageId/read', middlewares: [requireAuth], handler: handleMarkWorkroomMessageRead },
+  { method: 'POST', path: '/api/workrooms/:id/attachments', middlewares: [requireAuth], handler: handleUploadWorkroomAttachment },
+  { method: 'GET', path: '/api/workrooms/:id/summary', middlewares: [requireAuth], handler: handleGetWorkroomSummary },
+
+  // Phase 53 — Pins
+  { method: 'GET', path: '/api/workrooms/:id/pins', middlewares: [requireAuth], handler: handleListWorkroomPins },
+  { method: 'POST', path: '/api/workrooms/:id/pins', middlewares: [requireAuth], handler: handlePinWorkroomMessage },
+  { method: 'DELETE', path: '/api/workrooms/:id/pins/:messageId', middlewares: [requireAuth], handler: handleUnpinWorkroomMessage },
+
+  // Phase 53 — Checklist
+  { method: 'GET', path: '/api/workrooms/:id/checklist', middlewares: [requireAuth], handler: handleGetWorkroomChecklist },
+  { method: 'POST', path: '/api/workrooms/:id/checklist', middlewares: [requireAuth], handler: handleCreateWorkroomChecklistItem },
+  { method: 'PUT', path: '/api/workrooms/:id/checklist/:itemId', middlewares: [requireAuth], handler: handleUpdateWorkroomChecklistItem },
+  { method: 'DELETE', path: '/api/workrooms/:id/checklist/:itemId', middlewares: [requireAuth], handler: handleDeleteWorkroomChecklistItem },
+
+  // Phase 51 existing message routes
   { method: 'GET', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleListWorkroomMessages },
   { method: 'POST', path: '/api/workrooms/:id/messages/read-all', middlewares: [requireAuth], handler: handleMarkWorkroomRead },
   { method: 'POST', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleSendWorkroomMessage },
@@ -555,6 +599,12 @@ const routes = [
   // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
   { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
 
+  // ── Phase 53 — Trust Score V2 Calibration Admin APIs ──
+  { method: 'GET', path: '/api/admin/trust/calibration/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustCalibrationDashboard },
+  { method: 'GET', path: '/api/admin/trust/snapshots', middlewares: [requireAdmin], handler: handleAdminTrustSnapshots },
+  { method: 'POST', path: '/api/admin/trust/calibration/snapshot-batch', middlewares: [requireAdmin], handler: handleAdminRunTrustSnapshotBatch },
+  { method: 'POST', path: '/api/admin/trust/calibration/report', middlewares: [requireAdmin], handler: handleAdminRunTrustCalibrationReport },
+
   // ── Phase 49 — Marketplace Trust Analytics + Multi-Channel Admin Alerting ──
   { method: 'GET', path: '/api/admin/trust/resolution-time', middlewares: [requireAdmin], handler: handleAdminTrustResolutionTime },
   { method: 'GET', path: '/api/admin/trust/warning-conversion', middlewares: [requireAdmin], handler: handleAdminTrustWarningConversion },
@@ -598,7 +648,11 @@ const routes = [
   // ── Phase 51 — Predictive Abuse Intelligence ──
   { method: 'GET', path: '/api/admin/predictive-abuse/dashboard', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseDashboard },
   { method: 'GET', path: '/api/admin/predictive-abuse/signals', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseSignals },
+  { method: 'GET', path: '/api/admin/predictive-abuse/precision', middlewares: [requireAdmin], handler: handleAdminPredictivePrecision },
   { method: 'POST', path: '/api/admin/predictive-abuse/run-scan', middlewares: [requireAdmin], handler: handleAdminRunPredictiveAbuseScan },
+  { method: 'POST', path: '/api/admin/predictive-abuse/retention/run', middlewares: [requireAdmin], handler: handleAdminRunPredictiveSignalRetention },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/false-positive', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveFalsePositive },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/confirm', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveConfirmed },
   { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireAdmin], handler: handleAdminDismissPredictiveSignal },
   { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireAdmin], handler: handleAdminEscalatePredictiveSignal },
 
@@ -764,9 +818,11 @@ export function createRouter() {
       req.params = params;
 
       // Validate URL parameters (path traversal prevention)
-      if (params.id && !isValidId(params.id)) {
-        sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID' });
-        return;
+      for (const [paramName, paramValue] of Object.entries(params)) {
+        if (paramValue && !isValidId(paramValue)) {
+          sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID', param: paramName });
+          return;
+        }
       }
 
       // Run route-specific middleware then handler

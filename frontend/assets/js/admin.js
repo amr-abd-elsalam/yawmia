@@ -118,6 +118,7 @@ var AdminApp = (function () {
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
         loadPredictiveAbuseDashboard(),
+        loadPredictivePrecision(),
         loadDecisionQuality(),
         loadOpsQueueStats(),
         loadAlertDeliveries(),
@@ -125,6 +126,7 @@ var AdminApp = (function () {
         loadExports(),
         loadCounterHygiene(),
         loadTrustDashboard(),
+        loadTrustCalibrationDashboard(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -1745,6 +1747,8 @@ var AdminApp = (function () {
       html += '<div class="risk-signal-card__actions">' +
         '<button class="btn btn--ghost btn--sm" onclick="AdminApp.dismissPredictiveSignal(\'' + escapeHtml(s.id) + '\')">رفض</button>' +
         '<button class="btn btn--primary btn--sm" onclick="AdminApp.escalatePredictiveSignal(\'' + escapeHtml(s.id) + '\')">تصعيد للمراجعة</button>' +
+        '<button class="btn btn--ghost btn--sm" onclick="AdminApp.markPredictiveFalsePositive(\'' + escapeHtml(s.id) + '\')" style="color:var(--color-warning);border-color:var(--color-warning);">False Positive</button>' +
+        '<button class="btn btn--success btn--sm" onclick="AdminApp.markPredictiveConfirmed(\'' + escapeHtml(s.id) + '\')">Confirmed</button>' +
       '</div>' +
       '</div>';
     });
@@ -1808,6 +1812,96 @@ var AdminApp = (function () {
       loadDecisionQuality();
     } catch (err) {
       showError(err.message || 'خطأ في تصعيد الإشارة');
+    }
+  }
+
+  async function loadPredictivePrecision() {
+    var el = document.getElementById('predictivePrecisionMetrics');
+    if (!el) return;
+
+    el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var data = await api('/api/admin/predictive-abuse/precision');
+      var stats = data.stats || {};
+      var byStatus = stats.byStatus || {};
+
+      var cards = [
+        { value: stats.total || 0, label: 'إجمالي الإشارات' },
+        { value: byStatus.active || 0, label: 'نشطة' },
+        { value: byStatus.confirmed || 0, label: 'Confirmed' },
+        { value: byStatus.false_positive || 0, label: 'False Positive' },
+        { value: (stats.precisionRate || 0) + '%', label: 'Precision' },
+        { value: (stats.falsePositiveRate || 0) + '%', label: 'False Positive Rate' },
+      ];
+
+      el.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'trust-metric-card';
+        card.innerHTML =
+          '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+        el.appendChild(card);
+      });
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل دقة الإشارات</p>';
+    }
+  }
+
+  async function runPredictiveSignalRetention() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/retention/run?async=1', { force: false });
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم وضع Predictive Retention في الطابور — Job: ' + (data.queueJobId || ''));
+        }
+        loadOpsQueueStats();
+        loadPredictivePrecision();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل retention');
+    }
+  }
+
+  async function markPredictiveFalsePositive(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'False Positive',
+        message: 'اكتب سبب اعتبار الإشارة false positive',
+        placeholder: 'مثال: نشاط طبيعي أو بيانات غير كافية...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/false-positive', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تعليم الإشارة كـ False Positive');
+      loadPredictiveAbuseDashboard();
+      loadPredictivePrecision();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحديث الإشارة');
+    }
+  }
+
+  async function markPredictiveConfirmed(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'Confirmed Signal',
+        message: 'اكتب ملاحظة اختيارية عن تأكيد الإشارة',
+        placeholder: 'مثال: الإشارة تطابقت مع سلوك مؤكد...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/confirm', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تأكيد الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadPredictivePrecision();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تأكيد الإشارة');
     }
   }
 
@@ -2636,6 +2730,193 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 53 — Trust Calibration Dashboard
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadTrustCalibrationDashboard() {
+    var metricsEl = document.getElementById('trustCalibrationMetrics');
+    var warningsEl = document.getElementById('trustCalibrationWarnings');
+    var snapshotsEl = document.getElementById('trustSnapshotsTable');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (warningsEl) {
+      warningsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (snapshotsEl) {
+      snapshotsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/trust/calibration/dashboard');
+      var metrics = data.metrics || {};
+      var latestReport = data.latestReport || null;
+
+      if (metricsEl) {
+        var cards = [
+          { value: metrics.snapshotCount || 0, label: 'Snapshots' },
+          { value: metrics.reportCount || 0, label: 'تقارير معايرة' },
+          { value: metrics.latestSampleCount || 0, label: 'عينات آخر تقرير' },
+          { value: metrics.driftWarningCount || 0, label: 'تحذيرات Drift' },
+          { value: metrics.noAutomaticWeightChanges ? 'لا' : 'نعم', label: 'تعديل أوزان تلقائي؟' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      renderTrustCalibrationWarnings(latestReport);
+      renderTrustSnapshots(data.latestSnapshots || []);
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل معايرة الثقة</p>';
+      if (warningsEl) warningsEl.innerHTML = '';
+      if (snapshotsEl) snapshotsEl.innerHTML = '';
+    }
+  }
+
+  function renderTrustCalibrationWarnings(latestReport) {
+    var el = document.getElementById('trustCalibrationWarnings');
+    if (!el) return;
+
+    if (!latestReport) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد تقارير معايرة بعد</p>';
+      return;
+    }
+
+    var warnings = latestReport.driftWarnings || [];
+
+    if (warnings.length === 0) {
+      el.innerHTML =
+        '<div style="padding:0.75rem;border:1px solid rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);border-radius:var(--radius-sm);color:var(--color-success);">' +
+          '✓ لا توجد تحذيرات Drift في آخر تقرير' +
+        '</div>';
+      return;
+    }
+
+    var html =
+      '<div style="padding:0.75rem;border:1px solid rgba(245,158,11,0.35);background:rgba(245,158,11,0.08);border-radius:var(--radius-sm);">' +
+        '<strong style="color:var(--color-warning);">⚠️ تحذيرات Drift في آخر تقرير:</strong>' +
+        '<div style="margin-block-start:0.5rem;">';
+
+    warnings.forEach(function (w) {
+      html +=
+        '<div class="drift-warning drift-warning--' + escapeHtml(w.severity || 'medium') + '">' +
+          '<strong>Bucket ' + escapeHtml(w.label || w.bucket) + '</strong>: ' +
+          'score=' + escapeHtml(String(w.avgScore)) +
+          ' / success=' + escapeHtml(String(w.avgSuccessRate)) +
+          ' / delta=' + escapeHtml(String(w.delta)) +
+        '</div>';
+    });
+
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
+
+  function renderTrustSnapshots(snapshots) {
+    var el = document.getElementById('trustSnapshotsTable');
+    if (!el) return;
+
+    if (!snapshots || snapshots.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد snapshots بعد</p>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>المستخدم</th><th>الدور</th><th>Score</th><th>Grade</th><th>التاريخ</th>' +
+      '</tr></thead><tbody>';
+
+    snapshots.forEach(function (s) {
+      html += '<tr>' +
+        '<td><a class="worker-link" href="/user.html?id=' + escapeHtml(s.userId || '') + '">' + escapeHtml(s.userId || '-') + '</a></td>' +
+        '<td>' + escapeHtml(s.role || '-') + '</td>' +
+        '<td>' + escapeHtml(String(s.score100 || Math.round((s.score || 0) * 100))) + '/100</td>' +
+        '<td>' + escapeHtml(s.grade || '-') + '</td>' +
+        '<td><small>' + escapeHtml(s.createdAt ? new Date(s.createdAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  async function runTrustSnapshotBatch() {
+    var resultEl = document.getElementById('trustCalibrationActionResult');
+    if (resultEl) {
+      resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة Snapshot Batch للطابور...</p>';
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/trust/calibration/snapshot-batch?async=1', {
+        force: false,
+      });
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم وضع Snapshot Batch في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم وضع snapshot batch في الطابور');
+      }
+
+      loadOpsQueueStats();
+      loadTrustCalibrationDashboard();
+    } catch (err) {
+      if (resultEl) {
+        resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+      }
+      showError(err.message || 'خطأ في تشغيل snapshot batch');
+    }
+  }
+
+  async function runTrustCalibrationReport() {
+    var resultEl = document.getElementById('trustCalibrationActionResult');
+    if (resultEl) {
+      resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة تقرير المعايرة للطابور...</p>';
+    }
+
+    try {
+      var to = new Date().toISOString();
+      var from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      var data = await apiWrite('POST', '/api/admin/trust/calibration/report?async=1', {
+        from: from,
+        to: to,
+        outcomeWindowDays: 30,
+      });
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم وضع تقرير المعايرة في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم وضع تقرير المعايرة في الطابور');
+      }
+
+      loadOpsQueueStats();
+      loadTrustCalibrationDashboard();
+    } catch (err) {
+      if (resultEl) {
+        resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+      }
+      showError(err.message || 'خطأ في تشغيل تقرير المعايرة');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 49 — Webhook Test
   // ═══════════════════════════════════════════════════════════════
 
@@ -2715,6 +2996,10 @@ var AdminApp = (function () {
     escalatePredictiveSignal: escalatePredictiveSignal,
     loadDecisionQuality: loadDecisionQuality,
     loadBacklogPriority: loadBacklogPriority,
+    loadPredictivePrecision: loadPredictivePrecision,
+    runPredictiveSignalRetention: runPredictiveSignalRetention,
+    markPredictiveFalsePositive: markPredictiveFalsePositive,
+    markPredictiveConfirmed: markPredictiveConfirmed,
     // Phase 52 — Ops Queue + Alert Delivery + Async Export
     loadOpsQueueStats: loadOpsQueueStats,
     loadOpsQueueJobs: loadOpsQueueJobs,
@@ -2738,6 +3023,9 @@ var AdminApp = (function () {
     // Phase 49 — Trust Analytics + Alert Channels
     loadTrustDashboard: loadTrustDashboard,
     setTrustPeriod: setTrustPeriod,
+    loadTrustCalibrationDashboard: loadTrustCalibrationDashboard,
+    runTrustSnapshotBatch: runTrustSnapshotBatch,
+    runTrustCalibrationReport: runTrustCalibrationReport,
     testWebhook: testWebhook,
     renderCsvExportProgress: renderCsvExportProgress,
     // Phase 48 — Admin Real-Time Operations

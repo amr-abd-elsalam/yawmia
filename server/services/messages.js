@@ -85,7 +85,7 @@ export async function canMessage(jobId, userId) {
  * @param {{ recipientId: string, text: string }} fields
  * @returns {Promise<{ ok: boolean, message?: object, error?: string, code?: string }>}
  */
-export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey }) {
+export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey, attachments } = {}) {
   // 1. canMessage check for sender
   const senderCheck = await canMessage(jobId, senderId);
   if (!senderCheck.allowed) {
@@ -140,6 +140,22 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
   // 7. Determine sender role
   const senderRole = job.employerId === senderId ? 'employer' : 'worker';
 
+  // Phase 53 — Validate attachment metadata before creating message.
+  // Attachments are metadata only (imageRef), raw base64 is never stored here.
+  let cleanAttachments = [];
+  if (attachments !== undefined && attachments !== null) {
+    try {
+      const { validateAttachmentList } = await import('./workroomAttachments.js');
+      const validation = validateAttachmentList(attachments);
+      if (!validation.ok) {
+        return { ok: false, error: validation.error, code: validation.code };
+      }
+      cleanAttachments = validation.attachments || [];
+    } catch (_) {
+      cleanAttachments = [];
+    }
+  }
+
   // 8. Create message record
   const id = 'msg_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
@@ -155,8 +171,19 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     readAt: null,
     source: source === 'workroom' ? 'workroom' : 'job_messages',
     templateKey: (templateKey && typeof templateKey === 'string') ? templateKey.substring(0, 80) : null,
+    attachments: [],
     createdAt: now,
   };
+
+  // Phase 53 — Attach safe metadata to message.
+  if (cleanAttachments.length > 0) {
+    try {
+      const { attachToMessage } = await import('./workroomAttachments.js');
+      await attachToMessage(message, cleanAttachments);
+    } catch (_) {
+      message.attachments = [];
+    }
+  }
 
   const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
@@ -175,6 +202,13 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     jobTitle: job.title,
     preview: sanitized.substring(0, 100),
   });
+
+  // Phase 53 — Workroom message search indexing (fire-and-forget).
+  if (message.source === 'workroom') {
+    import('./workroomSearch.js').then(({ indexWorkroomMessage }) => {
+      indexWorkroomMessage(message).catch(() => {});
+    }).catch(() => {});
+  }
 
   return { ok: true, message };
 }

@@ -216,11 +216,17 @@ var YawmiaWorkroom = (function () {
       currentWorkroom = res.data.workroom;
       activeTab = window.location.hash === '#workroom-messages' ? 'messages' :
                   window.location.hash === '#workroom-timeline' ? 'timeline' :
+                  window.location.hash === '#workroom-search' ? 'search' :
+                  window.location.hash === '#workroom-pinned' ? 'pinned' :
+                  window.location.hash === '#workroom-checklist' ? 'checklist' :
                   'details';
 
       renderWorkroomDetail();
       if (activeTab === 'messages') loadMessages();
       if (activeTab === 'timeline') loadTimeline();
+      if (activeTab === 'search') renderSearchTab();
+      if (activeTab === 'pinned') loadPinnedMessages();
+      if (activeTab === 'checklist') loadChecklist();
     } catch (_) {
       detailMountEl.innerHTML = '';
     }
@@ -242,6 +248,9 @@ var YawmiaWorkroom = (function () {
         '<button class="workroom-tab' + (activeTab === 'details' ? ' workroom-tab--active' : '') + '" data-tab="details" role="tab">التفاصيل</button>' +
         '<button class="workroom-tab' + (activeTab === 'messages' ? ' workroom-tab--active' : '') + '" data-tab="messages" role="tab">الرسائل</button>' +
         '<button class="workroom-tab' + (activeTab === 'timeline' ? ' workroom-tab--active' : '') + '" data-tab="timeline" role="tab">السجل</button>' +
+        '<button class="workroom-tab' + (activeTab === 'search' ? ' workroom-tab--active' : '') + '" data-tab="search" role="tab">بحث</button>' +
+        '<button class="workroom-tab' + (activeTab === 'pinned' ? ' workroom-tab--active' : '') + '" data-tab="pinned" role="tab">مثبت</button>' +
+        '<button class="workroom-tab' + (activeTab === 'checklist' ? ' workroom-tab--active' : '') + '" data-tab="checklist" role="tab">مهام</button>' +
       '</div>' +
 
       '<div class="workroom-tab-panel" id="workroomTabPanel"></div>' +
@@ -260,6 +269,9 @@ var YawmiaWorkroom = (function () {
         if (activeTab === 'details') renderDetailsTab();
         if (activeTab === 'messages') loadMessages();
         if (activeTab === 'timeline') loadTimeline();
+        if (activeTab === 'search') renderSearchTab();
+        if (activeTab === 'pinned') loadPinnedMessages();
+        if (activeTab === 'checklist') loadChecklist();
       });
     });
 
@@ -285,6 +297,9 @@ var YawmiaWorkroom = (function () {
     }
 
     panel.innerHTML =
+      '<div id="workroomSummaryGrid" class="workroom-summary-grid">' +
+        '<p class="empty-state">جاري تحميل الملخص...</p>' +
+      '</div>' +
       '<div class="workroom-details-grid">' +
         '<div class="health-row"><span class="health-row__label">الحالة</span><span class="health-row__value">' + escapeHtml(statusLabel(job.status)) + '</span></div>' +
         '<div class="health-row"><span class="health-row__label">الأجر</span><span class="health-row__value">' + escapeHtml(String(job.dailyWage || 0)) + ' جنيه/يوم</span></div>' +
@@ -316,7 +331,57 @@ var YawmiaWorkroom = (function () {
       });
     }
 
+    loadSummaryCards();
     wireTemplateButtons();
+  }
+
+  async function loadSummaryCards() {
+    var grid = document.getElementById('workroomSummaryGrid');
+    if (!grid || !currentWorkroom) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/summary');
+      if (!res.data || !res.data.ok || !res.data.summary) {
+        grid.innerHTML = '';
+        return;
+      }
+
+      var s = res.data.summary;
+      var cards = [
+        {
+          value: (s.messages && s.messages.unread) || 0,
+          label: 'رسائل غير مقروءة'
+        },
+        {
+          value: (s.pins && s.pins.total) || 0,
+          label: 'رسائل مثبتة'
+        },
+        {
+          value: ((s.checklist && s.checklist.completed) || 0) + '/' + ((s.checklist && s.checklist.total) || 0),
+          label: 'مهام مكتملة'
+        },
+        {
+          value: ((s.attendance && s.attendance.attendanceRate) || 0) + '%',
+          label: 'نسبة الحضور'
+        },
+        {
+          value: (s.payment && s.payment.exists) ? statusLabel(s.payment.status) : 'لا يوجد',
+          label: 'حالة الدفع'
+        }
+      ];
+
+      grid.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'workroom-summary-card';
+        card.innerHTML =
+          '<div class="workroom-summary-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="workroom-summary-card__label">' + escapeHtml(c.label) + '</div>';
+        grid.appendChild(card);
+      });
+    } catch (_) {
+      grid.innerHTML = '';
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -374,12 +439,15 @@ var YawmiaWorkroom = (function () {
       bubble.innerHTML =
         '<div class="message-bubble__sender">' + escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') + ' ' + sourceLabel + '</div>' +
         '<div class="message-bubble__text">' + escapeHtml(msg.text || '') + '</div>' +
-        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + '</div>';
+        renderAttachments(msg.attachments || []) +
+        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + renderReceiptHint(msg, isMine) + '</div>' +
+        renderPinButton(msg);
 
       listEl.appendChild(bubble);
     });
 
     listEl.scrollTop = listEl.scrollHeight;
+    wirePinButtons();
   }
 
   function renderMessageComposer() {
@@ -396,6 +464,10 @@ var YawmiaWorkroom = (function () {
     }
 
     return templateHtml +
+      '<div class="workroom-attachment-row">' +
+        '<input type="file" id="workroomAttachmentInput" accept="image/*" class="form-input form-input--sm">' +
+        '<small class="form-hint">اختياري: صورة واحدة لكل رسالة حالياً</small>' +
+      '</div>' +
       '<div class="message-send-form workroom-composer">' +
         '<input type="text" class="message-input" id="workroomMessageInput" placeholder="اكتب رسالة..." maxlength="500">' +
         '<button class="btn btn--primary btn--sm" id="btnSendWorkroomMessage">إرسال</button>' +
@@ -414,8 +486,10 @@ var YawmiaWorkroom = (function () {
 
       await sendMessage(text, null, btn, function () {
         input.value = '';
+        var fileInput = document.getElementById('workroomAttachmentInput');
+        if (fileInput) fileInput.value = '';
         loadMessages();
-      });
+      }, true);
     }
 
     if (btn) btn.addEventListener('click', send);
@@ -443,7 +517,48 @@ var YawmiaWorkroom = (function () {
     });
   }
 
-  async function sendMessage(text, templateKey, btn, onSuccess) {
+  async function uploadSelectedAttachment(btn) {
+    var fileInput = document.getElementById('workroomAttachmentInput');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+
+    var file = fileInput.files[0];
+
+    if (file.size > 2 * 1024 * 1024) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('حجم الصورة أكبر من 2MB');
+      return null;
+    }
+
+    try {
+      var dataUri = await fileToDataUri(file);
+      var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/attachments', {
+        dataUri: dataUri,
+        clientName: file.name,
+      });
+
+      if (res.data && res.data.ok && res.data.attachment) {
+        return res.data.attachment;
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.error((res.data && res.data.error) || 'تعذّر رفع المرفق');
+      }
+      return null;
+    } catch (_) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في رفع المرفق');
+      return null;
+    }
+  }
+
+  function fileToDataUri(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(new Error('READ_FAILED')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function sendMessage(text, templateKey, btn, onSuccess, includeAttachment) {
     if (!currentWorkroom || !text) return;
 
     var errorEl = document.getElementById('workroomMessageError');
@@ -457,6 +572,11 @@ var YawmiaWorkroom = (function () {
     try {
       var body = { text: text };
       if (templateKey) body.templateKey = templateKey;
+
+      if (includeAttachment) {
+        var uploaded = await uploadSelectedAttachment(btn);
+        if (uploaded) body.attachments = [uploaded];
+      }
 
       var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages', body);
 
@@ -475,6 +595,315 @@ var YawmiaWorkroom = (function () {
     }
   }
 
+  function renderAttachments(attachments) {
+    if (!attachments || !attachments.length) return '';
+
+    var html = '<div class="message-attachments">';
+    attachments.forEach(function (att) {
+      if (att.type === 'image' && att.imageRef) {
+        html += '<a class="attachment-chip" href="/api/images/' + encodeURIComponent(att.imageRef) + '" target="_blank" rel="noopener">' +
+          '🖼 ' + escapeHtml(att.caption || att.clientName || 'صورة') +
+        '</a>';
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderReceiptHint(msg, isMine) {
+    if (!isMine) return '';
+
+    if (!msg.readReceipt) {
+      return ' · <span class="read-receipt read-receipt--unknown">غير معروف</span>';
+    }
+
+    var count = msg.readReceipt.readCount || 0;
+    if (count > 0) {
+      return ' · <span class="read-receipt read-receipt--read">تمت القراءة</span>';
+    }
+
+    return ' · <span class="read-receipt read-receipt--unread">غير مقروء</span>';
+  }
+
+  function renderPinButton(msg) {
+    var user = getUser();
+    if (!user || !currentWorkroom) return '';
+    if (currentWorkroom.userRoleInWorkroom !== 'employer') return '';
+    return '<button class="btn btn--ghost btn--sm workroom-pin-btn" data-message-id="' + escapeHtml(msg.id) + '" style="margin-block-start:0.35rem;">📌 تثبيت</button>';
+  }
+
+  async function handlePinMessage(messageId, btn) {
+    if (!currentWorkroom || !messageId) return;
+    if (btn) Yawmia.setLoading(btn, true);
+
+    try {
+      var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/pins', {
+        messageId: messageId
+      });
+      if (res.data && res.data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تثبيت الرسالة');
+        if (activeTab === 'messages') loadMessages();
+      } else {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((res.data && res.data.error) || 'خطأ في التثبيت');
+      }
+    } catch (_) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+    } finally {
+      if (btn) Yawmia.setLoading(btn, false);
+    }
+  }
+
+  function wirePinButtons() {
+    document.querySelectorAll('.workroom-pin-btn').forEach(function (btn) {
+      if (btn.dataset.wired === '1') return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', function () {
+        handlePinMessage(btn.getAttribute('data-message-id'), btn);
+      });
+    });
+  }
+
+  async function loadPinnedMessages() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML = '<p class="empty-state">جاري تحميل الرسائل المثبتة...</p>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/pins');
+      var pins = (res.data && res.data.pins) || [];
+
+      if (pins.length === 0) {
+        panel.innerHTML = '<p class="empty-state">لا توجد رسائل مثبتة بعد</p>';
+        return;
+      }
+
+      var html = '<div class="workroom-pin-list">';
+      pins.forEach(function (pin) {
+        var msg = pin.message || {};
+        html += '<div class="workroom-pin-card">' +
+          '<div class="workroom-pin-card__text">' + escapeHtml(msg.text || 'رسالة غير متاحة') + '</div>' +
+          '<div class="workroom-pin-card__meta">' +
+            escapeHtml(formatDateTime(pin.pinnedAt)) +
+            (pin.note ? ' · ' + escapeHtml(pin.note) : '') +
+          '</div>';
+
+        if (currentWorkroom.userRoleInWorkroom === 'employer') {
+          html += '<button class="btn btn--ghost btn--sm workroom-unpin-btn" data-message-id="' + escapeHtml(pin.messageId) + '" style="margin-block-start:0.5rem;color:var(--color-error);border-color:var(--color-error);">إلغاء التثبيت</button>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+
+      panel.innerHTML = html;
+
+      panel.querySelectorAll('.workroom-unpin-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          Yawmia.setLoading(btn, true);
+          try {
+            var r = await Yawmia.api('DELETE', '/api/workrooms/' + currentWorkroom.jobId + '/pins/' + btn.getAttribute('data-message-id'));
+            if (r.data && r.data.ok) {
+              if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إلغاء التثبيت');
+              loadPinnedMessages();
+            } else {
+              if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+            }
+          } catch (_) {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+          } finally {
+            Yawmia.setLoading(btn, false);
+          }
+        });
+      });
+    } catch (_) {
+      panel.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل المثبتة</p>';
+    }
+  }
+
+  async function loadChecklist() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML = '<p class="empty-state">جاري تحميل المهام...</p>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/checklist');
+      var checklist = (res.data && res.data.checklist) || { items: [] };
+      renderChecklist(checklist);
+    } catch (_) {
+      panel.innerHTML = '<p class="empty-state">خطأ في تحميل قائمة المهام</p>';
+    }
+  }
+
+  function renderChecklist(checklist) {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    var items = checklist.items || [];
+    var html = '<div class="workroom-checklist">';
+
+    if (currentWorkroom.userRoleInWorkroom === 'employer') {
+      html += '<div class="workroom-checklist-create">' +
+        '<input type="text" id="workroomChecklistText" class="form-input form-input--sm" placeholder="أضف مهمة..." maxlength="300">' +
+        '<button class="btn btn--primary btn--sm" id="btnCreateChecklistItem">إضافة</button>' +
+      '</div>';
+    }
+
+    if (items.length === 0) {
+      html += '<p class="empty-state">لا توجد مهام بعد</p>';
+    } else {
+      html += '<div class="workroom-checklist-items">';
+      items.forEach(function (item) {
+        var done = item.status === 'completed';
+        html += '<div class="workroom-checklist-item' + (done ? ' workroom-checklist-item--done' : '') + '">' +
+          '<label>' +
+            '<input type="checkbox" class="workroom-checklist-toggle" data-item-id="' + escapeHtml(item.id) + '" ' + (done ? 'checked disabled' : '') + '>' +
+            '<span>' + escapeHtml(item.text || '') + '</span>' +
+          '</label>';
+
+        if (currentWorkroom.userRoleInWorkroom === 'employer') {
+          html += '<button class="btn btn--ghost btn--sm workroom-checklist-delete" data-item-id="' + escapeHtml(item.id) + '">حذف</button>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    panel.innerHTML = html;
+
+    var createBtn = document.getElementById('btnCreateChecklistItem');
+    var input = document.getElementById('workroomChecklistText');
+    if (createBtn && input) {
+      createBtn.addEventListener('click', async function () {
+        var text = input.value.trim();
+        if (!text) return;
+        Yawmia.setLoading(createBtn, true);
+        try {
+          var r = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/checklist', { text: text });
+          if (r.data && r.data.ok) {
+            input.value = '';
+            loadChecklist();
+          } else {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(createBtn, false);
+        }
+      });
+    }
+
+    panel.querySelectorAll('.workroom-checklist-toggle').forEach(function (cb) {
+      cb.addEventListener('change', async function () {
+        var itemId = cb.getAttribute('data-item-id');
+        try {
+          var r = await Yawmia.api('PUT', '/api/workrooms/' + currentWorkroom.jobId + '/checklist/' + itemId, {
+            status: 'completed'
+          });
+          if (r.data && r.data.ok) {
+            loadChecklist();
+          } else {
+            cb.checked = false;
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          cb.checked = false;
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        }
+      });
+    });
+
+    panel.querySelectorAll('.workroom-checklist-delete').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var itemId = btn.getAttribute('data-item-id');
+        Yawmia.setLoading(btn, true);
+        try {
+          var r = await Yawmia.api('DELETE', '/api/workrooms/' + currentWorkroom.jobId + '/checklist/' + itemId);
+          if (r.data && r.data.ok) {
+            loadChecklist();
+          } else {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(btn, false);
+        }
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Search
+  // ═══════════════════════════════════════════════════════════════
+
+  function renderSearchTab() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML =
+      '<div class="workroom-search-box">' +
+        '<input type="search" id="workroomSearchInput" class="form-input form-input--sm" placeholder="ابحث في الرسائل..." aria-label="بحث في رسائل مساحة العمل">' +
+        '<button class="btn btn--primary btn--sm" id="btnWorkroomSearch">بحث</button>' +
+      '</div>' +
+      '<div id="workroomSearchResults" class="workroom-search-results">' +
+        '<p class="empty-state">اكتب كلمة للبحث داخل رسائل مساحة العمل</p>' +
+      '</div>';
+
+    var btn = document.getElementById('btnWorkroomSearch');
+    var input = document.getElementById('workroomSearchInput');
+
+    async function doSearch() {
+      var q = input ? input.value.trim() : '';
+      var resultsEl = document.getElementById('workroomSearchResults');
+      if (!resultsEl) return;
+
+      if (q.length < 2) {
+        resultsEl.innerHTML = '<p class="empty-state">كلمة البحث لازم تكون حرفين على الأقل</p>';
+        return;
+      }
+
+      resultsEl.innerHTML = '<p class="empty-state">جاري البحث...</p>';
+
+      try {
+        var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/search?q=' + encodeURIComponent(q) + '&limit=50');
+        if (!res.data || !res.data.ok || !res.data.results || res.data.results.length === 0) {
+          resultsEl.innerHTML = '<p class="empty-state">لا توجد نتائج</p>';
+          return;
+        }
+
+        var html = '<div class="workroom-search-meta">تم العثور على ' + res.data.total + ' نتيجة' +
+          (res.data.fallbackUsed ? ' · بحث احتياطي' : '') +
+          '</div>';
+
+        res.data.results.forEach(function (msg) {
+          html += '<div class="workroom-search-result">' +
+            '<div class="workroom-search-result__text">' + escapeHtml(msg.preview || msg.text || '') + '</div>' +
+            '<div class="workroom-search-result__meta">' +
+              escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') +
+              ' · ' + escapeHtml(formatDateTime(msg.createdAt)) +
+            '</div>' +
+          '</div>';
+        });
+
+        resultsEl.innerHTML = html;
+      } catch (_) {
+        resultsEl.innerHTML = '<p class="empty-state">خطأ في البحث</p>';
+      }
+    }
+
+    if (btn) btn.addEventListener('click', doSearch);
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doSearch();
+      });
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Timeline
   // ═══════════════════════════════════════════════════════════════
@@ -483,10 +912,25 @@ var YawmiaWorkroom = (function () {
     var panel = document.getElementById('workroomTabPanel');
     if (!panel || !currentWorkroom) return;
 
-    panel.innerHTML = '<div class="workroom-timeline"><p class="empty-state">جاري تحميل السجل...</p></div>';
+    panel.innerHTML =
+      '<div class="workroom-timeline-filter">' +
+        '<select id="workroomTimelineType" class="form-input form-input--sm" aria-label="فلترة السجل">' +
+          '<option value="">كل الأحداث</option>' +
+          '<option value="attendance_checkin,attendance_confirmed,attendance_noshow">الحضور</option>' +
+          '<option value="payment_created,payment_confirmed,payment_completed,payment_disputed">الدفع</option>' +
+          '<option value="job_created,job_started,job_completed">الفرصة</option>' +
+          '<option value="message_pinned,checklist_item_created,checklist_item_completed,attachment_added">التعاون</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="workroom-timeline"><p class="empty-state">جاري تحميل السجل...</p></div>';
 
     try {
-      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/timeline?limit=200');
+      var typeEl = document.getElementById('workroomTimelineType');
+      var type = typeEl ? typeEl.value : '';
+      var url = '/api/workrooms/' + currentWorkroom.jobId + '/timeline?limit=200';
+      if (type) url += '&type=' + encodeURIComponent(type);
+
+      var res = await Yawmia.api('GET', url);
       if (!res.data || !res.data.ok) {
         panel.innerHTML = '<p class="empty-state">تعذّر تحميل السجل</p>';
         return;
@@ -494,6 +938,12 @@ var YawmiaWorkroom = (function () {
 
       var timeline = res.data.timeline || [];
       renderTimeline(timeline);
+
+      var typeEl = document.getElementById('workroomTimelineType');
+      if (typeEl && typeEl.dataset.wired !== '1') {
+        typeEl.dataset.wired = '1';
+        typeEl.addEventListener('change', loadTimeline);
+      }
     } catch (_) {
       panel.innerHTML = '<p class="empty-state">خطأ في تحميل السجل</p>';
     }

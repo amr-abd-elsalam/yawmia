@@ -49,6 +49,7 @@ const SUBSCRIBED_EVENTS = [
   'alert_delivery:dead_lettered',
   'export:job_completed',
   'export:job_failed',
+  'workroom:template_used',
 ];
 
 let listenersRegistered = false;

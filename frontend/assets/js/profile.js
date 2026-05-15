@@ -52,6 +52,7 @@
         Yawmia.setAuth(Yawmia.getToken(), user);
         renderProfile(user);
         renderCompletenessBar(user);
+        loadProfileTasks();
         renderEditForm(user);
         renderNotificationPreferences(user);
         renderVerificationSection(user);
@@ -106,10 +107,71 @@
 
         // Load ratings
         loadRatings(user.id);
+
+        // Phase 53 — If opened with a task hash, scroll after dynamic sections render.
+        scrollToHashTarget();
       }
     } catch (err) {
       // Ignore — will show cached data
     }
+  }
+
+  // ── Phase 53 — Profile Completion Tasks ───────────────────
+  async function loadProfileTasks() {
+    var mount = Yawmia.$id('profileTasksMount');
+    if (!mount) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/profile/tasks');
+      if (!res.data || !res.data.ok || !res.data.tasks || res.data.tasks.length === 0) {
+        mount.innerHTML = '';
+        return;
+      }
+
+      renderProfileTasks(mount, res.data.tasks, res.data.completionScore || 0);
+    } catch (_) {
+      mount.innerHTML = '';
+    }
+  }
+
+  function renderProfileTasks(mount, tasks, completionScore) {
+    if (!mount) return;
+
+    var html =
+      '<section class="card profile-task-card">' +
+        '<div class="profile-task-card__header">' +
+          '<div>' +
+            '<h2 class="card__title">✅ مهام إكمال الحساب</h2>' +
+            '<p class="card__desc">اضغط على أي مهمة للانتقال مباشرة لمكان إكمالها.</p>' +
+          '</div>' +
+          '<span class="profile-task-score">' + completionScore + '%</span>' +
+        '</div>' +
+        '<div class="profile-task-list">';
+
+    tasks.forEach(function (task) {
+      html +=
+        '<a class="profile-task-item" href="' + escapeHtml(task.url || '/profile.html') + '">' +
+          '<span class="profile-task-priority profile-task-priority--' + escapeHtml(task.priority || 'low') + '">' + priorityLabel(task.priority) + '</span>' +
+          '<span class="profile-task-item__body">' +
+            '<strong>' + escapeHtml(task.label || '') + '</strong>' +
+            '<small>' + escapeHtml(task.description || '') + '</small>' +
+          '</span>' +
+          '<span class="profile-task-item__arrow">←</span>' +
+        '</a>';
+    });
+
+    html += '</div></section>';
+    mount.innerHTML = html;
+  }
+
+  function priorityLabel(priority) {
+    var labels = {
+      critical: 'مهم جداً',
+      high: 'مهم',
+      medium: 'متوسط',
+      low: 'اختياري',
+    };
+    return labels[priority] || 'مهمة';
   }
 
   // ── Render Profile Card ───────────────────────────────────
@@ -281,6 +343,7 @@
           user = res.data.user;
           Yawmia.setAuth(Yawmia.getToken(), user);
           renderProfile(user);
+          loadProfileTasks();
           // Update header
           if (headerName) headerName.textContent = user.name || user.phone;
           Yawmia.showMessage('editProfileMsg', 'تم حفظ التعديلات بنجاح', 'success');
@@ -971,6 +1034,20 @@
     } catch (err) {
       // Non-blocking — favorites section is optional
     }
+  }
+
+  // ── Phase 53 — Deep-link task scrolling ───────────────────
+  function scrollToHashTarget() {
+    if (!window.location.hash) return;
+    var id = window.location.hash.slice(1);
+    if (!id) return;
+
+    setTimeout(function () {
+      var el = document.getElementById(id);
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 400);
   }
 
   // ── Helpers ───────────────────────────────────────────────

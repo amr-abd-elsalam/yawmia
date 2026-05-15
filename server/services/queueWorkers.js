@@ -11,6 +11,10 @@
 //   - counter_compaction
 //   - audit_index_rebuild
 //   - backup_verify
+//   - trust_snapshot_batch
+//   - trust_calibration_report
+//   - predictive_signal_retention
+//   - workroom_search_rebuild
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
@@ -67,6 +71,12 @@ function registerBuiltIns() {
   registerJobHandler('counter_compaction', handleCounterCompactionJob);
   registerJobHandler('audit_index_rebuild', handleAuditIndexRebuildJob);
   registerJobHandler('backup_verify', handleBackupVerifyJob);
+
+  // Phase 53 — Trust Calibration + Predictive Hygiene + Workroom Search
+  registerJobHandler('trust_snapshot_batch', handleTrustSnapshotBatchJob);
+  registerJobHandler('trust_calibration_report', handleTrustCalibrationReportJob);
+  registerJobHandler('predictive_signal_retention', handlePredictiveSignalRetentionJob);
+  registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
 }
 
 export function startQueueWorkers() {
@@ -430,6 +440,99 @@ async function handleBackupVerifyJob() {
     skipped: true,
     reason: 'backup_verify handler is reserved for Phase 54 restore drill',
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 53 Built-in handlers
+// ═══════════════════════════════════════════════════════════════
+
+async function handleTrustSnapshotBatchJob({ payload }) {
+  const { createSnapshotsForActiveUsers } = await import('./trustCalibration.js');
+
+  const result = await createSnapshotsForActiveUsers({
+    role: payload.role || undefined,
+    limit: payload.limit ? parseInt(payload.limit) : undefined,
+    force: payload.force === true,
+    reason: payload.reason || 'queue_job',
+  });
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'TRUST_SNAPSHOT_BATCH_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    scanned: result.scanned || 0,
+    created: result.created || 0,
+    deduped: result.deduped || 0,
+    failed: result.failed || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleTrustCalibrationReportJob({ payload }) {
+  const { generateCalibrationReport } = await import('./trustCalibration.js');
+
+  const result = await generateCalibrationReport({
+    from: payload.from || undefined,
+    to: payload.to || undefined,
+    role: payload.role || undefined,
+    outcomeWindowDays: payload.outcomeWindowDays ? parseInt(payload.outcomeWindowDays) : undefined,
+    persist: payload.persist !== false,
+  });
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'TRUST_CALIBRATION_REPORT_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    reportId: result.report?.id || null,
+    sampleCount: result.report?.sampleCount || 0,
+    driftWarningCount: result.report?.driftWarnings?.length || 0,
+    durationMs: result.report?.durationMs || 0,
+  };
+}
+
+async function handlePredictiveSignalRetentionJob({ payload }) {
+  const { runPredictiveSignalRetention } = await import('./predictiveSignalRetention.js');
+
+  const result = await runPredictiveSignalRetention(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'PREDICTIVE_SIGNAL_RETENTION_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    scanned: result.scanned || 0,
+    archived: result.archived || 0,
+    skipped: result.skipped || 0,
+    failed: result.failed || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleWorkroomSearchRebuildJob({ payload }) {
+  if (!payload || !payload.jobId) {
+    const err = new Error('jobId is required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const { rebuildWorkroomSearchIndex } = await import('./workroomSearch.js');
+  const result = await rebuildWorkroomSearchIndex(payload.jobId);
+
+  if (!result || result.rebuilt === false) {
+    const err = new Error(result?.error || 'WORKROOM_SEARCH_REBUILD_FAILED');
+    err.retryable = result?.skipped ? false : true;
+    throw err;
+  }
+
+  return result;
 }
 
 export const _testHelpers = {

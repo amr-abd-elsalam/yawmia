@@ -12,6 +12,8 @@ import {
   sendWorkroomMessage,
   markWorkroomRead,
   getWorkroomTimeline,
+  getWorkroomSummary,
+  resolveWorkroomAccess,
 } from '../services/workroom.js';
 
 function sendJSON(res, statusCode, data) {
@@ -36,6 +38,23 @@ const ERROR_STATUS = {
   JOB_STATUS_NOT_ELIGIBLE: 400,
   NOT_INVOLVED: 403,
   RECIPIENT_NOT_INVOLVED: 403,
+  READ_RECEIPTS_DISABLED: 503,
+  MESSAGE_NOT_FOUND: 404,
+  QUERY_TOO_SHORT: 400,
+  PINS_DISABLED: 503,
+  PIN_FORBIDDEN: 403,
+  MAX_PINS_REACHED: 429,
+  CHECKLIST_DISABLED: 503,
+  CHECKLIST_FORBIDDEN: 403,
+  CHECKLIST_ITEM_NOT_FOUND: 404,
+  MAX_CHECKLIST_ITEMS: 429,
+  INVALID_ASSIGNEE: 400,
+  INVALID_STATUS: 400,
+  ATTACHMENTS_DISABLED: 503,
+  INVALID_ATTACHMENT: 400,
+  ATTACHMENT_STORE_FAILED: 400,
+  MAX_ATTACHMENTS_EXCEEDED: 400,
+  INVALID_ATTACHMENTS: 400,
 };
 
 function errorStatus(code) {
@@ -125,6 +144,7 @@ export async function handleSendWorkroomMessage(req, res) {
       text: body.text,
       recipientId: body.recipientId || null,
       templateKey: body.templateKey || null,
+      attachments: Array.isArray(body.attachments) ? body.attachments : [],
     });
 
     if (!result.ok) {
@@ -167,6 +187,7 @@ export async function handleGetWorkroomTimeline(req, res) {
     const jobId = req.params.id;
     const result = await getWorkroomTimeline(jobId, req.user.id, {
       limit: Math.min(500, Math.max(1, parseInt(req.query.limit) || 200)),
+      type: req.query.type || undefined,
     });
 
     if (!result.ok) {
@@ -180,5 +201,272 @@ export async function handleGetWorkroomTimeline(req, res) {
     });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب سجل مساحة العمل', code: 'WORKROOM_TIMELINE_ERROR' });
+  }
+}
+
+
+/**
+ * GET /api/workrooms/:id/search?q=&limit=
+ * Search visible workroom messages.
+ * Requires: requireAuth
+ */
+export async function handleSearchWorkroomMessages(req, res) {
+  try {
+    const jobId = req.params.id;
+    const q = req.query.q || '';
+
+    if (!q || String(q).trim().length < 2) {
+      return sendJSON(res, 400, { error: 'كلمة البحث لازم تكون حرفين على الأقل', code: 'QUERY_TOO_SHORT' });
+    }
+
+    const access = await resolveWorkroomAccess(jobId, req.user.id);
+    if (!access.allowed) {
+      return sendJSON(res, errorStatus(access.code), { error: access.error, code: access.code });
+    }
+
+    const { searchWorkroomMessages } = await import('../services/workroomSearch.js');
+
+    const result = await searchWorkroomMessages(jobId, q, {
+      userId: req.user.id,
+      limit: parseInt(req.query.limit) || 50,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في البحث داخل مساحة العمل', code: 'WORKROOM_SEARCH_ERROR' });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id/read-receipts
+ * Get read receipts for the workroom.
+ * Requires: requireAuth
+ */
+export async function handleGetWorkroomReadReceipts(req, res) {
+  try {
+    const jobId = req.params.id;
+
+    const access = await resolveWorkroomAccess(jobId, req.user.id);
+    if (!access.allowed) {
+      return sendJSON(res, errorStatus(access.code), { error: access.error, code: access.code });
+    }
+
+    const { getReadReceipts } = await import('../services/workroomReceipts.js');
+    const receipts = await getReadReceipts(jobId);
+
+    return sendJSON(res, 200, { ok: true, receipts });
+  } catch (err) {
+    return sendJSON(res, 500, { error: 'خطأ في جلب قراءات الرسائل', code: 'WORKROOM_RECEIPTS_ERROR' });
+  }
+}
+
+/**
+ * POST /api/workrooms/:id/messages/:messageId/read
+ * Mark a single message as read in the workroom receipts sidecar.
+ * Requires: requireAuth
+ */
+export async function handleMarkWorkroomMessageRead(req, res) {
+  try {
+    const jobId = req.params.id;
+    const messageId = req.params.messageId;
+
+    const { markMessageRead } = await import('../services/workroomReceipts.js');
+    const result = await markMessageRead(jobId, messageId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_MESSAGE_READ_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في تعليم الرسالة كمقروءة', code });
+  }
+}
+
+
+/**
+ * GET /api/workrooms/:id/pins
+ */
+export async function handleListWorkroomPins(req, res) {
+  try {
+    const { listPins } = await import('../services/workroomPins.js');
+    const result = await listPins(req.params.id, req.user.id);
+    return sendJSON(res, 200, { ok: true, pins: result.pins || [], total: result.total || 0 });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_PINS_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في جلب الرسائل المثبتة', code });
+  }
+}
+
+/**
+ * POST /api/workrooms/:id/pins
+ * Body: { messageId, note? }
+ */
+export async function handlePinWorkroomMessage(req, res) {
+  try {
+    const { pinMessage } = await import('../services/workroomPins.js');
+    const body = req.body || {};
+    const messageId = body.messageId;
+
+    if (!messageId || typeof messageId !== 'string') {
+      return sendJSON(res, 400, { error: 'معرّف الرسالة مطلوب', code: 'MESSAGE_ID_REQUIRED' });
+    }
+
+    const result = await pinMessage(req.params.id, messageId, req.user.id, body.note || null);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 201, { ok: true, pin: result.pin, idempotent: !!result.idempotent });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_PIN_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في تثبيت الرسالة', code });
+  }
+}
+
+/**
+ * DELETE /api/workrooms/:id/pins/:messageId
+ */
+export async function handleUnpinWorkroomMessage(req, res) {
+  try {
+    const { unpinMessage } = await import('../services/workroomPins.js');
+    const result = await unpinMessage(req.params.id, req.params.messageId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, removed: !!result.removed });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_UNPIN_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في إلغاء تثبيت الرسالة', code });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id/checklist
+ */
+export async function handleGetWorkroomChecklist(req, res) {
+  try {
+    const { getChecklist } = await import('../services/workroomChecklist.js');
+    const result = await getChecklist(req.params.id, req.user.id);
+    return sendJSON(res, 200, { ok: true, checklist: result.checklist });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_CHECKLIST_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في جلب قائمة المهام', code });
+  }
+}
+
+/**
+ * POST /api/workrooms/:id/checklist
+ * Body: { text, assignedTo? }
+ */
+export async function handleCreateWorkroomChecklistItem(req, res) {
+  try {
+    const { createChecklistItem } = await import('../services/workroomChecklist.js');
+    const result = await createChecklistItem(req.params.id, req.user.id, req.body || {});
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 201, { ok: true, item: result.item });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_CHECKLIST_CREATE_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في إنشاء المهمة', code });
+  }
+}
+
+/**
+ * PUT /api/workrooms/:id/checklist/:itemId
+ * Body: { text?, status?, assignedTo? }
+ */
+export async function handleUpdateWorkroomChecklistItem(req, res) {
+  try {
+    const { updateChecklistItem } = await import('../services/workroomChecklist.js');
+    const result = await updateChecklistItem(req.params.id, req.params.itemId, req.user.id, req.body || {});
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, item: result.item });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_CHECKLIST_UPDATE_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في تحديث المهمة', code });
+  }
+}
+
+/**
+ * DELETE /api/workrooms/:id/checklist/:itemId
+ */
+export async function handleDeleteWorkroomChecklistItem(req, res) {
+  try {
+    const { deleteChecklistItem } = await import('../services/workroomChecklist.js');
+    const result = await deleteChecklistItem(req.params.id, req.params.itemId, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, deleted: true });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_CHECKLIST_DELETE_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في حذف المهمة', code });
+  }
+}
+
+
+/**
+ * POST /api/workrooms/:id/attachments
+ * Body: { dataUri, caption?, clientName? }
+ * Requires: requireAuth
+ */
+export async function handleUploadWorkroomAttachment(req, res) {
+  try {
+    const jobId = req.params.id;
+    const body = req.body || {};
+
+    if (!body.dataUri || typeof body.dataUri !== 'string') {
+      return sendJSON(res, 400, { error: 'بيانات المرفق مطلوبة', code: 'INVALID_ATTACHMENT' });
+    }
+
+    const { storeWorkroomAttachment } = await import('../services/workroomAttachments.js');
+
+    const result = await storeWorkroomAttachment(jobId, req.user.id, body.dataUri, {
+      caption: body.caption || null,
+      clientName: body.clientName || null,
+      purpose: 'workroom_attachment',
+    });
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 201, { ok: true, attachment: result.attachment });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_ATTACHMENT_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في رفع المرفق', code });
+  }
+}
+
+/**
+ * GET /api/workrooms/:id/summary
+ * Requires: requireAuth
+ */
+export async function handleGetWorkroomSummary(req, res) {
+  try {
+    const result = await getWorkroomSummary(req.params.id, req.user.id);
+
+    if (!result.ok) {
+      return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
+    }
+
+    return sendJSON(res, 200, { ok: true, summary: result.summary });
+  } catch (err) {
+    const code = err.code || 'WORKROOM_SUMMARY_ERROR';
+    return sendJSON(res, errorStatus(code), { error: err.message || 'خطأ في جلب ملخص مساحة العمل', code });
   }
 }

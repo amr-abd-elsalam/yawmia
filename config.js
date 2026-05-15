@@ -278,6 +278,13 @@ const config = {
       ops_queue_dead_letter: 'ops_queue/dead-letter',
       alert_deliveries: 'alert_deliveries',
       queue_metrics: 'metrics/queue',
+      workroom_receipts: 'workrooms/receipts',
+      workroom_pins: 'workrooms/pins',
+      workroom_checklists: 'workrooms/checklists',
+      workroom_search_indexes: 'workrooms/search-indexes',
+      workroom_template_metrics: 'metrics/workroom-template-usage',
+      trust_calibration: 'metrics/trust-calibration',
+      predictive_signal_archives: 'metrics/predictive-signal-archives',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -466,7 +473,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.48.0',
+    cacheName: 'yawmia-v0.49.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1207,6 +1214,77 @@ const config = {
     retryBackoffMs: 30 * 1000,
     deadLetterEnabled: true,
     manualRetryEnabled: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 73. إجراءات الإشعارات (NOTIFICATION_ACTIONS) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  NOTIFICATION_ACTIONS: {
+    enabled: true,
+    defaultUrl: '/dashboard.html',
+    allowedUrlPrefixes: [
+      '/dashboard.html',
+      '/profile.html',
+      '/job.html',
+      '/user.html',
+      '/terms.html',
+    ],
+    trackActionClicks: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 74. مهام إكمال الملف الشخصي (PROFILE_TASKS) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  PROFILE_TASKS: {
+    enabled: true,
+    showOnDashboard: true,
+    maxTasksVisible: 5,
+    priorities: ['critical', 'high', 'medium', 'low'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 75. مساحة العمل V2 (WORKROOM_V2) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM_V2: {
+    enabled: true,
+    readReceiptsEnabled: true,
+    searchEnabled: true,
+    pinsEnabled: true,
+    checklistEnabled: true,
+    attachmentsEnabled: true,
+    summaryCardsEnabled: true,
+    timelineFiltersEnabled: true,
+    templateAnalyticsEnabled: true,
+    maxPinnedMessagesPerWorkroom: 5,
+    maxChecklistItems: 30,
+    maxAttachmentsPerMessage: 3,
+    messageSearchMaxResults: 100,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 76. معايرة مؤشر الثقة (TRUST_CALIBRATION) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_CALIBRATION: {
+    enabled: true,
+    snapshotOnEvents: true,
+    scheduledSnapshotEnabled: true,
+    snapshotIntervalMs: 24 * 60 * 60 * 1000,
+    outcomeWindowDays: 30,
+    driftWarningThreshold: 0.15,
+    minSamplesForCalibration: 20,
+    cacheTtlMs: 5 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 77. نظافة إشارات المخاطر التنبؤية (PREDICTIVE_SIGNAL_RETENTION) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_SIGNAL_RETENTION: {
+    enabled: true,
+    resolvedRetentionDays: 90,
+    archiveEnabled: true,
+    archivePath: 'metrics/predictive-signal-archives',
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+    batchSize: 100,
   },
 
 };

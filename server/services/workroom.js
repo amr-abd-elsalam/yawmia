@@ -226,6 +226,17 @@ async function resolveAccess(jobId, userId) {
 }
 
 /**
+ * Phase 53: Public access resolver for Workroom V2 sidecar services.
+ * Keeps all read receipts/search/pins/checklist access control centralized.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ */
+export async function resolveWorkroomAccess(jobId, userId) {
+  return await resolveAccess(jobId, userId);
+}
+
+/**
  * Return accepted worker IDs for a job.
  */
 async function getAcceptedWorkerIds(job) {
@@ -497,11 +508,29 @@ export async function sendWorkroomMessage(jobId, senderId, fields = {}) {
     text,
     source: 'workroom',
     templateKey,
+    attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
   });
 
   if (!result.ok) return result;
 
   await updateWorkroomMetadata(jobId, { lastMessageAt: result.message.createdAt }).catch(() => {});
+
+  // Phase 53 — Quick template usage metrics.
+  if (templateKey) {
+    try {
+      const { recordTemplateUsage } = await import('./workroomTemplateMetrics.js');
+      recordTemplateUsage({
+        jobId,
+        messageId: result.message.id,
+        userId: senderId,
+        role: access.role,
+        templateKey,
+        timestamp: result.message.createdAt,
+      }).catch(() => {});
+    } catch (_) {
+      // fire-and-forget
+    }
+  }
 
   eventBus.emit('workroom:message_sent', {
     jobId,
@@ -635,6 +664,81 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
     // optional
   }
 
+  // Phase 53 — Attachment messages.
+  try {
+    const { listByJob } = await import('./messages.js');
+    const msgResult = await listByJob(jobId, userId, { limit: 10000, offset: 0 });
+    const msgs = msgResult.items || [];
+    for (const msg of msgs) {
+      if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+        timeline.push({
+          type: 'attachment_added',
+          label: 'تمت إضافة مرفق في المحادثة',
+          timestamp: msg.createdAt,
+          meta: {
+            messageId: msg.id,
+            attachmentCount: msg.attachments.length,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Phase 53 — Pins.
+  try {
+    const { listPins } = await import('./workroomPins.js');
+    const pinsResult = await listPins(jobId, userId);
+    const pins = pinsResult.pins || [];
+    for (const pin of pins) {
+      timeline.push({
+        type: 'message_pinned',
+        label: 'تم تثبيت رسالة مهمة',
+        timestamp: pin.pinnedAt,
+        meta: {
+          messageId: pin.messageId,
+          pinnedBy: pin.pinnedBy,
+        },
+      });
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Phase 53 — Checklist.
+  try {
+    const { getChecklist } = await import('./workroomChecklist.js');
+    const checklistResult = await getChecklist(jobId, userId);
+    const items = checklistResult.checklist?.items || [];
+    for (const item of items) {
+      if (item.createdAt) {
+        timeline.push({
+          type: 'checklist_item_created',
+          label: 'تمت إضافة مهمة في مساحة العمل',
+          timestamp: item.createdAt,
+          meta: {
+            itemId: item.id,
+            createdBy: item.createdBy,
+          },
+        });
+      }
+      if (item.completedAt) {
+        timeline.push({
+          type: 'checklist_item_completed',
+          label: 'تم إكمال مهمة في مساحة العمل',
+          timestamp: item.completedAt,
+          meta: {
+            itemId: item.id,
+            completedBy: item.completedBy,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
   // Payments.
   try {
     const { listByJob } = await import('./payments.js');
@@ -706,7 +810,22 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
     });
   }
 
-  timeline.sort(sortTimeline);
+  let filteredTimeline = timeline;
+
+  // Phase 53 — Optional timeline type filter.
+  // Supports: ?type=payment_created OR ?type=payment_created,attendance_noshow
+  if (config.WORKROOM_V2?.timelineFiltersEnabled && options.type) {
+    const types = String(options.type)
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+    if (types.length > 0) {
+      const typeSet = new Set(types);
+      filteredTimeline = filteredTimeline.filter(evt => typeSet.has(evt.type));
+    }
+  }
+
+  filteredTimeline.sort(sortTimeline);
 
   const max = Math.min(
     config.WORKROOM.maxTimelineEvents || 200,
@@ -715,9 +834,109 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
 
   return {
     ok: true,
-    timeline: timeline.slice(-max),
-    total: timeline.length,
+    timeline: filteredTimeline.slice(-max),
+    total: filteredTimeline.length,
   };
+}
+
+/**
+ * Phase 53 — Build Workroom summary cards.
+ * Includes attendance/payment/pins/checklist/unread without leaking PII.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ */
+export async function getWorkroomSummary(jobId, userId) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  const summary = {
+    jobId,
+    attendance: {
+      totalRecords: 0,
+      checkedInCount: 0,
+      noShowCount: 0,
+      confirmedCount: 0,
+      attendanceRate: 0,
+    },
+    payment: {
+      exists: false,
+      status: null,
+      amount: 0,
+      platformFee: 0,
+      workerPayout: 0,
+    },
+    messages: {
+      unread: await countUnreadWorkroomMessages(jobId, userId),
+    },
+    pins: {
+      total: 0,
+    },
+    checklist: {
+      total: 0,
+      completed: 0,
+      open: 0,
+    },
+  };
+
+  // Attendance summary.
+  try {
+    const { getJobSummary } = await import('./attendance.js');
+    const att = await getJobSummary(jobId);
+    if (att) {
+      summary.attendance.totalRecords = att.totalRecords || 0;
+      summary.attendance.checkedInCount = att.checkedInCount || 0;
+      summary.attendance.noShowCount = att.noShowCount || 0;
+      summary.attendance.confirmedCount = att.confirmedCount || 0;
+      summary.attendance.attendanceRate = att.totalRecords > 0
+        ? Math.round((summary.attendance.checkedInCount / att.totalRecords) * 100)
+        : 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Payment summary.
+  try {
+    const { listByJob } = await import('./payments.js');
+    const payments = await listByJob(jobId);
+    if (payments && payments.length > 0) {
+      const p = payments[0];
+      summary.payment.exists = true;
+      summary.payment.status = p.status || null;
+      summary.payment.amount = p.amount || 0;
+      summary.payment.platformFee = p.platformFee || 0;
+      summary.payment.workerPayout = p.workerPayout || 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Pins summary.
+  try {
+    const { listPins } = await import('./workroomPins.js');
+    const pins = await listPins(jobId, userId);
+    summary.pins.total = pins.total || 0;
+  } catch (_) {
+    // optional
+  }
+
+  // Checklist summary.
+  try {
+    const { getChecklist } = await import('./workroomChecklist.js');
+    const checklist = await getChecklist(jobId, userId);
+    if (checklist && checklist.checklist) {
+      summary.checklist.total = checklist.checklist.total || 0;
+      summary.checklist.completed = checklist.checklist.completed || 0;
+      summary.checklist.open = checklist.checklist.open || 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  return { ok: true, summary };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -769,6 +988,7 @@ export const _testHelpers = {
   publicJobSummary,
   getTemplateKey,
   resolveAccess,
+  resolveWorkroomAccess,
   getAcceptedWorkerIds,
   countUnreadWorkroomMessages,
   getLastMessageAt,

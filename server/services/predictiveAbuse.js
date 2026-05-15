@@ -14,6 +14,10 @@
 //   predictive_abuse:signal_escalated
 //   predictive_abuse:scan_completed
 //   predictive_abuse:scan_failed
+//   predictive_signal:false_positive
+//   predictive_signal:confirmed
+//   predictive_signal:archived
+//   predictive_signal:retention_completed
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
@@ -1075,6 +1079,104 @@ export async function escalateSignal(signalId, adminId, note) {
   return reviewSignal(signalId, adminId, 'escalated', note);
 }
 
+/**
+ * Phase 53: Mark predictive signal as false positive.
+ * This is a quality label, not a user penalty.
+ *
+ * Allowed source statuses:
+ *   - active
+ *   - escalated
+ *   - dismissed
+ *
+ * @param {string} signalId
+ * @param {string} adminId
+ * @param {string} note
+ */
+export async function markSignalFalsePositive(signalId, adminId, note) {
+  return markSignalOutcome(signalId, adminId, 'false_positive', note);
+}
+
+/**
+ * Phase 53: Mark predictive signal as confirmed.
+ * This records that the signal was useful/true-positive.
+ * No auto-ban is performed.
+ *
+ * Allowed source statuses:
+ *   - active
+ *   - escalated
+ *
+ * @param {string} signalId
+ * @param {string} adminId
+ * @param {string} note
+ */
+export async function markSignalConfirmed(signalId, adminId, note) {
+  return markSignalOutcome(signalId, adminId, 'confirmed', note);
+}
+
+async function markSignalOutcome(signalId, adminId, outcome, note) {
+  if (!signalId || typeof signalId !== 'string') {
+    throw new Error('signalId is required');
+  }
+
+  const allowedOutcomes = ['false_positive', 'confirmed'];
+  if (!allowedOutcomes.includes(outcome)) {
+    throw new Error('invalid predictive signal outcome');
+  }
+
+  return withLock(`predictive-signal-review:${signalId}`, async () => {
+    const path = getRecordPath('predictive_signals', signalId);
+    const signal = await readJSON(path);
+
+    if (!signal) {
+      return { ok: false, error: 'الإشارة غير موجودة', code: 'SIGNAL_NOT_FOUND' };
+    }
+
+    const allowedSourceStatuses = outcome === 'false_positive'
+      ? ['active', 'escalated', 'dismissed']
+      : ['active', 'escalated'];
+
+    if (!allowedSourceStatuses.includes(signal.status)) {
+      return { ok: false, error: 'لا يمكن تحديث هذه الإشارة بهذه الحالة', code: 'SIGNAL_STATUS_NOT_ALLOWED' };
+    }
+
+    const previousStatus = signal.status;
+    const now = new Date().toISOString();
+
+    signal.status = outcome;
+    signal.reviewedAt = signal.reviewedAt || now;
+    signal.reviewedBy = adminId || signal.reviewedBy || 'admin_token';
+    signal.reviewDecision = outcome;
+    signal.reviewNote = note || signal.reviewNote || null;
+    signal.outcomeAt = now;
+    signal.outcomeBy = adminId || 'admin_token';
+    signal.outcomeNote = note || null;
+    signal.previousStatus = previousStatus;
+    signal.updatedAt = now;
+
+    await atomicWrite(path, signal);
+
+    clearCache();
+
+    eventBus.emit(
+      outcome === 'false_positive' ? 'predictive_signal:false_positive' : 'predictive_signal:confirmed',
+      {
+        signalId: signal.id,
+        riskType: signal.riskType,
+        entityType: signal.entityType,
+        entityId: signal.entityId,
+        relatedUserId: signal.relatedUserId || null,
+        previousStatus,
+        severity: signal.severity,
+        riskScore: signal.riskScore,
+        reviewedBy: signal.reviewedBy,
+        timestamp: now,
+      }
+    );
+
+    return { ok: true, signal };
+  });
+}
+
 async function reviewSignal(signalId, adminId, decision, note) {
   if (!signalId || typeof signalId !== 'string') {
     throw new Error('signalId is required');
@@ -1155,6 +1257,10 @@ const INVALIDATION_EVENTS = [
   'direct_offer:withdrawn',
   'abuse_flag:state_changed',
   'attendance:noshow',
+  'predictive_signal:false_positive',
+  'predictive_signal:confirmed',
+  'predictive_signal:archived',
+  'predictive_signal:retention_completed',
 ];
 
 for (const evt of INVALIDATION_EVENTS) {

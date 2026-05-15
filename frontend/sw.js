@@ -3,7 +3,7 @@
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.48.0';
+const CACHE_NAME = 'yawmia-v0.49.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -144,15 +144,67 @@ self.addEventListener('push', (event) => {
 // ── Notification Click: navigate to URL ──
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/dashboard.html';
+
+  const rawUrl = event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : '/dashboard.html';
+
+  const url = sanitizeNotificationUrl(rawUrl);
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url.includes(url) && 'focus' in client) {
-          return client.focus();
+        try {
+          const clientUrl = new URL(client.url);
+          const targetUrl = new URL(url, self.location.origin);
+
+          if (clientUrl.origin === targetUrl.origin) {
+            if ('navigate' in client && clientUrl.pathname + clientUrl.search + clientUrl.hash !== url) {
+              return client.navigate(url).then((c) => c && c.focus ? c.focus() : client.focus());
+            }
+            if ('focus' in client) return client.focus();
+          }
+        } catch (_) {
+          // Try next client.
         }
       }
+
       return clients.openWindow(url);
     })
   );
 });
+
+function sanitizeNotificationUrl(url) {
+  if (!url || typeof url !== 'string') return '/dashboard.html';
+
+  const trimmed = url.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (!trimmed.startsWith('/')) return '/dashboard.html';
+  if (lower.startsWith('//')) return '/dashboard.html';
+  if (lower.startsWith('http://')) return '/dashboard.html';
+  if (lower.startsWith('https://')) return '/dashboard.html';
+  if (lower.startsWith('javascript:')) return '/dashboard.html';
+  if (lower.startsWith('data:')) return '/dashboard.html';
+  if (trimmed.includes('\\')) return '/dashboard.html';
+  if (trimmed.includes('..')) return '/dashboard.html';
+
+  try {
+    const decoded = decodeURIComponent(trimmed);
+    if (decoded.includes('\\') || decoded.includes('..')) return '/dashboard.html';
+  } catch (_) {
+    return '/dashboard.html';
+  }
+
+  const allowed = [
+    '/dashboard.html',
+    '/profile.html',
+    '/job.html',
+    '/user.html',
+    '/terms.html'
+  ];
+
+  return allowed.some((prefix) => trimmed.startsWith(prefix))
+    ? trimmed
+    : '/dashboard.html';
+}

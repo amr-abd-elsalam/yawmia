@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, deleteJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
+import { attachAction } from './notificationActions.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
 
@@ -45,7 +46,7 @@ if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
  * @param {string} message
  * @param {object} [meta]
  */
-export async function createNotification(userId, type, message, meta = {}) {
+export async function createNotification(userId, type, message, meta = {}, options = {}) {
   // Dedup check: skip if same userId+type+context within window
   const contextId = (meta && (meta.jobId || meta.applicationId || meta.paymentId || meta.reportId)) || '';
   const dedupKey = `${userId}:${type}:${contextId}`;
@@ -58,7 +59,7 @@ export async function createNotification(userId, type, message, meta = {}) {
   const id = 'ntf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
-  const notification = {
+  let notification = {
     id,
     userId,
     type,
@@ -68,6 +69,13 @@ export async function createNotification(userId, type, message, meta = {}) {
     createdAt: now,
     readAt: null,
   };
+
+  // Phase 53 — Safe actionable notification metadata.
+  // Additive only: old consumers can ignore notification.action.
+  if (options && options.actionOverride && typeof options.actionOverride === 'object') {
+    notification.action = options.actionOverride;
+  }
+  notification = attachAction(notification, options.userRole || null);
 
   const ntfPath = getWriteRecordPath('notifications', id);
   await atomicWrite(ntfPath, notification);

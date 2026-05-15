@@ -181,6 +181,62 @@ var Yawmia = (function () {
     return role;
   }
 
+  // ── Phase 53: Safe Action Navigation ──────────────────────
+  function isSafeRelativeUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    var trimmed = url.trim();
+    var lower = trimmed.toLowerCase();
+
+    if (!trimmed.startsWith('/')) return false;
+    if (lower.startsWith('//')) return false;
+    if (lower.startsWith('http://')) return false;
+    if (lower.startsWith('https://')) return false;
+    if (lower.startsWith('javascript:')) return false;
+    if (lower.startsWith('data:')) return false;
+    if (lower.startsWith('vbscript:')) return false;
+    if (trimmed.indexOf('\\') !== -1) return false;
+    if (trimmed.indexOf('..') !== -1) return false;
+
+    try {
+      var decoded = decodeURIComponent(trimmed);
+      if (decoded.indexOf('\\') !== -1) return false;
+      if (decoded.indexOf('..') !== -1) return false;
+    } catch (_) {
+      return false;
+    }
+
+    var allowed = [
+      '/dashboard.html',
+      '/profile.html',
+      '/job.html',
+      '/user.html',
+      '/terms.html'
+    ];
+
+    return allowed.some(function (prefix) {
+      return trimmed.indexOf(prefix) === 0;
+    });
+  }
+
+  function safeNavigate(url) {
+    var target = isSafeRelativeUrl(url) ? url.trim() : '/dashboard.html';
+
+    try {
+      var current = window.location.pathname + window.location.search + window.location.hash;
+      if (current === target && target.indexOf('#') !== -1) {
+        var hash = target.slice(target.indexOf('#'));
+        window.location.hash = hash;
+        var el = document.getElementById(hash.slice(1));
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    window.location.href = target;
+  }
+
   // ── PWA: Service Worker Registration ──────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -435,6 +491,7 @@ var Yawmia = (function () {
     populateCategories: populateCategories,
     populateCategoriesCheckboxes: populateCategoriesCheckboxes,
     roleLabel: roleLabel,
+    safeNavigate: safeNavigate,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,

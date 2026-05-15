@@ -489,6 +489,107 @@ if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICT
   });
 }
 
+// ── Phase 53 — Scheduled Trust Score V2 Snapshot Batch ──────
+// Heavy-ish operation: never runs synchronously at startup.
+// Prefer durable queue job when OPS_QUEUE is enabled; fallback direct batch is still
+// batched/yielded inside trustCalibration.createSnapshotsForActiveUsers().
+if (config.TRUST_CALIBRATION && config.TRUST_CALIBRATION.enabled && config.TRUST_CALIBRATION.scheduledSnapshotEnabled) {
+  const trustSnapshotTimer = setInterval(async () => {
+    try {
+      const dateBucket = new Date().toISOString().slice(0, 10);
+
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+
+        const enqueueResult = await enqueueJob({
+          type: 'trust_snapshot_batch',
+          priority: 'low',
+          payload: {
+            reason: 'scheduled',
+            force: false,
+          },
+          idempotencyKey: `trust_snapshot_batch:scheduled:${dateBucket}`,
+          createdBy: 'scheduler',
+        });
+
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 53: trust snapshot batch queued', {
+            queueJobId: enqueueResult.job.id,
+          });
+        }
+      } else {
+        const { createSnapshotsForActiveUsers } = await import('./server/services/trustCalibration.js');
+        const result = await createSnapshotsForActiveUsers({ reason: 'scheduled', force: false });
+        if (result && (result.created || result.failed)) {
+          logger.info('Phase 53: trust snapshot batch completed', {
+            created: result.created || 0,
+            deduped: result.deduped || 0,
+            failed: result.failed || 0,
+          });
+        }
+      }
+    } catch (err) {
+      logger.warn('Phase 53: trust snapshot scheduling failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.TRUST_CALIBRATION.snapshotIntervalMs || (24 * 60 * 60 * 1000));
+  if (trustSnapshotTimer.unref) trustSnapshotTimer.unref();
+
+  logger.info('Phase 53: trust calibration snapshot scheduler started', {
+    intervalMs: config.TRUST_CALIBRATION.snapshotIntervalMs || (24 * 60 * 60 * 1000),
+  });
+}
+
+// ── Phase 53 — Predictive Signal Retention Scheduler ────────
+// Service is dynamically imported so deployments can disable this config safely.
+// Batch service is added in Phase 53 predictive hygiene step.
+if (config.PREDICTIVE_SIGNAL_RETENTION && config.PREDICTIVE_SIGNAL_RETENTION.enabled) {
+  const predictiveRetentionTimer = setInterval(async () => {
+    try {
+      const dateBucket = new Date().toISOString().slice(0, 10);
+
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+
+        const enqueueResult = await enqueueJob({
+          type: 'predictive_signal_retention',
+          priority: 'low',
+          payload: {
+            options: { reason: 'scheduled' },
+          },
+          idempotencyKey: `predictive_signal_retention:scheduled:${dateBucket}`,
+          createdBy: 'scheduler',
+        });
+
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 53: predictive signal retention queued', {
+            queueJobId: enqueueResult.job.id,
+          });
+        }
+      } else {
+        const { runPredictiveSignalRetention } = await import('./server/services/predictiveSignalRetention.js');
+        const result = await runPredictiveSignalRetention({ reason: 'scheduled' });
+        if (result && result.archived > 0) {
+          logger.info('Phase 53: predictive signal retention completed', {
+            archived: result.archived,
+          });
+        }
+      }
+    } catch (err) {
+      // The service is added in the predictive hygiene batch. Until then this is non-fatal.
+      logger.warn('Phase 53: predictive signal retention scheduling failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.PREDICTIVE_SIGNAL_RETENTION.cleanupIntervalMs || (24 * 60 * 60 * 1000));
+  if (predictiveRetentionTimer.unref) predictiveRetentionTimer.unref();
+
+  logger.info('Phase 53: predictive signal retention scheduler started', {
+    intervalMs: config.PREDICTIVE_SIGNAL_RETENTION.cleanupIntervalMs || (24 * 60 * 60 * 1000),
+  });
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)

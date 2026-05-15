@@ -13,6 +13,7 @@ import {
   listJSON, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex,
 } from './database.js';
 import { logger } from './logger.js';
+import { sanitizeActionUrl } from './notificationActions.js';
 
 const PUSH_USER_INDEX = config.DATABASE.indexFiles.pushUserIndex;
 
@@ -504,7 +505,7 @@ async function deliverPush(subscription, data) {
     title: data.title || 'يوميّة',
     body: data.body || 'إشعار جديد',
     icon: data.icon || '/assets/img/icon-192.png',
-    url: data.url || '/dashboard.html',
+    url: sanitizeActionUrl(data.url || '/dashboard.html'),
   });
 
   // Try payload encryption
