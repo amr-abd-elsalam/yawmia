@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.48.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-10T20:40:29.444Z
+# يوميّة (Yawmia) v0.49.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-15T11:15:47.318Z
 > Files in this part: 6
 
 ## Files
@@ -353,6 +353,13 @@ const config = {
       ops_queue_dead_letter: 'ops_queue/dead-letter',
       alert_deliveries: 'alert_deliveries',
       queue_metrics: 'metrics/queue',
+      workroom_receipts: 'workrooms/receipts',
+      workroom_pins: 'workrooms/pins',
+      workroom_checklists: 'workrooms/checklists',
+      workroom_search_indexes: 'workrooms/search-indexes',
+      workroom_template_metrics: 'metrics/workroom-template-usage',
+      trust_calibration: 'metrics/trust-calibration',
+      predictive_signal_archives: 'metrics/predictive-signal-archives',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -541,7 +548,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.48.0',
+    cacheName: 'yawmia-v0.49.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1284,6 +1291,77 @@ const config = {
     manualRetryEnabled: true,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 73. إجراءات الإشعارات (NOTIFICATION_ACTIONS) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  NOTIFICATION_ACTIONS: {
+    enabled: true,
+    defaultUrl: '/dashboard.html',
+    allowedUrlPrefixes: [
+      '/dashboard.html',
+      '/profile.html',
+      '/job.html',
+      '/user.html',
+      '/terms.html',
+    ],
+    trackActionClicks: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 74. مهام إكمال الملف الشخصي (PROFILE_TASKS) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  PROFILE_TASKS: {
+    enabled: true,
+    showOnDashboard: true,
+    maxTasksVisible: 5,
+    priorities: ['critical', 'high', 'medium', 'low'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 75. مساحة العمل V2 (WORKROOM_V2) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM_V2: {
+    enabled: true,
+    readReceiptsEnabled: true,
+    searchEnabled: true,
+    pinsEnabled: true,
+    checklistEnabled: true,
+    attachmentsEnabled: true,
+    summaryCardsEnabled: true,
+    timelineFiltersEnabled: true,
+    templateAnalyticsEnabled: true,
+    maxPinnedMessagesPerWorkroom: 5,
+    maxChecklistItems: 30,
+    maxAttachmentsPerMessage: 3,
+    messageSearchMaxResults: 100,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 76. معايرة مؤشر الثقة (TRUST_CALIBRATION) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_CALIBRATION: {
+    enabled: true,
+    snapshotOnEvents: true,
+    scheduledSnapshotEnabled: true,
+    snapshotIntervalMs: 24 * 60 * 60 * 1000,
+    outcomeWindowDays: 30,
+    driftWarningThreshold: 0.15,
+    minSamplesForCalibration: 20,
+    cacheTtlMs: 5 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 77. نظافة إشارات المخاطر التنبؤية (PREDICTIVE_SIGNAL_RETENTION) — Phase 53
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_SIGNAL_RETENTION: {
+    enabled: true,
+    resolvedRetentionDays: 90,
+    archiveEnabled: true,
+    archivePath: 'metrics/predictive-signal-archives',
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+    batchSize: 100,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1332,7 +1410,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.48.0",
+  "version": "0.49.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1848,6 +1926,107 @@ if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICT
   });
 }
 
+// ── Phase 53 — Scheduled Trust Score V2 Snapshot Batch ──────
+// Heavy-ish operation: never runs synchronously at startup.
+// Prefer durable queue job when OPS_QUEUE is enabled; fallback direct batch is still
+// batched/yielded inside trustCalibration.createSnapshotsForActiveUsers().
+if (config.TRUST_CALIBRATION && config.TRUST_CALIBRATION.enabled && config.TRUST_CALIBRATION.scheduledSnapshotEnabled) {
+  const trustSnapshotTimer = setInterval(async () => {
+    try {
+      const dateBucket = new Date().toISOString().slice(0, 10);
+
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+
+        const enqueueResult = await enqueueJob({
+          type: 'trust_snapshot_batch',
+          priority: 'low',
+          payload: {
+            reason: 'scheduled',
+            force: false,
+          },
+          idempotencyKey: `trust_snapshot_batch:scheduled:${dateBucket}`,
+          createdBy: 'scheduler',
+        });
+
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 53: trust snapshot batch queued', {
+            queueJobId: enqueueResult.job.id,
+          });
+        }
+      } else {
+        const { createSnapshotsForActiveUsers } = await import('./server/services/trustCalibration.js');
+        const result = await createSnapshotsForActiveUsers({ reason: 'scheduled', force: false });
+        if (result && (result.created || result.failed)) {
+          logger.info('Phase 53: trust snapshot batch completed', {
+            created: result.created || 0,
+            deduped: result.deduped || 0,
+            failed: result.failed || 0,
+          });
+        }
+      }
+    } catch (err) {
+      logger.warn('Phase 53: trust snapshot scheduling failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.TRUST_CALIBRATION.snapshotIntervalMs || (24 * 60 * 60 * 1000));
+  if (trustSnapshotTimer.unref) trustSnapshotTimer.unref();
+
+  logger.info('Phase 53: trust calibration snapshot scheduler started', {
+    intervalMs: config.TRUST_CALIBRATION.snapshotIntervalMs || (24 * 60 * 60 * 1000),
+  });
+}
+
+// ── Phase 53 — Predictive Signal Retention Scheduler ────────
+// Service is dynamically imported so deployments can disable this config safely.
+// Batch service is added in Phase 53 predictive hygiene step.
+if (config.PREDICTIVE_SIGNAL_RETENTION && config.PREDICTIVE_SIGNAL_RETENTION.enabled) {
+  const predictiveRetentionTimer = setInterval(async () => {
+    try {
+      const dateBucket = new Date().toISOString().slice(0, 10);
+
+      if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {
+        const { enqueueJob } = await import('./server/services/opsQueue.js');
+
+        const enqueueResult = await enqueueJob({
+          type: 'predictive_signal_retention',
+          priority: 'low',
+          payload: {
+            options: { reason: 'scheduled' },
+          },
+          idempotencyKey: `predictive_signal_retention:scheduled:${dateBucket}`,
+          createdBy: 'scheduler',
+        });
+
+        if (enqueueResult.ok && !enqueueResult.deduped) {
+          logger.info('Phase 53: predictive signal retention queued', {
+            queueJobId: enqueueResult.job.id,
+          });
+        }
+      } else {
+        const { runPredictiveSignalRetention } = await import('./server/services/predictiveSignalRetention.js');
+        const result = await runPredictiveSignalRetention({ reason: 'scheduled' });
+        if (result && result.archived > 0) {
+          logger.info('Phase 53: predictive signal retention completed', {
+            archived: result.archived,
+          });
+        }
+      }
+    } catch (err) {
+      // The service is added in the predictive hygiene batch. Until then this is non-fatal.
+      logger.warn('Phase 53: predictive signal retention scheduling failed', {
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }, config.PREDICTIVE_SIGNAL_RETENTION.cleanupIntervalMs || (24 * 60 * 60 * 1000));
+  if (predictiveRetentionTimer.unref) predictiveRetentionTimer.unref();
+
+  logger.info('Phase 53: predictive signal retention scheduler started', {
+    intervalMs: config.PREDICTIVE_SIGNAL_RETENTION.cleanupIntervalMs || (24 * 60 * 60 * 1000),
+  });
+}
+
 // ── Phase 45 — Counter File Startup Integrity Check + Scheduled Rebuild ──
 if (config.COUNTERS && config.COUNTERS.enabled) {
   // Startup integrity check (fire-and-forget — non-blocking)
@@ -2027,6 +2206,16 @@ import {
 } from './handlers/adminHandler.js';
 import { handleAdminEventStream } from './handlers/adminSseHandler.js';
 import {
+  handleAdminTrustCalibrationDashboard,
+  handleAdminTrustSnapshots,
+  handleAdminRunTrustSnapshotBatch,
+  handleAdminRunTrustCalibrationReport,
+  handleAdminPredictivePrecision,
+  handleAdminRunPredictiveSignalRetention,
+  handleAdminMarkPredictiveFalsePositive,
+  handleAdminMarkPredictiveConfirmed,
+} from './handlers/trustCalibrationHandler.js';
+import {
   handleAdminQueueStats,
   handleAdminQueueJobs,
   handleAdminQueueJobDetail,
@@ -2046,6 +2235,7 @@ import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, 
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
+import { handleGetProfileTasks } from './handlers/profileTasksHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
@@ -2065,6 +2255,18 @@ import {
   handleSendWorkroomMessage,
   handleMarkWorkroomRead,
   handleGetWorkroomTimeline,
+  handleSearchWorkroomMessages,
+  handleGetWorkroomReadReceipts,
+  handleMarkWorkroomMessageRead,
+  handleListWorkroomPins,
+  handlePinWorkroomMessage,
+  handleUnpinWorkroomMessage,
+  handleGetWorkroomChecklist,
+  handleCreateWorkroomChecklistItem,
+  handleUpdateWorkroomChecklistItem,
+  handleDeleteWorkroomChecklistItem,
+  handleUploadWorkroomAttachment,
+  handleGetWorkroomSummary,
 } from './handlers/workroomHandler.js';
 import { handleCreateOffer, handleAcceptOffer, handleDeclineOffer, handleWithdrawOffer, handleListMyOffers, handleGetOffer, handleEmployerOfferStats, handleWorkerOfferStats } from './handlers/directOfferHandler.js';
 import { setupNotificationListeners } from './services/notifications.js';
@@ -2096,7 +2298,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.48.0',
+        version: '0.49.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -2310,7 +2512,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.48.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.49.0' });
     },
   },
 
@@ -2321,6 +2523,7 @@ const routes = [
   // ── Auth Routes (Protected) ──
   { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
+  { method: 'GET', path: '/api/profile/tasks', middlewares: [requireAuth], handler: handleGetProfileTasks },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
   { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
   { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
@@ -2444,8 +2647,28 @@ const routes = [
   { method: 'DELETE', path: '/api/direct-offers/:id', middlewares: [requireAuth, requireRole('employer')], handler: handleWithdrawOffer },
   { method: 'GET', path: '/api/direct-offers/:id', middlewares: [requireAuth], handler: handleGetOffer },
 
-  // ── Phase 51 — Workroom Messaging Routes ──
+  // ── Phase 51/53 — Workroom Messaging + Collaboration V2 Routes ──
   { method: 'GET', path: '/api/workrooms', middlewares: [requireAuth], handler: handleListWorkrooms },
+
+  // Phase 53 — specific Workroom V2 routes BEFORE generic /:id
+  { method: 'GET', path: '/api/workrooms/:id/search', middlewares: [requireAuth], handler: handleSearchWorkroomMessages },
+  { method: 'GET', path: '/api/workrooms/:id/read-receipts', middlewares: [requireAuth], handler: handleGetWorkroomReadReceipts },
+  { method: 'POST', path: '/api/workrooms/:id/messages/:messageId/read', middlewares: [requireAuth], handler: handleMarkWorkroomMessageRead },
+  { method: 'POST', path: '/api/workrooms/:id/attachments', middlewares: [requireAuth], handler: handleUploadWorkroomAttachment },
+  { method: 'GET', path: '/api/workrooms/:id/summary', middlewares: [requireAuth], handler: handleGetWorkroomSummary },
+
+  // Phase 53 — Pins
+  { method: 'GET', path: '/api/workrooms/:id/pins', middlewares: [requireAuth], handler: handleListWorkroomPins },
+  { method: 'POST', path: '/api/workrooms/:id/pins', middlewares: [requireAuth], handler: handlePinWorkroomMessage },
+  { method: 'DELETE', path: '/api/workrooms/:id/pins/:messageId', middlewares: [requireAuth], handler: handleUnpinWorkroomMessage },
+
+  // Phase 53 — Checklist
+  { method: 'GET', path: '/api/workrooms/:id/checklist', middlewares: [requireAuth], handler: handleGetWorkroomChecklist },
+  { method: 'POST', path: '/api/workrooms/:id/checklist', middlewares: [requireAuth], handler: handleCreateWorkroomChecklistItem },
+  { method: 'PUT', path: '/api/workrooms/:id/checklist/:itemId', middlewares: [requireAuth], handler: handleUpdateWorkroomChecklistItem },
+  { method: 'DELETE', path: '/api/workrooms/:id/checklist/:itemId', middlewares: [requireAuth], handler: handleDeleteWorkroomChecklistItem },
+
+  // Phase 51 existing message routes
   { method: 'GET', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleListWorkroomMessages },
   { method: 'POST', path: '/api/workrooms/:id/messages/read-all', middlewares: [requireAuth], handler: handleMarkWorkroomRead },
   { method: 'POST', path: '/api/workrooms/:id/messages', middlewares: [requireAuth], handler: handleSendWorkroomMessage },
@@ -2524,6 +2747,12 @@ const routes = [
   // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
   { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
 
+  // ── Phase 53 — Trust Score V2 Calibration Admin APIs ──
+  { method: 'GET', path: '/api/admin/trust/calibration/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustCalibrationDashboard },
+  { method: 'GET', path: '/api/admin/trust/snapshots', middlewares: [requireAdmin], handler: handleAdminTrustSnapshots },
+  { method: 'POST', path: '/api/admin/trust/calibration/snapshot-batch', middlewares: [requireAdmin], handler: handleAdminRunTrustSnapshotBatch },
+  { method: 'POST', path: '/api/admin/trust/calibration/report', middlewares: [requireAdmin], handler: handleAdminRunTrustCalibrationReport },
+
   // ── Phase 49 — Marketplace Trust Analytics + Multi-Channel Admin Alerting ──
   { method: 'GET', path: '/api/admin/trust/resolution-time', middlewares: [requireAdmin], handler: handleAdminTrustResolutionTime },
   { method: 'GET', path: '/api/admin/trust/warning-conversion', middlewares: [requireAdmin], handler: handleAdminTrustWarningConversion },
@@ -2567,7 +2796,11 @@ const routes = [
   // ── Phase 51 — Predictive Abuse Intelligence ──
   { method: 'GET', path: '/api/admin/predictive-abuse/dashboard', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseDashboard },
   { method: 'GET', path: '/api/admin/predictive-abuse/signals', middlewares: [requireAdmin], handler: handleAdminPredictiveAbuseSignals },
+  { method: 'GET', path: '/api/admin/predictive-abuse/precision', middlewares: [requireAdmin], handler: handleAdminPredictivePrecision },
   { method: 'POST', path: '/api/admin/predictive-abuse/run-scan', middlewares: [requireAdmin], handler: handleAdminRunPredictiveAbuseScan },
+  { method: 'POST', path: '/api/admin/predictive-abuse/retention/run', middlewares: [requireAdmin], handler: handleAdminRunPredictiveSignalRetention },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/false-positive', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveFalsePositive },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/confirm', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveConfirmed },
   { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireAdmin], handler: handleAdminDismissPredictiveSignal },
   { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireAdmin], handler: handleAdminEscalatePredictiveSignal },
 
@@ -2733,9 +2966,11 @@ export function createRouter() {
       req.params = params;
 
       // Validate URL parameters (path traversal prevention)
-      if (params.id && !isValidId(params.id)) {
-        sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID' });
-        return;
+      for (const [paramName, paramValue] of Object.entries(params)) {
+        if (paramValue && !isValidId(paramValue)) {
+          sendJSON(res, 400, { error: 'معرّف غير صالح', code: 'INVALID_ID', param: paramName });
+          return;
+        }
       }
 
       // Run route-specific middleware then handler

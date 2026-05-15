@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.48.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-10T20:40:29.478Z
-> Files in this part: 47
+# يوميّة (Yawmia) v0.49.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-15T11:15:47.356Z
+> Files in this part: 50
 
 ## Files
 1. `frontend/404.html`
@@ -42,14 +42,17 @@
 37. `scripts/benchmark.js`
 38. `scripts/bundle-for-review.js`
 39. `scripts/compact-counters.js`
-40. `scripts/generate-vapid-keys.js`
-41. `scripts/migrate.js`
-42. `scripts/queue-drain.js`
-43. `scripts/queue-retry-dlq.js`
-44. `scripts/rebuild-audit-index.js`
-45. `scripts/rebuild-counters.js`
-46. `scripts/repair-indexes.js`
-47. `scripts/verify-audit-index.js`
+40. `scripts/compact-predictive-signals.js`
+41. `scripts/generate-vapid-keys.js`
+42. `scripts/migrate.js`
+43. `scripts/queue-drain.js`
+44. `scripts/queue-retry-dlq.js`
+45. `scripts/rebuild-audit-index.js`
+46. `scripts/rebuild-counters.js`
+47. `scripts/rebuild-workroom-search.js`
+48. `scripts/repair-indexes.js`
+49. `scripts/run-trust-calibration.js`
+50. `scripts/verify-audit-index.js`
 
 ---
 
@@ -311,6 +314,26 @@
         </div>
       </div>
 
+      <!-- Phase 53 — Predictive Signal Precision -->
+      <div class="admin-section" id="predictivePrecisionSection">
+        <div class="admin-section__header">
+          <h2>🧪 دقة إشارات المخاطر</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="AdminApp.loadPredictivePrecision()">تحديث</button>
+            <button class="btn btn--warning btn--sm" onclick="AdminApp.runPredictiveSignalRetention()">تشغيل Retention</button>
+          </div>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin-block-end:1rem;">
+          تقيس هذه اللوحة جودة إشارات المخاطر التنبؤية: confirmed مقابل false positives.
+          لا يوجد auto-ban بناءً على predictive signals.
+        </p>
+
+        <div id="predictivePrecisionMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 51 — Admin Decision Quality -->
       <div class="admin-section" id="decisionQualitySection">
         <div class="admin-section__header">
@@ -510,6 +533,40 @@
         <div id="abuseTrendChart">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
+      </div>
+
+      <!-- Phase 53 — Trust Score V2 Calibration -->
+      <div class="admin-section" id="trustCalibrationSection">
+        <div class="admin-section__header">
+          <h2>🎯 معايرة مؤشر الثقة V2</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="refresh-btn" onclick="AdminApp.loadTrustCalibrationDashboard()">تحديث</button>
+            <button class="btn btn--primary btn--sm" onclick="AdminApp.runTrustSnapshotBatch()">Snapshot Batch</button>
+            <button class="btn btn--warning btn--sm" onclick="AdminApp.runTrustCalibrationReport()">تقرير معايرة</button>
+          </div>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin-block-end:1rem;">
+          هذه اللوحة تقيس مدى تطابق Trust Score V2 مع outcomes الفعلية مثل الحضور، النزاعات، الإلغاءات، والتقييمات.
+          لا يتم تعديل الأوزان تلقائياً في Phase 53.
+        </p>
+
+        <div id="trustCalibrationMetrics" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="trustCalibrationWarnings">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h3 style="margin-block-end:0.75rem;font-size:1rem;color:var(--color-text);">آخر Snapshots</h3>
+        <div id="trustSnapshotsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="trustCalibrationActionResult" style="margin-block-start:0.75rem;"></div>
       </div>
 
       <!-- Phase 49 — Multi-Channel Admin Alerting -->
@@ -4901,6 +4958,385 @@ textarea:focus:not(:focus-visible) {
     max-height: 360px;
   }
 }
+
+/* ═══ Phase 53 — Profile Completion Tasks ═══ */
+.profile-task-card {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(37, 99, 235, 0.06) 100%);
+}
+
+.profile-task-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.profile-task-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--color-primary);
+  font-weight: 800;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  flex-shrink: 0;
+}
+
+.profile-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--color-text);
+  transition: border-color var(--transition), transform var(--transition), background var(--transition);
+}
+
+.profile-task-item:hover,
+.profile-task-item:focus-visible {
+  border-color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.profile-task-priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-task-priority--critical {
+  color: #fff;
+  background: var(--color-error);
+}
+
+.profile-task-priority--high {
+  color: #000;
+  background: var(--color-warning);
+}
+
+.profile-task-priority--medium {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.profile-task-priority--low {
+  color: var(--color-text-muted);
+  background: rgba(139, 143, 163, 0.15);
+  border: 1px solid var(--color-border);
+}
+
+.profile-task-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.profile-task-item__body strong {
+  font-size: 0.92rem;
+  color: var(--color-text);
+}
+
+.profile-task-item__body small {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.profile-task-item__arrow {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.profile-task-more {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  margin-block-start: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .profile-task-card__header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .profile-task-item {
+    align-items: flex-start;
+  }
+
+  .profile-task-priority {
+    min-width: 64px;
+  }
+}
+
+/* ═══ Phase 53 — Workroom Search + Read Receipts ═══ */
+.workroom-search-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+.workroom-search-box input {
+  flex: 1;
+}
+
+.workroom-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.workroom-search-meta {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-end: 0.5rem;
+}
+
+.workroom-search-result {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+}
+
+.workroom-search-result__text {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.workroom-search-result__meta {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  margin-block-start: 0.3rem;
+}
+
+.read-receipt {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.read-receipt--read {
+  color: var(--color-success);
+}
+
+.read-receipt--unread,
+.read-receipt--unknown {
+  color: var(--color-text-muted);
+}
+
+.workroom-timeline-filter {
+  margin-block-end: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .workroom-search-box {
+    flex-direction: column;
+  }
+}
+
+/* ═══ Phase 53 — Workroom Pins + Checklist ═══ */
+.workroom-pin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workroom-pin-card {
+  background: var(--color-surface-2);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-inline-start: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.workroom-pin-card__text {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.workroom-pin-card__meta {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  margin-block-start: 0.35rem;
+}
+
+.workroom-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workroom-checklist-create {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+}
+
+.workroom-checklist-create input {
+  flex: 1;
+}
+
+.workroom-checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.workroom-checklist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.workroom-checklist-item label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  cursor: pointer;
+}
+
+.workroom-checklist-item input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-success);
+}
+
+.workroom-checklist-item--done span {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 600px) {
+  .workroom-checklist-create {
+    flex-direction: column;
+  }
+
+  .workroom-checklist-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ═══ Phase 53 — Workroom Attachments + Summary Cards ═══ */
+.workroom-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+.workroom-summary-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  text-align: center;
+}
+
+.workroom-summary-card__value {
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.workroom-summary-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  margin-block-start: 0.25rem;
+}
+
+.workroom-attachment-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-block-end: 0.75rem;
+}
+
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-block-start: 0.45rem;
+}
+
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  font-size: 0.72rem;
+  text-decoration: none;
+}
+
+.attachment-chip:hover {
+  background: rgba(37, 99, 235, 0.22);
+}
+
+/* ═══ Phase 53 — Trust Calibration Admin UI ═══ */
+.calibration-metric-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+}
+
+.drift-warning {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  margin-block-end: 0.35rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+.drift-warning--medium {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--color-warning);
+}
+
+.drift-warning--high {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-error);
+}
 ```
 
 ---
@@ -5623,6 +6059,7 @@ var AdminApp = (function () {
         loadDirectOffersDashboard(),
         loadAbuseSignals(),
         loadPredictiveAbuseDashboard(),
+        loadPredictivePrecision(),
         loadDecisionQuality(),
         loadOpsQueueStats(),
         loadAlertDeliveries(),
@@ -5630,6 +6067,7 @@ var AdminApp = (function () {
         loadExports(),
         loadCounterHygiene(),
         loadTrustDashboard(),
+        loadTrustCalibrationDashboard(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -7250,6 +7688,8 @@ var AdminApp = (function () {
       html += '<div class="risk-signal-card__actions">' +
         '<button class="btn btn--ghost btn--sm" onclick="AdminApp.dismissPredictiveSignal(\'' + escapeHtml(s.id) + '\')">رفض</button>' +
         '<button class="btn btn--primary btn--sm" onclick="AdminApp.escalatePredictiveSignal(\'' + escapeHtml(s.id) + '\')">تصعيد للمراجعة</button>' +
+        '<button class="btn btn--ghost btn--sm" onclick="AdminApp.markPredictiveFalsePositive(\'' + escapeHtml(s.id) + '\')" style="color:var(--color-warning);border-color:var(--color-warning);">False Positive</button>' +
+        '<button class="btn btn--success btn--sm" onclick="AdminApp.markPredictiveConfirmed(\'' + escapeHtml(s.id) + '\')">Confirmed</button>' +
       '</div>' +
       '</div>';
     });
@@ -7313,6 +7753,96 @@ var AdminApp = (function () {
       loadDecisionQuality();
     } catch (err) {
       showError(err.message || 'خطأ في تصعيد الإشارة');
+    }
+  }
+
+  async function loadPredictivePrecision() {
+    var el = document.getElementById('predictivePrecisionMetrics');
+    if (!el) return;
+
+    el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var data = await api('/api/admin/predictive-abuse/precision');
+      var stats = data.stats || {};
+      var byStatus = stats.byStatus || {};
+
+      var cards = [
+        { value: stats.total || 0, label: 'إجمالي الإشارات' },
+        { value: byStatus.active || 0, label: 'نشطة' },
+        { value: byStatus.confirmed || 0, label: 'Confirmed' },
+        { value: byStatus.false_positive || 0, label: 'False Positive' },
+        { value: (stats.precisionRate || 0) + '%', label: 'Precision' },
+        { value: (stats.falsePositiveRate || 0) + '%', label: 'False Positive Rate' },
+      ];
+
+      el.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'trust-metric-card';
+        card.innerHTML =
+          '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+        el.appendChild(card);
+      });
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل دقة الإشارات</p>';
+    }
+  }
+
+  async function runPredictiveSignalRetention() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/retention/run?async=1', { force: false });
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم وضع Predictive Retention في الطابور — Job: ' + (data.queueJobId || ''));
+        }
+        loadOpsQueueStats();
+        loadPredictivePrecision();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل retention');
+    }
+  }
+
+  async function markPredictiveFalsePositive(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'False Positive',
+        message: 'اكتب سبب اعتبار الإشارة false positive',
+        placeholder: 'مثال: نشاط طبيعي أو بيانات غير كافية...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/false-positive', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم تعليم الإشارة كـ False Positive');
+      loadPredictiveAbuseDashboard();
+      loadPredictivePrecision();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحديث الإشارة');
+    }
+  }
+
+  async function markPredictiveConfirmed(signalId) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'Confirmed Signal',
+        message: 'اكتب ملاحظة اختيارية عن تأكيد الإشارة',
+        placeholder: 'مثال: الإشارة تطابقت مع سلوك مؤكد...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/predictive-abuse/signals/' + signalId + '/confirm', { note: note });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تأكيد الإشارة');
+      loadPredictiveAbuseDashboard();
+      loadPredictivePrecision();
+      loadDecisionQuality();
+    } catch (err) {
+      showError(err.message || 'خطأ في تأكيد الإشارة');
     }
   }
 
@@ -8141,6 +8671,193 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 53 — Trust Calibration Dashboard
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadTrustCalibrationDashboard() {
+    var metricsEl = document.getElementById('trustCalibrationMetrics');
+    var warningsEl = document.getElementById('trustCalibrationWarnings');
+    var snapshotsEl = document.getElementById('trustSnapshotsTable');
+
+    if (metricsEl) {
+      metricsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (warningsEl) {
+      warningsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (snapshotsEl) {
+      snapshotsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/trust/calibration/dashboard');
+      var metrics = data.metrics || {};
+      var latestReport = data.latestReport || null;
+
+      if (metricsEl) {
+        var cards = [
+          { value: metrics.snapshotCount || 0, label: 'Snapshots' },
+          { value: metrics.reportCount || 0, label: 'تقارير معايرة' },
+          { value: metrics.latestSampleCount || 0, label: 'عينات آخر تقرير' },
+          { value: metrics.driftWarningCount || 0, label: 'تحذيرات Drift' },
+          { value: metrics.noAutomaticWeightChanges ? 'لا' : 'نعم', label: 'تعديل أوزان تلقائي؟' },
+        ];
+
+        metricsEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'trust-metric-card';
+          card.innerHTML =
+            '<div class="trust-metric-value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+          metricsEl.appendChild(card);
+        });
+      }
+
+      renderTrustCalibrationWarnings(latestReport);
+      renderTrustSnapshots(data.latestSnapshots || []);
+    } catch (err) {
+      if (metricsEl) metricsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل معايرة الثقة</p>';
+      if (warningsEl) warningsEl.innerHTML = '';
+      if (snapshotsEl) snapshotsEl.innerHTML = '';
+    }
+  }
+
+  function renderTrustCalibrationWarnings(latestReport) {
+    var el = document.getElementById('trustCalibrationWarnings');
+    if (!el) return;
+
+    if (!latestReport) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد تقارير معايرة بعد</p>';
+      return;
+    }
+
+    var warnings = latestReport.driftWarnings || [];
+
+    if (warnings.length === 0) {
+      el.innerHTML =
+        '<div style="padding:0.75rem;border:1px solid rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);border-radius:var(--radius-sm);color:var(--color-success);">' +
+          '✓ لا توجد تحذيرات Drift في آخر تقرير' +
+        '</div>';
+      return;
+    }
+
+    var html =
+      '<div style="padding:0.75rem;border:1px solid rgba(245,158,11,0.35);background:rgba(245,158,11,0.08);border-radius:var(--radius-sm);">' +
+        '<strong style="color:var(--color-warning);">⚠️ تحذيرات Drift في آخر تقرير:</strong>' +
+        '<div style="margin-block-start:0.5rem;">';
+
+    warnings.forEach(function (w) {
+      html +=
+        '<div class="drift-warning drift-warning--' + escapeHtml(w.severity || 'medium') + '">' +
+          '<strong>Bucket ' + escapeHtml(w.label || w.bucket) + '</strong>: ' +
+          'score=' + escapeHtml(String(w.avgScore)) +
+          ' / success=' + escapeHtml(String(w.avgSuccessRate)) +
+          ' / delta=' + escapeHtml(String(w.delta)) +
+        '</div>';
+    });
+
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
+
+  function renderTrustSnapshots(snapshots) {
+    var el = document.getElementById('trustSnapshotsTable');
+    if (!el) return;
+
+    if (!snapshots || snapshots.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد snapshots بعد</p>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>المستخدم</th><th>الدور</th><th>Score</th><th>Grade</th><th>التاريخ</th>' +
+      '</tr></thead><tbody>';
+
+    snapshots.forEach(function (s) {
+      html += '<tr>' +
+        '<td><a class="worker-link" href="/user.html?id=' + escapeHtml(s.userId || '') + '">' + escapeHtml(s.userId || '-') + '</a></td>' +
+        '<td>' + escapeHtml(s.role || '-') + '</td>' +
+        '<td>' + escapeHtml(String(s.score100 || Math.round((s.score || 0) * 100))) + '/100</td>' +
+        '<td>' + escapeHtml(s.grade || '-') + '</td>' +
+        '<td><small>' + escapeHtml(s.createdAt ? new Date(s.createdAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  async function runTrustSnapshotBatch() {
+    var resultEl = document.getElementById('trustCalibrationActionResult');
+    if (resultEl) {
+      resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة Snapshot Batch للطابور...</p>';
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/trust/calibration/snapshot-batch?async=1', {
+        force: false,
+      });
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم وضع Snapshot Batch في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم وضع snapshot batch في الطابور');
+      }
+
+      loadOpsQueueStats();
+      loadTrustCalibrationDashboard();
+    } catch (err) {
+      if (resultEl) {
+        resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+      }
+      showError(err.message || 'خطأ في تشغيل snapshot batch');
+    }
+  }
+
+  async function runTrustCalibrationReport() {
+    var resultEl = document.getElementById('trustCalibrationActionResult');
+    if (resultEl) {
+      resultEl.innerHTML = '<p style="color:var(--color-text-muted);">جاري إضافة تقرير المعايرة للطابور...</p>';
+    }
+
+    try {
+      var to = new Date().toISOString();
+      var from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      var data = await apiWrite('POST', '/api/admin/trust/calibration/report?async=1', {
+        from: from,
+        to: to,
+        outcomeWindowDays: 30,
+      });
+
+      if (resultEl) {
+        resultEl.innerHTML =
+          '<p style="color:var(--color-success);">✓ تم وضع تقرير المعايرة في الطابور — Job: ' +
+          escapeHtml(data.queueJobId || '') +
+          '</p>';
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم وضع تقرير المعايرة في الطابور');
+      }
+
+      loadOpsQueueStats();
+      loadTrustCalibrationDashboard();
+    } catch (err) {
+      if (resultEl) {
+        resultEl.innerHTML = '<p style="color:var(--color-error);">خطأ: ' + escapeHtml(err.message || '') + '</p>';
+      }
+      showError(err.message || 'خطأ في تشغيل تقرير المعايرة');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 49 — Webhook Test
   // ═══════════════════════════════════════════════════════════════
 
@@ -8220,6 +8937,10 @@ var AdminApp = (function () {
     escalatePredictiveSignal: escalatePredictiveSignal,
     loadDecisionQuality: loadDecisionQuality,
     loadBacklogPriority: loadBacklogPriority,
+    loadPredictivePrecision: loadPredictivePrecision,
+    runPredictiveSignalRetention: runPredictiveSignalRetention,
+    markPredictiveFalsePositive: markPredictiveFalsePositive,
+    markPredictiveConfirmed: markPredictiveConfirmed,
     // Phase 52 — Ops Queue + Alert Delivery + Async Export
     loadOpsQueueStats: loadOpsQueueStats,
     loadOpsQueueJobs: loadOpsQueueJobs,
@@ -8243,6 +8964,9 @@ var AdminApp = (function () {
     // Phase 49 — Trust Analytics + Alert Channels
     loadTrustDashboard: loadTrustDashboard,
     setTrustPeriod: setTrustPeriod,
+    loadTrustCalibrationDashboard: loadTrustCalibrationDashboard,
+    runTrustSnapshotBatch: runTrustSnapshotBatch,
+    runTrustCalibrationReport: runTrustCalibrationReport,
     testWebhook: testWebhook,
     renderCsvExportProgress: renderCsvExportProgress,
     // Phase 48 — Admin Real-Time Operations
@@ -8437,6 +9161,62 @@ var Yawmia = (function () {
     if (role === 'employer') return 'صاحب عمل';
     if (role === 'admin') return 'أدمن';
     return role;
+  }
+
+  // ── Phase 53: Safe Action Navigation ──────────────────────
+  function isSafeRelativeUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    var trimmed = url.trim();
+    var lower = trimmed.toLowerCase();
+
+    if (!trimmed.startsWith('/')) return false;
+    if (lower.startsWith('//')) return false;
+    if (lower.startsWith('http://')) return false;
+    if (lower.startsWith('https://')) return false;
+    if (lower.startsWith('javascript:')) return false;
+    if (lower.startsWith('data:')) return false;
+    if (lower.startsWith('vbscript:')) return false;
+    if (trimmed.indexOf('\\') !== -1) return false;
+    if (trimmed.indexOf('..') !== -1) return false;
+
+    try {
+      var decoded = decodeURIComponent(trimmed);
+      if (decoded.indexOf('\\') !== -1) return false;
+      if (decoded.indexOf('..') !== -1) return false;
+    } catch (_) {
+      return false;
+    }
+
+    var allowed = [
+      '/dashboard.html',
+      '/profile.html',
+      '/job.html',
+      '/user.html',
+      '/terms.html'
+    ];
+
+    return allowed.some(function (prefix) {
+      return trimmed.indexOf(prefix) === 0;
+    });
+  }
+
+  function safeNavigate(url) {
+    var target = isSafeRelativeUrl(url) ? url.trim() : '/dashboard.html';
+
+    try {
+      var current = window.location.pathname + window.location.search + window.location.hash;
+      if (current === target && target.indexOf('#') !== -1) {
+        var hash = target.slice(target.indexOf('#'));
+        window.location.hash = hash;
+        var el = document.getElementById(hash.slice(1));
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    window.location.href = target;
   }
 
   // ── PWA: Service Worker Registration ──────────────────────
@@ -8693,6 +9473,7 @@ var Yawmia = (function () {
     populateCategories: populateCategories,
     populateCategoriesCheckboxes: populateCategoriesCheckboxes,
     roleLabel: roleLabel,
+    safeNavigate: safeNavigate,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
@@ -10704,6 +11485,9 @@ var YawmiaJobCard = (function () {
     btnLogout.addEventListener('click', function () { Yawmia.logout(); });
   }
 
+  // ── Phase 53 — Profile Completion Tasks ────────────────────
+  loadProfileTasks();
+
   // ── Phase 51 — Workroom List Mount ─────────────────────────
   if (typeof YawmiaWorkroom !== 'undefined') {
     YawmiaWorkroom.initList('workroomListMount');
@@ -10750,6 +11534,73 @@ var YawmiaJobCard = (function () {
       var el = Yawmia.$id('onlineWorkersCount');
       if (el) el.textContent = '—';
     }
+  }
+
+  // ── Phase 53 — Profile Completion Tasks ───────────────────
+  async function loadProfileTasks() {
+    var mount = Yawmia.$id('profileTasksMount');
+    if (!mount) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/profile/tasks');
+      if (!res.data || !res.data.ok || !res.data.tasks || res.data.tasks.length === 0) {
+        mount.innerHTML = '';
+        return;
+      }
+
+      renderProfileTasks(mount, res.data.tasks, res.data.completionScore || 0);
+    } catch (_) {
+      mount.innerHTML = '';
+    }
+  }
+
+  function renderProfileTasks(mount, tasks, completionScore) {
+    if (!mount) return;
+
+    var maxVisible = 5;
+    var visible = tasks.slice(0, maxVisible);
+
+    var html =
+      '<section class="card profile-task-card">' +
+        '<div class="profile-task-card__header">' +
+          '<div>' +
+            '<h2 class="card__title">✅ أكمل حسابك</h2>' +
+            '<p class="card__desc">اكتمال الحساب يساعدك توصل لفرص أفضل وثقة أعلى.</p>' +
+          '</div>' +
+          '<span class="profile-task-score">' + completionScore + '%</span>' +
+        '</div>' +
+        '<div class="profile-task-list">';
+
+    visible.forEach(function (task) {
+      html +=
+        '<a class="profile-task-item" href="' + YawmiaUtils.escapeHtml(task.url || '/profile.html') + '">' +
+          '<span class="profile-task-priority profile-task-priority--' + YawmiaUtils.escapeHtml(task.priority || 'low') + '">' + priorityLabel(task.priority) + '</span>' +
+          '<span class="profile-task-item__body">' +
+            '<strong>' + YawmiaUtils.escapeHtml(task.label || '') + '</strong>' +
+            '<small>' + YawmiaUtils.escapeHtml(task.description || '') + '</small>' +
+          '</span>' +
+          '<span class="profile-task-item__arrow">←</span>' +
+        '</a>';
+    });
+
+    html += '</div>';
+
+    if (tasks.length > maxVisible) {
+      html += '<p class="profile-task-more">+' + (tasks.length - maxVisible) + ' مهام أخرى في الملف الشخصي</p>';
+    }
+
+    html += '</section>';
+    mount.innerHTML = html;
+  }
+
+  function priorityLabel(priority) {
+    var labels = {
+      critical: 'مهم جداً',
+      high: 'مهم',
+      medium: 'متوسط',
+      low: 'اختياري',
+    };
+    return labels[priority] || 'مهمة';
   }
 
   // ── Phase 41 — Employer View Mode ─────────────────────────
@@ -10975,7 +11826,25 @@ var YawmiaJobCard = (function () {
           res.data.items.forEach(function (ntf) {
             var item = document.createElement('div'); item.className = 'notification-item' + (ntf.read ? '' : ' notification-item--unread'); item.setAttribute('aria-label', (ntf.read ? '' : 'غير مقروء: ') + ntf.message);
             item.innerHTML = '<p class="notification-item__msg">' + YawmiaUtils.escapeHtml(ntf.message) + '</p><span class="notification-item__time">' + new Date(ntf.createdAt).toLocaleString('ar-EG') + '</span>';
-            if (!ntf.read) { item.addEventListener('click', async function () { try { await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read'); item.classList.remove('notification-item--unread'); loadNotifications(); } catch (e) {} }); }
+            item.addEventListener('click', async function () {
+              try {
+                if (!ntf.read) {
+                  await Yawmia.api('POST', '/api/notifications/' + ntf.id + '/read');
+                  item.classList.remove('notification-item--unread');
+                }
+
+                if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
+                  Yawmia.safeNavigate(ntf.action.url);
+                  return;
+                }
+
+                loadNotifications();
+              } catch (e) {
+                if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
+                  Yawmia.safeNavigate(ntf.action.url);
+                }
+              }
+            });
             ntfList.appendChild(item);
           });
         } else if (ntfList) { ntfList.innerHTML = '<div class="notification-panel__empty"><span class="notification-panel__empty-icon">🔔</span><p>لا توجد إشعارات</p></div>'; }
@@ -12306,6 +13175,7 @@ var YawmiaPanels = (function () {
         Yawmia.setAuth(Yawmia.getToken(), user);
         renderProfile(user);
         renderCompletenessBar(user);
+        loadProfileTasks();
         renderEditForm(user);
         renderNotificationPreferences(user);
         renderVerificationSection(user);
@@ -12360,10 +13230,71 @@ var YawmiaPanels = (function () {
 
         // Load ratings
         loadRatings(user.id);
+
+        // Phase 53 — If opened with a task hash, scroll after dynamic sections render.
+        scrollToHashTarget();
       }
     } catch (err) {
       // Ignore — will show cached data
     }
+  }
+
+  // ── Phase 53 — Profile Completion Tasks ───────────────────
+  async function loadProfileTasks() {
+    var mount = Yawmia.$id('profileTasksMount');
+    if (!mount) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/profile/tasks');
+      if (!res.data || !res.data.ok || !res.data.tasks || res.data.tasks.length === 0) {
+        mount.innerHTML = '';
+        return;
+      }
+
+      renderProfileTasks(mount, res.data.tasks, res.data.completionScore || 0);
+    } catch (_) {
+      mount.innerHTML = '';
+    }
+  }
+
+  function renderProfileTasks(mount, tasks, completionScore) {
+    if (!mount) return;
+
+    var html =
+      '<section class="card profile-task-card">' +
+        '<div class="profile-task-card__header">' +
+          '<div>' +
+            '<h2 class="card__title">✅ مهام إكمال الحساب</h2>' +
+            '<p class="card__desc">اضغط على أي مهمة للانتقال مباشرة لمكان إكمالها.</p>' +
+          '</div>' +
+          '<span class="profile-task-score">' + completionScore + '%</span>' +
+        '</div>' +
+        '<div class="profile-task-list">';
+
+    tasks.forEach(function (task) {
+      html +=
+        '<a class="profile-task-item" href="' + escapeHtml(task.url || '/profile.html') + '">' +
+          '<span class="profile-task-priority profile-task-priority--' + escapeHtml(task.priority || 'low') + '">' + priorityLabel(task.priority) + '</span>' +
+          '<span class="profile-task-item__body">' +
+            '<strong>' + escapeHtml(task.label || '') + '</strong>' +
+            '<small>' + escapeHtml(task.description || '') + '</small>' +
+          '</span>' +
+          '<span class="profile-task-item__arrow">←</span>' +
+        '</a>';
+    });
+
+    html += '</div></section>';
+    mount.innerHTML = html;
+  }
+
+  function priorityLabel(priority) {
+    var labels = {
+      critical: 'مهم جداً',
+      high: 'مهم',
+      medium: 'متوسط',
+      low: 'اختياري',
+    };
+    return labels[priority] || 'مهمة';
   }
 
   // ── Render Profile Card ───────────────────────────────────
@@ -12535,6 +13466,7 @@ var YawmiaPanels = (function () {
           user = res.data.user;
           Yawmia.setAuth(Yawmia.getToken(), user);
           renderProfile(user);
+          loadProfileTasks();
           // Update header
           if (headerName) headerName.textContent = user.name || user.phone;
           Yawmia.showMessage('editProfileMsg', 'تم حفظ التعديلات بنجاح', 'success');
@@ -13225,6 +14157,20 @@ var YawmiaPanels = (function () {
     } catch (err) {
       // Non-blocking — favorites section is optional
     }
+  }
+
+  // ── Phase 53 — Deep-link task scrolling ───────────────────
+  function scrollToHashTarget() {
+    if (!window.location.hash) return;
+    var id = window.location.hash.slice(1);
+    if (!id) return;
+
+    setTimeout(function () {
+      var el = document.getElementById(id);
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 400);
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -15616,11 +16562,17 @@ var YawmiaWorkroom = (function () {
       currentWorkroom = res.data.workroom;
       activeTab = window.location.hash === '#workroom-messages' ? 'messages' :
                   window.location.hash === '#workroom-timeline' ? 'timeline' :
+                  window.location.hash === '#workroom-search' ? 'search' :
+                  window.location.hash === '#workroom-pinned' ? 'pinned' :
+                  window.location.hash === '#workroom-checklist' ? 'checklist' :
                   'details';
 
       renderWorkroomDetail();
       if (activeTab === 'messages') loadMessages();
       if (activeTab === 'timeline') loadTimeline();
+      if (activeTab === 'search') renderSearchTab();
+      if (activeTab === 'pinned') loadPinnedMessages();
+      if (activeTab === 'checklist') loadChecklist();
     } catch (_) {
       detailMountEl.innerHTML = '';
     }
@@ -15642,6 +16594,9 @@ var YawmiaWorkroom = (function () {
         '<button class="workroom-tab' + (activeTab === 'details' ? ' workroom-tab--active' : '') + '" data-tab="details" role="tab">التفاصيل</button>' +
         '<button class="workroom-tab' + (activeTab === 'messages' ? ' workroom-tab--active' : '') + '" data-tab="messages" role="tab">الرسائل</button>' +
         '<button class="workroom-tab' + (activeTab === 'timeline' ? ' workroom-tab--active' : '') + '" data-tab="timeline" role="tab">السجل</button>' +
+        '<button class="workroom-tab' + (activeTab === 'search' ? ' workroom-tab--active' : '') + '" data-tab="search" role="tab">بحث</button>' +
+        '<button class="workroom-tab' + (activeTab === 'pinned' ? ' workroom-tab--active' : '') + '" data-tab="pinned" role="tab">مثبت</button>' +
+        '<button class="workroom-tab' + (activeTab === 'checklist' ? ' workroom-tab--active' : '') + '" data-tab="checklist" role="tab">مهام</button>' +
       '</div>' +
 
       '<div class="workroom-tab-panel" id="workroomTabPanel"></div>' +
@@ -15660,6 +16615,9 @@ var YawmiaWorkroom = (function () {
         if (activeTab === 'details') renderDetailsTab();
         if (activeTab === 'messages') loadMessages();
         if (activeTab === 'timeline') loadTimeline();
+        if (activeTab === 'search') renderSearchTab();
+        if (activeTab === 'pinned') loadPinnedMessages();
+        if (activeTab === 'checklist') loadChecklist();
       });
     });
 
@@ -15685,6 +16643,9 @@ var YawmiaWorkroom = (function () {
     }
 
     panel.innerHTML =
+      '<div id="workroomSummaryGrid" class="workroom-summary-grid">' +
+        '<p class="empty-state">جاري تحميل الملخص...</p>' +
+      '</div>' +
       '<div class="workroom-details-grid">' +
         '<div class="health-row"><span class="health-row__label">الحالة</span><span class="health-row__value">' + escapeHtml(statusLabel(job.status)) + '</span></div>' +
         '<div class="health-row"><span class="health-row__label">الأجر</span><span class="health-row__value">' + escapeHtml(String(job.dailyWage || 0)) + ' جنيه/يوم</span></div>' +
@@ -15716,7 +16677,57 @@ var YawmiaWorkroom = (function () {
       });
     }
 
+    loadSummaryCards();
     wireTemplateButtons();
+  }
+
+  async function loadSummaryCards() {
+    var grid = document.getElementById('workroomSummaryGrid');
+    if (!grid || !currentWorkroom) return;
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/summary');
+      if (!res.data || !res.data.ok || !res.data.summary) {
+        grid.innerHTML = '';
+        return;
+      }
+
+      var s = res.data.summary;
+      var cards = [
+        {
+          value: (s.messages && s.messages.unread) || 0,
+          label: 'رسائل غير مقروءة'
+        },
+        {
+          value: (s.pins && s.pins.total) || 0,
+          label: 'رسائل مثبتة'
+        },
+        {
+          value: ((s.checklist && s.checklist.completed) || 0) + '/' + ((s.checklist && s.checklist.total) || 0),
+          label: 'مهام مكتملة'
+        },
+        {
+          value: ((s.attendance && s.attendance.attendanceRate) || 0) + '%',
+          label: 'نسبة الحضور'
+        },
+        {
+          value: (s.payment && s.payment.exists) ? statusLabel(s.payment.status) : 'لا يوجد',
+          label: 'حالة الدفع'
+        }
+      ];
+
+      grid.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'workroom-summary-card';
+        card.innerHTML =
+          '<div class="workroom-summary-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="workroom-summary-card__label">' + escapeHtml(c.label) + '</div>';
+        grid.appendChild(card);
+      });
+    } catch (_) {
+      grid.innerHTML = '';
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -15774,12 +16785,15 @@ var YawmiaWorkroom = (function () {
       bubble.innerHTML =
         '<div class="message-bubble__sender">' + escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') + ' ' + sourceLabel + '</div>' +
         '<div class="message-bubble__text">' + escapeHtml(msg.text || '') + '</div>' +
-        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + '</div>';
+        renderAttachments(msg.attachments || []) +
+        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + renderReceiptHint(msg, isMine) + '</div>' +
+        renderPinButton(msg);
 
       listEl.appendChild(bubble);
     });
 
     listEl.scrollTop = listEl.scrollHeight;
+    wirePinButtons();
   }
 
   function renderMessageComposer() {
@@ -15796,6 +16810,10 @@ var YawmiaWorkroom = (function () {
     }
 
     return templateHtml +
+      '<div class="workroom-attachment-row">' +
+        '<input type="file" id="workroomAttachmentInput" accept="image/*" class="form-input form-input--sm">' +
+        '<small class="form-hint">اختياري: صورة واحدة لكل رسالة حالياً</small>' +
+      '</div>' +
       '<div class="message-send-form workroom-composer">' +
         '<input type="text" class="message-input" id="workroomMessageInput" placeholder="اكتب رسالة..." maxlength="500">' +
         '<button class="btn btn--primary btn--sm" id="btnSendWorkroomMessage">إرسال</button>' +
@@ -15814,8 +16832,10 @@ var YawmiaWorkroom = (function () {
 
       await sendMessage(text, null, btn, function () {
         input.value = '';
+        var fileInput = document.getElementById('workroomAttachmentInput');
+        if (fileInput) fileInput.value = '';
         loadMessages();
-      });
+      }, true);
     }
 
     if (btn) btn.addEventListener('click', send);
@@ -15843,7 +16863,48 @@ var YawmiaWorkroom = (function () {
     });
   }
 
-  async function sendMessage(text, templateKey, btn, onSuccess) {
+  async function uploadSelectedAttachment(btn) {
+    var fileInput = document.getElementById('workroomAttachmentInput');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+
+    var file = fileInput.files[0];
+
+    if (file.size > 2 * 1024 * 1024) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('حجم الصورة أكبر من 2MB');
+      return null;
+    }
+
+    try {
+      var dataUri = await fileToDataUri(file);
+      var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/attachments', {
+        dataUri: dataUri,
+        clientName: file.name,
+      });
+
+      if (res.data && res.data.ok && res.data.attachment) {
+        return res.data.attachment;
+      }
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.error((res.data && res.data.error) || 'تعذّر رفع المرفق');
+      }
+      return null;
+    } catch (_) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في رفع المرفق');
+      return null;
+    }
+  }
+
+  function fileToDataUri(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(new Error('READ_FAILED')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function sendMessage(text, templateKey, btn, onSuccess, includeAttachment) {
     if (!currentWorkroom || !text) return;
 
     var errorEl = document.getElementById('workroomMessageError');
@@ -15857,6 +16918,11 @@ var YawmiaWorkroom = (function () {
     try {
       var body = { text: text };
       if (templateKey) body.templateKey = templateKey;
+
+      if (includeAttachment) {
+        var uploaded = await uploadSelectedAttachment(btn);
+        if (uploaded) body.attachments = [uploaded];
+      }
 
       var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages', body);
 
@@ -15875,6 +16941,315 @@ var YawmiaWorkroom = (function () {
     }
   }
 
+  function renderAttachments(attachments) {
+    if (!attachments || !attachments.length) return '';
+
+    var html = '<div class="message-attachments">';
+    attachments.forEach(function (att) {
+      if (att.type === 'image' && att.imageRef) {
+        html += '<a class="attachment-chip" href="/api/images/' + encodeURIComponent(att.imageRef) + '" target="_blank" rel="noopener">' +
+          '🖼 ' + escapeHtml(att.caption || att.clientName || 'صورة') +
+        '</a>';
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderReceiptHint(msg, isMine) {
+    if (!isMine) return '';
+
+    if (!msg.readReceipt) {
+      return ' · <span class="read-receipt read-receipt--unknown">غير معروف</span>';
+    }
+
+    var count = msg.readReceipt.readCount || 0;
+    if (count > 0) {
+      return ' · <span class="read-receipt read-receipt--read">تمت القراءة</span>';
+    }
+
+    return ' · <span class="read-receipt read-receipt--unread">غير مقروء</span>';
+  }
+
+  function renderPinButton(msg) {
+    var user = getUser();
+    if (!user || !currentWorkroom) return '';
+    if (currentWorkroom.userRoleInWorkroom !== 'employer') return '';
+    return '<button class="btn btn--ghost btn--sm workroom-pin-btn" data-message-id="' + escapeHtml(msg.id) + '" style="margin-block-start:0.35rem;">📌 تثبيت</button>';
+  }
+
+  async function handlePinMessage(messageId, btn) {
+    if (!currentWorkroom || !messageId) return;
+    if (btn) Yawmia.setLoading(btn, true);
+
+    try {
+      var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/pins', {
+        messageId: messageId
+      });
+      if (res.data && res.data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تثبيت الرسالة');
+        if (activeTab === 'messages') loadMessages();
+      } else {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((res.data && res.data.error) || 'خطأ في التثبيت');
+      }
+    } catch (_) {
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+    } finally {
+      if (btn) Yawmia.setLoading(btn, false);
+    }
+  }
+
+  function wirePinButtons() {
+    document.querySelectorAll('.workroom-pin-btn').forEach(function (btn) {
+      if (btn.dataset.wired === '1') return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', function () {
+        handlePinMessage(btn.getAttribute('data-message-id'), btn);
+      });
+    });
+  }
+
+  async function loadPinnedMessages() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML = '<p class="empty-state">جاري تحميل الرسائل المثبتة...</p>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/pins');
+      var pins = (res.data && res.data.pins) || [];
+
+      if (pins.length === 0) {
+        panel.innerHTML = '<p class="empty-state">لا توجد رسائل مثبتة بعد</p>';
+        return;
+      }
+
+      var html = '<div class="workroom-pin-list">';
+      pins.forEach(function (pin) {
+        var msg = pin.message || {};
+        html += '<div class="workroom-pin-card">' +
+          '<div class="workroom-pin-card__text">' + escapeHtml(msg.text || 'رسالة غير متاحة') + '</div>' +
+          '<div class="workroom-pin-card__meta">' +
+            escapeHtml(formatDateTime(pin.pinnedAt)) +
+            (pin.note ? ' · ' + escapeHtml(pin.note) : '') +
+          '</div>';
+
+        if (currentWorkroom.userRoleInWorkroom === 'employer') {
+          html += '<button class="btn btn--ghost btn--sm workroom-unpin-btn" data-message-id="' + escapeHtml(pin.messageId) + '" style="margin-block-start:0.5rem;color:var(--color-error);border-color:var(--color-error);">إلغاء التثبيت</button>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+
+      panel.innerHTML = html;
+
+      panel.querySelectorAll('.workroom-unpin-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          Yawmia.setLoading(btn, true);
+          try {
+            var r = await Yawmia.api('DELETE', '/api/workrooms/' + currentWorkroom.jobId + '/pins/' + btn.getAttribute('data-message-id'));
+            if (r.data && r.data.ok) {
+              if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إلغاء التثبيت');
+              loadPinnedMessages();
+            } else {
+              if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+            }
+          } catch (_) {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+          } finally {
+            Yawmia.setLoading(btn, false);
+          }
+        });
+      });
+    } catch (_) {
+      panel.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل المثبتة</p>';
+    }
+  }
+
+  async function loadChecklist() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML = '<p class="empty-state">جاري تحميل المهام...</p>';
+
+    try {
+      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/checklist');
+      var checklist = (res.data && res.data.checklist) || { items: [] };
+      renderChecklist(checklist);
+    } catch (_) {
+      panel.innerHTML = '<p class="empty-state">خطأ في تحميل قائمة المهام</p>';
+    }
+  }
+
+  function renderChecklist(checklist) {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    var items = checklist.items || [];
+    var html = '<div class="workroom-checklist">';
+
+    if (currentWorkroom.userRoleInWorkroom === 'employer') {
+      html += '<div class="workroom-checklist-create">' +
+        '<input type="text" id="workroomChecklistText" class="form-input form-input--sm" placeholder="أضف مهمة..." maxlength="300">' +
+        '<button class="btn btn--primary btn--sm" id="btnCreateChecklistItem">إضافة</button>' +
+      '</div>';
+    }
+
+    if (items.length === 0) {
+      html += '<p class="empty-state">لا توجد مهام بعد</p>';
+    } else {
+      html += '<div class="workroom-checklist-items">';
+      items.forEach(function (item) {
+        var done = item.status === 'completed';
+        html += '<div class="workroom-checklist-item' + (done ? ' workroom-checklist-item--done' : '') + '">' +
+          '<label>' +
+            '<input type="checkbox" class="workroom-checklist-toggle" data-item-id="' + escapeHtml(item.id) + '" ' + (done ? 'checked disabled' : '') + '>' +
+            '<span>' + escapeHtml(item.text || '') + '</span>' +
+          '</label>';
+
+        if (currentWorkroom.userRoleInWorkroom === 'employer') {
+          html += '<button class="btn btn--ghost btn--sm workroom-checklist-delete" data-item-id="' + escapeHtml(item.id) + '">حذف</button>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    panel.innerHTML = html;
+
+    var createBtn = document.getElementById('btnCreateChecklistItem');
+    var input = document.getElementById('workroomChecklistText');
+    if (createBtn && input) {
+      createBtn.addEventListener('click', async function () {
+        var text = input.value.trim();
+        if (!text) return;
+        Yawmia.setLoading(createBtn, true);
+        try {
+          var r = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/checklist', { text: text });
+          if (r.data && r.data.ok) {
+            input.value = '';
+            loadChecklist();
+          } else {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(createBtn, false);
+        }
+      });
+    }
+
+    panel.querySelectorAll('.workroom-checklist-toggle').forEach(function (cb) {
+      cb.addEventListener('change', async function () {
+        var itemId = cb.getAttribute('data-item-id');
+        try {
+          var r = await Yawmia.api('PUT', '/api/workrooms/' + currentWorkroom.jobId + '/checklist/' + itemId, {
+            status: 'completed'
+          });
+          if (r.data && r.data.ok) {
+            loadChecklist();
+          } else {
+            cb.checked = false;
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          cb.checked = false;
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        }
+      });
+    });
+
+    panel.querySelectorAll('.workroom-checklist-delete').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var itemId = btn.getAttribute('data-item-id');
+        Yawmia.setLoading(btn, true);
+        try {
+          var r = await Yawmia.api('DELETE', '/api/workrooms/' + currentWorkroom.jobId + '/checklist/' + itemId);
+          if (r.data && r.data.ok) {
+            loadChecklist();
+          } else {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error((r.data && r.data.error) || 'خطأ');
+          }
+        } catch (_) {
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
+        } finally {
+          Yawmia.setLoading(btn, false);
+        }
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Search
+  // ═══════════════════════════════════════════════════════════════
+
+  function renderSearchTab() {
+    var panel = document.getElementById('workroomTabPanel');
+    if (!panel || !currentWorkroom) return;
+
+    panel.innerHTML =
+      '<div class="workroom-search-box">' +
+        '<input type="search" id="workroomSearchInput" class="form-input form-input--sm" placeholder="ابحث في الرسائل..." aria-label="بحث في رسائل مساحة العمل">' +
+        '<button class="btn btn--primary btn--sm" id="btnWorkroomSearch">بحث</button>' +
+      '</div>' +
+      '<div id="workroomSearchResults" class="workroom-search-results">' +
+        '<p class="empty-state">اكتب كلمة للبحث داخل رسائل مساحة العمل</p>' +
+      '</div>';
+
+    var btn = document.getElementById('btnWorkroomSearch');
+    var input = document.getElementById('workroomSearchInput');
+
+    async function doSearch() {
+      var q = input ? input.value.trim() : '';
+      var resultsEl = document.getElementById('workroomSearchResults');
+      if (!resultsEl) return;
+
+      if (q.length < 2) {
+        resultsEl.innerHTML = '<p class="empty-state">كلمة البحث لازم تكون حرفين على الأقل</p>';
+        return;
+      }
+
+      resultsEl.innerHTML = '<p class="empty-state">جاري البحث...</p>';
+
+      try {
+        var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/search?q=' + encodeURIComponent(q) + '&limit=50');
+        if (!res.data || !res.data.ok || !res.data.results || res.data.results.length === 0) {
+          resultsEl.innerHTML = '<p class="empty-state">لا توجد نتائج</p>';
+          return;
+        }
+
+        var html = '<div class="workroom-search-meta">تم العثور على ' + res.data.total + ' نتيجة' +
+          (res.data.fallbackUsed ? ' · بحث احتياطي' : '') +
+          '</div>';
+
+        res.data.results.forEach(function (msg) {
+          html += '<div class="workroom-search-result">' +
+            '<div class="workroom-search-result__text">' + escapeHtml(msg.preview || msg.text || '') + '</div>' +
+            '<div class="workroom-search-result__meta">' +
+              escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') +
+              ' · ' + escapeHtml(formatDateTime(msg.createdAt)) +
+            '</div>' +
+          '</div>';
+        });
+
+        resultsEl.innerHTML = html;
+      } catch (_) {
+        resultsEl.innerHTML = '<p class="empty-state">خطأ في البحث</p>';
+      }
+    }
+
+    if (btn) btn.addEventListener('click', doSearch);
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doSearch();
+      });
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Timeline
   // ═══════════════════════════════════════════════════════════════
@@ -15883,10 +17258,25 @@ var YawmiaWorkroom = (function () {
     var panel = document.getElementById('workroomTabPanel');
     if (!panel || !currentWorkroom) return;
 
-    panel.innerHTML = '<div class="workroom-timeline"><p class="empty-state">جاري تحميل السجل...</p></div>';
+    panel.innerHTML =
+      '<div class="workroom-timeline-filter">' +
+        '<select id="workroomTimelineType" class="form-input form-input--sm" aria-label="فلترة السجل">' +
+          '<option value="">كل الأحداث</option>' +
+          '<option value="attendance_checkin,attendance_confirmed,attendance_noshow">الحضور</option>' +
+          '<option value="payment_created,payment_confirmed,payment_completed,payment_disputed">الدفع</option>' +
+          '<option value="job_created,job_started,job_completed">الفرصة</option>' +
+          '<option value="message_pinned,checklist_item_created,checklist_item_completed,attachment_added">التعاون</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="workroom-timeline"><p class="empty-state">جاري تحميل السجل...</p></div>';
 
     try {
-      var res = await Yawmia.api('GET', '/api/workrooms/' + currentWorkroom.jobId + '/timeline?limit=200');
+      var typeEl = document.getElementById('workroomTimelineType');
+      var type = typeEl ? typeEl.value : '';
+      var url = '/api/workrooms/' + currentWorkroom.jobId + '/timeline?limit=200';
+      if (type) url += '&type=' + encodeURIComponent(type);
+
+      var res = await Yawmia.api('GET', url);
       if (!res.data || !res.data.ok) {
         panel.innerHTML = '<p class="empty-state">تعذّر تحميل السجل</p>';
         return;
@@ -15894,6 +17284,12 @@ var YawmiaWorkroom = (function () {
 
       var timeline = res.data.timeline || [];
       renderTimeline(timeline);
+
+      var typeEl = document.getElementById('workroomTimelineType');
+      if (typeEl && typeEl.dataset.wired !== '1') {
+        typeEl.dataset.wired = '1';
+        typeEl.addEventListener('change', loadTimeline);
+      }
     } catch (_) {
       panel.innerHTML = '<p class="empty-state">خطأ في تحميل السجل</p>';
     }
@@ -16021,6 +17417,9 @@ var YawmiaWorkroom = (function () {
           <h2 id="welcomeTitle">أهلاً بيك!</h2>
           <p id="welcomeDesc"></p>
         </section>
+
+        <!-- Phase 53 — Profile Completion Tasks -->
+        <div id="profileTasksMount"></div>
 
         <!-- Phase 51 — Workroom List (worker/employer, mounted by JS) -->
         <div id="workroomListMount"></div>
@@ -16744,6 +18143,9 @@ var YawmiaWorkroom = (function () {
           <div class="profile-categories hidden" id="profileCategories"></div>
         </section>
 
+        <!-- Phase 53 — Profile Completion Tasks -->
+        <div id="profileTasksMount"></div>
+
         <!-- Edit Profile -->
         <section class="card" id="editProfileSection">
           <h2 class="card__title">تعديل البيانات</h2>
@@ -16949,7 +18351,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.48.0';
+const CACHE_NAME = 'yawmia-v0.49.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -17090,18 +18492,70 @@ self.addEventListener('push', (event) => {
 // ── Notification Click: navigate to URL ──
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/dashboard.html';
+
+  const rawUrl = event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : '/dashboard.html';
+
+  const url = sanitizeNotificationUrl(rawUrl);
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url.includes(url) && 'focus' in client) {
-          return client.focus();
+        try {
+          const clientUrl = new URL(client.url);
+          const targetUrl = new URL(url, self.location.origin);
+
+          if (clientUrl.origin === targetUrl.origin) {
+            if ('navigate' in client && clientUrl.pathname + clientUrl.search + clientUrl.hash !== url) {
+              return client.navigate(url).then((c) => c && c.focus ? c.focus() : client.focus());
+            }
+            if ('focus' in client) return client.focus();
+          }
+        } catch (_) {
+          // Try next client.
         }
       }
+
       return clients.openWindow(url);
     })
   );
 });
+
+function sanitizeNotificationUrl(url) {
+  if (!url || typeof url !== 'string') return '/dashboard.html';
+
+  const trimmed = url.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (!trimmed.startsWith('/')) return '/dashboard.html';
+  if (lower.startsWith('//')) return '/dashboard.html';
+  if (lower.startsWith('http://')) return '/dashboard.html';
+  if (lower.startsWith('https://')) return '/dashboard.html';
+  if (lower.startsWith('javascript:')) return '/dashboard.html';
+  if (lower.startsWith('data:')) return '/dashboard.html';
+  if (trimmed.includes('\\')) return '/dashboard.html';
+  if (trimmed.includes('..')) return '/dashboard.html';
+
+  try {
+    const decoded = decodeURIComponent(trimmed);
+    if (decoded.includes('\\') || decoded.includes('..')) return '/dashboard.html';
+  } catch (_) {
+    return '/dashboard.html';
+  }
+
+  const allowed = [
+    '/dashboard.html',
+    '/profile.html',
+    '/job.html',
+    '/user.html',
+    '/terms.html'
+  ];
+
+  return allowed.some((prefix) => trimmed.startsWith(prefix))
+    ? trimmed
+    : '/dashboard.html';
+}
 ```
 
 ---
@@ -17726,6 +19180,77 @@ main().catch(err => {
 
 ---
 
+## `scripts/compact-predictive-signals.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/compact-predictive-signals.js — Predictive Signal Retention CLI (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/compact-predictive-signals.js [--force]
+// Archives old resolved predictive signals.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  const force = process.argv.includes('--force');
+
+  console.log(`\n🧹 يوميّة Predictive Signal Retention${force ? ' (FORCE)' : ''}\n`);
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { runPredictiveSignalRetention, getPredictivePrecisionStats } =
+    await import('../server/services/predictiveSignalRetention.js');
+
+  const before = await getPredictivePrecisionStats();
+
+  console.log('Before:');
+  console.log(`   total: ${before.total || 0}`);
+  console.log(`   active: ${before.byStatus?.active || 0}`);
+  console.log(`   confirmed: ${before.byStatus?.confirmed || 0}`);
+  console.log(`   false_positive: ${before.byStatus?.false_positive || 0}`);
+
+  const result = await runPredictiveSignalRetention({
+    force,
+    reason: 'cli',
+  });
+
+  if (!result.ok) {
+    console.error('\n❌ Retention failed:', result.error || result.code);
+    process.exit(1);
+  }
+
+  console.log('\n✅ Retention complete');
+  console.log(`   scanned: ${result.scanned || 0}`);
+  console.log(`   archived: ${result.archived || 0}`);
+  console.log(`   skipped: ${result.skipped || 0}`);
+  console.log(`   failed: ${result.failed || 0}`);
+  console.log(`   duration: ${result.durationMs || 0}ms\n`);
+
+  const after = await getPredictivePrecisionStats();
+
+  console.log('After:');
+  console.log(`   total: ${after.total || 0}`);
+  console.log(`   active: ${after.byStatus?.active || 0}`);
+  console.log(`   confirmed: ${after.byStatus?.confirmed || 0}`);
+  console.log(`   false_positive: ${after.byStatus?.false_positive || 0}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Predictive signal retention failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/generate-vapid-keys.js`
 
 ```javascript
@@ -18098,6 +19623,92 @@ async function main() {
 
 main().catch(err => {
   console.error('❌', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/rebuild-workroom-search.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/rebuild-workroom-search.js — Workroom Search Rebuild CLI (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/rebuild-workroom-search.js --jobId=job_x
+//   node scripts/rebuild-workroom-search.js --all
+// Rebuilds per-job Workroom message search indexes.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const jobId = getArg('jobId', '');
+  const all = process.argv.includes('--all');
+
+  console.log('\n🔎 يوميّة Workroom Search Rebuild\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { rebuildWorkroomSearchIndex } = await import('../server/services/workroomSearch.js');
+
+  if (!jobId && !all) {
+    console.error('❌ Missing --jobId=job_x or --all');
+    process.exit(1);
+  }
+
+  if (jobId) {
+    const result = await rebuildWorkroomSearchIndex(jobId);
+    console.log('✅ Rebuild complete');
+    console.log(`   jobId: ${jobId}`);
+    console.log(`   messages: ${result.messageCount || 0}`);
+    console.log(`   tokens: ${result.tokenCount || 0}\n`);
+    return;
+  }
+
+  const { listAll } = await import('../server/services/jobs.js');
+  const jobs = await listAll();
+
+  let rebuilt = 0;
+  let failed = 0;
+
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+    try {
+      const result = await rebuildWorkroomSearchIndex(job.id);
+      if (result && result.rebuilt) rebuilt++;
+    } catch (err) {
+      failed++;
+      console.warn(`   ⚠️ Failed ${job.id}: ${err.message}`);
+    }
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  console.log('✅ Rebuild complete');
+  console.log(`   jobs scanned: ${jobs.length}`);
+  console.log(`   rebuilt: ${rebuilt}`);
+  console.log(`   failed: ${failed}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Workroom search rebuild failed:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });
 ```
@@ -18504,6 +20115,113 @@ async function repair() {
 
 repair().catch(err => {
   console.error('❌ Repair failed:', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/run-trust-calibration.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/run-trust-calibration.js — Trust Calibration CLI (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/run-trust-calibration.js --snapshots [--role=worker] [--limit=100] [--force]
+//   node scripts/run-trust-calibration.js --report [--from=ISO] [--to=ISO] [--role=worker]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const runSnapshots = process.argv.includes('--snapshots');
+  const runReport = process.argv.includes('--report');
+  const force = process.argv.includes('--force');
+
+  console.log('\n🎯 يوميّة Trust Calibration CLI\n');
+
+  if (!runSnapshots && !runReport) {
+    console.error('❌ Choose --snapshots or --report');
+    process.exit(1);
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const trustCalibration = await import('../server/services/trustCalibration.js');
+
+  if (runSnapshots) {
+    const role = getArg('role', '');
+    const limitRaw = getArg('limit', '');
+    const limit = limitRaw ? parseInt(limitRaw) : undefined;
+
+    console.log('   Running snapshot batch...');
+    const result = await trustCalibration.createSnapshotsForActiveUsers({
+      role: role || undefined,
+      limit,
+      force,
+      reason: 'cli',
+    });
+
+    console.log('\n✅ Snapshot batch complete');
+    console.log(`   scanned: ${result.scanned || 0}`);
+    console.log(`   created: ${result.created || 0}`);
+    console.log(`   deduped: ${result.deduped || 0}`);
+    console.log(`   failed: ${result.failed || 0}`);
+    console.log(`   duration: ${result.durationMs || 0}ms\n`);
+  }
+
+  if (runReport) {
+    const from = getArg('from', '') || undefined;
+    const to = getArg('to', '') || undefined;
+    const role = getArg('role', '') || undefined;
+
+    console.log('   Generating calibration report...');
+    const result = await trustCalibration.generateCalibrationReport({
+      from,
+      to,
+      role,
+      persist: true,
+    });
+
+    if (!result.ok) {
+      console.error('❌ Report failed:', result.error || result.code);
+      process.exit(1);
+    }
+
+    const report = result.report;
+
+    console.log('\n✅ Calibration report complete');
+    console.log(`   reportId: ${report.id}`);
+    console.log(`   samples: ${report.sampleCount}`);
+    console.log(`   drift warnings: ${(report.driftWarnings || []).length}`);
+    console.log(`   duration: ${report.durationMs || 0}ms\n`);
+
+    if (report.driftWarnings && report.driftWarnings.length > 0) {
+      console.log('⚠️ Drift warnings:');
+      for (const w of report.driftWarnings.slice(0, 10)) {
+        console.log(`   - ${w.label}: score=${w.avgScore}, success=${w.avgSuccessRate}, delta=${w.delta}`);
+      }
+      console.log('');
+    }
+  }
+}
+
+main().catch(err => {
+  console.error('\n❌ Trust calibration CLI failed:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });
 ```

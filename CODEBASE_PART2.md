@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.48.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-10T20:40:29.448Z
-> Files in this part: 77
+# يوميّة (Yawmia) v0.49.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-15T11:15:47.322Z
+> Files in this part: 87
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -52,34 +52,44 @@
 47. `server/services/messaging.js`
 48. `server/services/migration.js`
 49. `server/services/monitor.js`
-50. `server/services/notificationMessenger.js`
-51. `server/services/notifications.js`
-52. `server/services/offerAbuseDetector.js`
-53. `server/services/opsQueue.js`
-54. `server/services/payments.js`
-55. `server/services/predictiveAbuse.js`
-56. `server/services/presenceService.js`
-57. `server/services/profileCompleteness.js`
-58. `server/services/queryIndex.js`
-59. `server/services/queueWorkers.js`
-60. `server/services/ratings.js`
-61. `server/services/reports.js`
-62. `server/services/resourceLock.js`
-63. `server/services/sanitizer.js`
-64. `server/services/scheduledAbuseDetection.js`
-65. `server/services/searchIndex.js`
-66. `server/services/sessions.js`
-67. `server/services/snoozeReminders.js`
-68. `server/services/sseManager.js`
-69. `server/services/trust.js`
-70. `server/services/trustAnalytics.js`
-71. `server/services/trustScoreV2.js`
-72. `server/services/users.js`
-73. `server/services/validators.js`
-74. `server/services/verification.js`
-75. `server/services/webpush.js`
-76. `server/services/workerDiscovery.js`
-77. `server/services/workroom.js`
+50. `server/services/notificationActions.js`
+51. `server/services/notificationMessenger.js`
+52. `server/services/notifications.js`
+53. `server/services/offerAbuseDetector.js`
+54. `server/services/opsQueue.js`
+55. `server/services/payments.js`
+56. `server/services/predictiveAbuse.js`
+57. `server/services/predictiveSignalRetention.js`
+58. `server/services/presenceService.js`
+59. `server/services/profileCompleteness.js`
+60. `server/services/profileTasks.js`
+61. `server/services/queryIndex.js`
+62. `server/services/queueWorkers.js`
+63. `server/services/ratings.js`
+64. `server/services/reports.js`
+65. `server/services/resourceLock.js`
+66. `server/services/sanitizer.js`
+67. `server/services/scheduledAbuseDetection.js`
+68. `server/services/searchIndex.js`
+69. `server/services/sessions.js`
+70. `server/services/snoozeReminders.js`
+71. `server/services/sseManager.js`
+72. `server/services/trust.js`
+73. `server/services/trustAnalytics.js`
+74. `server/services/trustCalibration.js`
+75. `server/services/trustScoreV2.js`
+76. `server/services/users.js`
+77. `server/services/validators.js`
+78. `server/services/verification.js`
+79. `server/services/webpush.js`
+80. `server/services/workerDiscovery.js`
+81. `server/services/workroom.js`
+82. `server/services/workroomAttachments.js`
+83. `server/services/workroomChecklist.js`
+84. `server/services/workroomPins.js`
+85. `server/services/workroomReceipts.js`
+86. `server/services/workroomSearch.js`
+87. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -16023,7 +16033,7 @@ export async function canMessage(jobId, userId) {
  * @param {{ recipientId: string, text: string }} fields
  * @returns {Promise<{ ok: boolean, message?: object, error?: string, code?: string }>}
  */
-export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey }) {
+export async function sendMessage(jobId, senderId, { recipientId, text, source, templateKey, attachments } = {}) {
   // 1. canMessage check for sender
   const senderCheck = await canMessage(jobId, senderId);
   if (!senderCheck.allowed) {
@@ -16078,6 +16088,22 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
   // 7. Determine sender role
   const senderRole = job.employerId === senderId ? 'employer' : 'worker';
 
+  // Phase 53 — Validate attachment metadata before creating message.
+  // Attachments are metadata only (imageRef), raw base64 is never stored here.
+  let cleanAttachments = [];
+  if (attachments !== undefined && attachments !== null) {
+    try {
+      const { validateAttachmentList } = await import('./workroomAttachments.js');
+      const validation = validateAttachmentList(attachments);
+      if (!validation.ok) {
+        return { ok: false, error: validation.error, code: validation.code };
+      }
+      cleanAttachments = validation.attachments || [];
+    } catch (_) {
+      cleanAttachments = [];
+    }
+  }
+
   // 8. Create message record
   const id = 'msg_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
@@ -16093,8 +16119,19 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     readAt: null,
     source: source === 'workroom' ? 'workroom' : 'job_messages',
     templateKey: (templateKey && typeof templateKey === 'string') ? templateKey.substring(0, 80) : null,
+    attachments: [],
     createdAt: now,
   };
+
+  // Phase 53 — Attach safe metadata to message.
+  if (cleanAttachments.length > 0) {
+    try {
+      const { attachToMessage } = await import('./workroomAttachments.js');
+      await attachToMessage(message, cleanAttachments);
+    } catch (_) {
+      message.attachments = [];
+    }
+  }
 
   const msgPath = getWriteRecordPath('messages', id);
   await atomicWrite(msgPath, message);
@@ -16113,6 +16150,13 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     jobTitle: job.title,
     preview: sanitized.substring(0, 100),
   });
+
+  // Phase 53 — Workroom message search indexing (fire-and-forget).
+  if (message.source === 'workroom') {
+    import('./workroomSearch.js').then(({ indexWorkroomMessage }) => {
+      indexWorkroomMessage(message).catch(() => {});
+    }).catch(() => {});
+  }
 
   return { ok: true, message };
 }
@@ -16958,6 +17002,27 @@ const builtInMigrations = [
       logger.info('Migration v12: Phase 52 directories registered (ops queue + alert deliveries)');
     },
   },
+  {
+    version: 13,
+    name: 'Phase 53: Workroom Collaboration V2 + Trust Calibration + Actionable UX',
+    up: async () => {
+      // Phase 53 registers additive operational/product structures:
+      //   - workrooms/receipts
+      //   - workrooms/pins
+      //   - workrooms/checklists
+      //   - workrooms/search-indexes
+      //   - metrics/workroom-template-usage
+      //   - metrics/trust-calibration
+      //   - metrics/predictive-signal-archives
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      // Workroom search indexes are rebuildable via queue/script.
+      // Trust calibration snapshots/reports are generated by scheduled/admin jobs.
+      // Predictive signal archives are generated by retention jobs.
+      logger.info('Migration v13: Phase 53 directories registered (workroom v2 + trust calibration + predictive signal archives)');
+    },
+  },
 ];
 
 /**
@@ -17490,6 +17555,223 @@ export async function cleanOldSnapshots() {
 
 ---
 
+## `server/services/notificationActions.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/notificationActions.js — Safe Actionable Notifications (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Builds safe relative action URLs for notifications.
+// Additive only: old notifications without action remain valid.
+// Security:
+//   - relative URLs only
+//   - allowlisted prefixes only
+//   - rejects open redirects / javascript: / path traversal
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+function isEnabled() {
+  return !!(config.NOTIFICATION_ACTIONS && config.NOTIFICATION_ACTIONS.enabled);
+}
+
+export function getDefaultAction() {
+  const url = config.NOTIFICATION_ACTIONS?.defaultUrl || '/dashboard.html';
+  return {
+    type: 'default',
+    url,
+    entityType: null,
+    entityId: null,
+  };
+}
+
+function safeId(value) {
+  if (!value || typeof value !== 'string') return '';
+  if (value.length > 100) return '';
+  if (value.includes('..')) return '';
+  if (!/^[a-zA-Z0-9_-]+$/.test(value)) return '';
+  return value;
+}
+
+function buildUrl(path, params = {}, hash = '') {
+  const query = [];
+  for (const [key, value] of Object.entries(params)) {
+    const clean = safeId(value);
+    if (!clean) continue;
+    query.push(`${encodeURIComponent(key)}=${encodeURIComponent(clean)}`);
+  }
+
+  let url = path;
+  if (query.length > 0) url += '?' + query.join('&');
+  if (hash) url += hash.startsWith('#') ? hash : '#' + hash;
+  return sanitizeActionUrl(url);
+}
+
+export function isAllowedActionUrl(url) {
+  if (!isEnabled()) return false;
+  if (!url || typeof url !== 'string') return false;
+
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+
+  const lower = trimmed.toLowerCase();
+
+  // Absolute/protocol/open-redirect guards.
+  if (lower.startsWith('http://')) return false;
+  if (lower.startsWith('https://')) return false;
+  if (lower.startsWith('//')) return false;
+  if (lower.startsWith('javascript:')) return false;
+  if (lower.startsWith('data:')) return false;
+  if (lower.startsWith('vbscript:')) return false;
+
+  // Must be root-relative.
+  if (!trimmed.startsWith('/')) return false;
+
+  // No backslashes or traversal, including encoded traversal.
+  if (trimmed.includes('\\')) return false;
+  if (trimmed.includes('..')) return false;
+
+  let decoded = trimmed;
+  try {
+    decoded = decodeURIComponent(trimmed);
+  } catch (_) {
+    return false;
+  }
+
+  if (decoded.includes('\\')) return false;
+  if (decoded.includes('..')) return false;
+
+  const allowed = config.NOTIFICATION_ACTIONS?.allowedUrlPrefixes || ['/dashboard.html'];
+  return allowed.some(prefix => trimmed.startsWith(prefix));
+}
+
+export function sanitizeActionUrl(url) {
+  const fallback = config.NOTIFICATION_ACTIONS?.defaultUrl || '/dashboard.html';
+  if (!isAllowedActionUrl(url)) return fallback;
+  return url.trim();
+}
+
+export function buildNotificationAction(type, meta = {}, userRole) {
+  if (!isEnabled()) return getDefaultAction();
+
+  const safeMeta = meta && typeof meta === 'object' ? meta : {};
+  const jobId = safeMeta.jobId;
+  const userId = safeMeta.userId || safeMeta.toUserId || safeMeta.targetId;
+  const offerId = safeMeta.offerId;
+
+  function jobAction(actionType, hash) {
+    return {
+      type: actionType,
+      url: buildUrl('/job.html', { id: jobId }, hash || ''),
+      entityType: 'job',
+      entityId: safeId(jobId) || null,
+    };
+  }
+
+  function profileAction(actionType, hash) {
+    const url = hash ? `/profile.html${hash}` : '/profile.html';
+    return {
+      type: actionType,
+      url: sanitizeActionUrl(url),
+      entityType: 'profile',
+      entityId: null,
+    };
+  }
+
+  switch (type) {
+    case 'application_accepted':
+      return jobAction('job_workroom', '#workroom');
+
+    case 'application_rejected':
+    case 'new_application':
+    case 'job_filled':
+    case 'job_cancelled':
+    case 'job_renewed':
+    case 'job_expiry_warning':
+    case 'job_alert_match':
+    case 'job_match':
+    case 'job_nearby':
+      return jobAction('job_detail');
+
+    case 'payment_created':
+    case 'payment_disputed':
+    case 'payment_completed':
+    case 'direct_offer_accepted':
+      return jobAction('job_workroom', '#workroom');
+
+    case 'new_message':
+      return jobAction('workroom_messages', '#workroom-messages');
+
+    case 'rating_received':
+      if (userId && safeId(userId)) {
+        return {
+          type: 'user_profile',
+          url: buildUrl('/user.html', { id: userId }),
+          entityType: 'user',
+          entityId: safeId(userId),
+        };
+      }
+      return profileAction('profile');
+
+    case 'direct_offer':
+      return {
+        type: 'direct_offer',
+        url: sanitizeActionUrl('/dashboard.html'),
+        entityType: 'direct_offer',
+        entityId: safeId(offerId) || null,
+      };
+
+    case 'direct_offer_declined':
+    case 'direct_offer_expired':
+      return profileAction('direct_offers', '#directOffersSection');
+
+    case 'verification_reviewed':
+      return profileAction('verification', '#verification-section');
+
+    case 'admin_warning':
+    case 'activity_summary':
+      return profileAction('profile');
+
+    case 'terms_required':
+      return {
+        type: 'terms',
+        url: sanitizeActionUrl('/terms.html?accept=1'),
+        entityType: 'terms',
+        entityId: null,
+      };
+
+    default:
+      return getDefaultAction();
+  }
+}
+
+export function attachAction(notification, userRole) {
+  if (!notification || typeof notification !== 'object') return notification;
+
+  const existingAction = notification.action;
+  if (existingAction && typeof existingAction === 'object') {
+    return {
+      ...notification,
+      action: {
+        ...existingAction,
+        url: sanitizeActionUrl(existingAction.url),
+      },
+    };
+  }
+
+  const action = buildNotificationAction(notification.type, notification.meta || {}, userRole);
+  return { ...notification, action };
+}
+
+export const _testHelpers = {
+  safeId,
+  buildUrl,
+  isEnabled,
+};
+```
+
+---
+
 ## `server/services/notificationMessenger.js`
 
 ```javascript
@@ -17700,6 +17982,7 @@ import crypto from 'node:crypto';
 import config from '../../config.js';
 import { atomicWrite, readJSON, deleteJSON, getRecordPath, getWriteRecordPath, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
+import { attachAction } from './notificationActions.js';
 
 const USER_NTF_INDEX = config.DATABASE.indexFiles.userNotificationsIndex;
 
@@ -17739,7 +18022,7 @@ if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
  * @param {string} message
  * @param {object} [meta]
  */
-export async function createNotification(userId, type, message, meta = {}) {
+export async function createNotification(userId, type, message, meta = {}, options = {}) {
   // Dedup check: skip if same userId+type+context within window
   const contextId = (meta && (meta.jobId || meta.applicationId || meta.paymentId || meta.reportId)) || '';
   const dedupKey = `${userId}:${type}:${contextId}`;
@@ -17752,7 +18035,7 @@ export async function createNotification(userId, type, message, meta = {}) {
   const id = 'ntf_' + crypto.randomBytes(6).toString('hex');
   const now = new Date().toISOString();
 
-  const notification = {
+  let notification = {
     id,
     userId,
     type,
@@ -17762,6 +18045,13 @@ export async function createNotification(userId, type, message, meta = {}) {
     createdAt: now,
     readAt: null,
   };
+
+  // Phase 53 — Safe actionable notification metadata.
+  // Additive only: old consumers can ignore notification.action.
+  if (options && options.actionOverride && typeof options.actionOverride === 'object') {
+    notification.action = options.actionOverride;
+  }
+  notification = attachAction(notification, options.userRole || null);
 
   const ntfPath = getWriteRecordPath('notifications', id);
   await atomicWrite(ntfPath, notification);
@@ -19920,6 +20210,10 @@ export async function countByStatus() {
 //   predictive_abuse:signal_escalated
 //   predictive_abuse:scan_completed
 //   predictive_abuse:scan_failed
+//   predictive_signal:false_positive
+//   predictive_signal:confirmed
+//   predictive_signal:archived
+//   predictive_signal:retention_completed
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
@@ -20981,6 +21275,104 @@ export async function escalateSignal(signalId, adminId, note) {
   return reviewSignal(signalId, adminId, 'escalated', note);
 }
 
+/**
+ * Phase 53: Mark predictive signal as false positive.
+ * This is a quality label, not a user penalty.
+ *
+ * Allowed source statuses:
+ *   - active
+ *   - escalated
+ *   - dismissed
+ *
+ * @param {string} signalId
+ * @param {string} adminId
+ * @param {string} note
+ */
+export async function markSignalFalsePositive(signalId, adminId, note) {
+  return markSignalOutcome(signalId, adminId, 'false_positive', note);
+}
+
+/**
+ * Phase 53: Mark predictive signal as confirmed.
+ * This records that the signal was useful/true-positive.
+ * No auto-ban is performed.
+ *
+ * Allowed source statuses:
+ *   - active
+ *   - escalated
+ *
+ * @param {string} signalId
+ * @param {string} adminId
+ * @param {string} note
+ */
+export async function markSignalConfirmed(signalId, adminId, note) {
+  return markSignalOutcome(signalId, adminId, 'confirmed', note);
+}
+
+async function markSignalOutcome(signalId, adminId, outcome, note) {
+  if (!signalId || typeof signalId !== 'string') {
+    throw new Error('signalId is required');
+  }
+
+  const allowedOutcomes = ['false_positive', 'confirmed'];
+  if (!allowedOutcomes.includes(outcome)) {
+    throw new Error('invalid predictive signal outcome');
+  }
+
+  return withLock(`predictive-signal-review:${signalId}`, async () => {
+    const path = getRecordPath('predictive_signals', signalId);
+    const signal = await readJSON(path);
+
+    if (!signal) {
+      return { ok: false, error: 'الإشارة غير موجودة', code: 'SIGNAL_NOT_FOUND' };
+    }
+
+    const allowedSourceStatuses = outcome === 'false_positive'
+      ? ['active', 'escalated', 'dismissed']
+      : ['active', 'escalated'];
+
+    if (!allowedSourceStatuses.includes(signal.status)) {
+      return { ok: false, error: 'لا يمكن تحديث هذه الإشارة بهذه الحالة', code: 'SIGNAL_STATUS_NOT_ALLOWED' };
+    }
+
+    const previousStatus = signal.status;
+    const now = new Date().toISOString();
+
+    signal.status = outcome;
+    signal.reviewedAt = signal.reviewedAt || now;
+    signal.reviewedBy = adminId || signal.reviewedBy || 'admin_token';
+    signal.reviewDecision = outcome;
+    signal.reviewNote = note || signal.reviewNote || null;
+    signal.outcomeAt = now;
+    signal.outcomeBy = adminId || 'admin_token';
+    signal.outcomeNote = note || null;
+    signal.previousStatus = previousStatus;
+    signal.updatedAt = now;
+
+    await atomicWrite(path, signal);
+
+    clearCache();
+
+    eventBus.emit(
+      outcome === 'false_positive' ? 'predictive_signal:false_positive' : 'predictive_signal:confirmed',
+      {
+        signalId: signal.id,
+        riskType: signal.riskType,
+        entityType: signal.entityType,
+        entityId: signal.entityId,
+        relatedUserId: signal.relatedUserId || null,
+        previousStatus,
+        severity: signal.severity,
+        riskScore: signal.riskScore,
+        reviewedBy: signal.reviewedBy,
+        timestamp: now,
+      }
+    );
+
+    return { ok: true, signal };
+  });
+}
+
 async function reviewSignal(signalId, adminId, decision, note) {
   if (!signalId || typeof signalId !== 'string') {
     throw new Error('signalId is required');
@@ -21061,6 +21453,10 @@ const INVALIDATION_EVENTS = [
   'direct_offer:withdrawn',
   'abuse_flag:state_changed',
   'attendance:noshow',
+  'predictive_signal:false_positive',
+  'predictive_signal:confirmed',
+  'predictive_signal:archived',
+  'predictive_signal:retention_completed',
 ];
 
 for (const evt of INVALIDATION_EVENTS) {
@@ -21084,6 +21480,316 @@ export const _testHelpers = {
   buildSignal,
   safeRate,
   clearCache,
+};
+```
+
+---
+
+## `server/services/predictiveSignalRetention.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/predictiveSignalRetention.js — Predictive Signal Hygiene (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Archives old resolved predictive signals and computes precision stats.
+//
+// Resolved statuses:
+//   - dismissed
+//   - escalated
+//   - false_positive
+//   - confirmed
+//
+// Active signals are never archived.
+// Archive path:
+//   data/metrics/predictive-signal-archives/{YYYY-MM}.json
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const RESOLVED_STATUSES = new Set([
+  'dismissed',
+  'escalated',
+  'false_positive',
+  'confirmed',
+]);
+
+let lastRetentionStats = null;
+
+function isEnabled() {
+  return !!(config.PREDICTIVE_SIGNAL_RETENTION && config.PREDICTIVE_SIGNAL_RETENTION.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function signalPath(signalId) {
+  return getRecordPath('predictive_signals', signalId);
+}
+
+function archivePath(month) {
+  return getRecordPath('predictive_signal_archives', month);
+}
+
+function isResolved(signal) {
+  return !!(signal && RESOLVED_STATUSES.has(signal.status));
+}
+
+function retentionBasis(signal) {
+  return signal.outcomeAt ||
+    signal.reviewedAt ||
+    signal.updatedAt ||
+    signal.createdAt ||
+    null;
+}
+
+async function listAllSignalsRaw() {
+  try {
+    const dir = getCollectionPath('predictive_signals');
+    const all = await listJSON(dir);
+    return all.filter(s => s && s.id && s.id.startsWith('sig_'));
+  } catch (err) {
+    logger.warn('predictiveSignalRetention: listAllSignalsRaw failed', { error: err.message });
+    return [];
+  }
+}
+
+/**
+ * Archive one resolved signal into month archive file.
+ *
+ * @param {object} signal
+ */
+export async function archiveSignal(signal) {
+  if (!signal || !signal.id) {
+    return { ok: false, error: 'INVALID_SIGNAL' };
+  }
+
+  if (!isResolved(signal)) {
+    return { ok: false, error: 'SIGNAL_NOT_RESOLVED' };
+  }
+
+  const basis = retentionBasis(signal) || nowIso();
+  const month = monthKey(basis);
+  const filePath = archivePath(month);
+
+  return withLock(`predictive-signal-archive:${month}`, async () => {
+    const archive = (await readJSON(filePath)) || {
+      month,
+      kind: 'predictive_signals',
+      archivedAt: nowIso(),
+      entries: {},
+    };
+
+    if (!archive.entries) archive.entries = {};
+
+    archive.entries[signal.id] = {
+      ...signal,
+      archivedAt: nowIso(),
+    };
+    archive.updatedAt = nowIso();
+
+    await atomicWrite(filePath, archive);
+
+    eventBus.emit('predictive_signal:archived', {
+      signalId: signal.id,
+      status: signal.status,
+      month,
+      timestamp: archive.updatedAt,
+    });
+
+    return { ok: true, month, signalId: signal.id };
+  });
+}
+
+/**
+ * Run retention cleanup.
+ *
+ * @param {{ force?: boolean, reason?: string }} options
+ */
+export async function runPredictiveSignalRetention(options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, code: 'PREDICTIVE_SIGNAL_RETENTION_DISABLED' };
+  }
+
+  const started = Date.now();
+  const retentionDays = config.PREDICTIVE_SIGNAL_RETENTION.resolvedRetentionDays || 90;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const batchSize = config.PREDICTIVE_SIGNAL_RETENTION.batchSize || 100;
+
+  const signals = await listAllSignalsRaw();
+
+  let scanned = 0;
+  let archived = 0;
+  let skipped = 0;
+  let failed = 0;
+  const failures = [];
+
+  for (let i = 0; i < signals.length; i++) {
+    const signal = signals[i];
+    scanned++;
+
+    try {
+      if (!isResolved(signal)) {
+        skipped++;
+        continue;
+      }
+
+      const basis = retentionBasis(signal);
+      if (!basis) {
+        skipped++;
+        continue;
+      }
+
+      const basisMs = new Date(basis).getTime();
+      if (!options.force && basisMs > cutoffMs) {
+        skipped++;
+        continue;
+      }
+
+      const archiveResult = await archiveSignal(signal);
+      if (!archiveResult.ok) {
+        skipped++;
+        continue;
+      }
+
+      await deleteJSON(signalPath(signal.id)).catch(() => {});
+      archived++;
+    } catch (err) {
+      failed++;
+      failures.push({ signalId: signal.id, error: err.message });
+    }
+
+    if ((i + 1) % batchSize === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: true,
+    scanned,
+    archived,
+    skipped,
+    failed,
+    failures: failures.slice(0, 20),
+    retentionDays,
+    durationMs: Date.now() - started,
+    completedAt: nowIso(),
+    reason: options.reason || null,
+  };
+
+  lastRetentionStats = result;
+
+  eventBus.emit('predictive_signal:retention_completed', {
+    scanned,
+    archived,
+    skipped,
+    failed,
+    timestamp: result.completedAt,
+  });
+
+  return result;
+}
+
+/**
+ * Return last retention stats.
+ */
+export async function getRetentionStats() {
+  return {
+    enabled: isEnabled(),
+    lastRun: lastRetentionStats,
+  };
+}
+
+/**
+ * Compute precision and lifecycle quality stats.
+ *
+ * @param {{ from?: string, to?: string }} options
+ */
+export async function getPredictivePrecisionStats(options = {}) {
+  const signals = await listAllSignalsRaw();
+
+  const filtered = signals.filter(s => {
+    const basis = s.outcomeAt || s.reviewedAt || s.updatedAt || s.createdAt;
+    if (!basis) return true;
+    if (options.from && basis < options.from) return false;
+    if (options.to && basis > options.to) return false;
+    return true;
+  });
+
+  const byStatus = {
+    active: 0,
+    dismissed: 0,
+    escalated: 0,
+    false_positive: 0,
+    confirmed: 0,
+    archived: 0,
+  };
+
+  const byRiskType = {};
+  const bySeverity = { low: 0, medium: 0, high: 0, critical: 0 };
+
+  for (const s of filtered) {
+    if (byStatus[s.status] !== undefined) byStatus[s.status]++;
+    else byStatus[s.status] = (byStatus[s.status] || 0) + 1;
+
+    if (s.riskType) byRiskType[s.riskType] = (byRiskType[s.riskType] || 0) + 1;
+    if (bySeverity[s.severity] !== undefined) bySeverity[s.severity]++;
+  }
+
+  const resolved = byStatus.dismissed + byStatus.escalated + byStatus.false_positive + byStatus.confirmed;
+  const qualityLabeled = byStatus.false_positive + byStatus.confirmed;
+  const precisionRate = qualityLabeled > 0
+    ? Math.round((byStatus.confirmed / qualityLabeled) * 100)
+    : 0;
+
+  const confirmationRate = resolved > 0
+    ? Math.round((byStatus.confirmed / resolved) * 100)
+    : 0;
+
+  const falsePositiveRate = qualityLabeled > 0
+    ? Math.round((byStatus.false_positive / qualityLabeled) * 100)
+    : 0;
+
+  return {
+    enabled: isEnabled(),
+    total: filtered.length,
+    resolved,
+    qualityLabeled,
+    byStatus,
+    byRiskType,
+    bySeverity,
+    precisionRate,
+    confirmationRate,
+    falsePositiveRate,
+    generatedAt: nowIso(),
+  };
+}
+
+export const _testHelpers = {
+  RESOLVED_STATUSES,
+  isEnabled,
+  monthKey,
+  signalPath,
+  archivePath,
+  isResolved,
+  retentionBasis,
+  listAllSignalsRaw,
+  setLastRetentionStats: (stats) => { lastRetentionStats = stats; },
 };
 ```
 
@@ -21491,6 +22197,234 @@ export function calculateCompleteness(user) {
 export function getFieldLabel(fieldKey) {
   return FIELD_LABELS[fieldKey] || fieldKey;
 }
+```
+
+---
+
+## `server/services/profileTasks.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/profileTasks.js — Actionable Profile Completion Tasks (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Converts profile completeness gaps into actionable tasks.
+// Protected/user-specific only — no PII leakage.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { sanitizeActionUrl } from './notificationActions.js';
+import { calculateCompleteness } from './profileCompleteness.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.PROFILE_TASKS && config.PROFILE_TASKS.enabled);
+}
+
+export function taskUrl(taskId) {
+  const urls = {
+    accept_terms: '/terms.html?accept=1',
+    add_name: '/profile.html#editProfileSection',
+    select_governorate: '/profile.html#editProfileSection',
+    select_categories: '/profile.html#editCategoriesGroup',
+    add_location: '/profile.html#editProfileSection',
+    verify_identity: '/profile.html#verification-section',
+    enable_notifications: '/profile.html#notification-prefs',
+    create_availability_ad: '/profile.html#adFormMount',
+    create_availability_window: '/profile.html#availability-windows-section',
+  };
+
+  return sanitizeActionUrl(urls[taskId] || '/profile.html');
+}
+
+export function taskPriority(taskId) {
+  const priorities = {
+    accept_terms: 'critical',
+    add_name: 'high',
+    select_governorate: 'high',
+    select_categories: 'high',
+    add_location: 'medium',
+    verify_identity: 'medium',
+    enable_notifications: 'low',
+    create_availability_ad: 'low',
+    create_availability_window: 'low',
+  };
+
+  return priorities[taskId] || 'low';
+}
+
+function makeTask(id, label, description, completed = false) {
+  return {
+    id,
+    label,
+    description,
+    url: taskUrl(id),
+    priority: taskPriority(id),
+    completed: !!completed,
+  };
+}
+
+function sortTasks(tasks) {
+  const order = {};
+  const configured = config.PROFILE_TASKS?.priorities || ['critical', 'high', 'medium', 'low'];
+  configured.forEach((p, i) => { order[p] = i; });
+
+  return tasks.slice().sort((a, b) => {
+    const pa = order[a.priority] ?? 99;
+    const pb = order[b.priority] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return a.id.localeCompare(b.id);
+  });
+}
+
+export function buildTasksFromUser(user, completeness) {
+  if (!user) return [];
+
+  const tasks = [];
+  const missing = new Set((completeness && completeness.missing) || []);
+
+  if (!user.termsAcceptedAt || missing.has('terms')) {
+    tasks.push(makeTask(
+      'accept_terms',
+      'اقبل شروط الاستخدام',
+      'مطلوب لتفعيل الحساب بالكامل واستخدام كل مزايا المنصة'
+    ));
+  }
+
+  if (missing.has('name')) {
+    tasks.push(makeTask(
+      'add_name',
+      'أضف اسمك',
+      'الاسم يساعد الطرف الآخر يعرفك بثقة داخل المنصة'
+    ));
+  }
+
+  if (missing.has('governorate')) {
+    tasks.push(makeTask(
+      'select_governorate',
+      'اختار المحافظة',
+      'المحافظة تساعدنا نعرضلك فرص أو عمال أقرب لك'
+    ));
+  }
+
+  if (user.role === 'worker' && missing.has('categories')) {
+    tasks.push(makeTask(
+      'select_categories',
+      'اختار تخصصاتك',
+      'اختار التخصصات اللي تقدر تشتغل فيها عشان توصلك فرص مناسبة'
+    ));
+  }
+
+  if (missing.has('location')) {
+    tasks.push(makeTask(
+      'add_location',
+      'حدّد موقعك الجغرافي',
+      'الموقع يساعد في الفرص القريبة والمطابقة الفورية'
+    ));
+  }
+
+  if (missing.has('verification')) {
+    const status = user.verificationStatus || 'unverified';
+    if (status !== 'pending') {
+      tasks.push(makeTask(
+        'verify_identity',
+        'فعّل التحقق من الهوية',
+        'الحسابات المحققة تظهر بثقة أعلى للطرف الآخر'
+      ));
+    }
+  }
+
+  const prefs = user.notificationPreferences;
+  if (!prefs || prefs.whatsapp === undefined || prefs.sms === undefined) {
+    tasks.push(makeTask(
+      'enable_notifications',
+      'راجع إعدادات الإشعارات',
+      'فعّل القنوات المناسبة عشان توصلك التحديثات المهمة بسرعة'
+    ));
+  }
+
+  return sortTasks(tasks);
+}
+
+/**
+ * Add optional worker activation tasks that are not part of the base score.
+ */
+async function addWorkerActivationTasks(user, tasks) {
+  if (!user || user.role !== 'worker') return tasks;
+
+  const existingIds = new Set(tasks.map(t => t.id));
+  const next = tasks.slice();
+
+  // Availability ad task — only if worker has no active ad.
+  if (!existingIds.has('create_availability_ad') && config.AVAILABILITY_ADS?.enabled) {
+    try {
+      const { findActiveByWorker } = await import('./availabilityAd.js');
+      const activeAd = await findActiveByWorker(user.id);
+      if (!activeAd) {
+        next.push(makeTask(
+          'create_availability_ad',
+          'انشر إعلان إتاحة',
+          'قول لأصحاب العمل إنك متاح للشغل الآن واستقبل عروض مباشرة'
+        ));
+      }
+    } catch (err) {
+      logger.warn('profileTasks: availability ad check failed', { userId: user.id, error: err.message });
+    }
+  }
+
+  // Availability window task — only if no windows exist.
+  if (!existingIds.has('create_availability_window') && config.AVAILABILITY_WINDOWS?.enabled) {
+    try {
+      const { listByUser } = await import('./availabilityWindow.js');
+      const windows = await listByUser(user.id);
+      if (!windows || windows.length === 0) {
+        next.push(makeTask(
+          'create_availability_window',
+          'حدّد أوقات إتاحتك',
+          'ساعد المنصة تعرف إمتى تكون جاهز للشغل'
+        ));
+      }
+    } catch (err) {
+      logger.warn('profileTasks: availability windows check failed', { userId: user.id, error: err.message });
+    }
+  }
+
+  return sortTasks(next);
+}
+
+export async function getProfileTasks(userId) {
+  if (!isEnabled()) {
+    return { enabled: false, completionScore: 0, tasks: [] };
+  }
+
+  if (!userId || typeof userId !== 'string') {
+    return { enabled: true, completionScore: 0, tasks: [] };
+  }
+
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+
+  if (!user || user.status !== 'active') {
+    return { enabled: true, completionScore: 0, tasks: [] };
+  }
+
+  const completeness = calculateCompleteness(user);
+  let tasks = buildTasksFromUser(user, completeness);
+  tasks = await addWorkerActivationTasks(user, tasks);
+
+  return {
+    enabled: true,
+    completionScore: completeness.score,
+    missing: completeness.missing || [],
+    tasks,
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  makeTask,
+  sortTasks,
+  addWorkerActivationTasks,
+};
 ```
 
 ---
@@ -21993,6 +22927,10 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
 //   - counter_compaction
 //   - audit_index_rebuild
 //   - backup_verify
+//   - trust_snapshot_batch
+//   - trust_calibration_report
+//   - predictive_signal_retention
+//   - workroom_search_rebuild
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
@@ -22049,6 +22987,12 @@ function registerBuiltIns() {
   registerJobHandler('counter_compaction', handleCounterCompactionJob);
   registerJobHandler('audit_index_rebuild', handleAuditIndexRebuildJob);
   registerJobHandler('backup_verify', handleBackupVerifyJob);
+
+  // Phase 53 — Trust Calibration + Predictive Hygiene + Workroom Search
+  registerJobHandler('trust_snapshot_batch', handleTrustSnapshotBatchJob);
+  registerJobHandler('trust_calibration_report', handleTrustCalibrationReportJob);
+  registerJobHandler('predictive_signal_retention', handlePredictiveSignalRetentionJob);
+  registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
 }
 
 export function startQueueWorkers() {
@@ -22412,6 +23356,99 @@ async function handleBackupVerifyJob() {
     skipped: true,
     reason: 'backup_verify handler is reserved for Phase 54 restore drill',
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 53 Built-in handlers
+// ═══════════════════════════════════════════════════════════════
+
+async function handleTrustSnapshotBatchJob({ payload }) {
+  const { createSnapshotsForActiveUsers } = await import('./trustCalibration.js');
+
+  const result = await createSnapshotsForActiveUsers({
+    role: payload.role || undefined,
+    limit: payload.limit ? parseInt(payload.limit) : undefined,
+    force: payload.force === true,
+    reason: payload.reason || 'queue_job',
+  });
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'TRUST_SNAPSHOT_BATCH_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    scanned: result.scanned || 0,
+    created: result.created || 0,
+    deduped: result.deduped || 0,
+    failed: result.failed || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleTrustCalibrationReportJob({ payload }) {
+  const { generateCalibrationReport } = await import('./trustCalibration.js');
+
+  const result = await generateCalibrationReport({
+    from: payload.from || undefined,
+    to: payload.to || undefined,
+    role: payload.role || undefined,
+    outcomeWindowDays: payload.outcomeWindowDays ? parseInt(payload.outcomeWindowDays) : undefined,
+    persist: payload.persist !== false,
+  });
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'TRUST_CALIBRATION_REPORT_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    reportId: result.report?.id || null,
+    sampleCount: result.report?.sampleCount || 0,
+    driftWarningCount: result.report?.driftWarnings?.length || 0,
+    durationMs: result.report?.durationMs || 0,
+  };
+}
+
+async function handlePredictiveSignalRetentionJob({ payload }) {
+  const { runPredictiveSignalRetention } = await import('./predictiveSignalRetention.js');
+
+  const result = await runPredictiveSignalRetention(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.code || 'PREDICTIVE_SIGNAL_RETENTION_FAILED');
+    err.retryable = result?.disabled ? false : true;
+    throw err;
+  }
+
+  return {
+    scanned: result.scanned || 0,
+    archived: result.archived || 0,
+    skipped: result.skipped || 0,
+    failed: result.failed || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleWorkroomSearchRebuildJob({ payload }) {
+  if (!payload || !payload.jobId) {
+    const err = new Error('jobId is required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const { rebuildWorkroomSearchIndex } = await import('./workroomSearch.js');
+  const result = await rebuildWorkroomSearchIndex(payload.jobId);
+
+  if (!result || result.rebuilt === false) {
+    const err = new Error(result?.error || 'WORKROOM_SEARCH_REBUILD_FAILED');
+    err.retryable = result?.skipped ? false : true;
+    throw err;
+  }
+
+  return result;
 }
 
 export const _testHelpers = {
@@ -24723,6 +25760,853 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/trustCalibration.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/trustCalibration.js — Trust Score V2 Calibration (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Persists Trust Score V2 snapshots and compares them to future outcomes.
+// No automatic weight changes in Phase 53.
+// Storage:
+//   data/metrics/trust-v2-snapshots/YYYY-MM/tsv2_x.json
+//   data/metrics/trust-calibration/tcal_x.json
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+const SCORE_BUCKETS = [
+  { id: '0_20', min: 0, max: 0.2, label: '0-20' },
+  { id: '20_40', min: 0.2, max: 0.4, label: '20-40' },
+  { id: '40_60', min: 0.4, max: 0.6, label: '40-60' },
+  { id: '60_80', min: 0.6, max: 0.8, label: '60-80' },
+  { id: '80_100', min: 0.8, max: 1.01, label: '80-100' },
+];
+
+const cache = new Map();
+
+function isEnabled() {
+  return !!(config.TRUST_CALIBRATION && config.TRUST_CALIBRATION.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function dateKey(iso = nowIso()) {
+  return String(iso).slice(0, 10);
+}
+
+function snapshotRoot() {
+  return getCollectionPath('trust_snapshots');
+}
+
+function snapshotPath(snapshotId, iso = nowIso()) {
+  return join(snapshotRoot(), monthKey(iso), `${snapshotId}.json`);
+}
+
+function reportPath(reportId) {
+  return getRecordPath('trust_calibration', reportId);
+}
+
+function generateReportId() {
+  return 'tcal_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function safeUserSnapshotId(userId, date = dateKey()) {
+  const safeUser = String(userId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+  return `tsv2_${safeUser}_${date}`;
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  const ttl = config.TRUST_CALIBRATION?.cacheTtlMs || (5 * 60 * 1000);
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
+}
+
+export function clearTrustCalibrationCache() {
+  cache.clear();
+}
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function scoreBucket(score) {
+  const s = clamp01(Number(score) || 0);
+  return SCORE_BUCKETS.find(b => s >= b.min && s < b.max) || SCORE_BUCKETS[0];
+}
+
+function addDaysIso(iso, days) {
+  const base = iso ? new Date(iso).getTime() : Date.now();
+  return new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function inRange(iso, from, to) {
+  if (!iso) return false;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+function emptyOutcomes(role) {
+  if (role === 'employer') {
+    return {
+      role,
+      successfulCompletions: 0,
+      cancellations: 0,
+      disputes: 0,
+      completedPayments: 0,
+      totalPayments: 0,
+      totalJobs: 0,
+      totalRatings: 0,
+      avgRating: 0,
+      directOffers: {
+        total: 0,
+        accepted: 0,
+        declined: 0,
+        expired: 0,
+        acceptRate: 0,
+      },
+      negativeEvents: 0,
+      positiveEvents: 0,
+      successRate: 0,
+    };
+  }
+
+  return {
+    role,
+    successfulCompletions: 0,
+    noShows: 0,
+    attendedDays: 0,
+    totalAttendanceRecords: 0,
+    totalRatings: 0,
+    avgRating: 0,
+    directOffers: {
+      total: 0,
+      accepted: 0,
+      declined: 0,
+      expired: 0,
+      acceptRate: 0,
+    },
+    negativeEvents: 0,
+    positiveEvents: 0,
+    successRate: 0,
+  };
+}
+
+function finalizeOutcomeScore(outcomes) {
+  const positive = outcomes.positiveEvents || 0;
+  const negative = outcomes.negativeEvents || 0;
+  const total = positive + negative;
+
+  outcomes.successRate = total > 0
+    ? Math.round((positive / total) * 100) / 100
+    : null;
+
+  return outcomes;
+}
+
+/**
+ * Create a Trust Score V2 snapshot for one user.
+ *
+ * Idempotency:
+ *   default snapshot id = tsv2_{userId}_{YYYY-MM-DD}
+ *
+ * @param {string} userId
+ * @param {{ force?: boolean, reason?: string, date?: string }} options
+ */
+export async function createTrustSnapshot(userId, options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, code: 'TRUST_CALIBRATION_DISABLED' };
+  }
+
+  if (!userId || typeof userId !== 'string') {
+    return { ok: false, error: 'userId required', code: 'USER_ID_REQUIRED' };
+  }
+
+  const snapshotDate = options.date || dateKey();
+  const snapshotId = safeUserSnapshotId(userId, snapshotDate);
+  const createdAt = nowIso();
+
+  return withLock(`trust-snapshot:${snapshotId}`, async () => {
+    const path = snapshotPath(snapshotId, `${snapshotDate}T00:00:00.000Z`);
+
+    if (!options.force) {
+      const existing = await readJSON(path);
+      if (existing) {
+        return { ok: true, snapshot: existing, deduped: true };
+      }
+    }
+
+    const { findById } = await import('./users.js');
+    const user = await findById(userId);
+
+    if (!user || user.status !== 'active') {
+      return { ok: false, error: 'المستخدم غير موجود أو غير نشط', code: 'USER_NOT_ACTIVE' };
+    }
+
+    const { getTrustScoreV2 } = await import('./trustScoreV2.js');
+    const trust = await getTrustScoreV2(userId, { admin: true, force: true });
+
+    if (!trust) {
+      return { ok: false, error: 'تعذّر حساب مؤشر الثقة', code: 'TRUST_SCORE_UNAVAILABLE' };
+    }
+
+    const snapshot = {
+      id: snapshotId,
+      userId,
+      role: user.role,
+      score: trust.score,
+      score100: trust.score100,
+      grade: trust.grade,
+      components: trust.components || {},
+      rawMetrics: trust.rawMetrics || {},
+      explanations: trust.explanations || [],
+      adminExplanations: trust.adminExplanations || [],
+      reason: options.reason || 'manual_or_scheduled',
+      snapshotDate,
+      createdAt,
+    };
+
+    await atomicWrite(path, snapshot);
+
+    eventBus.emit('trust_v2:snapshot_created', {
+      snapshotId,
+      userId,
+      role: user.role,
+      score: snapshot.score,
+      reason: snapshot.reason,
+      timestamp: createdAt,
+    });
+
+    clearTrustCalibrationCache();
+
+    return { ok: true, snapshot, deduped: false };
+  });
+}
+
+/**
+ * Create snapshots for active users.
+ *
+ * @param {{ role?: string, limit?: number, force?: boolean, reason?: string }} options
+ */
+export async function createSnapshotsForActiveUsers(options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, created: 0, skipped: 0 };
+  }
+
+  const started = Date.now();
+
+  const { listAll } = await import('./users.js');
+  let users = await listAll();
+  users = users.filter(u => u && u.status === 'active' && u.id && u.id.startsWith('usr_'));
+
+  if (options.role) {
+    users = users.filter(u => u.role === options.role);
+  }
+
+  const limit = options.limit ? Math.max(1, parseInt(options.limit)) : users.length;
+  users = users.slice(0, limit);
+
+  let created = 0;
+  let deduped = 0;
+  let failed = 0;
+
+  const failures = [];
+
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+
+    try {
+      const result = await createTrustSnapshot(user.id, {
+        force: !!options.force,
+        reason: options.reason || 'batch',
+      });
+
+      if (result.ok && result.deduped) deduped++;
+      else if (result.ok) created++;
+      else {
+        failed++;
+        failures.push({ userId: user.id, code: result.code });
+      }
+    } catch (err) {
+      failed++;
+      failures.push({ userId: user.id, error: err.message });
+    }
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: true,
+    scanned: users.length,
+    created,
+    deduped,
+    failed,
+    failures: failures.slice(0, 20),
+    durationMs: Date.now() - started,
+    generatedAt: nowIso(),
+  };
+
+  return result;
+}
+
+/**
+ * List trust snapshots, newest first.
+ *
+ * @param {{ userId?: string, role?: string, from?: string, to?: string, limit?: number, offset?: number }} options
+ */
+export async function listTrustSnapshots(options = {}) {
+  if (!isEnabled()) {
+    return { snapshots: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const key = `snapshots:${JSON.stringify(options)}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const root = snapshotRoot();
+  let months = [];
+
+  try {
+    const entries = await readdir(root, { withFileTypes: true });
+    months = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name)
+      .sort()
+      .reverse();
+  } catch (_) {
+    months = [];
+  }
+
+  const rows = [];
+
+  for (const month of months) {
+    const dir = join(root, month);
+    let files = [];
+    try {
+      files = await readdir(dir);
+    } catch (_) {
+      continue;
+    }
+
+    for (const file of files) {
+      if (!file.startsWith('tsv2_') || !file.endsWith('.json') || file.endsWith('.tmp')) continue;
+
+      const snapshot = await readJSON(join(dir, file)).catch(() => null);
+      if (!snapshot) continue;
+
+      if (options.userId && snapshot.userId !== options.userId) continue;
+      if (options.role && snapshot.role !== options.role) continue;
+      if (options.from && snapshot.createdAt < options.from) continue;
+      if (options.to && snapshot.createdAt > options.to) continue;
+
+      rows.push(snapshot);
+    }
+  }
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(500, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  const result = {
+    snapshots: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+/**
+ * Compute actual user outcomes in a future window.
+ *
+ * @param {string} userId
+ * @param {'worker'|'employer'} role
+ * @param {string} from
+ * @param {string} to
+ */
+export async function computeUserOutcomes(userId, role, from, to) {
+  const outcomes = emptyOutcomes(role);
+
+  if (!userId || !role) return finalizeOutcomeScore(outcomes);
+
+  if (role === 'worker') {
+    // Attendance outcomes.
+    try {
+      const { listByWorker } = await import('./attendance.js');
+      const records = await listByWorker(userId);
+      const period = records.filter(r => inRange(r.createdAt || r.checkInAt || r.noShowReportedAt, from, to));
+
+      outcomes.totalAttendanceRecords = period.length;
+      outcomes.attendedDays = period.filter(r =>
+        r.status === 'checked_in' ||
+        r.status === 'checked_out' ||
+        r.status === 'confirmed' ||
+        r.employerConfirmed
+      ).length;
+      outcomes.noShows = period.filter(r => r.status === 'no_show').length;
+
+      outcomes.positiveEvents += outcomes.attendedDays;
+      outcomes.negativeEvents += outcomes.noShows;
+    } catch (_) {}
+
+    // Completed accepted jobs.
+    try {
+      const { listByWorker } = await import('./applications.js');
+      const { findById: findJob } = await import('./jobs.js');
+      const apps = await listByWorker(userId);
+      const accepted = apps.filter(a => a.status === 'accepted' || a.status === 'worker_confirmed');
+
+      for (const app of accepted) {
+        const job = await findJob(app.jobId);
+        if (job && job.status === 'completed' && inRange(job.completedAt, from, to)) {
+          outcomes.successfulCompletions++;
+          outcomes.positiveEvents++;
+        }
+      }
+    } catch (_) {}
+
+    // Ratings received.
+    try {
+      const { listByUser } = await import('./ratings.js');
+      const ratings = await listByUser(userId, { limit: 10000, offset: 0 });
+      const period = (ratings.items || []).filter(r => inRange(r.createdAt, from, to));
+
+      outcomes.totalRatings = period.length;
+      if (period.length > 0) {
+        outcomes.avgRating = Math.round((period.reduce((s, r) => s + (r.stars || 0), 0) / period.length) * 10) / 10;
+        for (const r of period) {
+          if ((r.stars || 0) >= 4) outcomes.positiveEvents++;
+          if ((r.stars || 0) <= 2) outcomes.negativeEvents++;
+        }
+      }
+    } catch (_) {}
+
+    // Direct offer outcomes.
+    try {
+      const { getWorkerOfferStats } = await import('./directOffer.js');
+      outcomes.directOffers = await getWorkerOfferStats(userId, { from, to });
+    } catch (_) {}
+  }
+
+  if (role === 'employer') {
+    // Job outcomes.
+    try {
+      const jobIds = await getFromSetIndex(config.DATABASE.indexFiles.employerJobsIndex, userId);
+      outcomes.totalJobs = jobIds.length;
+
+      for (const jobId of jobIds) {
+        const job = await readJSON(getRecordPath('jobs', jobId));
+        if (!job) continue;
+
+        if (job.status === 'completed' && inRange(job.completedAt, from, to)) {
+          outcomes.successfulCompletions++;
+          outcomes.positiveEvents++;
+        }
+
+        if (job.status === 'cancelled' && inRange(job.cancelledAt || job.createdAt, from, to)) {
+          outcomes.cancellations++;
+          outcomes.negativeEvents++;
+        }
+      }
+    } catch (_) {}
+
+    // Payment outcomes.
+    try {
+      const { listAll } = await import('./payments.js');
+      const payments = await listAll();
+      const mine = payments.filter(p => p.employerId === userId && inRange(p.createdAt, from, to));
+
+      outcomes.totalPayments = mine.length;
+      outcomes.completedPayments = mine.filter(p => p.status === 'completed').length;
+      outcomes.disputes = mine.filter(p => p.status === 'disputed').length;
+
+      outcomes.positiveEvents += outcomes.completedPayments;
+      outcomes.negativeEvents += outcomes.disputes;
+    } catch (_) {}
+
+    // Ratings received.
+    try {
+      const { listByUser } = await import('./ratings.js');
+      const ratings = await listByUser(userId, { limit: 10000, offset: 0 });
+      const period = (ratings.items || []).filter(r => inRange(r.createdAt, from, to));
+
+      outcomes.totalRatings = period.length;
+      if (period.length > 0) {
+        outcomes.avgRating = Math.round((period.reduce((s, r) => s + (r.stars || 0), 0) / period.length) * 10) / 10;
+        for (const r of period) {
+          if ((r.stars || 0) >= 4) outcomes.positiveEvents++;
+          if ((r.stars || 0) <= 2) outcomes.negativeEvents++;
+        }
+      }
+    } catch (_) {}
+
+    // Direct offer outcomes.
+    try {
+      const { getEmployerOfferStats } = await import('./directOffer.js');
+      outcomes.directOffers = await getEmployerOfferStats(userId, { from, to });
+    } catch (_) {}
+  }
+
+  return finalizeOutcomeScore(outcomes);
+}
+
+function summarizeBuckets(rows) {
+  const buckets = {};
+
+  for (const b of SCORE_BUCKETS) {
+    buckets[b.id] = {
+      bucket: b.id,
+      label: b.label,
+      min: b.min,
+      max: b.max >= 1.01 ? 1 : b.max,
+      samples: 0,
+      avgScore: 0,
+      avgSuccessRate: 0,
+      totalPositive: 0,
+      totalNegative: 0,
+    };
+  }
+
+  for (const row of rows) {
+    const b = scoreBucket(row.score);
+    const bucket = buckets[b.id];
+
+    bucket.samples++;
+    bucket.avgScore += row.score || 0;
+
+    if (row.outcomes && row.outcomes.successRate !== null) {
+      bucket.avgSuccessRate += row.outcomes.successRate;
+    }
+
+    bucket.totalPositive += row.outcomes?.positiveEvents || 0;
+    bucket.totalNegative += row.outcomes?.negativeEvents || 0;
+  }
+
+  for (const bucket of Object.values(buckets)) {
+    if (bucket.samples > 0) {
+      bucket.avgScore = Math.round((bucket.avgScore / bucket.samples) * 100) / 100;
+      bucket.avgSuccessRate = Math.round((bucket.avgSuccessRate / bucket.samples) * 100) / 100;
+    }
+  }
+
+  return Object.values(buckets);
+}
+
+export function detectTrustDriftFromBuckets(buckets, threshold) {
+  const driftThreshold = typeof threshold === 'number'
+    ? threshold
+    : (config.TRUST_CALIBRATION?.driftWarningThreshold || 0.15);
+
+  const warnings = [];
+
+  for (const bucket of buckets || []) {
+    if (!bucket || bucket.samples <= 0) continue;
+    if (bucket.avgSuccessRate === 0 && bucket.totalPositive + bucket.totalNegative === 0) continue;
+
+    const delta = Math.abs((bucket.avgScore || 0) - (bucket.avgSuccessRate || 0));
+    if (delta >= driftThreshold) {
+      warnings.push({
+        bucket: bucket.bucket,
+        label: bucket.label,
+        samples: bucket.samples,
+        avgScore: bucket.avgScore,
+        avgSuccessRate: bucket.avgSuccessRate,
+        delta: Math.round(delta * 100) / 100,
+        severity: delta >= driftThreshold * 2 ? 'high' : 'medium',
+      });
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Generate calibration report from snapshots + outcomes.
+ *
+ * @param {{ from?: string, to?: string, outcomeWindowDays?: number, role?: string, persist?: boolean }} options
+ */
+export async function generateCalibrationReport(options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, code: 'TRUST_CALIBRATION_DISABLED' };
+  }
+
+  const started = Date.now();
+  const from = options.from || addDaysIso(nowIso(), -30);
+  const to = options.to || nowIso();
+  const outcomeWindowDays = options.outcomeWindowDays || config.TRUST_CALIBRATION?.outcomeWindowDays || 30;
+
+  const snapshotsResult = await listTrustSnapshots({
+    from,
+    to,
+    role: options.role || undefined,
+    limit: 10000,
+    offset: 0,
+  });
+
+  const snapshots = snapshotsResult.snapshots || [];
+  const rows = [];
+
+  for (let i = 0; i < snapshots.length; i++) {
+    const snap = snapshots[i];
+    const outcomeFrom = snap.createdAt;
+    const outcomeTo = addDaysIso(snap.createdAt, outcomeWindowDays);
+
+    const outcomes = await computeUserOutcomes(snap.userId, snap.role, outcomeFrom, outcomeTo);
+
+    rows.push({
+      snapshotId: snap.id,
+      userId: snap.userId,
+      role: snap.role,
+      score: snap.score,
+      score100: snap.score100,
+      grade: snap.grade,
+      snapshotAt: snap.createdAt,
+      outcomeWindow: { from: outcomeFrom, to: outcomeTo },
+      outcomes,
+      bucket: scoreBucket(snap.score).id,
+    });
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const buckets = summarizeBuckets(rows);
+  const driftWarnings = detectTrustDriftFromBuckets(buckets, config.TRUST_CALIBRATION?.driftWarningThreshold || 0.15);
+
+  const report = {
+    id: generateReportId(),
+    type: 'trust_calibration_report',
+    period: { from, to },
+    outcomeWindowDays,
+    generatedAt: nowIso(),
+    durationMs: Date.now() - started,
+    sampleCount: rows.length,
+    minSamplesForCalibration: config.TRUST_CALIBRATION?.minSamplesForCalibration || 20,
+    buckets,
+    driftWarnings,
+    rows: rows.slice(0, 1000),
+    noAutomaticWeightChanges: true,
+  };
+
+  if (options.persist !== false) {
+    await atomicWrite(reportPath(report.id), report);
+
+    eventBus.emit('trust_calibration:report_created', {
+      reportId: report.id,
+      sampleCount: report.sampleCount,
+      driftWarningCount: driftWarnings.length,
+      timestamp: report.generatedAt,
+    });
+
+    if (driftWarnings.length > 0) {
+      eventBus.emit('trust_calibration:drift_detected', {
+        reportId: report.id,
+        warnings: driftWarnings,
+        timestamp: report.generatedAt,
+      });
+    }
+  }
+
+  clearTrustCalibrationCache();
+
+  return { ok: true, report };
+}
+
+/**
+ * List reports.
+ */
+export async function listCalibrationReports(options = {}) {
+  if (!isEnabled()) return { reports: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('trust_calibration');
+  let reports = await listJSON(dir);
+  reports = reports.filter(r => r && r.id && r.id.startsWith('tcal_'));
+
+  reports.sort((a, b) => new Date(b.generatedAt || 0) - new Date(a.generatedAt || 0));
+
+  const total = reports.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    reports: reports.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Detect trust drift from latest generated report or fresh transient report.
+ */
+export async function detectTrustDrift(options = {}) {
+  if (!isEnabled()) return { enabled: false, warnings: [] };
+
+  if (options.reportId) {
+    const report = await readJSON(reportPath(options.reportId));
+    if (!report) return { enabled: true, warnings: [], error: 'REPORT_NOT_FOUND' };
+    return {
+      enabled: true,
+      reportId: report.id,
+      warnings: report.driftWarnings || [],
+      generatedAt: report.generatedAt,
+    };
+  }
+
+  const reportResult = await generateCalibrationReport({
+    ...options,
+    persist: false,
+  });
+
+  return {
+    enabled: true,
+    reportId: null,
+    warnings: reportResult.report?.driftWarnings || [],
+    generatedAt: reportResult.report?.generatedAt || nowIso(),
+  };
+}
+
+/**
+ * Dashboard summary.
+ */
+export async function getCalibrationDashboard(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, metrics: {}, latestReport: null };
+  }
+
+  const key = `dashboard:${JSON.stringify(options)}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const reports = await listCalibrationReports({ limit: 1 });
+  const latest = reports.reports[0] || null;
+
+  let snapshotCount = 0;
+  let latestSnapshots = [];
+
+  try {
+    const snaps = await listTrustSnapshots({
+      limit: 20,
+      role: options.role || undefined,
+    });
+    snapshotCount = snaps.total || 0;
+    latestSnapshots = snaps.snapshots || [];
+  } catch (_) {}
+
+  const result = {
+    enabled: true,
+    generatedAt: nowIso(),
+    metrics: {
+      snapshotCount,
+      reportCount: reports.total || 0,
+      latestSampleCount: latest?.sampleCount || 0,
+      driftWarningCount: latest?.driftWarnings?.length || 0,
+      noAutomaticWeightChanges: true,
+    },
+    latestReport: latest ? {
+      id: latest.id,
+      generatedAt: latest.generatedAt,
+      sampleCount: latest.sampleCount,
+      buckets: latest.buckets || [],
+      driftWarnings: latest.driftWarnings || [],
+      durationMs: latest.durationMs || 0,
+    } : null,
+    latestSnapshots: latestSnapshots.map(s => ({
+      id: s.id,
+      userId: s.userId,
+      role: s.role,
+      score: s.score,
+      score100: s.score100,
+      grade: s.grade,
+      createdAt: s.createdAt,
+    })),
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+// Cache invalidation hooks.
+const INVALIDATION_EVENTS = [
+  'trust_v2:snapshot_created',
+  'trust_calibration:report_created',
+  'trust_calibration:drift_detected',
+  'rating:submitted',
+  'attendance:noshow',
+  'attendance:confirmed',
+  'payment:disputed',
+  'payment:completed',
+  'job:completed',
+  'job:cancelled',
+];
+
+for (const evt of INVALIDATION_EVENTS) {
+  eventBus.on(evt, () => {
+    clearTrustCalibrationCache();
+  });
+}
+
+export const _testHelpers = {
+  SCORE_BUCKETS,
+  snapshotPath,
+  reportPath,
+  safeUserSnapshotId,
+  monthKey,
+  dateKey,
+  clamp01,
+  scoreBucket,
+  addDaysIso,
+  inRange,
+  emptyOutcomes,
+  finalizeOutcomeScore,
+  summarizeBuckets,
+  detectTrustDriftFromBuckets,
+  clearTrustCalibrationCache,
+  cache,
+};
+```
+
+---
+
 ## `server/services/trustScoreV2.js`
 
 ```javascript
@@ -26504,6 +28388,7 @@ import {
   listJSON, addToSetIndex, getFromSetIndex, readSetIndex, writeSetIndex,
 } from './database.js';
 import { logger } from './logger.js';
+import { sanitizeActionUrl } from './notificationActions.js';
 
 const PUSH_USER_INDEX = config.DATABASE.indexFiles.pushUserIndex;
 
@@ -26995,7 +28880,7 @@ async function deliverPush(subscription, data) {
     title: data.title || 'يوميّة',
     body: data.body || 'إشعار جديد',
     icon: data.icon || '/assets/img/icon-192.png',
-    url: data.url || '/dashboard.html',
+    url: sanitizeActionUrl(data.url || '/dashboard.html'),
   });
 
   // Try payload encryption
@@ -27850,6 +29735,17 @@ async function resolveAccess(jobId, userId) {
 }
 
 /**
+ * Phase 53: Public access resolver for Workroom V2 sidecar services.
+ * Keeps all read receipts/search/pins/checklist access control centralized.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ */
+export async function resolveWorkroomAccess(jobId, userId) {
+  return await resolveAccess(jobId, userId);
+}
+
+/**
  * Return accepted worker IDs for a job.
  */
 async function getAcceptedWorkerIds(job) {
@@ -28121,11 +30017,29 @@ export async function sendWorkroomMessage(jobId, senderId, fields = {}) {
     text,
     source: 'workroom',
     templateKey,
+    attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
   });
 
   if (!result.ok) return result;
 
   await updateWorkroomMetadata(jobId, { lastMessageAt: result.message.createdAt }).catch(() => {});
+
+  // Phase 53 — Quick template usage metrics.
+  if (templateKey) {
+    try {
+      const { recordTemplateUsage } = await import('./workroomTemplateMetrics.js');
+      recordTemplateUsage({
+        jobId,
+        messageId: result.message.id,
+        userId: senderId,
+        role: access.role,
+        templateKey,
+        timestamp: result.message.createdAt,
+      }).catch(() => {});
+    } catch (_) {
+      // fire-and-forget
+    }
+  }
 
   eventBus.emit('workroom:message_sent', {
     jobId,
@@ -28259,6 +30173,81 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
     // optional
   }
 
+  // Phase 53 — Attachment messages.
+  try {
+    const { listByJob } = await import('./messages.js');
+    const msgResult = await listByJob(jobId, userId, { limit: 10000, offset: 0 });
+    const msgs = msgResult.items || [];
+    for (const msg of msgs) {
+      if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+        timeline.push({
+          type: 'attachment_added',
+          label: 'تمت إضافة مرفق في المحادثة',
+          timestamp: msg.createdAt,
+          meta: {
+            messageId: msg.id,
+            attachmentCount: msg.attachments.length,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Phase 53 — Pins.
+  try {
+    const { listPins } = await import('./workroomPins.js');
+    const pinsResult = await listPins(jobId, userId);
+    const pins = pinsResult.pins || [];
+    for (const pin of pins) {
+      timeline.push({
+        type: 'message_pinned',
+        label: 'تم تثبيت رسالة مهمة',
+        timestamp: pin.pinnedAt,
+        meta: {
+          messageId: pin.messageId,
+          pinnedBy: pin.pinnedBy,
+        },
+      });
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Phase 53 — Checklist.
+  try {
+    const { getChecklist } = await import('./workroomChecklist.js');
+    const checklistResult = await getChecklist(jobId, userId);
+    const items = checklistResult.checklist?.items || [];
+    for (const item of items) {
+      if (item.createdAt) {
+        timeline.push({
+          type: 'checklist_item_created',
+          label: 'تمت إضافة مهمة في مساحة العمل',
+          timestamp: item.createdAt,
+          meta: {
+            itemId: item.id,
+            createdBy: item.createdBy,
+          },
+        });
+      }
+      if (item.completedAt) {
+        timeline.push({
+          type: 'checklist_item_completed',
+          label: 'تم إكمال مهمة في مساحة العمل',
+          timestamp: item.completedAt,
+          meta: {
+            itemId: item.id,
+            completedBy: item.completedBy,
+          },
+        });
+      }
+    }
+  } catch (_) {
+    // optional
+  }
+
   // Payments.
   try {
     const { listByJob } = await import('./payments.js');
@@ -28330,7 +30319,22 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
     });
   }
 
-  timeline.sort(sortTimeline);
+  let filteredTimeline = timeline;
+
+  // Phase 53 — Optional timeline type filter.
+  // Supports: ?type=payment_created OR ?type=payment_created,attendance_noshow
+  if (config.WORKROOM_V2?.timelineFiltersEnabled && options.type) {
+    const types = String(options.type)
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+    if (types.length > 0) {
+      const typeSet = new Set(types);
+      filteredTimeline = filteredTimeline.filter(evt => typeSet.has(evt.type));
+    }
+  }
+
+  filteredTimeline.sort(sortTimeline);
 
   const max = Math.min(
     config.WORKROOM.maxTimelineEvents || 200,
@@ -28339,9 +30343,109 @@ export async function getWorkroomTimeline(jobId, userId, options = {}) {
 
   return {
     ok: true,
-    timeline: timeline.slice(-max),
-    total: timeline.length,
+    timeline: filteredTimeline.slice(-max),
+    total: filteredTimeline.length,
   };
+}
+
+/**
+ * Phase 53 — Build Workroom summary cards.
+ * Includes attendance/payment/pins/checklist/unread without leaking PII.
+ *
+ * @param {string} jobId
+ * @param {string} userId
+ */
+export async function getWorkroomSummary(jobId, userId) {
+  const access = await resolveAccess(jobId, userId);
+  if (!access.allowed) {
+    return { ok: false, error: access.error, code: access.code };
+  }
+
+  const summary = {
+    jobId,
+    attendance: {
+      totalRecords: 0,
+      checkedInCount: 0,
+      noShowCount: 0,
+      confirmedCount: 0,
+      attendanceRate: 0,
+    },
+    payment: {
+      exists: false,
+      status: null,
+      amount: 0,
+      platformFee: 0,
+      workerPayout: 0,
+    },
+    messages: {
+      unread: await countUnreadWorkroomMessages(jobId, userId),
+    },
+    pins: {
+      total: 0,
+    },
+    checklist: {
+      total: 0,
+      completed: 0,
+      open: 0,
+    },
+  };
+
+  // Attendance summary.
+  try {
+    const { getJobSummary } = await import('./attendance.js');
+    const att = await getJobSummary(jobId);
+    if (att) {
+      summary.attendance.totalRecords = att.totalRecords || 0;
+      summary.attendance.checkedInCount = att.checkedInCount || 0;
+      summary.attendance.noShowCount = att.noShowCount || 0;
+      summary.attendance.confirmedCount = att.confirmedCount || 0;
+      summary.attendance.attendanceRate = att.totalRecords > 0
+        ? Math.round((summary.attendance.checkedInCount / att.totalRecords) * 100)
+        : 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Payment summary.
+  try {
+    const { listByJob } = await import('./payments.js');
+    const payments = await listByJob(jobId);
+    if (payments && payments.length > 0) {
+      const p = payments[0];
+      summary.payment.exists = true;
+      summary.payment.status = p.status || null;
+      summary.payment.amount = p.amount || 0;
+      summary.payment.platformFee = p.platformFee || 0;
+      summary.payment.workerPayout = p.workerPayout || 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  // Pins summary.
+  try {
+    const { listPins } = await import('./workroomPins.js');
+    const pins = await listPins(jobId, userId);
+    summary.pins.total = pins.total || 0;
+  } catch (_) {
+    // optional
+  }
+
+  // Checklist summary.
+  try {
+    const { getChecklist } = await import('./workroomChecklist.js');
+    const checklist = await getChecklist(jobId, userId);
+    if (checklist && checklist.checklist) {
+      summary.checklist.total = checklist.checklist.total || 0;
+      summary.checklist.completed = checklist.checklist.completed || 0;
+      summary.checklist.open = checklist.checklist.open || 0;
+    }
+  } catch (_) {
+    // optional
+  }
+
+  return { ok: true, summary };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -28393,10 +30497,1517 @@ export const _testHelpers = {
   publicJobSummary,
   getTemplateKey,
   resolveAccess,
+  resolveWorkroomAccess,
   getAcceptedWorkerIds,
   countUnreadWorkroomMessages,
   getLastMessageAt,
   buildWorkroom,
+};
+```
+
+---
+
+## `server/services/workroomAttachments.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomAttachments.js — Workroom Attachments (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Metadata wrapper around existing imageStore.
+// Stores binary/base64 image through imageStore, then returns safe metadata.
+// Message JSON stores only imageRef metadata — never raw base64.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { sanitizeText } from './sanitizer.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(
+    config.WORKROOM_V2 &&
+    config.WORKROOM_V2.enabled &&
+    config.WORKROOM_V2.attachmentsEnabled
+  );
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+async function assertParticipant(jobId, userId) {
+  const { resolveWorkroomAccess } = await import('./workroom.js');
+  const access = await resolveWorkroomAccess(jobId, userId);
+
+  if (!access.allowed) {
+    const err = new Error(access.error || 'NOT_WORKROOM_PARTICIPANT');
+    err.code = access.code || 'NOT_WORKROOM_PARTICIPANT';
+    throw err;
+  }
+
+  return access;
+}
+
+export function sanitizeAttachmentMetadata(meta = {}) {
+  const safe = {};
+
+  if (meta.caption !== undefined && meta.caption !== null) {
+    safe.caption = sanitizeText(String(meta.caption)).slice(0, 160);
+  } else {
+    safe.caption = null;
+  }
+
+  if (meta.clientName !== undefined && meta.clientName !== null) {
+    safe.clientName = sanitizeText(String(meta.clientName)).slice(0, 160);
+  } else {
+    safe.clientName = null;
+  }
+
+  if (meta.purpose !== undefined && meta.purpose !== null) {
+    safe.purpose = sanitizeText(String(meta.purpose)).slice(0, 80);
+  } else {
+    safe.purpose = 'workroom_attachment';
+  }
+
+  return safe;
+}
+
+export async function storeWorkroomAttachment(jobId, userId, base64DataUri, metadata = {}) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'مرفقات مساحة العمل غير مفعّلة', code: 'ATTACHMENTS_DISABLED' };
+  }
+
+  if (!base64DataUri || typeof base64DataUri !== 'string') {
+    return { ok: false, error: 'بيانات المرفق غير صالحة', code: 'INVALID_ATTACHMENT' };
+  }
+
+  await assertParticipant(jobId, userId);
+
+  const safeMeta = sanitizeAttachmentMetadata(metadata);
+  const { storeImage } = await import('./imageStore.js');
+
+  const result = await storeImage(base64DataUri, {
+    uploadedBy: userId,
+    purpose: safeMeta.purpose || 'workroom_attachment',
+  });
+
+  if (!result || !result.ok) {
+    return {
+      ok: false,
+      error: result?.error || 'تعذّر حفظ المرفق',
+      code: result?.code || 'ATTACHMENT_STORE_FAILED',
+    };
+  }
+
+  const attachment = {
+    type: 'image',
+    imageRef: result.imageRef,
+    hash: result.hash || null,
+    contentType: result.contentType || null,
+    sizeBytes: result.sizeBytes || 0,
+    caption: safeMeta.caption,
+    clientName: safeMeta.clientName,
+    uploadedBy: userId,
+    uploadedAt: nowIso(),
+  };
+
+  eventBus.emit('workroom:attachment_added', {
+    jobId,
+    userId,
+    imageRef: attachment.imageRef,
+    timestamp: attachment.uploadedAt,
+  });
+
+  return { ok: true, attachment };
+}
+
+export async function attachToMessage(message, attachments) {
+  if (!message || typeof message !== 'object') return message;
+
+  const list = Array.isArray(attachments) ? attachments : [];
+  if (list.length === 0) {
+    message.attachments = [];
+    return message;
+  }
+
+  const max = config.WORKROOM_V2?.maxAttachmentsPerMessage || 3;
+  const trimmed = list.slice(0, max);
+
+  message.attachments = trimmed
+    .filter(a => a && a.type === 'image' && a.imageRef)
+    .map(a => ({
+      type: 'image',
+      imageRef: String(a.imageRef).slice(0, 80),
+      caption: a.caption ? sanitizeText(String(a.caption)).slice(0, 160) : null,
+      clientName: a.clientName ? sanitizeText(String(a.clientName)).slice(0, 160) : null,
+      uploadedAt: a.uploadedAt || nowIso(),
+    }));
+
+  return message;
+}
+
+export function validateAttachmentList(attachments) {
+  if (attachments === undefined || attachments === null) {
+    return { ok: true, attachments: [] };
+  }
+
+  if (!Array.isArray(attachments)) {
+    return { ok: false, error: 'المرفقات يجب أن تكون قائمة', code: 'INVALID_ATTACHMENTS' };
+  }
+
+  const max = config.WORKROOM_V2?.maxAttachmentsPerMessage || 3;
+  if (attachments.length > max) {
+    return { ok: false, error: `أقصى عدد للمرفقات هو ${max}`, code: 'MAX_ATTACHMENTS_EXCEEDED' };
+  }
+
+  for (const a of attachments) {
+    if (!a || typeof a !== 'object' || a.type !== 'image' || !a.imageRef) {
+      return { ok: false, error: 'مرفق غير صالح', code: 'INVALID_ATTACHMENT' };
+    }
+  }
+
+  return { ok: true, attachments };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  sanitizeAttachmentMetadata,
+  validateAttachmentList,
+  nowIso,
+};
+```
+
+---
+
+## `server/services/workroomChecklist.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomChecklist.js — Structured Workroom Checklist (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Sidecar checklist per workroom/job.
+// Storage: data/workrooms/checklists/{jobId}.json
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { sanitizeText } from './sanitizer.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.checklistEnabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function checklistPath(jobId) {
+  return getRecordPath('workroom_checklists', jobId);
+}
+
+function generateId() {
+  return 'chk_' + crypto.randomBytes(6).toString('hex');
+}
+
+function emptyChecklist(jobId) {
+  return {
+    jobId,
+    items: [],
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+async function assertParticipant(jobId, userId) {
+  const { resolveWorkroomAccess } = await import('./workroom.js');
+  const access = await resolveWorkroomAccess(jobId, userId);
+  if (!access.allowed) {
+    const err = new Error(access.error || 'NOT_WORKROOM_PARTICIPANT');
+    err.code = access.code || 'NOT_WORKROOM_PARTICIPANT';
+    throw err;
+  }
+  return access;
+}
+
+function canCreateOrDelete(access) {
+  return access && access.role === 'employer';
+}
+
+function canCompleteItem(access, item, userId) {
+  if (!access || !item || !userId) return false;
+  if (access.role === 'employer') return true;
+  if (access.role === 'worker') {
+    return !item.assignedTo || item.assignedTo === userId;
+  }
+  return false;
+}
+
+function publicChecklist(data) {
+  const items = Array.isArray(data.items) ? data.items : [];
+  return {
+    jobId: data.jobId,
+    items,
+    total: items.length,
+    completed: items.filter(i => i.status === 'completed').length,
+    open: items.filter(i => i.status !== 'completed').length,
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+export async function getChecklist(jobId, userId) {
+  if (!isEnabled()) {
+    return { ok: true, checklist: publicChecklist(emptyChecklist(jobId)) };
+  }
+
+  await assertParticipant(jobId, userId);
+
+  const data = (await readJSON(checklistPath(jobId))) || emptyChecklist(jobId);
+  return { ok: true, checklist: publicChecklist(data) };
+}
+
+export async function createChecklistItem(jobId, userId, fields = {}) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'قائمة المهام غير مفعّلة', code: 'CHECKLIST_DISABLED' };
+  }
+
+  const access = await assertParticipant(jobId, userId);
+  if (!canCreateOrDelete(access)) {
+    return { ok: false, error: 'إضافة المهام متاحة لصاحب العمل فقط', code: 'CHECKLIST_FORBIDDEN' };
+  }
+
+  const text = sanitizeText(fields.text || '').trim();
+  if (!text || text.length < 2) {
+    return { ok: false, error: 'نص المهمة مطلوب', code: 'TEXT_REQUIRED' };
+  }
+  if (text.length > 300) {
+    return { ok: false, error: 'نص المهمة لا يتجاوز 300 حرف', code: 'TEXT_TOO_LONG' };
+  }
+
+  const assignedTo = fields.assignedTo && typeof fields.assignedTo === 'string'
+    ? fields.assignedTo
+    : null;
+
+  if (assignedTo && !access.workerIds.includes(assignedTo) && assignedTo !== access.job.employerId) {
+    return { ok: false, error: 'المستخدم المكلّف غير مشترك في مساحة العمل', code: 'INVALID_ASSIGNEE' };
+  }
+
+  return withLock(`workroom-checklist:${jobId}`, async () => {
+    const filePath = checklistPath(jobId);
+    const data = (await readJSON(filePath)) || emptyChecklist(jobId);
+    data.items = Array.isArray(data.items) ? data.items : [];
+
+    const max = config.WORKROOM_V2?.maxChecklistItems || 30;
+    if (data.items.length >= max) {
+      return { ok: false, error: `أقصى عدد للمهام هو ${max}`, code: 'MAX_CHECKLIST_ITEMS' };
+    }
+
+    const now = nowIso();
+    const item = {
+      id: generateId(),
+      text,
+      status: 'open',
+      createdBy: userId,
+      assignedTo,
+      completedBy: null,
+      completedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    data.items.push(item);
+    data.updatedAt = now;
+    if (!data.createdAt) data.createdAt = now;
+
+    await atomicWrite(filePath, data);
+
+    eventBus.emit('workroom:checklist_item_created', {
+      jobId,
+      itemId: item.id,
+      createdBy: userId,
+      assignedTo,
+      timestamp: now,
+    });
+
+    return { ok: true, item };
+  });
+}
+
+export async function updateChecklistItem(jobId, itemId, userId, patch = {}) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'قائمة المهام غير مفعّلة', code: 'CHECKLIST_DISABLED' };
+  }
+
+  const access = await assertParticipant(jobId, userId);
+
+  return withLock(`workroom-checklist:${jobId}`, async () => {
+    const filePath = checklistPath(jobId);
+    const data = (await readJSON(filePath)) || emptyChecklist(jobId);
+    data.items = Array.isArray(data.items) ? data.items : [];
+
+    const item = data.items.find(i => i.id === itemId);
+    if (!item) {
+      return { ok: false, error: 'المهمة غير موجودة', code: 'CHECKLIST_ITEM_NOT_FOUND' };
+    }
+
+    const now = nowIso();
+
+    if (patch.status !== undefined) {
+      if (patch.status !== 'open' && patch.status !== 'completed') {
+        return { ok: false, error: 'حالة المهمة غير صالحة', code: 'INVALID_STATUS' };
+      }
+
+      if (patch.status === 'completed') {
+        if (!canCompleteItem(access, item, userId)) {
+          return { ok: false, error: 'غير مسموح لك بإكمال هذه المهمة', code: 'CHECKLIST_FORBIDDEN' };
+        }
+        item.status = 'completed';
+        item.completedBy = userId;
+        item.completedAt = now;
+
+        eventBus.emit('workroom:checklist_item_completed', {
+          jobId,
+          itemId,
+          completedBy: userId,
+          timestamp: now,
+        });
+      } else {
+        if (!canCreateOrDelete(access)) {
+          return { ok: false, error: 'إعادة فتح المهمة متاحة لصاحب العمل فقط', code: 'CHECKLIST_FORBIDDEN' };
+        }
+        item.status = 'open';
+        item.completedBy = null;
+        item.completedAt = null;
+      }
+    }
+
+    if (patch.text !== undefined) {
+      if (!canCreateOrDelete(access)) {
+        return { ok: false, error: 'تعديل نص المهمة متاح لصاحب العمل فقط', code: 'CHECKLIST_FORBIDDEN' };
+      }
+
+      const text = sanitizeText(String(patch.text || '')).trim();
+      if (!text || text.length < 2) {
+        return { ok: false, error: 'نص المهمة مطلوب', code: 'TEXT_REQUIRED' };
+      }
+      if (text.length > 300) {
+        return { ok: false, error: 'نص المهمة لا يتجاوز 300 حرف', code: 'TEXT_TOO_LONG' };
+      }
+      item.text = text;
+    }
+
+    if (patch.assignedTo !== undefined) {
+      if (!canCreateOrDelete(access)) {
+        return { ok: false, error: 'تعديل التكليف متاح لصاحب العمل فقط', code: 'CHECKLIST_FORBIDDEN' };
+      }
+
+      const assignedTo = patch.assignedTo || null;
+      if (assignedTo && !access.workerIds.includes(assignedTo) && assignedTo !== access.job.employerId) {
+        return { ok: false, error: 'المستخدم المكلّف غير مشترك في مساحة العمل', code: 'INVALID_ASSIGNEE' };
+      }
+      item.assignedTo = assignedTo;
+    }
+
+    item.updatedAt = now;
+    data.updatedAt = now;
+
+    await atomicWrite(filePath, data);
+
+    return { ok: true, item };
+  });
+}
+
+export async function deleteChecklistItem(jobId, itemId, userId) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'قائمة المهام غير مفعّلة', code: 'CHECKLIST_DISABLED' };
+  }
+
+  const access = await assertParticipant(jobId, userId);
+  if (!canCreateOrDelete(access)) {
+    return { ok: false, error: 'حذف المهام متاح لصاحب العمل فقط', code: 'CHECKLIST_FORBIDDEN' };
+  }
+
+  return withLock(`workroom-checklist:${jobId}`, async () => {
+    const filePath = checklistPath(jobId);
+    const data = (await readJSON(filePath)) || emptyChecklist(jobId);
+    data.items = Array.isArray(data.items) ? data.items : [];
+
+    const before = data.items.length;
+    data.items = data.items.filter(i => i.id !== itemId);
+
+    if (data.items.length === before) {
+      return { ok: false, error: 'المهمة غير موجودة', code: 'CHECKLIST_ITEM_NOT_FOUND' };
+    }
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+
+    eventBus.emit('workroom:checklist_item_deleted', {
+      jobId,
+      itemId,
+      deletedBy: userId,
+      timestamp: data.updatedAt,
+    });
+
+    return { ok: true, deleted: true };
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  checklistPath,
+  generateId,
+  emptyChecklist,
+  publicChecklist,
+  canCreateOrDelete,
+  canCompleteItem,
+};
+```
+
+---
+
+## `server/services/workroomPins.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomPins.js — Workroom Pinned Messages (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Sidecar pinned messages per workroom/job.
+// Storage: data/workrooms/pins/{jobId}.json
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { sanitizeText } from './sanitizer.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.pinsEnabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function pinsPath(jobId) {
+  return getRecordPath('workroom_pins', jobId);
+}
+
+function emptyPins(jobId) {
+  return {
+    jobId,
+    pins: [],
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+async function getMessage(messageId) {
+  if (!messageId || typeof messageId !== 'string') return null;
+  const { readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+  return await readJSONFn(getRecordPathFn('messages', messageId));
+}
+
+async function assertParticipant(jobId, userId) {
+  const { resolveWorkroomAccess } = await import('./workroom.js');
+  const access = await resolveWorkroomAccess(jobId, userId);
+  if (!access.allowed) {
+    const err = new Error(access.error || 'NOT_WORKROOM_PARTICIPANT');
+    err.code = access.code || 'NOT_WORKROOM_PARTICIPANT';
+    throw err;
+  }
+  return access;
+}
+
+function canPin(access) {
+  // Phase 53: employer-only pinning by default.
+  return access && access.role === 'employer';
+}
+
+function publicPin(pin, message) {
+  return {
+    id: pin.id,
+    jobId: pin.jobId,
+    messageId: pin.messageId,
+    pinnedBy: pin.pinnedBy,
+    note: pin.note || null,
+    pinnedAt: pin.pinnedAt,
+    message: message ? {
+      id: message.id,
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      text: message.text,
+      createdAt: message.createdAt,
+      source: message.source || 'job_messages',
+      attachments: message.attachments || [],
+    } : null,
+  };
+}
+
+export async function listPins(jobId, userId) {
+  if (!isEnabled()) return { ok: true, pins: [], total: 0 };
+
+  await assertParticipant(jobId, userId);
+
+  const data = (await readJSON(pinsPath(jobId))) || emptyPins(jobId);
+  const pins = Array.isArray(data.pins) ? data.pins : [];
+
+  const enriched = [];
+  for (const pin of pins) {
+    const msg = await getMessage(pin.messageId);
+    enriched.push(publicPin(pin, msg));
+  }
+
+  enriched.sort((a, b) => new Date(b.pinnedAt) - new Date(a.pinnedAt));
+
+  return {
+    ok: true,
+    pins: enriched,
+    total: enriched.length,
+  };
+}
+
+export async function isPinned(jobId, messageId) {
+  if (!isEnabled()) return false;
+  const data = await readJSON(pinsPath(jobId));
+  if (!data || !Array.isArray(data.pins)) return false;
+  return data.pins.some(p => p.messageId === messageId);
+}
+
+export async function pinMessage(jobId, messageId, userId, note) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'تثبيت الرسائل غير مفعّل', code: 'PINS_DISABLED' };
+  }
+
+  const access = await assertParticipant(jobId, userId);
+  if (!canPin(access)) {
+    return { ok: false, error: 'التثبيت متاح لصاحب العمل فقط حالياً', code: 'PIN_FORBIDDEN' };
+  }
+
+  const message = await getMessage(messageId);
+  if (!message || message.jobId !== jobId) {
+    return { ok: false, error: 'الرسالة غير موجودة في مساحة العمل', code: 'MESSAGE_NOT_FOUND' };
+  }
+
+  return withLock(`workroom-pins:${jobId}`, async () => {
+    const filePath = pinsPath(jobId);
+    const data = (await readJSON(filePath)) || emptyPins(jobId);
+    data.pins = Array.isArray(data.pins) ? data.pins : [];
+
+    const existing = data.pins.find(p => p.messageId === messageId);
+    if (existing) {
+      return { ok: true, pin: publicPin(existing, message), idempotent: true };
+    }
+
+    const max = config.WORKROOM_V2?.maxPinnedMessagesPerWorkroom || 5;
+    if (data.pins.length >= max) {
+      return { ok: false, error: `أقصى عدد للرسائل المثبتة هو ${max}`, code: 'MAX_PINS_REACHED' };
+    }
+
+    const pin = {
+      id: `pin_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      jobId,
+      messageId,
+      pinnedBy: userId,
+      note: note ? sanitizeText(String(note)).slice(0, 300) : null,
+      pinnedAt: nowIso(),
+    };
+
+    data.pins.push(pin);
+    data.updatedAt = nowIso();
+    if (!data.createdAt) data.createdAt = data.updatedAt;
+
+    await atomicWrite(filePath, data);
+
+    eventBus.emit('workroom:message_pinned', {
+      jobId,
+      messageId,
+      pinnedBy: userId,
+      timestamp: pin.pinnedAt,
+    });
+
+    return { ok: true, pin: publicPin(pin, message), idempotent: false };
+  });
+}
+
+export async function unpinMessage(jobId, messageId, userId) {
+  if (!isEnabled()) {
+    return { ok: false, error: 'تثبيت الرسائل غير مفعّل', code: 'PINS_DISABLED' };
+  }
+
+  const access = await assertParticipant(jobId, userId);
+  if (!canPin(access)) {
+    return { ok: false, error: 'إلغاء التثبيت متاح لصاحب العمل فقط حالياً', code: 'PIN_FORBIDDEN' };
+  }
+
+  return withLock(`workroom-pins:${jobId}`, async () => {
+    const filePath = pinsPath(jobId);
+    const data = (await readJSON(filePath)) || emptyPins(jobId);
+    data.pins = Array.isArray(data.pins) ? data.pins : [];
+
+    const before = data.pins.length;
+    data.pins = data.pins.filter(p => p.messageId !== messageId);
+
+    if (data.pins.length === before) {
+      return { ok: true, removed: false };
+    }
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+
+    eventBus.emit('workroom:message_unpinned', {
+      jobId,
+      messageId,
+      unpinnedBy: userId,
+      timestamp: data.updatedAt,
+    });
+
+    return { ok: true, removed: true };
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  pinsPath,
+  emptyPins,
+  publicPin,
+  canPin,
+};
+```
+
+---
+
+## `server/services/workroomReceipts.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomReceipts.js — Workroom Read Receipts (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Sidecar read receipts per workroom/job.
+// Storage: data/workrooms/receipts/{jobId}.json
+// Does NOT mutate old message files. Existing messages.read remains compatible.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+
+function isEnabled() {
+  return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.readReceiptsEnabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function receiptPath(jobId) {
+  return getRecordPath('workroom_receipts', jobId);
+}
+
+async function assertParticipant(jobId, userId) {
+  const { resolveWorkroomAccess } = await import('./workroom.js');
+  const access = await resolveWorkroomAccess(jobId, userId);
+  if (!access.allowed) {
+    const err = new Error(access.error || 'NOT_WORKROOM_PARTICIPANT');
+    err.code = access.code || 'NOT_WORKROOM_PARTICIPANT';
+    throw err;
+  }
+  return access;
+}
+
+async function messageBelongsToJob(jobId, messageId) {
+  if (!jobId || !messageId) return false;
+  const { readJSON: readJSONFn, getRecordPath: getRecordPathFn } = await import('./database.js');
+  const msg = await readJSONFn(getRecordPathFn('messages', messageId));
+  return !!(msg && msg.jobId === jobId);
+}
+
+function emptyReceipt(jobId) {
+  return {
+    jobId,
+    messages: {},
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+export async function getReadReceipts(jobId) {
+  if (!isEnabled()) return emptyReceipt(jobId);
+  const data = await readJSON(receiptPath(jobId));
+  if (!data || typeof data !== 'object') return emptyReceipt(jobId);
+  return {
+    jobId,
+    messages: data.messages || {},
+    createdAt: data.createdAt || null,
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+export async function getMessageReceipt(jobId, messageId) {
+  const receipts = await getReadReceipts(jobId);
+  return receipts.messages?.[messageId] || { readBy: {} };
+}
+
+export async function markMessageRead(jobId, messageId, userId) {
+  if (!isEnabled()) {
+    return { ok: false, code: 'READ_RECEIPTS_DISABLED', error: 'Read receipts disabled' };
+  }
+
+  await assertParticipant(jobId, userId);
+
+  const belongs = await messageBelongsToJob(jobId, messageId);
+  if (!belongs) {
+    return { ok: false, code: 'MESSAGE_NOT_FOUND', error: 'الرسالة غير موجودة في مساحة العمل' };
+  }
+
+  return withLock(`workroom-receipts:${jobId}`, async () => {
+    const filePath = receiptPath(jobId);
+    const receipts = (await readJSON(filePath)) || emptyReceipt(jobId);
+
+    if (!receipts.messages) receipts.messages = {};
+    if (!receipts.messages[messageId]) {
+      receipts.messages[messageId] = { readBy: {} };
+    }
+    if (!receipts.messages[messageId].readBy) {
+      receipts.messages[messageId].readBy = {};
+    }
+
+    const alreadyReadAt = receipts.messages[messageId].readBy[userId] || null;
+    if (!alreadyReadAt) {
+      receipts.messages[messageId].readBy[userId] = nowIso();
+      receipts.updatedAt = nowIso();
+      if (!receipts.createdAt) receipts.createdAt = receipts.updatedAt;
+
+      await atomicWrite(filePath, receipts);
+
+      eventBus.emit('workroom:message_read', {
+        jobId,
+        messageId,
+        userId,
+        readAt: receipts.messages[messageId].readBy[userId],
+      });
+    }
+
+    return {
+      ok: true,
+      messageId,
+      readAt: receipts.messages[messageId].readBy[userId],
+      idempotent: !!alreadyReadAt,
+    };
+  });
+}
+
+export async function markAllVisibleRead(jobId, userId, messageIds) {
+  if (!isEnabled()) {
+    return { ok: false, code: 'READ_RECEIPTS_DISABLED', error: 'Read receipts disabled', count: 0 };
+  }
+
+  await assertParticipant(jobId, userId);
+
+  const ids = Array.isArray(messageIds)
+    ? Array.from(new Set(messageIds.filter(id => typeof id === 'string')))
+    : [];
+
+  if (ids.length === 0) return { ok: true, count: 0 };
+
+  return withLock(`workroom-receipts:${jobId}`, async () => {
+    const filePath = receiptPath(jobId);
+    const receipts = (await readJSON(filePath)) || emptyReceipt(jobId);
+    const now = nowIso();
+
+    if (!receipts.messages) receipts.messages = {};
+
+    let count = 0;
+
+    for (const messageId of ids) {
+      const belongs = await messageBelongsToJob(jobId, messageId);
+      if (!belongs) continue;
+
+      if (!receipts.messages[messageId]) receipts.messages[messageId] = { readBy: {} };
+      if (!receipts.messages[messageId].readBy) receipts.messages[messageId].readBy = {};
+
+      if (!receipts.messages[messageId].readBy[userId]) {
+        receipts.messages[messageId].readBy[userId] = now;
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      receipts.updatedAt = now;
+      if (!receipts.createdAt) receipts.createdAt = now;
+      await atomicWrite(filePath, receipts);
+
+      eventBus.emit('workroom:messages_read', {
+        jobId,
+        userId,
+        count,
+        readAt: now,
+      });
+    }
+
+    return { ok: true, count };
+  });
+}
+
+export async function enrichMessagesWithReceipts(jobId, messages, viewerId) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages || [];
+
+  if (!isEnabled()) {
+    return messages.map(m => ({
+      ...m,
+      readReceipt: null,
+    }));
+  }
+
+  const receipts = await getReadReceipts(jobId);
+  const receiptMap = receipts.messages || {};
+
+  return messages.map(msg => {
+    const msgReceipt = receiptMap[msg.id] || { readBy: {} };
+    const readBy = msgReceipt.readBy || {};
+    const viewerReadAt = viewerId ? (readBy[viewerId] || null) : null;
+
+    return {
+      ...msg,
+      readReceipt: {
+        readBy,
+        viewerReadAt,
+        readCount: Object.keys(readBy).length,
+      },
+    };
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  receiptPath,
+  emptyReceipt,
+  assertParticipant,
+  messageBelongsToJob,
+};
+```
+
+---
+
+## `server/services/workroomSearch.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomSearch.js — Per-Job Workroom Message Search (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Arabic-normalized per-workroom search index.
+// Index is acceleration only; fallback full scan is always available.
+// Storage: data/workrooms/search-indexes/{jobId}.json
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getFromSetIndex,
+  listJSON,
+  getCollectionPath,
+} from './database.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.searchEnabled);
+}
+
+function indexPath(jobId) {
+  return getRecordPath('workroom_search_indexes', jobId);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function tokenize(text) {
+  const normalized = normalizeArabic(String(text || '').toLowerCase());
+  return Array.from(new Set(
+    normalized
+      .split(/[^\p{L}\p{N}_-]+/gu)
+      .map(t => t.trim())
+      .filter(t => t.length >= 2 && t.length <= 50)
+  ));
+}
+
+function normalizeQuery(q) {
+  return normalizeArabic(String(q || '').toLowerCase()).trim();
+}
+
+function previewText(text) {
+  const raw = String(text || '');
+  return raw.length > 120 ? raw.slice(0, 120) + '…' : raw;
+}
+
+function emptyIndex(jobId) {
+  return {
+    version: 1,
+    jobId,
+    tokens: {},
+    messageMeta: {},
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+async function listMessagesForJobRaw(jobId) {
+  const ids = await getFromSetIndex(config.DATABASE.indexFiles.messageJobIndex, jobId);
+  const results = [];
+
+  if (ids && ids.length > 0) {
+    for (const msgId of ids) {
+      const msg = await readJSON(getRecordPath('messages', msgId));
+      if (msg && msg.jobId === jobId) results.push(msg);
+    }
+    return results;
+  }
+
+  const dir = getCollectionPath('messages');
+  const all = await listJSON(dir);
+  return all.filter(m => m && m.id && m.id.startsWith('msg_') && m.jobId === jobId);
+}
+
+async function visibleMessages(jobId, userId, options = {}) {
+  if (userId) {
+    const { listByJob } = await import('./messages.js');
+    const result = await listByJob(jobId, userId, {
+      limit: options.limit || 10000,
+      offset: options.offset || 0,
+    });
+    return result.items || [];
+  }
+
+  return await listMessagesForJobRaw(jobId);
+}
+
+export async function indexWorkroomMessage(message) {
+  if (!isEnabled()) return { indexed: false };
+  if (!message || !message.id || !message.jobId) return { indexed: false };
+  if (message.source !== 'workroom') return { indexed: false };
+
+  const jobId = message.jobId;
+  const filePath = indexPath(jobId);
+
+  try {
+    const idx = (await readJSON(filePath)) || emptyIndex(jobId);
+    if (!idx.tokens) idx.tokens = {};
+    if (!idx.messageMeta) idx.messageMeta = {};
+
+    // Remove stale references for this message before re-indexing.
+    for (const token of Object.keys(idx.tokens)) {
+      idx.tokens[token] = (idx.tokens[token] || []).filter(id => id !== message.id);
+      if (idx.tokens[token].length === 0) delete idx.tokens[token];
+    }
+
+    const tokens = tokenize(message.text || '');
+    for (const token of tokens) {
+      if (!idx.tokens[token]) idx.tokens[token] = [];
+      if (!idx.tokens[token].includes(message.id)) idx.tokens[token].push(message.id);
+    }
+
+    idx.messageMeta[message.id] = {
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      createdAt: message.createdAt,
+      preview: previewText(message.text),
+    };
+
+    idx.updatedAt = nowIso();
+    if (!idx.createdAt) idx.createdAt = idx.updatedAt;
+
+    await atomicWrite(filePath, idx);
+
+    eventBus.emit('workroom:search_index_updated', {
+      jobId,
+      messageId: message.id,
+      tokenCount: tokens.length,
+      timestamp: idx.updatedAt,
+    });
+
+    return { indexed: true, tokenCount: tokens.length };
+  } catch (err) {
+    logger.warn('workroomSearch: indexWorkroomMessage failed', {
+      jobId,
+      messageId: message.id,
+      error: err.message,
+    });
+    return { indexed: false, error: err.message };
+  }
+}
+
+export async function removeWorkroomMessage(jobId, messageId) {
+  if (!isEnabled()) return { removed: false };
+  if (!jobId || !messageId) return { removed: false };
+
+  const filePath = indexPath(jobId);
+  const idx = await readJSON(filePath);
+  if (!idx) return { removed: false };
+
+  for (const token of Object.keys(idx.tokens || {})) {
+    idx.tokens[token] = idx.tokens[token].filter(id => id !== messageId);
+    if (idx.tokens[token].length === 0) delete idx.tokens[token];
+  }
+
+  if (idx.messageMeta) delete idx.messageMeta[messageId];
+  idx.updatedAt = nowIso();
+
+  await atomicWrite(filePath, idx);
+  return { removed: true };
+}
+
+export async function rebuildWorkroomSearchIndex(jobId) {
+  if (!isEnabled()) return { rebuilt: false, skipped: true };
+  if (!jobId) return { rebuilt: false, error: 'jobId required' };
+
+  const idx = emptyIndex(jobId);
+  const messages = await listMessagesForJobRaw(jobId);
+  const workroomMessages = messages.filter(m => m.source === 'workroom');
+
+  for (let i = 0; i < workroomMessages.length; i++) {
+    const msg = workroomMessages[i];
+    const tokens = tokenize(msg.text || '');
+
+    for (const token of tokens) {
+      if (!idx.tokens[token]) idx.tokens[token] = [];
+      if (!idx.tokens[token].includes(msg.id)) idx.tokens[token].push(msg.id);
+    }
+
+    idx.messageMeta[msg.id] = {
+      senderId: msg.senderId,
+      senderRole: msg.senderRole,
+      createdAt: msg.createdAt,
+      preview: previewText(msg.text),
+    };
+
+    if ((i + 1) % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  idx.updatedAt = nowIso();
+  await atomicWrite(indexPath(jobId), idx);
+
+  return {
+    rebuilt: true,
+    jobId,
+    messageCount: workroomMessages.length,
+    tokenCount: Object.keys(idx.tokens).length,
+  };
+}
+
+async function indexedSearch(jobId, query) {
+  const idx = await readJSON(indexPath(jobId));
+  if (!idx || !idx.tokens || !idx.messageMeta) {
+    return { fallbackRequired: true, reason: 'missing_or_corrupt_index' };
+  }
+
+  const tokens = tokenize(query);
+  if (tokens.length === 0) return { ids: [], indexed: true };
+
+  let candidateSet = null;
+
+  for (const token of tokens) {
+    const ids = new Set(idx.tokens[token] || []);
+    if (candidateSet === null) {
+      candidateSet = ids;
+    } else {
+      candidateSet = new Set([...candidateSet].filter(id => ids.has(id)));
+    }
+  }
+
+  return {
+    ids: Array.from(candidateSet || []),
+    indexed: true,
+  };
+}
+
+async function fullScanSearch(jobId, query, options = {}) {
+  const q = normalizeQuery(query);
+  const messages = await visibleMessages(jobId, options.userId, { limit: 10000, offset: 0 });
+
+  return messages.filter(msg => {
+    const text = normalizeArabic(String(msg.text || '').toLowerCase());
+    return text.includes(q);
+  });
+}
+
+export async function searchWorkroomMessages(jobId, query, options = {}) {
+  if (!isEnabled()) {
+    return { results: [], total: 0, indexed: false, fallbackUsed: false };
+  }
+
+  const q = normalizeQuery(query);
+  if (!q || q.length < 2) {
+    return { results: [], total: 0, indexed: false, fallbackUsed: false };
+  }
+
+  const limit = Math.min(
+    config.WORKROOM_V2?.messageSearchMaxResults || 100,
+    Math.max(1, parseInt(options.limit) || 50)
+  );
+
+  let matchedMessages = [];
+  let indexed = false;
+  let fallbackUsed = false;
+
+  try {
+    const indexedResult = await indexedSearch(jobId, q);
+
+    if (!indexedResult.fallbackRequired) {
+      indexed = true;
+
+      const visible = await visibleMessages(jobId, options.userId, { limit: 10000, offset: 0 });
+      const visibleById = new Map(visible.map(m => [m.id, m]));
+      matchedMessages = (indexedResult.ids || [])
+        .map(id => visibleById.get(id))
+        .filter(Boolean)
+        .filter(msg => normalizeArabic(String(msg.text || '').toLowerCase()).includes(q));
+    } else {
+      fallbackUsed = true;
+      matchedMessages = await fullScanSearch(jobId, q, options);
+    }
+  } catch (err) {
+    logger.warn('workroomSearch: indexed search failed, using fallback', {
+      jobId,
+      error: err.message,
+    });
+    fallbackUsed = true;
+    matchedMessages = await fullScanSearch(jobId, q, options);
+  }
+
+  matchedMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = matchedMessages.length;
+  const results = matchedMessages.slice(0, limit).map(msg => ({
+    id: msg.id,
+    jobId: msg.jobId,
+    senderId: msg.senderId,
+    senderRole: msg.senderRole,
+    text: msg.text,
+    preview: previewText(msg.text),
+    createdAt: msg.createdAt,
+    source: msg.source || 'job_messages',
+    templateKey: msg.templateKey || null,
+    attachments: msg.attachments || [],
+  }));
+
+  return {
+    results,
+    total,
+    limit,
+    indexed,
+    fallbackUsed,
+  };
+}
+
+export async function getWorkroomSearchStats(jobId) {
+  if (!isEnabled()) return { enabled: false };
+
+  const idx = await readJSON(indexPath(jobId));
+  if (!idx) {
+    return { enabled: true, status: 'missing', tokenCount: 0, messageCount: 0, updatedAt: null };
+  }
+
+  return {
+    enabled: true,
+    status: 'healthy',
+    tokenCount: Object.keys(idx.tokens || {}).length,
+    messageCount: Object.keys(idx.messageMeta || {}).length,
+    updatedAt: idx.updatedAt || null,
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  indexPath,
+  tokenize,
+  normalizeQuery,
+  previewText,
+  emptyIndex,
+  listMessagesForJobRaw,
+  indexedSearch,
+  fullScanSearch,
+};
+```
+
+---
+
+## `server/services/workroomTemplateMetrics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomTemplateMetrics.js — Template Usage Metrics (Phase 53)
+// ═══════════════════════════════════════════════════════════════
+// Tracks Workroom quick template usage.
+// Storage: data/metrics/workroom-template-usage.json
+//
+// Metrics:
+//   - byRole
+//   - byTemplateKey
+//   - byDay
+//   - total
+//
+// Fire-and-forget safe. Atomic writes. Single-writer lock.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const METRICS_ID = 'workroom-template-usage';
+
+function isEnabled() {
+  return !!(
+    config.WORKROOM_V2 &&
+    config.WORKROOM_V2.enabled &&
+    config.WORKROOM_V2.templateAnalyticsEnabled
+  );
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function metricsPath() {
+  return getRecordPath('workroom_template_metrics', METRICS_ID);
+}
+
+function toEgyptDate(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  const egyptMs = d.getTime() + 2 * 60 * 60 * 1000;
+  const egyptDate = new Date(egyptMs);
+  const y = egyptDate.getUTCFullYear();
+  const m = String(egyptDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(egyptDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function emptyMetrics() {
+  return {
+    id: METRICS_ID,
+    version: 1,
+    total: 0,
+    byRole: {
+      worker: 0,
+      employer: 0,
+      unknown: 0,
+    },
+    byTemplateKey: {},
+    byDay: {},
+    lastUsedAt: null,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+function normalizeRole(role) {
+  if (role === 'worker' || role === 'employer') return role;
+  return 'unknown';
+}
+
+function safeTemplateKey(templateKey) {
+  if (!templateKey || typeof templateKey !== 'string') return '';
+  const clean = templateKey.trim().slice(0, 80);
+  if (!/^[a-zA-Z0-9_-]+$/.test(clean)) return '';
+  return clean;
+}
+
+/**
+ * Record one template usage event.
+ *
+ * @param {{
+ *   jobId: string,
+ *   messageId?: string,
+ *   userId: string,
+ *   role: 'worker'|'employer',
+ *   templateKey: string,
+ *   timestamp?: string
+ * }} params
+ */
+export async function recordTemplateUsage(params = {}) {
+  if (!isEnabled()) return { recorded: false, disabled: true };
+
+  const templateKey = safeTemplateKey(params.templateKey);
+  if (!templateKey) return { recorded: false, error: 'INVALID_TEMPLATE_KEY' };
+
+  const role = normalizeRole(params.role);
+  const timestamp = params.timestamp || nowIso();
+  const day = toEgyptDate(timestamp);
+
+  return withLock('workroom-template-metrics', async () => {
+    const filePath = metricsPath();
+    const metrics = (await readJSON(filePath)) || emptyMetrics();
+
+    metrics.total = (metrics.total || 0) + 1;
+
+    if (!metrics.byRole) metrics.byRole = {};
+    metrics.byRole[role] = (metrics.byRole[role] || 0) + 1;
+
+    if (!metrics.byTemplateKey) metrics.byTemplateKey = {};
+    if (!metrics.byTemplateKey[templateKey]) {
+      metrics.byTemplateKey[templateKey] = {
+        templateKey,
+        count: 0,
+        byRole: {},
+        lastUsedAt: null,
+      };
+    }
+
+    metrics.byTemplateKey[templateKey].count++;
+    metrics.byTemplateKey[templateKey].byRole[role] =
+      (metrics.byTemplateKey[templateKey].byRole[role] || 0) + 1;
+    metrics.byTemplateKey[templateKey].lastUsedAt = timestamp;
+
+    if (!metrics.byDay) metrics.byDay = {};
+    if (!metrics.byDay[day]) {
+      metrics.byDay[day] = {
+        date: day,
+        total: 0,
+        byRole: {},
+        byTemplateKey: {},
+      };
+    }
+
+    metrics.byDay[day].total++;
+    metrics.byDay[day].byRole[role] = (metrics.byDay[day].byRole[role] || 0) + 1;
+    metrics.byDay[day].byTemplateKey[templateKey] =
+      (metrics.byDay[day].byTemplateKey[templateKey] || 0) + 1;
+
+    metrics.lastUsedAt = timestamp;
+    metrics.updatedAt = nowIso();
+    if (!metrics.createdAt) metrics.createdAt = metrics.updatedAt;
+
+    await atomicWrite(filePath, metrics);
+
+    eventBus.emit('workroom:template_used', {
+      jobId: params.jobId || null,
+      messageId: params.messageId || null,
+      userId: params.userId || null,
+      role,
+      templateKey,
+      timestamp,
+    });
+
+    return {
+      recorded: true,
+      templateKey,
+      role,
+      day,
+    };
+  });
+}
+
+/**
+ * Get template usage stats.
+ *
+ * @param {{ from?: string, to?: string, role?: string, limit?: number }} options
+ */
+export async function getTemplateUsageStats(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      total: 0,
+      byRole: {},
+      topTemplates: [],
+      byDay: [],
+    };
+  }
+
+  let metrics;
+  try {
+    metrics = (await readJSON(metricsPath())) || emptyMetrics();
+  } catch (err) {
+    logger.warn('workroomTemplateMetrics: read failed', { error: err.message });
+    metrics = emptyMetrics();
+  }
+
+  const from = options.from ? String(options.from).slice(0, 10) : null;
+  const to = options.to ? String(options.to).slice(0, 10) : null;
+  const role = options.role ? normalizeRole(options.role) : null;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 10));
+
+  let byDay = Object.values(metrics.byDay || {});
+  if (from) byDay = byDay.filter(d => d.date >= from);
+  if (to) byDay = byDay.filter(d => d.date <= to);
+
+  byDay = byDay.map(d => {
+    if (!role) return d;
+    return {
+      date: d.date,
+      total: d.byRole?.[role] || 0,
+      byRole: { [role]: d.byRole?.[role] || 0 },
+      byTemplateKey: d.byTemplateKey || {},
+    };
+  }).sort((a, b) => a.date.localeCompare(b.date));
+
+  let topTemplates = Object.values(metrics.byTemplateKey || {});
+  if (role) {
+    topTemplates = topTemplates.map(t => ({
+      templateKey: t.templateKey,
+      count: t.byRole?.[role] || 0,
+      byRole: { [role]: t.byRole?.[role] || 0 },
+      lastUsedAt: t.lastUsedAt || null,
+    }));
+  }
+
+  topTemplates = topTemplates
+    .filter(t => t.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+
+  return {
+    enabled: true,
+    total: metrics.total || 0,
+    byRole: metrics.byRole || {},
+    topTemplates,
+    byDay,
+    lastUsedAt: metrics.lastUsedAt || null,
+    updatedAt: metrics.updatedAt || null,
+  };
+}
+
+/**
+ * Reset metrics — test helper / operational recovery.
+ */
+export async function resetTemplateUsageStats() {
+  const metrics = emptyMetrics();
+  await atomicWrite(metricsPath(), metrics);
+  return metrics;
+}
+
+export const _testHelpers = {
+  isEnabled,
+  metricsPath,
+  toEgyptDate,
+  emptyMetrics,
+  normalizeRole,
+  safeTemplateKey,
 };
 ```
 
