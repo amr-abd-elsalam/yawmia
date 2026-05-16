@@ -4856,3 +4856,73 @@ textarea:focus:not(:focus-visible) {
   border-color: rgba(245, 158, 11, 0.45);
   background: rgba(245, 158, 11, 0.08);
 }
+
+/* ═══ Phase 55 — Scale Hygiene Admin UI ═══ */
+.scale-hygiene-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.scale-hygiene-warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scale-hygiene-warning {
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.scale-hygiene-warning--medium {
+  color: var(--color-warning);
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.scale-hygiene-warning--high {
+  color: var(--color-error);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.storage-size-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.storage-size-pill--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.storage-size-pill--warn {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.storage-size-pill--critical {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}

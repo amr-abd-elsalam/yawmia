@@ -11,6 +11,7 @@ import {
 import { eventBus } from './eventBus.js';
 import { sanitizeText } from './sanitizer.js';
 import { logger } from './logger.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const MESSAGE_JOB_INDEX = config.DATABASE.indexFiles.messageJobIndex;
 const MESSAGE_USER_INDEX = config.DATABASE.indexFiles.messageUserIndex;
@@ -67,7 +68,7 @@ export async function canMessage(jobId, userId) {
     if (config.MESSAGES.onlyAfterAcceptance) {
       const { listByJob: listApps } = await import('./applications.js');
       const apps = await listApps(jobId);
-      const accepted = apps.find(a => a.workerId === userId && a.status === 'accepted');
+      const accepted = apps.find(a => a.workerId === userId && isAcceptedApplicationStatus(a.status));
       if (!accepted) {
         return { allowed: false, error: 'أنت مش مشارك في هذه الفرصة', code: 'NOT_INVOLVED' };
       }
@@ -271,7 +272,7 @@ export async function broadcastMessage(jobId, employerId, text) {
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
   const workerIds = apps
-    .filter(a => a.status === 'accepted')
+    .filter(a => isAcceptedApplicationStatus(a.status))
     .map(a => a.workerId);
 
   if (workerIds.length === 0) {

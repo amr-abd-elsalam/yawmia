@@ -42,6 +42,48 @@ function csvRow(fields) {
  * @returns {Promise<{ entries: object[], total: number, nextCursor: string|null, hasMore: boolean }>}
  */
 export async function searchActions(options = {}) {
+  const started = Date.now();
+  let telemetry = {
+    indexed: false,
+    fallbackUsed: false,
+    fallbackReason: null,
+    candidateCount: null,
+    resultCount: 0,
+    filters: {
+      q: options.q || null,
+      action: options.action || null,
+      adminId: options.adminId || null,
+      targetType: options.targetType || null,
+      from: options.from || null,
+      to: options.to || null,
+    },
+  };
+
+  async function maybeRecordTelemetry(result) {
+    const durationMs = Date.now() - started;
+    const slowMs = config.SCALE_HYGIENE?.auditSlowQueryMs || 1000;
+    const shouldRecord =
+      config.SCALE_HYGIENE?.enabled &&
+      config.SCALE_HYGIENE?.slowQueryLogEnabled &&
+      (
+        durationMs >= slowMs ||
+        telemetry.fallbackReason === 'candidate_cap_exceeded'
+      );
+
+    if (!shouldRecord) return;
+
+    try {
+      const { recordSlowAuditQuery } = await import('./auditLogIndex.js');
+      await recordSlowAuditQuery({
+        ...telemetry,
+        durationMs,
+        resultCount: result && typeof result.total === 'number' ? result.total : 0,
+      });
+    } catch (_) {
+      // Telemetry failure must never break audit search.
+    }
+  }
+
   // Phase 50: indexed-first path with safe full-scan fallback.
   if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
     try {
@@ -49,14 +91,23 @@ export async function searchActions(options = {}) {
       const indexedResult = await searchAuditIndex(options);
 
       if (indexedResult && !indexedResult.fallbackRequired) {
-        return indexedResult;
+        telemetry.indexed = true;
+        telemetry.fallbackUsed = false;
+        const result = indexedResult;
+        await maybeRecordTelemetry(result);
+        return result;
       }
+
+      telemetry.fallbackReason = indexedResult && indexedResult.reason;
+      telemetry.candidateCount = indexedResult && indexedResult.candidateCount !== undefined
+        ? indexedResult.candidateCount
+        : null;
 
       if (!config.AUDIT_INDEX.fallbackToFullScan) {
         logger.warn('auditLogSearch: audit index requested fallback but fallback disabled', {
           reason: indexedResult && indexedResult.reason,
         });
-        return {
+        const result = {
           entries: [],
           total: 0,
           nextCursor: null,
@@ -66,20 +117,32 @@ export async function searchActions(options = {}) {
           fallbackUsed: false,
           indexError: indexedResult && indexedResult.reason,
         };
+        await maybeRecordTelemetry(result);
+        return result;
       }
 
       logger.warn('auditLogSearch: falling back to full scan', {
         reason: indexedResult && indexedResult.reason,
       });
+
+      telemetry.fallbackUsed = true;
       const fallback = await fullScanSearchActions(options);
-      return { ...fallback, indexed: false, fallbackUsed: true };
+      const result = { ...fallback, indexed: false, fallbackUsed: true };
+      await maybeRecordTelemetry(result);
+      return result;
     } catch (err) {
       logger.warn('auditLogSearch: indexed path failed, falling back', { error: err.message });
+      telemetry.fallbackUsed = true;
+      telemetry.fallbackReason = 'indexed_path_failed';
+
       if (config.AUDIT_INDEX.fallbackToFullScan) {
         const fallback = await fullScanSearchActions(options);
-        return { ...fallback, indexed: false, fallbackUsed: true };
+        const result = { ...fallback, indexed: false, fallbackUsed: true };
+        await maybeRecordTelemetry(result);
+        return result;
       }
-      return {
+
+      const result = {
         entries: [],
         total: 0,
         nextCursor: null,
@@ -89,11 +152,14 @@ export async function searchActions(options = {}) {
         fallbackUsed: false,
         indexError: err.message,
       };
+      await maybeRecordTelemetry(result);
+      return result;
     }
   }
 
-  const result = await fullScanSearchActions(options);
-  return { ...result, indexed: false, fallbackUsed: false };
+  const result = { ...(await fullScanSearchActions(options)), indexed: false, fallbackUsed: false };
+  await maybeRecordTelemetry(result);
+  return result;
 }
 
 /**

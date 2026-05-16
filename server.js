@@ -441,16 +441,18 @@ if (config.INCIDENT_TIMELINE && config.INCIDENT_TIMELINE.enabled) {
   }
 }
 
-// ── Phase 54 — Persistent Scheduler Registry Visibility ─────
-// Register default scheduler records for admin visibility.
-// Runner start is enabled in a later Phase 54 step after scheduled timers are safely routed.
+// ── Phase 54/55 — Persistent Scheduler Registry ─────────────
+// Phase 55 starts the scheduler registry runner for heavy/ops recurring jobs.
+// Existing legacy timers remain as safety fallback, while queue idempotency keys
+// prevent duplicate heavy execution during the transition period.
 if (config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled) {
   try {
     const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
     await schedulerRegistry.registerDefaultSchedulerJobs();
-    logger.info('Phase 54: scheduler registry defaults registered');
+    schedulerRegistry.startSchedulerRegistry();
+    logger.info('Phase 55: scheduler registry defaults registered and runner started');
   } catch (err) {
-    logger.warn('Phase 54: scheduler registry registration failed', { error: err.message });
+    logger.warn('Phase 55: scheduler registry start failed', { error: err.message });
   }
 }
 

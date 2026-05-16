@@ -90,6 +90,19 @@ function registerBuiltIns() {
   registerJobHandler('trust_calibration_report', handleTrustCalibrationReportJob);
   registerJobHandler('predictive_signal_retention', handlePredictiveSignalRetentionJob);
   registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
+
+  // Phase 55 — File-Based Scale Hygiene
+  registerJobHandler('queue_compaction', handleQueueCompactionJob);
+  registerJobHandler('queue_verify', handleQueueVerifyJob);
+  registerJobHandler('queue_repair', handleQueueRepairJob);
+  registerJobHandler('workroom_hygiene_compaction', handleWorkroomHygieneCompactionJob);
+  registerJobHandler('workroom_search_verify', handleWorkroomSearchVerifyJob);
+  registerJobHandler('workroom_attachment_cleanup', handleWorkroomAttachmentCleanupJob);
+
+  registerJobHandler('audit_token_compaction', handleAuditTokenCompactionJob);
+  registerJobHandler('trust_snapshot_rollup', handleTrustSnapshotRollupJob);
+  registerJobHandler('predictive_archive_index_rebuild', handlePredictiveArchiveIndexRebuildJob);
+  registerJobHandler('scheduler_history_cleanup', handleSchedulerHistoryCleanupJob);
 }
 
 export async function startQueueWorkers() {
@@ -647,6 +660,126 @@ async function handleWorkroomSearchRebuildJob({ payload }) {
   }
 
   return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 55 Built-in handlers — Queue Scale Hygiene
+// ═══════════════════════════════════════════════════════════════
+
+async function handleQueueCompactionJob({ payload }) {
+  const { compactQueue } = await import('./queueCompaction.js');
+  const result = await compactQueue(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.reason || 'QUEUE_COMPACTION_FAILED');
+    err.retryable = result?.skipped ? false : true;
+    throw err;
+  }
+
+  return {
+    archive: result.archive || {},
+    idempotency: result.idempotency || {},
+    slowJobs: result.slowJobs || {},
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleQueueVerifyJob({ payload }) {
+  const { verifyQueueHealth } = await import('./queueHealthVerify.js');
+  const result = await verifyQueueHealth(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error((result?.errors || []).join('; ') || 'QUEUE_VERIFY_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return {
+    status: result.status,
+    warningCount: (result.warnings || []).length,
+    errorCount: (result.errors || []).length,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleQueueRepairJob({ payload }) {
+  const { repairQueueStorage } = await import('./queueHealthVerify.js');
+  const result = await repairQueueStorage(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error((result?.after?.errors || result?.before?.errors || []).join('; ') || 'QUEUE_REPAIR_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return {
+    beforeStatus: result.before?.status || 'unknown',
+    afterStatus: result.after?.status || 'unknown',
+    summary: result.summary || {},
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleWorkroomHygieneCompactionJob({ payload }) {
+  const { compactAllWorkrooms, compactWorkroom } = await import('./workroomHygiene.js');
+
+  if (payload && payload.jobId) {
+    return await compactWorkroom(payload.jobId, payload.options || {});
+  }
+
+  return await compactAllWorkrooms(payload.options || {});
+}
+
+async function handleWorkroomSearchVerifyJob({ payload }) {
+  const { verifyAllWorkroomSearchIndexes, verifyWorkroomSearchIndex, repairWorkroomSearchIndex } = await import('./workroomIndexHealth.js');
+
+  if (payload && payload.jobId && payload.repair) {
+    return await repairWorkroomSearchIndex(payload.jobId);
+  }
+
+  if (payload && payload.jobId) {
+    return await verifyWorkroomSearchIndex(payload.jobId, payload.options || {});
+  }
+
+  const result = await verifyAllWorkroomSearchIndexes(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error('WORKROOM_SEARCH_VERIFY_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return result;
+}
+
+async function handleWorkroomAttachmentCleanupJob({ payload }) {
+  const { cleanupOrphanAttachments } = await import('./workroomHygiene.js');
+  return await cleanupOrphanAttachments(payload.options || {});
+}
+
+async function handleAuditTokenCompactionJob({ payload }) {
+  const { compactAuditTokenIndex } = await import('./auditLogIndex.js');
+  return await compactAuditTokenIndex(payload.options || {});
+}
+
+async function handleTrustSnapshotRollupJob({ payload }) {
+  const { runTrustRetention, createTrustSnapshotRollup } = await import('./trustSnapshotRollups.js');
+
+  if (payload && payload.rollupOnly) {
+    return await createTrustSnapshotRollup(payload.options || {});
+  }
+
+  return await runTrustRetention(payload.options || {});
+}
+
+async function handlePredictiveArchiveIndexRebuildJob({ payload }) {
+  const { rebuildPredictiveArchiveIndex } = await import('./predictiveArchiveIndex.js');
+  return await rebuildPredictiveArchiveIndex(payload.options || {});
+}
+
+async function handleSchedulerHistoryCleanupJob({ payload }) {
+  const { cleanupSchedulerHistory } = await import('./schedulerRunHistory.js');
+  return await cleanupSchedulerHistory(payload.options || {});
 }
 
 export const _testHelpers = {

@@ -130,6 +130,33 @@
         <div id="opsRollupsTable"></div>
       </div>
 
+      <!-- Phase 55 — Scale Hygiene -->
+      <div class="admin-section" id="scaleHygieneSection">
+        <div class="admin-section__header">
+          <h2>🧹 نظافة التوسع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadScaleHygiene()">تحديث</button>
+        </div>
+
+        <div id="scaleHygieneSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.verifyQueue()">فحص Queue</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.compactQueue()">ضغط Queue</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.repairQueue()">إصلاح Queue</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.compactWorkrooms()">ضغط Workrooms</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyWorkroomIndexes()">فحص Workroom Indexes</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.cleanupWorkroomAttachments()">تنظيف المرفقات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.runTrustRollup()">Trust Rollup</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.rebuildPredictiveArchiveIndex()">Rebuild Predictive Archive Index</button>
+        </div>
+
+        <div id="scaleHygieneDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 54 — Backup Restore Drills -->
       <div class="admin-section" id="restoreDrillsSection">
         <div class="admin-section__header">

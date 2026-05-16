@@ -403,6 +403,25 @@ const builtInMigrations = [
       logger.info('Migration v14: Phase 54 production ops directories registered (locks, scheduler, ops rollups, incidents, restore drills)');
     },
   },
+  {
+    version: 15,
+    name: 'Phase 55: File-Based Scale Hygiene + Scheduler Consolidation',
+    up: async () => {
+      // Phase 55 registers additive scale-hygiene structures:
+      //   - segmented queue directories
+      //   - queue archive
+      //   - scheduler run history
+      //   - workroom hygiene metrics
+      //   - trust snapshot rollups
+      //   - predictive archive indexes
+      //   - scale hygiene metrics
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy queue/audit/workroom/trust scan is performed here by design.
+      // All Phase 55 structures are repairable/rebuildable by scripts or queue jobs.
+      logger.info('Migration v15: Phase 55 scale hygiene directories registered (queue, workroom, trust, predictive archives, scheduler history)');
+    },
+  },
 ];
 
 /**

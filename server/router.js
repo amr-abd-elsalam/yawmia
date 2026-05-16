@@ -103,6 +103,22 @@ import {
   handleEnableMaintenanceMode,
   handleDisableMaintenanceMode,
 } from './handlers/productionOpsHandler.js';
+import {
+  handleScaleHygieneOverview,
+  handleQueueHealth,
+  handleQueueVerify,
+  handleQueueCompact,
+  handleQueueRepair,
+  handleWorkroomHygieneOverview,
+  handleWorkroomCompact,
+  handleWorkroomVerifyIndexes,
+  handleWorkroomCleanupAttachments,
+  handleTrustRollups,
+  handleRunTrustRollup,
+  handlePredictiveArchiveIndexStatus,
+  handleRebuildPredictiveArchiveIndex,
+  handleSchedulerHistory,
+} from './handlers/scaleHygieneHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -172,7 +188,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.50.0',
+        version: '0.51.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -453,7 +469,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.50.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.51.0' });
     },
   },
 
@@ -713,6 +729,27 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  // ── Phase 55 — Scale Hygiene Admin APIs ──
+  { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },
+
+  { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
+  { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },
+  { method: 'POST', path: '/api/admin/queue/compact', middlewares: [requireAdmin], handler: handleQueueCompact },
+  { method: 'POST', path: '/api/admin/queue/repair', middlewares: [requireAdmin], handler: handleQueueRepair },
+
+  { method: 'GET', path: '/api/admin/workroom-hygiene/overview', middlewares: [requireAdmin], handler: handleWorkroomHygieneOverview },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/compact', middlewares: [requireAdmin], handler: handleWorkroomCompact },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/verify-indexes', middlewares: [requireAdmin], handler: handleWorkroomVerifyIndexes },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/cleanup-attachments', middlewares: [requireAdmin], handler: handleWorkroomCleanupAttachments },
+
+  { method: 'GET', path: '/api/admin/trust/rollups', middlewares: [requireAdmin], handler: handleTrustRollups },
+  { method: 'POST', path: '/api/admin/trust/rollups/run', middlewares: [requireAdmin], handler: handleRunTrustRollup },
+
+  { method: 'GET', path: '/api/admin/predictive-abuse/archive-index/status', middlewares: [requireAdmin], handler: handlePredictiveArchiveIndexStatus },
+  { method: 'POST', path: '/api/admin/predictive-abuse/archive-index/rebuild', middlewares: [requireAdmin], handler: handleRebuildPredictiveArchiveIndex },
+
+  { method: 'GET', path: '/api/admin/schedulers/:name/history', middlewares: [requireAdmin], handler: handleSchedulerHistory },
 
   { method: 'GET', path: '/api/admin/schedulers', middlewares: [requireAdmin], handler: handleListSchedulers },
   { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireAdmin], handler: handleRunSchedulerNow },

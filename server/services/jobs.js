@@ -7,6 +7,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus, isPendingApplicationStatus } from './applicationStatus.js';
 
 const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
 

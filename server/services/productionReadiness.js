@@ -120,6 +120,63 @@ async function checkCriticalIndexes() {
   return check('critical_indexes', 'pass', 'Critical indexes exist and parse correctly');
 }
 
+async function checkScaleHygiene() {
+  try {
+    const { getScaleHygieneOverview } = await import('./scaleHygiene.js');
+    const overview = await getScaleHygieneOverview();
+
+    if (!overview.enabled) {
+      return check('scale_hygiene', 'warn', 'Scale hygiene overview is disabled');
+    }
+
+    if (overview.status === 'critical') {
+      return check('scale_hygiene', 'fail', 'Scale hygiene has critical warnings', {
+        warningCount: overview.warningCount || 0,
+      });
+    }
+
+    if (overview.status === 'warnings') {
+      return check('scale_hygiene', 'warn', 'Scale hygiene has warnings', {
+        warningCount: overview.warningCount || 0,
+      });
+    }
+
+    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy');
+  } catch (err) {
+    return check('scale_hygiene', 'warn', 'Could not evaluate scale hygiene', { error: err.message });
+  }
+}
+
+async function checkDomainConsistency() {
+  try {
+    const brandDomain = config.BRAND?.domain || '';
+    const origins = config.SECURITY?.allowedOrigins || [];
+    const originDomains = origins
+      .filter(o => typeof o === 'string' && o !== '*')
+      .map(o => {
+        try { return new URL(o).hostname; } catch (_) { return ''; }
+      })
+      .filter(Boolean);
+
+    const mismatches = originDomains.filter(d => brandDomain && d !== brandDomain);
+
+    if (mismatches.length > 0) {
+      return check('domain_consistency', 'warn', 'Brand domain differs from configured allowed origins', {
+        brandDomain,
+        originDomains,
+        mismatches,
+      });
+    }
+
+    return check('domain_consistency', 'pass', 'Domain configuration is consistent', {
+      brandDomain,
+      originDomains,
+    });
+  } catch (err) {
+    return check('domain_consistency', 'warn', 'Could not evaluate domain consistency', { error: err.message });
+  }
+}
+
 async function checkPwaCacheVersion() {
   try {
     const swRaw = await readFile('./frontend/sw.js', 'utf-8');
@@ -256,10 +313,19 @@ export async function runReadinessChecks(options = {}) {
 
   checks.push(check('instance_mode', 'pass', 'Instance mode evaluated', getInstanceInfo()));
 
+  // Phase 55 — Scale hygiene + domain consistency.
+  checks.push(await checkScaleHygiene());
+  checks.push(await checkDomainConsistency());
+
   checks.push(await checkPwaCacheVersion());
 
   return checks;
 }
+
+export const _testHelpers = {
+  classifyReadiness,
+  runReadinessChecks,
+};
 
 export async function getProductionReadiness() {
   try {

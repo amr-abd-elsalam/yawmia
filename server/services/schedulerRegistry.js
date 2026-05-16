@@ -19,6 +19,7 @@ import { withLock } from './resourceLock.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { getInstanceId, canRunSchedulers, getInstanceInfo } from './instanceMode.js';
+import { recordSchedulerRun } from './schedulerRunHistory.js';
 
 let registryTimer = null;
 
@@ -164,6 +165,71 @@ function defaultDefinitions() {
       payload: { options: { reason: 'scheduled' } },
       enabled: false,
       idempotencyKeyFn: (bucket) => `backup_restore_drill:scheduled:${bucket}`,
+    },
+
+    // Phase 55 — File-Based Scale Hygiene schedulers
+    {
+      name: 'queue_compaction',
+      queueType: 'queue_compaction',
+      intervalMs: config.QUEUE_HYGIENE?.compactIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('queue_compaction'),
+      idempotencyKeyFn: (bucket) => `queue_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_hygiene_compaction',
+      queueType: 'workroom_hygiene_compaction',
+      intervalMs: config.WORKROOM_HYGIENE?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_hygiene_compaction'),
+      idempotencyKeyFn: (bucket) => `workroom_hygiene_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_attachment_cleanup',
+      queueType: 'workroom_attachment_cleanup',
+      intervalMs: config.WORKROOM_HYGIENE?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_attachment_cleanup'),
+      idempotencyKeyFn: (bucket) => `workroom_attachment_cleanup:scheduled:${bucket}`,
+    },
+    {
+      name: 'trust_snapshot_rollup',
+      queueType: 'trust_snapshot_rollup',
+      intervalMs: config.TRUST_RETENTION?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('trust_snapshot_rollup'),
+      idempotencyKeyFn: (bucket) => `trust_snapshot_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'predictive_archive_index_rebuild',
+      queueType: 'predictive_archive_index_rebuild',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('predictive_archive_index_rebuild'),
+      idempotencyKeyFn: (bucket) => `predictive_archive_index_rebuild:scheduled:${bucket}`,
+    },
+    {
+      name: 'audit_token_compaction',
+      queueType: 'audit_token_compaction',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('audit_token_compaction'),
+      idempotencyKeyFn: (bucket) => `audit_token_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'scheduler_history_cleanup',
+      queueType: 'scheduler_history_cleanup',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('scheduler_history_cleanup'),
+      idempotencyKeyFn: (bucket) => `scheduler_history_cleanup:scheduled:${bucket}`,
     },
   ];
 }
@@ -392,6 +458,18 @@ export async function runSchedulerJobNow(name, options = {}) {
     return { ok: false, code: 'SCHEDULERS_DISABLED_BY_INSTANCE_MODE', instance: getInstanceInfo() };
   }
 
+  if (options.payload) {
+    const payloadBytes = payloadSizeBytes(options.payload);
+    const maxBytes = cfg().maxManualRunPayloadBytes || (64 * 1024);
+    if (payloadBytes > maxBytes) {
+      return {
+        ok: false,
+        code: 'PAYLOAD_TOO_LARGE',
+        error: `Scheduler manual payload exceeds maxManualRunPayloadBytes (${payloadBytes} > ${maxBytes})`,
+      };
+    }
+  }
+
   const definition = definitions.get(name);
   const record = await readJSON(schedulerPath(name)).catch(() => null);
 
@@ -419,6 +497,15 @@ export async function runSchedulerJobNow(name, options = {}) {
         failed: true,
       });
 
+      await recordSchedulerRun(name, {
+        status: 'failed',
+        createdBy: options.createdBy || ownerId,
+        startedAt: nowIso(),
+        completedAt: nowIso(),
+        error: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        idempotencyKey: enqueue.idempotencyKey,
+      }).catch(() => {});
+
       eventBus.emit('scheduler:job_failed', {
         name,
         error: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
@@ -433,6 +520,19 @@ export async function runSchedulerJobNow(name, options = {}) {
       lastQueueJobId: enqueue.enqueueResult.job?.id || null,
       lastError: null,
     });
+
+    await recordSchedulerRun(name, {
+      status: enqueue.enqueueResult.deduped ? 'skipped' : 'queued',
+      queueJobId: enqueue.enqueueResult.job?.id || null,
+      createdBy: options.createdBy || ownerId,
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      idempotencyKey: enqueue.idempotencyKey,
+      deduped: !!enqueue.enqueueResult.deduped,
+      metadata: {
+        queueType: record.queueType,
+      },
+    }).catch(() => {});
 
     eventBus.emit('scheduler:job_queued', {
       name,
@@ -456,6 +556,14 @@ export async function runSchedulerJobNow(name, options = {}) {
       lastStatus: 'failed',
       lastError: err.message,
       failed: true,
+    }).catch(() => {});
+
+    await recordSchedulerRun(name, {
+      status: 'failed',
+      createdBy: options.createdBy || ownerId,
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      error: err.message,
     }).catch(() => {});
 
     eventBus.emit('scheduler:job_failed', {

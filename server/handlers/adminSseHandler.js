@@ -66,6 +66,32 @@ const SUBSCRIBED_EVENTS = [
   'scheduler:job_queued',
   'maintenance:enabled',
   'maintenance:disabled',
+
+  // Phase 55 — Scale Hygiene
+  'ops_queue:summary_updated',
+  'ops_queue:record_moved',
+  'ops_queue:legacy_record_detected',
+  'queue:compaction_started',
+  'queue:compaction_completed',
+  'queue:compaction_failed',
+  'queue:idempotency_cleanup_completed',
+  'queue:slow_jobs_detected',
+  'queue:health_verified',
+  'queue:repair_completed',
+  'queue:summary_rebuilt',
+
+  'workroom_hygiene:inspection_completed',
+  'workroom_hygiene:compaction_completed',
+  'workroom_hygiene:attachment_cleanup_completed',
+  'workroom_hygiene:warning_detected',
+  'workroom_search:verified',
+  'workroom_search:repair_completed',
+
+  'audit_index:token_compaction_completed',
+  'trust_retention:rollup_created',
+  'predictive_archive_index:rebuilt',
+  'scheduler:run_history_recorded',
+  'scheduler:history_cleanup_completed',
 ];
 
 let listenersRegistered = false;

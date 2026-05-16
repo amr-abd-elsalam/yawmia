@@ -13,12 +13,15 @@ function sendJSON(res, statusCode, data) {
 }
 
 export function maintenanceMiddleware(req, res, next) {
-  if (!config.MAINTENANCE_MODE || !config.MAINTENANCE_MODE.enabled) {
-    return next();
-  }
-
   import('../services/maintenanceMode.js')
-    .then(async ({ getMaintenanceMode, isRouteAllowedDuringMaintenance }) => {
+    .then(async ({ getMaintenanceMode, isRouteAllowedDuringMaintenance, isFeatureEnabled }) => {
+      // Phase 55 hotfix:
+      // MAINTENANCE_MODE_ENABLED=true must work even when config.MAINTENANCE_MODE.enabled=false.
+      // The service is the source of truth for env override behavior.
+      if (!isFeatureEnabled()) {
+        return next();
+      }
+
       const state = await getMaintenanceMode();
 
       if (!state || !state.enabled) {

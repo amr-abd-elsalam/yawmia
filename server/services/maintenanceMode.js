@@ -16,7 +16,7 @@ function cfg() {
   return config.MAINTENANCE_MODE || {};
 }
 
-function isFeatureEnabled() {
+export function isFeatureEnabled() {
   return !!cfg().enabled || process.env.MAINTENANCE_MODE_ENABLED === 'true';
 }
 

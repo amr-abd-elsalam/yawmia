@@ -26,6 +26,15 @@ import {
   getCollectionPath,
   listJSON,
 } from './database.js';
+import {
+  writeQueueRecord,
+  readQueueRecord,
+  deleteQueueRecord,
+  moveQueueRecord,
+  listQueueRecords,
+  readQueueSummary,
+  rebuildQueueSummary,
+} from './queueStorageIndex.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
@@ -63,8 +72,14 @@ function parseMs(iso) {
 export function getQueuePaths() {
   return {
     base: getCollectionPath('ops_queue'),
+    pending: getCollectionPath('queue_pending'),
+    running: getCollectionPath('queue_running'),
+    completed: getCollectionPath('queue_completed'),
+    failed: getCollectionPath('queue_failed'),
+    cancelled: getCollectionPath('queue_cancelled'),
     idempotency: getCollectionPath('ops_queue_idempotency'),
     deadLetter: getCollectionPath('ops_queue_dead_letter'),
+    archive: getCollectionPath('queue_archive'),
   };
 }
 
@@ -214,7 +229,7 @@ export async function enqueueJob(params = {}) {
       }
 
       const job = buildInitialJob(params);
-      await atomicWrite(queuePath(job.id), job);
+      await writeQueueRecord(job);
 
       const ttlHours = config.OPS_QUEUE?.idempotencyTtlHours || 24;
       await atomicWrite(idempotencyPath(keyHash), {
@@ -254,11 +269,7 @@ export async function enqueueJob(params = {}) {
  */
 export async function getJob(jobId) {
   if (!jobId || typeof jobId !== 'string') return null;
-
-  const active = await readJSON(queuePath(jobId));
-  if (active) return active;
-
-  return await readJSON(deadLetterPath(jobId));
+  return await readQueueRecord(jobId);
 }
 
 /**
@@ -270,11 +281,12 @@ export async function listJobs(options = {}) {
   }
 
   const includeDeadLetter = options.deadLetter === true || options.status === 'dead-letter';
-  const dir = includeDeadLetter
-    ? getCollectionPath('ops_queue_dead_letter')
-    : getCollectionPath('ops_queue');
 
-  let jobs = await listJSON(dir);
+  let jobs = await listQueueRecords({
+    ...options,
+    deadLetter: includeDeadLetter,
+    includeDeadLetter,
+  });
   jobs = jobs.filter(j => j && j.id && j.id.startsWith('q_'));
 
   if (options.status) jobs = jobs.filter(j => j.status === options.status);
@@ -312,7 +324,7 @@ export async function claimNextJobs(options = {}) {
 
   await recoverStaleRunningJobs().catch(() => {});
 
-  const all = await listJSON(getCollectionPath('ops_queue'));
+  const all = await listQueueRecords({ status: 'pending', maxMonths: 2 });
   const due = all
     .filter(j => j && j.id && j.status === 'pending' && !j.cancelRequested && isDue(j))
     .sort((a, b) =>
@@ -328,7 +340,7 @@ export async function claimNextJobs(options = {}) {
     if (claimed.length >= limit) break;
 
     const claimedJob = await withLock(`queue-job:${candidate.id}`, async () => {
-      const fresh = await readJSON(queuePath(candidate.id));
+      const fresh = await readQueueRecord(candidate.id);
       if (!fresh || fresh.status !== 'pending' || fresh.cancelRequested || !isDue(fresh)) return null;
 
       const now = nowIso();
@@ -341,7 +353,7 @@ export async function claimNextJobs(options = {}) {
       fresh.updatedAt = now;
       fresh.lastError = null;
 
-      await atomicWrite(queuePath(fresh.id), fresh);
+      await writeQueueRecord(fresh);
 
       eventBus.emit('ops_queue:job_started', {
         jobId: fresh.id,
@@ -365,7 +377,7 @@ export async function claimNextJobs(options = {}) {
  */
 export async function completeJob(jobId, result = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     const now = nowIso();
@@ -377,7 +389,7 @@ export async function completeJob(jobId, result = {}) {
     job.updatedAt = now;
     job.lastError = null;
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_completed', {
       jobId: job.id,
@@ -394,7 +406,7 @@ export async function completeJob(jobId, result = {}) {
  */
 export async function failJob(jobId, error, options = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     const retryable = options.retryable !== false;
@@ -409,14 +421,14 @@ export async function failJob(jobId, error, options = {}) {
     const exhausted = (job.attempts || 0) >= (job.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5);
 
     if (!retryable || exhausted) {
-      await atomicWrite(queuePath(job.id), job);
+      await writeQueueRecord(job);
       return await moveToDeadLetter(job.id, retryable ? 'MAX_ATTEMPTS_EXHAUSTED' : 'PERMANENT_FAILURE');
     }
 
     job.status = 'pending';
     job.nextRunAt = calculateNextRunAt(job.attempts, job.backoffMs);
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_failed', {
       jobId: job.id,
@@ -436,7 +448,7 @@ export async function failJob(jobId, error, options = {}) {
  */
 export async function cancelJob(jobId, reason = 'cancelled') {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     if (job.status === 'completed' || job.status === 'dead-letter') {
@@ -452,7 +464,7 @@ export async function cancelJob(jobId, reason = 'cancelled') {
     job.lockedBy = null;
     job.lastError = reason || null;
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_cancelled', {
       jobId: job.id,
@@ -470,8 +482,8 @@ export async function cancelJob(jobId, reason = 'cancelled') {
  */
 export async function retryJob(jobId, options = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    let job = await readJSON(queuePath(jobId));
-    let fromDeadLetter = false;
+    let job = await readQueueRecord(jobId);
+    let fromDeadLetter = job && job.status === 'dead-letter';
 
     if (!job) {
       job = await readJSON(deadLetterPath(jobId));
@@ -498,7 +510,7 @@ export async function retryJob(jobId, options = {}) {
       job.attempts = 0;
     }
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     if (wasDeadLetter) {
       await deleteJSON(deadLetterPath(job.id)).catch(() => {});
@@ -519,19 +531,24 @@ export async function retryJob(jobId, options = {}) {
  * Move exhausted/permanent-failure job to dead-letter queue.
  */
 export async function moveToDeadLetter(jobId, reason = 'dead-letter') {
-  const job = await readJSON(queuePath(jobId));
-  if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+  const existing = await readQueueRecord(jobId);
+  if (!existing) return { ok: false, error: 'JOB_NOT_FOUND' };
 
   const now = nowIso();
-  job.status = 'dead-letter';
-  job.deadLetteredAt = now;
-  job.updatedAt = now;
-  job.leaseUntil = null;
-  job.lockedBy = null;
-  job.lastError = job.lastError || reason;
+  const job = {
+    ...existing,
+    status: 'dead-letter',
+    deadLetteredAt: now,
+    updatedAt: now,
+    leaseUntil: null,
+    lockedBy: null,
+    lastError: existing.lastError || reason,
+  };
 
-  await atomicWrite(queuePath(job.id), job);
-  await atomicWrite(deadLetterPath(job.id), job);
+  await writeQueueRecord(job);
+
+  // Legacy mirror for backward compatibility with older DLQ tooling.
+  await atomicWrite(deadLetterPath(job.id), job).catch(() => {});
 
   eventBus.emit('ops_queue:job_dead_lettered', {
     jobId: job.id,
@@ -550,7 +567,7 @@ export async function moveToDeadLetter(jobId, reason = 'dead-letter') {
 export async function recoverStaleRunningJobs() {
   if (!isEnabled()) return 0;
 
-  const jobs = await listJSON(getCollectionPath('ops_queue'));
+  const jobs = await listQueueRecords({ status: 'running', maxMonths: 2 });
   let recovered = 0;
 
   for (const job of jobs) {
@@ -558,7 +575,7 @@ export async function recoverStaleRunningJobs() {
     if (!isLeaseExpired(job)) continue;
 
     await withLock(`queue-job:${job.id}`, async () => {
-      const fresh = await readJSON(queuePath(job.id));
+      const fresh = await readQueueRecord(job.id);
       if (!fresh || fresh.status !== 'running' || !isLeaseExpired(fresh)) return;
 
       if ((fresh.attempts || 0) >= (fresh.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5)) {
@@ -570,7 +587,7 @@ export async function recoverStaleRunningJobs() {
         fresh.nextRunAt = calculateNextRunAt(fresh.attempts || 1, fresh.backoffMs);
         fresh.lastError = 'Recovered stale running job';
         fresh.updatedAt = nowIso();
-        await atomicWrite(queuePath(fresh.id), fresh);
+        await writeQueueRecord(fresh);
 
         eventBus.emit('ops_queue:job_recovered', {
           jobId: fresh.id,
@@ -603,7 +620,7 @@ export async function cleanupOldJobs() {
 
   let cleaned = 0;
 
-  const activeJobs = await listJSON(getCollectionPath('ops_queue'));
+  const activeJobs = await listQueueRecords({ includeDeadLetter: false, maxMonths: 120 });
   for (const job of activeJobs) {
     if (!job || !job.id) continue;
 
@@ -620,15 +637,16 @@ export async function cleanupOldJobs() {
       parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff;
 
     if (completedOld || failedOld || activeDeadLetterOld) {
-      await deleteJSON(queuePath(job.id)).catch(() => {});
+      await deleteQueueRecord(job).catch(() => {});
       cleaned++;
     }
   }
 
-  const deadJobs = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+  const deadJobs = await listQueueRecords({ deadLetter: true, status: 'dead-letter', maxMonths: 120 });
   for (const job of deadJobs) {
     if (!job || !job.id) continue;
     if (parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff) {
+      await deleteQueueRecord(job).catch(() => {});
       await deleteJSON(deadLetterPath(job.id)).catch(() => {});
       cleaned++;
     }
@@ -645,8 +663,58 @@ export async function getQueueStats() {
     return { enabled: false };
   }
 
-  const jobs = await listJSON(getCollectionPath('ops_queue'));
-  const dead = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+  // Phase 55: prefer cheap summary/index stats.
+  try {
+    let summary = await readQueueSummary();
+
+    // If summary has never been built/updated, rebuild once lazily.
+    const hasAnyLocation = summary.locations && Object.keys(summary.locations).length > 0;
+    const hasAnyCount = Object.values(summary.byStatus || {}).some(v => Number(v) > 0);
+
+    if (!hasAnyLocation && !hasAnyCount) {
+      summary = await rebuildQueueSummary();
+    }
+
+    if (!summary.stale) {
+      const byStatus = {
+        pending: summary.byStatus?.pending || 0,
+        running: summary.byStatus?.running || 0,
+        completed: summary.byStatus?.completed || 0,
+        failed: summary.byStatus?.failed || 0,
+        'dead-letter': summary.byStatus?.['dead-letter'] || 0,
+        cancelled: summary.byStatus?.cancelled || 0,
+      };
+
+      return {
+        enabled: true,
+        byStatus,
+        byType: summary.byType || {},
+        totalActiveRecords:
+          byStatus.pending +
+          byStatus.running +
+          byStatus.completed +
+          byStatus.failed +
+          byStatus.cancelled,
+        deadLetter: byStatus['dead-letter'],
+        summary: {
+          lastRebuiltAt: summary.lastRebuiltAt || null,
+          lastUpdatedAt: summary.lastUpdatedAt || null,
+          stale: !!summary.stale,
+          legacyRecords: summary.legacyRecords || 0,
+          locationCount: Object.keys(summary.locations || {}).length,
+        },
+        workerEnabled: !!config.OPS_QUEUE.workerEnabled,
+        workerConcurrency: config.OPS_QUEUE.workerConcurrency,
+        scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
+      };
+    }
+  } catch (err) {
+    logger.warn('opsQueue: summary stats failed, falling back to scan', { error: err.message });
+  }
+
+  // Safe fallback: full scan.
+  const jobs = await listQueueRecords({ includeDeadLetter: false, maxMonths: 120 });
+  const dead = await listQueueRecords({ deadLetter: true, status: 'dead-letter', maxMonths: 120 });
 
   const byStatus = {
     pending: 0,
@@ -665,7 +733,6 @@ export async function getQueueStats() {
     byType[job.type] = (byType[job.type] || 0) + 1;
   }
 
-  // Dead-letter dir is the reliable DLQ count.
   byStatus['dead-letter'] = dead.filter(j => j && j.id).length;
 
   return {
@@ -674,6 +741,10 @@ export async function getQueueStats() {
     byType,
     totalActiveRecords: jobs.filter(j => j && j.id).length,
     deadLetter: byStatus['dead-letter'],
+    summary: {
+      stale: true,
+      fallbackUsed: true,
+    },
     workerEnabled: !!config.OPS_QUEUE.workerEnabled,
     workerConcurrency: config.OPS_QUEUE.workerConcurrency,
     scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,

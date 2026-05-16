@@ -8,6 +8,7 @@ import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath,
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
 
@@ -237,7 +238,7 @@ export async function disputePayment(paymentId, userId, reason) {
     // Check if user is an accepted worker on this job
     const { listByJob: listAppsByJob } = await import('./applications.js');
     const apps = await listAppsByJob(payment.jobId);
-    isInvolved = apps.some(a => a.workerId === userId && a.status === 'accepted');
+    isInvolved = apps.some(a => a.workerId === userId && isAcceptedApplicationStatus(a.status));
   }
 
   if (!isInvolved) {

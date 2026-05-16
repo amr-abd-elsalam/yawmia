@@ -14,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import {
@@ -590,6 +590,267 @@ export async function markAuditIndexStale(reason) {
     staleReason: reason || 'unknown',
     lastUpdatedAt: new Date().toISOString(),
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 55 — Audit Index Hygiene V2
+// ═══════════════════════════════════════════════════════════════
+
+async function walkTokenIndexFiles() {
+  const root = join(indexRoot(), 'by-token');
+  const results = [];
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+        results.push(full);
+      }
+    }
+  }
+
+  await walk(root);
+  return results;
+}
+
+/**
+ * Phase 55: token index hygiene stats.
+ * Measures token file count, total size, largest token files.
+ */
+export async function getAuditIndexHygieneStats(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, tokenIndex: { enabled: false } };
+  }
+
+  const files = await walkTokenIndexFiles();
+
+  let totalSizeBytes = 0;
+  let totalIds = 0;
+  const largestTokenFiles = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const filePath = files[i];
+    try {
+      const st = await stat(filePath);
+      totalSizeBytes += st.size;
+
+      const data = await readIndexFile(filePath);
+      const idsCount = Array.isArray(data.ids) ? data.ids.length : 0;
+      totalIds += idsCount;
+
+      largestTokenFiles.push({
+        path: filePath.replace((process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath) + '/', ''),
+        sizeBytes: st.size,
+        sizeKB: Math.round((st.size / 1024) * 10) / 10,
+        idsCount,
+      });
+    } catch (_) {
+      // Skip unreadable token file — verify/compact can handle later.
+    }
+
+    if ((i + 1) % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  largestTokenFiles.sort((a, b) => b.sizeBytes - a.sizeBytes);
+
+  const warningKB = config.SCALE_HYGIENE?.fileSizeWarningKB || 1024;
+  const criticalKB = config.SCALE_HYGIENE?.fileSizeCriticalKB || 4096;
+
+  const warnings = [];
+  for (const f of largestTokenFiles.slice(0, 20)) {
+    if (f.sizeKB >= criticalKB) {
+      warnings.push({ level: 'critical', type: 'audit_token_file_size', ...f });
+    } else if (f.sizeKB >= warningKB) {
+      warnings.push({ level: 'warning', type: 'audit_token_file_size', ...f });
+    }
+  }
+
+  return {
+    enabled: true,
+    tokenIndex: {
+      enabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+      fileCount: files.length,
+      totalSizeBytes,
+      totalSizeKB: Math.round((totalSizeBytes / 1024) * 10) / 10,
+      totalIds,
+      largestTokenFiles: largestTokenFiles.slice(0, options.limit || 20),
+    },
+    warnings,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Phase 55: compact token index files.
+ * Removes duplicate IDs and IDs whose raw audit record is missing.
+ * Search correctness remains protected by final record re-read/filtering.
+ */
+export async function compactAuditTokenIndex(options = {}) {
+  if (!isEnabled()) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const started = Date.now();
+  const dryRun = !!options.dryRun;
+  const maxFiles = Math.max(1, parseInt(options.maxFiles) || 100000);
+
+  const files = await walkTokenIndexFiles();
+
+  let scannedFiles = 0;
+  let compactedFiles = 0;
+  let removedDuplicateIds = 0;
+  let removedMissingIds = 0;
+  let deletedEmptyFiles = 0;
+  let failedFiles = 0;
+  const failures = [];
+
+  for (let i = 0; i < files.length && scannedFiles < maxFiles; i++) {
+    const filePath = files[i];
+    scannedFiles++;
+
+    try {
+      const data = await readIndexFile(filePath);
+      const original = Array.isArray(data.ids) ? data.ids : [];
+
+      const seen = new Set();
+      const deduped = [];
+      for (const id of original) {
+        if (seen.has(id)) {
+          removedDuplicateIds++;
+          continue;
+        }
+        seen.add(id);
+        deduped.push(id);
+      }
+
+      const existing = [];
+      for (const id of deduped) {
+        const rec = await readJSON(getRecordPath('audit', id));
+        if (rec) existing.push(id);
+        else removedMissingIds++;
+      }
+
+      const changed = existing.length !== original.length;
+
+      if (!dryRun && changed) {
+        if (existing.length === 0) {
+          await unlink(filePath).catch(() => {});
+          deletedEmptyFiles++;
+        } else {
+          await writeIndexFile(filePath, existing);
+        }
+        compactedFiles++;
+      }
+    } catch (err) {
+      failedFiles++;
+      failures.push({ filePath, error: err.message });
+    }
+
+    if (scannedFiles % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: failedFiles === 0,
+    scannedFiles,
+    compactedFiles,
+    removedDuplicateIds,
+    removedMissingIds,
+    deletedEmptyFiles,
+    failedFiles,
+    failures: failures.slice(0, 20),
+    dryRun,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  try {
+    eventBus.emit('audit_index:token_compaction_completed', result);
+  } catch (_) {}
+
+  return result;
+}
+
+function slowAuditQueryFilePath(iso = new Date().toISOString()) {
+  const month = iso.slice(0, 7);
+  const base = join(process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath, 'metrics/scale-hygiene/audit-slow-queries');
+  return join(base, `${month}.json`);
+}
+
+/**
+ * Phase 55: record slow audit query or candidate-cap fallback telemetry.
+ */
+export async function recordSlowAuditQuery(entry = {}) {
+  if (!config.SCALE_HYGIENE?.enabled || !config.SCALE_HYGIENE?.slowQueryLogEnabled) return null;
+
+  const now = new Date().toISOString();
+  const filePath = slowAuditQueryFilePath(now);
+
+  return withLock(`audit-slow-query:${now.slice(0, 7)}`, async () => {
+    const data = (await readJSON(filePath).catch(() => null)) || {
+      month: now.slice(0, 7),
+      entries: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    data.entries = Array.isArray(data.entries) ? data.entries : [];
+    data.entries.push({
+      id: `asq_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      durationMs: entry.durationMs || 0,
+      indexed: !!entry.indexed,
+      fallbackUsed: !!entry.fallbackUsed,
+      fallbackReason: entry.fallbackReason || null,
+      candidateCount: entry.candidateCount || null,
+      resultCount: entry.resultCount || 0,
+      filters: entry.filters || {},
+      createdAt: now,
+    });
+
+    while (data.entries.length > 1000) {
+      data.entries.shift();
+    }
+
+    data.updatedAt = now;
+    await atomicWrite(filePath, data);
+
+    return data.entries[data.entries.length - 1];
+  });
+}
+
+/**
+ * Phase 55: list slow audit query telemetry.
+ */
+export async function getSlowAuditQueries(options = {}) {
+  const month = options.month || new Date().toISOString().slice(0, 7);
+  const filePath = slowAuditQueryFilePath(`${month}-01T00:00:00.000Z`);
+  const data = await readJSON(filePath).catch(() => null);
+
+  const entries = data && Array.isArray(data.entries) ? data.entries : [];
+  entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 50));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    month,
+    entries: entries.slice(offset, offset + limit),
+    total: entries.length,
+    limit,
+    offset,
+  };
 }
 
 // ── EventBus Integration ─────────────────────────────────────

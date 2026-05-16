@@ -291,6 +291,19 @@ const config = {
       incidents: 'metrics/incidents',
       backup_restore_drills: 'metrics/backup-restore-drills',
       ops: 'ops',
+
+      // Phase 55 — File-Based Scale Hygiene
+      queue_pending: 'ops_queue/pending',
+      queue_running: 'ops_queue/running',
+      queue_completed: 'ops_queue/completed',
+      queue_failed: 'ops_queue/failed',
+      queue_cancelled: 'ops_queue/cancelled',
+      queue_archive: 'ops_queue/archive',
+      scheduler_history: 'scheduler/history',
+      workroom_hygiene: 'metrics/workroom-hygiene',
+      trust_rollups: 'metrics/trust-calibration/rollups',
+      predictive_archive_indexes: 'metrics/predictive-signal-archives/index',
+      scale_hygiene: 'metrics/scale-hygiene',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -479,7 +492,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.50.0',
+    cacheName: 'yawmia-v0.51.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1403,6 +1416,103 @@ const config = {
     requireBackupPlanInProduction: true,
     requireVapidIfWebPushEnabled: true,
     requireAlertWebhookIfAlertChannelsEnabled: false,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 86. تخزين الطابور المقسم (QUEUE_STORAGE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  QUEUE_STORAGE: {
+    enabled: true,
+    segmentByStatus: true,
+    monthlySharding: true,
+    basePath: 'ops_queue',
+    statusDirs: {
+      pending: 'pending',
+      running: 'running',
+      completed: 'completed',
+      failed: 'failed',
+      cancelled: 'cancelled',
+      deadLetter: 'dead-letter',
+    },
+    summaryFile: 'metrics/queue/summary.json',
+    legacyReadFallback: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 87. نظافة الطابور (QUEUE_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  QUEUE_HYGIENE: {
+    enabled: true,
+    archiveCompletedAfterHours: 48,
+    archiveFailedAfterDays: 14,
+    archiveCancelledAfterHours: 48,
+    archiveDeadLetterAfterDays: 90,
+    archivePath: 'ops_queue/archive',
+    compactIntervalMs: 24 * 60 * 60 * 1000,
+    verifySampleSize: 100,
+    slowJobThresholdMs: 5 * 60 * 1000,
+    idempotencyCleanupEnabled: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 88. نظافة Workroom (WORKROOM_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM_HYGIENE: {
+    enabled: true,
+    sidecarSizeWarningKB: 512,
+    sidecarSizeCriticalKB: 2048,
+    receiptCompactionEnabled: true,
+    receiptRetentionDays: 365,
+    timelineCompactionEnabled: true,
+    timelineMaxEvents: 500,
+    attachmentOrphanCleanupEnabled: true,
+    attachmentGraceHours: 24,
+    searchVerifySampleSize: 50,
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 89. احتفاظ و Rollups الثقة (TRUST_RETENTION) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_RETENTION: {
+    enabled: true,
+    snapshotRetentionDays: 90,
+    rollupEnabled: true,
+    rollupPath: 'metrics/trust-calibration/rollups',
+    calibrationReportRetentionDays: 180,
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 90. فهرسة أرشيف المخاطر التنبؤية (PREDICTIVE_ARCHIVE_INDEX) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_ARCHIVE_INDEX: {
+    enabled: true,
+    basePath: 'metrics/predictive-signal-archives/index',
+    rebuildOnRetention: true,
+    monthlyPrecisionRollups: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 91. سجل تشغيل الجدولة (SCHEDULER_HISTORY) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  SCHEDULER_HISTORY: {
+    enabled: true,
+    basePath: 'scheduler/history',
+    maxRunsPerJob: 100,
+    retentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 92. نظافة التوسع (SCALE_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  SCALE_HYGIENE: {
+    enabled: true,
+    dashboardEnabled: true,
+    slowQueryLogEnabled: true,
+    auditSlowQueryMs: 1000,
+    fileSizeWarningKB: 1024,
+    fileSizeCriticalKB: 4096,
   },
 
 };

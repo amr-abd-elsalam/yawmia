@@ -134,6 +134,7 @@ var AdminApp = (function () {
         loadCounterHygiene(),
         loadTrustDashboard(),
         loadTrustCalibrationDashboard(),
+        loadScaleHygiene(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -378,6 +379,39 @@ var AdminApp = (function () {
           }
           loadMaintenanceMode();
         } catch (_) {}
+      });
+
+      // Phase 55 — Scale Hygiene events
+      [
+        'queue:compaction_completed',
+        'queue:compaction_failed',
+        'queue:idempotency_cleanup_completed',
+        'queue:slow_jobs_detected',
+        'queue:health_verified',
+        'queue:repair_completed',
+        'queue:summary_rebuilt',
+        'workroom_hygiene:compaction_completed',
+        'workroom_hygiene:attachment_cleanup_completed',
+        'workroom_hygiene:warning_detected',
+        'workroom_search:verified',
+        'audit_index:token_compaction_completed',
+        'trust_retention:rollup_created',
+        'predictive_archive_index:rebuilt',
+        'scheduler:run_history_recorded',
+        'scheduler:history_cleanup_completed',
+      ].forEach(function (eventName) {
+        adminSseSource.addEventListener(eventName, function (e) {
+          try {
+            if (eventName.indexOf('failed') !== -1 && typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.error('فشل حدث نظافة التوسع: ' + eventName);
+            } else if (eventName.indexOf('warning') !== -1 && typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.warning('تحذير نظافة التوسع: ' + eventName);
+            }
+
+            if (typeof loadScaleHygiene === 'function') loadScaleHygiene();
+            if (typeof loadOpsQueueStats === 'function') loadOpsQueueStats();
+          } catch (_) {}
+        });
       });
 
       // Phase 49 — CSV export progress events
@@ -3542,6 +3576,310 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 55 — Scale Hygiene UI
+  // ═══════════════════════════════════════════════════════════════
+
+  function storageSizePill(sizeKB, status) {
+    var s = status || 'ok';
+    var cls = s === 'critical'
+      ? 'storage-size-pill--critical'
+      : (s === 'warning' ? 'storage-size-pill--warn' : 'storage-size-pill--ok');
+
+    return '<span class="storage-size-pill ' + cls + '">' + escapeHtml(String(sizeKB || 0)) + ' KB</span>';
+  }
+
+  async function loadScaleHygiene() {
+    var summaryEl = document.getElementById('scaleHygieneSummary');
+    var detailsEl = document.getElementById('scaleHygieneDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (detailsEl) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/scale-hygiene/overview');
+      var o = data.overview || {};
+
+      renderScaleHygieneSummary(o);
+      renderScaleHygieneDetails(o);
+    } catch (err) {
+      if (summaryEl) {
+        summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل نظافة التوسع</p>';
+      }
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  function renderScaleHygieneSummary(o) {
+    var el = document.getElementById('scaleHygieneSummary');
+    if (!el) return;
+
+    var queue = o.queue && o.queue.stats ? o.queue.stats : {};
+    var qStatus = queue.byStatus || {};
+    var audit = o.audit || {};
+    var tokenIndex = audit.tokenIndex || {};
+    var workrooms = o.workrooms || {};
+    var trust = o.trust || {};
+    var predictive = o.predictiveArchive || {};
+
+    var cards = [
+      { value: opsStatusPill(o.status || 'unknown'), label: 'الحالة العامة' },
+      { value: qStatus.pending || 0, label: 'Queue Pending' },
+      { value: qStatus['dead-letter'] || 0, label: 'Queue DLQ' },
+      { value: tokenIndex.fileCount || 0, label: 'Audit Token Files' },
+      { value: (workrooms.warningCount || 0), label: 'Workroom Warnings' },
+      { value: trust.rollupCount || 0, label: 'Trust Rollups' },
+      { value: predictive.status || 'unknown', label: 'Predictive Archive Index' },
+      { value: o.warningCount || 0, label: 'تحذيرات' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'scale-hygiene-card';
+      card.innerHTML =
+        '<div class="trust-metric-value">' + c.value + '</div>' +
+        '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderScaleHygieneDetails(o) {
+    var el = document.getElementById('scaleHygieneDetails');
+    if (!el) return;
+
+    var warnings = o.warnings || [];
+    var queue = o.queue || {};
+    var audit = o.audit || {};
+    var workrooms = o.workrooms || {};
+    var trust = o.trust || {};
+    var predictive = o.predictiveArchive || {};
+    var schedulerHistory = o.schedulerHistory || {};
+
+    var html = '';
+
+    // Warnings summary.
+    html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">التحذيرات</h3>';
+    if (warnings.length === 0) {
+      html += '<p style="color:var(--color-success);text-align:center;padding:0.75rem;">✓ لا توجد تحذيرات توسع حالياً</p>';
+    } else {
+      html += '<div class="scale-hygiene-warning-list">';
+      warnings.slice(0, 10).forEach(function (w) {
+        var level = w.level || 'warning';
+        var cls = level === 'critical' || level === 'error'
+          ? 'scale-hygiene-warning--high'
+          : 'scale-hygiene-warning--medium';
+
+        html += '<div class="scale-hygiene-warning ' + cls + '">' +
+          '<strong>' + escapeHtml(w.source || 'system') + '</strong>: ' +
+          escapeHtml(w.message || '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Details table.
+    html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">تفاصيل التخزين</h3>';
+    html += '<table class="admin-table"><thead><tr>' +
+      '<th>النظام</th><th>المؤشر</th><th>القيمة</th><th>ملاحظات</th>' +
+      '</tr></thead><tbody>';
+
+    html += '<tr>' +
+      '<td>Queue</td>' +
+      '<td>Summary</td>' +
+      '<td>' + escapeHtml(queue.stats && queue.stats.summary && queue.stats.summary.stale ? 'stale' : 'healthy') + '</td>' +
+      '<td><small>locations: ' + escapeHtml(String(queue.stats && queue.stats.summary ? queue.stats.summary.locationCount || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Queue Archive</td>' +
+      '<td>Entries</td>' +
+      '<td>' + escapeHtml(String(queue.archives ? queue.archives.entries || 0 : 0)) + '</td>' +
+      '<td><small>months: ' + escapeHtml(String(queue.archives ? queue.archives.months || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Audit Index</td>' +
+      '<td>Token Index Size</td>' +
+      '<td>' + storageSizePill(audit.tokenIndex ? audit.tokenIndex.totalSizeKB || 0 : 0, 'ok') + '</td>' +
+      '<td><small>files: ' + escapeHtml(String(audit.tokenIndex ? audit.tokenIndex.fileCount || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Workrooms</td>' +
+      '<td>Sidecars</td>' +
+      '<td>' + storageSizePill(workrooms.totalSidecarKB || 0, workrooms.warningCount > 0 ? 'warning' : 'ok') + '</td>' +
+      '<td><small>inspected: ' + escapeHtml(String(workrooms.inspectedWorkrooms || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Trust</td>' +
+      '<td>Retention</td>' +
+      '<td>' + escapeHtml(String(trust.rollupCount || 0)) + ' rollups</td>' +
+      '<td><small>reports: ' + escapeHtml(String(trust.reportCount || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Predictive Archive</td>' +
+      '<td>Index</td>' +
+      '<td>' + escapeHtml(predictive.status || 'unknown') + '</td>' +
+      '<td><small>signals: ' + escapeHtml(String(predictive.archivedSignals || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Scheduler History</td>' +
+      '<td>Runs</td>' +
+      '<td>' + escapeHtml(String(schedulerHistory.runCount || 0)) + '</td>' +
+      '<td><small>files: ' + escapeHtml(String(schedulerHistory.fileCount || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '</tbody></table>';
+
+    // Largest workroom sidecars.
+    if (workrooms.largestSidecars && workrooms.largestSidecars.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أكبر Workroom Sidecars</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Job</th><th>Type</th><th>Size</th><th>Status</th></tr></thead><tbody>';
+      workrooms.largestSidecars.slice(0, 5).forEach(function (s) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(s.jobId || '-') + '</small></td>' +
+          '<td>' + escapeHtml(s.kind || '-') + '</td>' +
+          '<td>' + storageSizePill(s.sizeKB || 0, s.status || 'ok') + '</td>' +
+          '<td>' + escapeHtml(s.status || 'ok') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function verifyQueue() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/verify?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع فحص Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في فحص Queue');
+    }
+  }
+
+  async function compactQueue() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/compact?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع ضغط Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في ضغط Queue');
+    }
+  }
+
+  async function repairQueue() {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'إصلاح Queue',
+      message: 'سيتم إعادة بناء summary/location index للطابور. هل تريد المتابعة؟',
+      confirmText: 'إصلاح',
+      cancelText: 'إلغاء',
+    });
+    if (!confirmed) return;
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/repair?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع إصلاح Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في إصلاح Queue');
+    }
+  }
+
+  async function compactWorkrooms() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/compact?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع ضغط Workrooms في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في ضغط Workrooms');
+    }
+  }
+
+  async function verifyWorkroomIndexes() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/verify-indexes?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع فحص Workroom Indexes في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في فحص Workroom Indexes');
+    }
+  }
+
+  async function cleanupWorkroomAttachments() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/cleanup-attachments?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع تنظيف المرفقات في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تنظيف المرفقات');
+    }
+  }
+
+  async function runTrustRollup() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/trust/rollups/run?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع Trust Rollup في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+        loadTrustCalibrationDashboard();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل Trust Rollup');
+    }
+  }
+
+  async function rebuildPredictiveArchiveIndex() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/archive-index/rebuild?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع Rebuild Predictive Archive Index في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في إعادة بناء Predictive Archive Index');
+    }
+  }
+
+  async function loadSchedulerHistory(name) {
+    try {
+      var data = await api('/api/admin/schedulers/' + encodeURIComponent(name) + '/history?limit=20');
+      return data;
+    } catch (err) {
+      showError(err.message || 'خطأ في جلب سجل الجدولة');
+      return null;
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -3629,6 +3967,17 @@ var AdminApp = (function () {
     loadMaintenanceMode: loadMaintenanceMode,
     enableMaintenanceMode: enableMaintenanceMode,
     disableMaintenanceMode: disableMaintenanceMode,
+    // Phase 55 — Scale Hygiene
+    loadScaleHygiene: loadScaleHygiene,
+    verifyQueue: verifyQueue,
+    compactQueue: compactQueue,
+    repairQueue: repairQueue,
+    compactWorkrooms: compactWorkrooms,
+    verifyWorkroomIndexes: verifyWorkroomIndexes,
+    cleanupWorkroomAttachments: cleanupWorkroomAttachments,
+    runTrustRollup: runTrustRollup,
+    rebuildPredictiveArchiveIndex: rebuildPredictiveArchiveIndex,
+    loadSchedulerHistory: loadSchedulerHistory,
     // Phase 48 — Admin Real-Time Operations
     connectAdminSse: connectAdminSse,
   };

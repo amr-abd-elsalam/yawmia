@@ -11,6 +11,7 @@ import {
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const JOB_ATTENDANCE_INDEX = config.DATABASE.indexFiles.jobAttendanceIndex;
 const WORKER_ATTENDANCE_INDEX = config.DATABASE.indexFiles.workerAttendanceIndex;
@@ -91,7 +92,7 @@ export function checkIn(jobId, workerId, coords = {}) {
   // 3. Worker is accepted on this job
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
-  const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+  const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
   if (!accepted) {
     return { ok: false, error: 'أنت مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
   }
@@ -318,7 +319,7 @@ export function reportNoShow(jobId, workerId, reportedBy) {
   // 4. Worker is accepted on the job
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
-  const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+  const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
   if (!accepted) {
     return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
   }
@@ -415,7 +416,7 @@ export function employerCheckIn(jobId, workerId, employerId) {
     // 5. Worker is accepted on this job
     const { listByJob: listApps } = await import('./applications.js');
     const apps = await listApps(jobId);
-    const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+    const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
     if (!accepted) {
       return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
     }
@@ -648,7 +649,7 @@ export async function autoDetectNoShows() {
     if (now < jobCutoffTime) continue;
     try {
       const apps = await listAppsByJob(job.id);
-      const acceptedWorkers = apps.filter(a => a.status === 'accepted');
+      const acceptedWorkers = apps.filter(a => isAcceptedApplicationStatus(a.status));
 
       for (const app of acceptedWorkers) {
         // Check if worker has any record today
