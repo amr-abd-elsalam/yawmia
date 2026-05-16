@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.50.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-15T22:38:35.853Z
+# يوميّة (Yawmia) v0.51.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-16T02:31:29.302Z
 > Files in this part: 6
 
 ## Files
@@ -372,6 +372,19 @@ const config = {
       incidents: 'metrics/incidents',
       backup_restore_drills: 'metrics/backup-restore-drills',
       ops: 'ops',
+
+      // Phase 55 — File-Based Scale Hygiene
+      queue_pending: 'ops_queue/pending',
+      queue_running: 'ops_queue/running',
+      queue_completed: 'ops_queue/completed',
+      queue_failed: 'ops_queue/failed',
+      queue_cancelled: 'ops_queue/cancelled',
+      queue_archive: 'ops_queue/archive',
+      scheduler_history: 'scheduler/history',
+      workroom_hygiene: 'metrics/workroom-hygiene',
+      trust_rollups: 'metrics/trust-calibration/rollups',
+      predictive_archive_indexes: 'metrics/predictive-signal-archives/index',
+      scale_hygiene: 'metrics/scale-hygiene',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -560,7 +573,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.50.0',
+    cacheName: 'yawmia-v0.51.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1486,6 +1499,103 @@ const config = {
     requireAlertWebhookIfAlertChannelsEnabled: false,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 86. تخزين الطابور المقسم (QUEUE_STORAGE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  QUEUE_STORAGE: {
+    enabled: true,
+    segmentByStatus: true,
+    monthlySharding: true,
+    basePath: 'ops_queue',
+    statusDirs: {
+      pending: 'pending',
+      running: 'running',
+      completed: 'completed',
+      failed: 'failed',
+      cancelled: 'cancelled',
+      deadLetter: 'dead-letter',
+    },
+    summaryFile: 'metrics/queue/summary.json',
+    legacyReadFallback: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 87. نظافة الطابور (QUEUE_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  QUEUE_HYGIENE: {
+    enabled: true,
+    archiveCompletedAfterHours: 48,
+    archiveFailedAfterDays: 14,
+    archiveCancelledAfterHours: 48,
+    archiveDeadLetterAfterDays: 90,
+    archivePath: 'ops_queue/archive',
+    compactIntervalMs: 24 * 60 * 60 * 1000,
+    verifySampleSize: 100,
+    slowJobThresholdMs: 5 * 60 * 1000,
+    idempotencyCleanupEnabled: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 88. نظافة Workroom (WORKROOM_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  WORKROOM_HYGIENE: {
+    enabled: true,
+    sidecarSizeWarningKB: 512,
+    sidecarSizeCriticalKB: 2048,
+    receiptCompactionEnabled: true,
+    receiptRetentionDays: 365,
+    timelineCompactionEnabled: true,
+    timelineMaxEvents: 500,
+    attachmentOrphanCleanupEnabled: true,
+    attachmentGraceHours: 24,
+    searchVerifySampleSize: 50,
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 89. احتفاظ و Rollups الثقة (TRUST_RETENTION) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  TRUST_RETENTION: {
+    enabled: true,
+    snapshotRetentionDays: 90,
+    rollupEnabled: true,
+    rollupPath: 'metrics/trust-calibration/rollups',
+    calibrationReportRetentionDays: 180,
+    cleanupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 90. فهرسة أرشيف المخاطر التنبؤية (PREDICTIVE_ARCHIVE_INDEX) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  PREDICTIVE_ARCHIVE_INDEX: {
+    enabled: true,
+    basePath: 'metrics/predictive-signal-archives/index',
+    rebuildOnRetention: true,
+    monthlyPrecisionRollups: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 91. سجل تشغيل الجدولة (SCHEDULER_HISTORY) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  SCHEDULER_HISTORY: {
+    enabled: true,
+    basePath: 'scheduler/history',
+    maxRunsPerJob: 100,
+    retentionDays: 90,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 92. نظافة التوسع (SCALE_HYGIENE) — Phase 55
+  // ═══════════════════════════════════════════════════════════════
+  SCALE_HYGIENE: {
+    enabled: true,
+    dashboardEnabled: true,
+    slowQueryLogEnabled: true,
+    auditSlowQueryMs: 1000,
+    fileSizeWarningKB: 1024,
+    fileSizeCriticalKB: 4096,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1534,7 +1644,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.50.0",
+  "version": "0.51.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -2002,16 +2112,18 @@ if (config.INCIDENT_TIMELINE && config.INCIDENT_TIMELINE.enabled) {
   }
 }
 
-// ── Phase 54 — Persistent Scheduler Registry Visibility ─────
-// Register default scheduler records for admin visibility.
-// Runner start is enabled in a later Phase 54 step after scheduled timers are safely routed.
+// ── Phase 54/55 — Persistent Scheduler Registry ─────────────
+// Phase 55 starts the scheduler registry runner for heavy/ops recurring jobs.
+// Existing legacy timers remain as safety fallback, while queue idempotency keys
+// prevent duplicate heavy execution during the transition period.
 if (config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled) {
   try {
     const schedulerRegistry = await import('./server/services/schedulerRegistry.js');
     await schedulerRegistry.registerDefaultSchedulerJobs();
-    logger.info('Phase 54: scheduler registry defaults registered');
+    schedulerRegistry.startSchedulerRegistry();
+    logger.info('Phase 55: scheduler registry defaults registered and runner started');
   } catch (err) {
-    logger.warn('Phase 54: scheduler registry registration failed', { error: err.message });
+    logger.warn('Phase 55: scheduler registry start failed', { error: err.message });
   }
 }
 
@@ -2409,6 +2521,22 @@ import {
   handleEnableMaintenanceMode,
   handleDisableMaintenanceMode,
 } from './handlers/productionOpsHandler.js';
+import {
+  handleScaleHygieneOverview,
+  handleQueueHealth,
+  handleQueueVerify,
+  handleQueueCompact,
+  handleQueueRepair,
+  handleWorkroomHygieneOverview,
+  handleWorkroomCompact,
+  handleWorkroomVerifyIndexes,
+  handleWorkroomCleanupAttachments,
+  handleTrustRollups,
+  handleRunTrustRollup,
+  handlePredictiveArchiveIndexStatus,
+  handleRebuildPredictiveArchiveIndex,
+  handleSchedulerHistory,
+} from './handlers/scaleHygieneHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -2478,7 +2606,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.50.0',
+        version: '0.51.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -2759,7 +2887,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.50.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.51.0' });
     },
   },
 
@@ -3019,6 +3147,27 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  // ── Phase 55 — Scale Hygiene Admin APIs ──
+  { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },
+
+  { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
+  { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },
+  { method: 'POST', path: '/api/admin/queue/compact', middlewares: [requireAdmin], handler: handleQueueCompact },
+  { method: 'POST', path: '/api/admin/queue/repair', middlewares: [requireAdmin], handler: handleQueueRepair },
+
+  { method: 'GET', path: '/api/admin/workroom-hygiene/overview', middlewares: [requireAdmin], handler: handleWorkroomHygieneOverview },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/compact', middlewares: [requireAdmin], handler: handleWorkroomCompact },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/verify-indexes', middlewares: [requireAdmin], handler: handleWorkroomVerifyIndexes },
+  { method: 'POST', path: '/api/admin/workroom-hygiene/cleanup-attachments', middlewares: [requireAdmin], handler: handleWorkroomCleanupAttachments },
+
+  { method: 'GET', path: '/api/admin/trust/rollups', middlewares: [requireAdmin], handler: handleTrustRollups },
+  { method: 'POST', path: '/api/admin/trust/rollups/run', middlewares: [requireAdmin], handler: handleRunTrustRollup },
+
+  { method: 'GET', path: '/api/admin/predictive-abuse/archive-index/status', middlewares: [requireAdmin], handler: handlePredictiveArchiveIndexStatus },
+  { method: 'POST', path: '/api/admin/predictive-abuse/archive-index/rebuild', middlewares: [requireAdmin], handler: handleRebuildPredictiveArchiveIndex },
+
+  { method: 'GET', path: '/api/admin/schedulers/:name/history', middlewares: [requireAdmin], handler: handleSchedulerHistory },
 
   { method: 'GET', path: '/api/admin/schedulers', middlewares: [requireAdmin], handler: handleListSchedulers },
   { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireAdmin], handler: handleRunSchedulerNow },

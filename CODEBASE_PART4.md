@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.50.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-15T22:38:35.900Z
-> Files in this part: 53
+# يوميّة (Yawmia) v0.51.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-16T02:31:29.347Z
+> Files in this part: 61
 
 ## Files
 1. `frontend/404.html`
@@ -41,21 +41,29 @@
 36. `scripts/backup.js`
 37. `scripts/benchmark.js`
 38. `scripts/bundle-for-review.js`
-39. `scripts/compact-counters.js`
-40. `scripts/compact-predictive-signals.js`
-41. `scripts/export-incident-timeline.js`
-42. `scripts/generate-vapid-keys.js`
-43. `scripts/migrate.js`
-44. `scripts/queue-drain.js`
-45. `scripts/queue-retry-dlq.js`
-46. `scripts/rebuild-audit-index.js`
-47. `scripts/rebuild-counters.js`
-48. `scripts/rebuild-workroom-search.js`
-49. `scripts/repair-indexes.js`
-50. `scripts/run-backup-restore-drill.js`
-51. `scripts/run-trust-calibration.js`
-52. `scripts/verify-audit-index.js`
-53. `scripts/verify-production-readiness.js`
+39. `scripts/cleanup-attachments.js`
+40. `scripts/compact-counters.js`
+41. `scripts/compact-predictive-signals.js`
+42. `scripts/compact-queue.js`
+43. `scripts/compact-workrooms.js`
+44. `scripts/export-incident-timeline.js`
+45. `scripts/generate-vapid-keys.js`
+46. `scripts/migrate.js`
+47. `scripts/queue-drain.js`
+48. `scripts/queue-retry-dlq.js`
+49. `scripts/rebuild-audit-index.js`
+50. `scripts/rebuild-counters.js`
+51. `scripts/rebuild-predictive-archive-index.js`
+52. `scripts/rebuild-workroom-search.js`
+53. `scripts/repair-indexes.js`
+54. `scripts/repair-queue.js`
+55. `scripts/rollup-trust-snapshots.js`
+56. `scripts/run-backup-restore-drill.js`
+57. `scripts/run-trust-calibration.js`
+58. `scripts/verify-audit-index.js`
+59. `scripts/verify-production-readiness.js`
+60. `scripts/verify-queue.js`
+61. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -227,6 +235,33 @@
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
         <div id="opsRollupsTable"></div>
+      </div>
+
+      <!-- Phase 55 — Scale Hygiene -->
+      <div class="admin-section" id="scaleHygieneSection">
+        <div class="admin-section__header">
+          <h2>🧹 نظافة التوسع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadScaleHygiene()">تحديث</button>
+        </div>
+
+        <div id="scaleHygieneSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.verifyQueue()">فحص Queue</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.compactQueue()">ضغط Queue</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.repairQueue()">إصلاح Queue</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.compactWorkrooms()">ضغط Workrooms</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyWorkroomIndexes()">فحص Workroom Indexes</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.cleanupWorkroomAttachments()">تنظيف المرفقات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.runTrustRollup()">Trust Rollup</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.rebuildPredictiveArchiveIndex()">Rebuild Predictive Archive Index</button>
+        </div>
+
+        <div id="scaleHygieneDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
       </div>
 
       <!-- Phase 54 — Backup Restore Drills -->
@@ -5598,6 +5633,76 @@ textarea:focus:not(:focus-visible) {
   border-color: rgba(245, 158, 11, 0.45);
   background: rgba(245, 158, 11, 0.08);
 }
+
+/* ═══ Phase 55 — Scale Hygiene Admin UI ═══ */
+.scale-hygiene-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.scale-hygiene-warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scale-hygiene-warning {
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.scale-hygiene-warning--medium {
+  color: var(--color-warning);
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.scale-hygiene-warning--high {
+  color: var(--color-error);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.storage-size-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.storage-size-pill--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.storage-size-pill--warn {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.storage-size-pill--critical {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
 ```
 
 ---
@@ -6336,6 +6441,7 @@ var AdminApp = (function () {
         loadCounterHygiene(),
         loadTrustDashboard(),
         loadTrustCalibrationDashboard(),
+        loadScaleHygiene(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -6580,6 +6686,39 @@ var AdminApp = (function () {
           }
           loadMaintenanceMode();
         } catch (_) {}
+      });
+
+      // Phase 55 — Scale Hygiene events
+      [
+        'queue:compaction_completed',
+        'queue:compaction_failed',
+        'queue:idempotency_cleanup_completed',
+        'queue:slow_jobs_detected',
+        'queue:health_verified',
+        'queue:repair_completed',
+        'queue:summary_rebuilt',
+        'workroom_hygiene:compaction_completed',
+        'workroom_hygiene:attachment_cleanup_completed',
+        'workroom_hygiene:warning_detected',
+        'workroom_search:verified',
+        'audit_index:token_compaction_completed',
+        'trust_retention:rollup_created',
+        'predictive_archive_index:rebuilt',
+        'scheduler:run_history_recorded',
+        'scheduler:history_cleanup_completed',
+      ].forEach(function (eventName) {
+        adminSseSource.addEventListener(eventName, function (e) {
+          try {
+            if (eventName.indexOf('failed') !== -1 && typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.error('فشل حدث نظافة التوسع: ' + eventName);
+            } else if (eventName.indexOf('warning') !== -1 && typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.warning('تحذير نظافة التوسع: ' + eventName);
+            }
+
+            if (typeof loadScaleHygiene === 'function') loadScaleHygiene();
+            if (typeof loadOpsQueueStats === 'function') loadOpsQueueStats();
+          } catch (_) {}
+        });
       });
 
       // Phase 49 — CSV export progress events
@@ -9744,6 +9883,310 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 55 — Scale Hygiene UI
+  // ═══════════════════════════════════════════════════════════════
+
+  function storageSizePill(sizeKB, status) {
+    var s = status || 'ok';
+    var cls = s === 'critical'
+      ? 'storage-size-pill--critical'
+      : (s === 'warning' ? 'storage-size-pill--warn' : 'storage-size-pill--ok');
+
+    return '<span class="storage-size-pill ' + cls + '">' + escapeHtml(String(sizeKB || 0)) + ' KB</span>';
+  }
+
+  async function loadScaleHygiene() {
+    var summaryEl = document.getElementById('scaleHygieneSummary');
+    var detailsEl = document.getElementById('scaleHygieneDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (detailsEl) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/scale-hygiene/overview');
+      var o = data.overview || {};
+
+      renderScaleHygieneSummary(o);
+      renderScaleHygieneDetails(o);
+    } catch (err) {
+      if (summaryEl) {
+        summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل نظافة التوسع</p>';
+      }
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  function renderScaleHygieneSummary(o) {
+    var el = document.getElementById('scaleHygieneSummary');
+    if (!el) return;
+
+    var queue = o.queue && o.queue.stats ? o.queue.stats : {};
+    var qStatus = queue.byStatus || {};
+    var audit = o.audit || {};
+    var tokenIndex = audit.tokenIndex || {};
+    var workrooms = o.workrooms || {};
+    var trust = o.trust || {};
+    var predictive = o.predictiveArchive || {};
+
+    var cards = [
+      { value: opsStatusPill(o.status || 'unknown'), label: 'الحالة العامة' },
+      { value: qStatus.pending || 0, label: 'Queue Pending' },
+      { value: qStatus['dead-letter'] || 0, label: 'Queue DLQ' },
+      { value: tokenIndex.fileCount || 0, label: 'Audit Token Files' },
+      { value: (workrooms.warningCount || 0), label: 'Workroom Warnings' },
+      { value: trust.rollupCount || 0, label: 'Trust Rollups' },
+      { value: predictive.status || 'unknown', label: 'Predictive Archive Index' },
+      { value: o.warningCount || 0, label: 'تحذيرات' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'scale-hygiene-card';
+      card.innerHTML =
+        '<div class="trust-metric-value">' + c.value + '</div>' +
+        '<div class="trust-metric-label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderScaleHygieneDetails(o) {
+    var el = document.getElementById('scaleHygieneDetails');
+    if (!el) return;
+
+    var warnings = o.warnings || [];
+    var queue = o.queue || {};
+    var audit = o.audit || {};
+    var workrooms = o.workrooms || {};
+    var trust = o.trust || {};
+    var predictive = o.predictiveArchive || {};
+    var schedulerHistory = o.schedulerHistory || {};
+
+    var html = '';
+
+    // Warnings summary.
+    html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">التحذيرات</h3>';
+    if (warnings.length === 0) {
+      html += '<p style="color:var(--color-success);text-align:center;padding:0.75rem;">✓ لا توجد تحذيرات توسع حالياً</p>';
+    } else {
+      html += '<div class="scale-hygiene-warning-list">';
+      warnings.slice(0, 10).forEach(function (w) {
+        var level = w.level || 'warning';
+        var cls = level === 'critical' || level === 'error'
+          ? 'scale-hygiene-warning--high'
+          : 'scale-hygiene-warning--medium';
+
+        html += '<div class="scale-hygiene-warning ' + cls + '">' +
+          '<strong>' + escapeHtml(w.source || 'system') + '</strong>: ' +
+          escapeHtml(w.message || '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Details table.
+    html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">تفاصيل التخزين</h3>';
+    html += '<table class="admin-table"><thead><tr>' +
+      '<th>النظام</th><th>المؤشر</th><th>القيمة</th><th>ملاحظات</th>' +
+      '</tr></thead><tbody>';
+
+    html += '<tr>' +
+      '<td>Queue</td>' +
+      '<td>Summary</td>' +
+      '<td>' + escapeHtml(queue.stats && queue.stats.summary && queue.stats.summary.stale ? 'stale' : 'healthy') + '</td>' +
+      '<td><small>locations: ' + escapeHtml(String(queue.stats && queue.stats.summary ? queue.stats.summary.locationCount || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Queue Archive</td>' +
+      '<td>Entries</td>' +
+      '<td>' + escapeHtml(String(queue.archives ? queue.archives.entries || 0 : 0)) + '</td>' +
+      '<td><small>months: ' + escapeHtml(String(queue.archives ? queue.archives.months || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Audit Index</td>' +
+      '<td>Token Index Size</td>' +
+      '<td>' + storageSizePill(audit.tokenIndex ? audit.tokenIndex.totalSizeKB || 0 : 0, 'ok') + '</td>' +
+      '<td><small>files: ' + escapeHtml(String(audit.tokenIndex ? audit.tokenIndex.fileCount || 0 : 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Workrooms</td>' +
+      '<td>Sidecars</td>' +
+      '<td>' + storageSizePill(workrooms.totalSidecarKB || 0, workrooms.warningCount > 0 ? 'warning' : 'ok') + '</td>' +
+      '<td><small>inspected: ' + escapeHtml(String(workrooms.inspectedWorkrooms || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Trust</td>' +
+      '<td>Retention</td>' +
+      '<td>' + escapeHtml(String(trust.rollupCount || 0)) + ' rollups</td>' +
+      '<td><small>reports: ' + escapeHtml(String(trust.reportCount || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Predictive Archive</td>' +
+      '<td>Index</td>' +
+      '<td>' + escapeHtml(predictive.status || 'unknown') + '</td>' +
+      '<td><small>signals: ' + escapeHtml(String(predictive.archivedSignals || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '<tr>' +
+      '<td>Scheduler History</td>' +
+      '<td>Runs</td>' +
+      '<td>' + escapeHtml(String(schedulerHistory.runCount || 0)) + '</td>' +
+      '<td><small>files: ' + escapeHtml(String(schedulerHistory.fileCount || 0)) + '</small></td>' +
+    '</tr>';
+
+    html += '</tbody></table>';
+
+    // Largest workroom sidecars.
+    if (workrooms.largestSidecars && workrooms.largestSidecars.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أكبر Workroom Sidecars</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Job</th><th>Type</th><th>Size</th><th>Status</th></tr></thead><tbody>';
+      workrooms.largestSidecars.slice(0, 5).forEach(function (s) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(s.jobId || '-') + '</small></td>' +
+          '<td>' + escapeHtml(s.kind || '-') + '</td>' +
+          '<td>' + storageSizePill(s.sizeKB || 0, s.status || 'ok') + '</td>' +
+          '<td>' + escapeHtml(s.status || 'ok') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function verifyQueue() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/verify?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع فحص Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في فحص Queue');
+    }
+  }
+
+  async function compactQueue() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/compact?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع ضغط Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في ضغط Queue');
+    }
+  }
+
+  async function repairQueue() {
+    var confirmed = await YawmiaModal.confirm({
+      title: 'إصلاح Queue',
+      message: 'سيتم إعادة بناء summary/location index للطابور. هل تريد المتابعة؟',
+      confirmText: 'إصلاح',
+      cancelText: 'إلغاء',
+    });
+    if (!confirmed) return;
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/queue/repair?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع إصلاح Queue في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في إصلاح Queue');
+    }
+  }
+
+  async function compactWorkrooms() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/compact?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع ضغط Workrooms في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في ضغط Workrooms');
+    }
+  }
+
+  async function verifyWorkroomIndexes() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/verify-indexes?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع فحص Workroom Indexes في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في فحص Workroom Indexes');
+    }
+  }
+
+  async function cleanupWorkroomAttachments() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/workroom-hygiene/cleanup-attachments?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع تنظيف المرفقات في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تنظيف المرفقات');
+    }
+  }
+
+  async function runTrustRollup() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/trust/rollups/run?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع Trust Rollup في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+        loadTrustCalibrationDashboard();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل Trust Rollup');
+    }
+  }
+
+  async function rebuildPredictiveArchiveIndex() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/predictive-abuse/archive-index/rebuild?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع Rebuild Predictive Archive Index في الطابور — Job: ' + (data.queueJobId || ''));
+        loadOpsQueueStats();
+        loadScaleHygiene();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في إعادة بناء Predictive Archive Index');
+    }
+  }
+
+  async function loadSchedulerHistory(name) {
+    try {
+      var data = await api('/api/admin/schedulers/' + encodeURIComponent(name) + '/history?limit=20');
+      return data;
+    } catch (err) {
+      showError(err.message || 'خطأ في جلب سجل الجدولة');
+      return null;
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -9831,6 +10274,17 @@ var AdminApp = (function () {
     loadMaintenanceMode: loadMaintenanceMode,
     enableMaintenanceMode: enableMaintenanceMode,
     disableMaintenanceMode: disableMaintenanceMode,
+    // Phase 55 — Scale Hygiene
+    loadScaleHygiene: loadScaleHygiene,
+    verifyQueue: verifyQueue,
+    compactQueue: compactQueue,
+    repairQueue: repairQueue,
+    compactWorkrooms: compactWorkrooms,
+    verifyWorkroomIndexes: verifyWorkroomIndexes,
+    cleanupWorkroomAttachments: cleanupWorkroomAttachments,
+    runTrustRollup: runTrustRollup,
+    rebuildPredictiveArchiveIndex: rebuildPredictiveArchiveIndex,
+    loadSchedulerHistory: loadSchedulerHistory,
     // Phase 48 — Admin Real-Time Operations
     connectAdminSse: connectAdminSse,
   };
@@ -19213,7 +19667,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.50.0';
+const CACHE_NAME = 'yawmia-v0.51.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -19988,6 +20442,69 @@ main().catch(err => {
 
 ---
 
+## `scripts/cleanup-attachments.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/cleanup-attachments.js — Workroom Attachment Cleanup CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/cleanup-attachments.js [--dry-run] [--grace-hours=24]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const dryRun = process.argv.includes('--dry-run');
+  const graceHoursRaw = getArg('grace-hours', '');
+  const graceHours = graceHoursRaw ? parseInt(graceHoursRaw) : undefined;
+
+  console.log(`\n🧼 يوميّة Attachment Cleanup${dryRun ? ' (DRY RUN)' : ''}\n`);
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { cleanupOrphanAttachments } = await import('../server/services/workroomHygiene.js');
+
+  const result = await cleanupOrphanAttachments({
+    dryRun,
+    graceHours,
+  });
+
+  if (result.skipped) {
+    console.log(`⚠️ Skipped: ${result.reason}`);
+    process.exit(0);
+  }
+
+  console.log('✅ Attachment cleanup complete');
+  console.log(`   scanned: ${result.scanned || 0}`);
+  console.log(`   orphan candidates: ${result.orphanCandidates || 0}`);
+  console.log(`   deleted: ${result.deleted || 0}`);
+  console.log(`   skipped: ${result.skipped || 0}`);
+  console.log(`   failed: ${result.failed || 0}`);
+  console.log(`   graceHours: ${result.graceHours || 0}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Attachment cleanup failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/compact-counters.js`
 
 ```javascript
@@ -20106,6 +20623,135 @@ async function main() {
 
 main().catch(err => {
   console.error('\n❌ Predictive signal retention failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/compact-queue.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/compact-queue.js — Queue Compaction CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/compact-queue.js [--dry-run] [--status=completed]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const dryRun = process.argv.includes('--dry-run');
+  const status = getArg('status', '');
+
+  console.log(`\n🧹 يوميّة Queue Compaction${dryRun ? ' (DRY RUN)' : ''}\n`);
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { compactQueue } = await import('../server/services/queueCompaction.js');
+
+  const result = await compactQueue({
+    dryRun,
+    status: status || undefined,
+  });
+
+  if (result.skipped) {
+    console.log(`⚠️ Skipped: ${result.reason}`);
+    process.exit(0);
+  }
+
+  console.log('✅ Queue compaction complete');
+  console.log(`   archived: ${result.archive?.archived || 0}`);
+  console.log(`   archive scanned: ${result.archive?.scanned || 0}`);
+  console.log(`   idempotency cleaned: ${result.idempotency?.cleaned || 0}`);
+  console.log(`   slow jobs: ${result.slowJobs?.count || 0}`);
+  console.log(`   duration: ${result.durationMs || 0}ms\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Queue compaction failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/compact-workrooms.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/compact-workrooms.js — Workroom Hygiene CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/compact-workrooms.js [--jobId=job_x]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const jobId = getArg('jobId', '');
+
+  console.log('\n🧹 يوميّة Workroom Hygiene\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { compactWorkroom, compactAllWorkrooms } = await import('../server/services/workroomHygiene.js');
+
+  const result = jobId
+    ? await compactWorkroom(jobId)
+    : await compactAllWorkrooms();
+
+  if (result.skipped) {
+    console.log(`⚠️ Skipped: ${result.reason}`);
+    process.exit(0);
+  }
+
+  console.log('✅ Workroom compaction complete');
+
+  if (jobId) {
+    console.log(`   jobId: ${jobId}`);
+    console.log(`   receipts removed: ${result.receipts?.removed || 0}`);
+    console.log(`   pins removed: ${result.pins?.removed || 0}`);
+    console.log(`   checklist removed: ${result.checklist?.removed || 0}`);
+  } else {
+    console.log(`   scanned: ${result.scanned || 0}`);
+    console.log(`   compacted: ${result.compacted || 0}`);
+    console.log(`   failed: ${result.failed || 0}`);
+    console.log(`   duration: ${result.durationMs || 0}ms`);
+  }
+
+  console.log('');
+}
+
+main().catch(err => {
+  console.error('\n❌ Workroom compaction failed:', err.message);
   if (err.stack) console.error(err.stack);
   process.exit(1);
 });
@@ -20570,6 +21216,59 @@ async function main() {
 
 main().catch(err => {
   console.error('❌', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/rebuild-predictive-archive-index.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/rebuild-predictive-archive-index.js — Predictive Archive Index CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/rebuild-predictive-archive-index.js
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🧠 يوميّة Predictive Archive Index Rebuild\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { rebuildPredictiveArchiveIndex, getPredictiveArchiveIndexStats } =
+    await import('../server/services/predictiveArchiveIndex.js');
+
+  const result = await rebuildPredictiveArchiveIndex();
+
+  if (result.skipped) {
+    console.log(`⚠️ Skipped: ${result.reason}`);
+    process.exit(0);
+  }
+
+  const stats = await getPredictiveArchiveIndexStats();
+
+  console.log('✅ Predictive archive index rebuilt');
+  console.log(`   archivedSignals: ${result.archivedSignals || 0}`);
+  console.log(`   scannedArchives: ${result.scannedArchives || 0}`);
+  console.log(`   riskTypes: ${result.riskTypeCount || 0}`);
+  console.log(`   statuses: ${result.statusCount || 0}`);
+  console.log(`   months: ${result.monthCount || 0}`);
+  console.log(`   duration: ${result.durationMs || 0}ms`);
+  console.log(`   status: ${stats.status}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Predictive archive index rebuild failed:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });
 ```
@@ -21068,6 +21767,122 @@ repair().catch(err => {
 
 ---
 
+## `scripts/repair-queue.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/repair-queue.js — Queue Repair CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/repair-queue.js
+// Rebuilds queue summary/location index and verifies result.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🔧 يوميّة Queue Repair\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { repairQueueStorage } = await import('../server/services/queueHealthVerify.js');
+
+  const result = await repairQueueStorage();
+
+  console.log(`Before: ${result.before?.status || 'unknown'}`);
+  console.log(`After:  ${result.after?.status || 'unknown'}`);
+  console.log(`Duration: ${result.durationMs || 0}ms`);
+
+  if (result.summary) {
+    console.log(`Summary locations: ${result.summary.locationCount || 0}`);
+    console.log(`Legacy records: ${result.summary.legacyRecords || 0}`);
+  }
+
+  if (!result.ok) {
+    console.log('\n❌ Queue repair completed with remaining errors');
+    for (const e of result.after?.errors || []) {
+      console.log(`  - ${e}`);
+    }
+    process.exit(1);
+  }
+
+  console.log('\n✅ Queue repair complete\n');
+}
+
+main().catch(err => {
+  console.error('\n❌ Queue repair failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/rollup-trust-snapshots.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/rollup-trust-snapshots.js — Trust Rollup CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/rollup-trust-snapshots.js [--month=YYYY-MM]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const month = getArg('month', '');
+
+  console.log('\n🎯 يوميّة Trust Snapshot Rollup\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { createTrustSnapshotRollup, cleanupOldTrustSnapshots, cleanupOldCalibrationReports } =
+    await import('../server/services/trustSnapshotRollups.js');
+
+  const rollup = await createTrustSnapshotRollup({ month: month || undefined });
+  const snapshots = await cleanupOldTrustSnapshots();
+  const reports = await cleanupOldCalibrationReports();
+
+  if (rollup.skipped) {
+    console.log(`⚠️ Skipped: ${rollup.reason}`);
+    process.exit(0);
+  }
+
+  console.log('✅ Trust rollup complete');
+  console.log(`   month: ${rollup.rollup?.month || month || 'current'}`);
+  console.log(`   snapshots: ${rollup.rollup?.snapshotCount || 0}`);
+  console.log(`   avgScore: ${rollup.rollup?.avgScore || 0}`);
+  console.log(`   old snapshots cleaned: ${snapshots.cleaned || 0}`);
+  console.log(`   old reports cleaned: ${reports.cleaned || 0}\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Trust rollup failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/run-backup-restore-drill.js`
 
 ```javascript
@@ -21351,6 +22166,150 @@ async function main() {
 
 main().catch(err => {
   console.error('\n❌ Readiness check failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/verify-queue.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-queue.js — Queue Health Verify CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-queue.js
+// Exits 1 on errors.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🧪 يوميّة Queue Health Verify\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { verifyQueueHealth } = await import('../server/services/queueHealthVerify.js');
+
+  const result = await verifyQueueHealth({ fullScan: true });
+
+  console.log(`Status: ${result.status}`);
+  console.log(`Parsed records: ${result.details?.parsedRecords || 0}`);
+  console.log(`Warnings: ${(result.warnings || []).length}`);
+  console.log(`Errors: ${(result.errors || []).length}`);
+  console.log(`Duration: ${result.durationMs || 0}ms\n`);
+
+  if (result.warnings && result.warnings.length > 0) {
+    console.log('Warnings:');
+    for (const w of result.warnings.slice(0, 20)) {
+      console.log(`  ⚠️ ${w}`);
+    }
+    console.log('');
+  }
+
+  if (result.errors && result.errors.length > 0) {
+    console.log('Errors:');
+    for (const e of result.errors.slice(0, 20)) {
+      console.log(`  ❌ ${e}`);
+    }
+    console.log('');
+    process.exit(1);
+  }
+
+  console.log('✅ Queue verify complete\n');
+}
+
+main().catch(err => {
+  console.error('\n❌ Queue verify failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/verify-workroom-indexes.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-workroom-indexes.js — Workroom Search Verify CLI (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-workroom-indexes.js [--jobId=job_x] [--repair]
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const jobId = getArg('jobId', '');
+  const repair = process.argv.includes('--repair');
+
+  console.log('\n🔎 يوميّة Workroom Search Index Verify\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const {
+    verifyWorkroomSearchIndex,
+    verifyAllWorkroomSearchIndexes,
+    repairWorkroomSearchIndex,
+  } = await import('../server/services/workroomIndexHealth.js');
+
+  let result;
+
+  if (jobId && repair) {
+    result = await repairWorkroomSearchIndex(jobId);
+    console.log(`Repair jobId: ${jobId}`);
+    console.log(`Before: ${result.before?.status || 'unknown'}`);
+    console.log(`After:  ${result.after?.status || 'unknown'}`);
+    if (!result.ok) process.exit(1);
+    console.log('\n✅ Repair complete\n');
+    return;
+  }
+
+  if (jobId) {
+    result = await verifyWorkroomSearchIndex(jobId);
+    console.log(`jobId: ${jobId}`);
+    console.log(`status: ${result.status}`);
+    console.log(`messages: ${result.messageCount || 0}`);
+    console.log(`tokens: ${result.tokenCount || 0}`);
+    console.log(`warnings: ${(result.warnings || []).length}`);
+    console.log(`errors: ${(result.errors || []).length}\n`);
+
+    if (result.errors && result.errors.length > 0) process.exit(1);
+    return;
+  }
+
+  result = await verifyAllWorkroomSearchIndexes();
+
+  console.log(`Total: ${result.total || 0}`);
+  console.log(`Healthy: ${result.healthy || 0}`);
+  console.log(`Warnings: ${result.warnings || 0}`);
+  console.log(`Failed: ${result.failed || 0}\n`);
+
+  if (!result.ok) process.exit(1);
+}
+
+main().catch(err => {
+  console.error('\n❌ Workroom index verify failed:', err.message);
   if (err.stack) console.error(err.stack);
   process.exit(1);
 });

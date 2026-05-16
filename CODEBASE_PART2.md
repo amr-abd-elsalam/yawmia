@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.50.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-15T22:38:35.859Z
-> Files in this part: 95
+# يوميّة (Yawmia) v0.51.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-16T02:31:29.307Z
+> Files in this part: 105
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -10,94 +10,104 @@
 5. `server/services/adminDecisionAnalytics.js`
 6. `server/services/alertDeliveryHistory.js`
 7. `server/services/analytics.js`
-8. `server/services/applications.js`
-9. `server/services/arabicNormalizer.js`
-10. `server/services/attendance.js`
-11. `server/services/auditLog.js`
-12. `server/services/auditLogIndex.js`
-13. `server/services/auditLogRetention.js`
-14. `server/services/auditLogSearch.js`
-15. `server/services/auth.js`
-16. `server/services/availabilityAd.js`
-17. `server/services/availabilityWindow.js`
-18. `server/services/backupRestoreDrill.js`
-19. `server/services/backupScheduler.js`
-20. `server/services/cache.js`
-21. `server/services/cacheDebouncer.js`
-22. `server/services/channels/sms.js`
-23. `server/services/channels/whatsapp.js`
-24. `server/services/contentFilter.js`
-25. `server/services/counterCompaction.js`
-26. `server/services/csvExportProgress.js`
-27. `server/services/database.js`
-28. `server/services/directOffer.js`
-29. `server/services/directOfferAnalytics.js`
-30. `server/services/directOfferCounters.js`
-31. `server/services/errorAggregator.js`
-32. `server/services/eventBus.js`
-33. `server/services/eventReplayBuffer.js`
-34. `server/services/exportRegistry.js`
-35. `server/services/favorites.js`
-36. `server/services/financialExport.js`
-37. `server/services/geo.js`
-38. `server/services/imageStore.js`
-39. `server/services/incidentTimeline.js`
-40. `server/services/indexHealth.js`
-41. `server/services/instanceMode.js`
-42. `server/services/instantMatch.js`
-43. `server/services/jobAlerts.js`
-44. `server/services/jobMatcher.js`
-45. `server/services/jobs.js`
-46. `server/services/liveFeed.js`
-47. `server/services/logWriter.js`
-48. `server/services/logger.js`
-49. `server/services/maintenanceMode.js`
-50. `server/services/messages.js`
-51. `server/services/messaging.js`
-52. `server/services/metricsRollups.js`
-53. `server/services/migration.js`
-54. `server/services/monitor.js`
-55. `server/services/notificationActions.js`
-56. `server/services/notificationMessenger.js`
-57. `server/services/notifications.js`
-58. `server/services/offerAbuseDetector.js`
-59. `server/services/opsQueue.js`
-60. `server/services/payments.js`
-61. `server/services/predictiveAbuse.js`
-62. `server/services/predictiveSignalRetention.js`
-63. `server/services/presenceService.js`
-64. `server/services/processLock.js`
-65. `server/services/productionReadiness.js`
-66. `server/services/profileCompleteness.js`
-67. `server/services/profileTasks.js`
-68. `server/services/queryIndex.js`
-69. `server/services/queueWorkers.js`
-70. `server/services/ratings.js`
-71. `server/services/reports.js`
-72. `server/services/resourceLock.js`
-73. `server/services/sanitizer.js`
-74. `server/services/scheduledAbuseDetection.js`
-75. `server/services/schedulerRegistry.js`
-76. `server/services/searchIndex.js`
-77. `server/services/sessions.js`
-78. `server/services/snoozeReminders.js`
-79. `server/services/sseManager.js`
-80. `server/services/trust.js`
-81. `server/services/trustAnalytics.js`
-82. `server/services/trustCalibration.js`
-83. `server/services/trustScoreV2.js`
-84. `server/services/users.js`
-85. `server/services/validators.js`
-86. `server/services/verification.js`
-87. `server/services/webpush.js`
-88. `server/services/workerDiscovery.js`
-89. `server/services/workroom.js`
-90. `server/services/workroomAttachments.js`
-91. `server/services/workroomChecklist.js`
-92. `server/services/workroomPins.js`
-93. `server/services/workroomReceipts.js`
-94. `server/services/workroomSearch.js`
-95. `server/services/workroomTemplateMetrics.js`
+8. `server/services/applicationStatus.js`
+9. `server/services/applications.js`
+10. `server/services/arabicNormalizer.js`
+11. `server/services/attendance.js`
+12. `server/services/auditLog.js`
+13. `server/services/auditLogIndex.js`
+14. `server/services/auditLogRetention.js`
+15. `server/services/auditLogSearch.js`
+16. `server/services/auth.js`
+17. `server/services/availabilityAd.js`
+18. `server/services/availabilityWindow.js`
+19. `server/services/backupRestoreDrill.js`
+20. `server/services/backupScheduler.js`
+21. `server/services/cache.js`
+22. `server/services/cacheDebouncer.js`
+23. `server/services/channels/sms.js`
+24. `server/services/channels/whatsapp.js`
+25. `server/services/contentFilter.js`
+26. `server/services/counterCompaction.js`
+27. `server/services/csvExportProgress.js`
+28. `server/services/database.js`
+29. `server/services/directOffer.js`
+30. `server/services/directOfferAnalytics.js`
+31. `server/services/directOfferCounters.js`
+32. `server/services/errorAggregator.js`
+33. `server/services/eventBus.js`
+34. `server/services/eventReplayBuffer.js`
+35. `server/services/exportRegistry.js`
+36. `server/services/favorites.js`
+37. `server/services/financialExport.js`
+38. `server/services/geo.js`
+39. `server/services/imageStore.js`
+40. `server/services/incidentTimeline.js`
+41. `server/services/indexHealth.js`
+42. `server/services/instanceMode.js`
+43. `server/services/instantMatch.js`
+44. `server/services/jobAlerts.js`
+45. `server/services/jobMatcher.js`
+46. `server/services/jobs.js`
+47. `server/services/liveFeed.js`
+48. `server/services/logWriter.js`
+49. `server/services/logger.js`
+50. `server/services/maintenanceMode.js`
+51. `server/services/messages.js`
+52. `server/services/messaging.js`
+53. `server/services/metricsRollups.js`
+54. `server/services/migration.js`
+55. `server/services/monitor.js`
+56. `server/services/notificationActions.js`
+57. `server/services/notificationMessenger.js`
+58. `server/services/notifications.js`
+59. `server/services/offerAbuseDetector.js`
+60. `server/services/opsQueue.js`
+61. `server/services/payments.js`
+62. `server/services/predictiveAbuse.js`
+63. `server/services/predictiveArchiveIndex.js`
+64. `server/services/predictiveSignalRetention.js`
+65. `server/services/presenceService.js`
+66. `server/services/processLock.js`
+67. `server/services/productionReadiness.js`
+68. `server/services/profileCompleteness.js`
+69. `server/services/profileTasks.js`
+70. `server/services/queryIndex.js`
+71. `server/services/queueCompaction.js`
+72. `server/services/queueHealthVerify.js`
+73. `server/services/queueStorageIndex.js`
+74. `server/services/queueWorkers.js`
+75. `server/services/ratings.js`
+76. `server/services/reports.js`
+77. `server/services/resourceLock.js`
+78. `server/services/sanitizer.js`
+79. `server/services/scaleHygiene.js`
+80. `server/services/scheduledAbuseDetection.js`
+81. `server/services/schedulerRegistry.js`
+82. `server/services/schedulerRunHistory.js`
+83. `server/services/searchIndex.js`
+84. `server/services/sessions.js`
+85. `server/services/snoozeReminders.js`
+86. `server/services/sseManager.js`
+87. `server/services/trust.js`
+88. `server/services/trustAnalytics.js`
+89. `server/services/trustCalibration.js`
+90. `server/services/trustScoreV2.js`
+91. `server/services/trustSnapshotRollups.js`
+92. `server/services/users.js`
+93. `server/services/validators.js`
+94. `server/services/verification.js`
+95. `server/services/webpush.js`
+96. `server/services/workerDiscovery.js`
+97. `server/services/workroom.js`
+98. `server/services/workroomAttachments.js`
+99. `server/services/workroomChecklist.js`
+100. `server/services/workroomHygiene.js`
+101. `server/services/workroomIndexHealth.js`
+102. `server/services/workroomPins.js`
+103. `server/services/workroomReceipts.js`
+104. `server/services/workroomSearch.js`
+105. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -3167,6 +3177,75 @@ function emptyPlatformAnalytics() {
 
 ---
 
+## `server/services/applicationStatus.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/applicationStatus.js — Application Status Helpers (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Centralized lifecycle helpers.
+// Fixes accepted-equivalent semantics without migrating old records.
+// ═══════════════════════════════════════════════════════════════
+
+const ACCEPTED_EQUIVALENT_STATUSES = new Set([
+  'accepted',
+  'worker_confirmed',
+]);
+
+const PENDING_STATUSES = new Set([
+  'pending',
+]);
+
+const TERMINAL_STATUSES = new Set([
+  'rejected',
+  'withdrawn',
+  'worker_declined',
+]);
+
+/**
+ * Accepted-equivalent means the worker is allowed to participate in the job flow:
+ * - attendance
+ * - messaging
+ * - workroom
+ * - payment dispute access
+ * - rating eligibility
+ *
+ * @param {string} status
+ * @returns {boolean}
+ */
+export function isAcceptedApplicationStatus(status) {
+  return ACCEPTED_EQUIVALENT_STATUSES.has(status);
+}
+
+/**
+ * Pending means the employer has not responded yet.
+ *
+ * @param {string} status
+ * @returns {boolean}
+ */
+export function isPendingApplicationStatus(status) {
+  return PENDING_STATUSES.has(status);
+}
+
+/**
+ * Terminal statuses no longer represent active participation.
+ *
+ * @param {string} status
+ * @returns {boolean}
+ */
+export function isTerminalApplicationStatus(status) {
+  return TERMINAL_STATUSES.has(status);
+}
+
+export const _testHelpers = {
+  ACCEPTED_EQUIVALENT_STATUSES,
+  PENDING_STATUSES,
+  TERMINAL_STATUSES,
+};
+```
+
+---
+
 ## `server/services/applications.js`
 
 ```javascript
@@ -3735,6 +3814,7 @@ import {
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const JOB_ATTENDANCE_INDEX = config.DATABASE.indexFiles.jobAttendanceIndex;
 const WORKER_ATTENDANCE_INDEX = config.DATABASE.indexFiles.workerAttendanceIndex;
@@ -3815,7 +3895,7 @@ export function checkIn(jobId, workerId, coords = {}) {
   // 3. Worker is accepted on this job
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
-  const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+  const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
   if (!accepted) {
     return { ok: false, error: 'أنت مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
   }
@@ -4042,7 +4122,7 @@ export function reportNoShow(jobId, workerId, reportedBy) {
   // 4. Worker is accepted on the job
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
-  const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+  const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
   if (!accepted) {
     return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
   }
@@ -4139,7 +4219,7 @@ export function employerCheckIn(jobId, workerId, employerId) {
     // 5. Worker is accepted on this job
     const { listByJob: listApps } = await import('./applications.js');
     const apps = await listApps(jobId);
-    const accepted = apps.find(a => a.workerId === workerId && a.status === 'accepted');
+    const accepted = apps.find(a => a.workerId === workerId && isAcceptedApplicationStatus(a.status));
     if (!accepted) {
       return { ok: false, error: 'العامل مش مقبول في هذه الفرصة', code: 'NOT_ACCEPTED_WORKER' };
     }
@@ -4372,7 +4452,7 @@ export async function autoDetectNoShows() {
     if (now < jobCutoffTime) continue;
     try {
       const apps = await listAppsByJob(job.id);
-      const acceptedWorkers = apps.filter(a => a.status === 'accepted');
+      const acceptedWorkers = apps.filter(a => isAcceptedApplicationStatus(a.status));
 
       for (const app of acceptedWorkers) {
         // Check if worker has any record today
@@ -4516,7 +4596,7 @@ export async function countActions() {
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import config from '../../config.js';
 import {
@@ -5094,6 +5174,267 @@ export async function markAuditIndexStale(reason) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Phase 55 — Audit Index Hygiene V2
+// ═══════════════════════════════════════════════════════════════
+
+async function walkTokenIndexFiles() {
+  const root = join(indexRoot(), 'by-token');
+  const results = [];
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+        results.push(full);
+      }
+    }
+  }
+
+  await walk(root);
+  return results;
+}
+
+/**
+ * Phase 55: token index hygiene stats.
+ * Measures token file count, total size, largest token files.
+ */
+export async function getAuditIndexHygieneStats(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, tokenIndex: { enabled: false } };
+  }
+
+  const files = await walkTokenIndexFiles();
+
+  let totalSizeBytes = 0;
+  let totalIds = 0;
+  const largestTokenFiles = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const filePath = files[i];
+    try {
+      const st = await stat(filePath);
+      totalSizeBytes += st.size;
+
+      const data = await readIndexFile(filePath);
+      const idsCount = Array.isArray(data.ids) ? data.ids.length : 0;
+      totalIds += idsCount;
+
+      largestTokenFiles.push({
+        path: filePath.replace((process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath) + '/', ''),
+        sizeBytes: st.size,
+        sizeKB: Math.round((st.size / 1024) * 10) / 10,
+        idsCount,
+      });
+    } catch (_) {
+      // Skip unreadable token file — verify/compact can handle later.
+    }
+
+    if ((i + 1) % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  largestTokenFiles.sort((a, b) => b.sizeBytes - a.sizeBytes);
+
+  const warningKB = config.SCALE_HYGIENE?.fileSizeWarningKB || 1024;
+  const criticalKB = config.SCALE_HYGIENE?.fileSizeCriticalKB || 4096;
+
+  const warnings = [];
+  for (const f of largestTokenFiles.slice(0, 20)) {
+    if (f.sizeKB >= criticalKB) {
+      warnings.push({ level: 'critical', type: 'audit_token_file_size', ...f });
+    } else if (f.sizeKB >= warningKB) {
+      warnings.push({ level: 'warning', type: 'audit_token_file_size', ...f });
+    }
+  }
+
+  return {
+    enabled: true,
+    tokenIndex: {
+      enabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+      fileCount: files.length,
+      totalSizeBytes,
+      totalSizeKB: Math.round((totalSizeBytes / 1024) * 10) / 10,
+      totalIds,
+      largestTokenFiles: largestTokenFiles.slice(0, options.limit || 20),
+    },
+    warnings,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Phase 55: compact token index files.
+ * Removes duplicate IDs and IDs whose raw audit record is missing.
+ * Search correctness remains protected by final record re-read/filtering.
+ */
+export async function compactAuditTokenIndex(options = {}) {
+  if (!isEnabled()) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const started = Date.now();
+  const dryRun = !!options.dryRun;
+  const maxFiles = Math.max(1, parseInt(options.maxFiles) || 100000);
+
+  const files = await walkTokenIndexFiles();
+
+  let scannedFiles = 0;
+  let compactedFiles = 0;
+  let removedDuplicateIds = 0;
+  let removedMissingIds = 0;
+  let deletedEmptyFiles = 0;
+  let failedFiles = 0;
+  const failures = [];
+
+  for (let i = 0; i < files.length && scannedFiles < maxFiles; i++) {
+    const filePath = files[i];
+    scannedFiles++;
+
+    try {
+      const data = await readIndexFile(filePath);
+      const original = Array.isArray(data.ids) ? data.ids : [];
+
+      const seen = new Set();
+      const deduped = [];
+      for (const id of original) {
+        if (seen.has(id)) {
+          removedDuplicateIds++;
+          continue;
+        }
+        seen.add(id);
+        deduped.push(id);
+      }
+
+      const existing = [];
+      for (const id of deduped) {
+        const rec = await readJSON(getRecordPath('audit', id));
+        if (rec) existing.push(id);
+        else removedMissingIds++;
+      }
+
+      const changed = existing.length !== original.length;
+
+      if (!dryRun && changed) {
+        if (existing.length === 0) {
+          await unlink(filePath).catch(() => {});
+          deletedEmptyFiles++;
+        } else {
+          await writeIndexFile(filePath, existing);
+        }
+        compactedFiles++;
+      }
+    } catch (err) {
+      failedFiles++;
+      failures.push({ filePath, error: err.message });
+    }
+
+    if (scannedFiles % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: failedFiles === 0,
+    scannedFiles,
+    compactedFiles,
+    removedDuplicateIds,
+    removedMissingIds,
+    deletedEmptyFiles,
+    failedFiles,
+    failures: failures.slice(0, 20),
+    dryRun,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  try {
+    eventBus.emit('audit_index:token_compaction_completed', result);
+  } catch (_) {}
+
+  return result;
+}
+
+function slowAuditQueryFilePath(iso = new Date().toISOString()) {
+  const month = iso.slice(0, 7);
+  const base = join(process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath, 'metrics/scale-hygiene/audit-slow-queries');
+  return join(base, `${month}.json`);
+}
+
+/**
+ * Phase 55: record slow audit query or candidate-cap fallback telemetry.
+ */
+export async function recordSlowAuditQuery(entry = {}) {
+  if (!config.SCALE_HYGIENE?.enabled || !config.SCALE_HYGIENE?.slowQueryLogEnabled) return null;
+
+  const now = new Date().toISOString();
+  const filePath = slowAuditQueryFilePath(now);
+
+  return withLock(`audit-slow-query:${now.slice(0, 7)}`, async () => {
+    const data = (await readJSON(filePath).catch(() => null)) || {
+      month: now.slice(0, 7),
+      entries: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    data.entries = Array.isArray(data.entries) ? data.entries : [];
+    data.entries.push({
+      id: `asq_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      durationMs: entry.durationMs || 0,
+      indexed: !!entry.indexed,
+      fallbackUsed: !!entry.fallbackUsed,
+      fallbackReason: entry.fallbackReason || null,
+      candidateCount: entry.candidateCount || null,
+      resultCount: entry.resultCount || 0,
+      filters: entry.filters || {},
+      createdAt: now,
+    });
+
+    while (data.entries.length > 1000) {
+      data.entries.shift();
+    }
+
+    data.updatedAt = now;
+    await atomicWrite(filePath, data);
+
+    return data.entries[data.entries.length - 1];
+  });
+}
+
+/**
+ * Phase 55: list slow audit query telemetry.
+ */
+export async function getSlowAuditQueries(options = {}) {
+  const month = options.month || new Date().toISOString().slice(0, 7);
+  const filePath = slowAuditQueryFilePath(`${month}-01T00:00:00.000Z`);
+  const data = await readJSON(filePath).catch(() => null);
+
+  const entries = data && Array.isArray(data.entries) ? data.entries : [];
+  entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 50));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    month,
+    entries: entries.slice(offset, offset + limit),
+    total: entries.length,
+    limit,
+    offset,
+  };
+}
+
 // ── EventBus Integration ─────────────────────────────────────
 // Registered when this module is imported at startup/search.
 // Phase 50 hotfix: guard globally because tests may import this module with
@@ -5378,6 +5719,48 @@ function csvRow(fields) {
  * @returns {Promise<{ entries: object[], total: number, nextCursor: string|null, hasMore: boolean }>}
  */
 export async function searchActions(options = {}) {
+  const started = Date.now();
+  let telemetry = {
+    indexed: false,
+    fallbackUsed: false,
+    fallbackReason: null,
+    candidateCount: null,
+    resultCount: 0,
+    filters: {
+      q: options.q || null,
+      action: options.action || null,
+      adminId: options.adminId || null,
+      targetType: options.targetType || null,
+      from: options.from || null,
+      to: options.to || null,
+    },
+  };
+
+  async function maybeRecordTelemetry(result) {
+    const durationMs = Date.now() - started;
+    const slowMs = config.SCALE_HYGIENE?.auditSlowQueryMs || 1000;
+    const shouldRecord =
+      config.SCALE_HYGIENE?.enabled &&
+      config.SCALE_HYGIENE?.slowQueryLogEnabled &&
+      (
+        durationMs >= slowMs ||
+        telemetry.fallbackReason === 'candidate_cap_exceeded'
+      );
+
+    if (!shouldRecord) return;
+
+    try {
+      const { recordSlowAuditQuery } = await import('./auditLogIndex.js');
+      await recordSlowAuditQuery({
+        ...telemetry,
+        durationMs,
+        resultCount: result && typeof result.total === 'number' ? result.total : 0,
+      });
+    } catch (_) {
+      // Telemetry failure must never break audit search.
+    }
+  }
+
   // Phase 50: indexed-first path with safe full-scan fallback.
   if (config.AUDIT_INDEX && config.AUDIT_INDEX.enabled) {
     try {
@@ -5385,14 +5768,23 @@ export async function searchActions(options = {}) {
       const indexedResult = await searchAuditIndex(options);
 
       if (indexedResult && !indexedResult.fallbackRequired) {
-        return indexedResult;
+        telemetry.indexed = true;
+        telemetry.fallbackUsed = false;
+        const result = indexedResult;
+        await maybeRecordTelemetry(result);
+        return result;
       }
+
+      telemetry.fallbackReason = indexedResult && indexedResult.reason;
+      telemetry.candidateCount = indexedResult && indexedResult.candidateCount !== undefined
+        ? indexedResult.candidateCount
+        : null;
 
       if (!config.AUDIT_INDEX.fallbackToFullScan) {
         logger.warn('auditLogSearch: audit index requested fallback but fallback disabled', {
           reason: indexedResult && indexedResult.reason,
         });
-        return {
+        const result = {
           entries: [],
           total: 0,
           nextCursor: null,
@@ -5402,20 +5794,32 @@ export async function searchActions(options = {}) {
           fallbackUsed: false,
           indexError: indexedResult && indexedResult.reason,
         };
+        await maybeRecordTelemetry(result);
+        return result;
       }
 
       logger.warn('auditLogSearch: falling back to full scan', {
         reason: indexedResult && indexedResult.reason,
       });
+
+      telemetry.fallbackUsed = true;
       const fallback = await fullScanSearchActions(options);
-      return { ...fallback, indexed: false, fallbackUsed: true };
+      const result = { ...fallback, indexed: false, fallbackUsed: true };
+      await maybeRecordTelemetry(result);
+      return result;
     } catch (err) {
       logger.warn('auditLogSearch: indexed path failed, falling back', { error: err.message });
+      telemetry.fallbackUsed = true;
+      telemetry.fallbackReason = 'indexed_path_failed';
+
       if (config.AUDIT_INDEX.fallbackToFullScan) {
         const fallback = await fullScanSearchActions(options);
-        return { ...fallback, indexed: false, fallbackUsed: true };
+        const result = { ...fallback, indexed: false, fallbackUsed: true };
+        await maybeRecordTelemetry(result);
+        return result;
       }
-      return {
+
+      const result = {
         entries: [],
         total: 0,
         nextCursor: null,
@@ -5425,11 +5829,14 @@ export async function searchActions(options = {}) {
         fallbackUsed: false,
         indexError: err.message,
       };
+      await maybeRecordTelemetry(result);
+      return result;
     }
   }
 
-  const result = await fullScanSearchActions(options);
-  return { ...result, indexed: false, fallbackUsed: false };
+  const result = { ...(await fullScanSearchActions(options)), indexed: false, fallbackUsed: false };
+  await maybeRecordTelemetry(result);
+  return result;
 }
 
 /**
@@ -15428,6 +15835,7 @@ import config from '../../config.js';
 import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus, isPendingApplicationStatus } from './applicationStatus.js';
 
 const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
 
@@ -16883,7 +17291,7 @@ function cfg() {
   return config.MAINTENANCE_MODE || {};
 }
 
-function isFeatureEnabled() {
+export function isFeatureEnabled() {
   return !!cfg().enabled || process.env.MAINTENANCE_MODE_ENABLED === 'true';
 }
 
@@ -17071,6 +17479,7 @@ import {
 import { eventBus } from './eventBus.js';
 import { sanitizeText } from './sanitizer.js';
 import { logger } from './logger.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const MESSAGE_JOB_INDEX = config.DATABASE.indexFiles.messageJobIndex;
 const MESSAGE_USER_INDEX = config.DATABASE.indexFiles.messageUserIndex;
@@ -17127,7 +17536,7 @@ export async function canMessage(jobId, userId) {
     if (config.MESSAGES.onlyAfterAcceptance) {
       const { listByJob: listApps } = await import('./applications.js');
       const apps = await listApps(jobId);
-      const accepted = apps.find(a => a.workerId === userId && a.status === 'accepted');
+      const accepted = apps.find(a => a.workerId === userId && isAcceptedApplicationStatus(a.status));
       if (!accepted) {
         return { allowed: false, error: 'أنت مش مشارك في هذه الفرصة', code: 'NOT_INVOLVED' };
       }
@@ -17331,7 +17740,7 @@ export async function broadcastMessage(jobId, employerId, text) {
   const { listByJob: listApps } = await import('./applications.js');
   const apps = await listApps(jobId);
   const workerIds = apps
-    .filter(a => a.status === 'accepted')
+    .filter(a => isAcceptedApplicationStatus(a.status))
     .map(a => a.workerId);
 
   if (workerIds.length === 0) {
@@ -18574,6 +18983,25 @@ const builtInMigrations = [
       // initDatabase() creates configured dirs before migrations run.
       // No heavy scan is performed here by design.
       logger.info('Migration v14: Phase 54 production ops directories registered (locks, scheduler, ops rollups, incidents, restore drills)');
+    },
+  },
+  {
+    version: 15,
+    name: 'Phase 55: File-Based Scale Hygiene + Scheduler Consolidation',
+    up: async () => {
+      // Phase 55 registers additive scale-hygiene structures:
+      //   - segmented queue directories
+      //   - queue archive
+      //   - scheduler run history
+      //   - workroom hygiene metrics
+      //   - trust snapshot rollups
+      //   - predictive archive indexes
+      //   - scale hygiene metrics
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy queue/audit/workroom/trust scan is performed here by design.
+      // All Phase 55 structures are repairable/rebuildable by scripts or queue jobs.
+      logger.info('Migration v15: Phase 55 scale hygiene directories registered (queue, workroom, trust, predictive archives, scheduler history)');
     },
   },
 ];
@@ -20747,6 +21175,15 @@ import {
   getCollectionPath,
   listJSON,
 } from './database.js';
+import {
+  writeQueueRecord,
+  readQueueRecord,
+  deleteQueueRecord,
+  moveQueueRecord,
+  listQueueRecords,
+  readQueueSummary,
+  rebuildQueueSummary,
+} from './queueStorageIndex.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
@@ -20784,8 +21221,14 @@ function parseMs(iso) {
 export function getQueuePaths() {
   return {
     base: getCollectionPath('ops_queue'),
+    pending: getCollectionPath('queue_pending'),
+    running: getCollectionPath('queue_running'),
+    completed: getCollectionPath('queue_completed'),
+    failed: getCollectionPath('queue_failed'),
+    cancelled: getCollectionPath('queue_cancelled'),
     idempotency: getCollectionPath('ops_queue_idempotency'),
     deadLetter: getCollectionPath('ops_queue_dead_letter'),
+    archive: getCollectionPath('queue_archive'),
   };
 }
 
@@ -20935,7 +21378,7 @@ export async function enqueueJob(params = {}) {
       }
 
       const job = buildInitialJob(params);
-      await atomicWrite(queuePath(job.id), job);
+      await writeQueueRecord(job);
 
       const ttlHours = config.OPS_QUEUE?.idempotencyTtlHours || 24;
       await atomicWrite(idempotencyPath(keyHash), {
@@ -20975,11 +21418,7 @@ export async function enqueueJob(params = {}) {
  */
 export async function getJob(jobId) {
   if (!jobId || typeof jobId !== 'string') return null;
-
-  const active = await readJSON(queuePath(jobId));
-  if (active) return active;
-
-  return await readJSON(deadLetterPath(jobId));
+  return await readQueueRecord(jobId);
 }
 
 /**
@@ -20991,11 +21430,12 @@ export async function listJobs(options = {}) {
   }
 
   const includeDeadLetter = options.deadLetter === true || options.status === 'dead-letter';
-  const dir = includeDeadLetter
-    ? getCollectionPath('ops_queue_dead_letter')
-    : getCollectionPath('ops_queue');
 
-  let jobs = await listJSON(dir);
+  let jobs = await listQueueRecords({
+    ...options,
+    deadLetter: includeDeadLetter,
+    includeDeadLetter,
+  });
   jobs = jobs.filter(j => j && j.id && j.id.startsWith('q_'));
 
   if (options.status) jobs = jobs.filter(j => j.status === options.status);
@@ -21033,7 +21473,7 @@ export async function claimNextJobs(options = {}) {
 
   await recoverStaleRunningJobs().catch(() => {});
 
-  const all = await listJSON(getCollectionPath('ops_queue'));
+  const all = await listQueueRecords({ status: 'pending', maxMonths: 2 });
   const due = all
     .filter(j => j && j.id && j.status === 'pending' && !j.cancelRequested && isDue(j))
     .sort((a, b) =>
@@ -21049,7 +21489,7 @@ export async function claimNextJobs(options = {}) {
     if (claimed.length >= limit) break;
 
     const claimedJob = await withLock(`queue-job:${candidate.id}`, async () => {
-      const fresh = await readJSON(queuePath(candidate.id));
+      const fresh = await readQueueRecord(candidate.id);
       if (!fresh || fresh.status !== 'pending' || fresh.cancelRequested || !isDue(fresh)) return null;
 
       const now = nowIso();
@@ -21062,7 +21502,7 @@ export async function claimNextJobs(options = {}) {
       fresh.updatedAt = now;
       fresh.lastError = null;
 
-      await atomicWrite(queuePath(fresh.id), fresh);
+      await writeQueueRecord(fresh);
 
       eventBus.emit('ops_queue:job_started', {
         jobId: fresh.id,
@@ -21086,7 +21526,7 @@ export async function claimNextJobs(options = {}) {
  */
 export async function completeJob(jobId, result = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     const now = nowIso();
@@ -21098,7 +21538,7 @@ export async function completeJob(jobId, result = {}) {
     job.updatedAt = now;
     job.lastError = null;
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_completed', {
       jobId: job.id,
@@ -21115,7 +21555,7 @@ export async function completeJob(jobId, result = {}) {
  */
 export async function failJob(jobId, error, options = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     const retryable = options.retryable !== false;
@@ -21130,14 +21570,14 @@ export async function failJob(jobId, error, options = {}) {
     const exhausted = (job.attempts || 0) >= (job.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5);
 
     if (!retryable || exhausted) {
-      await atomicWrite(queuePath(job.id), job);
+      await writeQueueRecord(job);
       return await moveToDeadLetter(job.id, retryable ? 'MAX_ATTEMPTS_EXHAUSTED' : 'PERMANENT_FAILURE');
     }
 
     job.status = 'pending';
     job.nextRunAt = calculateNextRunAt(job.attempts, job.backoffMs);
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_failed', {
       jobId: job.id,
@@ -21157,7 +21597,7 @@ export async function failJob(jobId, error, options = {}) {
  */
 export async function cancelJob(jobId, reason = 'cancelled') {
   return withLock(`queue-job:${jobId}`, async () => {
-    const job = await readJSON(queuePath(jobId));
+    const job = await readQueueRecord(jobId);
     if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
 
     if (job.status === 'completed' || job.status === 'dead-letter') {
@@ -21173,7 +21613,7 @@ export async function cancelJob(jobId, reason = 'cancelled') {
     job.lockedBy = null;
     job.lastError = reason || null;
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     eventBus.emit('ops_queue:job_cancelled', {
       jobId: job.id,
@@ -21191,8 +21631,8 @@ export async function cancelJob(jobId, reason = 'cancelled') {
  */
 export async function retryJob(jobId, options = {}) {
   return withLock(`queue-job:${jobId}`, async () => {
-    let job = await readJSON(queuePath(jobId));
-    let fromDeadLetter = false;
+    let job = await readQueueRecord(jobId);
+    let fromDeadLetter = job && job.status === 'dead-letter';
 
     if (!job) {
       job = await readJSON(deadLetterPath(jobId));
@@ -21219,7 +21659,7 @@ export async function retryJob(jobId, options = {}) {
       job.attempts = 0;
     }
 
-    await atomicWrite(queuePath(job.id), job);
+    await writeQueueRecord(job);
 
     if (wasDeadLetter) {
       await deleteJSON(deadLetterPath(job.id)).catch(() => {});
@@ -21240,19 +21680,24 @@ export async function retryJob(jobId, options = {}) {
  * Move exhausted/permanent-failure job to dead-letter queue.
  */
 export async function moveToDeadLetter(jobId, reason = 'dead-letter') {
-  const job = await readJSON(queuePath(jobId));
-  if (!job) return { ok: false, error: 'JOB_NOT_FOUND' };
+  const existing = await readQueueRecord(jobId);
+  if (!existing) return { ok: false, error: 'JOB_NOT_FOUND' };
 
   const now = nowIso();
-  job.status = 'dead-letter';
-  job.deadLetteredAt = now;
-  job.updatedAt = now;
-  job.leaseUntil = null;
-  job.lockedBy = null;
-  job.lastError = job.lastError || reason;
+  const job = {
+    ...existing,
+    status: 'dead-letter',
+    deadLetteredAt: now,
+    updatedAt: now,
+    leaseUntil: null,
+    lockedBy: null,
+    lastError: existing.lastError || reason,
+  };
 
-  await atomicWrite(queuePath(job.id), job);
-  await atomicWrite(deadLetterPath(job.id), job);
+  await writeQueueRecord(job);
+
+  // Legacy mirror for backward compatibility with older DLQ tooling.
+  await atomicWrite(deadLetterPath(job.id), job).catch(() => {});
 
   eventBus.emit('ops_queue:job_dead_lettered', {
     jobId: job.id,
@@ -21271,7 +21716,7 @@ export async function moveToDeadLetter(jobId, reason = 'dead-letter') {
 export async function recoverStaleRunningJobs() {
   if (!isEnabled()) return 0;
 
-  const jobs = await listJSON(getCollectionPath('ops_queue'));
+  const jobs = await listQueueRecords({ status: 'running', maxMonths: 2 });
   let recovered = 0;
 
   for (const job of jobs) {
@@ -21279,7 +21724,7 @@ export async function recoverStaleRunningJobs() {
     if (!isLeaseExpired(job)) continue;
 
     await withLock(`queue-job:${job.id}`, async () => {
-      const fresh = await readJSON(queuePath(job.id));
+      const fresh = await readQueueRecord(job.id);
       if (!fresh || fresh.status !== 'running' || !isLeaseExpired(fresh)) return;
 
       if ((fresh.attempts || 0) >= (fresh.maxAttempts || config.OPS_QUEUE?.maxAttempts || 5)) {
@@ -21291,7 +21736,7 @@ export async function recoverStaleRunningJobs() {
         fresh.nextRunAt = calculateNextRunAt(fresh.attempts || 1, fresh.backoffMs);
         fresh.lastError = 'Recovered stale running job';
         fresh.updatedAt = nowIso();
-        await atomicWrite(queuePath(fresh.id), fresh);
+        await writeQueueRecord(fresh);
 
         eventBus.emit('ops_queue:job_recovered', {
           jobId: fresh.id,
@@ -21324,7 +21769,7 @@ export async function cleanupOldJobs() {
 
   let cleaned = 0;
 
-  const activeJobs = await listJSON(getCollectionPath('ops_queue'));
+  const activeJobs = await listQueueRecords({ includeDeadLetter: false, maxMonths: 120 });
   for (const job of activeJobs) {
     if (!job || !job.id) continue;
 
@@ -21341,15 +21786,16 @@ export async function cleanupOldJobs() {
       parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff;
 
     if (completedOld || failedOld || activeDeadLetterOld) {
-      await deleteJSON(queuePath(job.id)).catch(() => {});
+      await deleteQueueRecord(job).catch(() => {});
       cleaned++;
     }
   }
 
-  const deadJobs = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+  const deadJobs = await listQueueRecords({ deadLetter: true, status: 'dead-letter', maxMonths: 120 });
   for (const job of deadJobs) {
     if (!job || !job.id) continue;
     if (parseMs(job.deadLetteredAt || job.updatedAt) < dlqCutoff) {
+      await deleteQueueRecord(job).catch(() => {});
       await deleteJSON(deadLetterPath(job.id)).catch(() => {});
       cleaned++;
     }
@@ -21366,8 +21812,58 @@ export async function getQueueStats() {
     return { enabled: false };
   }
 
-  const jobs = await listJSON(getCollectionPath('ops_queue'));
-  const dead = await listJSON(getCollectionPath('ops_queue_dead_letter'));
+  // Phase 55: prefer cheap summary/index stats.
+  try {
+    let summary = await readQueueSummary();
+
+    // If summary has never been built/updated, rebuild once lazily.
+    const hasAnyLocation = summary.locations && Object.keys(summary.locations).length > 0;
+    const hasAnyCount = Object.values(summary.byStatus || {}).some(v => Number(v) > 0);
+
+    if (!hasAnyLocation && !hasAnyCount) {
+      summary = await rebuildQueueSummary();
+    }
+
+    if (!summary.stale) {
+      const byStatus = {
+        pending: summary.byStatus?.pending || 0,
+        running: summary.byStatus?.running || 0,
+        completed: summary.byStatus?.completed || 0,
+        failed: summary.byStatus?.failed || 0,
+        'dead-letter': summary.byStatus?.['dead-letter'] || 0,
+        cancelled: summary.byStatus?.cancelled || 0,
+      };
+
+      return {
+        enabled: true,
+        byStatus,
+        byType: summary.byType || {},
+        totalActiveRecords:
+          byStatus.pending +
+          byStatus.running +
+          byStatus.completed +
+          byStatus.failed +
+          byStatus.cancelled,
+        deadLetter: byStatus['dead-letter'],
+        summary: {
+          lastRebuiltAt: summary.lastRebuiltAt || null,
+          lastUpdatedAt: summary.lastUpdatedAt || null,
+          stale: !!summary.stale,
+          legacyRecords: summary.legacyRecords || 0,
+          locationCount: Object.keys(summary.locations || {}).length,
+        },
+        workerEnabled: !!config.OPS_QUEUE.workerEnabled,
+        workerConcurrency: config.OPS_QUEUE.workerConcurrency,
+        scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
+      };
+    }
+  } catch (err) {
+    logger.warn('opsQueue: summary stats failed, falling back to scan', { error: err.message });
+  }
+
+  // Safe fallback: full scan.
+  const jobs = await listQueueRecords({ includeDeadLetter: false, maxMonths: 120 });
+  const dead = await listQueueRecords({ deadLetter: true, status: 'dead-letter', maxMonths: 120 });
 
   const byStatus = {
     pending: 0,
@@ -21386,7 +21882,6 @@ export async function getQueueStats() {
     byType[job.type] = (byType[job.type] || 0) + 1;
   }
 
-  // Dead-letter dir is the reliable DLQ count.
   byStatus['dead-letter'] = dead.filter(j => j && j.id).length;
 
   return {
@@ -21395,6 +21890,10 @@ export async function getQueueStats() {
     byType,
     totalActiveRecords: jobs.filter(j => j && j.id).length,
     deadLetter: byStatus['dead-letter'],
+    summary: {
+      stale: true,
+      fallbackUsed: true,
+    },
     workerEnabled: !!config.OPS_QUEUE.workerEnabled,
     workerConcurrency: config.OPS_QUEUE.workerConcurrency,
     scanIntervalMs: config.OPS_QUEUE.scanIntervalMs,
@@ -21429,6 +21928,7 @@ import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath,
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { withLock } from './resourceLock.js';
+import { isAcceptedApplicationStatus } from './applicationStatus.js';
 
 const JOB_PAYMENTS_INDEX = config.DATABASE.indexFiles.jobPaymentsIndex;
 
@@ -21658,7 +22158,7 @@ export async function disputePayment(paymentId, userId, reason) {
     // Check if user is an accepted worker on this job
     const { listByJob: listAppsByJob } = await import('./applications.js');
     const apps = await listAppsByJob(payment.jobId);
-    isInvolved = apps.some(a => a.workerId === userId && a.status === 'accepted');
+    isInvolved = apps.some(a => a.workerId === userId && isAcceptedApplicationStatus(a.status));
   }
 
   if (!isInvolved) {
@@ -23088,6 +23588,359 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/predictiveArchiveIndex.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/predictiveArchiveIndex.js — Predictive Archive Index (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Indexes archived predictive signals by riskType/status/month.
+// Archives remain source of truth; index is rebuildable.
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function isEnabled() {
+  return !!(config.PREDICTIVE_ARCHIVE_INDEX && config.PREDICTIVE_ARCHIVE_INDEX.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function safeSegment(value) {
+  return String(value || 'unknown')
+    .toLowerCase()
+    .replace(/[\\/]/g, '_')
+    .replace(/\.\./g, '_')
+    .replace(/[^\p{L}\p{N}_\-:.@]+/gu, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 120) || 'unknown';
+}
+
+function indexBasePath() {
+  return getCollectionPath('predictive_archive_indexes');
+}
+
+function indexFile(kind, key) {
+  return join(indexBasePath(), `by-${kind}`, `${safeSegment(key)}.json`);
+}
+
+function metaPath() {
+  return join(indexBasePath(), 'meta.json');
+}
+
+function signalRef(signal, archiveMonth) {
+  return {
+    signalId: signal.id,
+    riskType: signal.riskType || null,
+    status: signal.status || null,
+    severity: signal.severity || null,
+    entityType: signal.entityType || null,
+    entityId: signal.entityId || null,
+    relatedUserId: signal.relatedUserId || null,
+    archiveMonth,
+    archivedAt: signal.archivedAt || null,
+    createdAt: signal.createdAt || null,
+    updatedAt: signal.updatedAt || null,
+  };
+}
+
+async function readIndexList(filePath) {
+  const data = await readJSON(filePath);
+  if (!data || !Array.isArray(data.refs)) {
+    return { refs: [], updatedAt: null };
+  }
+  return data;
+}
+
+async function writeIndexList(filePath, refs) {
+  const unique = new Map();
+  for (const ref of refs || []) {
+    if (ref && ref.signalId) unique.set(`${ref.archiveMonth}:${ref.signalId}`, ref);
+  }
+
+  await atomicWrite(filePath, {
+    refs: Array.from(unique.values()),
+    updatedAt: nowIso(),
+  });
+}
+
+async function appendIndex(kind, key, ref) {
+  if (!key || !ref || !ref.signalId) return;
+  const filePath = indexFile(kind, key);
+  const data = await readIndexList(filePath);
+  data.refs.push(ref);
+  await writeIndexList(filePath, data.refs);
+}
+
+async function listArchiveFiles() {
+  const dir = getCollectionPath('predictive_signal_archives');
+  let files = [];
+  try {
+    files = await readdir(dir);
+  } catch (_) {
+    return [];
+  }
+
+  return files
+    .filter(f => /^\d{4}-\d{2}\.json$/.test(f))
+    .map(f => join(dir, f));
+}
+
+/**
+ * Update archive index for a single archived signal.
+ */
+export async function updatePredictiveArchiveIndexForSignal(signal) {
+  if (!isEnabled()) return { indexed: false, disabled: true };
+  if (!signal || !signal.id) return { indexed: false, error: 'invalid signal' };
+
+  const archiveMonth = signal.archivedAt
+    ? signal.archivedAt.slice(0, 7)
+    : (signal.updatedAt || signal.createdAt || nowIso()).slice(0, 7);
+
+  const ref = signalRef(signal, archiveMonth);
+
+  await appendIndex('risk-type', signal.riskType || 'unknown', ref);
+  await appendIndex('status', signal.status || 'unknown', ref);
+  await appendIndex('month', archiveMonth, ref);
+
+  return { indexed: true, ref };
+}
+
+/**
+ * Rebuild full archive index from archive files.
+ */
+export async function rebuildPredictiveArchiveIndex(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const started = Date.now();
+  const archiveFiles = await listArchiveFiles();
+
+  const byRiskType = new Map();
+  const byStatus = new Map();
+  const byMonth = new Map();
+
+  let archivedSignals = 0;
+  let scannedArchives = 0;
+
+  for (let i = 0; i < archiveFiles.length; i++) {
+    const filePath = archiveFiles[i];
+    const archive = await readJSON(filePath).catch(() => null);
+    if (!archive || !archive.entries) continue;
+
+    scannedArchives++;
+    const archiveMonth = archive.month || filePath.split('/').pop().replace('.json', '');
+
+    for (const signal of Object.values(archive.entries || {})) {
+      if (!signal || !signal.id) continue;
+      archivedSignals++;
+
+      const ref = signalRef(signal, archiveMonth);
+
+      const rt = signal.riskType || 'unknown';
+      const st = signal.status || 'unknown';
+
+      if (!byRiskType.has(rt)) byRiskType.set(rt, []);
+      if (!byStatus.has(st)) byStatus.set(st, []);
+      if (!byMonth.has(archiveMonth)) byMonth.set(archiveMonth, []);
+
+      byRiskType.get(rt).push(ref);
+      byStatus.get(st).push(ref);
+      byMonth.get(archiveMonth).push(ref);
+    }
+
+    if ((i + 1) % 20 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  for (const [key, refs] of byRiskType) {
+    await writeIndexList(indexFile('risk-type', key), refs);
+  }
+
+  for (const [key, refs] of byStatus) {
+    await writeIndexList(indexFile('status', key), refs);
+  }
+
+  for (const [key, refs] of byMonth) {
+    await writeIndexList(indexFile('month', key), refs);
+  }
+
+  const meta = {
+    version: 1,
+    rebuiltAt: nowIso(),
+    scannedArchives,
+    archivedSignals,
+    riskTypeCount: byRiskType.size,
+    statusCount: byStatus.size,
+    monthCount: byMonth.size,
+    stale: false,
+  };
+
+  await atomicWrite(metaPath(), meta);
+
+  eventBus.emit('predictive_archive_index:rebuilt', {
+    archivedSignals,
+    scannedArchives,
+    timestamp: meta.rebuiltAt,
+  });
+
+  return {
+    ok: true,
+    ...meta,
+    durationMs: Date.now() - started,
+  };
+}
+
+async function loadSignalFromArchive(ref) {
+  if (!ref || !ref.signalId || !ref.archiveMonth) return null;
+  const archive = await readJSON(getRecordPath('predictive_signal_archives', ref.archiveMonth)).catch(() => null);
+  return archive?.entries?.[ref.signalId] || null;
+}
+
+async function fallbackArchiveScan(options = {}) {
+  const archiveFiles = await listArchiveFiles();
+  const rows = [];
+
+  for (const filePath of archiveFiles) {
+    const archive = await readJSON(filePath).catch(() => null);
+    if (!archive || !archive.entries) continue;
+
+    for (const signal of Object.values(archive.entries || {})) {
+      if (!signal || !signal.id) continue;
+      if (options.riskType && signal.riskType !== options.riskType) continue;
+      if (options.status && signal.status !== options.status) continue;
+      if (options.month && (archive.month || '').slice(0, 7) !== options.month) continue;
+      rows.push(signal);
+    }
+  }
+
+  return rows;
+}
+
+/**
+ * Query predictive archive index.
+ */
+export async function queryPredictiveArchiveIndex(options = {}) {
+  if (!isEnabled()) {
+    const fallback = await fallbackArchiveScan(options);
+    return paginateSignals(fallback, options, { indexed: false, fallbackUsed: true });
+  }
+
+  let refs = null;
+  let indexed = true;
+  let fallbackUsed = false;
+
+  try {
+    if (options.riskType) {
+      refs = (await readIndexList(indexFile('risk-type', options.riskType))).refs;
+    } else if (options.status) {
+      refs = (await readIndexList(indexFile('status', options.status))).refs;
+    } else if (options.month) {
+      refs = (await readIndexList(indexFile('month', options.month))).refs;
+    } else {
+      // No selective filter — use fallback scan to avoid reading every index file.
+      indexed = false;
+      fallbackUsed = true;
+      const fallback = await fallbackArchiveScan(options);
+      return paginateSignals(fallback, options, { indexed, fallbackUsed });
+    }
+
+    if (!refs || refs.length === 0) {
+      return paginateSignals([], options, { indexed, fallbackUsed: false });
+    }
+
+    // Apply additional filters not covered by selected index.
+    refs = refs.filter(ref => {
+      if (options.riskType && ref.riskType !== options.riskType) return false;
+      if (options.status && ref.status !== options.status) return false;
+      if (options.month && ref.archiveMonth !== options.month) return false;
+      return true;
+    });
+
+    const signals = [];
+    for (const ref of refs) {
+      const signal = await loadSignalFromArchive(ref);
+      if (signal) signals.push(signal);
+    }
+
+    return paginateSignals(signals, options, { indexed, fallbackUsed });
+  } catch (err) {
+    logger.warn('predictiveArchiveIndex: query failed, using fallback', { error: err.message });
+    const fallback = await fallbackArchiveScan(options);
+    return paginateSignals(fallback, options, { indexed: false, fallbackUsed: true });
+  }
+}
+
+function paginateSignals(signals, options, meta) {
+  signals.sort((a, b) =>
+    new Date(b.archivedAt || b.updatedAt || b.createdAt || 0) -
+    new Date(a.archivedAt || a.updatedAt || a.createdAt || 0)
+  );
+
+  const total = signals.length;
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 50));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    signals: signals.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+    indexed: !!meta.indexed,
+    fallbackUsed: !!meta.fallbackUsed,
+  };
+}
+
+export async function getPredictiveArchiveIndexStats() {
+  if (!isEnabled()) return { enabled: false };
+
+  const meta = await readJSON(metaPath()).catch(() => null);
+
+  return {
+    enabled: true,
+    status: meta && !meta.stale ? 'healthy' : 'missing_or_stale',
+    rebuiltAt: meta?.rebuiltAt || null,
+    scannedArchives: meta?.scannedArchives || 0,
+    archivedSignals: meta?.archivedSignals || 0,
+    riskTypeCount: meta?.riskTypeCount || 0,
+    statusCount: meta?.statusCount || 0,
+    monthCount: meta?.monthCount || 0,
+    stale: !!meta?.stale,
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  safeSegment,
+  indexBasePath,
+  indexFile,
+  metaPath,
+  signalRef,
+  readIndexList,
+  writeIndexList,
+  fallbackArchiveScan,
+  paginateSignals,
+};
+```
+
+---
+
 ## `server/services/predictiveSignalRetention.js`
 
 ```javascript
@@ -24146,6 +24999,63 @@ async function checkCriticalIndexes() {
   return check('critical_indexes', 'pass', 'Critical indexes exist and parse correctly');
 }
 
+async function checkScaleHygiene() {
+  try {
+    const { getScaleHygieneOverview } = await import('./scaleHygiene.js');
+    const overview = await getScaleHygieneOverview();
+
+    if (!overview.enabled) {
+      return check('scale_hygiene', 'warn', 'Scale hygiene overview is disabled');
+    }
+
+    if (overview.status === 'critical') {
+      return check('scale_hygiene', 'fail', 'Scale hygiene has critical warnings', {
+        warningCount: overview.warningCount || 0,
+      });
+    }
+
+    if (overview.status === 'warnings') {
+      return check('scale_hygiene', 'warn', 'Scale hygiene has warnings', {
+        warningCount: overview.warningCount || 0,
+      });
+    }
+
+    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy');
+  } catch (err) {
+    return check('scale_hygiene', 'warn', 'Could not evaluate scale hygiene', { error: err.message });
+  }
+}
+
+async function checkDomainConsistency() {
+  try {
+    const brandDomain = config.BRAND?.domain || '';
+    const origins = config.SECURITY?.allowedOrigins || [];
+    const originDomains = origins
+      .filter(o => typeof o === 'string' && o !== '*')
+      .map(o => {
+        try { return new URL(o).hostname; } catch (_) { return ''; }
+      })
+      .filter(Boolean);
+
+    const mismatches = originDomains.filter(d => brandDomain && d !== brandDomain);
+
+    if (mismatches.length > 0) {
+      return check('domain_consistency', 'warn', 'Brand domain differs from configured allowed origins', {
+        brandDomain,
+        originDomains,
+        mismatches,
+      });
+    }
+
+    return check('domain_consistency', 'pass', 'Domain configuration is consistent', {
+      brandDomain,
+      originDomains,
+    });
+  } catch (err) {
+    return check('domain_consistency', 'warn', 'Could not evaluate domain consistency', { error: err.message });
+  }
+}
+
 async function checkPwaCacheVersion() {
   try {
     const swRaw = await readFile('./frontend/sw.js', 'utf-8');
@@ -24282,10 +25192,19 @@ export async function runReadinessChecks(options = {}) {
 
   checks.push(check('instance_mode', 'pass', 'Instance mode evaluated', getInstanceInfo()));
 
+  // Phase 55 — Scale hygiene + domain consistency.
+  checks.push(await checkScaleHygiene());
+  checks.push(await checkDomainConsistency());
+
   checks.push(await checkPwaCacheVersion());
 
   return checks;
 }
+
+export const _testHelpers = {
+  classifyReadiness,
+  runReadinessChecks,
+};
 
 export async function getProductionReadiness() {
   try {
@@ -25137,6 +26056,1563 @@ if (isEnabled() && config.QUERY_INDEX.incrementalUpdates) {
 
 ---
 
+## `server/services/queueCompaction.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/queueCompaction.js — Queue Hygiene + Archive (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Archives old completed/failed/cancelled/dead-letter queue records,
+// cleans expired idempotency records, and captures slow running job diagnostics.
+//
+// Archive layout:
+//   data/ops_queue/archive/YYYY-MM/completed.json
+//   data/ops_queue/archive/YYYY-MM/failed.json
+//   data/ops_queue/archive/YYYY-MM/cancelled.json
+//   data/ops_queue/archive/YYYY-MM/dead-letter.json
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import {
+  listQueueRecords,
+  deleteQueueRecord,
+  rebuildQueueSummary,
+  readQueueSummary,
+} from './queueStorageIndex.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+let lastQueueCompactionStats = null;
+
+function isEnabled() {
+  return !!(config.QUEUE_HYGIENE && config.QUEUE_HYGIENE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function normalizeArchiveStatus(status) {
+  if (status === 'deadLetter') return 'dead-letter';
+  if (status === 'dead-letter') return 'dead-letter';
+  if (status === 'completed') return 'completed';
+  if (status === 'failed') return 'failed';
+  if (status === 'cancelled') return 'cancelled';
+  return null;
+}
+
+function archiveFilePath(status, iso) {
+  const s = normalizeArchiveStatus(status);
+  if (!s) throw new Error(`Invalid archive status: ${status}`);
+  const archiveRoot = config.QUEUE_HYGIENE?.archivePath || 'ops_queue/archive';
+  return join(BASE_PATH, archiveRoot, monthKey(iso), `${s}.json`);
+}
+
+function archiveBasis(job) {
+  return job.completedAt ||
+    job.deadLetteredAt ||
+    job.cancelledAt ||
+    job.failedAt ||
+    job.updatedAt ||
+    job.createdAt ||
+    nowIso();
+}
+
+function retentionCutoffForStatus(status) {
+  const cfg = config.QUEUE_HYGIENE || {};
+  const now = Date.now();
+
+  if (status === 'completed') {
+    return now - (cfg.archiveCompletedAfterHours || 48) * 60 * 60 * 1000;
+  }
+
+  if (status === 'failed') {
+    return now - (cfg.archiveFailedAfterDays || 14) * 24 * 60 * 60 * 1000;
+  }
+
+  if (status === 'cancelled') {
+    return now - (cfg.archiveCancelledAfterHours || 48) * 60 * 60 * 1000;
+  }
+
+  if (status === 'dead-letter') {
+    return now - (cfg.archiveDeadLetterAfterDays || 90) * 24 * 60 * 60 * 1000;
+  }
+
+  return 0;
+}
+
+function shouldArchive(job) {
+  if (!job || !job.id) return false;
+
+  const status = normalizeArchiveStatus(job.status);
+  if (!status) return false;
+
+  // Never archive active execution states.
+  if (job.status === 'pending' || job.status === 'running') return false;
+
+  const basis = archiveBasis(job);
+  const basisMs = parseMs(basis);
+  if (!basisMs) return false;
+
+  return basisMs < retentionCutoffForStatus(status);
+}
+
+async function appendArchiveRecord(status, job) {
+  const s = normalizeArchiveStatus(status);
+  if (!s || !job || !job.id) return false;
+
+  const basis = archiveBasis(job);
+  const filePath = archiveFilePath(s, basis);
+
+  return withLock(`queue-archive:${s}:${monthKey(basis)}`, async () => {
+    const archive = (await readJSON(filePath)) || {
+      version: 1,
+      status: s,
+      month: monthKey(basis),
+      archivedAt: nowIso(),
+      entries: {},
+    };
+
+    if (!archive.entries) archive.entries = {};
+
+    archive.entries[job.id] = {
+      ...job,
+      archivedAt: nowIso(),
+    };
+
+    archive.updatedAt = nowIso();
+
+    await atomicWrite(filePath, archive);
+    return true;
+  });
+}
+
+/**
+ * Archive old queue records by retention policy.
+ *
+ * @param {{ status?: string, dryRun?: boolean, limit?: number }} options
+ */
+export async function archiveOldQueueRecords(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', archived: 0 };
+
+  const statuses = options.status
+    ? [normalizeArchiveStatus(options.status)].filter(Boolean)
+    : ['completed', 'failed', 'cancelled', 'dead-letter'];
+
+  const limit = Math.max(1, parseInt(options.limit) || 10000);
+  const dryRun = !!options.dryRun;
+
+  let scanned = 0;
+  let archived = 0;
+  let skipped = 0;
+  let failed = 0;
+  const failures = [];
+
+  for (const status of statuses) {
+    const rows = await listQueueRecords({
+      status,
+      deadLetter: status === 'dead-letter',
+      includeDeadLetter: status === 'dead-letter',
+      maxMonths: 120,
+    });
+
+    for (let i = 0; i < rows.length; i++) {
+      if (scanned >= limit) break;
+
+      const job = rows[i];
+      scanned++;
+
+      if (!shouldArchive(job)) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        if (!dryRun) {
+          await appendArchiveRecord(status, job);
+          await deleteQueueRecord(job);
+
+          // Keep legacy DLQ mirror clean if this was a dead-letter job.
+          if (status === 'dead-letter') {
+            await deleteJSON(getRecordPath('ops_queue_dead_letter', job.id)).catch(() => {});
+          }
+        }
+
+        archived++;
+      } catch (err) {
+        failed++;
+        failures.push({ jobId: job.id, status, error: err.message });
+        logger.warn('queueCompaction: archive failed', { jobId: job.id, status, error: err.message });
+      }
+
+      if ((i + 1) % 100 === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+  }
+
+  if (!dryRun && archived > 0) {
+    await rebuildQueueSummary().catch(() => {});
+  }
+
+  return {
+    scanned,
+    archived,
+    skipped,
+    failed,
+    dryRun,
+    failures: failures.slice(0, 20),
+  };
+}
+
+/**
+ * Cleanup expired idempotency records.
+ *
+ * @param {{ dryRun?: boolean, limit?: number }} options
+ */
+export async function cleanupIdempotencyRecords(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', cleaned: 0 };
+
+  if (config.QUEUE_HYGIENE?.idempotencyCleanupEnabled === false) {
+    return { skipped: true, reason: 'idempotency_cleanup_disabled', cleaned: 0 };
+  }
+
+  const dryRun = !!options.dryRun;
+  const limit = Math.max(1, parseInt(options.limit) || 10000);
+  const dir = getCollectionPath('ops_queue_idempotency');
+
+  const records = await listJSON(dir);
+  const now = Date.now();
+
+  let scanned = 0;
+  let cleaned = 0;
+  let skipped = 0;
+  let failed = 0;
+  const failures = [];
+
+  for (const rec of records) {
+    if (scanned >= limit) break;
+    scanned++;
+
+    if (!rec || !rec.keyHash) {
+      skipped++;
+      continue;
+    }
+
+    const expiresMs = parseMs(rec.expiresAt);
+    if (!expiresMs || expiresMs > now) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      if (!dryRun) {
+        await deleteJSON(getRecordPath('ops_queue_idempotency', rec.keyHash));
+      }
+      cleaned++;
+    } catch (err) {
+      failed++;
+      failures.push({ keyHash: rec.keyHash, error: err.message });
+    }
+
+    if (scanned % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  eventBus.emit('queue:idempotency_cleanup_completed', {
+    scanned,
+    cleaned,
+    skipped,
+    failed,
+    timestamp: nowIso(),
+  });
+
+  return {
+    scanned,
+    cleaned,
+    skipped,
+    failed,
+    dryRun,
+    failures: failures.slice(0, 20),
+  };
+}
+
+/**
+ * Capture slow/stale running job diagnostics.
+ *
+ * @param {{ thresholdMs?: number }} options
+ */
+export async function captureSlowJobDiagnostics(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', slowJobs: [] };
+
+  const thresholdMs = options.thresholdMs || config.QUEUE_HYGIENE?.slowJobThresholdMs || (5 * 60 * 1000);
+  const rows = await listQueueRecords({ status: 'running', maxMonths: 2 });
+  const now = Date.now();
+
+  const slowJobs = rows
+    .filter(job => {
+      const startedMs = parseMs(job.startedAt || job.updatedAt);
+      return startedMs > 0 && (now - startedMs) >= thresholdMs;
+    })
+    .map(job => ({
+      jobId: job.id,
+      type: job.type,
+      attempts: job.attempts || 0,
+      lockedBy: job.lockedBy || null,
+      startedAt: job.startedAt || null,
+      updatedAt: job.updatedAt || null,
+      ageMs: now - parseMs(job.startedAt || job.updatedAt),
+      leaseUntil: job.leaseUntil || null,
+    }))
+    .sort((a, b) => b.ageMs - a.ageMs);
+
+  if (slowJobs.length > 0) {
+    const filePath = join(BASE_PATH, 'metrics/scale-hygiene/queue-slow-jobs.json');
+    await atomicWrite(filePath, {
+      generatedAt: nowIso(),
+      thresholdMs,
+      count: slowJobs.length,
+      slowJobs: slowJobs.slice(0, 200),
+    });
+
+    eventBus.emit('queue:slow_jobs_detected', {
+      count: slowJobs.length,
+      thresholdMs,
+      sample: slowJobs.slice(0, 5),
+      timestamp: nowIso(),
+    });
+  }
+
+  return {
+    thresholdMs,
+    slowJobs,
+    count: slowJobs.length,
+  };
+}
+
+/**
+ * Run full queue compaction.
+ */
+export async function compactQueue(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const started = Date.now();
+
+  eventBus.emit('queue:compaction_started', {
+    timestamp: nowIso(),
+  });
+
+  try {
+    const archive = await archiveOldQueueRecords(options);
+    const idempotency = await cleanupIdempotencyRecords(options);
+    const slowJobs = await captureSlowJobDiagnostics(options);
+    const summary = await readQueueSummary().catch(() => null);
+
+    const result = {
+      ok: true,
+      archive,
+      idempotency,
+      slowJobs: {
+        count: slowJobs.count || 0,
+        thresholdMs: slowJobs.thresholdMs || null,
+      },
+      summary: summary ? {
+        byStatus: summary.byStatus || {},
+        legacyRecords: summary.legacyRecords || 0,
+        lastUpdatedAt: summary.lastUpdatedAt || null,
+      } : null,
+      durationMs: Date.now() - started,
+      completedAt: nowIso(),
+    };
+
+    lastQueueCompactionStats = result;
+
+    eventBus.emit('queue:compaction_completed', {
+      archived: archive.archived || 0,
+      idempotencyCleaned: idempotency.cleaned || 0,
+      slowJobs: slowJobs.count || 0,
+      durationMs: result.durationMs,
+      timestamp: result.completedAt,
+    });
+
+    return result;
+  } catch (err) {
+    const failure = {
+      ok: false,
+      error: err.message,
+      durationMs: Date.now() - started,
+      failedAt: nowIso(),
+    };
+
+    lastQueueCompactionStats = failure;
+
+    eventBus.emit('queue:compaction_failed', failure);
+    logger.warn('queueCompaction: compactQueue failed', { error: err.message });
+
+    throw err;
+  }
+}
+
+export function getLastQueueCompactionStats() {
+  return lastQueueCompactionStats;
+}
+
+export async function getQueueArchiveStats() {
+  const archiveRoot = join(BASE_PATH, config.QUEUE_HYGIENE?.archivePath || 'ops_queue/archive');
+
+  const stats = {
+    archiveRoot,
+    months: 0,
+    files: 0,
+    entries: 0,
+    byStatus: {
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+      'dead-letter': 0,
+    },
+  };
+
+  let months = [];
+  try {
+    const entries = await import('node:fs/promises').then(fs => fs.readdir(archiveRoot, { withFileTypes: true }));
+    months = entries.filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name)).map(e => e.name);
+  } catch (_) {
+    return stats;
+  }
+
+  stats.months = months.length;
+
+  for (const month of months) {
+    for (const status of Object.keys(stats.byStatus)) {
+      const filePath = join(archiveRoot, month, `${status}.json`);
+      const data = await readJSON(filePath).catch(() => null);
+      if (!data) continue;
+
+      stats.files++;
+      const count = Object.keys(data.entries || {}).length;
+      stats.entries += count;
+      stats.byStatus[status] += count;
+    }
+  }
+
+  return stats;
+}
+
+export const _testHelpers = {
+  isEnabled,
+  parseMs,
+  monthKey,
+  normalizeArchiveStatus,
+  archiveFilePath,
+  archiveBasis,
+  retentionCutoffForStatus,
+  shouldArchive,
+  appendArchiveRecord,
+};
+```
+
+---
+
+## `server/services/queueHealthVerify.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/queueHealthVerify.js — Queue Verify/Repair (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Verifies queue storage consistency across segmented + legacy layouts.
+// Repair is intentionally conservative: summary rebuild + stale recovery hints.
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  readJSON,
+  getCollectionPath,
+  walkCollectionFiles,
+} from './database.js';
+import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
+import {
+  listQueueRecords,
+  readQueueSummary,
+  rebuildQueueSummary,
+  markQueueSummaryStale,
+  _testHelpers as storageHelpers,
+} from './queueStorageIndex.js';
+import { isLeaseExpired } from './opsQueue.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function expectedStatusFromPath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+
+  const segments = filePath.split(/[\\/]+/);
+
+  if (segments.includes('pending')) return 'pending';
+  if (segments.includes('running')) return 'running';
+  if (segments.includes('completed')) return 'completed';
+  if (segments.includes('failed')) return 'failed';
+  if (segments.includes('cancelled')) return 'cancelled';
+  if (segments.includes('dead-letter')) return 'dead-letter';
+
+  return null;
+}
+
+function isQueueRecord(row) {
+  return row && row.id && String(row.id).startsWith('q_');
+}
+
+async function listSegmentFiles(collectionName) {
+  try {
+    const root = getCollectionPath(collectionName);
+    return await walkCollectionFiles(root, 'q_');
+  } catch (_) {
+    return [];
+  }
+}
+
+async function listAllQueueFiles() {
+  const collections = [
+    'queue_pending',
+    'queue_running',
+    'queue_completed',
+    'queue_failed',
+    'queue_cancelled',
+    'ops_queue',
+    'ops_queue_dead_letter',
+  ];
+
+  const files = [];
+  for (const col of collections) {
+    try {
+      files.push(...await listSegmentFiles(col));
+    } catch (_) {}
+  }
+
+  return files;
+}
+
+/**
+ * Rebuild queue summary index from actual queue files.
+ */
+export async function rebuildQueueSummaryIndex(options = {}) {
+  const result = await rebuildQueueSummary();
+
+  eventBus.emit('queue:summary_rebuilt', {
+    statusCounts: result.byStatus || {},
+    legacyRecords: result.legacyRecords || 0,
+    timestamp: result.lastRebuiltAt || nowIso(),
+  });
+
+  return {
+    ok: true,
+    summary: {
+      byStatus: result.byStatus || {},
+      byType: result.byType || {},
+      legacyRecords: result.legacyRecords || 0,
+      locationCount: Object.keys(result.locations || {}).length,
+      lastRebuiltAt: result.lastRebuiltAt || null,
+    },
+  };
+}
+
+/**
+ * Verify queue storage health.
+ *
+ * @param {{ fullScan?: boolean, sampleSize?: number }} options
+ */
+export async function verifyQueueHealth(options = {}) {
+  const started = Date.now();
+  const warnings = [];
+  const errors = [];
+  const details = {
+    parsedRecords: 0,
+    statusDirMismatches: [],
+    staleRunningJobs: [],
+    orphanIdempotency: [],
+    expiredIdempotency: [],
+    summaryMismatches: [],
+    legacyRecords: 0,
+  };
+
+  // 1. Parse queue files + status-dir consistency.
+  const files = await listAllQueueFiles();
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    let record = null;
+    try {
+      record = await readJSON(file.filePath);
+    } catch (err) {
+      errors.push(`corrupt queue record: ${file.filePath}: ${err.message}`);
+      continue;
+    }
+
+    if (!isQueueRecord(record)) continue;
+
+    details.parsedRecords++;
+
+    const expected = expectedStatusFromPath(file.filePath);
+    if (expected && expected !== record.status) {
+      details.statusDirMismatches.push({
+        jobId: record.id,
+        path: file.filePath.replace(BASE_PATH + '/', ''),
+        expectedStatus: expected,
+        actualStatus: record.status,
+      });
+    }
+
+    if (!expected) {
+      details.legacyRecords++;
+    }
+
+    if (record.status === 'running' && isLeaseExpired(record)) {
+      details.staleRunningJobs.push({
+        jobId: record.id,
+        lockedBy: record.lockedBy || null,
+        leaseUntil: record.leaseUntil || null,
+        updatedAt: record.updatedAt || null,
+      });
+    }
+
+    if ((i + 1) % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  if (details.statusDirMismatches.length > 0) {
+    warnings.push(`status-dir mismatches: ${details.statusDirMismatches.length}`);
+  }
+
+  if (details.staleRunningJobs.length > 0) {
+    warnings.push(`stale running jobs: ${details.staleRunningJobs.length}`);
+  }
+
+  if (details.legacyRecords > 0) {
+    warnings.push(`legacy flat queue records detected: ${details.legacyRecords}`);
+  }
+
+  // 2. Idempotency records.
+  try {
+    const idemDir = getCollectionPath('ops_queue_idempotency');
+    const idemRecords = await import('./database.js').then(db => db.listJSON(idemDir));
+    const now = Date.now();
+
+    for (const rec of idemRecords) {
+      if (!rec || !rec.jobId) continue;
+
+      const job = await import('./opsQueue.js').then(q => q.getJob(rec.jobId)).catch(() => null);
+      if (!job && (!rec.expiresAt || new Date(rec.expiresAt).getTime() > now)) {
+        details.orphanIdempotency.push({
+          keyHash: rec.keyHash || null,
+          jobId: rec.jobId,
+        });
+      }
+
+      if (rec.expiresAt && new Date(rec.expiresAt).getTime() <= now) {
+        details.expiredIdempotency.push({
+          keyHash: rec.keyHash || null,
+          jobId: rec.jobId,
+          expiresAt: rec.expiresAt,
+        });
+      }
+    }
+
+    if (details.orphanIdempotency.length > 0) {
+      warnings.push(`orphan idempotency records: ${details.orphanIdempotency.length}`);
+    }
+
+    if (details.expiredIdempotency.length > 0) {
+      warnings.push(`expired idempotency records: ${details.expiredIdempotency.length}`);
+    }
+  } catch (err) {
+    warnings.push(`idempotency verification failed: ${err.message}`);
+  }
+
+  // 3. Summary consistency.
+  try {
+    const summary = await readQueueSummary();
+
+    const scanRows = await listQueueRecords({ includeDeadLetter: true, maxMonths: 120 });
+    const counts = {
+      pending: 0,
+      running: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+      'dead-letter': 0,
+    };
+
+    for (const job of scanRows) {
+      if (counts[job.status] !== undefined) counts[job.status]++;
+    }
+
+    for (const [status, count] of Object.entries(counts)) {
+      const summaryCount = summary.byStatus?.[status] || 0;
+      if (summaryCount !== count) {
+        details.summaryMismatches.push({
+          status,
+          summaryCount,
+          scanCount: count,
+        });
+      }
+    }
+
+    if (details.summaryMismatches.length > 0) {
+      warnings.push(`summary mismatches: ${details.summaryMismatches.length}`);
+      await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+    }
+  } catch (err) {
+    warnings.push(`summary verification failed: ${err.message}`);
+    await markQueueSummaryStale('verify_summary_failed').catch(() => {});
+  }
+
+  const result = {
+    ok: errors.length === 0,
+    status: errors.length > 0 ? 'failed' : (warnings.length > 0 ? 'warnings' : 'healthy'),
+    warnings,
+    errors,
+    details: {
+      parsedRecords: details.parsedRecords,
+      legacyRecords: details.legacyRecords,
+      statusDirMismatches: details.statusDirMismatches.slice(0, 50),
+      staleRunningJobs: details.staleRunningJobs.slice(0, 50),
+      orphanIdempotency: details.orphanIdempotency.slice(0, 50),
+      expiredIdempotency: details.expiredIdempotency.slice(0, 50),
+      summaryMismatches: details.summaryMismatches,
+    },
+    durationMs: Date.now() - started,
+    checkedAt: nowIso(),
+  };
+
+  eventBus.emit('queue:health_verified', {
+    status: result.status,
+    warningCount: warnings.length,
+    errorCount: errors.length,
+    timestamp: result.checkedAt,
+  });
+
+  return result;
+}
+
+/**
+ * Conservative repair:
+ * - rebuild summary/location index
+ * - reports stale running jobs, but does not mutate them here
+ * - idempotency cleanup is handled by queueCompaction
+ */
+export async function repairQueueStorage(options = {}) {
+  const started = Date.now();
+
+  const before = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+    ok: false,
+    status: 'failed',
+    warnings: [],
+    errors: [err.message],
+  }));
+
+  const summaryResult = await rebuildQueueSummaryIndex(options);
+
+  const after = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+    ok: false,
+    status: 'failed',
+    warnings: [],
+    errors: [err.message],
+  }));
+
+  const result = {
+    ok: after.ok,
+    before: {
+      status: before.status,
+      warnings: before.warnings || [],
+      errors: before.errors || [],
+    },
+    after: {
+      status: after.status,
+      warnings: after.warnings || [],
+      errors: after.errors || [],
+    },
+    summary: summaryResult.summary,
+    durationMs: Date.now() - started,
+    repairedAt: nowIso(),
+  };
+
+  eventBus.emit('queue:repair_completed', {
+    ok: result.ok,
+    beforeStatus: result.before.status,
+    afterStatus: result.after.status,
+    timestamp: result.repairedAt,
+  });
+
+  return result;
+}
+
+export const _testHelpers = {
+  expectedStatusFromPath,
+  isQueueRecord,
+  listSegmentFiles,
+  listAllQueueFiles,
+};
+```
+
+---
+
+## `server/services/queueStorageIndex.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/queueStorageIndex.js — Segmented Queue Storage (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Compatibility layer for durable ops queue records.
+// New writes can go to segmented status/month paths while legacy flat queue
+// records remain readable.
+//
+// Legacy:
+//   data/ops_queue/q_x.json
+//   data/ops_queue/dead-letter/q_x.json
+//
+// Segmented:
+//   data/ops_queue/pending/YYYY-MM/q_x.json
+//   data/ops_queue/running/YYYY-MM/q_x.json
+//   data/ops_queue/completed/YYYY-MM/q_x.json
+//   data/ops_queue/failed/YYYY-MM/q_x.json
+//   data/ops_queue/cancelled/YYYY-MM/q_x.json
+//   data/ops_queue/dead-letter/YYYY-MM/q_x.json
+//
+// Summary:
+//   data/metrics/queue/summary.json
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, stat } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  isValidId,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+const ACTIVE_STATUSES = new Set(['pending', 'running', 'completed', 'failed', 'cancelled']);
+const DEAD_LETTER_STATUS = 'dead-letter';
+
+function cfg() {
+  return config.QUEUE_STORAGE || {};
+}
+
+function isEnabled() {
+  return !!(cfg().enabled && cfg().segmentByStatus);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 7);
+  return d.toISOString().slice(0, 7);
+}
+
+function normalizeStatus(status) {
+  if (status === 'deadLetter') return DEAD_LETTER_STATUS;
+  if (status === DEAD_LETTER_STATUS) return DEAD_LETTER_STATUS;
+  if (ACTIVE_STATUSES.has(status)) return status;
+  return 'pending';
+}
+
+function dirKeyForStatus(status) {
+  const s = normalizeStatus(status);
+  if (s === DEAD_LETTER_STATUS) return 'ops_queue_dead_letter';
+
+  const map = {
+    pending: 'queue_pending',
+    running: 'queue_running',
+    completed: 'queue_completed',
+    failed: 'queue_failed',
+    cancelled: 'queue_cancelled',
+  };
+
+  return map[s] || 'queue_pending';
+}
+
+function statusDirName(status) {
+  const s = normalizeStatus(status);
+  const statusDirs = cfg().statusDirs || {};
+  if (s === DEAD_LETTER_STATUS) return statusDirs.deadLetter || 'dead-letter';
+  return statusDirs[s] || s;
+}
+
+function legacyQueuePath(jobId) {
+  return getRecordPath('ops_queue', jobId);
+}
+
+function legacyDeadLetterPath(jobId) {
+  return getRecordPath('ops_queue_dead_letter', jobId);
+}
+
+function summaryPath() {
+  return join(BASE_PATH, cfg().summaryFile || 'metrics/queue/summary.json');
+}
+
+function makeEmptySummary() {
+  return {
+    version: 1,
+    enabled: isEnabled(),
+    byStatus: {
+      pending: 0,
+      running: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+      'dead-letter': 0,
+    },
+    byType: {},
+    locations: {},
+    legacyRecords: 0,
+    lastRebuiltAt: null,
+    lastUpdatedAt: null,
+    stale: false,
+    staleReason: null,
+  };
+}
+
+function publicSummary(summary) {
+  const empty = makeEmptySummary();
+  const s = summary && typeof summary === 'object' ? summary : empty;
+  return {
+    ...empty,
+    ...s,
+    byStatus: { ...empty.byStatus, ...(s.byStatus || {}) },
+    byType: s.byType || {},
+    locations: s.locations || {},
+  };
+}
+
+function relativeToBase(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  if (filePath.startsWith(BASE_PATH + '/')) return filePath.slice(BASE_PATH.length + 1);
+  return filePath;
+}
+
+function absoluteFromSummaryPath(pathValue) {
+  if (!pathValue || typeof pathValue !== 'string') return null;
+  if (pathValue.startsWith('/')) return pathValue;
+  return join(BASE_PATH, pathValue);
+}
+
+function increment(obj, key, delta) {
+  if (!obj[key]) obj[key] = 0;
+  obj[key] += delta;
+  if (obj[key] < 0) obj[key] = 0;
+}
+
+function decrementType(summary, type) {
+  if (!type) return;
+  if (!summary.byType) summary.byType = {};
+  if (summary.byType[type]) {
+    summary.byType[type]--;
+    if (summary.byType[type] <= 0) delete summary.byType[type];
+  }
+}
+
+function incrementType(summary, type) {
+  if (!type) return;
+  if (!summary.byType) summary.byType = {};
+  summary.byType[type] = (summary.byType[type] || 0) + 1;
+}
+
+/**
+ * Return the segmented path for a queue job/status.
+ *
+ * @param {string} status
+ * @param {string} jobId
+ * @param {string} [createdAt]
+ * @returns {string}
+ */
+export function getQueuePathByStatus(status, jobId, createdAt) {
+  if (!jobId || !isValidId(jobId)) {
+    throw new Error(`Invalid queue job ID: ${jobId}`);
+  }
+
+  const s = normalizeStatus(status);
+  const dirKey = dirKeyForStatus(s);
+
+  if (!isEnabled()) {
+    if (s === DEAD_LETTER_STATUS) return legacyDeadLetterPath(jobId);
+    return legacyQueuePath(jobId);
+  }
+
+  const root = getCollectionPath(dirKey);
+  if (cfg().monthlySharding) {
+    return join(root, monthKey(createdAt), `${jobId}.json`);
+  }
+
+  return join(root, `${jobId}.json`);
+}
+
+/**
+ * Return path for a full job object.
+ *
+ * @param {object} job
+ * @returns {string}
+ */
+export function getQueueRecordPath(job) {
+  if (!job || !job.id) throw new Error('queue job is required');
+  return getQueuePathByStatus(job.status, job.id, job.createdAt || job.updatedAt);
+}
+
+export async function readQueueSummary() {
+  try {
+    const summary = await readJSON(summaryPath());
+    return publicSummary(summary);
+  } catch (_) {
+    return makeEmptySummary();
+  }
+}
+
+async function writeQueueSummary(summary) {
+  const next = publicSummary(summary);
+  next.lastUpdatedAt = nowIso();
+  await atomicWrite(summaryPath(), next);
+  return next;
+}
+
+/**
+ * Update queue summary and location index.
+ * Safe to call repeatedly; if oldStatus===newStatus it refreshes location.
+ */
+export async function updateQueueSummary(job, oldStatus, newStatus) {
+  if (!job || !job.id) return null;
+
+  return withLock('queue-summary', async () => {
+    const summary = await readQueueSummary();
+    const oldS = oldStatus ? normalizeStatus(oldStatus) : null;
+    const newS = newStatus ? normalizeStatus(newStatus) : normalizeStatus(job.status);
+
+    summary.byStatus = summary.byStatus || makeEmptySummary().byStatus;
+    summary.byType = summary.byType || {};
+    summary.locations = summary.locations || {};
+
+    if (oldS && oldS !== newS) {
+      increment(summary.byStatus, oldS, -1);
+      decrementType(summary, job.type);
+    }
+
+    if (!oldS || oldS !== newS) {
+      increment(summary.byStatus, newS, 1);
+      incrementType(summary, job.type);
+    }
+
+    const filePath = getQueuePathByStatus(newS, job.id, job.createdAt || job.updatedAt);
+    summary.locations[job.id] = {
+      jobId: job.id,
+      status: newS,
+      type: job.type || null,
+      path: relativeToBase(filePath),
+      createdAt: job.createdAt || null,
+      updatedAt: job.updatedAt || null,
+    };
+
+    summary.stale = false;
+    summary.staleReason = null;
+
+    const saved = await writeQueueSummary(summary);
+
+    eventBus.emit('ops_queue:summary_updated', {
+      jobId: job.id,
+      oldStatus: oldS,
+      newStatus: newS,
+      timestamp: saved.lastUpdatedAt,
+    });
+
+    return saved;
+  });
+}
+
+/**
+ * Write queue record to current storage layout.
+ * If an existing summary location points to a different path, deletes old copy.
+ *
+ * @param {object} job
+ */
+export async function writeQueueRecord(job) {
+  if (!job || !job.id) throw new Error('queue job is required');
+
+  const newPath = getQueueRecordPath(job);
+  let oldStatus = null;
+  let oldPath = null;
+
+  try {
+    const summary = await readQueueSummary();
+    const loc = summary.locations && summary.locations[job.id];
+    if (loc) {
+      oldStatus = loc.status || null;
+      oldPath = absoluteFromSummaryPath(loc.path);
+    }
+  } catch (_) {
+    // no summary yet
+  }
+
+  await atomicWrite(newPath, job);
+
+  if (oldPath && oldPath !== newPath) {
+    await deleteJSON(oldPath).catch(() => {});
+    eventBus.emit('ops_queue:record_moved', {
+      jobId: job.id,
+      oldStatus,
+      newStatus: job.status,
+      from: relativeToBase(oldPath),
+      to: relativeToBase(newPath),
+      timestamp: nowIso(),
+    });
+  }
+
+  await updateQueueSummary(job, oldStatus, job.status).catch(err => {
+    logger.warn('queueStorageIndex: summary update failed', {
+      jobId: job.id,
+      error: err.message,
+    });
+  });
+
+  return job;
+}
+
+/**
+ * Read queue record by ID.
+ * Order:
+ *   1. summary location
+ *   2. legacy active path
+ *   3. legacy dead-letter path
+ *   4. segmented current/recent paths via bounded scan
+ */
+export async function readQueueRecord(jobId) {
+  if (!jobId || typeof jobId !== 'string' || !isValidId(jobId)) return null;
+
+  // 1. Summary location.
+  try {
+    const summary = await readQueueSummary();
+    const loc = summary.locations && summary.locations[jobId];
+    if (loc && loc.path) {
+      const filePath = absoluteFromSummaryPath(loc.path);
+      const record = await readJSON(filePath);
+      if (record) return record;
+    }
+  } catch (_) {}
+
+  // 2. Legacy active.
+  if (cfg().legacyReadFallback !== false) {
+    const legacy = await readJSON(legacyQueuePath(jobId)).catch(() => null);
+    if (legacy) {
+      eventBus.emit('ops_queue:legacy_record_detected', {
+        jobId,
+        status: legacy.status || null,
+        timestamp: nowIso(),
+      });
+      return legacy;
+    }
+
+    const legacyDlq = await readJSON(legacyDeadLetterPath(jobId)).catch(() => null);
+    if (legacyDlq) {
+      eventBus.emit('ops_queue:legacy_record_detected', {
+        jobId,
+        status: 'dead-letter',
+        timestamp: nowIso(),
+      });
+      return legacyDlq;
+    }
+  }
+
+  // 3. Segmented bounded scan.
+  if (!isEnabled()) return null;
+
+  const statuses = ['pending', 'running', 'completed', 'failed', 'cancelled', DEAD_LETTER_STATUS];
+  const now = new Date();
+  const months = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    months.push(d.toISOString().slice(0, 7));
+  }
+
+  for (const status of statuses) {
+    const dirKey = dirKeyForStatus(status);
+    const root = getCollectionPath(dirKey);
+
+    for (const month of months) {
+      const filePath = cfg().monthlySharding
+        ? join(root, month, `${jobId}.json`)
+        : join(root, `${jobId}.json`);
+
+      const record = await readJSON(filePath).catch(() => null);
+      if (record) {
+        await updateQueueSummary(record, null, record.status).catch(() => {});
+        return record;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Delete queue record from known storage.
+ */
+export async function deleteQueueRecord(jobOrId) {
+  const jobId = typeof jobOrId === 'string' ? jobOrId : jobOrId?.id;
+  if (!jobId || !isValidId(jobId)) return false;
+
+  let deleted = false;
+  let status = typeof jobOrId === 'object' ? normalizeStatus(jobOrId.status) : null;
+  let type = typeof jobOrId === 'object' ? jobOrId.type : null;
+
+  const summary = await readQueueSummary().catch(() => makeEmptySummary());
+  const loc = summary.locations && summary.locations[jobId];
+
+  if (loc && loc.path) {
+    const filePath = absoluteFromSummaryPath(loc.path);
+    deleted = await deleteJSON(filePath).catch(() => false) || deleted;
+    status = status || loc.status;
+    type = type || loc.type;
+  }
+
+  // Legacy cleanup too (best-effort).
+  deleted = await deleteJSON(legacyQueuePath(jobId)).catch(() => false) || deleted;
+  deleted = await deleteJSON(legacyDeadLetterPath(jobId)).catch(() => false) || deleted;
+
+  // Remove from summary.
+  await withLock('queue-summary', async () => {
+    const s = await readQueueSummary();
+    if (s.locations && s.locations[jobId]) {
+      const loc2 = s.locations[jobId];
+      const st = status || loc2.status;
+      const tp = type || loc2.type;
+      if (st) increment(s.byStatus, normalizeStatus(st), -1);
+      if (tp) decrementType(s, tp);
+      delete s.locations[jobId];
+      await writeQueueSummary(s);
+    }
+  }).catch(() => {});
+
+  return deleted;
+}
+
+/**
+ * Move queue record to a new status segment.
+ */
+export async function moveQueueRecord(job, newStatus) {
+  if (!job || !job.id) throw new Error('queue job is required');
+
+  const oldStatus = normalizeStatus(job.status);
+  const nextStatus = normalizeStatus(newStatus);
+
+  const next = {
+    ...job,
+    status: nextStatus,
+    updatedAt: job.updatedAt || nowIso(),
+  };
+
+  const oldPath = await findCurrentPath(job.id, oldStatus).catch(() => null);
+  const newPath = getQueuePathByStatus(nextStatus, next.id, next.createdAt || next.updatedAt);
+
+  await atomicWrite(newPath, next);
+
+  if (oldPath && oldPath !== newPath) {
+    await deleteJSON(oldPath).catch(() => {});
+  }
+
+  await updateQueueSummary(next, oldStatus, nextStatus).catch(() => {});
+
+  eventBus.emit('ops_queue:record_moved', {
+    jobId: next.id,
+    oldStatus,
+    newStatus: nextStatus,
+    from: oldPath ? relativeToBase(oldPath) : null,
+    to: relativeToBase(newPath),
+    timestamp: nowIso(),
+  });
+
+  return next;
+}
+
+async function findCurrentPath(jobId, expectedStatus) {
+  const summary = await readQueueSummary();
+  const loc = summary.locations && summary.locations[jobId];
+  if (loc && loc.path) {
+    const filePath = absoluteFromSummaryPath(loc.path);
+    const exists = await stat(filePath).then(() => true).catch(() => false);
+    if (exists) return filePath;
+  }
+
+  const legacy = legacyQueuePath(jobId);
+  if (await stat(legacy).then(() => true).catch(() => false)) return legacy;
+
+  const legacyDlq = legacyDeadLetterPath(jobId);
+  if (await stat(legacyDlq).then(() => true).catch(() => false)) return legacyDlq;
+
+  if (!isEnabled()) return null;
+
+  const status = normalizeStatus(expectedStatus || 'pending');
+  const root = getCollectionPath(dirKeyForStatus(status));
+
+  if (!cfg().monthlySharding) {
+    const p = join(root, `${jobId}.json`);
+    return await stat(p).then(() => p).catch(() => null);
+  }
+
+  const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+  const months = entries
+    .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+    .map(e => e.name)
+    .sort()
+    .reverse();
+
+  for (const month of months) {
+    const p = join(root, month, `${jobId}.json`);
+    const ok = await stat(p).then(() => true).catch(() => false);
+    if (ok) return p;
+  }
+
+  return null;
+}
+
+async function listSegmentStatus(status, options = {}) {
+  const dirKey = dirKeyForStatus(status);
+
+  if (!isEnabled()) {
+    if (status === DEAD_LETTER_STATUS) return await listJSON(getCollectionPath('ops_queue_dead_letter'));
+    return await listJSON(getCollectionPath('ops_queue'));
+  }
+
+  const root = getCollectionPath(dirKey);
+  const results = [];
+
+  if (cfg().monthlySharding) {
+    const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+    let months = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name)
+      .sort()
+      .reverse();
+
+    if (options.months && Array.isArray(options.months)) {
+      const wanted = new Set(options.months);
+      months = months.filter(m => wanted.has(m));
+    }
+
+    const maxMonths = options.maxMonths || 6;
+    months = months.slice(0, maxMonths);
+
+    for (const month of months) {
+      const dir = join(root, month);
+      const rows = await listJSON(dir).catch(() => []);
+      for (const row of rows) results.push(row);
+    }
+
+    return results;
+  }
+
+  return await listJSON(root).catch(() => []);
+}
+
+/**
+ * List queue records.
+ *
+ * @param {{ status?: string, type?: string, deadLetter?: boolean, limit?: number, offset?: number, maxMonths?: number }} options
+ */
+export async function listQueueRecords(options = {}) {
+  const status = options.deadLetter ? DEAD_LETTER_STATUS : (options.status ? normalizeStatus(options.status) : null);
+
+  let rows = [];
+
+  if (status) {
+    rows = await listSegmentStatus(status, options);
+
+    // Legacy fallback for active mixed layout when requested status is not DLQ.
+    if (cfg().legacyReadFallback !== false && status !== DEAD_LETTER_STATUS) {
+      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      rows.push(...legacyRows.filter(j => j && normalizeStatus(j.status) === status));
+    }
+  } else {
+    const statuses = ['pending', 'running', 'completed', 'failed', 'cancelled'];
+    for (const s of statuses) {
+      rows.push(...await listSegmentStatus(s, options));
+    }
+
+    if (options.includeDeadLetter) {
+      rows.push(...await listSegmentStatus(DEAD_LETTER_STATUS, options));
+    }
+
+    if (cfg().legacyReadFallback !== false) {
+      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      rows.push(...legacyRows);
+    }
+  }
+
+  // Dedupe by ID.
+  const byId = new Map();
+  for (const row of rows) {
+    if (!row || !row.id || !row.id.startsWith('q_')) continue;
+    byId.set(row.id, row);
+  }
+
+  rows = Array.from(byId.values());
+
+  if (options.type) rows = rows.filter(j => j.type === options.type);
+  if (options.createdBy) rows = rows.filter(j => j.createdBy === options.createdBy);
+
+  return rows;
+}
+
+/**
+ * Full rebuild of summary/location index.
+ */
+export async function rebuildQueueSummary() {
+  return withLock('queue-summary', async () => {
+    const summary = makeEmptySummary();
+
+    const statuses = ['pending', 'running', 'completed', 'failed', 'cancelled', DEAD_LETTER_STATUS];
+
+    for (const status of statuses) {
+      const rows = await listSegmentStatus(status, { maxMonths: 120 }).catch(() => []);
+      for (const job of rows) {
+        if (!job || !job.id) continue;
+        const s = normalizeStatus(job.status || status);
+        increment(summary.byStatus, s, 1);
+        incrementType(summary, job.type);
+
+        summary.locations[job.id] = {
+          jobId: job.id,
+          status: s,
+          type: job.type || null,
+          path: relativeToBase(getQueuePathByStatus(s, job.id, job.createdAt || job.updatedAt)),
+          createdAt: job.createdAt || null,
+          updatedAt: job.updatedAt || null,
+        };
+      }
+    }
+
+    // Legacy flat records.
+    if (cfg().legacyReadFallback !== false) {
+      const legacy = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      for (const job of legacy) {
+        if (!job || !job.id || !job.id.startsWith('q_')) continue;
+        if (summary.locations[job.id]) continue;
+
+        const s = normalizeStatus(job.status || 'pending');
+        increment(summary.byStatus, s, 1);
+        incrementType(summary, job.type);
+        summary.legacyRecords++;
+        summary.locations[job.id] = {
+          jobId: job.id,
+          status: s,
+          type: job.type || null,
+          path: relativeToBase(legacyQueuePath(job.id)),
+          createdAt: job.createdAt || null,
+          updatedAt: job.updatedAt || null,
+          legacy: true,
+        };
+      }
+
+      const legacyDlq = await listJSON(getCollectionPath('ops_queue_dead_letter')).catch(() => []);
+      for (const job of legacyDlq) {
+        if (!job || !job.id || !job.id.startsWith('q_')) continue;
+        if (summary.locations[job.id]) continue;
+
+        increment(summary.byStatus, DEAD_LETTER_STATUS, 1);
+        incrementType(summary, job.type);
+        summary.legacyRecords++;
+        summary.locations[job.id] = {
+          jobId: job.id,
+          status: DEAD_LETTER_STATUS,
+          type: job.type || null,
+          path: relativeToBase(legacyDeadLetterPath(job.id)),
+          createdAt: job.createdAt || null,
+          updatedAt: job.updatedAt || null,
+          legacy: true,
+        };
+      }
+    }
+
+    summary.lastRebuiltAt = nowIso();
+    summary.lastUpdatedAt = summary.lastRebuiltAt;
+    summary.stale = false;
+    summary.staleReason = null;
+
+    await atomicWrite(summaryPath(), summary);
+
+    return summary;
+  });
+}
+
+export async function markQueueSummaryStale(reason) {
+  return withLock('queue-summary', async () => {
+    const summary = await readQueueSummary();
+    summary.stale = true;
+    summary.staleReason = reason || 'unknown';
+    summary.lastUpdatedAt = nowIso();
+    await atomicWrite(summaryPath(), summary);
+    return summary;
+  });
+}
+
+export const _testHelpers = {
+  BASE_PATH,
+  isEnabled,
+  monthKey,
+  normalizeStatus,
+  dirKeyForStatus,
+  statusDirName,
+  legacyQueuePath,
+  legacyDeadLetterPath,
+  summaryPath,
+  makeEmptySummary,
+  publicSummary,
+  relativeToBase,
+  absoluteFromSummaryPath,
+  listSegmentStatus,
+};
+```
+
+---
+
 ## `server/services/queueWorkers.js`
 
 ```javascript
@@ -25232,6 +27708,19 @@ function registerBuiltIns() {
   registerJobHandler('trust_calibration_report', handleTrustCalibrationReportJob);
   registerJobHandler('predictive_signal_retention', handlePredictiveSignalRetentionJob);
   registerJobHandler('workroom_search_rebuild', handleWorkroomSearchRebuildJob);
+
+  // Phase 55 — File-Based Scale Hygiene
+  registerJobHandler('queue_compaction', handleQueueCompactionJob);
+  registerJobHandler('queue_verify', handleQueueVerifyJob);
+  registerJobHandler('queue_repair', handleQueueRepairJob);
+  registerJobHandler('workroom_hygiene_compaction', handleWorkroomHygieneCompactionJob);
+  registerJobHandler('workroom_search_verify', handleWorkroomSearchVerifyJob);
+  registerJobHandler('workroom_attachment_cleanup', handleWorkroomAttachmentCleanupJob);
+
+  registerJobHandler('audit_token_compaction', handleAuditTokenCompactionJob);
+  registerJobHandler('trust_snapshot_rollup', handleTrustSnapshotRollupJob);
+  registerJobHandler('predictive_archive_index_rebuild', handlePredictiveArchiveIndexRebuildJob);
+  registerJobHandler('scheduler_history_cleanup', handleSchedulerHistoryCleanupJob);
 }
 
 export async function startQueueWorkers() {
@@ -25789,6 +28278,126 @@ async function handleWorkroomSearchRebuildJob({ payload }) {
   }
 
   return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 55 Built-in handlers — Queue Scale Hygiene
+// ═══════════════════════════════════════════════════════════════
+
+async function handleQueueCompactionJob({ payload }) {
+  const { compactQueue } = await import('./queueCompaction.js');
+  const result = await compactQueue(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error(result?.error || result?.reason || 'QUEUE_COMPACTION_FAILED');
+    err.retryable = result?.skipped ? false : true;
+    throw err;
+  }
+
+  return {
+    archive: result.archive || {},
+    idempotency: result.idempotency || {},
+    slowJobs: result.slowJobs || {},
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleQueueVerifyJob({ payload }) {
+  const { verifyQueueHealth } = await import('./queueHealthVerify.js');
+  const result = await verifyQueueHealth(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error((result?.errors || []).join('; ') || 'QUEUE_VERIFY_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return {
+    status: result.status,
+    warningCount: (result.warnings || []).length,
+    errorCount: (result.errors || []).length,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleQueueRepairJob({ payload }) {
+  const { repairQueueStorage } = await import('./queueHealthVerify.js');
+  const result = await repairQueueStorage(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error((result?.after?.errors || result?.before?.errors || []).join('; ') || 'QUEUE_REPAIR_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return {
+    beforeStatus: result.before?.status || 'unknown',
+    afterStatus: result.after?.status || 'unknown',
+    summary: result.summary || {},
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleWorkroomHygieneCompactionJob({ payload }) {
+  const { compactAllWorkrooms, compactWorkroom } = await import('./workroomHygiene.js');
+
+  if (payload && payload.jobId) {
+    return await compactWorkroom(payload.jobId, payload.options || {});
+  }
+
+  return await compactAllWorkrooms(payload.options || {});
+}
+
+async function handleWorkroomSearchVerifyJob({ payload }) {
+  const { verifyAllWorkroomSearchIndexes, verifyWorkroomSearchIndex, repairWorkroomSearchIndex } = await import('./workroomIndexHealth.js');
+
+  if (payload && payload.jobId && payload.repair) {
+    return await repairWorkroomSearchIndex(payload.jobId);
+  }
+
+  if (payload && payload.jobId) {
+    return await verifyWorkroomSearchIndex(payload.jobId, payload.options || {});
+  }
+
+  const result = await verifyAllWorkroomSearchIndexes(payload.options || {});
+
+  if (!result || result.ok === false) {
+    const err = new Error('WORKROOM_SEARCH_VERIFY_FAILED');
+    err.retryable = false;
+    throw err;
+  }
+
+  return result;
+}
+
+async function handleWorkroomAttachmentCleanupJob({ payload }) {
+  const { cleanupOrphanAttachments } = await import('./workroomHygiene.js');
+  return await cleanupOrphanAttachments(payload.options || {});
+}
+
+async function handleAuditTokenCompactionJob({ payload }) {
+  const { compactAuditTokenIndex } = await import('./auditLogIndex.js');
+  return await compactAuditTokenIndex(payload.options || {});
+}
+
+async function handleTrustSnapshotRollupJob({ payload }) {
+  const { runTrustRetention, createTrustSnapshotRollup } = await import('./trustSnapshotRollups.js');
+
+  if (payload && payload.rollupOnly) {
+    return await createTrustSnapshotRollup(payload.options || {});
+  }
+
+  return await runTrustRetention(payload.options || {});
+}
+
+async function handlePredictiveArchiveIndexRebuildJob({ payload }) {
+  const { rebuildPredictiveArchiveIndex } = await import('./predictiveArchiveIndex.js');
+  return await rebuildPredictiveArchiveIndex(payload.options || {});
+}
+
+async function handleSchedulerHistoryCleanupJob({ payload }) {
+  const { cleanupSchedulerHistory } = await import('./schedulerRunHistory.js');
+  return await cleanupSchedulerHistory(payload.options || {});
 }
 
 export const _testHelpers = {
@@ -26493,6 +29102,138 @@ export function sanitizeFields(obj, keys) {
 
 ---
 
+## `server/services/scaleHygiene.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/scaleHygiene.js — Scale Hygiene Overview (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Aggregates queue/workroom/audit/trust/predictive/scheduler hygiene.
+// Admin-only consumption.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+function isEnabled() {
+  return !!(config.SCALE_HYGIENE && config.SCALE_HYGIENE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function severityRank(level) {
+  return ({ info: 1, warning: 2, medium: 2, high: 3, critical: 4, error: 4 })[level] || 1;
+}
+
+function normalizeWarning(source, warning) {
+  if (!warning) return null;
+  return {
+    source,
+    level: warning.level || warning.status || 'warning',
+    message: warning.message || warning.type || String(warning),
+    details: warning,
+  };
+}
+
+/**
+ * Get unified scale hygiene overview.
+ */
+export async function getScaleHygieneOverview() {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      generatedAt: nowIso(),
+      warnings: [],
+    };
+  }
+
+  const warnings = [];
+
+  const [
+    queueStats,
+    queueArchiveStats,
+    auditHygiene,
+    workroomHygiene,
+    trustRetention,
+    predictiveArchiveIndex,
+    schedulerHistory,
+  ] = await Promise.all([
+    import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
+    import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
+    import('./auditLogIndex.js').then(m => m.getAuditIndexHygieneStats()).catch(err => ({ enabled: false, error: err.message })),
+    import('./workroomHygiene.js').then(m => m.getWorkroomHygieneOverview({ limit: 200 })).catch(err => ({ enabled: false, error: err.message })),
+    import('./trustSnapshotRollups.js').then(m => m.getTrustRetentionStats()).catch(err => ({ enabled: false, error: err.message })),
+    import('./predictiveArchiveIndex.js').then(m => m.getPredictiveArchiveIndexStats()).catch(err => ({ enabled: false, error: err.message })),
+    import('./schedulerRunHistory.js').then(m => m.getSchedulerHistoryStats()).catch(err => ({ enabled: false, error: err.message })),
+  ]);
+
+  if (queueStats.summary && queueStats.summary.stale) {
+    warnings.push({
+      source: 'queue',
+      level: 'warning',
+      message: 'Queue summary is stale',
+      details: queueStats.summary,
+    });
+  }
+
+  if ((queueStats.byStatus?.['dead-letter'] || 0) > 0) {
+    warnings.push({
+      source: 'queue',
+      level: 'warning',
+      message: 'Queue has dead-letter jobs',
+      details: { deadLetter: queueStats.byStatus['dead-letter'] },
+    });
+  }
+
+  for (const w of auditHygiene.warnings || []) {
+    const normalized = normalizeWarning('audit', w);
+    if (normalized) warnings.push(normalized);
+  }
+
+  for (const w of workroomHygiene.warnings || []) {
+    const normalized = normalizeWarning('workroom', w);
+    if (normalized) warnings.push(normalized);
+  }
+
+  if (predictiveArchiveIndex.enabled && predictiveArchiveIndex.status !== 'healthy') {
+    warnings.push({
+      source: 'predictive_archive',
+      level: 'warning',
+      message: 'Predictive archive index is missing or stale',
+      details: predictiveArchiveIndex,
+    });
+  }
+
+  warnings.sort((a, b) => severityRank(b.level) - severityRank(a.level));
+
+  const status = warnings.some(w => severityRank(w.level) >= 4)
+    ? 'critical'
+    : warnings.length > 0
+      ? 'warnings'
+      : 'healthy';
+
+  return {
+    enabled: true,
+    status,
+    generatedAt: nowIso(),
+    queue: {
+      stats: queueStats,
+      archives: queueArchiveStats,
+    },
+    audit: auditHygiene,
+    workrooms: workroomHygiene,
+    trust: trustRetention,
+    predictiveArchive: predictiveArchiveIndex,
+    schedulerHistory,
+    warnings: warnings.slice(0, 100),
+    warningCount: warnings.length,
+  };
+}
+```
+
+---
+
 ## `server/services/scheduledAbuseDetection.js`
 
 ```javascript
@@ -26696,6 +29437,7 @@ import { withLock } from './resourceLock.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
 import { getInstanceId, canRunSchedulers, getInstanceInfo } from './instanceMode.js';
+import { recordSchedulerRun } from './schedulerRunHistory.js';
 
 let registryTimer = null;
 
@@ -26841,6 +29583,71 @@ function defaultDefinitions() {
       payload: { options: { reason: 'scheduled' } },
       enabled: false,
       idempotencyKeyFn: (bucket) => `backup_restore_drill:scheduled:${bucket}`,
+    },
+
+    // Phase 55 — File-Based Scale Hygiene schedulers
+    {
+      name: 'queue_compaction',
+      queueType: 'queue_compaction',
+      intervalMs: config.QUEUE_HYGIENE?.compactIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('queue_compaction'),
+      idempotencyKeyFn: (bucket) => `queue_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_hygiene_compaction',
+      queueType: 'workroom_hygiene_compaction',
+      intervalMs: config.WORKROOM_HYGIENE?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_hygiene_compaction'),
+      idempotencyKeyFn: (bucket) => `workroom_hygiene_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_attachment_cleanup',
+      queueType: 'workroom_attachment_cleanup',
+      intervalMs: config.WORKROOM_HYGIENE?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_attachment_cleanup'),
+      idempotencyKeyFn: (bucket) => `workroom_attachment_cleanup:scheduled:${bucket}`,
+    },
+    {
+      name: 'trust_snapshot_rollup',
+      queueType: 'trust_snapshot_rollup',
+      intervalMs: config.TRUST_RETENTION?.cleanupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('trust_snapshot_rollup'),
+      idempotencyKeyFn: (bucket) => `trust_snapshot_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'predictive_archive_index_rebuild',
+      queueType: 'predictive_archive_index_rebuild',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('predictive_archive_index_rebuild'),
+      idempotencyKeyFn: (bucket) => `predictive_archive_index_rebuild:scheduled:${bucket}`,
+    },
+    {
+      name: 'audit_token_compaction',
+      queueType: 'audit_token_compaction',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('audit_token_compaction'),
+      idempotencyKeyFn: (bucket) => `audit_token_compaction:scheduled:${bucket}`,
+    },
+    {
+      name: 'scheduler_history_cleanup',
+      queueType: 'scheduler_history_cleanup',
+      intervalMs: day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('scheduler_history_cleanup'),
+      idempotencyKeyFn: (bucket) => `scheduler_history_cleanup:scheduled:${bucket}`,
     },
   ];
 }
@@ -27069,6 +29876,18 @@ export async function runSchedulerJobNow(name, options = {}) {
     return { ok: false, code: 'SCHEDULERS_DISABLED_BY_INSTANCE_MODE', instance: getInstanceInfo() };
   }
 
+  if (options.payload) {
+    const payloadBytes = payloadSizeBytes(options.payload);
+    const maxBytes = cfg().maxManualRunPayloadBytes || (64 * 1024);
+    if (payloadBytes > maxBytes) {
+      return {
+        ok: false,
+        code: 'PAYLOAD_TOO_LARGE',
+        error: `Scheduler manual payload exceeds maxManualRunPayloadBytes (${payloadBytes} > ${maxBytes})`,
+      };
+    }
+  }
+
   const definition = definitions.get(name);
   const record = await readJSON(schedulerPath(name)).catch(() => null);
 
@@ -27096,6 +29915,15 @@ export async function runSchedulerJobNow(name, options = {}) {
         failed: true,
       });
 
+      await recordSchedulerRun(name, {
+        status: 'failed',
+        createdBy: options.createdBy || ownerId,
+        startedAt: nowIso(),
+        completedAt: nowIso(),
+        error: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
+        idempotencyKey: enqueue.idempotencyKey,
+      }).catch(() => {});
+
       eventBus.emit('scheduler:job_failed', {
         name,
         error: enqueue.enqueueResult?.error || 'QUEUE_ENQUEUE_FAILED',
@@ -27110,6 +29938,19 @@ export async function runSchedulerJobNow(name, options = {}) {
       lastQueueJobId: enqueue.enqueueResult.job?.id || null,
       lastError: null,
     });
+
+    await recordSchedulerRun(name, {
+      status: enqueue.enqueueResult.deduped ? 'skipped' : 'queued',
+      queueJobId: enqueue.enqueueResult.job?.id || null,
+      createdBy: options.createdBy || ownerId,
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      idempotencyKey: enqueue.idempotencyKey,
+      deduped: !!enqueue.enqueueResult.deduped,
+      metadata: {
+        queueType: record.queueType,
+      },
+    }).catch(() => {});
 
     eventBus.emit('scheduler:job_queued', {
       name,
@@ -27133,6 +29974,14 @@ export async function runSchedulerJobNow(name, options = {}) {
       lastStatus: 'failed',
       lastError: err.message,
       failed: true,
+    }).catch(() => {});
+
+    await recordSchedulerRun(name, {
+      status: 'failed',
+      createdBy: options.createdBy || ownerId,
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      error: err.message,
     }).catch(() => {});
 
     eventBus.emit('scheduler:job_failed', {
@@ -27260,6 +30109,299 @@ export const _testHelpers = {
   payloadSizeBytes,
   getTimer: () => registryTimer,
   clearDefinitions: () => definitions.clear(),
+};
+```
+
+---
+
+## `server/services/schedulerRunHistory.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/schedulerRunHistory.js — Scheduler Run History (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Persistent run history for scheduler registry.
+// Storage:
+//   data/scheduler/history/{jobName}/YYYY-MM.json
+//
+// Current scheduler record remains in data/scheduler/{jobName}.json.
+// History is append-only per month with bounded retention.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { readdir, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  isValidId,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function isEnabled() {
+  return !!(config.SCHEDULER_HISTORY && config.SCHEDULER_HISTORY.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function safeJobName(name) {
+  const raw = String(name || 'unknown');
+  const safe = raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100);
+  return safe || 'unknown';
+}
+
+function historyRoot() {
+  return join(BASE_PATH, config.SCHEDULER_HISTORY?.basePath || 'scheduler/history');
+}
+
+function historyFilePath(name, iso = nowIso()) {
+  const safeName = safeJobName(name);
+  return join(historyRoot(), safeName, `${monthKey(iso)}.json`);
+}
+
+function generateRunId() {
+  return 'schrun_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function sanitizeEntry(entry = {}) {
+  const now = nowIso();
+
+  return {
+    runId: entry.runId || generateRunId(),
+    name: entry.name || 'unknown',
+    queueJobId: entry.queueJobId || null,
+    status: entry.status || 'queued',
+    createdBy: entry.createdBy || 'scheduler',
+    startedAt: entry.startedAt || now,
+    completedAt: entry.completedAt || null,
+    durationMs: Number(entry.durationMs || 0),
+    error: entry.error ? String(entry.error).slice(0, 1000) : null,
+    idempotencyKey: entry.idempotencyKey || null,
+    deduped: !!entry.deduped,
+    metadata: entry.metadata && typeof entry.metadata === 'object'
+      ? JSON.parse(JSON.stringify(entry.metadata))
+      : {},
+  };
+}
+
+/**
+ * Record one scheduler run history entry.
+ *
+ * @param {string} name
+ * @param {object} entry
+ */
+export async function recordSchedulerRun(name, entry = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+  if (!name || !isValidId(safeJobName(name))) {
+    return { ok: false, code: 'INVALID_SCHEDULER_NAME' };
+  }
+
+  const safeName = safeJobName(name);
+  const record = sanitizeEntry({ ...entry, name: safeName });
+  const filePath = historyFilePath(safeName, record.startedAt || nowIso());
+
+  return withLock(`scheduler-history:${safeName}:${monthKey(record.startedAt)}`, async () => {
+    const data = (await readJSON(filePath).catch(() => null)) || {
+      name: safeName,
+      month: monthKey(record.startedAt),
+      runs: [],
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+
+    data.runs = Array.isArray(data.runs) ? data.runs : [];
+    data.runs.push(record);
+
+    const maxRuns = config.SCHEDULER_HISTORY?.maxRunsPerJob || 100;
+    data.runs.sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0));
+    data.runs = data.runs.slice(0, maxRuns);
+
+    data.updatedAt = nowIso();
+
+    await atomicWrite(filePath, data);
+
+    eventBus.emit('scheduler:run_history_recorded', {
+      name: safeName,
+      runId: record.runId,
+      status: record.status,
+      queueJobId: record.queueJobId || null,
+      timestamp: data.updatedAt,
+    });
+
+    return { ok: true, run: record };
+  });
+}
+
+/**
+ * List scheduler run history for one job.
+ *
+ * @param {string} name
+ * @param {{ month?: string, limit?: number, offset?: number }} options
+ */
+export async function listSchedulerRuns(name, options = {}) {
+  if (!isEnabled()) {
+    return { runs: [], total: 0, limit: 20, offset: 0, disabled: true };
+  }
+
+  const safeName = safeJobName(name);
+  const root = join(historyRoot(), safeName);
+
+  let months = [];
+
+  if (options.month) {
+    months = [options.month];
+  } else {
+    try {
+      const files = await readdir(root);
+      months = files
+        .filter(f => /^\d{4}-\d{2}\.json$/.test(f))
+        .map(f => f.replace('.json', ''))
+        .sort()
+        .reverse();
+    } catch (_) {
+      months = [];
+    }
+  }
+
+  const runs = [];
+
+  for (const month of months) {
+    const filePath = join(root, `${month}.json`);
+    const data = await readJSON(filePath).catch(() => null);
+    if (!data || !Array.isArray(data.runs)) continue;
+    runs.push(...data.runs);
+  }
+
+  runs.sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0));
+
+  const total = runs.length;
+  const limit = Math.min(200, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    runs: runs.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Cleanup scheduler history older than retentionDays.
+ */
+export async function cleanupSchedulerHistory(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', cleaned: 0 };
+
+  const retentionDays = options.retentionDays || config.SCHEDULER_HISTORY?.retentionDays || 90;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const root = historyRoot();
+
+  let jobDirs = [];
+  try {
+    const entries = await readdir(root, { withFileTypes: true });
+    jobDirs = entries.filter(e => e.isDirectory()).map(e => e.name);
+  } catch (_) {
+    return { scanned: 0, cleaned: 0, retentionDays };
+  }
+
+  let scanned = 0;
+  let cleaned = 0;
+  let failed = 0;
+
+  for (const jobName of jobDirs) {
+    const dir = join(root, jobName);
+    let files = [];
+
+    try {
+      files = await readdir(dir);
+    } catch (_) {
+      continue;
+    }
+
+    for (const file of files) {
+      if (!/^\d{4}-\d{2}\.json$/.test(file)) continue;
+
+      scanned++;
+      const month = file.replace('.json', '');
+      const monthMs = new Date(`${month}-01T00:00:00.000Z`).getTime();
+
+      if (Number.isFinite(monthMs) && monthMs < cutoffMs) {
+        try {
+          await rm(join(dir, file), { force: true });
+          cleaned++;
+        } catch (_) {
+          failed++;
+        }
+      }
+    }
+  }
+
+  eventBus.emit('scheduler:history_cleanup_completed', {
+    scanned,
+    cleaned,
+    failed,
+    retentionDays,
+    timestamp: nowIso(),
+  });
+
+  return { scanned, cleaned, failed, retentionDays };
+}
+
+export async function getSchedulerHistoryStats() {
+  if (!isEnabled()) return { enabled: false };
+
+  const root = historyRoot();
+
+  let schedulerCount = 0;
+  let fileCount = 0;
+  let runCount = 0;
+
+  try {
+    const jobDirs = await readdir(root, { withFileTypes: true });
+    const dirs = jobDirs.filter(e => e.isDirectory());
+    schedulerCount = dirs.length;
+
+    for (const dirEnt of dirs) {
+      const dir = join(root, dirEnt.name);
+      const files = await readdir(dir).catch(() => []);
+      for (const file of files) {
+        if (!/^\d{4}-\d{2}\.json$/.test(file)) continue;
+        fileCount++;
+        const data = await readJSON(join(dir, file)).catch(() => null);
+        if (data && Array.isArray(data.runs)) runCount += data.runs.length;
+      }
+    }
+  } catch (_) {}
+
+  return {
+    enabled: true,
+    schedulerCount,
+    fileCount,
+    runCount,
+    retentionDays: config.SCHEDULER_HISTORY?.retentionDays || 90,
+    maxRunsPerJob: config.SCHEDULER_HISTORY?.maxRunsPerJob || 100,
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  safeJobName,
+  historyRoot,
+  historyFilePath,
+  generateRunId,
+  sanitizeEntry,
 };
 ```
 
@@ -30271,6 +33413,312 @@ export const _testHelpers = {
   publicComponents,
   safeOutput,
   cache,
+};
+```
+
+---
+
+## `server/services/trustSnapshotRollups.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/trustSnapshotRollups.js — Trust Snapshot Rollups (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Monthly rollups + retention for Trust Score V2 snapshots and calibration reports.
+// Does NOT mutate trust weights.
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function isEnabled() {
+  return !!(config.TRUST_RETENTION && config.TRUST_RETENTION.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function rollupPath(month) {
+  return getRecordPath('trust_rollups', month);
+}
+
+function snapshotRoot() {
+  return getCollectionPath('trust_snapshots');
+}
+
+function reportPath(reportId) {
+  return getRecordPath('trust_calibration', reportId);
+}
+
+function emptyRollup(month) {
+  return {
+    month,
+    snapshotCount: 0,
+    byRole: {},
+    byGrade: {},
+    avgScore: 0,
+    scoreTotal: 0,
+    generatedAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+function addSnapshotToRollup(rollup, snapshot) {
+  rollup.snapshotCount++;
+  rollup.scoreTotal += Number(snapshot.score || 0);
+  rollup.avgScore = rollup.snapshotCount > 0
+    ? Math.round((rollup.scoreTotal / rollup.snapshotCount) * 100) / 100
+    : 0;
+
+  const role = snapshot.role || 'unknown';
+  const grade = snapshot.grade || 'unknown';
+
+  if (!rollup.byRole[role]) {
+    rollup.byRole[role] = { count: 0, scoreTotal: 0, avgScore: 0 };
+  }
+  rollup.byRole[role].count++;
+  rollup.byRole[role].scoreTotal += Number(snapshot.score || 0);
+  rollup.byRole[role].avgScore = Math.round((rollup.byRole[role].scoreTotal / rollup.byRole[role].count) * 100) / 100;
+
+  rollup.byGrade[grade] = (rollup.byGrade[grade] || 0) + 1;
+}
+
+/**
+ * Create monthly rollup for trust snapshots.
+ *
+ * @param {{ month?: string }} options
+ */
+export async function createTrustSnapshotRollup(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+  if (config.TRUST_RETENTION?.rollupEnabled === false) {
+    return { skipped: true, reason: 'rollup_disabled' };
+  }
+
+  const month = options.month || monthKey();
+  const dir = join(snapshotRoot(), month);
+
+  let files = [];
+  try {
+    files = await readdir(dir);
+  } catch (_) {
+    const empty = emptyRollup(month);
+    await atomicWrite(rollupPath(month), empty);
+    return { ok: true, rollup: empty, empty: true };
+  }
+
+  const rollup = emptyRollup(month);
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (!file.startsWith('tsv2_') || !file.endsWith('.json') || file.endsWith('.tmp')) continue;
+
+    const snapshot = await readJSON(join(dir, file)).catch(() => null);
+    if (!snapshot) continue;
+
+    addSnapshotToRollup(rollup, snapshot);
+
+    if ((i + 1) % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  rollup.updatedAt = nowIso();
+
+  await atomicWrite(rollupPath(month), rollup);
+
+  eventBus.emit('trust_retention:rollup_created', {
+    month,
+    snapshotCount: rollup.snapshotCount,
+    avgScore: rollup.avgScore,
+    timestamp: rollup.updatedAt,
+  });
+
+  return { ok: true, rollup };
+}
+
+export async function listTrustSnapshotRollups(options = {}) {
+  if (!isEnabled()) return { rollups: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('trust_rollups');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.month);
+
+  rows.sort((a, b) => String(b.month).localeCompare(String(a.month)));
+
+  const total = rows.length;
+  const limit = Math.min(120, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    rollups: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Cleanup old trust snapshots after retention cutoff.
+ */
+export async function cleanupOldTrustSnapshots(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', cleaned: 0 };
+
+  const retentionDays = options.retentionDays || config.TRUST_RETENTION?.snapshotRetentionDays || 90;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const root = snapshotRoot();
+  let months = [];
+
+  try {
+    const entries = await readdir(root, { withFileTypes: true });
+    months = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name);
+  } catch (_) {
+    return { cleaned: 0, scanned: 0 };
+  }
+
+  let scanned = 0;
+  let cleaned = 0;
+  let failed = 0;
+
+  for (const month of months) {
+    const dir = join(root, month);
+    const files = await readdir(dir).catch(() => []);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.startsWith('tsv2_') || !file.endsWith('.json') || file.endsWith('.tmp')) continue;
+
+      scanned++;
+
+      const filePath = join(dir, file);
+      const snapshot = await readJSON(filePath).catch(() => null);
+      const basisMs = snapshot ? new Date(snapshot.createdAt || snapshot.snapshotDate || 0).getTime() : 0;
+
+      if (basisMs > 0 && basisMs < cutoffMs) {
+        try {
+          await rm(filePath, { force: true });
+          cleaned++;
+        } catch (_) {
+          failed++;
+        }
+      }
+
+      if (scanned % 100 === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+  }
+
+  return { scanned, cleaned, failed, retentionDays };
+}
+
+/**
+ * Cleanup old calibration reports after retention cutoff.
+ */
+export async function cleanupOldCalibrationReports(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled', cleaned: 0 };
+
+  const retentionDays = options.retentionDays || config.TRUST_RETENTION?.calibrationReportRetentionDays || 180;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const reports = await listJSON(getCollectionPath('trust_calibration')).catch(() => []);
+
+  let scanned = 0;
+  let cleaned = 0;
+  let failed = 0;
+
+  for (const report of reports) {
+    if (!report || !report.id || !report.id.startsWith('tcal_')) continue;
+
+    scanned++;
+    const basisMs = new Date(report.generatedAt || report.createdAt || 0).getTime();
+
+    if (basisMs > 0 && basisMs < cutoffMs) {
+      try {
+        await deleteJSON(reportPath(report.id));
+        cleaned++;
+      } catch (_) {
+        failed++;
+      }
+    }
+
+    if (scanned % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return { scanned, cleaned, failed, retentionDays };
+}
+
+export async function getTrustRetentionStats() {
+  if (!isEnabled()) return { enabled: false };
+
+  const rollups = await listTrustSnapshotRollups({ limit: 1 });
+
+  let snapshotMonths = 0;
+  try {
+    const entries = await readdir(snapshotRoot(), { withFileTypes: true });
+    snapshotMonths = entries.filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name)).length;
+  } catch (_) {}
+
+  let reportCount = 0;
+  try {
+    const reports = await listJSON(getCollectionPath('trust_calibration'));
+    reportCount = reports.filter(r => r && r.id && r.id.startsWith('tcal_')).length;
+  } catch (_) {}
+
+  return {
+    enabled: true,
+    snapshotMonths,
+    reportCount,
+    rollupCount: rollups.total || 0,
+    latestRollup: rollups.rollups?.[0] || null,
+    snapshotRetentionDays: config.TRUST_RETENTION?.snapshotRetentionDays || 90,
+    calibrationReportRetentionDays: config.TRUST_RETENTION?.calibrationReportRetentionDays || 180,
+    generatedAt: nowIso(),
+  };
+}
+
+export async function runTrustRetention(options = {}) {
+  const rollup = await createTrustSnapshotRollup(options);
+  const snapshots = await cleanupOldTrustSnapshots(options);
+  const reports = await cleanupOldCalibrationReports(options);
+
+  return {
+    ok: true,
+    rollup,
+    snapshots,
+    reports,
+    completedAt: nowIso(),
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  rollupPath,
+  emptyRollup,
+  addSnapshotToRollup,
 };
 ```
 
@@ -33912,6 +37360,951 @@ export const _testHelpers = {
   publicChecklist,
   canCreateOrDelete,
   canCompleteItem,
+};
+```
+
+---
+
+## `server/services/workroomHygiene.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomHygiene.js — Workroom Sidecar Hygiene (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Inspects and compacts Workroom V2 sidecars:
+//   - read receipts
+//   - search indexes
+//   - pins
+//   - checklists
+//   - attachments / imageStore orphan cleanup
+//
+// Conservative by design:
+//   - no raw base64 is ever expected in messages
+//   - attachments are deleted only if older than grace period and unreferenced
+//   - sidecar compaction removes references to missing messages only
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  deleteJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+let lastWorkroomHygieneStats = null;
+
+function isEnabled() {
+  return !!(config.WORKROOM_HYGIENE && config.WORKROOM_HYGIENE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+async function fileSizeBytes(filePath) {
+  try {
+    const s = await stat(filePath);
+    return s.size;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function sidecarWarning(sizeBytes) {
+  const kb = sizeBytes / 1024;
+  const warning = config.WORKROOM_HYGIENE?.sidecarSizeWarningKB || 512;
+  const critical = config.WORKROOM_HYGIENE?.sidecarSizeCriticalKB || 2048;
+
+  if (kb >= critical) return 'critical';
+  if (kb >= warning) return 'warning';
+  return 'ok';
+}
+
+async function listMessagesForJob(jobId) {
+  try {
+    const dir = getCollectionPath('messages');
+    const all = await listJSON(dir);
+    return all.filter(m => m && m.id && m.id.startsWith('msg_') && m.jobId === jobId);
+  } catch (_) {
+    return [];
+  }
+}
+
+async function listAllWorkroomJobIds() {
+  const ids = new Set();
+
+  try {
+    const workrooms = await listJSON(getCollectionPath('workrooms'));
+    for (const w of workrooms) {
+      if (w && w.jobId) ids.add(w.jobId);
+      else if (w && w.id && w.id.startsWith('job_')) ids.add(w.id);
+    }
+  } catch (_) {}
+
+  try {
+    const messages = await listJSON(getCollectionPath('messages'));
+    for (const m of messages) {
+      if (m && m.jobId && m.source === 'workroom') ids.add(m.jobId);
+    }
+  } catch (_) {}
+
+  return Array.from(ids);
+}
+
+function collectMessageImageRefs(messages) {
+  const refs = new Set();
+
+  for (const msg of messages || []) {
+    if (!msg || !Array.isArray(msg.attachments)) continue;
+
+    for (const att of msg.attachments) {
+      if (att && att.type === 'image' && att.imageRef) {
+        refs.add(att.imageRef);
+      }
+
+      // Safety check: messages must not store raw base64.
+      if (att && typeof att.dataUri === 'string') {
+        refs.add('__RAW_BASE64_FOUND__');
+      }
+    }
+  }
+
+  return refs;
+}
+
+async function collectAllReferencedImageRefs() {
+  const refs = new Set();
+
+  // Workroom/message attachments.
+  try {
+    const messages = await listJSON(getCollectionPath('messages'));
+    for (const ref of collectMessageImageRefs(messages)) {
+      refs.add(ref);
+    }
+  } catch (_) {}
+
+  // Verification image refs.
+  try {
+    const verifications = await listJSON(getCollectionPath('verifications'));
+    for (const v of verifications) {
+      if (v && v.nationalIdImageRef) refs.add(v.nationalIdImageRef);
+      if (v && v.selfieImageRef) refs.add(v.selfieImageRef);
+    }
+  } catch (_) {}
+
+  return refs;
+}
+
+/**
+ * Inspect sidecar files for one workroom/job.
+ *
+ * @param {string} jobId
+ */
+export async function inspectWorkroomSidecars(jobId) {
+  if (!isEnabled()) {
+    return { enabled: false, jobId, warnings: [] };
+  }
+
+  if (!jobId || typeof jobId !== 'string') {
+    return { enabled: true, jobId: null, warnings: [{ level: 'error', message: 'jobId required' }] };
+  }
+
+  const sidecars = [];
+  const warnings = [];
+
+  const sidecarDefs = [
+    { kind: 'receipts', path: getRecordPath('workroom_receipts', jobId) },
+    { kind: 'search_index', path: getRecordPath('workroom_search_indexes', jobId) },
+    { kind: 'pins', path: getRecordPath('workroom_pins', jobId) },
+    { kind: 'checklist', path: getRecordPath('workroom_checklists', jobId) },
+  ];
+
+  for (const def of sidecarDefs) {
+    const size = await fileSizeBytes(def.path);
+    const status = sidecarWarning(size);
+
+    const item = {
+      kind: def.kind,
+      path: def.path.replace(BASE_PATH + '/', ''),
+      exists: size > 0,
+      sizeBytes: size,
+      sizeKB: Math.round((size / 1024) * 10) / 10,
+      status,
+    };
+
+    sidecars.push(item);
+
+    if (status !== 'ok') {
+      warnings.push({
+        level: status,
+        kind: def.kind,
+        message: `${def.kind} sidecar is ${status}`,
+        sizeKB: item.sizeKB,
+      });
+    }
+  }
+
+  const messages = await listMessagesForJob(jobId);
+  const imageRefs = collectMessageImageRefs(messages);
+
+  if (imageRefs.has('__RAW_BASE64_FOUND__')) {
+    warnings.push({
+      level: 'critical',
+      kind: 'attachments',
+      message: 'Raw base64 attachment data found in message JSON',
+    });
+    imageRefs.delete('__RAW_BASE64_FOUND__');
+  }
+
+  const result = {
+    enabled: true,
+    jobId,
+    sidecars,
+    messageCount: messages.length,
+    attachmentRefs: imageRefs.size,
+    warnings,
+    inspectedAt: nowIso(),
+  };
+
+  eventBus.emit('workroom_hygiene:inspection_completed', {
+    jobId,
+    warningCount: warnings.length,
+    timestamp: result.inspectedAt,
+  });
+
+  if (warnings.length > 0) {
+    eventBus.emit('workroom_hygiene:warning_detected', {
+      jobId,
+      warnings: warnings.slice(0, 10),
+      timestamp: result.inspectedAt,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Compact read receipts for one workroom:
+ * - remove receipt entries for missing messages
+ * - keep existing readBy shape for compatibility
+ */
+async function compactReceipts(jobId) {
+  if (!config.WORKROOM_HYGIENE?.receiptCompactionEnabled) {
+    return { skipped: true, reason: 'receipt_compaction_disabled', removed: 0 };
+  }
+
+  const filePath = getRecordPath('workroom_receipts', jobId);
+  const receipts = await readJSON(filePath);
+  if (!receipts || !receipts.messages) {
+    return { skipped: false, removed: 0 };
+  }
+
+  const messages = await listMessagesForJob(jobId);
+  const messageIds = new Set(messages.map(m => m.id));
+
+  let removed = 0;
+
+  for (const messageId of Object.keys(receipts.messages || {})) {
+    if (!messageIds.has(messageId)) {
+      delete receipts.messages[messageId];
+      removed++;
+    }
+  }
+
+  if (removed > 0) {
+    receipts.updatedAt = nowIso();
+    receipts.compactedAt = receipts.updatedAt;
+    await atomicWrite(filePath, receipts);
+  }
+
+  return { removed };
+}
+
+/**
+ * Compact pins sidecar:
+ * - remove pins pointing to missing messages
+ * - enforce max pinned messages
+ */
+async function compactPins(jobId) {
+  const filePath = getRecordPath('workroom_pins', jobId);
+  const pins = await readJSON(filePath);
+  if (!pins) return { skipped: false, removed: 0 };
+
+  const messages = await listMessagesForJob(jobId);
+  const messageIds = new Set(messages.map(m => m.id));
+
+  let list = Array.isArray(pins.pins) ? pins.pins : [];
+  const before = list.length;
+
+  list = list.filter(p => p && p.messageId && messageIds.has(p.messageId));
+
+  const maxPins = config.WORKROOM_V2?.maxPinnedMessagesPerWorkroom || 5;
+  list.sort((a, b) => new Date(b.pinnedAt || b.createdAt || 0) - new Date(a.pinnedAt || a.createdAt || 0));
+  list = list.slice(0, maxPins);
+
+  const removed = before - list.length;
+
+  if (removed > 0) {
+    pins.pins = list;
+    pins.updatedAt = nowIso();
+    pins.compactedAt = pins.updatedAt;
+    await atomicWrite(filePath, pins);
+  }
+
+  return { removed };
+}
+
+/**
+ * Compact checklist sidecar:
+ * - enforce max items
+ * - keep newest items first if oversized
+ */
+async function compactChecklist(jobId) {
+  const filePath = getRecordPath('workroom_checklists', jobId);
+  const checklist = await readJSON(filePath);
+  if (!checklist) return { skipped: false, removed: 0 };
+
+  let items = Array.isArray(checklist.items) ? checklist.items : [];
+  const before = items.length;
+  const maxItems = config.WORKROOM_V2?.maxChecklistItems || 30;
+
+  items.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  items = items.slice(0, maxItems);
+
+  const removed = before - items.length;
+
+  if (removed > 0) {
+    checklist.items = items;
+    checklist.updatedAt = nowIso();
+    checklist.compactedAt = checklist.updatedAt;
+    await atomicWrite(filePath, checklist);
+  }
+
+  return { removed };
+}
+
+/**
+ * Compact one workroom sidecars.
+ *
+ * @param {string} jobId
+ * @param {object} options
+ */
+export async function compactWorkroom(jobId, options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+  if (!jobId) return { ok: false, error: 'jobId required' };
+
+  return withLock(`workroom-hygiene:${jobId}`, async () => {
+    const before = await inspectWorkroomSidecars(jobId);
+
+    const receipts = await compactReceipts(jobId);
+    const pins = await compactPins(jobId);
+    const checklist = await compactChecklist(jobId);
+
+    const after = await inspectWorkroomSidecars(jobId);
+
+    const result = {
+      ok: true,
+      jobId,
+      before,
+      after,
+      receipts,
+      pins,
+      checklist,
+      compactedAt: nowIso(),
+    };
+
+    eventBus.emit('workroom_hygiene:compaction_completed', {
+      jobId,
+      receiptsRemoved: receipts.removed || 0,
+      pinsRemoved: pins.removed || 0,
+      checklistRemoved: checklist.removed || 0,
+      timestamp: result.compactedAt,
+    });
+
+    return result;
+  });
+}
+
+/**
+ * Compact all known workrooms.
+ */
+export async function compactAllWorkrooms(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const started = Date.now();
+  const jobIds = options.jobIds || await listAllWorkroomJobIds();
+
+  let scanned = 0;
+  let compacted = 0;
+  let failed = 0;
+  const failures = [];
+
+  for (let i = 0; i < jobIds.length; i++) {
+    const jobId = jobIds[i];
+    scanned++;
+
+    try {
+      await compactWorkroom(jobId, options);
+      compacted++;
+    } catch (err) {
+      failed++;
+      failures.push({ jobId, error: err.message });
+      logger.warn('workroomHygiene: compactWorkroom failed', { jobId, error: err.message });
+    }
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: true,
+    scanned,
+    compacted,
+    failed,
+    failures: failures.slice(0, 20),
+    durationMs: Date.now() - started,
+    completedAt: nowIso(),
+  };
+
+  lastWorkroomHygieneStats = result;
+  return result;
+}
+
+async function walkImageMetaFiles() {
+  const base = process.env.YAWMIA_DATA_PATH
+    ? join(process.env.YAWMIA_DATA_PATH, 'images')
+    : (config.IMAGE_STORAGE ? config.IMAGE_STORAGE.basePath : './data/images');
+
+  const results = [];
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.meta.json')) {
+        results.push(full);
+      }
+    }
+  }
+
+  await walk(base);
+  return results;
+}
+
+/**
+ * Cleanup orphan workroom attachments from imageStore.
+ *
+ * Conservative:
+ * - only images with purpose='workroom_attachment'
+ * - only if older than attachmentGraceHours
+ * - only if imageRef is not referenced by messages/verifications
+ */
+export async function cleanupOrphanAttachments(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  if (!config.WORKROOM_HYGIENE?.attachmentOrphanCleanupEnabled) {
+    return { skipped: true, reason: 'attachment_cleanup_disabled' };
+  }
+
+  const dryRun = !!options.dryRun;
+  const graceHours = options.graceHours || config.WORKROOM_HYGIENE?.attachmentGraceHours || 24;
+  const cutoffMs = Date.now() - graceHours * 60 * 60 * 1000;
+
+  const refs = await collectAllReferencedImageRefs();
+  const metaFiles = await walkImageMetaFiles();
+
+  let scanned = 0;
+  let orphanCandidates = 0;
+  let deleted = 0;
+  let skipped = 0;
+  let failed = 0;
+  const failures = [];
+
+  const { deleteImage } = await import('./imageStore.js');
+
+  for (let i = 0; i < metaFiles.length; i++) {
+    const metaPath = metaFiles[i];
+    scanned++;
+
+    try {
+      const meta = await readJSON(metaPath);
+      if (!meta || !meta.ref) {
+        skipped++;
+        continue;
+      }
+
+      if (meta.purpose !== 'workroom_attachment') {
+        skipped++;
+        continue;
+      }
+
+      if (refs.has(meta.ref)) {
+        skipped++;
+        continue;
+      }
+
+      const uploadedMs = parseMs(meta.uploadedAt);
+      if (!uploadedMs || uploadedMs > cutoffMs) {
+        skipped++;
+        continue;
+      }
+
+      orphanCandidates++;
+
+      if (!dryRun) {
+        const ok = await deleteImage(meta.ref);
+        if (ok) deleted++;
+      }
+    } catch (err) {
+      failed++;
+      failures.push({ metaPath: metaPath.replace(BASE_PATH + '/', ''), error: err.message });
+    }
+
+    if ((i + 1) % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const result = {
+    ok: true,
+    scanned,
+    orphanCandidates,
+    deleted,
+    skipped,
+    failed,
+    dryRun,
+    graceHours,
+    failures: failures.slice(0, 20),
+    completedAt: nowIso(),
+  };
+
+  eventBus.emit('workroom_hygiene:attachment_cleanup_completed', {
+    scanned,
+    orphanCandidates,
+    deleted,
+    failed,
+    timestamp: result.completedAt,
+  });
+
+  return result;
+}
+
+/**
+ * Overview across workroom sidecars.
+ */
+export async function getWorkroomHygieneOverview(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, warnings: [] };
+  }
+
+  const jobIds = (options.jobIds || await listAllWorkroomJobIds()).slice(0, options.limit || 200);
+
+  let totalSidecarBytes = 0;
+  let warningCount = 0;
+  const warnings = [];
+  const largestSidecars = [];
+
+  for (let i = 0; i < jobIds.length; i++) {
+    try {
+      const inspection = await inspectWorkroomSidecars(jobIds[i]);
+
+      for (const sidecar of inspection.sidecars || []) {
+        totalSidecarBytes += sidecar.sizeBytes || 0;
+        if ((sidecar.sizeBytes || 0) > 0) {
+          largestSidecars.push({
+            jobId: jobIds[i],
+            kind: sidecar.kind,
+            sizeBytes: sidecar.sizeBytes,
+            sizeKB: sidecar.sizeKB,
+            status: sidecar.status,
+          });
+        }
+      }
+
+      if (inspection.warnings && inspection.warnings.length > 0) {
+        warningCount += inspection.warnings.length;
+        for (const w of inspection.warnings.slice(0, 5)) {
+          warnings.push({ jobId: jobIds[i], ...w });
+        }
+      }
+    } catch (_) {}
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  largestSidecars.sort((a, b) => b.sizeBytes - a.sizeBytes);
+
+  return {
+    enabled: true,
+    inspectedWorkrooms: jobIds.length,
+    totalSidecarBytes,
+    totalSidecarKB: Math.round((totalSidecarBytes / 1024) * 10) / 10,
+    warningCount,
+    warnings: warnings.slice(0, 50),
+    largestSidecars: largestSidecars.slice(0, 20),
+    lastRun: lastWorkroomHygieneStats,
+    generatedAt: nowIso(),
+  };
+}
+
+export function getLastWorkroomHygieneStats() {
+  return lastWorkroomHygieneStats;
+}
+
+export const _testHelpers = {
+  isEnabled,
+  parseMs,
+  sidecarWarning,
+  fileSizeBytes,
+  listMessagesForJob,
+  listAllWorkroomJobIds,
+  collectMessageImageRefs,
+  collectAllReferencedImageRefs,
+  compactReceipts,
+  compactPins,
+  compactChecklist,
+  walkImageMetaFiles,
+};
+```
+
+---
+
+## `server/services/workroomIndexHealth.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomIndexHealth.js — Workroom Search Verify (Phase 55)
+// ═══════════════════════════════════════════════════════════════
+// Verifies per-job workroom search indexes.
+// Index remains acceleration only; rebuild is safe and source-of-truth is messages.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+import {
+  rebuildWorkroomSearchIndex,
+  searchWorkroomMessages,
+} from './workroomSearch.js';
+
+function isEnabled() {
+  return !!(
+    config.WORKROOM_V2 &&
+    config.WORKROOM_V2.enabled &&
+    config.WORKROOM_V2.searchEnabled
+  );
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function tokenize(text) {
+  return Array.from(new Set(
+    normalizeArabic(String(text || '').toLowerCase())
+      .split(/[^\p{L}\p{N}_-]+/gu)
+      .map(t => t.trim())
+      .filter(t => t.length >= 2 && t.length <= 50)
+  ));
+}
+
+async function listMessagesForJob(jobId) {
+  const dir = getCollectionPath('messages');
+  const all = await listJSON(dir);
+  return all.filter(m =>
+    m &&
+    m.id &&
+    m.id.startsWith('msg_') &&
+    m.jobId === jobId &&
+    m.source === 'workroom'
+  );
+}
+
+async function listAllWorkroomJobIds() {
+  const ids = new Set();
+
+  try {
+    const messages = await listJSON(getCollectionPath('messages'));
+    for (const m of messages) {
+      if (m && m.jobId && m.source === 'workroom') ids.add(m.jobId);
+    }
+  } catch (_) {}
+
+  try {
+    const workrooms = await listJSON(getCollectionPath('workrooms'));
+    for (const w of workrooms) {
+      if (w && w.jobId) ids.add(w.jobId);
+      else if (w && w.id && w.id.startsWith('job_')) ids.add(w.id);
+    }
+  } catch (_) {}
+
+  return Array.from(ids);
+}
+
+/**
+ * Verify one workroom search index.
+ *
+ * @param {string} jobId
+ * @param {{ sampleSize?: number }} options
+ */
+export async function verifyWorkroomSearchIndex(jobId, options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, jobId, ok: true, warnings: [] };
+  }
+
+  const warnings = [];
+  const errors = [];
+
+  if (!jobId || typeof jobId !== 'string') {
+    return { enabled: true, jobId: null, ok: false, errors: ['jobId required'], warnings: [] };
+  }
+
+  const idx = await readJSON(getRecordPath('workroom_search_indexes', jobId));
+  const messages = await listMessagesForJob(jobId);
+  const messageIds = new Set(messages.map(m => m.id));
+
+  if (!idx) {
+    if (messages.length > 0) {
+      warnings.push('missing search index for workroom messages');
+    }
+    return {
+      enabled: true,
+      jobId,
+      ok: true,
+      status: warnings.length > 0 ? 'warnings' : 'healthy',
+      messageCount: messages.length,
+      tokenCount: 0,
+      warnings,
+      errors,
+      missing: true,
+      checkedAt: nowIso(),
+    };
+  }
+
+  const tokens = idx.tokens || {};
+  const meta = idx.messageMeta || {};
+
+  // 1. Token references must point to existing messages.
+  let staleTokenRefs = 0;
+  for (const [token, ids] of Object.entries(tokens)) {
+    if (!Array.isArray(ids)) {
+      errors.push(`token ${token} ids is not an array`);
+      continue;
+    }
+
+    for (const id of ids) {
+      if (!messageIds.has(id)) staleTokenRefs++;
+    }
+  }
+
+  if (staleTokenRefs > 0) {
+    warnings.push(`stale token refs: ${staleTokenRefs}`);
+  }
+
+  // 2. Meta references must point to existing messages.
+  let staleMetaRefs = 0;
+  for (const id of Object.keys(meta)) {
+    if (!messageIds.has(id)) staleMetaRefs++;
+  }
+
+  if (staleMetaRefs > 0) {
+    warnings.push(`stale messageMeta refs: ${staleMetaRefs}`);
+  }
+
+  // 3. Sample messages should be represented in token index.
+  const sampleSize = Math.min(
+    Math.max(1, parseInt(options.sampleSize) || config.WORKROOM_HYGIENE?.searchVerifySampleSize || 50),
+    messages.length
+  );
+
+  const sample = messages.slice(0, sampleSize);
+  let missingIndexedMessages = 0;
+  let failedSearchSamples = 0;
+
+  for (const msg of sample) {
+    const msgTokens = tokenize(msg.text || '');
+    if (msgTokens.length === 0) continue;
+
+    const represented = msgTokens.some(t => Array.isArray(tokens[t]) && tokens[t].includes(msg.id));
+    if (!represented) {
+      missingIndexedMessages++;
+      continue;
+    }
+
+    // Query first token and ensure message can be found using raw visibility mode.
+    const query = msgTokens[0];
+    try {
+      const result = await searchWorkroomMessages(jobId, query, { limit: 100 });
+      const found = (result.results || []).some(r => r.id === msg.id);
+      if (!found) failedSearchSamples++;
+    } catch (_) {
+      failedSearchSamples++;
+    }
+  }
+
+  if (missingIndexedMessages > 0) {
+    warnings.push(`sample messages missing from index: ${missingIndexedMessages}`);
+  }
+
+  if (failedSearchSamples > 0) {
+    warnings.push(`sample searches failed: ${failedSearchSamples}`);
+  }
+
+  const result = {
+    enabled: true,
+    jobId,
+    ok: errors.length === 0,
+    status: errors.length > 0 ? 'failed' : (warnings.length > 0 ? 'warnings' : 'healthy'),
+    messageCount: messages.length,
+    tokenCount: Object.keys(tokens).length,
+    indexedMessageCount: Object.keys(meta).length,
+    staleTokenRefs,
+    staleMetaRefs,
+    missingIndexedMessages,
+    failedSearchSamples,
+    warnings,
+    errors,
+    checkedAt: nowIso(),
+  };
+
+  eventBus.emit('workroom_search:verified', {
+    jobId,
+    status: result.status,
+    warningCount: warnings.length,
+    errorCount: errors.length,
+    timestamp: result.checkedAt,
+  });
+
+  return result;
+}
+
+/**
+ * Verify all known workroom search indexes.
+ */
+export async function verifyAllWorkroomSearchIndexes(options = {}) {
+  if (!isEnabled()) return { enabled: false, ok: true, results: [] };
+
+  const jobIds = (options.jobIds || await listAllWorkroomJobIds()).slice(0, options.limit || 1000);
+
+  let healthy = 0;
+  let warnings = 0;
+  let failed = 0;
+  const results = [];
+
+  for (let i = 0; i < jobIds.length; i++) {
+    try {
+      const r = await verifyWorkroomSearchIndex(jobIds[i], options);
+      results.push(r);
+
+      if (r.status === 'healthy') healthy++;
+      else if (r.status === 'warnings') warnings++;
+      else failed++;
+    } catch (err) {
+      failed++;
+      results.push({
+        jobId: jobIds[i],
+        status: 'failed',
+        ok: false,
+        errors: [err.message],
+      });
+    }
+
+    if ((i + 1) % 50 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return {
+    enabled: true,
+    ok: failed === 0,
+    total: jobIds.length,
+    healthy,
+    warnings,
+    failed,
+    results: results.slice(0, options.includeResults === false ? 0 : 200),
+    checkedAt: nowIso(),
+  };
+}
+
+/**
+ * Repair/rebuild one workroom search index.
+ */
+export async function repairWorkroomSearchIndex(jobId) {
+  if (!isEnabled()) return { enabled: false, rebuilt: false, skipped: true };
+  if (!jobId) return { ok: false, error: 'jobId required' };
+
+  const before = await verifyWorkroomSearchIndex(jobId).catch(err => ({
+    ok: false,
+    status: 'failed',
+    errors: [err.message],
+  }));
+
+  const rebuild = await rebuildWorkroomSearchIndex(jobId);
+
+  const after = await verifyWorkroomSearchIndex(jobId).catch(err => ({
+    ok: false,
+    status: 'failed',
+    errors: [err.message],
+  }));
+
+  const result = {
+    ok: after.ok,
+    jobId,
+    before,
+    rebuild,
+    after,
+    repairedAt: nowIso(),
+  };
+
+  eventBus.emit('workroom_search:repair_completed', {
+    jobId,
+    beforeStatus: before.status,
+    afterStatus: after.status,
+    timestamp: result.repairedAt,
+  });
+
+  return result;
+}
+
+export const _testHelpers = {
+  isEnabled,
+  tokenize,
+  listMessagesForJob,
+  listAllWorkroomJobIds,
 };
 ```
 
