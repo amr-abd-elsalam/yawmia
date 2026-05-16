@@ -269,7 +269,10 @@ export async function queryPredictiveArchiveIndex(options = {}) {
     }
 
     if (!refs || refs.length === 0) {
-      return paginateSignals([], options, { indexed, fallbackUsed: false });
+      indexed = false;
+      fallbackUsed = true;
+      const fallback = await fallbackArchiveScan(options);
+      return paginateSignals(fallback, options, { indexed, fallbackUsed });
     }
 
     // Apply additional filters not covered by selected index.

@@ -26,6 +26,7 @@ import {
 } from './database.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const INDEX_VERSION = 1;
 const MAX_SAFE_SEGMENT_LENGTH = 96;

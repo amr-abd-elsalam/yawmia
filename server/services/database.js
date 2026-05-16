@@ -9,8 +9,19 @@ import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from 
 import { withLock } from './resourceLock.js';
 
 // Allow override via env variable (for testing with temp directories)
-const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+// Keep this dynamic because node:test imports services with cache-busting while
+// shared database imports may otherwise keep the first test's temp directory.
+let BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const ENCODING = config.DATABASE.encoding;
+
+function refreshBasePath() {
+  const next = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+  if (next !== BASE_PATH) {
+    BASE_PATH = next;
+    shardLocationCache.clear();
+  }
+  return BASE_PATH;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Sharding Helpers
@@ -83,6 +94,8 @@ async function getShardDirs(collectionDir) {
  * Creates shard subdirectories for current month on sharded collections
  */
 export async function initDatabase() {
+  refreshBasePath();
+
   const dirs = Object.values(config.DATABASE.dirs);
   for (const dir of dirs) {
     const fullPath = join(BASE_PATH, dir);
@@ -134,6 +147,8 @@ export async function atomicWrite(filePath, data) {
  * For sharded collections: if file not found at given path, scans shard subdirs
  */
 export async function readJSON(filePath) {
+  refreshBasePath();
+
   // Check cache first
   const cacheKey = `file:${filePath}`;
   const cached = cacheGet(cacheKey);
@@ -389,6 +404,8 @@ export async function paginatedListJSON(dirPath, options = {}) {
  * Read or create an index file
  */
 export async function readIndex(indexName) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, config.DATABASE.indexFiles[indexName]);
   return (await readJSON(filePath)) || {};
 }
@@ -397,6 +414,8 @@ export async function readIndex(indexName) {
  * Write an index file (atomic)
  */
 export async function writeIndex(indexName, data) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, config.DATABASE.indexFiles[indexName]);
   await atomicWrite(filePath, data);
 }
@@ -422,6 +441,8 @@ export function isValidId(id) {
  * For non-sharded collections: returns flat path (unchanged behavior).
  */
 export function getRecordPath(collection, id) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
@@ -446,6 +467,8 @@ export function getRecordPath(collection, id) {
  * USE ONLY for new record creation — updates should use getRecordPath.
  */
 export function getWriteRecordPath(collection, id) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
@@ -466,6 +489,8 @@ export function getWriteRecordPath(collection, id) {
  * Get full directory path for a collection
  */
 export function getCollectionPath(collection) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   return join(BASE_PATH, dir);
@@ -480,6 +505,8 @@ export function getCollectionPath(collection) {
  * @param {string} relativePath — path relative to BASE_PATH (e.g. 'applications/worker-index.json')
  */
 export async function readSetIndex(relativePath) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, relativePath);
   return (await readJSON(filePath)) || {};
 }
@@ -490,6 +517,8 @@ export async function readSetIndex(relativePath) {
  * @param {object} data — the full index object
  */
 export async function writeSetIndex(relativePath, data) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, relativePath);
   await atomicWrite(filePath, data);
 }
