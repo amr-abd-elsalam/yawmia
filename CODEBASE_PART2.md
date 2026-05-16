@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.51.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-16T02:31:29.307Z
+> Auto-generated: 2026-05-16T19:45:01.933Z
 > Files in this part: 105
 
 ## Files
@@ -4608,6 +4608,7 @@ import {
 } from './database.js';
 import { logger } from './logger.js';
 import { eventBus } from './eventBus.js';
+import { withLock } from './resourceLock.js';
 
 const INDEX_VERSION = 1;
 const MAX_SAFE_SEGMENT_LENGTH = 96;
@@ -8923,8 +8924,19 @@ import { get as cacheGet, set as cacheSet, invalidate as cacheInvalidate } from 
 import { withLock } from './resourceLock.js';
 
 // Allow override via env variable (for testing with temp directories)
-const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+// Keep this dynamic because node:test imports services with cache-busting while
+// shared database imports may otherwise keep the first test's temp directory.
+let BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
 const ENCODING = config.DATABASE.encoding;
+
+function refreshBasePath() {
+  const next = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+  if (next !== BASE_PATH) {
+    BASE_PATH = next;
+    shardLocationCache.clear();
+  }
+  return BASE_PATH;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Sharding Helpers
@@ -8997,6 +9009,8 @@ async function getShardDirs(collectionDir) {
  * Creates shard subdirectories for current month on sharded collections
  */
 export async function initDatabase() {
+  refreshBasePath();
+
   const dirs = Object.values(config.DATABASE.dirs);
   for (const dir of dirs) {
     const fullPath = join(BASE_PATH, dir);
@@ -9048,6 +9062,8 @@ export async function atomicWrite(filePath, data) {
  * For sharded collections: if file not found at given path, scans shard subdirs
  */
 export async function readJSON(filePath) {
+  refreshBasePath();
+
   // Check cache first
   const cacheKey = `file:${filePath}`;
   const cached = cacheGet(cacheKey);
@@ -9303,6 +9319,8 @@ export async function paginatedListJSON(dirPath, options = {}) {
  * Read or create an index file
  */
 export async function readIndex(indexName) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, config.DATABASE.indexFiles[indexName]);
   return (await readJSON(filePath)) || {};
 }
@@ -9311,6 +9329,8 @@ export async function readIndex(indexName) {
  * Write an index file (atomic)
  */
 export async function writeIndex(indexName, data) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, config.DATABASE.indexFiles[indexName]);
   await atomicWrite(filePath, data);
 }
@@ -9336,6 +9356,8 @@ export function isValidId(id) {
  * For non-sharded collections: returns flat path (unchanged behavior).
  */
 export function getRecordPath(collection, id) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
@@ -9360,6 +9382,8 @@ export function getRecordPath(collection, id) {
  * USE ONLY for new record creation — updates should use getRecordPath.
  */
 export function getWriteRecordPath(collection, id) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   if (!isValidId(id)) throw new Error(`Invalid record ID: ${id}`);
@@ -9380,6 +9404,8 @@ export function getWriteRecordPath(collection, id) {
  * Get full directory path for a collection
  */
 export function getCollectionPath(collection) {
+  refreshBasePath();
+
   const dir = config.DATABASE.dirs[collection];
   if (!dir) throw new Error(`Unknown collection: ${collection}`);
   return join(BASE_PATH, dir);
@@ -9394,6 +9420,8 @@ export function getCollectionPath(collection) {
  * @param {string} relativePath — path relative to BASE_PATH (e.g. 'applications/worker-index.json')
  */
 export async function readSetIndex(relativePath) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, relativePath);
   return (await readJSON(filePath)) || {};
 }
@@ -9404,6 +9432,8 @@ export async function readSetIndex(relativePath) {
  * @param {object} data — the full index object
  */
 export async function writeSetIndex(relativePath, data) {
+  refreshBasePath();
+
   const filePath = join(BASE_PATH, relativePath);
   await atomicWrite(filePath, data);
 }
@@ -23862,7 +23892,10 @@ export async function queryPredictiveArchiveIndex(options = {}) {
     }
 
     if (!refs || refs.length === 0) {
-      return paginateSignals([], options, { indexed, fallbackUsed: false });
+      indexed = false;
+      fallbackUsed = true;
+      const fallback = await fallbackArchiveScan(options);
+      return paginateSignals(fallback, options, { indexed, fallbackUsed });
     }
 
     // Apply additional filters not covered by selected index.
