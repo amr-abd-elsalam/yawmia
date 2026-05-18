@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.52.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-18T19:28:29.364Z
+> Auto-generated: 2026-05-18T20:51:44.651Z
 > Files in this part: 6
 
 ## Files
@@ -2663,7 +2663,7 @@ import {
   handleMatchingQuality,
   handleRunMarketplaceIntelligenceRollup,
 } from './handlers/marketplaceIntelligenceHandler.js';
-import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
+import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead, handleNotificationActionClick } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
@@ -3088,6 +3088,7 @@ const routes = [
   { method: 'GET', path: '/api/notifications', middlewares: [requireAuth], handler: handleListNotifications },
   { method: 'GET', path: '/api/notifications/stream', middlewares: [], handler: handleNotificationStream },
   { method: 'POST', path: '/api/notifications/read-all', middlewares: [requireAuth], handler: handleMarkAllAsRead },
+  { method: 'POST', path: '/api/notifications/:id/action-click', middlewares: [requireAuth], handler: handleNotificationActionClick },
   { method: 'POST', path: '/api/notifications/:id/read', middlewares: [requireAuth], handler: handleMarkAsRead },
 
   // ── Message Unread Count ──

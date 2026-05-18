@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.52.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-18T19:28:29.398Z
-> Files in this part: 63
+> Auto-generated: 2026-05-18T20:51:44.703Z
+> Files in this part: 64
 
 ## Files
 1. `frontend/404.html`
@@ -54,18 +54,19 @@
 49. `scripts/rebuild-audit-index.js`
 50. `scripts/rebuild-counters.js`
 51. `scripts/rebuild-predictive-archive-index.js`
-52. `scripts/rebuild-workroom-search.js`
-53. `scripts/repair-indexes.js`
-54. `scripts/repair-queue.js`
-55. `scripts/rollup-product-intelligence.js`
-56. `scripts/rollup-trust-snapshots.js`
-57. `scripts/run-backup-restore-drill.js`
-58. `scripts/run-trust-calibration.js`
-59. `scripts/verify-audit-index.js`
-60. `scripts/verify-marketplace-intelligence.js`
-61. `scripts/verify-production-readiness.js`
-62. `scripts/verify-queue.js`
-63. `scripts/verify-workroom-indexes.js`
+52. `scripts/rebuild-search-relevance.js`
+53. `scripts/rebuild-workroom-search.js`
+54. `scripts/repair-indexes.js`
+55. `scripts/repair-queue.js`
+56. `scripts/rollup-product-intelligence.js`
+57. `scripts/rollup-trust-snapshots.js`
+58. `scripts/run-backup-restore-drill.js`
+59. `scripts/run-trust-calibration.js`
+60. `scripts/verify-audit-index.js`
+61. `scripts/verify-marketplace-intelligence.js`
+62. `scripts/verify-production-readiness.js`
+63. `scripts/verify-queue.js`
+64. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -11175,8 +11176,31 @@ var Yawmia = (function () {
     });
   }
 
-  function safeNavigate(url) {
+  function recordNotificationActionClick(meta) {
+    if (!meta || !meta.notificationId || !state.token) return;
+
+    try {
+      fetch(API_BASE + '/api/notifications/' + encodeURIComponent(meta.notificationId) + '/action-click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + state.token
+        },
+        body: JSON.stringify({
+          actionType: meta.actionType || null,
+          notificationType: meta.notificationType || null
+        }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function safeNavigate(url, meta) {
     var target = isSafeRelativeUrl(url) ? url.trim() : '/dashboard.html';
+
+    // Phase 56 — fire-and-forget notification action click tracking.
+    // Do not block navigation.
+    recordNotificationActionClick(meta);
 
     try {
       var current = window.location.pathname + window.location.search + window.location.hash;
@@ -11449,6 +11473,7 @@ var Yawmia = (function () {
     populateCategoriesCheckboxes: populateCategoriesCheckboxes,
     roleLabel: roleLabel,
     safeNavigate: safeNavigate,
+    recordNotificationActionClick: recordNotificationActionClick,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
@@ -13535,14 +13560,8 @@ var YawmiaJobCard = (function () {
     var url = '/api/profile/tasks/' + encodeURIComponent(taskId) + '/click';
     var payload = JSON.stringify({ taskId: taskId });
 
-    try {
-      if (navigator.sendBeacon) {
-        var blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(url, blob);
-        return;
-      }
-    } catch (_) {}
-
+    // Do not use sendBeacon here because the endpoint requires Authorization
+    // and sendBeacon cannot attach Bearer headers.
     try {
       fetch(url, {
         method: 'POST',
@@ -13848,14 +13867,22 @@ var YawmiaJobCard = (function () {
                 }
 
                 if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
-                  Yawmia.safeNavigate(ntf.action.url);
+                  Yawmia.safeNavigate(ntf.action.url, {
+                    notificationId: ntf.id,
+                    notificationType: ntf.type,
+                    actionType: ntf.action.type || 'default'
+                  });
                   return;
                 }
 
                 loadNotifications();
               } catch (e) {
                 if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
-                  Yawmia.safeNavigate(ntf.action.url);
+                  Yawmia.safeNavigate(ntf.action.url, {
+                    notificationId: ntf.id,
+                    notificationType: ntf.type,
+                    actionType: ntf.action.type || 'default'
+                  });
                 }
               }
             });
@@ -15277,14 +15304,8 @@ var YawmiaPanels = (function () {
     var url = '/api/profile/tasks/' + encodeURIComponent(taskId) + '/click';
     var payload = JSON.stringify({ taskId: taskId });
 
-    try {
-      if (navigator.sendBeacon) {
-        var blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(url, blob);
-        return;
-      }
-    } catch (_) {}
-
+    // Do not use sendBeacon here because the endpoint requires Authorization
+    // and sendBeacon cannot attach Bearer headers.
     try {
       fetch(url, {
         method: 'POST',
@@ -22026,6 +22047,79 @@ async function main() {
 
 main().catch(err => {
   console.error('\n❌ Predictive archive index rebuild failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/rebuild-search-relevance.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/rebuild-search-relevance.js — Phase 56 Search Relevance Rebuild CLI
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/rebuild-search-relevance.js
+//
+// Rebuilds existing search acceleration indexes used by search relevance:
+//   - searchIndex
+//   - queryIndex
+//
+// Note:
+//   Phase 56 search relevance is mostly stateless scoring.
+//   This script rebuilds candidate indexes only; it does not create an
+//   external search DB or new search backend.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+async function main() {
+  console.log('\n🔎 يوميّة Search Relevance Rebuild\n');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const started = Date.now();
+
+  let searchIndexResult = null;
+  let queryIndexResult = null;
+
+  try {
+    const searchIndex = await import('../server/services/searchIndex.js');
+    if (searchIndex.buildIndex) {
+      searchIndexResult = await searchIndex.buildIndex();
+    }
+  } catch (err) {
+    console.error('❌ searchIndex rebuild failed:', err.message);
+    process.exit(1);
+  }
+
+  try {
+    const queryIndex = await import('../server/services/queryIndex.js');
+    if (queryIndex.buildAllIndexes) {
+      queryIndexResult = await queryIndex.buildAllIndexes();
+    }
+  } catch (err) {
+    console.error('❌ queryIndex rebuild failed:', err.message);
+    process.exit(1);
+  }
+
+  const durationMs = Date.now() - started;
+
+  console.log('✅ Search relevance acceleration rebuilt');
+  console.log(`   searchIndex: ${searchIndexResult === undefined ? 'ok' : JSON.stringify(searchIndexResult)}`);
+  console.log(`   queryIndex: ${queryIndexResult === undefined ? 'ok' : JSON.stringify(queryIndexResult)}`);
+  console.log(`   duration: ${durationMs}ms\n`);
+}
+
+main().catch(err => {
+  console.error('\n❌ Search relevance rebuild failed:', err.message);
   if (err.stack) console.error(err.stack);
   process.exit(1);
 });

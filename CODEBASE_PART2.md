@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.52.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-18T19:28:29.368Z
+> Auto-generated: 2026-05-18T20:51:44.656Z
 > Files in this part: 114
 
 ## Files
@@ -18591,6 +18591,7 @@ const INVALIDATION_EVENTS = [
   'profile_task:clicked_recorded',
   'notification:action_click_recorded',
   'notification:conversion_recorded',
+  'notification:conversion_metric_recorded',
   'workroom_adoption:rollup_completed',
   'payment:disputed',
   'direct_offer:accepted',
@@ -21537,7 +21538,7 @@ export async function recordNotificationConversion(params = {}) {
     ensureMatrix(data, type, actionType).conversions++;
   });
 
-  eventBus.emit('notification:conversion_recorded', {
+  eventBus.emit('notification:conversion_metric_recorded', {
     notificationType: type,
     actionType,
     conversionType: params.conversionType || 'unknown',
@@ -21954,6 +21955,18 @@ export async function listByUser(userId, { limit = 20, offset = 0 } = {}) {
   const unread = userNotifications.filter(n => !n.read).length;
 
   return { items, total, unread, limit, offset };
+}
+
+/**
+ * Find notification by ID.
+ * Used by action-click tracking handlers with ownership checks.
+ *
+ * @param {string} notificationId
+ * @returns {Promise<object|null>}
+ */
+export async function findById(notificationId) {
+  if (!notificationId || typeof notificationId !== 'string') return null;
+  return await readJSON(getRecordPath('notifications', notificationId));
 }
 
 /**
