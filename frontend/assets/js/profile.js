@@ -140,14 +140,8 @@
     var url = '/api/profile/tasks/' + encodeURIComponent(taskId) + '/click';
     var payload = JSON.stringify({ taskId: taskId });
 
-    try {
-      if (navigator.sendBeacon) {
-        var blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(url, blob);
-        return;
-      }
-    } catch (_) {}
-
+    // Do not use sendBeacon here because the endpoint requires Authorization
+    // and sendBeacon cannot attach Bearer headers.
     try {
       fetch(url, {
         method: 'POST',

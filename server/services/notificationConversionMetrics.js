@@ -160,7 +160,7 @@ export async function recordNotificationConversion(params = {}) {
     ensureMatrix(data, type, actionType).conversions++;
   });
 
-  eventBus.emit('notification:conversion_recorded', {
+  eventBus.emit('notification:conversion_metric_recorded', {
     notificationType: type,
     actionType,
     conversionType: params.conversionType || 'unknown',

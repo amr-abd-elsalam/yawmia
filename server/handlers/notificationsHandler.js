@@ -2,7 +2,8 @@
 // server/handlers/notificationsHandler.js — Notification Endpoints
 // ═══════════════════════════════════════════════════════════════
 
-import { listByUser, markAsRead, markAllAsRead } from '../services/notifications.js';
+import { listByUser, markAsRead, markAllAsRead, findById } from '../services/notifications.js';
+import { recordNotificationActionClick } from '../services/notificationConversionMetrics.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -55,5 +56,48 @@ export async function handleMarkAllAsRead(req, res) {
     return sendJSON(res, 200, result);
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في تحديث الإشعارات', code: 'MARK_ALL_READ_ERROR' });
+  }
+}
+
+/**
+ * POST /api/notifications/:id/action-click
+ * Phase 56 — Fire-and-forget notification action click tracking.
+ * Requires: auth
+ */
+export async function handleNotificationActionClick(req, res) {
+  const notificationId = req.params.id;
+
+  try {
+    const notification = await findById(notificationId);
+
+    if (!notification) {
+      return sendJSON(res, 404, {
+        error: 'الإشعار غير موجود',
+        code: 'NOTIFICATION_NOT_FOUND',
+      });
+    }
+
+    if (notification.userId !== req.user.id) {
+      return sendJSON(res, 403, {
+        error: 'مش مسموحلك تسجل هذا الإجراء',
+        code: 'NOT_NOTIFICATION_OWNER',
+      });
+    }
+
+    const actionType = notification.action && notification.action.type
+      ? notification.action.type
+      : 'default';
+
+    await recordNotificationActionClick({
+      notificationType: notification.type || 'unknown',
+      actionType,
+      userRole: req.user.role || 'unknown',
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true });
+  } catch (err) {
+    // Tracking endpoint must never block UX.
+    return sendJSON(res, 200, { ok: true });
   }
 }

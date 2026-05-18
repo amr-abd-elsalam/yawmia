@@ -132,6 +132,18 @@ export async function listByUser(userId, { limit = 20, offset = 0 } = {}) {
 }
 
 /**
+ * Find notification by ID.
+ * Used by action-click tracking handlers with ownership checks.
+ *
+ * @param {string} notificationId
+ * @returns {Promise<object|null>}
+ */
+export async function findById(notificationId) {
+  if (!notificationId || typeof notificationId !== 'string') return null;
+  return await readJSON(getRecordPath('notifications', notificationId));
+}
+
+/**
  * Count unread notifications for a user (index-accelerated)
  */
 export async function countUnread(userId) {

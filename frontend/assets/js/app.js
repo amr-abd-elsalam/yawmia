@@ -218,8 +218,31 @@ var Yawmia = (function () {
     });
   }
 
-  function safeNavigate(url) {
+  function recordNotificationActionClick(meta) {
+    if (!meta || !meta.notificationId || !state.token) return;
+
+    try {
+      fetch(API_BASE + '/api/notifications/' + encodeURIComponent(meta.notificationId) + '/action-click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + state.token
+        },
+        body: JSON.stringify({
+          actionType: meta.actionType || null,
+          notificationType: meta.notificationType || null
+        }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function safeNavigate(url, meta) {
     var target = isSafeRelativeUrl(url) ? url.trim() : '/dashboard.html';
+
+    // Phase 56 — fire-and-forget notification action click tracking.
+    // Do not block navigation.
+    recordNotificationActionClick(meta);
 
     try {
       var current = window.location.pathname + window.location.search + window.location.hash;
@@ -492,6 +515,7 @@ var Yawmia = (function () {
     populateCategoriesCheckboxes: populateCategoriesCheckboxes,
     roleLabel: roleLabel,
     safeNavigate: safeNavigate,
+    recordNotificationActionClick: recordNotificationActionClick,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,

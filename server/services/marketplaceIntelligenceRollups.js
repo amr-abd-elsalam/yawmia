@@ -397,6 +397,7 @@ const INVALIDATION_EVENTS = [
   'profile_task:clicked_recorded',
   'notification:action_click_recorded',
   'notification:conversion_recorded',
+  'notification:conversion_metric_recorded',
   'workroom_adoption:rollup_completed',
   'payment:disputed',
   'direct_offer:accepted',

@@ -103,14 +103,8 @@
     var url = '/api/profile/tasks/' + encodeURIComponent(taskId) + '/click';
     var payload = JSON.stringify({ taskId: taskId });
 
-    try {
-      if (navigator.sendBeacon) {
-        var blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(url, blob);
-        return;
-      }
-    } catch (_) {}
-
+    // Do not use sendBeacon here because the endpoint requires Authorization
+    // and sendBeacon cannot attach Bearer headers.
     try {
       fetch(url, {
         method: 'POST',
@@ -416,14 +410,22 @@
                 }
 
                 if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
-                  Yawmia.safeNavigate(ntf.action.url);
+                  Yawmia.safeNavigate(ntf.action.url, {
+                    notificationId: ntf.id,
+                    notificationType: ntf.type,
+                    actionType: ntf.action.type || 'default'
+                  });
                   return;
                 }
 
                 loadNotifications();
               } catch (e) {
                 if (ntf.action && ntf.action.url && Yawmia.safeNavigate) {
-                  Yawmia.safeNavigate(ntf.action.url);
+                  Yawmia.safeNavigate(ntf.action.url, {
+                    notificationId: ntf.id,
+                    notificationType: ntf.type,
+                    actionType: ntf.action.type || 'default'
+                  });
                 }
               }
             });
