@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.51.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-16T19:45:01.927Z
+# يوميّة (Yawmia) v0.52.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-18T19:28:29.364Z
 > Files in this part: 6
 
 ## Files
@@ -385,6 +385,12 @@ const config = {
       trust_rollups: 'metrics/trust-calibration/rollups',
       predictive_archive_indexes: 'metrics/predictive-signal-archives/index',
       scale_hygiene: 'metrics/scale-hygiene',
+
+      // Phase 56 — Marketplace Intelligence + Product UX Maturity
+      search_analytics: 'metrics/search-analytics',
+      product_intelligence: 'metrics/product-intelligence',
+      matching_metrics: 'metrics/matching',
+      payment_dispute_analytics: 'metrics/payment-disputes',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -573,7 +579,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.51.0',
+    cacheName: 'yawmia-v0.52.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1431,6 +1437,14 @@ const config = {
       alert_delivery_cleanup: { enabled: true },
       ops_rollup_capture: { enabled: true },
       backup_restore_drill: { enabled: true },
+
+      // Phase 56 — Marketplace/Product Intelligence schedulers
+      marketplace_intelligence_daily: { enabled: true },
+      search_analytics_rollup: { enabled: true },
+      payment_dispute_analytics_rollup: { enabled: true },
+      workroom_adoption_rollup: { enabled: true },
+      notification_conversion_rollup: { enabled: true },
+      activation_funnel_rollup: { enabled: true },
     },
   },
 
@@ -1596,6 +1610,107 @@ const config = {
     fileSizeCriticalKB: 4096,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 93. تحسين البحث والملاءمة (SEARCH_RELEVANCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  SEARCH_RELEVANCE: {
+    enabled: true,
+    useWeightedRanking: true,
+    maxResults: 200,
+    weights: {
+      exactTitleMatch: 0.30,
+      titleTokenMatch: 0.20,
+      descriptionTokenMatch: 0.10,
+      categoryMatch: 0.15,
+      governorateMatch: 0.10,
+      urgencyBoost: 0.05,
+      recencyBoost: 0.05,
+      wageFit: 0.05,
+    },
+    recencyHalfLifeHours: 72,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 94. البحث العربي المتقدم (ARABIC_SEARCH) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  ARABIC_SEARCH: {
+    enabled: true,
+    stopwordsEnabled: true,
+    lightStemmingEnabled: true,
+    minTokenLength: 2,
+    maxTokensPerQuery: 12,
+    preserveNumbers: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 95. تحليلات البحث (SEARCH_ANALYTICS) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  SEARCH_ANALYTICS: {
+    enabled: true,
+    basePath: 'metrics/search-analytics',
+    hashQueries: true,
+    trackZeroResults: true,
+    trackClicks: true,
+    trackApplicationsAfterSearch: true,
+    retentionDays: 90,
+    rollupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 96. ذكاء المطابقة القابل للتفسير (MATCHING_INTELLIGENCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  MATCHING_INTELLIGENCE: {
+    enabled: true,
+    explainabilityEnabled: true,
+    maxExplanationReasons: 5,
+    scoreWeights: {
+      category: 0.25,
+      distance: 0.20,
+      availability: 0.15,
+      activeAd: 0.10,
+      trustScore: 0.15,
+      rating: 0.05,
+      responseSpeed: 0.10,
+    },
+    fairness: {
+      maxSameWorkerRecommendationsPerEmployerPerDay: 10,
+      diversifyResults: true,
+      noPunitiveAutomation: true,
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 97. ذكاء المنتج والسوق (PRODUCT_INTELLIGENCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  PRODUCT_INTELLIGENCE: {
+    enabled: true,
+    basePath: 'metrics/product-intelligence',
+    cacheTtlMs: 5 * 60 * 1000,
+    rollupEnabled: true,
+    rollupIntervalMs: 24 * 60 * 60 * 1000,
+    retentionDays: 180,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 98. تحليلات النزاعات المالية (PAYMENT_DISPUTE_ANALYTICS) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  PAYMENT_DISPUTE_ANALYTICS: {
+    enabled: true,
+    cacheTtlMs: 5 * 60 * 1000,
+    minSamplesForTrend: 5,
+    groupBy: ['category', 'governorate', 'employer', 'worker'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 99. تنظيم لوحة الأدمن (ADMIN_DASHBOARD_IA) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_DASHBOARD_IA: {
+    enabled: true,
+    defaultTab: 'overview',
+    lazyLoadTabs: true,
+    tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'settings'],
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1644,7 +1759,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.51.0",
+  "version": "0.52.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -2537,13 +2652,24 @@ import {
   handleRebuildPredictiveArchiveIndex,
   handleSchedulerHistory,
 } from './handlers/scaleHygieneHandler.js';
+import {
+  handleMarketplaceIntelligenceDashboard,
+  handleSearchAnalytics,
+  handleZeroResultSearches,
+  handleActivationFunnel,
+  handleNotificationConversions,
+  handleWorkroomAdoption,
+  handlePaymentDisputeAnalytics,
+  handleMatchingQuality,
+  handleRunMarketplaceIntelligenceRollup,
+} from './handlers/marketplaceIntelligenceHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
-import { handleGetProfileTasks } from './handlers/profileTasksHandler.js';
+import { handleGetProfileTasks, handleProfileTaskClick } from './handlers/profileTasksHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
@@ -2606,7 +2732,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.51.0',
+        version: '0.52.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -2887,7 +3013,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.51.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.52.0' });
     },
   },
 
@@ -2899,6 +3025,7 @@ const routes = [
   { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
   { method: 'GET', path: '/api/profile/tasks', middlewares: [requireAuth], handler: handleGetProfileTasks },
+  { method: 'POST', path: '/api/profile/tasks/:id/click', middlewares: [requireAuth], handler: handleProfileTaskClick },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
   { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
   { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
@@ -3147,6 +3274,17 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  // ── Phase 56 — Marketplace Intelligence Admin APIs ──
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/dashboard', middlewares: [requireAdmin], handler: handleMarketplaceIntelligenceDashboard },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/search', middlewares: [requireAdmin], handler: handleSearchAnalytics },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/search/zero-results', middlewares: [requireAdmin], handler: handleZeroResultSearches },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/activation-funnel', middlewares: [requireAdmin], handler: handleActivationFunnel },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/notification-conversions', middlewares: [requireAdmin], handler: handleNotificationConversions },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/workroom-adoption', middlewares: [requireAdmin], handler: handleWorkroomAdoption },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/payment-disputes', middlewares: [requireAdmin], handler: handlePaymentDisputeAnalytics },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/matching-quality', middlewares: [requireAdmin], handler: handleMatchingQuality },
+  { method: 'POST', path: '/api/admin/marketplace-intelligence/rollup/run', middlewares: [requireAdmin], handler: handleRunMarketplaceIntelligenceRollup },
 
   // ── Phase 55 — Scale Hygiene Admin APIs ──
   { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },

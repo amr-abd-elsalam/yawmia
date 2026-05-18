@@ -1,113 +1,122 @@
-# يوميّة (Yawmia) v0.51.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-16T19:45:01.933Z
-> Files in this part: 105
+# يوميّة (Yawmia) v0.52.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-18T19:28:29.368Z
+> Files in this part: 114
 
 ## Files
 1. `server/services/abuseFlagReview.js`
-2. `server/services/activitySummary.js`
-3. `server/services/adMatcher.js`
-4. `server/services/adminAlertChannels.js`
-5. `server/services/adminDecisionAnalytics.js`
-6. `server/services/alertDeliveryHistory.js`
-7. `server/services/analytics.js`
-8. `server/services/applicationStatus.js`
-9. `server/services/applications.js`
-10. `server/services/arabicNormalizer.js`
-11. `server/services/attendance.js`
-12. `server/services/auditLog.js`
-13. `server/services/auditLogIndex.js`
-14. `server/services/auditLogRetention.js`
-15. `server/services/auditLogSearch.js`
-16. `server/services/auth.js`
-17. `server/services/availabilityAd.js`
-18. `server/services/availabilityWindow.js`
-19. `server/services/backupRestoreDrill.js`
-20. `server/services/backupScheduler.js`
-21. `server/services/cache.js`
-22. `server/services/cacheDebouncer.js`
-23. `server/services/channels/sms.js`
-24. `server/services/channels/whatsapp.js`
-25. `server/services/contentFilter.js`
-26. `server/services/counterCompaction.js`
-27. `server/services/csvExportProgress.js`
-28. `server/services/database.js`
-29. `server/services/directOffer.js`
-30. `server/services/directOfferAnalytics.js`
-31. `server/services/directOfferCounters.js`
-32. `server/services/errorAggregator.js`
-33. `server/services/eventBus.js`
-34. `server/services/eventReplayBuffer.js`
-35. `server/services/exportRegistry.js`
-36. `server/services/favorites.js`
-37. `server/services/financialExport.js`
-38. `server/services/geo.js`
-39. `server/services/imageStore.js`
-40. `server/services/incidentTimeline.js`
-41. `server/services/indexHealth.js`
-42. `server/services/instanceMode.js`
-43. `server/services/instantMatch.js`
-44. `server/services/jobAlerts.js`
-45. `server/services/jobMatcher.js`
-46. `server/services/jobs.js`
-47. `server/services/liveFeed.js`
-48. `server/services/logWriter.js`
-49. `server/services/logger.js`
-50. `server/services/maintenanceMode.js`
-51. `server/services/messages.js`
-52. `server/services/messaging.js`
-53. `server/services/metricsRollups.js`
-54. `server/services/migration.js`
-55. `server/services/monitor.js`
-56. `server/services/notificationActions.js`
-57. `server/services/notificationMessenger.js`
-58. `server/services/notifications.js`
-59. `server/services/offerAbuseDetector.js`
-60. `server/services/opsQueue.js`
-61. `server/services/payments.js`
-62. `server/services/predictiveAbuse.js`
-63. `server/services/predictiveArchiveIndex.js`
-64. `server/services/predictiveSignalRetention.js`
-65. `server/services/presenceService.js`
-66. `server/services/processLock.js`
-67. `server/services/productionReadiness.js`
-68. `server/services/profileCompleteness.js`
-69. `server/services/profileTasks.js`
-70. `server/services/queryIndex.js`
-71. `server/services/queueCompaction.js`
-72. `server/services/queueHealthVerify.js`
-73. `server/services/queueStorageIndex.js`
-74. `server/services/queueWorkers.js`
-75. `server/services/ratings.js`
-76. `server/services/reports.js`
-77. `server/services/resourceLock.js`
-78. `server/services/sanitizer.js`
-79. `server/services/scaleHygiene.js`
-80. `server/services/scheduledAbuseDetection.js`
-81. `server/services/schedulerRegistry.js`
-82. `server/services/schedulerRunHistory.js`
-83. `server/services/searchIndex.js`
-84. `server/services/sessions.js`
-85. `server/services/snoozeReminders.js`
-86. `server/services/sseManager.js`
-87. `server/services/trust.js`
-88. `server/services/trustAnalytics.js`
-89. `server/services/trustCalibration.js`
-90. `server/services/trustScoreV2.js`
-91. `server/services/trustSnapshotRollups.js`
-92. `server/services/users.js`
-93. `server/services/validators.js`
-94. `server/services/verification.js`
-95. `server/services/webpush.js`
-96. `server/services/workerDiscovery.js`
-97. `server/services/workroom.js`
-98. `server/services/workroomAttachments.js`
-99. `server/services/workroomChecklist.js`
-100. `server/services/workroomHygiene.js`
-101. `server/services/workroomIndexHealth.js`
-102. `server/services/workroomPins.js`
-103. `server/services/workroomReceipts.js`
-104. `server/services/workroomSearch.js`
-105. `server/services/workroomTemplateMetrics.js`
+2. `server/services/activationFunnelMetrics.js`
+3. `server/services/activitySummary.js`
+4. `server/services/adMatcher.js`
+5. `server/services/adminAlertChannels.js`
+6. `server/services/adminDecisionAnalytics.js`
+7. `server/services/alertDeliveryHistory.js`
+8. `server/services/analytics.js`
+9. `server/services/applicationStatus.js`
+10. `server/services/applications.js`
+11. `server/services/arabicNormalizer.js`
+12. `server/services/arabicSearchTokens.js`
+13. `server/services/attendance.js`
+14. `server/services/auditLog.js`
+15. `server/services/auditLogIndex.js`
+16. `server/services/auditLogRetention.js`
+17. `server/services/auditLogSearch.js`
+18. `server/services/auth.js`
+19. `server/services/availabilityAd.js`
+20. `server/services/availabilityWindow.js`
+21. `server/services/backupRestoreDrill.js`
+22. `server/services/backupScheduler.js`
+23. `server/services/cache.js`
+24. `server/services/cacheDebouncer.js`
+25. `server/services/channels/sms.js`
+26. `server/services/channels/whatsapp.js`
+27. `server/services/contentFilter.js`
+28. `server/services/counterCompaction.js`
+29. `server/services/csvExportProgress.js`
+30. `server/services/database.js`
+31. `server/services/directOffer.js`
+32. `server/services/directOfferAnalytics.js`
+33. `server/services/directOfferCounters.js`
+34. `server/services/errorAggregator.js`
+35. `server/services/eventBus.js`
+36. `server/services/eventReplayBuffer.js`
+37. `server/services/exportRegistry.js`
+38. `server/services/favorites.js`
+39. `server/services/financialExport.js`
+40. `server/services/geo.js`
+41. `server/services/imageStore.js`
+42. `server/services/incidentTimeline.js`
+43. `server/services/indexHealth.js`
+44. `server/services/instanceMode.js`
+45. `server/services/instantMatch.js`
+46. `server/services/jobAlerts.js`
+47. `server/services/jobMatcher.js`
+48. `server/services/jobs.js`
+49. `server/services/liveFeed.js`
+50. `server/services/logWriter.js`
+51. `server/services/logger.js`
+52. `server/services/maintenanceMode.js`
+53. `server/services/marketplaceIntelligenceRollups.js`
+54. `server/services/matchingIntelligence.js`
+55. `server/services/messages.js`
+56. `server/services/messaging.js`
+57. `server/services/metricsRollups.js`
+58. `server/services/migration.js`
+59. `server/services/monitor.js`
+60. `server/services/notificationActions.js`
+61. `server/services/notificationConversionMetrics.js`
+62. `server/services/notificationMessenger.js`
+63. `server/services/notifications.js`
+64. `server/services/offerAbuseDetector.js`
+65. `server/services/opsQueue.js`
+66. `server/services/paymentDisputeAnalytics.js`
+67. `server/services/payments.js`
+68. `server/services/predictiveAbuse.js`
+69. `server/services/predictiveArchiveIndex.js`
+70. `server/services/predictiveSignalRetention.js`
+71. `server/services/presenceService.js`
+72. `server/services/processLock.js`
+73. `server/services/productionReadiness.js`
+74. `server/services/profileCompleteness.js`
+75. `server/services/profileTasks.js`
+76. `server/services/queryIndex.js`
+77. `server/services/queueCompaction.js`
+78. `server/services/queueHealthVerify.js`
+79. `server/services/queueStorageIndex.js`
+80. `server/services/queueWorkers.js`
+81. `server/services/ratings.js`
+82. `server/services/reports.js`
+83. `server/services/resourceLock.js`
+84. `server/services/sanitizer.js`
+85. `server/services/scaleHygiene.js`
+86. `server/services/scheduledAbuseDetection.js`
+87. `server/services/schedulerRegistry.js`
+88. `server/services/schedulerRunHistory.js`
+89. `server/services/searchAnalytics.js`
+90. `server/services/searchIndex.js`
+91. `server/services/searchRelevance.js`
+92. `server/services/sessions.js`
+93. `server/services/snoozeReminders.js`
+94. `server/services/sseManager.js`
+95. `server/services/trust.js`
+96. `server/services/trustAnalytics.js`
+97. `server/services/trustCalibration.js`
+98. `server/services/trustScoreV2.js`
+99. `server/services/trustSnapshotRollups.js`
+100. `server/services/users.js`
+101. `server/services/validators.js`
+102. `server/services/verification.js`
+103. `server/services/webpush.js`
+104. `server/services/workerDiscovery.js`
+105. `server/services/workroom.js`
+106. `server/services/workroomAdoptionMetrics.js`
+107. `server/services/workroomAttachments.js`
+108. `server/services/workroomChecklist.js`
+109. `server/services/workroomHygiene.js`
+110. `server/services/workroomIndexHealth.js`
+111. `server/services/workroomPins.js`
+112. `server/services/workroomReceipts.js`
+113. `server/services/workroomSearch.js`
+114. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -565,6 +574,394 @@ export const _testHelpers = {
   bulkUpdate,
   searchByNotes,
   getSnoozeExpiringSoon,
+};
+```
+
+---
+
+## `server/services/activationFunnelMetrics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/activationFunnelMetrics.js — Activation Funnel Metrics (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Aggregate/admin-only activation funnel telemetry.
+// Storage:
+//   data/metrics/product-intelligence/activation-YYYY-MM.json
+//
+// Tracks:
+//   - profile task shown/clicked/completed
+//   - profile completeness reached 80/100
+//   - first application
+//   - first job posted
+//   - first accepted
+//   - first check-in
+//   - first payment
+//   - first rating
+//
+// Privacy:
+//   - aggregate counters only
+//   - no phone/name/message text
+//   - userId may appear only in transient EventBus payload, not persisted
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.PRODUCT_INTELLIGENCE && config.PRODUCT_INTELLIGENCE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function dayKey(iso = nowIso()) {
+  return String(iso).slice(0, 10);
+}
+
+function metricsId(month) {
+  return `activation-${month}`;
+}
+
+function metricsPath(month) {
+  return getRecordPath('product_intelligence', metricsId(month));
+}
+
+function safeTaskId(taskId) {
+  if (!taskId || typeof taskId !== 'string') return 'unknown';
+  const clean = taskId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  return clean || 'unknown';
+}
+
+function safeRole(role) {
+  if (role === 'worker' || role === 'employer' || role === 'admin') return role;
+  return 'unknown';
+}
+
+function emptyMetrics(month) {
+  const now = nowIso();
+  return {
+    id: metricsId(month),
+    kind: 'activation_funnel',
+    version: 1,
+    month,
+    totals: {
+      profileTaskShown: 0,
+      profileTaskClicked: 0,
+      profileTaskCompleted: 0,
+      profileCompleteness80: 0,
+      firstApplication: 0,
+      firstJobPosted: 0,
+      firstAccepted: 0,
+      firstCheckin: 0,
+      firstPayment: 0,
+      firstRating: 0,
+    },
+    byRole: {},
+    byTask: {},
+    byDay: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureRole(data, role) {
+  if (!data.byRole) data.byRole = {};
+  if (!data.byRole[role]) {
+    data.byRole[role] = {
+      profileTaskShown: 0,
+      profileTaskClicked: 0,
+      profileTaskCompleted: 0,
+      profileCompleteness80: 0,
+      firstApplication: 0,
+      firstJobPosted: 0,
+      firstAccepted: 0,
+      firstCheckin: 0,
+      firstPayment: 0,
+      firstRating: 0,
+    };
+  }
+  return data.byRole[role];
+}
+
+function ensureTask(data, taskId) {
+  if (!data.byTask) data.byTask = {};
+  if (!data.byTask[taskId]) {
+    data.byTask[taskId] = {
+      taskId,
+      shown: 0,
+      clicked: 0,
+      completed: 0,
+      lastSeenAt: null,
+    };
+  }
+  return data.byTask[taskId];
+}
+
+function ensureDay(data, day) {
+  if (!data.byDay) data.byDay = {};
+  if (!data.byDay[day]) {
+    data.byDay[day] = {
+      date: day,
+      profileTaskShown: 0,
+      profileTaskClicked: 0,
+      profileTaskCompleted: 0,
+      profileCompleteness80: 0,
+      firstApplication: 0,
+      firstJobPosted: 0,
+      firstAccepted: 0,
+      firstCheckin: 0,
+      firstPayment: 0,
+      firstRating: 0,
+    };
+  }
+  return data.byDay[day];
+}
+
+async function mutate(timestamp, fn) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const month = monthKey(timestamp);
+  return withLock(`activation-funnel:${month}`, async () => {
+    const filePath = metricsPath(month);
+    const data = (await readJSON(filePath)) || emptyMetrics(month);
+
+    await fn(data);
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+
+    return { ok: true, month, data };
+  });
+}
+
+function incLifecycle(data, key, role, timestamp) {
+  if (!data.totals[key]) data.totals[key] = 0;
+  data.totals[key]++;
+
+  const roleRow = ensureRole(data, role);
+  if (!roleRow[key]) roleRow[key] = 0;
+  roleRow[key]++;
+
+  const day = ensureDay(data, dayKey(timestamp));
+  if (!day[key]) day[key] = 0;
+  day[key]++;
+}
+
+/**
+ * Record profile task shown.
+ */
+export async function recordProfileTaskShown(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const taskId = safeTaskId(params.taskId);
+  const role = safeRole(params.role);
+
+  await mutate(timestamp, async (data) => {
+    incLifecycle(data, 'profileTaskShown', role, timestamp);
+    const task = ensureTask(data, taskId);
+    task.shown++;
+    task.lastSeenAt = timestamp;
+  });
+
+  return { recorded: true, taskId, role };
+}
+
+/**
+ * Record profile task clicked.
+ */
+export async function recordProfileTaskClicked(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const taskId = safeTaskId(params.taskId);
+  const role = safeRole(params.role);
+
+  await mutate(timestamp, async (data) => {
+    incLifecycle(data, 'profileTaskClicked', role, timestamp);
+    const task = ensureTask(data, taskId);
+    task.clicked++;
+    task.lastSeenAt = timestamp;
+  });
+
+  eventBus.emit('profile_task:clicked_recorded', {
+    taskId,
+    role,
+    timestamp,
+  });
+
+  return { recorded: true, taskId, role };
+}
+
+/**
+ * Record profile task completed.
+ */
+export async function recordProfileTaskCompleted(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const taskId = safeTaskId(params.taskId);
+  const role = safeRole(params.role);
+
+  await mutate(timestamp, async (data) => {
+    incLifecycle(data, 'profileTaskCompleted', role, timestamp);
+    const task = ensureTask(data, taskId);
+    task.completed++;
+    task.lastSeenAt = timestamp;
+  });
+
+  return { recorded: true, taskId, role };
+}
+
+/**
+ * Record a lifecycle milestone.
+ *
+ * @param {{ milestone: string, role?: string, timestamp?: string }} params
+ */
+export async function recordActivationMilestone(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const role = safeRole(params.role);
+
+  const map = {
+    profile_completeness_80: 'profileCompleteness80',
+    first_application: 'firstApplication',
+    first_job_posted: 'firstJobPosted',
+    first_accepted: 'firstAccepted',
+    first_checkin: 'firstCheckin',
+    first_payment: 'firstPayment',
+    first_rating: 'firstRating',
+  };
+
+  const key = map[params.milestone];
+  if (!key) return { recorded: false, error: 'INVALID_MILESTONE' };
+
+  await mutate(timestamp, async (data) => {
+    incLifecycle(data, key, role, timestamp);
+  });
+
+  return { recorded: true, milestone: params.milestone, role };
+}
+
+/**
+ * Get activation funnel metrics.
+ */
+export async function getActivationFunnel(options = {}) {
+  if (!isEnabled()) return { enabled: false, totals: {}, byTask: [] };
+
+  const month = options.month || monthKey();
+  const data = (await readJSON(metricsPath(month))) || emptyMetrics(month);
+
+  let tasks = Object.values(data.byTask || {});
+  tasks.sort((a, b) => (b.clicked || 0) - (a.clicked || 0) || (b.shown || 0) - (a.shown || 0));
+
+  const totals = data.totals || {};
+  const clickRate = totals.profileTaskShown > 0
+    ? Math.round((totals.profileTaskClicked / totals.profileTaskShown) * 100)
+    : 0;
+  const completionRate = totals.profileTaskShown > 0
+    ? Math.round((totals.profileTaskCompleted / totals.profileTaskShown) * 100)
+    : 0;
+
+  return {
+    enabled: true,
+    month,
+    totals,
+    byRole: data.byRole || {},
+    byDay: Object.values(data.byDay || {}).sort((a, b) => a.date.localeCompare(b.date)),
+    byTask: tasks,
+    rates: {
+      profileTaskClickRate: clickRate,
+      profileTaskCompletionRate: completionRate,
+    },
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+/**
+ * Rollup wrapper for queue/scheduler.
+ */
+export async function rollupActivationFunnel(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const month = options.month || monthKey();
+  const result = await getActivationFunnel({ month });
+
+  eventBus.emit('activation_funnel:rollup_completed', {
+    month,
+    profileTaskShown: result.totals?.profileTaskShown || 0,
+    profileTaskClicked: result.totals?.profileTaskClicked || 0,
+    timestamp: nowIso(),
+  });
+
+  return {
+    ok: true,
+    month,
+    totals: result.totals,
+    rates: result.rates,
+    generatedAt: nowIso(),
+  };
+}
+
+// Event listeners — guard globally for test cache-busting.
+const LISTENER_FLAG = '__yawmiaActivationFunnelListenersRegistered';
+
+if (isEnabled() && !globalThis[LISTENER_FLAG]) {
+  globalThis[LISTENER_FLAG] = true;
+
+  eventBus.on('profile_task:shown', (data) => {
+    recordProfileTaskShown(data).catch(err => {
+      logger.warn('activationFunnel: recordProfileTaskShown failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('profile_task:clicked', (data) => {
+    recordProfileTaskClicked(data).catch(err => {
+      logger.warn('activationFunnel: recordProfileTaskClicked failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('profile_task:completed', (data) => {
+    recordProfileTaskCompleted(data).catch(err => {
+      logger.warn('activationFunnel: recordProfileTaskCompleted failed', { error: err.message });
+    });
+  });
+
+  const milestoneEvents = {
+    'activation:first_application': 'first_application',
+    'activation:first_job_posted': 'first_job_posted',
+    'activation:first_accepted': 'first_accepted',
+    'activation:first_checkin': 'first_checkin',
+    'activation:first_payment': 'first_payment',
+    'activation:first_rating': 'first_rating',
+  };
+
+  for (const [eventName, milestone] of Object.entries(milestoneEvents)) {
+    eventBus.on(eventName, (data = {}) => {
+      recordActivationMilestone({
+        milestone,
+        role: data.role || 'unknown',
+        timestamp: data.timestamp || nowIso(),
+      }).catch(() => {});
+    });
+  }
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  dayKey,
+  metricsId,
+  metricsPath,
+  safeTaskId,
+  safeRole,
+  emptyMetrics,
 };
 ```
 
@@ -3794,6 +4191,217 @@ export function hasArabic(text) {
   if (!text || typeof text !== 'string') return false;
   return /[\u0600-\u06FF]/.test(text);
 }
+```
+
+---
+
+## `server/services/arabicSearchTokens.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/arabicSearchTokens.js — Arabic Search Tokenization V2 (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Deterministic Arabic-first tokenization for marketplace search.
+// Builds on arabicNormalizer.js and adds:
+//   - Arabic/English/number token extraction
+//   - small local stopword list
+//   - conservative Arabic light stemming
+//   - safe token-set builder
+//
+// No external dependencies.
+// No I/O.
+// Never throws on non-string input.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+
+const DEFAULT_STOPWORDS = new Set([
+  // Arabic MSA/common
+  'في', 'من', 'على', 'عن', 'الى', 'إلى', 'الي', 'او', 'أو', 'و', 'ف', 'ثم',
+  'هذا', 'هذه', 'ذلك', 'تلك', 'هناك', 'هنا', 'مع', 'بدون', 'بعد', 'قبل',
+  'كل', 'اي', 'أي', 'انا', 'انت', 'هو', 'هي', 'هم', 'احنا', 'نحن',
+  // Egyptian/common marketplace phrasing
+  'عايز', 'عاوز', 'محتاج', 'مطلوب', 'شغل', 'فرصه', 'فرصة', 'عمل',
+  'اليوم', 'بكره', 'بكرة', 'دلوقتي', 'حاليا', 'حالياً',
+  // English common
+  'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'for', 'with', 'on',
+]);
+
+function cfg() {
+  return config.ARABIC_SEARCH || {};
+}
+
+function minTokenLength() {
+  return Math.max(1, Number(cfg().minTokenLength) || 2);
+}
+
+function maxTokensPerQuery() {
+  return Math.max(1, Number(cfg().maxTokensPerQuery) || 12);
+}
+
+function isNumberToken(token) {
+  return /^[0-9]+(?:[._-][0-9]+)*$/.test(token);
+}
+
+function normalizeDigits(str) {
+  if (!str || typeof str !== 'string') return '';
+
+  const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
+  const easternArabicIndic = '۰۱۲۳۴۵۶۷۸۹';
+
+  return str.replace(/[\u0660-\u0669\u06F0-\u06F9]/g, ch => {
+    const a = arabicIndic.indexOf(ch);
+    if (a >= 0) return String(a);
+    const e = easternArabicIndic.indexOf(ch);
+    if (e >= 0) return String(e);
+    return ch;
+  });
+}
+
+/**
+ * Normalize one token for search.
+ *
+ * @param {*} token
+ * @returns {string}
+ */
+export function normalizeSearchToken(token) {
+  if (!token || typeof token !== 'string') return '';
+
+  let t = normalizeDigits(token);
+  t = normalizeArabic(t.toLowerCase());
+  t = t
+    .replace(/[^\p{L}\p{N}_-]+/gu, '')
+    .replace(/^[-_]+|[-_]+$/g, '')
+    .trim();
+
+  if (!t) return '';
+
+  if (!cfg().preserveNumbers && isNumberToken(t)) return '';
+
+  if (t.length < minTokenLength()) return '';
+
+  if (cfg().lightStemmingEnabled !== false) {
+    t = lightStemArabicToken(t);
+  }
+
+  if (t.length < minTokenLength()) return '';
+
+  return t;
+}
+
+/**
+ * Conservative Arabic light stemming.
+ * Avoids aggressive stemming to reduce false positives.
+ *
+ * @param {*} token
+ * @returns {string}
+ */
+export function lightStemArabicToken(token) {
+  if (!token || typeof token !== 'string') return '';
+
+  let t = token;
+
+  // Do not stem numbers or very short tokens.
+  if (isNumberToken(t) || t.length <= 3) return t;
+
+  // Normalize common feminine ending again after tokenizer normalization.
+  // arabicNormalizer already maps ة → ه.
+  const suffixes = ['اتها', 'يات', 'ات', 'ين', 'ون', 'ها', 'هم', 'كم', 'نا', 'ه'];
+  for (const suffix of suffixes) {
+    if (t.length >= suffix.length + 4 && t.endsWith(suffix)) {
+      t = t.slice(0, -suffix.length);
+      break;
+    }
+  }
+
+  // Common prefixes. Prefer longer prefix first.
+  const prefixes = ['وال', 'فال', 'بال', 'كال', 'لل', 'ال', 'و', 'ف', 'ب', 'ك', 'ل'];
+  for (const prefix of prefixes) {
+    if (t.length >= prefix.length + 4 && t.startsWith(prefix)) {
+      t = t.slice(prefix.length);
+      break;
+    }
+  }
+
+  // Avoid returning empty/too-short stems.
+  if (t.length < minTokenLength()) return token;
+  return t;
+}
+
+/**
+ * Remove local Arabic/English stopwords.
+ *
+ * @param {string[]} tokens
+ * @returns {string[]}
+ */
+export function removeArabicStopwords(tokens) {
+  if (!Array.isArray(tokens)) return [];
+  if (cfg().stopwordsEnabled === false) return tokens.slice();
+
+  return tokens.filter(token => {
+    if (!token) return false;
+    const normalized = normalizeArabic(String(token).toLowerCase());
+    return !DEFAULT_STOPWORDS.has(normalized) && !DEFAULT_STOPWORDS.has(token);
+  });
+}
+
+/**
+ * Tokenize Arabic/English/numeric search text.
+ *
+ * @param {*} text
+ * @param {{ maxTokens?: number, removeStopwords?: boolean, lightStem?: boolean }} options
+ * @returns {string[]}
+ */
+export function tokenizeArabicSearch(text, options = {}) {
+  if (!text || typeof text !== 'string') return [];
+
+  const maxTokens = Math.max(1, Number(options.maxTokens) || maxTokensPerQuery());
+
+  const previousLightStem = cfg().lightStemmingEnabled;
+  let raw = normalizeDigits(text);
+  raw = normalizeArabic(raw.toLowerCase());
+
+  let tokens = raw
+    .split(/[^\p{L}\p{N}_-]+/gu)
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => {
+      if (options.lightStem === false) {
+        const normalized = normalizeArabic(normalizeDigits(t).toLowerCase())
+          .replace(/[^\p{L}\p{N}_-]+/gu, '')
+          .trim();
+        return normalized.length >= minTokenLength() ? normalized : '';
+      }
+      return normalizeSearchToken(t);
+    })
+    .filter(Boolean);
+
+  tokens = Array.from(new Set(tokens));
+
+  if (options.removeStopwords !== false) {
+    tokens = removeArabicStopwords(tokens);
+  }
+
+  return tokens.slice(0, maxTokens);
+}
+
+/**
+ * Build a deterministic Set of search tokens.
+ *
+ * @param {*} text
+ * @param {object} options
+ * @returns {Set<string>}
+ */
+export function buildSearchTokenSet(text, options = {}) {
+  return new Set(tokenizeArabicSearch(text, options));
+}
+
+export const _testHelpers = {
+  DEFAULT_STOPWORDS,
+  normalizeDigits,
+  isNumberToken,
+};
 ```
 
 ---
@@ -16108,42 +16716,130 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (search index accelerated, Arabic-normalized)
+  // Text search on title + description (search index accelerated + Phase 56 weighted relevance)
   if (filters.search) {
+    const searchQuery = String(filters.search || '').trim();
     let searchHandled = false;
-    if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
-      try {
-        const { search: searchIndexQuery, getStats: getSearchStats } = await import('./searchIndex.js');
-        const searchStats = getSearchStats();
-        // Only use index if it has been built (size > 0)
-        if (searchStats.size > 0) {
+
+    if (searchQuery) {
+      // Candidate filtering using existing searchIndex when possible.
+      // Phase 56 keeps searchIndex as acceleration only; final ranking happens below.
+      if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
+        try {
+          const { search: searchIndexQuery, getStats: getSearchStats } = await import('./searchIndex.js');
+          const searchStats = getSearchStats();
+
+          if (searchStats.size > 0) {
+            const { normalizeArabic } = await import('./arabicNormalizer.js');
+            const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+
+            const matchedIds = searchIndexQuery(normalizedTerm, {
+              status: filters.status || 'open',
+              category: filters.category,
+              governorate: filters.governorate,
+            });
+
+            // Important: searchIndex uses phrase includes(). If it returns zero,
+            // fall back to token-aware full scan so multi-token Arabic queries
+            // do not incorrectly become zero-result.
+            if (matchedIds.length > 0) {
+              jobs = jobs.filter(j => matchedIds.includes(j.id));
+              searchHandled = true;
+            }
+          }
+        } catch (_) {
+          // Fallback to full scan below
+        }
+      }
+
+      // Token-aware fallback / enhancement.
+      if (!searchHandled) {
+        try {
+          const { buildSearchTokenSet } = await import('./arabicSearchTokens.js');
+          const queryTokens = buildSearchTokenSet(searchQuery);
           const { normalizeArabic } = await import('./arabicNormalizer.js');
-          const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-          const matchedIds = searchIndexQuery(normalizedTerm, {
-            status: filters.status || 'open',
-            category: filters.category,
-            governorate: filters.governorate,
+          const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+
+          jobs = jobs.filter(j => {
+            const title = normalizeArabic((j.title || '').toLowerCase());
+            const desc = normalizeArabic((j.description || '').toLowerCase());
+            if (normalizedTerm && (title.includes(normalizedTerm) || desc.includes(normalizedTerm))) return true;
+
+            const titleTokens = buildSearchTokenSet(j.title || '');
+            const descTokens = buildSearchTokenSet(j.description || '');
+            for (const token of queryTokens) {
+              if (titleTokens.has(token) || descTokens.has(token)) return true;
+            }
+            return false;
           });
-          jobs = jobs.filter(j => matchedIds.includes(j.id));
+
+          searchHandled = true;
+        } catch (_) {
+          // Last-resort Phase 55 behavior.
+          const { normalizeArabic } = await import('./arabicNormalizer.js');
+          const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+          jobs = jobs.filter(j => {
+            const title = normalizeArabic((j.title || '').toLowerCase());
+            const desc = normalizeArabic((j.description || '').toLowerCase());
+            return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
+          });
           searchHandled = true;
         }
-      } catch (_) {
-        // Fallback to full scan below
       }
-    }
-    if (!searchHandled) {
-      const { normalizeArabic } = await import('./arabicNormalizer.js');
-      const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-      jobs = jobs.filter(j => {
-        const title = normalizeArabic((j.title || '').toLowerCase());
-        const desc = normalizeArabic((j.description || '').toLowerCase());
-        return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
-      });
+
+      // Phase 56: weighted relevance ranking.
+      if (config.SEARCH_RELEVANCE && config.SEARCH_RELEVANCE.enabled) {
+        try {
+          const { rankJobSearchResults } = await import('./searchRelevance.js');
+          jobs = rankJobSearchResults(jobs, searchQuery, filters, {
+            explain: filters.explain === '1' || filters.explain === 'true' || true,
+          });
+          filters._relevanceSorted = true;
+        } catch (_) {
+          // Keep filtered jobs with existing sorting fallback.
+        }
+      }
+
+      // Phase 56: privacy-safe search analytics (fire-and-forget).
+      try {
+        const { hashSearchQuery } = await import('./searchAnalytics.js');
+        const queryHash = hashSearchQuery(searchQuery);
+        const safeFilters = {
+          category: filters.category || null,
+          categories: filters.categories || null,
+          governorate: filters.governorate || null,
+          urgency: filters.urgency || null,
+          minWage: filters.minWage || null,
+          maxWage: filters.maxWage || null,
+        };
+
+        eventBus.emit('search:performed', {
+          scope: 'jobs',
+          query: searchQuery,
+          queryHash,
+          resultCount: jobs.length,
+          filters: safeFilters,
+          timestamp: new Date().toISOString(),
+        });
+
+        if (jobs.length === 0) {
+          eventBus.emit('search:zero_results', {
+            scope: 'jobs',
+            query: searchQuery,
+            queryHash,
+            resultCount: 0,
+            filters: safeFilters,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_) {
+        // Analytics must never affect search response.
+      }
     }
   }
 
-  // Sort (skip if already sorted by proximity)
-  if (!filters._proximitySorted) {
+  // Sort (skip if already sorted by proximity or Phase 56 relevance ranking)
+  if (!filters._proximitySorted && !filters._relevanceSorted) {
     const sort = filters.sort || 'newest';
     const urgencyOrder = { immediate: 0, urgent: 1, normal: 2 };
     if (sort === 'wage_high') {
@@ -17488,6 +18184,830 @@ export const _testHelpers = {
   isStaticRequest,
   isAlwaysAllowedApi,
   isReadOnlyApi,
+};
+```
+
+---
+
+## `server/services/marketplaceIntelligenceRollups.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/marketplaceIntelligenceRollups.js — Marketplace Intelligence Rollups (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Unified daily product/marketplace intelligence rollup.
+// Storage:
+//   data/metrics/product-intelligence/mpi_YYYY-MM-DD.json
+//
+// Inputs:
+//   - search analytics
+//   - activation funnel
+//   - notification conversion metrics
+//   - workroom adoption metrics
+//   - payment dispute analytics
+//   - direct offer funnel
+//   - predictive precision
+//   - trust calibration summary
+//   - matching quality config/stats
+//
+// Admin-only consumers.
+// No PII.
+// Heavy-ish aggregation should be queueable.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const cache = new Map();
+
+function isEnabled() {
+  return !!(config.PRODUCT_INTELLIGENCE && config.PRODUCT_INTELLIGENCE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function dayKey(iso = nowIso()) {
+  return String(iso).slice(0, 10);
+}
+
+function monthKeyFromDay(day) {
+  return String(day || dayKey()).slice(0, 7);
+}
+
+function rollupId(day) {
+  return `mpi_${day}`;
+}
+
+function rollupPath(day) {
+  return getRecordPath('product_intelligence', rollupId(day));
+}
+
+function cacheTtlMs() {
+  return config.PRODUCT_INTELLIGENCE?.cacheTtlMs || (5 * 60 * 1000);
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  cache.set(key, { value, expiresAt: Date.now() + cacheTtlMs() });
+}
+
+export function clearMarketplaceIntelligenceCache() {
+  cache.clear();
+}
+
+function safeTotals(obj) {
+  return obj && typeof obj === 'object' ? obj : {};
+}
+
+function computeHealthSignals(snapshot) {
+  const warnings = [];
+
+  const searchTotals = snapshot.search?.totals || {};
+  const searches = searchTotals.searches || 0;
+  const zeroResults = searchTotals.zeroResults || 0;
+  const zeroRate = searches > 0 ? Math.round((zeroResults / searches) * 100) : 0;
+
+  if (searches >= 10 && zeroRate >= 50) {
+    warnings.push({
+      source: 'search',
+      level: 'warning',
+      message: `Zero-result search rate is ${zeroRate}%`,
+      metric: 'zeroResultRate',
+      value: zeroRate,
+    });
+  }
+
+  const notificationTotals = snapshot.notificationConversions?.totals || {};
+  if ((notificationTotals.clicks || 0) === 0 && searches > 0) {
+    warnings.push({
+      source: 'notifications',
+      level: 'info',
+      message: 'No notification action clicks recorded yet',
+      metric: 'notificationClicks',
+      value: 0,
+    });
+  }
+
+  const disputes = snapshot.paymentDisputes?.totals || {};
+  if ((disputes.disputes || 0) >= (config.PAYMENT_DISPUTE_ANALYTICS?.minSamplesForTrend || 5) && (disputes.disputeRate || 0) >= 20) {
+    warnings.push({
+      source: 'payments',
+      level: 'warning',
+      message: `Payment dispute rate is ${disputes.disputeRate}%`,
+      metric: 'paymentDisputeRate',
+      value: disputes.disputeRate,
+    });
+  }
+
+  const workroomTotals = snapshot.workroomAdoption?.totals || {};
+  if ((workroomTotals.opened || 0) > 0 && (workroomTotals.messageSent || 0) === 0) {
+    warnings.push({
+      source: 'workrooms',
+      level: 'info',
+      message: 'Workrooms are opened but messages are not being sent yet',
+      metric: 'workroomMessageSent',
+      value: 0,
+    });
+  }
+
+  return {
+    zeroResultRate: zeroRate,
+    warningCount: warnings.length,
+    warnings,
+  };
+}
+
+async function collectSnapshot(options = {}) {
+  const month = options.month || monthKeyFromDay(options.day || dayKey());
+
+  const [
+    search,
+    zeroResults,
+    activation,
+    notificationConversions,
+    workroomAdoption,
+    paymentDisputes,
+    directOfferFunnel,
+    predictivePrecision,
+    matchingQuality,
+    trustCalibration,
+  ] = await Promise.all([
+    import('./searchAnalytics.js')
+      .then(m => m.getSearchAnalytics({ month, limit: 20 }))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./searchAnalytics.js')
+      .then(m => m.getZeroResultQueries({ month, limit: 20 }))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./activationFunnelMetrics.js')
+      .then(m => m.getActivationFunnel({ month }))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./notificationConversionMetrics.js')
+      .then(m => m.getNotificationConversionMetrics({ month }))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./workroomAdoptionMetrics.js')
+      .then(m => m.getWorkroomAdoptionMetrics({ month }))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./paymentDisputeAnalytics.js')
+      .then(m => m.getPaymentDisputeAnalytics(options))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./directOfferAnalytics.js')
+      .then(m => m.getPlatformOfferFunnel(options))
+      .catch(err => ({ sent: 0, accepted: 0, declined: 0, expired: 0, acceptRate: 0, error: err.message })),
+
+    import('./predictiveSignalRetention.js')
+      .then(m => m.getPredictivePrecisionStats(options))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./matchingIntelligence.js')
+      .then(m => m.getMatchingIntelligenceStats(options))
+      .catch(err => ({ enabled: false, error: err.message })),
+
+    import('./trustCalibration.js')
+      .then(m => m.getCalibrationDashboard ? m.getCalibrationDashboard({}) : null)
+      .catch(err => ({ enabled: false, error: err.message })),
+  ]);
+
+  const snapshot = {
+    search,
+    zeroResults,
+    activation,
+    notificationConversions,
+    workroomAdoption,
+    paymentDisputes,
+    directOfferFunnel,
+    predictivePrecision,
+    matchingQuality,
+    trustCalibration: trustCalibration || { enabled: false },
+  };
+
+  return {
+    ...snapshot,
+    health: computeHealthSignals(snapshot),
+  };
+}
+
+/**
+ * Capture and persist a daily marketplace intelligence rollup.
+ *
+ * @param {{ day?: string, from?: string, to?: string, reason?: string }} options
+ */
+export async function captureMarketplaceIntelligenceRollup(options = {}) {
+  if (!isEnabled()) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const started = Date.now();
+  const day = options.day || dayKey();
+  const generatedAt = nowIso();
+
+  const snapshot = await collectSnapshot({
+    ...options,
+    day,
+    month: monthKeyFromDay(day),
+  });
+
+  const rollup = {
+    id: rollupId(day),
+    kind: 'marketplace_intelligence',
+    version: 1,
+    day,
+    generatedAt,
+    reason: options.reason || null,
+    search: snapshot.search,
+    zeroResults: snapshot.zeroResults,
+    activation: snapshot.activation,
+    notificationConversions: snapshot.notificationConversions,
+    workroomAdoption: snapshot.workroomAdoption,
+    paymentDisputes: snapshot.paymentDisputes,
+    directOfferFunnel: snapshot.directOfferFunnel,
+    predictivePrecision: snapshot.predictivePrecision,
+    matchingQuality: snapshot.matchingQuality,
+    trustCalibration: snapshot.trustCalibration,
+    health: snapshot.health,
+    durationMs: Date.now() - started,
+    createdAt: generatedAt,
+    updatedAt: generatedAt,
+  };
+
+  await atomicWrite(rollupPath(day), rollup);
+
+  clearMarketplaceIntelligenceCache();
+
+  eventBus.emit('marketplace_intelligence:rollup_captured', {
+    rollupId: rollup.id,
+    day,
+    warningCount: rollup.health?.warningCount || 0,
+    durationMs: rollup.durationMs,
+    timestamp: generatedAt,
+  });
+
+  return rollup;
+}
+
+/**
+ * List persisted rollups newest-first.
+ */
+export async function listMarketplaceIntelligenceRollups(options = {}) {
+  if (!isEnabled()) {
+    return { rollups: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const dir = getCollectionPath('product_intelligence');
+  let rows = await listJSON(dir);
+
+  rows = rows.filter(r => r && r.id && r.id.startsWith('mpi_'));
+
+  if (options.from) rows = rows.filter(r => r.day >= String(options.from).slice(0, 10));
+  if (options.to) rows = rows.filter(r => r.day <= String(options.to).slice(0, 10));
+
+  rows.sort((a, b) => String(b.day).localeCompare(String(a.day)));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    rollups: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Get dashboard from latest persisted rollup, or capture-on-read if missing.
+ */
+export async function getMarketplaceIntelligenceDashboard(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false };
+  }
+
+  const key = `dashboard:${options.day || 'latest'}:${options.from || 'all'}:${options.to || 'all'}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  let latest = null;
+
+  if (options.day) {
+    latest = await readJSON(rollupPath(options.day)).catch(() => null);
+  } else {
+    const rows = await listMarketplaceIntelligenceRollups({ limit: 1 });
+    latest = rows.rollups && rows.rollups[0] ? rows.rollups[0] : null;
+  }
+
+  // If no rollup exists yet, capture lightweight current-day rollup synchronously.
+  // This is acceptable for admin dashboard and small datasets; heavy scheduled usage
+  // should use queue jobs.
+  if (!latest) {
+    latest = await captureMarketplaceIntelligenceRollup({
+      day: options.day || dayKey(),
+      from: options.from,
+      to: options.to,
+      reason: 'dashboard_on_demand',
+    });
+  }
+
+  const dashboard = {
+    enabled: true,
+    generatedAt: nowIso(),
+    latestRollup: latest,
+    summary: {
+      searches: latest.search?.totals?.searches || 0,
+      zeroResults: latest.search?.totals?.zeroResults || 0,
+      zeroResultRate: latest.health?.zeroResultRate || 0,
+      profileTaskClicks: latest.activation?.totals?.profileTaskClicked || 0,
+      notificationClicks: latest.notificationConversions?.totals?.clicks || 0,
+      workroomMessages: latest.workroomAdoption?.totals?.messageSent || 0,
+      paymentDisputes: latest.paymentDisputes?.totals?.disputes || 0,
+      directOfferAcceptRate: latest.directOfferFunnel?.acceptRate || 0,
+      predictivePrecisionRate: latest.predictivePrecision?.precisionRate || 0,
+      warningCount: latest.health?.warningCount || 0,
+    },
+    warnings: latest.health?.warnings || [],
+  };
+
+  cacheSet(key, dashboard);
+  return dashboard;
+}
+
+/**
+ * Cleanup old rollups beyond retentionDays.
+ */
+export async function cleanupOldMarketplaceIntelligenceRollups() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.PRODUCT_INTELLIGENCE?.retentionDays || 180;
+  const cutoff = dayKey(new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString());
+
+  const dir = getCollectionPath('product_intelligence');
+  const rows = await listJSON(dir);
+
+  let cleaned = 0;
+  for (const row of rows) {
+    if (!row || !row.id || !row.id.startsWith('mpi_')) continue;
+    if (row.day && row.day < cutoff) {
+      await deleteJSON(rollupPath(row.day)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    logger.info('marketplaceIntelligence: cleaned old rollups', { cleaned });
+  }
+
+  return cleaned;
+}
+
+const INVALIDATION_EVENTS = [
+  'search:performed',
+  'search:result_clicked_recorded',
+  'search:conversion_recorded',
+  'profile_task:clicked_recorded',
+  'notification:action_click_recorded',
+  'notification:conversion_recorded',
+  'workroom_adoption:rollup_completed',
+  'payment:disputed',
+  'direct_offer:accepted',
+  'direct_offer:declined',
+  'predictive_signal:false_positive',
+  'predictive_signal:confirmed',
+];
+
+for (const evt of INVALIDATION_EVENTS) {
+  eventBus.on(evt, () => {
+    clearMarketplaceIntelligenceCache();
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  dayKey,
+  rollupId,
+  rollupPath,
+  computeHealthSignals,
+  clearMarketplaceIntelligenceCache,
+};
+```
+
+---
+
+## `server/services/matchingIntelligence.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/matchingIntelligence.js — Explainable Matching Intelligence (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Human-readable, privacy-safe matching explanations for marketplace discovery.
+// Signals:
+//   - category
+//   - distance
+//   - availability/presence
+//   - active availability ad
+//   - Trust Score V2 / fallback trust
+//   - rating
+//   - direct offer response history
+//   - fairness caps
+//
+// Safety:
+//   - no punitive automation
+//   - no auto-ban
+//   - no negative labels
+//   - no phone/full-name leakage
+//   - explanations are positive/neutral only
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { readJSON, getRecordPath, getFromSetIndex } from './database.js';
+
+function isEnabled() {
+  return !!(config.MATCHING_INTELLIGENCE && config.MATCHING_INTELLIGENCE.enabled);
+}
+
+function cfg() {
+  return config.MATCHING_INTELLIGENCE || {};
+}
+
+function weights() {
+  return cfg().scoreWeights || {};
+}
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function roundScore(n) {
+  return Math.round(clamp01(n) * 1000) / 1000;
+}
+
+function safeReason(label, score, icon) {
+  return {
+    label,
+    score: Math.round((Number(score) || 0) * 1000) / 1000,
+    icon: icon || null,
+  };
+}
+
+function maxReasons() {
+  return Math.max(1, Number(cfg().maxExplanationReasons) || 5);
+}
+
+function hasCategoryMatch(worker, jobOrContext) {
+  const categories = Array.isArray(worker?.categories)
+    ? worker.categories
+    : (Array.isArray(worker?.user?.categories) ? worker.user.categories : []);
+
+  const category = jobOrContext?.category ||
+    (Array.isArray(jobOrContext?.categories) && jobOrContext.categories.length === 1 ? jobOrContext.categories[0] : null);
+
+  if (!category) return false;
+  return categories.includes(category);
+}
+
+function distanceScore(distanceKm, radiusKm) {
+  if (!Number.isFinite(distanceKm)) return 0;
+  if (!Number.isFinite(radiusKm) || radiusKm <= 0) radiusKm = 30;
+  return clamp01(1 - distanceKm / radiusKm);
+}
+
+function ratingScore(worker) {
+  const rating = worker?.rating || worker?.user?.rating || { avg: 0, count: 0 };
+  const avg = Number(rating.avg) || 0;
+  const count = Number(rating.count) || 0;
+  if (count <= 0) return 0;
+  return clamp01(avg / 5);
+}
+
+async function resolveTrustScore(worker, context = {}) {
+  if (typeof context.trustScore === 'number') return clamp01(context.trustScore);
+  if (typeof worker?.trustScore === 'number') return clamp01(worker.trustScore);
+  if (typeof worker?.user?.trustScore === 'number') return clamp01(worker.user.trustScore);
+
+  const userId = worker?.id || worker?.userId || worker?.user?.id;
+  if (!userId) return 0.5;
+
+  try {
+    const { getTrustScoreV2 } = await import('./trustScoreV2.js');
+    const result = await getTrustScoreV2(userId, { admin: false });
+    if (result && typeof result.score === 'number') return clamp01(result.score);
+    if (result && typeof result.score01 === 'number') return clamp01(result.score01);
+  } catch (_) {
+    // Fallback below.
+  }
+
+  try {
+    const { getUserTrustScore } = await import('./trust.js');
+    const result = await getUserTrustScore(userId);
+    if (result && typeof result.score === 'number') return clamp01(result.score);
+  } catch (_) {
+    // Default below.
+  }
+
+  return 0.5;
+}
+
+function isOnline(worker, context = {}) {
+  if (context.presenceData && context.presenceData.status === 'online') return true;
+  if (context.presenceStatus === 'online') return true;
+  if (worker?.isOnline === true) return true;
+  if (worker?.status === 'online') return true;
+  return false;
+}
+
+function isAvailable(worker, context = {}) {
+  if (context.availableNow === true) return true;
+  if (context.activeAd) return true;
+  if (worker?.hasActiveAd) return true;
+
+  const availability = worker?.availability || worker?.user?.availability;
+  if (availability && availability.available === false) return false;
+
+  return isOnline(worker, context);
+}
+
+function hasActiveAd(worker, context = {}) {
+  return !!(context.activeAd || worker?.activeAd || worker?.hasActiveAd || worker?.adSummary);
+}
+
+async function getPairOffers(employerId, workerId) {
+  if (!employerId || !workerId) return [];
+
+  try {
+    const indexPath = config.DATABASE.indexFiles.employerOffersIndex;
+    const ids = await getFromSetIndex(indexPath, employerId);
+    const offers = [];
+    for (const id of ids) {
+      const offer = await readJSON(getRecordPath('direct_offers', id));
+      if (offer && offer.workerId === workerId) offers.push(offer);
+    }
+    return offers;
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Get safe direct-offer acceptance signals for employer→worker pair.
+ *
+ * @param {string} employerId
+ * @param {string} workerId
+ * @param {object} context
+ */
+export async function getDirectOfferAcceptanceSignals(employerId, workerId, context = {}) {
+  const offers = Array.isArray(context.pairOffers)
+    ? context.pairOffers
+    : await getPairOffers(employerId, workerId);
+
+  let total = 0;
+  let accepted = 0;
+  let declined = 0;
+  let expired = 0;
+  let withdrawn = 0;
+  let responseMsTotal = 0;
+  let responseCount = 0;
+
+  for (const offer of offers) {
+    total++;
+    if (offer.status === 'accepted') accepted++;
+    else if (offer.status === 'declined') declined++;
+    else if (offer.status === 'expired') expired++;
+    else if (offer.status === 'withdrawn') withdrawn++;
+
+    const responseAt = offer.acceptedAt || offer.declinedAt;
+    if (responseAt && offer.createdAt) {
+      const ms = new Date(responseAt).getTime() - new Date(offer.createdAt).getTime();
+      if (Number.isFinite(ms) && ms > 0) {
+        responseMsTotal += ms;
+        responseCount++;
+      }
+    }
+  }
+
+  const decided = accepted + declined + expired;
+  const acceptRate = decided > 0 ? accepted / decided : 0;
+  const avgResponseMs = responseCount > 0 ? Math.round(responseMsTotal / responseCount) : 0;
+
+  let responseSpeedScore = 0;
+  if (avgResponseMs > 0) {
+    // 0-120s is strong, >10min fades out.
+    responseSpeedScore = clamp01(1 - Math.max(0, avgResponseMs - 120000) / (10 * 60 * 1000));
+  }
+
+  return {
+    total,
+    accepted,
+    declined,
+    expired,
+    withdrawn,
+    decided,
+    acceptRate: Math.round(acceptRate * 100) / 100,
+    avgResponseMs,
+    responseSpeedScore: roundScore(responseSpeedScore),
+  };
+}
+
+/**
+ * Score one worker for a job/context.
+ *
+ * @param {object} worker — privacy-safe worker card OR raw user/candidate
+ * @param {object} job — job-like object OR discovery filters
+ * @param {object} context
+ */
+export async function scoreWorkerForJob(worker, job, context = {}) {
+  if (!isEnabled()) {
+    return { score: 0, reasons: [], noPunitiveAutomation: true };
+  }
+
+  const w = weights();
+  let total = 0;
+  const reasons = [];
+
+  const categoryMatched = hasCategoryMatch(worker, job);
+  if (categoryMatched) {
+    total += w.category || 0;
+    reasons.push(safeReason('تخصص مطابق', w.category || 0, 'briefcase'));
+  }
+
+  const distanceKm = Number.isFinite(context.distanceKm)
+    ? context.distanceKm
+    : (Number.isFinite(worker?.distanceKm) ? worker.distanceKm : worker?._distance);
+
+  const radiusKm = Number(context.radiusKm || job?.radiusKm || config.WORKER_DISCOVERY?.defaultRadiusKm || 30);
+  const distScore = distanceScore(distanceKm, radiusKm);
+  if (distScore > 0) {
+    total += (w.distance || 0) * distScore;
+    if (Number.isFinite(distanceKm) && distanceKm <= Math.min(radiusKm, 15)) {
+      reasons.push(safeReason('قريب منك', (w.distance || 0) * distScore, 'mapPin'));
+    }
+  }
+
+  if (isAvailable(worker, context)) {
+    total += w.availability || 0;
+    reasons.push(safeReason(isOnline(worker, context) ? 'متاح الآن' : 'متاح للشغل', w.availability || 0, 'checkCircle'));
+  }
+
+  if (hasActiveAd(worker, context)) {
+    total += w.activeAd || 0;
+    reasons.push(safeReason('عنده إعلان إتاحة نشط', w.activeAd || 0, 'bell'));
+  }
+
+  const trust = await resolveTrustScore(worker, context);
+  total += (w.trustScore || 0) * trust;
+  if (trust >= 0.7) {
+    reasons.push(safeReason('ثقة عالية', (w.trustScore || 0) * trust, 'shieldCheck'));
+  } else if (trust >= 0.5) {
+    reasons.push(safeReason('ثقة مناسبة', (w.trustScore || 0) * trust, 'shield'));
+  }
+
+  const rScore = ratingScore(worker);
+  if (rScore > 0) {
+    total += (w.rating || 0) * rScore;
+    if (rScore >= 0.8) reasons.push(safeReason('تقييمات قوية', (w.rating || 0) * rScore, 'star'));
+  }
+
+  let offerSignals = context.offerSignals || null;
+  const employerId = context.employerId || job?.employerId || null;
+  const workerId = worker?.id || worker?.userId || worker?.user?.id || null;
+
+  if (!offerSignals && employerId && workerId) {
+    offerSignals = await getDirectOfferAcceptanceSignals(employerId, workerId, context);
+  }
+
+  if (offerSignals && offerSignals.responseSpeedScore > 0) {
+    total += (w.responseSpeed || 0) * offerSignals.responseSpeedScore;
+    if (offerSignals.avgResponseMs > 0 && offerSignals.avgResponseMs <= 5 * 60 * 1000) {
+      reasons.push(safeReason('عادةً يرد بسرعة', (w.responseSpeed || 0) * offerSignals.responseSpeedScore, 'clock'));
+    }
+  }
+
+  // Fairness cap is neutral: it can reduce exposure repetition, never label worker negatively.
+  const sameWorkerCount = Number(context.sameWorkerRecommendationCount || 0);
+  const cap = Number(cfg().fairness?.maxSameWorkerRecommendationsPerEmployerPerDay || 10);
+  let fairnessCapped = false;
+  if (cap > 0 && sameWorkerCount >= cap) {
+    fairnessCapped = true;
+    total *= 0.75;
+  }
+
+  reasons.sort((a, b) => b.score - a.score);
+
+  const finalReasons = reasons
+    .filter(r => r && r.label)
+    .slice(0, maxReasons())
+    .map(r => r.label);
+
+  try {
+    eventBus.emit('matching:explanation_generated', {
+      workerId,
+      employerId,
+      jobId: job?.id || null,
+      reasonCount: finalReasons.length,
+      fairnessCapped,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (_) {
+    // fire-and-forget
+  }
+
+  return {
+    score: roundScore(total),
+    reasons: finalReasons,
+    reasonDetails: reasons.slice(0, maxReasons()),
+    fairnessCapped,
+    noPunitiveAutomation: cfg().fairness?.noPunitiveAutomation !== false,
+  };
+}
+
+/**
+ * Explain match as safe Arabic chips.
+ *
+ * @param {object} worker
+ * @param {object} job
+ * @param {object} context
+ */
+export async function explainWorkerJobMatch(worker, job, context = {}) {
+  const result = await scoreWorkerForJob(worker, job, context);
+  return result.reasons;
+}
+
+/**
+ * Rank workers for a job/context.
+ *
+ * @param {object[]} workers
+ * @param {object} job
+ * @param {object} context
+ */
+export async function rankWorkersForJob(workers, job, context = {}) {
+  if (!Array.isArray(workers)) return [];
+
+  const rows = [];
+  for (let i = 0; i < workers.length; i++) {
+    const worker = workers[i];
+    const result = await scoreWorkerForJob(worker, job, context);
+    rows.push({ worker, idx: i, score: result.score, reasons: result.reasons });
+  }
+
+  rows.sort((a, b) =>
+    b.score - a.score ||
+    String(a.worker?.id || a.worker?.userId || '').localeCompare(String(b.worker?.id || b.worker?.userId || '')) ||
+    a.idx - b.idx
+  );
+
+  return rows.map(row => ({
+    ...row.worker,
+    _matchScore: row.score,
+    _matchReasons: row.reasons,
+  }));
+}
+
+/**
+ * Lightweight stats for admin/health.
+ */
+export async function getMatchingIntelligenceStats() {
+  return {
+    enabled: isEnabled(),
+    explainabilityEnabled: !!cfg().explainabilityEnabled,
+    maxExplanationReasons: maxReasons(),
+    noPunitiveAutomation: cfg().fairness?.noPunitiveAutomation !== false,
+    diversifyResults: !!cfg().fairness?.diversifyResults,
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  clamp01,
+  roundScore,
+  distanceScore,
+  ratingScore,
+  hasCategoryMatch,
+  safeReason,
 };
 ```
 
@@ -19034,6 +20554,25 @@ const builtInMigrations = [
       logger.info('Migration v15: Phase 55 scale hygiene directories registered (queue, workroom, trust, predictive archives, scheduler history)');
     },
   },
+  {
+    version: 16,
+    name: 'Phase 56: Marketplace Intelligence + Product UX Maturity',
+    up: async () => {
+      // Phase 56 registers additive marketplace/product intelligence structures:
+      //   - metrics/search-analytics
+      //   - metrics/product-intelligence
+      //   - metrics/matching
+      //   - metrics/payment-disputes
+      //
+      // No heavy scan is performed here by design.
+      // Search/product/payment/workroom rollups are generated by queue jobs,
+      // scheduler registry, or repair/rebuild scripts.
+      //
+      // Phase 56 also adds relevance and explainability services, but those are
+      // rebuildable/stateless unless a rollup job persists aggregates.
+      logger.info('Migration v16: Phase 56 marketplace intelligence directories registered (search, product, matching, payment disputes)');
+    },
+  },
 ];
 
 /**
@@ -19828,6 +21367,255 @@ export const _testHelpers = {
   safeId,
   buildUrl,
   isEnabled,
+};
+```
+
+---
+
+## `server/services/notificationConversionMetrics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/notificationConversionMetrics.js — Notification Conversion Metrics (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Aggregate/admin-only notification action telemetry.
+// Storage:
+//   data/metrics/product-intelligence/notification-conversions-YYYY-MM.json
+//
+// Tracks:
+//   - notification type
+//   - action type
+//   - clicks
+//   - conversions
+//   - CTR / conversion rate
+//
+// Privacy:
+//   - no message body
+//   - no phone/name
+//   - notificationId not persisted in aggregate rows
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.PRODUCT_INTELLIGENCE && config.PRODUCT_INTELLIGENCE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function metricsId(month) {
+  return `notification-conversions-${month}`;
+}
+
+function metricsPath(month) {
+  return getRecordPath('product_intelligence', metricsId(month));
+}
+
+function safeKey(value, fallback = 'unknown') {
+  if (!value || typeof value !== 'string') return fallback;
+  const clean = value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  return clean || fallback;
+}
+
+function emptyMetrics(month) {
+  const now = nowIso();
+  return {
+    id: metricsId(month),
+    kind: 'notification_conversions',
+    version: 1,
+    month,
+    totals: {
+      clicks: 0,
+      conversions: 0,
+    },
+    byType: {},
+    byAction: {},
+    matrix: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureType(data, type) {
+  if (!data.byType) data.byType = {};
+  if (!data.byType[type]) {
+    data.byType[type] = { type, clicks: 0, conversions: 0 };
+  }
+  return data.byType[type];
+}
+
+function ensureAction(data, actionType) {
+  if (!data.byAction) data.byAction = {};
+  if (!data.byAction[actionType]) {
+    data.byAction[actionType] = { actionType, clicks: 0, conversions: 0 };
+  }
+  return data.byAction[actionType];
+}
+
+function ensureMatrix(data, type, actionType) {
+  if (!data.matrix) data.matrix = {};
+  const key = `${type}:${actionType}`;
+  if (!data.matrix[key]) {
+    data.matrix[key] = { key, type, actionType, clicks: 0, conversions: 0 };
+  }
+  return data.matrix[key];
+}
+
+async function mutate(timestamp, fn) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const month = monthKey(timestamp);
+  return withLock(`notification-conversions:${month}`, async () => {
+    const filePath = metricsPath(month);
+    const data = (await readJSON(filePath)) || emptyMetrics(month);
+
+    await fn(data);
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+
+    return { ok: true, month, data };
+  });
+}
+
+/**
+ * Record notification action click.
+ *
+ * @param {{ notificationType?: string, actionType?: string, timestamp?: string }} params
+ */
+export async function recordNotificationActionClick(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const type = safeKey(params.notificationType || params.type);
+  const actionType = safeKey(params.actionType || params.action);
+
+  await mutate(timestamp, async (data) => {
+    data.totals.clicks++;
+
+    ensureType(data, type).clicks++;
+    ensureAction(data, actionType).clicks++;
+    ensureMatrix(data, type, actionType).clicks++;
+  });
+
+  eventBus.emit('notification:action_click_recorded', {
+    notificationType: type,
+    actionType,
+    timestamp,
+  });
+
+  return { recorded: true, notificationType: type, actionType };
+}
+
+/**
+ * Record conversion after notification click/action.
+ *
+ * @param {{ notificationType?: string, actionType?: string, conversionType?: string, timestamp?: string }} params
+ */
+export async function recordNotificationConversion(params = {}) {
+  const timestamp = params.timestamp || nowIso();
+  const type = safeKey(params.notificationType || params.type);
+  const actionType = safeKey(params.actionType || params.action);
+
+  await mutate(timestamp, async (data) => {
+    data.totals.conversions++;
+
+    ensureType(data, type).conversions++;
+    ensureAction(data, actionType).conversions++;
+    ensureMatrix(data, type, actionType).conversions++;
+  });
+
+  eventBus.emit('notification:conversion_recorded', {
+    notificationType: type,
+    actionType,
+    conversionType: params.conversionType || 'unknown',
+    timestamp,
+  });
+
+  return { recorded: true, notificationType: type, actionType };
+}
+
+/**
+ * Get notification conversion metrics.
+ */
+export async function getNotificationConversionMetrics(options = {}) {
+  if (!isEnabled()) return { enabled: false, totals: {}, rows: [] };
+
+  const month = options.month || monthKey();
+  const data = (await readJSON(metricsPath(month))) || emptyMetrics(month);
+
+  const rows = Object.values(data.matrix || {}).map(row => {
+    const ctrBase = row.clicks || 0;
+    const conversionRate = ctrBase > 0 ? Math.round((row.conversions / ctrBase) * 100) : 0;
+    return { ...row, conversionRate };
+  }).sort((a, b) => b.clicks - a.clicks || b.conversions - a.conversions);
+
+  return {
+    enabled: true,
+    month,
+    totals: data.totals || {},
+    byType: data.byType || {},
+    byAction: data.byAction || {},
+    rows,
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+/**
+ * Rollup wrapper.
+ */
+export async function rollupNotificationConversions(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const month = options.month || monthKey();
+  const result = await getNotificationConversionMetrics({ month });
+
+  return {
+    ok: true,
+    month,
+    totals: result.totals,
+    rows: result.rows.slice(0, 20),
+    generatedAt: nowIso(),
+  };
+}
+
+const LISTENER_FLAG = '__yawmiaNotificationConversionListenersRegistered';
+
+if (isEnabled() && !globalThis[LISTENER_FLAG]) {
+  globalThis[LISTENER_FLAG] = true;
+
+  eventBus.on('notification:action_clicked', (data) => {
+    recordNotificationActionClick(data).catch(err => {
+      logger.warn('notificationConversionMetrics: click failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('notification:conversion_recorded', (data) => {
+    recordNotificationConversion(data).catch(err => {
+      logger.warn('notificationConversionMetrics: conversion failed', { error: err.message });
+    });
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  metricsId,
+  metricsPath,
+  safeKey,
+  emptyMetrics,
 };
 ```
 
@@ -21431,7 +23219,7 @@ export async function enqueueJob(params = {}) {
   }
 
   const job = buildInitialJob(params);
-  await atomicWrite(queuePath(job.id), job);
+  await writeQueueRecord(job);
 
   eventBus.emit('ops_queue:job_enqueued', {
     jobId: job.id,
@@ -21940,6 +23728,351 @@ export const _testHelpers = {
   buildInitialJob,
   payloadSizeBytes,
   VALID_STATUSES,
+};
+```
+
+---
+
+## `server/services/paymentDisputeAnalytics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/paymentDisputeAnalytics.js — Payment Dispute Analytics V2 (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Admin-only analytics for payment disputes.
+// No PII leakage: aggregate by IDs/category/governorate/method/status only.
+// No raw disputeReason in dashboard rows by default.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+const cache = new Map();
+
+function isEnabled() {
+  return !!(config.PAYMENT_DISPUTE_ANALYTICS && config.PAYMENT_DISPUTE_ANALYTICS.enabled);
+}
+
+function cacheTtlMs() {
+  return config.PAYMENT_DISPUTE_ANALYTICS?.cacheTtlMs || (5 * 60 * 1000);
+}
+
+function cacheKey(prefix, options = {}) {
+  return `${prefix}:${options.from || 'all'}:${options.to || 'all'}:${options.groupBy || 'all'}`;
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  cache.set(key, { value, expiresAt: Date.now() + cacheTtlMs() });
+}
+
+export function clearPaymentDisputeAnalyticsCache() {
+  cache.clear();
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function inRange(iso, from, to) {
+  if (!iso) return true;
+  if (from && iso < from) return false;
+  if (to && iso > to) return false;
+  return true;
+}
+
+function amountBucket(amount) {
+  const n = Number(amount) || 0;
+  if (n < 500) return '<500';
+  if (n < 1000) return '500-999';
+  if (n < 2500) return '1000-2499';
+  if (n < 5000) return '2500-4999';
+  return '5000+';
+}
+
+function inc(obj, key, amount = 1) {
+  const k = key || 'unknown';
+  obj[k] = (obj[k] || 0) + amount;
+}
+
+function safeRate(num, den) {
+  if (!den || den <= 0) return 0;
+  return Math.round((num / den) * 100);
+}
+
+function durationMs(fromIso, toIso) {
+  if (!fromIso || !toIso) return 0;
+  const ms = new Date(toIso).getTime() - new Date(fromIso).getTime();
+  return Number.isFinite(ms) && ms > 0 ? ms : 0;
+}
+
+async function loadPaymentsAndJobs(options = {}) {
+  const { listAll: listPayments } = await import('./payments.js');
+  const { findById: findJob } = await import('./jobs.js');
+
+  const payments = await listPayments();
+  const rows = [];
+
+  for (let i = 0; i < payments.length; i++) {
+    const payment = payments[i];
+    if (!payment || !payment.id) continue;
+    if (!inRange(payment.disputedAt || payment.createdAt, options.from, options.to)) continue;
+
+    let job = null;
+    try {
+      job = payment.jobId ? await findJob(payment.jobId) : null;
+    } catch (_) {
+      job = null;
+    }
+
+    rows.push({ payment, job });
+
+    if ((i + 1) % 100 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return rows;
+}
+
+function emptyAnalytics() {
+  return {
+    enabled: true,
+    generatedAt: nowIso(),
+    totals: {
+      payments: 0,
+      disputes: 0,
+      disputeRate: 0,
+      openDisputes: 0,
+      resolvedDisputes: 0,
+      disputedAmount: 0,
+      disputedPlatformFeeExposure: 0,
+      avgResolutionMs: 0,
+      avgResolutionHours: 0,
+    },
+    byStatus: {},
+    byCategory: {},
+    byGovernorate: {},
+    byMethod: {},
+    byAmountBucket: {},
+    byEmployer: {},
+    byWorker: {},
+    topRiskCategories: [],
+    topRiskGovernorates: [],
+  };
+}
+
+/**
+ * Main admin analytics.
+ */
+export async function getPaymentDisputeAnalytics(options = {}) {
+  if (!isEnabled()) return { enabled: false };
+
+  const key = cacheKey('payment-disputes', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const rows = await loadPaymentsAndJobs(options);
+  const result = emptyAnalytics();
+
+  let resolutionTotal = 0;
+  let resolutionCount = 0;
+
+  const categoryTotals = {};
+  const govTotals = {};
+
+  for (const { payment, job } of rows) {
+    result.totals.payments++;
+
+    const category = job?.category || 'unknown';
+    const governorate = job?.governorate || 'unknown';
+
+    inc(categoryTotals, category);
+    inc(govTotals, governorate);
+
+    if (payment.status !== 'disputed' && !payment.disputedAt) continue;
+
+    result.totals.disputes++;
+    result.totals.disputedAmount += payment.amount || 0;
+    result.totals.disputedPlatformFeeExposure += payment.platformFee || 0;
+
+    inc(result.byStatus, payment.status || 'unknown');
+    inc(result.byCategory, category);
+    inc(result.byGovernorate, governorate);
+    inc(result.byMethod, payment.method || 'unknown');
+    inc(result.byAmountBucket, amountBucket(payment.amount || 0));
+    inc(result.byEmployer, payment.employerId || 'unknown');
+
+    if (payment.disputedBy) inc(result.byWorker, payment.disputedBy);
+
+    if (payment.status === 'disputed') {
+      result.totals.openDisputes++;
+    } else if (payment.disputedAt && payment.completedAt) {
+      result.totals.resolvedDisputes++;
+      const ms = durationMs(payment.disputedAt, payment.completedAt);
+      if (ms > 0) {
+        resolutionTotal += ms;
+        resolutionCount++;
+      }
+    }
+  }
+
+  result.totals.disputeRate = safeRate(result.totals.disputes, result.totals.payments);
+  result.totals.avgResolutionMs = resolutionCount > 0 ? Math.round(resolutionTotal / resolutionCount) : 0;
+  result.totals.avgResolutionHours = result.totals.avgResolutionMs > 0
+    ? Math.round((result.totals.avgResolutionMs / 3600000) * 10) / 10
+    : 0;
+
+  result.topRiskCategories = Object.entries(result.byCategory)
+    .map(([category, disputes]) => ({
+      category,
+      disputes,
+      totalPayments: categoryTotals[category] || disputes,
+      disputeRate: safeRate(disputes, categoryTotals[category] || disputes),
+    }))
+    .sort((a, b) => b.disputeRate - a.disputeRate || b.disputes - a.disputes)
+    .slice(0, 10);
+
+  result.topRiskGovernorates = Object.entries(result.byGovernorate)
+    .map(([governorate, disputes]) => ({
+      governorate,
+      disputes,
+      totalPayments: govTotals[governorate] || disputes,
+      disputeRate: safeRate(disputes, govTotals[governorate] || disputes),
+    }))
+    .sort((a, b) => b.disputeRate - a.disputeRate || b.disputes - a.disputes)
+    .slice(0, 10);
+
+  cacheSet(key, result);
+  return result;
+}
+
+/**
+ * Daily trend.
+ */
+export async function getPaymentDisputeTrend(options = {}) {
+  if (!isEnabled()) return { enabled: false, trend: [] };
+
+  const key = cacheKey('payment-dispute-trend', options);
+  const cached = cacheGet(key);
+  if (cached) return cached;
+
+  const rows = await loadPaymentsAndJobs(options);
+  const byDay = {};
+
+  for (const { payment } of rows) {
+    if (!payment.disputedAt) continue;
+    const day = payment.disputedAt.slice(0, 10);
+    if (!byDay[day]) {
+      byDay[day] = {
+        date: day,
+        disputes: 0,
+        disputedAmount: 0,
+        disputedPlatformFeeExposure: 0,
+      };
+    }
+    byDay[day].disputes++;
+    byDay[day].disputedAmount += payment.amount || 0;
+    byDay[day].disputedPlatformFeeExposure += payment.platformFee || 0;
+  }
+
+  const result = {
+    enabled: true,
+    trend: Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date)),
+    generatedAt: nowIso(),
+  };
+
+  cacheSet(key, result);
+  return result;
+}
+
+/**
+ * Breakdown by requested dimension.
+ */
+export async function getPaymentDisputeBreakdown(options = {}) {
+  if (!isEnabled()) return { enabled: false, breakdown: [] };
+
+  const groupBy = options.groupBy || 'category';
+  const analytics = await getPaymentDisputeAnalytics(options);
+
+  const map = {
+    category: analytics.byCategory,
+    governorate: analytics.byGovernorate,
+    method: analytics.byMethod,
+    status: analytics.byStatus,
+    amountBucket: analytics.byAmountBucket,
+    employer: analytics.byEmployer,
+    worker: analytics.byWorker,
+  };
+
+  const source = map[groupBy] || analytics.byCategory;
+
+  const breakdown = Object.entries(source || {})
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    enabled: true,
+    groupBy,
+    breakdown,
+    total: breakdown.length,
+    generatedAt: nowIso(),
+  };
+}
+
+/**
+ * Rollup wrapper for queue/scheduler.
+ */
+export async function rollupPaymentDisputeAnalytics(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const analytics = await getPaymentDisputeAnalytics(options);
+  const trend = await getPaymentDisputeTrend(options);
+
+  eventBus.emit('payment_dispute_analytics:rollup_completed', {
+    disputes: analytics.totals?.disputes || 0,
+    disputeRate: analytics.totals?.disputeRate || 0,
+    timestamp: nowIso(),
+  });
+
+  return {
+    ok: true,
+    analytics,
+    trend: trend.trend || [],
+    generatedAt: nowIso(),
+  };
+}
+
+const LISTENER_FLAG = '__yawmiaPaymentDisputeAnalyticsListenersRegistered';
+
+if (isEnabled() && !globalThis[LISTENER_FLAG]) {
+  globalThis[LISTENER_FLAG] = true;
+
+  const clear = () => clearPaymentDisputeAnalyticsCache();
+
+  eventBus.on('payment:created', clear);
+  eventBus.on('payment:confirmed', clear);
+  eventBus.on('payment:completed', clear);
+  eventBus.on('payment:disputed', clear);
+}
+
+export const _testHelpers = {
+  isEnabled,
+  amountBucket,
+  safeRate,
+  durationMs,
+  emptyAnalytics,
+  clearPaymentDisputeAnalyticsCache,
 };
 ```
 
@@ -25393,6 +27526,7 @@ import config from '../../config.js';
 import { sanitizeActionUrl } from './notificationActions.js';
 import { calculateCompleteness } from './profileCompleteness.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 function isEnabled() {
   return !!(config.PROFILE_TASKS && config.PROFILE_TASKS.enabled);
@@ -25588,6 +27722,38 @@ export async function getProfileTasks(userId) {
   const completeness = calculateCompleteness(user);
   let tasks = buildTasksFromUser(user, completeness);
   tasks = await addWorkerActivationTasks(user, tasks);
+
+  // Phase 56 — Product intelligence events.
+  // Fire-and-forget only; profile tasks response must remain fast and stable.
+  try {
+    const timestamp = new Date().toISOString();
+
+    for (const task of tasks) {
+      eventBus.emit('profile_task:shown', {
+        userId: user.id,
+        role: user.role,
+        taskId: task.id,
+        timestamp,
+      });
+    }
+
+    if (completeness.score >= 80) {
+      eventBus.emit('profile_task:completed', {
+        userId: user.id,
+        role: user.role,
+        taskId: 'profile_completeness_80',
+        timestamp,
+      });
+
+      eventBus.emit('activation:first_profile_completeness_80', {
+        userId: user.id,
+        role: user.role,
+        timestamp,
+      });
+    }
+  } catch (_) {
+    // Never block profile tasks.
+  }
 
   return {
     enabled: true,
@@ -27754,6 +29920,15 @@ function registerBuiltIns() {
   registerJobHandler('trust_snapshot_rollup', handleTrustSnapshotRollupJob);
   registerJobHandler('predictive_archive_index_rebuild', handlePredictiveArchiveIndexRebuildJob);
   registerJobHandler('scheduler_history_cleanup', handleSchedulerHistoryCleanupJob);
+
+  // Phase 56 — Marketplace Intelligence + Product UX Maturity
+  registerJobHandler('marketplace_intelligence_rollup', handleMarketplaceIntelligenceRollupJob);
+  registerJobHandler('search_analytics_rollup', handleSearchAnalyticsRollupJob);
+  registerJobHandler('payment_dispute_analytics_rollup', handlePaymentDisputeAnalyticsRollupJob);
+  registerJobHandler('workroom_adoption_rollup', handleWorkroomAdoptionRollupJob);
+  registerJobHandler('notification_conversion_rollup', handleNotificationConversionRollupJob);
+  registerJobHandler('activation_funnel_rollup', handleActivationFunnelRollupJob);
+  registerJobHandler('search_relevance_rebuild', handleSearchRelevanceRebuildJob);
 }
 
 export async function startQueueWorkers() {
@@ -28431,6 +30606,138 @@ async function handlePredictiveArchiveIndexRebuildJob({ payload }) {
 async function handleSchedulerHistoryCleanupJob({ payload }) {
   const { cleanupSchedulerHistory } = await import('./schedulerRunHistory.js');
   return await cleanupSchedulerHistory(payload.options || {});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 56 Built-in handlers — Marketplace/Product Intelligence
+// ═══════════════════════════════════════════════════════════════
+
+async function handleMarketplaceIntelligenceRollupJob({ payload }) {
+  const { captureMarketplaceIntelligenceRollup } = await import('./marketplaceIntelligenceRollups.js');
+
+  const result = await captureMarketplaceIntelligenceRollup(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    rollupId: result.id || null,
+    day: result.day || null,
+    warningCount: result.health?.warningCount || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleSearchAnalyticsRollupJob({ payload }) {
+  const { rollupSearchAnalytics } = await import('./searchAnalytics.js');
+
+  const result = await rollupSearchAnalytics(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    topQueryCount: Array.isArray(result.topQueries) ? result.topQueries.length : 0,
+  };
+}
+
+async function handlePaymentDisputeAnalyticsRollupJob({ payload }) {
+  const { rollupPaymentDisputeAnalytics } = await import('./paymentDisputeAnalytics.js');
+
+  const result = await rollupPaymentDisputeAnalytics(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    disputes: result.analytics?.totals?.disputes || 0,
+    disputeRate: result.analytics?.totals?.disputeRate || 0,
+    trendDays: Array.isArray(result.trend) ? result.trend.length : 0,
+  };
+}
+
+async function handleWorkroomAdoptionRollupJob({ payload }) {
+  const { rollupWorkroomAdoption } = await import('./workroomAdoptionMetrics.js');
+
+  const result = await rollupWorkroomAdoption(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rates: result.rates || {},
+  };
+}
+
+async function handleNotificationConversionRollupJob({ payload }) {
+  const { rollupNotificationConversions } = await import('./notificationConversionMetrics.js');
+
+  const result = await rollupNotificationConversions(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rowCount: Array.isArray(result.rows) ? result.rows.length : 0,
+  };
+}
+
+async function handleActivationFunnelRollupJob({ payload }) {
+  const { rollupActivationFunnel } = await import('./activationFunnelMetrics.js');
+
+  const result = await rollupActivationFunnel(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rates: result.rates || {},
+  };
+}
+
+async function handleSearchRelevanceRebuildJob({ payload }) {
+  const result = {
+    searchIndex: { rebuilt: false, count: 0 },
+    queryIndex: { rebuilt: false, count: 0 },
+  };
+
+  try {
+    const searchIndex = await import('./searchIndex.js');
+    const count = await searchIndex.buildIndex();
+    result.searchIndex = { rebuilt: true, count };
+  } catch (err) {
+    result.searchIndex = { rebuilt: false, error: err.message };
+  }
+
+  try {
+    const queryIndex = await import('./queryIndex.js');
+    const count = await queryIndex.buildAllIndexes();
+    result.queryIndex = { rebuilt: true, count };
+  } catch (err) {
+    result.queryIndex = { rebuilt: false, error: err.message };
+  }
+
+  if (!result.searchIndex.rebuilt && !result.queryIndex.rebuilt) {
+    const err = new Error('SEARCH_RELEVANCE_REBUILD_FAILED');
+    err.retryable = true;
+    throw err;
+  }
+
+  return result;
 }
 
 export const _testHelpers = {
@@ -29682,6 +31989,62 @@ function defaultDefinitions() {
       enabled: defaultEnabled('scheduler_history_cleanup'),
       idempotencyKeyFn: (bucket) => `scheduler_history_cleanup:scheduled:${bucket}`,
     },
+
+    // Phase 56 — Marketplace Intelligence + Product UX Maturity
+    {
+      name: 'marketplace_intelligence_daily',
+      queueType: 'marketplace_intelligence_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('marketplace_intelligence_daily'),
+      idempotencyKeyFn: (bucket) => `marketplace_intelligence_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'search_analytics_rollup',
+      queueType: 'search_analytics_rollup',
+      intervalMs: config.SEARCH_ANALYTICS?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('search_analytics_rollup'),
+      idempotencyKeyFn: (bucket) => `search_analytics_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'payment_dispute_analytics_rollup',
+      queueType: 'payment_dispute_analytics_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('payment_dispute_analytics_rollup'),
+      idempotencyKeyFn: (bucket) => `payment_dispute_analytics_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_adoption_rollup',
+      queueType: 'workroom_adoption_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_adoption_rollup'),
+      idempotencyKeyFn: (bucket) => `workroom_adoption_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'notification_conversion_rollup',
+      queueType: 'notification_conversion_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('notification_conversion_rollup'),
+      idempotencyKeyFn: (bucket) => `notification_conversion_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'activation_funnel_rollup',
+      queueType: 'activation_funnel_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('activation_funnel_rollup'),
+      idempotencyKeyFn: (bucket) => `activation_funnel_rollup:scheduled:${bucket}`,
+    },
   ];
 }
 
@@ -30440,6 +32803,481 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/searchAnalytics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/searchAnalytics.js — Search Analytics (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Privacy-safe aggregate search analytics.
+// Storage:
+//   data/metrics/search-analytics/{YYYY-MM}.json
+//
+// Defaults:
+//   - raw queries are NOT stored
+//   - queryHash is SHA-256(query normalized/lowercased)
+//   - aggregate by scope + queryHash
+//
+// Events consumed:
+//   - search:performed
+//   - search:zero_results
+//   - search:result_clicked
+//   - search:conversion
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  deleteJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.SEARCH_ANALYTICS && config.SEARCH_ANALYTICS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function dayKey(iso = nowIso()) {
+  return String(iso).slice(0, 10);
+}
+
+function analyticsPath(month) {
+  return getRecordPath('search_analytics', month);
+}
+
+function normalizeQueryForHash(query) {
+  if (!query || typeof query !== 'string') return '';
+  return normalizeArabic(query.toLowerCase()).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Hash search query for privacy.
+ *
+ * @param {*} query
+ * @returns {string}
+ */
+export function hashSearchQuery(query) {
+  const normalized = normalizeQueryForHash(String(query || ''));
+  return crypto.createHash('sha256').update(normalized).digest('hex');
+}
+
+function sanitizeScope(scope) {
+  if (!scope || typeof scope !== 'string') return 'unknown';
+  const clean = scope.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+  return clean || 'unknown';
+}
+
+function sanitizeFilters(filters) {
+  if (!filters || typeof filters !== 'object') return {};
+  const allowed = ['category', 'categories', 'governorate', 'urgency', 'minWage', 'maxWage', 'status'];
+  const out = {};
+  for (const key of allowed) {
+    if (filters[key] === undefined) continue;
+    const value = filters[key];
+    if (value === null) out[key] = null;
+    else if (typeof value === 'number' || typeof value === 'boolean') out[key] = value;
+    else out[key] = String(value).slice(0, 200);
+  }
+  return out;
+}
+
+function emptyMonth(month) {
+  const now = nowIso();
+  return {
+    id: month,
+    month,
+    version: 1,
+    totals: {
+      searches: 0,
+      zeroResults: 0,
+      clicks: 0,
+      conversions: 0,
+    },
+    byScope: {},
+    queries: {},
+    byDay: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureScope(monthData, scope) {
+  if (!monthData.byScope) monthData.byScope = {};
+  if (!monthData.byScope[scope]) {
+    monthData.byScope[scope] = {
+      searches: 0,
+      zeroResults: 0,
+      clicks: 0,
+      conversions: 0,
+    };
+  }
+  return monthData.byScope[scope];
+}
+
+function ensureDay(monthData, day) {
+  if (!monthData.byDay) monthData.byDay = {};
+  if (!monthData.byDay[day]) {
+    monthData.byDay[day] = {
+      date: day,
+      searches: 0,
+      zeroResults: 0,
+      clicks: 0,
+      conversions: 0,
+      byScope: {},
+    };
+  }
+  return monthData.byDay[day];
+}
+
+function ensureQuery(monthData, scope, queryHash) {
+  if (!monthData.queries) monthData.queries = {};
+  const key = `${scope}:${queryHash}`;
+  if (!monthData.queries[key]) {
+    monthData.queries[key] = {
+      key,
+      scope,
+      queryHash,
+      sampleQuery: null,
+      count: 0,
+      zeroResults: 0,
+      clickedResults: 0,
+      applicationsAfterSearch: 0,
+      lastResultCount: 0,
+      filters: {},
+      firstSeenAt: nowIso(),
+      lastSeenAt: nowIso(),
+    };
+  }
+  return monthData.queries[key];
+}
+
+function maybeStoreSampleQuery(record, query) {
+  if (config.SEARCH_ANALYTICS?.hashQueries !== false) return;
+  if (!query || typeof query !== 'string') return;
+  record.sampleQuery = query.slice(0, 200);
+}
+
+async function mutateMonth(timestamp, mutator) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const month = monthKey(timestamp);
+  return withLock(`search-analytics:${month}`, async () => {
+    const filePath = analyticsPath(month);
+    const data = (await readJSON(filePath)) || emptyMonth(month);
+
+    await mutator(data);
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+    return { ok: true, month, data };
+  });
+}
+
+/**
+ * Record search performed.
+ *
+ * @param {{ scope: string, query?: string, queryHash?: string, resultCount?: number, filters?: object, timestamp?: string }} params
+ */
+export async function recordSearchPerformed(params = {}) {
+  if (!isEnabled()) return { recorded: false, disabled: true };
+
+  const timestamp = params.timestamp || nowIso();
+  const scope = sanitizeScope(params.scope);
+  const queryHash = params.queryHash || hashSearchQuery(params.query || '');
+  const resultCount = Math.max(0, Number(params.resultCount) || 0);
+  const filters = sanitizeFilters(params.filters || {});
+  const zero = resultCount === 0;
+
+  await mutateMonth(timestamp, async (data) => {
+    data.totals.searches++;
+    if (zero) data.totals.zeroResults++;
+
+    const scopeRow = ensureScope(data, scope);
+    scopeRow.searches++;
+    if (zero) scopeRow.zeroResults++;
+
+    const day = ensureDay(data, dayKey(timestamp));
+    day.searches++;
+    if (zero) day.zeroResults++;
+    if (!day.byScope[scope]) day.byScope[scope] = { searches: 0, zeroResults: 0, clicks: 0, conversions: 0 };
+    day.byScope[scope].searches++;
+    if (zero) day.byScope[scope].zeroResults++;
+
+    const q = ensureQuery(data, scope, queryHash);
+    q.count++;
+    if (zero) q.zeroResults++;
+    q.lastResultCount = resultCount;
+    q.filters = filters;
+    q.lastSeenAt = timestamp;
+    maybeStoreSampleQuery(q, params.query);
+  });
+
+  return { recorded: true, scope, queryHash, zeroResults: zero };
+}
+
+/**
+ * Explicit zero-result recorder.
+ * Safe to call after recordSearchPerformed; avoids double-counting by only
+ * incrementing if the query record was not already marked zero for same timestamp
+ * is intentionally not attempted in file aggregates. Callers should normally
+ * emit search:performed once; zero-results event is for realtime notifications.
+ */
+export async function recordZeroResultSearch(params = {}) {
+  if (!isEnabled() || config.SEARCH_ANALYTICS?.trackZeroResults === false) {
+    return { recorded: false };
+  }
+
+  // Do not double-record totals here. recordSearchPerformed handles zero count.
+  return { recorded: true, queryHash: params.queryHash || hashSearchQuery(params.query || '') };
+}
+
+/**
+ * Record result click.
+ *
+ * @param {{ scope: string, query?: string, queryHash?: string, resultId?: string, resultType?: string, timestamp?: string }} params
+ */
+export async function recordSearchClick(params = {}) {
+  if (!isEnabled() || config.SEARCH_ANALYTICS?.trackClicks === false) {
+    return { recorded: false };
+  }
+
+  const timestamp = params.timestamp || nowIso();
+  const scope = sanitizeScope(params.scope);
+  const queryHash = params.queryHash || hashSearchQuery(params.query || '');
+
+  await mutateMonth(timestamp, async (data) => {
+    data.totals.clicks++;
+
+    const scopeRow = ensureScope(data, scope);
+    scopeRow.clicks++;
+
+    const day = ensureDay(data, dayKey(timestamp));
+    day.clicks++;
+    if (!day.byScope[scope]) day.byScope[scope] = { searches: 0, zeroResults: 0, clicks: 0, conversions: 0 };
+    day.byScope[scope].clicks++;
+
+    const q = ensureQuery(data, scope, queryHash);
+    q.clickedResults++;
+    q.lastSeenAt = timestamp;
+    maybeStoreSampleQuery(q, params.query);
+  });
+
+  eventBus.emit('search:result_clicked_recorded', {
+    scope,
+    queryHash,
+    resultType: params.resultType || null,
+    timestamp,
+  });
+
+  return { recorded: true, scope, queryHash };
+}
+
+/**
+ * Record search conversion, e.g. application after search.
+ *
+ * @param {{ scope: string, query?: string, queryHash?: string, conversionType?: string, timestamp?: string }} params
+ */
+export async function recordSearchConversion(params = {}) {
+  if (!isEnabled() || config.SEARCH_ANALYTICS?.trackApplicationsAfterSearch === false) {
+    return { recorded: false };
+  }
+
+  const timestamp = params.timestamp || nowIso();
+  const scope = sanitizeScope(params.scope);
+  const queryHash = params.queryHash || hashSearchQuery(params.query || '');
+
+  await mutateMonth(timestamp, async (data) => {
+    data.totals.conversions++;
+
+    const scopeRow = ensureScope(data, scope);
+    scopeRow.conversions++;
+
+    const day = ensureDay(data, dayKey(timestamp));
+    day.conversions++;
+    if (!day.byScope[scope]) day.byScope[scope] = { searches: 0, zeroResults: 0, clicks: 0, conversions: 0 };
+    day.byScope[scope].conversions++;
+
+    const q = ensureQuery(data, scope, queryHash);
+    q.applicationsAfterSearch++;
+    q.lastSeenAt = timestamp;
+    maybeStoreSampleQuery(q, params.query);
+  });
+
+  eventBus.emit('search:conversion_recorded', {
+    scope,
+    queryHash,
+    conversionType: params.conversionType || 'unknown',
+    timestamp,
+  });
+
+  return { recorded: true, scope, queryHash };
+}
+
+/**
+ * Get aggregate search analytics.
+ *
+ * @param {{ month?: string, scope?: string, limit?: number }} options
+ */
+export async function getSearchAnalytics(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, totals: {}, topQueries: [] };
+  }
+
+  const month = options.month || monthKey();
+  const data = (await readJSON(analyticsPath(month))) || emptyMonth(month);
+
+  let queries = Object.values(data.queries || {});
+  if (options.scope) queries = queries.filter(q => q.scope === options.scope);
+
+  queries.sort((a, b) => b.count - a.count || b.zeroResults - a.zeroResults);
+
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+
+  return {
+    enabled: true,
+    month,
+    totals: data.totals || {},
+    byScope: data.byScope || {},
+    byDay: Object.values(data.byDay || {}).sort((a, b) => a.date.localeCompare(b.date)),
+    topQueries: queries.slice(0, limit),
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+/**
+ * Get zero-result queries ranked by frequency.
+ *
+ * @param {{ month?: string, scope?: string, limit?: number }} options
+ */
+export async function getZeroResultQueries(options = {}) {
+  if (!isEnabled()) {
+    return { enabled: false, queries: [], total: 0 };
+  }
+
+  const month = options.month || monthKey();
+  const data = (await readJSON(analyticsPath(month))) || emptyMonth(month);
+
+  let queries = Object.values(data.queries || {}).filter(q => (q.zeroResults || 0) > 0);
+  if (options.scope) queries = queries.filter(q => q.scope === options.scope);
+
+  queries.sort((a, b) => b.zeroResults - a.zeroResults || b.count - a.count);
+
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+
+  return {
+    enabled: true,
+    month,
+    queries: queries.slice(0, limit),
+    total: queries.length,
+  };
+}
+
+/**
+ * Roll up search analytics.
+ * Current implementation returns the persisted monthly aggregate.
+ * Kept as separate API so scheduler/queue can call it idempotently.
+ */
+export async function rollupSearchAnalytics(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const month = options.month || monthKey();
+  const analytics = await getSearchAnalytics({ month, limit: 100 });
+
+  eventBus.emit('search_analytics:rollup_completed', {
+    month,
+    searches: analytics.totals?.searches || 0,
+    zeroResults: analytics.totals?.zeroResults || 0,
+    timestamp: nowIso(),
+  });
+
+  return {
+    ok: true,
+    month,
+    totals: analytics.totals,
+    topQueries: analytics.topQueries,
+    generatedAt: nowIso(),
+  };
+}
+
+export async function cleanupOldSearchAnalytics() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.SEARCH_ANALYTICS?.retentionDays || 90;
+  const cutoffMonth = monthKey(new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString());
+
+  const dir = getCollectionPath('search_analytics');
+  const rows = await listJSON(dir);
+
+  let cleaned = 0;
+  for (const row of rows) {
+    if (!row || !row.id) continue;
+    if (row.month && row.month < cutoffMonth) {
+      await deleteJSON(analyticsPath(row.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  return cleaned;
+}
+
+// EventBus listeners — fire-and-forget.
+// Guard globally because tests may import with cache busting.
+const LISTENER_FLAG = '__yawmiaSearchAnalyticsListenersRegistered';
+
+if (isEnabled() && !globalThis[LISTENER_FLAG]) {
+  globalThis[LISTENER_FLAG] = true;
+
+  eventBus.on('search:performed', (data) => {
+    recordSearchPerformed(data).catch(err => {
+      logger.warn('searchAnalytics: recordSearchPerformed failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('search:zero_results', (data) => {
+    recordZeroResultSearch(data).catch(() => {});
+  });
+
+  eventBus.on('search:result_clicked', (data) => {
+    recordSearchClick(data).catch(err => {
+      logger.warn('searchAnalytics: recordSearchClick failed', { error: err.message });
+    });
+  });
+
+  eventBus.on('search:conversion', (data) => {
+    recordSearchConversion(data).catch(err => {
+      logger.warn('searchAnalytics: recordSearchConversion failed', { error: err.message });
+    });
+  });
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  dayKey,
+  analyticsPath,
+  normalizeQueryForHash,
+  sanitizeFilters,
+  emptyMonth,
+};
+```
+
+---
+
 ## `server/services/searchIndex.js`
 
 ```javascript
@@ -30611,6 +33449,347 @@ if (isEnabled()) {
     }).catch(() => {});
   });
 }
+```
+
+---
+
+## `server/services/searchRelevance.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/searchRelevance.js — Weighted Search Relevance (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Pure-ish relevance scoring for jobs and workroom messages.
+// No external search dependency.
+// Designed as additive ranking layer on top of existing candidate filtering.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { normalizeArabic } from './arabicNormalizer.js';
+import {
+  tokenizeArabicSearch,
+  buildSearchTokenSet,
+} from './arabicSearchTokens.js';
+
+function isEnabled() {
+  return !!(
+    config.SEARCH_RELEVANCE &&
+    config.SEARCH_RELEVANCE.enabled &&
+    config.SEARCH_RELEVANCE.useWeightedRanking
+  );
+}
+
+function weights() {
+  return (config.SEARCH_RELEVANCE && config.SEARCH_RELEVANCE.weights) || {};
+}
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function roundScore(n) {
+  return Math.round(clamp01(n) * 1000) / 1000;
+}
+
+function tokenOverlapScore(queryTokens, fieldTokens) {
+  if (!queryTokens || queryTokens.size === 0 || !fieldTokens || fieldTokens.size === 0) return 0;
+
+  let matched = 0;
+  for (const token of queryTokens) {
+    if (fieldTokens.has(token)) matched++;
+  }
+
+  return matched / queryTokens.size;
+}
+
+function normalizedText(text) {
+  return normalizeArabic(String(text || '').toLowerCase()).trim();
+}
+
+function recencyBoost(createdAt) {
+  if (!createdAt) return 0;
+
+  const createdMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdMs)) return 0;
+
+  const ageHours = Math.max(0, (Date.now() - createdMs) / 3600000);
+  const halfLife = Math.max(1, Number(config.SEARCH_RELEVANCE?.recencyHalfLifeHours) || 72);
+
+  // Exponential half-life: 1 at now, 0.5 at halfLife, etc.
+  return Math.pow(0.5, ageHours / halfLife);
+}
+
+function urgencyBoost(urgency) {
+  if (urgency === 'immediate') return 1;
+  if (urgency === 'urgent') return 0.65;
+  return 0;
+}
+
+function wageFitScore(job, filters = {}) {
+  const wage = Number(job && job.dailyWage);
+  if (!Number.isFinite(wage) || wage <= 0) return 0;
+
+  const minWage = filters.minWage !== undefined ? Number(filters.minWage) : null;
+  const maxWage = filters.maxWage !== undefined ? Number(filters.maxWage) : null;
+
+  if (Number.isFinite(minWage) && wage < minWage) return 0;
+  if (Number.isFinite(maxWage) && wage > maxWage) return 0;
+
+  if (Number.isFinite(minWage) || Number.isFinite(maxWage)) return 1;
+
+  // No explicit wage filter: slight normalized preference for healthy wage range.
+  const cfg = config.FINANCIALS || {};
+  const min = Number(cfg.minDailyWage) || 150;
+  const max = Number(cfg.maxDailyWage) || 1000;
+
+  return clamp01((wage - min) / Math.max(1, max - min));
+}
+
+function makeReason(label, weight, score) {
+  return {
+    label,
+    weight: Math.round((weight || 0) * 1000) / 1000,
+    score: Math.round((score || 0) * 1000) / 1000,
+  };
+}
+
+/**
+ * Explain job search score in safe Arabic microcopy.
+ *
+ * @param {object} job
+ * @param {string} query
+ * @param {object} filters
+ * @returns {string[]}
+ */
+export function explainJobSearchScore(job, query, filters = {}) {
+  const scored = scoreJobSearchResult(job, query, filters, { includeDetails: true });
+  return scored.reasons.map(r => r.label).slice(0, 5);
+}
+
+/**
+ * Score a job search result.
+ *
+ * @param {object} job
+ * @param {string} query
+ * @param {object} filters
+ * @param {{ includeDetails?: boolean }} options
+ * @returns {{ score: number, reasons: object[] }}
+ */
+export function scoreJobSearchResult(job, query, filters = {}, options = {}) {
+  if (!job || !query || typeof query !== 'string') {
+    return { score: 0, reasons: [] };
+  }
+
+  const w = weights();
+
+  const qNorm = normalizedText(query);
+  const titleNorm = normalizedText(job.title);
+  const descNorm = normalizedText(job.description);
+
+  const queryTokens = buildSearchTokenSet(query);
+  const titleTokens = buildSearchTokenSet(job.title || '');
+  const descTokens = buildSearchTokenSet(job.description || '');
+
+  let total = 0;
+  const reasons = [];
+
+  const exactTitle = qNorm && titleNorm && titleNorm.includes(qNorm) ? 1 : 0;
+  if (exactTitle > 0) {
+    const part = (w.exactTitleMatch || 0) * exactTitle;
+    total += part;
+    reasons.push(makeReason('العنوان مطابق للبحث', w.exactTitleMatch || 0, exactTitle));
+  }
+
+  const titleOverlap = tokenOverlapScore(queryTokens, titleTokens);
+  if (titleOverlap > 0) {
+    const part = (w.titleTokenMatch || 0) * titleOverlap;
+    total += part;
+    reasons.push(makeReason('كلمات البحث موجودة في العنوان', w.titleTokenMatch || 0, titleOverlap));
+  }
+
+  const descOverlap = tokenOverlapScore(queryTokens, descTokens);
+  if (descOverlap > 0) {
+    const part = (w.descriptionTokenMatch || 0) * descOverlap;
+    total += part;
+    reasons.push(makeReason('الوصف يحتوي على كلمات مناسبة', w.descriptionTokenMatch || 0, descOverlap));
+  }
+
+  if (filters.category && job.category === filters.category) {
+    total += (w.categoryMatch || 0);
+    reasons.push(makeReason('التخصص مطابق', w.categoryMatch || 0, 1));
+  } else if (filters.categories) {
+    const cats = String(filters.categories).split(',').map(s => s.trim()).filter(Boolean);
+    if (cats.includes(job.category)) {
+      total += (w.categoryMatch || 0);
+      reasons.push(makeReason('التخصص ضمن اختياراتك', w.categoryMatch || 0, 1));
+    }
+  }
+
+  if (filters.governorate && job.governorate === filters.governorate) {
+    total += (w.governorateMatch || 0);
+    reasons.push(makeReason('المحافظة مطابقة', w.governorateMatch || 0, 1));
+  }
+
+  const urg = urgencyBoost(job.urgency || 'normal');
+  if (urg > 0) {
+    total += (w.urgencyBoost || 0) * urg;
+    reasons.push(makeReason(job.urgency === 'immediate' ? 'فرصة فورية' : 'فرصة عاجلة', w.urgencyBoost || 0, urg));
+  }
+
+  const rec = recencyBoost(job.createdAt);
+  if (rec > 0) {
+    total += (w.recencyBoost || 0) * rec;
+    if (rec >= 0.5) {
+      reasons.push(makeReason('فرصة حديثة', w.recencyBoost || 0, rec));
+    }
+  }
+
+  const wage = wageFitScore(job, filters);
+  if (wage > 0) {
+    total += (w.wageFit || 0) * wage;
+    if (filters.minWage !== undefined || filters.maxWage !== undefined) {
+      reasons.push(makeReason('الأجر مناسب للفلاتر', w.wageFit || 0, wage));
+    }
+  }
+
+  reasons.sort((a, b) => (b.weight * b.score) - (a.weight * a.score));
+
+  return {
+    score: roundScore(total),
+    reasons: options.includeDetails ? reasons : reasons.slice(0, 5),
+  };
+}
+
+/**
+ * Rank job search results by weighted relevance.
+ * If relevance is disabled or no query, preserves input order.
+ *
+ * @param {object[]} jobs
+ * @param {string} query
+ * @param {object} filters
+ * @param {{ explain?: boolean }} options
+ * @returns {object[]}
+ */
+export function rankJobSearchResults(jobs, query, filters = {}, options = {}) {
+  if (!Array.isArray(jobs)) return [];
+  if (!isEnabled() || !query) return jobs.slice();
+
+  const ranked = jobs.map((job, idx) => {
+    const scored = scoreJobSearchResult(job, query, filters, { includeDetails: true });
+    return {
+      job,
+      idx,
+      score: scored.score,
+      reasons: scored.reasons,
+    };
+  });
+
+  ranked.sort((a, b) =>
+    b.score - a.score ||
+    new Date(b.job.createdAt || 0) - new Date(a.job.createdAt || 0) ||
+    a.idx - b.idx
+  );
+
+  const max = config.SEARCH_RELEVANCE?.maxResults || 200;
+
+  return ranked.slice(0, max).map(row => {
+    const out = { ...row.job, _relevanceScore: row.score };
+    if (options.explain !== false) {
+      out._relevanceReasons = row.reasons.map(r => r.label).slice(0, 5);
+    }
+    return out;
+  });
+}
+
+/**
+ * Score one workroom message for search relevance.
+ *
+ * @param {object} message
+ * @param {string} query
+ * @param {{ pinnedIds?: Set<string>|string[] }} options
+ */
+export function scoreWorkroomMessageSearchResult(message, query, options = {}) {
+  if (!message || !query) return { score: 0, highlights: [] };
+
+  const qNorm = normalizedText(query);
+  const textNorm = normalizedText(message.text || '');
+
+  const queryTokens = buildSearchTokenSet(query);
+  const textTokens = buildSearchTokenSet(message.text || '');
+
+  let score = 0;
+  const highlights = [];
+
+  if (qNorm && textNorm.includes(qNorm)) {
+    score += 0.45;
+    highlights.push('تطابق مباشر مع نص البحث');
+  }
+
+  const overlap = tokenOverlapScore(queryTokens, textTokens);
+  if (overlap > 0) {
+    score += 0.30 * overlap;
+    highlights.push('كلمات البحث موجودة في الرسالة');
+  }
+
+  const rec = recencyBoost(message.createdAt);
+  if (rec > 0) {
+    score += 0.15 * rec;
+    if (rec >= 0.5) highlights.push('رسالة حديثة');
+  }
+
+  let pinnedIds = options.pinnedIds || new Set();
+  if (Array.isArray(pinnedIds)) pinnedIds = new Set(pinnedIds);
+  if (pinnedIds instanceof Set && pinnedIds.has(message.id)) {
+    score += 0.10;
+    highlights.push('رسالة مثبتة');
+  }
+
+  return {
+    score: roundScore(score),
+    highlights: Array.from(new Set(highlights)).slice(0, 4),
+  };
+}
+
+/**
+ * Rank workroom messages by relevance.
+ *
+ * @param {object[]} messages
+ * @param {string} query
+ * @param {object} options
+ * @returns {object[]}
+ */
+export function rankWorkroomMessages(messages, query, options = {}) {
+  if (!Array.isArray(messages)) return [];
+  if (!isEnabled() || !query) return messages.slice();
+
+  const ranked = messages.map((msg, idx) => {
+    const scored = scoreWorkroomMessageSearchResult(msg, query, options);
+    return { msg, idx, score: scored.score, highlights: scored.highlights };
+  });
+
+  ranked.sort((a, b) =>
+    b.score - a.score ||
+    new Date(b.msg.createdAt || 0) - new Date(a.msg.createdAt || 0) ||
+    a.idx - b.idx
+  );
+
+  return ranked.map(row => ({
+    ...row.msg,
+    _score: row.score,
+    _highlights: row.highlights,
+  }));
+}
+
+export const _testHelpers = {
+  isEnabled,
+  clamp01,
+  tokenOverlapScore,
+  recencyBoost,
+  urgencyBoost,
+  wageFitScore,
+  normalizedText,
+};
 ```
 
 ---
@@ -35424,7 +38603,8 @@ function computeTileKey(filters) {
   const radius = filters.radiusKm || 'na';
   const minW = filters.minWage || 'na';
   const maxW = filters.maxWage || 'na';
-  return `${gov}:${cats}:${tileX}:${tileY}:${radius}:${minW}:${maxW}`;
+  const employer = filters.employerId || 'anon';
+  return `${gov}:${cats}:${tileX}:${tileY}:${radius}:${minW}:${maxW}:${employer}`;
 }
 
 /**
@@ -35578,6 +38758,7 @@ export async function discoverWorkers(options = {}) {
     governorate: options.governorate,
     minWage: options.minWage,
     maxWage: options.maxWage,
+    employerId: options.employerId,
   });
 
   // Check cache
@@ -35595,6 +38776,7 @@ export async function discoverWorkers(options = {}) {
   const { findById: findUser, listAll: listAllUsers } = await import('./users.js');
   const { getUserTrustScore } = await import('./trust.js');
   const { haversineDistance } = await import('./geo.js');
+  const matchingIntelligence = await import('./matchingIntelligence.js').catch(() => null);
 
   // Track candidates by userId (dedup)
   /** @type {Map<string, object>} */
@@ -35800,14 +38982,49 @@ export async function discoverWorkers(options = {}) {
     list.sort((a, b) => b._score - a._score);
   }
 
-  // Build privacy-first cards
-  const cards = list.map(c => {
+  // Build privacy-first cards + Phase 56 safe match explanations
+  const cards = [];
+  for (const c of list) {
     const presenceData = c.isOnline ? { status: 'online', lastHeartbeat: c.lastOnlineAt } : null;
     const card = buildPublicCard(c.user, presenceData, c.activeAd, c._distance, c.trustScore);
     card._tier = c.tier;
     card._score = c._score;
-    return card;
-  });
+
+    // Phase 56: explainable matching. Safe additive fields only.
+    if (
+      matchingIntelligence &&
+      config.MATCHING_INTELLIGENCE &&
+      config.MATCHING_INTELLIGENCE.enabled &&
+      config.MATCHING_INTELLIGENCE.explainabilityEnabled
+    ) {
+      try {
+        const jobContext = {
+          category: Array.isArray(options.categories) && options.categories.length === 1 ? options.categories[0] : options.category || null,
+          categories: options.categories || [],
+          governorate: options.governorate || null,
+          radiusKm,
+          employerId: options.employerId || null,
+        };
+
+        const scored = await matchingIntelligence.scoreWorkerForJob(card, jobContext, {
+          employerId: options.employerId || null,
+          activeAd: c.activeAd,
+          presenceData,
+          distanceKm: c._distance,
+          radiusKm,
+          trustScore: c.trustScore,
+        });
+
+        card._matchScore = scored.score;
+        card._matchReasons = scored.reasons || [];
+      } catch (_) {
+        card._matchScore = c._score;
+        card._matchReasons = [];
+      }
+    }
+
+    cards.push(card);
+  }
 
   // Cache full result
   cacheSet(cacheKey, cards);
@@ -36929,6 +40146,350 @@ export const _testHelpers = {
   countUnreadWorkroomMessages,
   getLastMessageAt,
   buildWorkroom,
+};
+```
+
+---
+
+## `server/services/workroomAdoptionMetrics.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/workroomAdoptionMetrics.js — Workroom Adoption Metrics (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Aggregate/admin-only Workroom V2 adoption telemetry.
+// Storage:
+//   data/metrics/product-intelligence/workroom-adoption-YYYY-MM.json
+//
+// Tracks:
+//   - workroom opened
+//   - message sent
+//   - quick template used
+//   - attachment uploaded
+//   - checklist item created/completed
+//   - message pinned
+//   - search used
+//   - timeline viewed
+//   - read receipt created
+//
+// Privacy:
+//   - no message text
+//   - no attachment content
+//   - no phone/name
+//   - aggregate by role/day/event only
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.PRODUCT_INTELLIGENCE && config.PRODUCT_INTELLIGENCE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function monthKey(iso = nowIso()) {
+  return String(iso).slice(0, 7);
+}
+
+function dayKey(iso = nowIso()) {
+  return String(iso).slice(0, 10);
+}
+
+function metricsId(month) {
+  return `workroom-adoption-${month}`;
+}
+
+function metricsPath(month) {
+  return getRecordPath('product_intelligence', metricsId(month));
+}
+
+function safeRole(role) {
+  if (role === 'worker' || role === 'employer' || role === 'admin') return role;
+  return 'unknown';
+}
+
+function safeEventType(eventType) {
+  if (!eventType || typeof eventType !== 'string') return 'unknown';
+  const clean = eventType.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  return clean || 'unknown';
+}
+
+function emptyMetrics(month) {
+  const now = nowIso();
+  return {
+    id: metricsId(month),
+    kind: 'workroom_adoption',
+    version: 1,
+    month,
+    totals: {
+      opened: 0,
+      messageSent: 0,
+      templateUsed: 0,
+      attachmentUploaded: 0,
+      checklistCreated: 0,
+      checklistCompleted: 0,
+      messagePinned: 0,
+      searchUsed: 0,
+      timelineViewed: 0,
+      readReceiptCreated: 0,
+    },
+    byRole: {},
+    byEvent: {},
+    byDay: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function ensureRole(data, role) {
+  if (!data.byRole) data.byRole = {};
+  if (!data.byRole[role]) {
+    data.byRole[role] = {
+      opened: 0,
+      messageSent: 0,
+      templateUsed: 0,
+      attachmentUploaded: 0,
+      checklistCreated: 0,
+      checklistCompleted: 0,
+      messagePinned: 0,
+      searchUsed: 0,
+      timelineViewed: 0,
+      readReceiptCreated: 0,
+    };
+  }
+  return data.byRole[role];
+}
+
+function ensureEvent(data, eventType) {
+  if (!data.byEvent) data.byEvent = {};
+  if (!data.byEvent[eventType]) {
+    data.byEvent[eventType] = {
+      eventType,
+      count: 0,
+      byRole: {},
+      lastSeenAt: null,
+    };
+  }
+  return data.byEvent[eventType];
+}
+
+function ensureDay(data, day) {
+  if (!data.byDay) data.byDay = {};
+  if (!data.byDay[day]) {
+    data.byDay[day] = {
+      date: day,
+      opened: 0,
+      messageSent: 0,
+      templateUsed: 0,
+      attachmentUploaded: 0,
+      checklistCreated: 0,
+      checklistCompleted: 0,
+      messagePinned: 0,
+      searchUsed: 0,
+      timelineViewed: 0,
+      readReceiptCreated: 0,
+    };
+  }
+  return data.byDay[day];
+}
+
+const EVENT_TO_TOTAL_KEY = {
+  opened: 'opened',
+  message_sent: 'messageSent',
+  template_used: 'templateUsed',
+  attachment_uploaded: 'attachmentUploaded',
+  checklist_item_created: 'checklistCreated',
+  checklist_item_completed: 'checklistCompleted',
+  message_pinned: 'messagePinned',
+  search_used: 'searchUsed',
+  timeline_viewed: 'timelineViewed',
+  read_receipt_created: 'readReceiptCreated',
+};
+
+async function mutate(timestamp, fn) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const month = monthKey(timestamp);
+  return withLock(`workroom-adoption:${month}`, async () => {
+    const filePath = metricsPath(month);
+    const data = (await readJSON(filePath)) || emptyMetrics(month);
+
+    await fn(data);
+
+    data.updatedAt = nowIso();
+    await atomicWrite(filePath, data);
+
+    return { ok: true, month, data };
+  });
+}
+
+/**
+ * Record one workroom adoption event.
+ *
+ * @param {{
+ *   eventType: string,
+ *   role?: string,
+ *   jobId?: string,
+ *   userId?: string,
+ *   timestamp?: string
+ * }} params
+ */
+export async function recordWorkroomAdoptionEvent(params = {}) {
+  if (!isEnabled()) return { recorded: false, disabled: true };
+
+  const timestamp = params.timestamp || nowIso();
+  const eventType = safeEventType(params.eventType);
+  const role = safeRole(params.role);
+  const totalKey = EVENT_TO_TOTAL_KEY[eventType];
+
+  if (!totalKey) {
+    return { recorded: false, error: 'UNKNOWN_EVENT_TYPE', eventType };
+  }
+
+  await mutate(timestamp, async (data) => {
+    if (!data.totals[totalKey]) data.totals[totalKey] = 0;
+    data.totals[totalKey]++;
+
+    const roleRow = ensureRole(data, role);
+    if (!roleRow[totalKey]) roleRow[totalKey] = 0;
+    roleRow[totalKey]++;
+
+    const day = ensureDay(data, dayKey(timestamp));
+    if (!day[totalKey]) day[totalKey] = 0;
+    day[totalKey]++;
+
+    const eventRow = ensureEvent(data, eventType);
+    eventRow.count++;
+    eventRow.byRole[role] = (eventRow.byRole[role] || 0) + 1;
+    eventRow.lastSeenAt = timestamp;
+  });
+
+  return { recorded: true, eventType, role };
+}
+
+/**
+ * Get aggregate adoption metrics.
+ */
+export async function getWorkroomAdoptionMetrics(options = {}) {
+  if (!isEnabled()) return { enabled: false, totals: {}, byEvent: [] };
+
+  const month = options.month || monthKey();
+  const data = (await readJSON(metricsPath(month))) || emptyMetrics(month);
+
+  const byEvent = Object.values(data.byEvent || {})
+    .sort((a, b) => b.count - a.count || String(a.eventType).localeCompare(String(b.eventType)));
+
+  const totals = data.totals || {};
+  const opened = totals.opened || 0;
+  const messageSent = totals.messageSent || 0;
+  const messagePerOpen = opened > 0
+    ? Math.round((messageSent / opened) * 100) / 100
+    : 0;
+
+  const checklistUsage = (totals.checklistCreated || 0) + (totals.checklistCompleted || 0);
+  const collaborationEvents =
+    (totals.attachmentUploaded || 0) +
+    checklistUsage +
+    (totals.messagePinned || 0) +
+    (totals.searchUsed || 0);
+
+  return {
+    enabled: true,
+    month,
+    totals,
+    byRole: data.byRole || {},
+    byEvent,
+    byDay: Object.values(data.byDay || {}).sort((a, b) => a.date.localeCompare(b.date)),
+    rates: {
+      messagePerOpen,
+      collaborationEvents,
+    },
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+/**
+ * Rollup wrapper for queue/scheduler.
+ */
+export async function rollupWorkroomAdoption(options = {}) {
+  if (!isEnabled()) return { skipped: true, reason: 'disabled' };
+
+  const month = options.month || monthKey();
+  const result = await getWorkroomAdoptionMetrics({ month });
+
+  eventBus.emit('workroom_adoption:rollup_completed', {
+    month,
+    opened: result.totals?.opened || 0,
+    messageSent: result.totals?.messageSent || 0,
+    timestamp: nowIso(),
+  });
+
+  return {
+    ok: true,
+    month,
+    totals: result.totals,
+    rates: result.rates,
+    generatedAt: nowIso(),
+  };
+}
+
+// EventBus listeners.
+const LISTENER_FLAG = '__yawmiaWorkroomAdoptionListenersRegistered';
+
+if (isEnabled() && !globalThis[LISTENER_FLAG]) {
+  globalThis[LISTENER_FLAG] = true;
+
+  const eventMap = {
+    'workroom:opened': 'opened',
+    'workroom:message_sent': 'message_sent',
+    'workroom:template_used': 'template_used',
+    'workroom:attachment_uploaded': 'attachment_uploaded',
+    'workroom:checklist_item_created': 'checklist_item_created',
+    'workroom:checklist_item_completed': 'checklist_item_completed',
+    'workroom:message_pinned': 'message_pinned',
+    'workroom:search_used': 'search_used',
+    'workroom:timeline_viewed': 'timeline_viewed',
+    'workroom:read_receipt_created': 'read_receipt_created',
+  };
+
+  for (const [eventName, eventType] of Object.entries(eventMap)) {
+    eventBus.on(eventName, (data = {}) => {
+      recordWorkroomAdoptionEvent({
+        eventType,
+        role: data.role || data.userRole || data.senderRole || 'unknown',
+        jobId: data.jobId || null,
+        userId: data.userId || data.senderId || null,
+        timestamp: data.timestamp || nowIso(),
+      }).catch(err => {
+        logger.warn('workroomAdoptionMetrics: record failed', {
+          eventName,
+          error: err.message,
+        });
+      });
+    });
+  }
+}
+
+export const _testHelpers = {
+  isEnabled,
+  monthKey,
+  dayKey,
+  metricsId,
+  metricsPath,
+  safeRole,
+  safeEventType,
+  emptyMetrics,
+  EVENT_TO_TOTAL_KEY,
 };
 ```
 
@@ -38799,6 +42360,7 @@ import {
 import { normalizeArabic } from './arabicNormalizer.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { rankWorkroomMessages } from './searchRelevance.js';
 
 function isEnabled() {
   return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.searchEnabled);
@@ -39067,7 +42629,22 @@ export async function searchWorkroomMessages(jobId, query, options = {}) {
     matchedMessages = await fullScanSearch(jobId, q, options);
   }
 
-  matchedMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Phase 56: relevance ranking. Falls back to newest-first if disabled/fails.
+  try {
+    let pinnedIds = new Set();
+    try {
+      const { listPins } = await import('./workroomPins.js');
+      const pinsResult = await listPins(jobId, options.userId || null).catch(() => null);
+      const pins = (pinsResult && pinsResult.pins) || [];
+      pinnedIds = new Set(pins.map(p => p.messageId).filter(Boolean));
+    } catch (_) {
+      pinnedIds = new Set();
+    }
+
+    matchedMessages = rankWorkroomMessages(matchedMessages, q, { pinnedIds });
+  } catch (_) {
+    matchedMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
 
   const total = matchedMessages.length;
   const results = matchedMessages.slice(0, limit).map(msg => ({
@@ -39081,7 +42658,21 @@ export async function searchWorkroomMessages(jobId, query, options = {}) {
     source: msg.source || 'job_messages',
     templateKey: msg.templateKey || null,
     attachments: msg.attachments || [],
+    _score: typeof msg._score === 'number' ? msg._score : undefined,
+    _highlights: Array.isArray(msg._highlights) ? msg._highlights : undefined,
   }));
+
+  // Phase 56: adoption/search usage event — aggregate only, no message text.
+  try {
+    eventBus.emit('workroom:search_used', {
+      jobId,
+      userId: options.userId || null,
+      resultCount: total,
+      indexed,
+      fallbackUsed,
+      timestamp: nowIso(),
+    });
+  } catch (_) { /* fire-and-forget */ }
 
   return {
     results,

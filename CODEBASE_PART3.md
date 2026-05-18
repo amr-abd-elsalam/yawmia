@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.51.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-16T19:45:01.965Z
-> Files in this part: 39
+# يوميّة (Yawmia) v0.52.0 — Part 3: Middleware (7) + Handlers (11)
+> Auto-generated: 2026-05-18T19:28:29.392Z
+> Files in this part: 40
 
 ## Files
 1. `server/handlers/adminHandler.js`
@@ -17,31 +17,32 @@
 12. `server/handlers/imageHandler.js`
 13. `server/handlers/jobsHandler.js`
 14. `server/handlers/liveFeedHandler.js`
-15. `server/handlers/messagesHandler.js`
-16. `server/handlers/notificationsHandler.js`
-17. `server/handlers/paymentsHandler.js`
-18. `server/handlers/presenceHandler.js`
-19. `server/handlers/productionOpsHandler.js`
-20. `server/handlers/profileTasksHandler.js`
-21. `server/handlers/pushHandler.js`
-22. `server/handlers/queueHandler.js`
-23. `server/handlers/ratingsHandler.js`
-24. `server/handlers/reportsHandler.js`
-25. `server/handlers/scaleHygieneHandler.js`
-26. `server/handlers/sseHandler.js`
-27. `server/handlers/trustCalibrationHandler.js`
-28. `server/handlers/verificationHandler.js`
-29. `server/handlers/workerDiscoveryHandler.js`
-30. `server/handlers/workroomHandler.js`
-31. `server/middleware/auth.js`
-32. `server/middleware/bodyParser.js`
-33. `server/middleware/cors.js`
-34. `server/middleware/maintenance.js`
-35. `server/middleware/rateLimit.js`
-36. `server/middleware/requestId.js`
-37. `server/middleware/security.js`
-38. `server/middleware/static.js`
-39. `server/middleware/timing.js`
+15. `server/handlers/marketplaceIntelligenceHandler.js`
+16. `server/handlers/messagesHandler.js`
+17. `server/handlers/notificationsHandler.js`
+18. `server/handlers/paymentsHandler.js`
+19. `server/handlers/presenceHandler.js`
+20. `server/handlers/productionOpsHandler.js`
+21. `server/handlers/profileTasksHandler.js`
+22. `server/handlers/pushHandler.js`
+23. `server/handlers/queueHandler.js`
+24. `server/handlers/ratingsHandler.js`
+25. `server/handlers/reportsHandler.js`
+26. `server/handlers/scaleHygieneHandler.js`
+27. `server/handlers/sseHandler.js`
+28. `server/handlers/trustCalibrationHandler.js`
+29. `server/handlers/verificationHandler.js`
+30. `server/handlers/workerDiscoveryHandler.js`
+31. `server/handlers/workroomHandler.js`
+32. `server/middleware/auth.js`
+33. `server/middleware/bodyParser.js`
+34. `server/middleware/cors.js`
+35. `server/middleware/maintenance.js`
+36. `server/middleware/rateLimit.js`
+37. `server/middleware/requestId.js`
+38. `server/middleware/security.js`
+39. `server/middleware/static.js`
+40. `server/middleware/timing.js`
 
 ---
 
@@ -1510,6 +1511,13 @@ const SUBSCRIBED_EVENTS = [
   'predictive_archive_index:rebuilt',
   'scheduler:run_history_recorded',
   'scheduler:history_cleanup_completed',
+
+  // Phase 56 — Marketplace/Product Intelligence
+  'marketplace_intelligence:rollup_captured',
+  'search_analytics:rollup_completed',
+  'activation_funnel:rollup_completed',
+  'workroom_adoption:rollup_completed',
+  'payment_dispute_analytics:rollup_completed',
 ];
 
 let listenersRegistered = false;
@@ -3975,6 +3983,318 @@ export async function handleInstantAccept(req, res) {
 
 ---
 
+## `server/handlers/marketplaceIntelligenceHandler.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/handlers/marketplaceIntelligenceHandler.js — Marketplace Intelligence Admin APIs (Phase 56)
+// ═══════════════════════════════════════════════════════════════
+// Admin-only product/marketplace intelligence endpoints.
+// No PII leakage.
+// Heavy rollups support ?async=1.
+// ═══════════════════════════════════════════════════════════════
+
+import { logAction } from '../services/auditLog.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+function adminId(req) {
+  return req.user?.id || 'admin_token';
+}
+
+function requestIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+}
+
+function parseBool(value) {
+  return value === true || value === '1' || value === 'true';
+}
+
+function queryOptions(req) {
+  return {
+    from: req.query.from || undefined,
+    to: req.query.to || undefined,
+    month: req.query.month || undefined,
+    day: req.query.day || undefined,
+    limit: parseInt(req.query.limit) || undefined,
+    groupBy: req.query.groupBy || undefined,
+  };
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/dashboard
+ */
+export async function handleMarketplaceIntelligenceDashboard(req, res) {
+  try {
+    const { getMarketplaceIntelligenceDashboard, listMarketplaceIntelligenceRollups } =
+      await import('../services/marketplaceIntelligenceRollups.js');
+
+    const [dashboard, rollups] = await Promise.all([
+      getMarketplaceIntelligenceDashboard(queryOptions(req)),
+      listMarketplaceIntelligenceRollups({ limit: 7 }),
+    ]);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      dashboard,
+      recentRollups: rollups.rollups || [],
+    });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب ذكاء السوق',
+      code: 'MARKETPLACE_INTELLIGENCE_DASHBOARD_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/search
+ */
+export async function handleSearchAnalytics(req, res) {
+  try {
+    const { getSearchAnalytics } = await import('../services/searchAnalytics.js');
+    const result = await getSearchAnalytics({
+      month: req.query.month || undefined,
+      scope: req.query.scope || undefined,
+      limit: parseInt(req.query.limit) || 20,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب تحليلات البحث',
+      code: 'SEARCH_ANALYTICS_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/search/zero-results
+ */
+export async function handleZeroResultSearches(req, res) {
+  try {
+    const { getZeroResultQueries } = await import('../services/searchAnalytics.js');
+    const result = await getZeroResultQueries({
+      month: req.query.month || undefined,
+      scope: req.query.scope || undefined,
+      limit: parseInt(req.query.limit) || 20,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب عمليات البحث بدون نتائج',
+      code: 'ZERO_RESULT_SEARCH_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/activation-funnel
+ */
+export async function handleActivationFunnel(req, res) {
+  try {
+    const { getActivationFunnel } = await import('../services/activationFunnelMetrics.js');
+    const result = await getActivationFunnel({
+      month: req.query.month || undefined,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب Activation Funnel',
+      code: 'ACTIVATION_FUNNEL_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/notification-conversions
+ */
+export async function handleNotificationConversions(req, res) {
+  try {
+    const { getNotificationConversionMetrics } = await import('../services/notificationConversionMetrics.js');
+    const result = await getNotificationConversionMetrics({
+      month: req.query.month || undefined,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب تحويلات الإشعارات',
+      code: 'NOTIFICATION_CONVERSIONS_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/workroom-adoption
+ */
+export async function handleWorkroomAdoption(req, res) {
+  try {
+    const { getWorkroomAdoptionMetrics } = await import('../services/workroomAdoptionMetrics.js');
+    const result = await getWorkroomAdoptionMetrics({
+      month: req.query.month || undefined,
+    });
+
+    return sendJSON(res, 200, { ok: true, ...result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب استخدام Workroom',
+      code: 'WORKROOM_ADOPTION_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/payment-disputes
+ */
+export async function handlePaymentDisputeAnalytics(req, res) {
+  try {
+    const {
+      getPaymentDisputeAnalytics,
+      getPaymentDisputeTrend,
+      getPaymentDisputeBreakdown,
+    } = await import('../services/paymentDisputeAnalytics.js');
+
+    const opts = queryOptions(req);
+
+    const [analytics, trend, breakdown] = await Promise.all([
+      getPaymentDisputeAnalytics(opts),
+      getPaymentDisputeTrend(opts),
+      getPaymentDisputeBreakdown(opts),
+    ]);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      analytics,
+      trend: trend.trend || [],
+      breakdown,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب تحليلات نزاعات الدفع',
+      code: 'PAYMENT_DISPUTE_ANALYTICS_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/marketplace-intelligence/matching-quality
+ */
+export async function handleMatchingQuality(req, res) {
+  try {
+    const { getMatchingIntelligenceStats } = await import('../services/matchingIntelligence.js');
+    const stats = await getMatchingIntelligenceStats();
+
+    return sendJSON(res, 200, {
+      ok: true,
+      stats,
+      safety: {
+        noPunitiveAutomation: true,
+        noAutoBan: true,
+        explanationPolicy: 'positive_or_neutral_only',
+      },
+    });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب جودة المطابقة',
+      code: 'MATCHING_QUALITY_ERROR',
+    });
+  }
+}
+
+/**
+ * POST /api/admin/marketplace-intelligence/rollup/run?async=1
+ */
+export async function handleRunMarketplaceIntelligenceRollup(req, res) {
+  try {
+    const body = req.body || {};
+    const day = body.day || req.query.day || new Date().toISOString().slice(0, 10);
+
+    if (parseBool(req.query.async)) {
+      const { enqueueJob } = await import('../services/opsQueue.js');
+
+      const enqueueResult = await enqueueJob({
+        type: 'marketplace_intelligence_rollup',
+        priority: body.priority || 'normal',
+        payload: {
+          options: {
+            day,
+            from: body.from || req.query.from || undefined,
+            to: body.to || req.query.to || undefined,
+            reason: 'admin_requested',
+          },
+        },
+        idempotencyKey: `marketplace_intelligence_rollup:manual:${adminId(req)}:${day}:${new Date().toISOString().slice(0, 16)}`,
+        createdBy: adminId(req),
+      });
+
+      if (!enqueueResult.ok) {
+        return sendJSON(res, 500, {
+          error: enqueueResult.error || 'تعذّر إضافة Rollup للطابور',
+          code: 'MARKETPLACE_ROLLUP_QUEUE_ERROR',
+        });
+      }
+
+      logAction({
+        adminId: adminId(req),
+        action: 'marketplace_intelligence_rollup_queued',
+        targetType: 'marketplace_intelligence',
+        targetId: day,
+        details: {
+          queueJobId: enqueueResult.job.id,
+          deduped: !!enqueueResult.deduped,
+          day,
+        },
+        ip: requestIp(req),
+      }).catch(() => {});
+
+      return sendJSON(res, 202, {
+        ok: true,
+        queued: true,
+        queueJobId: enqueueResult.job.id,
+        job: enqueueResult.job,
+        deduped: !!enqueueResult.deduped,
+      });
+    }
+
+    const { captureMarketplaceIntelligenceRollup } = await import('../services/marketplaceIntelligenceRollups.js');
+
+    const result = await captureMarketplaceIntelligenceRollup({
+      day,
+      from: body.from || req.query.from || undefined,
+      to: body.to || req.query.to || undefined,
+      reason: 'admin_requested',
+    });
+
+    logAction({
+      adminId: adminId(req),
+      action: 'marketplace_intelligence_rollup_run',
+      targetType: 'marketplace_intelligence',
+      targetId: day,
+      details: {
+        warningCount: result.health?.warningCount || 0,
+        durationMs: result.durationMs || 0,
+      },
+      ip: requestIp(req),
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true, rollup: result });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في تشغيل Marketplace Intelligence Rollup',
+      code: 'MARKETPLACE_ROLLUP_ERROR',
+    });
+  }
+}
+```
+
+---
+
 ## `server/handlers/messagesHandler.js`
 
 ```javascript
@@ -5067,6 +5387,7 @@ export async function handleDisableMaintenanceMode(req, res) {
 // ═══════════════════════════════════════════════════════════════
 
 import { getProfileTasks } from '../services/profileTasks.js';
+import { recordProfileTaskClicked } from '../services/activationFunnelMetrics.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -5093,6 +5414,28 @@ export async function handleGetProfileTasks(req, res) {
       error: 'خطأ في جلب مهام إكمال الملف الشخصي',
       code: 'PROFILE_TASKS_ERROR',
     });
+  }
+}
+
+/**
+ * POST /api/profile/tasks/:id/click
+ * Phase 56 — fire-and-forget profile task click tracking.
+ * Requires: requireAuth
+ */
+export async function handleProfileTaskClick(req, res) {
+  try {
+    const taskId = req.params.id;
+
+    await recordProfileTaskClicked({
+      userId: req.user.id,
+      role: req.user.role,
+      taskId,
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
+
+    return sendJSON(res, 200, { ok: true });
+  } catch (err) {
+    return sendJSON(res, 200, { ok: true });
   }
 }
 ```
@@ -7003,6 +7346,7 @@ export async function handleDiscoverWorkers(req, res) {
       sortBy: q.sortBy || 'composite',
       limit: q.limit !== undefined && q.limit !== '' ? Math.min(parseInt(q.limit) || 20, 50) : 20,
       offset: q.offset !== undefined && q.offset !== '' ? Math.max(parseInt(q.offset) || 0, 0) : 0,
+      employerId: req.user.id,
     };
 
     const result = await discoverWorkers(options);
@@ -7123,6 +7467,7 @@ import {
   getWorkroomSummary,
   resolveWorkroomAccess,
 } from '../services/workroom.js';
+import { eventBus } from '../services/eventBus.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -7203,6 +7548,15 @@ export async function handleGetWorkroom(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:opened', {
+        jobId,
+        userId: req.user.id,
+        role: result.workroom?.userRoleInWorkroom || req.user.role,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 200, { ok: true, workroom: result.workroom });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب مساحة العمل', code: 'WORKROOM_GET_ERROR' });
@@ -7259,6 +7613,19 @@ export async function handleSendWorkroomMessage(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:message_sent', {
+        jobId,
+        userId: req.user.id,
+        senderId: req.user.id,
+        role: result.message?.senderRole || req.user.role,
+        messageId: result.message?.id || null,
+        hasAttachments: Array.isArray(result.message?.attachments) && result.message.attachments.length > 0,
+        templateKey: result.message?.templateKey || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, message: result.message });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إرسال رسالة مساحة العمل', code: 'WORKROOM_SEND_ERROR' });
@@ -7301,6 +7668,16 @@ export async function handleGetWorkroomTimeline(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      eventBus.emit('workroom:timeline_viewed', {
+        jobId,
+        userId: req.user.id,
+        role: req.user.role,
+        total: result.total || 0,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
 
     return sendJSON(res, 200, {
       ok: true,
@@ -7427,6 +7804,17 @@ export async function handlePinWorkroomMessage(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:message_pinned', {
+        jobId: req.params.id,
+        userId: req.user.id,
+        role: req.user.role,
+        messageId,
+        idempotent: !!result.idempotent,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, pin: result.pin, idempotent: !!result.idempotent });
   } catch (err) {
     const code = err.code || 'WORKROOM_PIN_ERROR';
@@ -7480,6 +7868,16 @@ export async function handleCreateWorkroomChecklistItem(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:checklist_item_created', {
+        jobId: req.params.id,
+        userId: req.user.id,
+        role: req.user.role,
+        itemId: result.item?.id || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, item: result.item });
   } catch (err) {
     const code = err.code || 'WORKROOM_CHECKLIST_CREATE_ERROR';
@@ -7499,6 +7897,18 @@ export async function handleUpdateWorkroomChecklistItem(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      if (result.item && result.item.status === 'completed') {
+        eventBus.emit('workroom:checklist_item_completed', {
+          jobId: req.params.id,
+          userId: req.user.id,
+          role: req.user.role,
+          itemId: result.item.id || req.params.itemId,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (_) {}
 
     return sendJSON(res, 200, { ok: true, item: result.item });
   } catch (err) {
@@ -7552,6 +7962,16 @@ export async function handleUploadWorkroomAttachment(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      eventBus.emit('workroom:attachment_uploaded', {
+        jobId,
+        userId: req.user.id,
+        role: req.user.role,
+        attachmentType: result.attachment?.type || 'image',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
 
     return sendJSON(res, 201, { ok: true, attachment: result.attachment });
   } catch (err) {
