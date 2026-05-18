@@ -13,11 +13,11 @@ test('Phase 56 notification conversion recording does not recursively emit same 
     const { initDatabase } = await import('../server/services/database.js?' + Date.now());
     await initDatabase();
 
-    const { eventBus } = await import('../server/services/eventBus.js?' + Date.now());
     const metrics = await import('../server/services/notificationConversionMetrics.js?' + Date.now());
+    const { eventBus } = await import('../server/services/eventBus.js');
 
     let internalEvents = 0;
-    eventBus.on('notification:conversion_metric_recorded', () => {
+    const unsubscribe = eventBus.on('notification:conversion_metric_recorded', () => {
       internalEvents++;
     });
 
@@ -32,6 +32,8 @@ test('Phase 56 notification conversion recording does not recursively emit same 
 
     assert.equal(result.totals.conversions, 1);
     assert.equal(internalEvents, 1);
+
+    unsubscribe();
   } finally {
     if (oldData === undefined) delete process.env.YAWMIA_DATA_PATH;
     else process.env.YAWMIA_DATA_PATH = oldData;
