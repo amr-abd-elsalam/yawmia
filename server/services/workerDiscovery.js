@@ -47,7 +47,8 @@ function computeTileKey(filters) {
   const radius = filters.radiusKm || 'na';
   const minW = filters.minWage || 'na';
   const maxW = filters.maxWage || 'na';
-  return `${gov}:${cats}:${tileX}:${tileY}:${radius}:${minW}:${maxW}`;
+  const employer = filters.employerId || 'anon';
+  return `${gov}:${cats}:${tileX}:${tileY}:${radius}:${minW}:${maxW}:${employer}`;
 }
 
 /**
@@ -201,6 +202,7 @@ export async function discoverWorkers(options = {}) {
     governorate: options.governorate,
     minWage: options.minWage,
     maxWage: options.maxWage,
+    employerId: options.employerId,
   });
 
   // Check cache
@@ -218,6 +220,7 @@ export async function discoverWorkers(options = {}) {
   const { findById: findUser, listAll: listAllUsers } = await import('./users.js');
   const { getUserTrustScore } = await import('./trust.js');
   const { haversineDistance } = await import('./geo.js');
+  const matchingIntelligence = await import('./matchingIntelligence.js').catch(() => null);
 
   // Track candidates by userId (dedup)
   /** @type {Map<string, object>} */
@@ -423,14 +426,49 @@ export async function discoverWorkers(options = {}) {
     list.sort((a, b) => b._score - a._score);
   }
 
-  // Build privacy-first cards
-  const cards = list.map(c => {
+  // Build privacy-first cards + Phase 56 safe match explanations
+  const cards = [];
+  for (const c of list) {
     const presenceData = c.isOnline ? { status: 'online', lastHeartbeat: c.lastOnlineAt } : null;
     const card = buildPublicCard(c.user, presenceData, c.activeAd, c._distance, c.trustScore);
     card._tier = c.tier;
     card._score = c._score;
-    return card;
-  });
+
+    // Phase 56: explainable matching. Safe additive fields only.
+    if (
+      matchingIntelligence &&
+      config.MATCHING_INTELLIGENCE &&
+      config.MATCHING_INTELLIGENCE.enabled &&
+      config.MATCHING_INTELLIGENCE.explainabilityEnabled
+    ) {
+      try {
+        const jobContext = {
+          category: Array.isArray(options.categories) && options.categories.length === 1 ? options.categories[0] : options.category || null,
+          categories: options.categories || [],
+          governorate: options.governorate || null,
+          radiusKm,
+          employerId: options.employerId || null,
+        };
+
+        const scored = await matchingIntelligence.scoreWorkerForJob(card, jobContext, {
+          employerId: options.employerId || null,
+          activeAd: c.activeAd,
+          presenceData,
+          distanceKm: c._distance,
+          radiusKm,
+          trustScore: c.trustScore,
+        });
+
+        card._matchScore = scored.score;
+        card._matchReasons = scored.reasons || [];
+      } catch (_) {
+        card._matchScore = c._score;
+        card._matchReasons = [];
+      }
+    }
+
+    cards.push(card);
+  }
 
   // Cache full result
   cacheSet(cacheKey, cards);

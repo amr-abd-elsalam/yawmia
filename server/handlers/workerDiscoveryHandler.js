@@ -82,6 +82,7 @@ export async function handleDiscoverWorkers(req, res) {
       sortBy: q.sortBy || 'composite',
       limit: q.limit !== undefined && q.limit !== '' ? Math.min(parseInt(q.limit) || 20, 50) : 20,
       offset: q.offset !== undefined && q.offset !== '' ? Math.max(parseInt(q.offset) || 0, 0) : 0,
+      employerId: req.user.id,
     };
 
     const result = await discoverWorkers(options);

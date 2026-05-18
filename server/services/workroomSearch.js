@@ -18,6 +18,7 @@ import {
 import { normalizeArabic } from './arabicNormalizer.js';
 import { eventBus } from './eventBus.js';
 import { logger } from './logger.js';
+import { rankWorkroomMessages } from './searchRelevance.js';
 
 function isEnabled() {
   return !!(config.WORKROOM_V2 && config.WORKROOM_V2.enabled && config.WORKROOM_V2.searchEnabled);
@@ -286,7 +287,22 @@ export async function searchWorkroomMessages(jobId, query, options = {}) {
     matchedMessages = await fullScanSearch(jobId, q, options);
   }
 
-  matchedMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Phase 56: relevance ranking. Falls back to newest-first if disabled/fails.
+  try {
+    let pinnedIds = new Set();
+    try {
+      const { listPins } = await import('./workroomPins.js');
+      const pinsResult = await listPins(jobId, options.userId || null).catch(() => null);
+      const pins = (pinsResult && pinsResult.pins) || [];
+      pinnedIds = new Set(pins.map(p => p.messageId).filter(Boolean));
+    } catch (_) {
+      pinnedIds = new Set();
+    }
+
+    matchedMessages = rankWorkroomMessages(matchedMessages, q, { pinnedIds });
+  } catch (_) {
+    matchedMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
 
   const total = matchedMessages.length;
   const results = matchedMessages.slice(0, limit).map(msg => ({
@@ -300,7 +316,21 @@ export async function searchWorkroomMessages(jobId, query, options = {}) {
     source: msg.source || 'job_messages',
     templateKey: msg.templateKey || null,
     attachments: msg.attachments || [],
+    _score: typeof msg._score === 'number' ? msg._score : undefined,
+    _highlights: Array.isArray(msg._highlights) ? msg._highlights : undefined,
   }));
+
+  // Phase 56: adoption/search usage event — aggregate only, no message text.
+  try {
+    eventBus.emit('workroom:search_used', {
+      jobId,
+      userId: options.userId || null,
+      resultCount: total,
+      indexed,
+      fallbackUsed,
+      timestamp: nowIso(),
+    });
+  } catch (_) { /* fire-and-forget */ }
 
   return {
     results,

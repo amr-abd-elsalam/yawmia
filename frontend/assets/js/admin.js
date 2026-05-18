@@ -103,6 +103,7 @@ var AdminApp = (function () {
       document.getElementById('tokenForm').style.display = 'none';
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('dashboard').classList.remove('hidden');
+      initAdminTabs();
       // Phase 48 — Connect to admin SSE channel
       connectAdminSse();
       // Load remaining data in parallel
@@ -399,6 +400,11 @@ var AdminApp = (function () {
         'predictive_archive_index:rebuilt',
         'scheduler:run_history_recorded',
         'scheduler:history_cleanup_completed',
+        'marketplace_intelligence:rollup_captured',
+        'search_analytics:rollup_completed',
+        'activation_funnel:rollup_completed',
+        'workroom_adoption:rollup_completed',
+        'payment_dispute_analytics:rollup_completed',
       ].forEach(function (eventName) {
         adminSseSource.addEventListener(eventName, function (e) {
           try {
@@ -406,6 +412,14 @@ var AdminApp = (function () {
               YawmiaToast.error('فشل حدث نظافة التوسع: ' + eventName);
             } else if (eventName.indexOf('warning') !== -1 && typeof YawmiaToast !== 'undefined') {
               YawmiaToast.warning('تحذير نظافة التوسع: ' + eventName);
+            }
+
+            if (eventName.indexOf('marketplace_intelligence') !== -1 ||
+                eventName.indexOf('search_analytics') !== -1 ||
+                eventName.indexOf('activation_funnel') !== -1 ||
+                eventName.indexOf('workroom_adoption') !== -1 ||
+                eventName.indexOf('payment_dispute_analytics') !== -1) {
+              if (typeof loadMarketplaceIntelligence === 'function') loadMarketplaceIntelligence();
             }
 
             if (typeof loadScaleHygiene === 'function') loadScaleHygiene();
@@ -3880,6 +3894,453 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 56 — Admin Dashboard IA Tabs + Marketplace Intelligence
+  // ═══════════════════════════════════════════════════════════════
+
+  var activeAdminTab = 'overview';
+  var loadedAdminTabs = new Set();
+
+  var ADMIN_TAB_SECTIONS = {
+    overview: [
+      'statsGrid',
+      'analyticsGrid',
+      'financialGrid',
+      'healthInfo',
+      'monitoringInfo'
+    ],
+    marketplace: [
+      'marketplaceIntelligenceSection',
+      'directOffersFunnel',
+      'topEmployersTable',
+      'topWorkersTable',
+      'directOffersDeclineReasons'
+    ],
+    trust: [
+      'reportsTable',
+      'verificationsTable',
+      'abuseSignalsSection',
+      'predictiveAbuseSection',
+      'predictivePrecisionSection',
+      'decisionQualitySection',
+      'trustAnalyticsSection',
+      'trustCalibrationSection'
+    ],
+    ops: [
+      'productionReadinessSection',
+      'instanceModeSection',
+      'schedulerSection',
+      'opsSloSection',
+      'restoreDrillsSection',
+      'incidentsSection',
+      'maintenanceSection'
+    ],
+    scale: [
+      'scaleHygieneSection',
+      'opsQueueSection',
+      'alertDeliveriesSection',
+      'counterHygieneSection'
+    ],
+    audit: [
+      'auditLogSection',
+      'auditIndexSection',
+      'exportsSection'
+    ],
+    settings: [
+      'usersTable',
+      'jobsTable',
+      'alertChannelsSection'
+    ],
+  };
+
+  function closestSectionById(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    return el.classList && el.classList.contains('admin-section') ? el : el.closest('.admin-section') || el;
+  }
+
+  function initAdminTabs() {
+    var tabs = document.getElementById('adminTabs');
+    if (!tabs || tabs.dataset.wired === '1') return;
+
+    tabs.dataset.wired = '1';
+
+    tabs.querySelectorAll('.admin-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tab = btn.getAttribute('data-admin-tab') || 'overview';
+        showAdminTab(tab, true);
+      });
+    });
+
+    var initial = (window.location.hash || '').replace('#', '') || 'overview';
+    if (!ADMIN_TAB_SECTIONS[initial]) initial = 'overview';
+    showAdminTab(initial, false);
+
+    window.addEventListener('hashchange', function () {
+      var tab = (window.location.hash || '').replace('#', '') || 'overview';
+      if (ADMIN_TAB_SECTIONS[tab]) showAdminTab(tab, false);
+    });
+  }
+
+  function showAdminTab(tabName, updateHash) {
+    if (!ADMIN_TAB_SECTIONS[tabName]) tabName = 'overview';
+    activeAdminTab = tabName;
+
+    var tabs = document.getElementById('adminTabs');
+    if (tabs) {
+      tabs.querySelectorAll('.admin-tab').forEach(function (btn) {
+        var isActive = btn.getAttribute('data-admin-tab') === tabName;
+        btn.classList.toggle('admin-tab--active', isActive);
+      });
+    }
+
+    // Hide all known sections first.
+    Object.keys(ADMIN_TAB_SECTIONS).forEach(function (tab) {
+      ADMIN_TAB_SECTIONS[tab].forEach(function (id) {
+        var section = closestSectionById(id);
+        if (section) section.classList.add('admin-tab-panel-hidden');
+      });
+    });
+
+    // Show selected tab sections.
+    ADMIN_TAB_SECTIONS[tabName].forEach(function (id) {
+      var section = closestSectionById(id);
+      if (section) section.classList.remove('admin-tab-panel-hidden');
+    });
+
+    if (updateHash) {
+      try { window.location.hash = tabName; } catch (_) {}
+    }
+
+    lazyLoadAdminTab(tabName);
+  }
+
+  function lazyLoadAdminTab(tabName) {
+    if (loadedAdminTabs.has(tabName)) return;
+    loadedAdminTabs.add(tabName);
+
+    if (tabName === 'marketplace') {
+      loadMarketplaceIntelligence();
+      loadDirectOffersDashboard();
+    } else if (tabName === 'trust') {
+      loadReports();
+      loadVerifications();
+      loadAbuseSignals();
+      loadPredictiveAbuseDashboard();
+      loadPredictivePrecision();
+      loadDecisionQuality();
+      loadTrustDashboard();
+      loadTrustCalibrationDashboard();
+    } else if (tabName === 'ops') {
+      loadProductionReadiness();
+      loadInstanceOps();
+      loadSchedulers();
+      loadOpsSlo();
+      loadRestoreDrills();
+      loadIncidents();
+      loadMaintenanceMode();
+    } else if (tabName === 'scale') {
+      loadScaleHygiene();
+      loadOpsQueueStats();
+      loadAlertDeliveries();
+      loadCounterHygiene();
+    } else if (tabName === 'audit') {
+      loadAuditIndexStatus();
+      loadExports();
+    }
+  }
+
+  function renderMpiCards(summary) {
+    var el = document.getElementById('marketplaceIntelligenceSummary');
+    if (!el) return;
+
+    var s = summary || {};
+    var cards = [
+      { value: s.searches || 0, label: 'عمليات بحث' },
+      { value: (s.zeroResultRate || 0) + '%', label: 'بحث بدون نتائج' },
+      { value: s.profileTaskClicks || 0, label: 'ضغطات مهام الملف' },
+      { value: s.notificationClicks || 0, label: 'ضغطات الإشعارات' },
+      { value: s.workroomMessages || 0, label: 'رسائل Workroom' },
+      { value: s.paymentDisputes || 0, label: 'نزاعات دفع' },
+      { value: (s.directOfferAcceptRate || 0) + '%', label: 'قبول العروض المباشرة' },
+      { value: s.warningCount || 0, label: 'تحذيرات منتج' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'marketplace-intelligence-card';
+      card.innerHTML =
+        '<div class="marketplace-intelligence-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="marketplace-intelligence-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  async function loadMarketplaceIntelligence() {
+    var details = document.getElementById('marketplaceIntelligenceDetails');
+    var summary = document.getElementById('marketplaceIntelligenceSummary');
+
+    if (summary) {
+      summary.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/dashboard');
+      var dashboard = data.dashboard || {};
+      renderMpiCards(dashboard.summary || {});
+
+      if (details) {
+        var warnings = dashboard.warnings || [];
+        if (warnings.length === 0) {
+          details.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:0.75rem;">✓ لا توجد تحذيرات منتج حالياً</p>';
+        } else {
+          var html = '<div class="scale-hygiene-warning-list">';
+          warnings.forEach(function (w) {
+            html += '<div class="scale-hygiene-warning scale-hygiene-warning--medium">' +
+              '<strong>' + escapeHtml(w.source || 'system') + '</strong>: ' +
+              escapeHtml(w.message || '') +
+            '</div>';
+          });
+          html += '</div>';
+          details.innerHTML = html;
+        }
+      }
+    } catch (err) {
+      if (summary) summary.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل ذكاء السوق</p>';
+    }
+  }
+
+  async function loadSearchAnalytics() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+    el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري تحميل تحليلات البحث...</p>';
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/search?limit=20');
+      var totals = data.totals || {};
+      var rows = data.topQueries || [];
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">تحليلات البحث</h3>';
+      html += '<div class="analytics-grid">' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.searches || 0) + '</div><div class="marketplace-intelligence-card__label">بحث</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.zeroResults || 0) + '</div><div class="marketplace-intelligence-card__label">بدون نتائج</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.clicks || 0) + '</div><div class="marketplace-intelligence-card__label">Clicks</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.conversions || 0) + '</div><div class="marketplace-intelligence-card__label">Conversions</div></div>' +
+      '</div>';
+
+      if (rows.length > 0) {
+        html += '<table class="admin-table"><thead><tr><th>Query Hash</th><th>Scope</th><th>Count</th><th>Zero</th><th>Clicks</th></tr></thead><tbody>';
+        rows.forEach(function (r) {
+          html += '<tr>' +
+            '<td><small>' + escapeHtml((r.queryHash || '').slice(0, 16)) + '…</small></td>' +
+            '<td>' + escapeHtml(r.scope || '-') + '</td>' +
+            '<td>' + escapeHtml(String(r.count || 0)) + '</td>' +
+            '<td>' + escapeHtml(String(r.zeroResults || 0)) + '</td>' +
+            '<td>' + escapeHtml(String(r.clickedResults || 0)) + '</td>' +
+          '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تحليلات البحث</p>';
+    }
+  }
+
+  async function loadZeroResultSearches() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/search/zero-results?limit=20');
+      var rows = data.queries || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد عمليات بحث بدون نتائج</p>';
+        return;
+      }
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">بحث بدون نتائج</h3>';
+      rows.forEach(function (r) {
+        html += '<div class="zero-result-query-card">' +
+          '<strong>Hash:</strong> <small>' + escapeHtml((r.queryHash || '').slice(0, 24)) + '…</small><br>' +
+          '<small>Scope: ' + escapeHtml(r.scope || '-') + ' · Zero: ' + escapeHtml(String(r.zeroResults || 0)) + ' · Count: ' + escapeHtml(String(r.count || 0)) + '</small>' +
+        '</div>';
+      });
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل zero-results</p>';
+    }
+  }
+
+  async function loadActivationFunnel() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/activation-funnel');
+      var totals = data.totals || {};
+      var rates = data.rates || {};
+      var tasks = data.byTask || [];
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">Activation Funnel</h3>';
+      html += '<div class="analytics-grid">' +
+        '<div class="funnel-step-card">Shown: <strong>' + (totals.profileTaskShown || 0) + '</strong></div>' +
+        '<div class="funnel-step-card">Clicked: <strong>' + (totals.profileTaskClicked || 0) + '</strong></div>' +
+        '<div class="funnel-step-card">Completed: <strong>' + (totals.profileTaskCompleted || 0) + '</strong></div>' +
+        '<div class="funnel-step-card">Click Rate: <strong>' + (rates.profileTaskClickRate || 0) + '%</strong></div>' +
+      '</div>';
+
+      if (tasks.length > 0) {
+        html += '<table class="admin-table"><thead><tr><th>Task</th><th>Shown</th><th>Clicked</th><th>Completed</th></tr></thead><tbody>';
+        tasks.slice(0, 20).forEach(function (t) {
+          html += '<tr><td>' + escapeHtml(t.taskId || '-') + '</td><td>' + (t.shown || 0) + '</td><td>' + (t.clicked || 0) + '</td><td>' + (t.completed || 0) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Activation Funnel</p>';
+    }
+  }
+
+  async function loadNotificationConversions() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/notification-conversions');
+      var rows = data.rows || [];
+      var totals = data.totals || {};
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">تحويلات الإشعارات</h3>';
+      html += '<p style="color:var(--color-text-muted);font-size:0.85rem;">Clicks: ' + (totals.clicks || 0) + ' · Conversions: ' + (totals.conversions || 0) + '</p>';
+
+      if (rows.length === 0) {
+        html += '<p class="empty-state">لا توجد بيانات تحويلات بعد</p>';
+      } else {
+        html += '<table class="admin-table"><thead><tr><th>Type</th><th>Action</th><th>Clicks</th><th>Conversions</th><th>Rate</th></tr></thead><tbody>';
+        rows.slice(0, 20).forEach(function (r) {
+          html += '<tr>' +
+            '<td>' + escapeHtml(r.type || '-') + '</td>' +
+            '<td>' + escapeHtml(r.actionType || '-') + '</td>' +
+            '<td>' + (r.clicks || 0) + '</td>' +
+            '<td>' + (r.conversions || 0) + '</td>' +
+            '<td><span class="conversion-rate-pill">' + (r.conversionRate || 0) + '%</span></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تحويلات الإشعارات</p>';
+    }
+  }
+
+  async function loadWorkroomAdoption() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/workroom-adoption');
+      var totals = data.totals || {};
+      var rates = data.rates || {};
+      var events = data.byEvent || [];
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">Workroom Adoption</h3>';
+      html += '<div class="analytics-grid">' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.opened || 0) + '</div><div class="marketplace-intelligence-card__label">Opened</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.messageSent || 0) + '</div><div class="marketplace-intelligence-card__label">Messages</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.attachmentUploaded || 0) + '</div><div class="marketplace-intelligence-card__label">Attachments</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (rates.collaborationEvents || 0) + '</div><div class="marketplace-intelligence-card__label">Collaboration Events</div></div>' +
+      '</div>';
+
+      if (events.length > 0) {
+        html += '<table class="admin-table"><thead><tr><th>Event</th><th>Count</th></tr></thead><tbody>';
+        events.slice(0, 20).forEach(function (e) {
+          html += '<tr><td>' + escapeHtml(e.eventType || '-') + '</td><td>' + (e.count || 0) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Workroom Adoption</p>';
+    }
+  }
+
+  async function loadPaymentDisputeAnalytics() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/payment-disputes');
+      var a = data.analytics || {};
+      var totals = a.totals || {};
+      var categories = a.topRiskCategories || [];
+
+      var html = '<h3 style="font-size:1rem;margin-block-end:0.75rem;">تحليلات نزاعات الدفع</h3>';
+      html += '<div class="analytics-grid">' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.disputes || 0) + '</div><div class="marketplace-intelligence-card__label">نزاعات</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.disputeRate || 0) + '%</div><div class="marketplace-intelligence-card__label">معدل النزاع</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.disputedPlatformFeeExposure || 0) + '</div><div class="marketplace-intelligence-card__label">تعرض عمولة</div></div>' +
+        '<div class="marketplace-intelligence-card"><div class="marketplace-intelligence-card__value">' + (totals.avgResolutionHours || 0) + 'h</div><div class="marketplace-intelligence-card__label">متوسط الحل</div></div>' +
+      '</div>';
+
+      if (categories.length > 0) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">أعلى التخصصات مخاطرة</h4>';
+        html += '<table class="admin-table"><thead><tr><th>Category</th><th>Disputes</th><th>Rate</th></tr></thead><tbody>';
+        categories.forEach(function (c) {
+          html += '<tr><td>' + escapeHtml(c.category || '-') + '</td><td>' + (c.disputes || 0) + '</td><td><span class="dispute-risk-pill">' + (c.disputeRate || 0) + '%</span></td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل نزاعات الدفع</p>';
+    }
+  }
+
+  async function loadMatchingQuality() {
+    var el = document.getElementById('marketplaceIntelligenceDetails');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/marketplace-intelligence/matching-quality');
+      var stats = data.stats || {};
+      var safety = data.safety || {};
+
+      el.innerHTML =
+        '<h3 style="font-size:1rem;margin-block-end:0.75rem;">جودة المطابقة</h3>' +
+        '<div class="health-row"><span class="health-row__label">Explainability</span><span class="health-row__value">' + (stats.explainabilityEnabled ? 'مفعل' : 'غير مفعل') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Max Reasons</span><span class="health-row__value">' + escapeHtml(String(stats.maxExplanationReasons || 0)) + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">No Punitive Automation</span><span class="health-row__value">' + (safety.noPunitiveAutomation ? 'نعم' : 'لا') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Policy</span><span class="health-row__value">' + escapeHtml(safety.explanationPolicy || '-') + '</span></div>';
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جودة المطابقة</p>';
+    }
+  }
+
+  async function runMarketplaceIntelligenceRollup() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/marketplace-intelligence/rollup/run?async=1', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم وضع Marketplace Intelligence Rollup في الطابور — Job: ' + (data.queueJobId || ''));
+        }
+        loadOpsQueueStats();
+        loadMarketplaceIntelligence();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل rollup');
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -3967,6 +4428,19 @@ var AdminApp = (function () {
     loadMaintenanceMode: loadMaintenanceMode,
     enableMaintenanceMode: enableMaintenanceMode,
     disableMaintenanceMode: disableMaintenanceMode,
+    // Phase 56 — Admin Dashboard IA + Marketplace Intelligence
+    initAdminTabs: initAdminTabs,
+    showAdminTab: showAdminTab,
+    loadMarketplaceIntelligence: loadMarketplaceIntelligence,
+    loadSearchAnalytics: loadSearchAnalytics,
+    loadZeroResultSearches: loadZeroResultSearches,
+    loadActivationFunnel: loadActivationFunnel,
+    loadNotificationConversions: loadNotificationConversions,
+    loadWorkroomAdoption: loadWorkroomAdoption,
+    loadPaymentDisputeAnalytics: loadPaymentDisputeAnalytics,
+    loadMatchingQuality: loadMatchingQuality,
+    runMarketplaceIntelligenceRollup: runMarketplaceIntelligenceRollup,
+
     // Phase 55 — Scale Hygiene
     loadScaleHygiene: loadScaleHygiene,
     verifyQueue: verifyQueue,

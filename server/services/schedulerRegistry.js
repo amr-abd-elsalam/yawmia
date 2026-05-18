@@ -231,6 +231,62 @@ function defaultDefinitions() {
       enabled: defaultEnabled('scheduler_history_cleanup'),
       idempotencyKeyFn: (bucket) => `scheduler_history_cleanup:scheduled:${bucket}`,
     },
+
+    // Phase 56 — Marketplace Intelligence + Product UX Maturity
+    {
+      name: 'marketplace_intelligence_daily',
+      queueType: 'marketplace_intelligence_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('marketplace_intelligence_daily'),
+      idempotencyKeyFn: (bucket) => `marketplace_intelligence_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'search_analytics_rollup',
+      queueType: 'search_analytics_rollup',
+      intervalMs: config.SEARCH_ANALYTICS?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('search_analytics_rollup'),
+      idempotencyKeyFn: (bucket) => `search_analytics_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'payment_dispute_analytics_rollup',
+      queueType: 'payment_dispute_analytics_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('payment_dispute_analytics_rollup'),
+      idempotencyKeyFn: (bucket) => `payment_dispute_analytics_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'workroom_adoption_rollup',
+      queueType: 'workroom_adoption_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('workroom_adoption_rollup'),
+      idempotencyKeyFn: (bucket) => `workroom_adoption_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'notification_conversion_rollup',
+      queueType: 'notification_conversion_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('notification_conversion_rollup'),
+      idempotencyKeyFn: (bucket) => `notification_conversion_rollup:scheduled:${bucket}`,
+    },
+    {
+      name: 'activation_funnel_rollup',
+      queueType: 'activation_funnel_rollup',
+      intervalMs: config.PRODUCT_INTELLIGENCE?.rollupIntervalMs || day,
+      priority: 'low',
+      payload: { options: { reason: 'scheduled' } },
+      enabled: defaultEnabled('activation_funnel_rollup'),
+      idempotencyKeyFn: (bucket) => `activation_funnel_rollup:scheduled:${bucket}`,
+    },
   ];
 }
 

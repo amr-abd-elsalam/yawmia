@@ -15,6 +15,7 @@ import {
   getWorkroomSummary,
   resolveWorkroomAccess,
 } from '../services/workroom.js';
+import { eventBus } from '../services/eventBus.js';
 
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -95,6 +96,15 @@ export async function handleGetWorkroom(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:opened', {
+        jobId,
+        userId: req.user.id,
+        role: result.workroom?.userRoleInWorkroom || req.user.role,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 200, { ok: true, workroom: result.workroom });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب مساحة العمل', code: 'WORKROOM_GET_ERROR' });
@@ -151,6 +161,19 @@ export async function handleSendWorkroomMessage(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:message_sent', {
+        jobId,
+        userId: req.user.id,
+        senderId: req.user.id,
+        role: result.message?.senderRole || req.user.role,
+        messageId: result.message?.id || null,
+        hasAttachments: Array.isArray(result.message?.attachments) && result.message.attachments.length > 0,
+        templateKey: result.message?.templateKey || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, message: result.message });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في إرسال رسالة مساحة العمل', code: 'WORKROOM_SEND_ERROR' });
@@ -193,6 +216,16 @@ export async function handleGetWorkroomTimeline(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      eventBus.emit('workroom:timeline_viewed', {
+        jobId,
+        userId: req.user.id,
+        role: req.user.role,
+        total: result.total || 0,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
 
     return sendJSON(res, 200, {
       ok: true,
@@ -319,6 +352,17 @@ export async function handlePinWorkroomMessage(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:message_pinned', {
+        jobId: req.params.id,
+        userId: req.user.id,
+        role: req.user.role,
+        messageId,
+        idempotent: !!result.idempotent,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, pin: result.pin, idempotent: !!result.idempotent });
   } catch (err) {
     const code = err.code || 'WORKROOM_PIN_ERROR';
@@ -372,6 +416,16 @@ export async function handleCreateWorkroomChecklistItem(req, res) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
 
+    try {
+      eventBus.emit('workroom:checklist_item_created', {
+        jobId: req.params.id,
+        userId: req.user.id,
+        role: req.user.role,
+        itemId: result.item?.id || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
+
     return sendJSON(res, 201, { ok: true, item: result.item });
   } catch (err) {
     const code = err.code || 'WORKROOM_CHECKLIST_CREATE_ERROR';
@@ -391,6 +445,18 @@ export async function handleUpdateWorkroomChecklistItem(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      if (result.item && result.item.status === 'completed') {
+        eventBus.emit('workroom:checklist_item_completed', {
+          jobId: req.params.id,
+          userId: req.user.id,
+          role: req.user.role,
+          itemId: result.item.id || req.params.itemId,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (_) {}
 
     return sendJSON(res, 200, { ok: true, item: result.item });
   } catch (err) {
@@ -444,6 +510,16 @@ export async function handleUploadWorkroomAttachment(req, res) {
     if (!result.ok) {
       return sendJSON(res, errorStatus(result.code), { error: result.error, code: result.code });
     }
+
+    try {
+      eventBus.emit('workroom:attachment_uploaded', {
+        jobId,
+        userId: req.user.id,
+        role: req.user.role,
+        attachmentType: result.attachment?.type || 'image',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (_) {}
 
     return sendJSON(res, 201, { ok: true, attachment: result.attachment });
   } catch (err) {

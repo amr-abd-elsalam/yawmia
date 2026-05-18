@@ -9,6 +9,7 @@ import config from '../../config.js';
 import { sanitizeActionUrl } from './notificationActions.js';
 import { calculateCompleteness } from './profileCompleteness.js';
 import { logger } from './logger.js';
+import { eventBus } from './eventBus.js';
 
 function isEnabled() {
   return !!(config.PROFILE_TASKS && config.PROFILE_TASKS.enabled);
@@ -204,6 +205,38 @@ export async function getProfileTasks(userId) {
   const completeness = calculateCompleteness(user);
   let tasks = buildTasksFromUser(user, completeness);
   tasks = await addWorkerActivationTasks(user, tasks);
+
+  // Phase 56 — Product intelligence events.
+  // Fire-and-forget only; profile tasks response must remain fast and stable.
+  try {
+    const timestamp = new Date().toISOString();
+
+    for (const task of tasks) {
+      eventBus.emit('profile_task:shown', {
+        userId: user.id,
+        role: user.role,
+        taskId: task.id,
+        timestamp,
+      });
+    }
+
+    if (completeness.score >= 80) {
+      eventBus.emit('profile_task:completed', {
+        userId: user.id,
+        role: user.role,
+        taskId: 'profile_completeness_80',
+        timestamp,
+      });
+
+      eventBus.emit('activation:first_profile_completeness_80', {
+        userId: user.id,
+        role: user.role,
+        timestamp,
+      });
+    }
+  } catch (_) {
+    // Never block profile tasks.
+  }
 
   return {
     enabled: true,

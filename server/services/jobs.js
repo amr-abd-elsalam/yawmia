@@ -250,42 +250,130 @@ export async function list(filters = {}) {
     }
   }
 
-  // Text search on title + description (search index accelerated, Arabic-normalized)
+  // Text search on title + description (search index accelerated + Phase 56 weighted relevance)
   if (filters.search) {
+    const searchQuery = String(filters.search || '').trim();
     let searchHandled = false;
-    if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
-      try {
-        const { search: searchIndexQuery, getStats: getSearchStats } = await import('./searchIndex.js');
-        const searchStats = getSearchStats();
-        // Only use index if it has been built (size > 0)
-        if (searchStats.size > 0) {
+
+    if (searchQuery) {
+      // Candidate filtering using existing searchIndex when possible.
+      // Phase 56 keeps searchIndex as acceleration only; final ranking happens below.
+      if (config.SEARCH_INDEX && config.SEARCH_INDEX.enabled) {
+        try {
+          const { search: searchIndexQuery, getStats: getSearchStats } = await import('./searchIndex.js');
+          const searchStats = getSearchStats();
+
+          if (searchStats.size > 0) {
+            const { normalizeArabic } = await import('./arabicNormalizer.js');
+            const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+
+            const matchedIds = searchIndexQuery(normalizedTerm, {
+              status: filters.status || 'open',
+              category: filters.category,
+              governorate: filters.governorate,
+            });
+
+            // Important: searchIndex uses phrase includes(). If it returns zero,
+            // fall back to token-aware full scan so multi-token Arabic queries
+            // do not incorrectly become zero-result.
+            if (matchedIds.length > 0) {
+              jobs = jobs.filter(j => matchedIds.includes(j.id));
+              searchHandled = true;
+            }
+          }
+        } catch (_) {
+          // Fallback to full scan below
+        }
+      }
+
+      // Token-aware fallback / enhancement.
+      if (!searchHandled) {
+        try {
+          const { buildSearchTokenSet } = await import('./arabicSearchTokens.js');
+          const queryTokens = buildSearchTokenSet(searchQuery);
           const { normalizeArabic } = await import('./arabicNormalizer.js');
-          const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-          const matchedIds = searchIndexQuery(normalizedTerm, {
-            status: filters.status || 'open',
-            category: filters.category,
-            governorate: filters.governorate,
+          const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+
+          jobs = jobs.filter(j => {
+            const title = normalizeArabic((j.title || '').toLowerCase());
+            const desc = normalizeArabic((j.description || '').toLowerCase());
+            if (normalizedTerm && (title.includes(normalizedTerm) || desc.includes(normalizedTerm))) return true;
+
+            const titleTokens = buildSearchTokenSet(j.title || '');
+            const descTokens = buildSearchTokenSet(j.description || '');
+            for (const token of queryTokens) {
+              if (titleTokens.has(token) || descTokens.has(token)) return true;
+            }
+            return false;
           });
-          jobs = jobs.filter(j => matchedIds.includes(j.id));
+
+          searchHandled = true;
+        } catch (_) {
+          // Last-resort Phase 55 behavior.
+          const { normalizeArabic } = await import('./arabicNormalizer.js');
+          const normalizedTerm = normalizeArabic(searchQuery.toLowerCase());
+          jobs = jobs.filter(j => {
+            const title = normalizeArabic((j.title || '').toLowerCase());
+            const desc = normalizeArabic((j.description || '').toLowerCase());
+            return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
+          });
           searchHandled = true;
         }
-      } catch (_) {
-        // Fallback to full scan below
       }
-    }
-    if (!searchHandled) {
-      const { normalizeArabic } = await import('./arabicNormalizer.js');
-      const normalizedTerm = normalizeArabic(filters.search.toLowerCase());
-      jobs = jobs.filter(j => {
-        const title = normalizeArabic((j.title || '').toLowerCase());
-        const desc = normalizeArabic((j.description || '').toLowerCase());
-        return title.includes(normalizedTerm) || desc.includes(normalizedTerm);
-      });
+
+      // Phase 56: weighted relevance ranking.
+      if (config.SEARCH_RELEVANCE && config.SEARCH_RELEVANCE.enabled) {
+        try {
+          const { rankJobSearchResults } = await import('./searchRelevance.js');
+          jobs = rankJobSearchResults(jobs, searchQuery, filters, {
+            explain: filters.explain === '1' || filters.explain === 'true' || true,
+          });
+          filters._relevanceSorted = true;
+        } catch (_) {
+          // Keep filtered jobs with existing sorting fallback.
+        }
+      }
+
+      // Phase 56: privacy-safe search analytics (fire-and-forget).
+      try {
+        const { hashSearchQuery } = await import('./searchAnalytics.js');
+        const queryHash = hashSearchQuery(searchQuery);
+        const safeFilters = {
+          category: filters.category || null,
+          categories: filters.categories || null,
+          governorate: filters.governorate || null,
+          urgency: filters.urgency || null,
+          minWage: filters.minWage || null,
+          maxWage: filters.maxWage || null,
+        };
+
+        eventBus.emit('search:performed', {
+          scope: 'jobs',
+          query: searchQuery,
+          queryHash,
+          resultCount: jobs.length,
+          filters: safeFilters,
+          timestamp: new Date().toISOString(),
+        });
+
+        if (jobs.length === 0) {
+          eventBus.emit('search:zero_results', {
+            scope: 'jobs',
+            query: searchQuery,
+            queryHash,
+            resultCount: 0,
+            filters: safeFilters,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (_) {
+        // Analytics must never affect search response.
+      }
     }
   }
 
-  // Sort (skip if already sorted by proximity)
-  if (!filters._proximitySorted) {
+  // Sort (skip if already sorted by proximity or Phase 56 relevance ranking)
+  if (!filters._proximitySorted && !filters._relevanceSorted) {
     const sort = filters.sort || 'newest';
     const urgencyOrder = { immediate: 0, urgent: 1, normal: 2 };
     if (sort === 'wage_high') {

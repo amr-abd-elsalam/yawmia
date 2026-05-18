@@ -361,9 +361,26 @@ var YawmiaTalentRadar = (function () {
     }
 
     var scoreHtml = '';
-    if (typeof w._score === 'number') {
-      var scorePercent = Math.round(w._score * 100);
+    var scoreValue = typeof w._matchScore === 'number' ? w._matchScore : w._score;
+    if (typeof scoreValue === 'number') {
+      var scorePercent = Math.round(scoreValue * 100);
       scoreHtml = '<div class="worker-card__score-badge" title="درجة المطابقة">' + scorePercent + '</div>';
+    }
+
+    var reasonsHtml = '';
+    if (Array.isArray(w._matchReasons) && w._matchReasons.length > 0) {
+      reasonsHtml = '<div class="match-reason-list" aria-label="أسباب الترشيح">';
+      w._matchReasons.slice(0, 3).forEach(function (reason) {
+        var icon = '✨';
+        if (reason.indexOf('قريب') !== -1) icon = '📍';
+        else if (reason.indexOf('متاح') !== -1) icon = '🟢';
+        else if (reason.indexOf('تخصص') !== -1) icon = '🧰';
+        else if (reason.indexOf('ثقة') !== -1) icon = '🛡️';
+        else if (reason.indexOf('تقييم') !== -1) icon = '⭐';
+        else if (reason.indexOf('يرد') !== -1) icon = '⏱️';
+        reasonsHtml += '<span class="match-reason-chip">' + icon + ' ' + escapeHtml(reason) + '</span>';
+      });
+      reasonsHtml += '</div>';
     }
 
     return '' +
@@ -381,6 +398,7 @@ var YawmiaTalentRadar = (function () {
         '</div>' +
 
         categoriesHtml +
+        reasonsHtml +
 
         '<div class="worker-card__info-row">' +
           distanceHtml +

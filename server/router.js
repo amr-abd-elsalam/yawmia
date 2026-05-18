@@ -119,13 +119,24 @@ import {
   handleRebuildPredictiveArchiveIndex,
   handleSchedulerHistory,
 } from './handlers/scaleHygieneHandler.js';
+import {
+  handleMarketplaceIntelligenceDashboard,
+  handleSearchAnalytics,
+  handleZeroResultSearches,
+  handleActivationFunnel,
+  handleNotificationConversions,
+  handleWorkroomAdoption,
+  handlePaymentDisputeAnalytics,
+  handleMatchingQuality,
+  handleRunMarketplaceIntelligenceRollup,
+} from './handlers/marketplaceIntelligenceHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
 import { handleCreateReport, handleAdminListReports, handleAdminReviewReport, handleGetTrustScore, handleGetTrustScoreV2 } from './handlers/reportsHandler.js';
 import { handleSubmitVerification, handleGetVerificationStatus, handleGetPublicProfile, handleAdminListVerifications, handleAdminReviewVerification } from './handlers/verificationHandler.js';
 import { handleNotificationStream } from './handlers/sseHandler.js';
-import { handleGetProfileTasks } from './handlers/profileTasksHandler.js';
+import { handleGetProfileTasks, handleProfileTaskClick } from './handlers/profileTasksHandler.js';
 import { handleCheckIn, handleCheckOut, handleConfirmAttendance, handleReportNoShow, handleEmployerCheckIn, handleListJobAttendance, handleJobAttendanceSummary } from './handlers/attendanceHandler.js';
 import { handleSendMessage, handleBroadcastMessage, handleListJobMessages, handleGetUnreadCount, handleMarkMessageRead, handleMarkAllJobMessagesRead } from './handlers/messagesHandler.js';
 import { handlePushSubscribe, handlePushUnsubscribe } from './handlers/pushHandler.js';
@@ -188,7 +199,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.51.0',
+        version: '0.52.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -469,7 +480,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.51.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.52.0' });
     },
   },
 
@@ -481,6 +492,7 @@ const routes = [
   { method: 'GET', path: '/api/auth/me', middlewares: [requireAuth], handler: handleGetMe },
   { method: 'PUT', path: '/api/auth/profile', middlewares: [requireAuth], handler: handleUpdateProfile },
   { method: 'GET', path: '/api/profile/tasks', middlewares: [requireAuth], handler: handleGetProfileTasks },
+  { method: 'POST', path: '/api/profile/tasks/:id/click', middlewares: [requireAuth], handler: handleProfileTaskClick },
   { method: 'POST', path: '/api/auth/logout', middlewares: [requireAuth], handler: handleLogout },
   { method: 'POST', path: '/api/auth/logout-all', middlewares: [requireAuth], handler: handleLogoutAll },
   { method: 'POST', path: '/api/auth/accept-terms', middlewares: [requireAuth], handler: handleAcceptTerms },
@@ -729,6 +741,17 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+
+  // ── Phase 56 — Marketplace Intelligence Admin APIs ──
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/dashboard', middlewares: [requireAdmin], handler: handleMarketplaceIntelligenceDashboard },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/search', middlewares: [requireAdmin], handler: handleSearchAnalytics },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/search/zero-results', middlewares: [requireAdmin], handler: handleZeroResultSearches },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/activation-funnel', middlewares: [requireAdmin], handler: handleActivationFunnel },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/notification-conversions', middlewares: [requireAdmin], handler: handleNotificationConversions },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/workroom-adoption', middlewares: [requireAdmin], handler: handleWorkroomAdoption },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/payment-disputes', middlewares: [requireAdmin], handler: handlePaymentDisputeAnalytics },
+  { method: 'GET', path: '/api/admin/marketplace-intelligence/matching-quality', middlewares: [requireAdmin], handler: handleMatchingQuality },
+  { method: 'POST', path: '/api/admin/marketplace-intelligence/rollup/run', middlewares: [requireAdmin], handler: handleRunMarketplaceIntelligenceRollup },
 
   // ── Phase 55 — Scale Hygiene Admin APIs ──
   { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },

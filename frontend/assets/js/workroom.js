@@ -214,12 +214,15 @@ var YawmiaWorkroom = (function () {
       }
 
       currentWorkroom = res.data.workroom;
+      var currentUser = getUser();
+      var defaultTab = currentUser && currentUser.role === 'worker' ? 'messages' : 'details';
+
       activeTab = window.location.hash === '#workroom-messages' ? 'messages' :
                   window.location.hash === '#workroom-timeline' ? 'timeline' :
                   window.location.hash === '#workroom-search' ? 'search' :
                   window.location.hash === '#workroom-pinned' ? 'pinned' :
                   window.location.hash === '#workroom-checklist' ? 'checklist' :
-                  'details';
+                  defaultTab;
 
       renderWorkroomDetail();
       if (activeTab === 'messages') loadMessages();
@@ -406,7 +409,7 @@ var YawmiaWorkroom = (function () {
       if (!listEl) return;
 
       if (!res.data || !res.data.ok || !res.data.items || res.data.items.length === 0) {
-        listEl.innerHTML = '<p class="empty-state">لا توجد رسائل بعد</p>';
+        listEl.innerHTML = '<div class="empty-state"><span class="empty-state__icon">💬</span><p class="empty-state__text">لا توجد رسائل بعد</p><p class="empty-state__hint">ابدأ برسالة سريعة أو اكتب أول رسالة</p></div>';
       } else {
         renderMessages(res.data.items);
       }
@@ -674,7 +677,7 @@ var YawmiaWorkroom = (function () {
       var pins = (res.data && res.data.pins) || [];
 
       if (pins.length === 0) {
-        panel.innerHTML = '<p class="empty-state">لا توجد رسائل مثبتة بعد</p>';
+        panel.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📌</span><p class="empty-state__text">لا توجد رسائل مثبتة بعد</p><p class="empty-state__hint">ثبّت أهم رسالة لتظهر هنا بسرعة</p></div>';
         return;
       }
 
@@ -751,7 +754,7 @@ var YawmiaWorkroom = (function () {
     }
 
     if (items.length === 0) {
-      html += '<p class="empty-state">لا توجد مهام بعد</p>';
+      html += '<div class="empty-state"><span class="empty-state__icon">✅</span><p class="empty-state__text">لا توجد مهام بعد</p><p class="empty-state__hint">استخدم المهام لتوضيح المطلوب قبل وأثناء الشغل</p></div>';
     } else {
       html += '<div class="workroom-checklist-items">';
       items.forEach(function (item) {

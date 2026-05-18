@@ -304,6 +304,12 @@ const config = {
       trust_rollups: 'metrics/trust-calibration/rollups',
       predictive_archive_indexes: 'metrics/predictive-signal-archives/index',
       scale_hygiene: 'metrics/scale-hygiene',
+
+      // Phase 56 — Marketplace Intelligence + Product UX Maturity
+      search_analytics: 'metrics/search-analytics',
+      product_intelligence: 'metrics/product-intelligence',
+      matching_metrics: 'metrics/matching',
+      payment_dispute_analytics: 'metrics/payment-disputes',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -492,7 +498,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.51.0',
+    cacheName: 'yawmia-v0.52.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1350,6 +1356,14 @@ const config = {
       alert_delivery_cleanup: { enabled: true },
       ops_rollup_capture: { enabled: true },
       backup_restore_drill: { enabled: true },
+
+      // Phase 56 — Marketplace/Product Intelligence schedulers
+      marketplace_intelligence_daily: { enabled: true },
+      search_analytics_rollup: { enabled: true },
+      payment_dispute_analytics_rollup: { enabled: true },
+      workroom_adoption_rollup: { enabled: true },
+      notification_conversion_rollup: { enabled: true },
+      activation_funnel_rollup: { enabled: true },
     },
   },
 
@@ -1513,6 +1527,107 @@ const config = {
     auditSlowQueryMs: 1000,
     fileSizeWarningKB: 1024,
     fileSizeCriticalKB: 4096,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 93. تحسين البحث والملاءمة (SEARCH_RELEVANCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  SEARCH_RELEVANCE: {
+    enabled: true,
+    useWeightedRanking: true,
+    maxResults: 200,
+    weights: {
+      exactTitleMatch: 0.30,
+      titleTokenMatch: 0.20,
+      descriptionTokenMatch: 0.10,
+      categoryMatch: 0.15,
+      governorateMatch: 0.10,
+      urgencyBoost: 0.05,
+      recencyBoost: 0.05,
+      wageFit: 0.05,
+    },
+    recencyHalfLifeHours: 72,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 94. البحث العربي المتقدم (ARABIC_SEARCH) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  ARABIC_SEARCH: {
+    enabled: true,
+    stopwordsEnabled: true,
+    lightStemmingEnabled: true,
+    minTokenLength: 2,
+    maxTokensPerQuery: 12,
+    preserveNumbers: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 95. تحليلات البحث (SEARCH_ANALYTICS) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  SEARCH_ANALYTICS: {
+    enabled: true,
+    basePath: 'metrics/search-analytics',
+    hashQueries: true,
+    trackZeroResults: true,
+    trackClicks: true,
+    trackApplicationsAfterSearch: true,
+    retentionDays: 90,
+    rollupIntervalMs: 24 * 60 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 96. ذكاء المطابقة القابل للتفسير (MATCHING_INTELLIGENCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  MATCHING_INTELLIGENCE: {
+    enabled: true,
+    explainabilityEnabled: true,
+    maxExplanationReasons: 5,
+    scoreWeights: {
+      category: 0.25,
+      distance: 0.20,
+      availability: 0.15,
+      activeAd: 0.10,
+      trustScore: 0.15,
+      rating: 0.05,
+      responseSpeed: 0.10,
+    },
+    fairness: {
+      maxSameWorkerRecommendationsPerEmployerPerDay: 10,
+      diversifyResults: true,
+      noPunitiveAutomation: true,
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 97. ذكاء المنتج والسوق (PRODUCT_INTELLIGENCE) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  PRODUCT_INTELLIGENCE: {
+    enabled: true,
+    basePath: 'metrics/product-intelligence',
+    cacheTtlMs: 5 * 60 * 1000,
+    rollupEnabled: true,
+    rollupIntervalMs: 24 * 60 * 60 * 1000,
+    retentionDays: 180,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 98. تحليلات النزاعات المالية (PAYMENT_DISPUTE_ANALYTICS) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  PAYMENT_DISPUTE_ANALYTICS: {
+    enabled: true,
+    cacheTtlMs: 5 * 60 * 1000,
+    minSamplesForTrend: 5,
+    groupBy: ['category', 'governorate', 'employer', 'worker'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 99. تنظيم لوحة الأدمن (ADMIN_DASHBOARD_IA) — Phase 56
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_DASHBOARD_IA: {
+    enabled: true,
+    defaultTab: 'overview',
+    lazyLoadTabs: true,
+    tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'settings'],
   },
 
 };

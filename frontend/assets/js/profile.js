@@ -134,6 +134,44 @@
     }
   }
 
+  function trackProfileTaskClick(taskId) {
+    if (!taskId || !Yawmia.getToken()) return;
+
+    var url = '/api/profile/tasks/' + encodeURIComponent(taskId) + '/click';
+    var payload = JSON.stringify({ taskId: taskId });
+
+    try {
+      if (navigator.sendBeacon) {
+        var blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + Yawmia.getToken()
+        },
+        body: payload,
+        keepalive: true
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  function wireProfileTaskClicks(scopeEl) {
+    if (!scopeEl) return;
+    scopeEl.querySelectorAll('.profile-task-item[data-task-id]').forEach(function (el) {
+      if (el.dataset.trackingWired === '1') return;
+      el.dataset.trackingWired = '1';
+      el.addEventListener('click', function () {
+        trackProfileTaskClick(el.getAttribute('data-task-id'));
+      });
+    });
+  }
+
   function renderProfileTasks(mount, tasks, completionScore) {
     if (!mount) return;
 
@@ -150,7 +188,7 @@
 
     tasks.forEach(function (task) {
       html +=
-        '<a class="profile-task-item" href="' + escapeHtml(task.url || '/profile.html') + '">' +
+        '<a class="profile-task-item" data-task-id="' + escapeHtml(task.id || '') + '" href="' + escapeHtml(task.url || '/profile.html') + '">' +
           '<span class="profile-task-priority profile-task-priority--' + escapeHtml(task.priority || 'low') + '">' + priorityLabel(task.priority) + '</span>' +
           '<span class="profile-task-item__body">' +
             '<strong>' + escapeHtml(task.label || '') + '</strong>' +
@@ -162,6 +200,7 @@
 
     html += '</div></section>';
     mount.innerHTML = html;
+    wireProfileTaskClicks(mount);
   }
 
   function priorityLabel(priority) {

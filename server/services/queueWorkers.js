@@ -103,6 +103,15 @@ function registerBuiltIns() {
   registerJobHandler('trust_snapshot_rollup', handleTrustSnapshotRollupJob);
   registerJobHandler('predictive_archive_index_rebuild', handlePredictiveArchiveIndexRebuildJob);
   registerJobHandler('scheduler_history_cleanup', handleSchedulerHistoryCleanupJob);
+
+  // Phase 56 — Marketplace Intelligence + Product UX Maturity
+  registerJobHandler('marketplace_intelligence_rollup', handleMarketplaceIntelligenceRollupJob);
+  registerJobHandler('search_analytics_rollup', handleSearchAnalyticsRollupJob);
+  registerJobHandler('payment_dispute_analytics_rollup', handlePaymentDisputeAnalyticsRollupJob);
+  registerJobHandler('workroom_adoption_rollup', handleWorkroomAdoptionRollupJob);
+  registerJobHandler('notification_conversion_rollup', handleNotificationConversionRollupJob);
+  registerJobHandler('activation_funnel_rollup', handleActivationFunnelRollupJob);
+  registerJobHandler('search_relevance_rebuild', handleSearchRelevanceRebuildJob);
 }
 
 export async function startQueueWorkers() {
@@ -780,6 +789,138 @@ async function handlePredictiveArchiveIndexRebuildJob({ payload }) {
 async function handleSchedulerHistoryCleanupJob({ payload }) {
   const { cleanupSchedulerHistory } = await import('./schedulerRunHistory.js');
   return await cleanupSchedulerHistory(payload.options || {});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 56 Built-in handlers — Marketplace/Product Intelligence
+// ═══════════════════════════════════════════════════════════════
+
+async function handleMarketplaceIntelligenceRollupJob({ payload }) {
+  const { captureMarketplaceIntelligenceRollup } = await import('./marketplaceIntelligenceRollups.js');
+
+  const result = await captureMarketplaceIntelligenceRollup(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    rollupId: result.id || null,
+    day: result.day || null,
+    warningCount: result.health?.warningCount || 0,
+    durationMs: result.durationMs || 0,
+  };
+}
+
+async function handleSearchAnalyticsRollupJob({ payload }) {
+  const { rollupSearchAnalytics } = await import('./searchAnalytics.js');
+
+  const result = await rollupSearchAnalytics(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    topQueryCount: Array.isArray(result.topQueries) ? result.topQueries.length : 0,
+  };
+}
+
+async function handlePaymentDisputeAnalyticsRollupJob({ payload }) {
+  const { rollupPaymentDisputeAnalytics } = await import('./paymentDisputeAnalytics.js');
+
+  const result = await rollupPaymentDisputeAnalytics(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    disputes: result.analytics?.totals?.disputes || 0,
+    disputeRate: result.analytics?.totals?.disputeRate || 0,
+    trendDays: Array.isArray(result.trend) ? result.trend.length : 0,
+  };
+}
+
+async function handleWorkroomAdoptionRollupJob({ payload }) {
+  const { rollupWorkroomAdoption } = await import('./workroomAdoptionMetrics.js');
+
+  const result = await rollupWorkroomAdoption(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rates: result.rates || {},
+  };
+}
+
+async function handleNotificationConversionRollupJob({ payload }) {
+  const { rollupNotificationConversions } = await import('./notificationConversionMetrics.js');
+
+  const result = await rollupNotificationConversions(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rowCount: Array.isArray(result.rows) ? result.rows.length : 0,
+  };
+}
+
+async function handleActivationFunnelRollupJob({ payload }) {
+  const { rollupActivationFunnel } = await import('./activationFunnelMetrics.js');
+
+  const result = await rollupActivationFunnel(payload.options || {});
+
+  if (!result || result.skipped) {
+    return result || { skipped: true };
+  }
+
+  return {
+    month: result.month || null,
+    totals: result.totals || {},
+    rates: result.rates || {},
+  };
+}
+
+async function handleSearchRelevanceRebuildJob({ payload }) {
+  const result = {
+    searchIndex: { rebuilt: false, count: 0 },
+    queryIndex: { rebuilt: false, count: 0 },
+  };
+
+  try {
+    const searchIndex = await import('./searchIndex.js');
+    const count = await searchIndex.buildIndex();
+    result.searchIndex = { rebuilt: true, count };
+  } catch (err) {
+    result.searchIndex = { rebuilt: false, error: err.message };
+  }
+
+  try {
+    const queryIndex = await import('./queryIndex.js');
+    const count = await queryIndex.buildAllIndexes();
+    result.queryIndex = { rebuilt: true, count };
+  } catch (err) {
+    result.queryIndex = { rebuilt: false, error: err.message };
+  }
+
+  if (!result.searchIndex.rebuilt && !result.queryIndex.rebuilt) {
+    const err = new Error('SEARCH_RELEVANCE_REBUILD_FAILED');
+    err.retryable = true;
+    throw err;
+  }
+
+  return result;
 }
 
 export const _testHelpers = {

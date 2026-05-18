@@ -3389,6 +3389,28 @@ textarea:focus:not(:focus-visible) {
   gap: 0.25rem;
 }
 
+.match-reason-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-block-start: 0.15rem;
+}
+
+.match-reason-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .worker-card__cat-pill {
   display: inline-block;
   padding: 0.15rem 0.5rem;
@@ -3523,6 +3545,11 @@ textarea:focus:not(:focus-visible) {
 @media (max-width: 600px) {
   .worker-cards-grid {
     grid-template-columns: 1fr;
+  }
+
+  .match-reason-chip {
+    font-size: 0.7rem;
+    padding: 0.18rem 0.5rem;
   }
   .radar-filter__row--inline {
     flex-direction: column;
@@ -4925,4 +4952,122 @@ textarea:focus:not(:focus-visible) {
   color: var(--color-error);
   background: rgba(239, 68, 68, 0.14);
   border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ═══ Phase 56 — Admin Dashboard IA + Marketplace Intelligence ═══ */
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-end: 1.25rem;
+  padding: 0.65rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.admin-tab {
+  min-height: 44px;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.admin-tab:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.admin-tab--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.admin-tab-panel-hidden {
+  display: none !important;
+}
+
+.marketplace-intelligence-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.marketplace-intelligence-card__value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.marketplace-intelligence-card__label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.35rem;
+}
+
+.zero-result-query-card {
+  padding: 0.75rem 0.9rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  margin-block-end: 0.5rem;
+}
+
+.funnel-step-card {
+  padding: 0.85rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.conversion-rate-pill,
+.dispute-risk-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+}
+
+.conversion-rate-pill {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.dispute-risk-pill {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+@media (max-width: 600px) {
+  .admin-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0.5rem;
+  }
+
+  .admin-tab {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
 }

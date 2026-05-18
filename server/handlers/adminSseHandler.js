@@ -92,6 +92,13 @@ const SUBSCRIBED_EVENTS = [
   'predictive_archive_index:rebuilt',
   'scheduler:run_history_recorded',
   'scheduler:history_cleanup_completed',
+
+  // Phase 56 — Marketplace/Product Intelligence
+  'marketplace_intelligence:rollup_captured',
+  'search_analytics:rollup_completed',
+  'activation_funnel:rollup_completed',
+  'workroom_adoption:rollup_completed',
+  'payment_dispute_analytics:rollup_completed',
 ];
 
 let listenersRegistered = false;

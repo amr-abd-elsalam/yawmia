@@ -36,6 +36,17 @@
     <div class="error-msg" id="errorMsg"></div>
 
     <div id="dashboard" class="hidden">
+      <!-- Phase 56 — Admin Dashboard IA Tabs -->
+      <nav class="admin-tabs" id="adminTabs" aria-label="أقسام لوحة التحكم">
+        <button class="admin-tab admin-tab--active" data-admin-tab="overview">نظرة عامة</button>
+        <button class="admin-tab" data-admin-tab="marketplace">السوق</button>
+        <button class="admin-tab" data-admin-tab="trust">الثقة والأمان</button>
+        <button class="admin-tab" data-admin-tab="ops">التشغيل</button>
+        <button class="admin-tab" data-admin-tab="scale">التوسع</button>
+        <button class="admin-tab" data-admin-tab="audit">السجل والتصدير</button>
+        <button class="admin-tab" data-admin-tab="settings">الإعدادات</button>
+      </nav>
+
       <div class="stats-grid" id="statsGrid"></div>
 
       <div class="admin-section">
@@ -250,6 +261,33 @@
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
         <div id="verifications-pagination"></div>
+      </div>
+
+      <!-- Phase 56 — Marketplace Intelligence -->
+      <div class="admin-section" id="marketplaceIntelligenceSection" data-admin-tab-panel="marketplace">
+        <div class="admin-section__header">
+          <h2>🧠 ذكاء السوق</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMarketplaceIntelligence()">تحديث</button>
+        </div>
+
+        <div id="marketplaceIntelligenceSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.runMarketplaceIntelligenceRollup()">تحديث Rollup</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadSearchAnalytics()">تحليلات البحث</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadZeroResultSearches()">بحث بدون نتائج</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadActivationFunnel()">Activation Funnel</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadNotificationConversions()">تحويلات الإشعارات</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadWorkroomAdoption()">Workroom Adoption</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPaymentDisputeAnalytics()">نزاعات الدفع</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadMatchingQuality()">جودة المطابقة</button>
+        </div>
+
+        <div id="marketplaceIntelligenceDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">اختار تقرير من الأزرار أعلاه</p>
+        </div>
       </div>
 
       <!-- Phase 44 — Admin Direct Offers Operations Console -->

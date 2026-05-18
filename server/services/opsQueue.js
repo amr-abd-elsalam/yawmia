@@ -252,7 +252,7 @@ export async function enqueueJob(params = {}) {
   }
 
   const job = buildInitialJob(params);
-  await atomicWrite(queuePath(job.id), job);
+  await writeQueueRecord(job);
 
   eventBus.emit('ops_queue:job_enqueued', {
     jobId: job.id,
