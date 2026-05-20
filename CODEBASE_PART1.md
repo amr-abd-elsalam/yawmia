@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.53.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-20T22:25:20.868Z
+> Auto-generated: 2026-05-20T23:01:32.406Z
 > Files in this part: 6
 
 ## Files
@@ -1888,11 +1888,11 @@ import { createRouter } from './server/router.js';
 import { corsMiddleware } from './server/middleware/cors.js';
 import { securityMiddleware } from './server/middleware/security.js';
 import { requestIdMiddleware } from './server/middleware/requestId.js';
+import { readOnlyReplicaMiddleware } from './server/middleware/readOnlyReplica.js';
 import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { timingMiddleware } from './server/middleware/timing.js';
 import { maintenanceMiddleware } from './server/middleware/maintenance.js';
-import { readOnlyReplicaMiddleware } from './server/middleware/readOnlyReplica.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
