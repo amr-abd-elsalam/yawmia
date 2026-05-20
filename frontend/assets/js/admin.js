@@ -89,6 +89,53 @@ var AdminApp = (function () {
     }, 5000);
   }
 
+  function renderRecommendedActions(containerId, actions) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+
+    actions = Array.isArray(actions) ? actions : [];
+
+    if (actions.length === 0) {
+      el.innerHTML =
+        '<div class="recommended-actions recommended-actions--empty">' +
+          '<div class="recommended-action-card recommended-action-card--ok">' +
+            '<strong>✅ لا توجد إجراءات عاجلة</strong>' +
+            '<p>كل المؤشرات الأساسية في هذا القسم تبدو مستقرة حالياً.</p>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    var top = actions.slice(0, 3);
+
+    var html = '<div class="recommended-actions__title">الإجراءات المقترحة</div>';
+
+    top.forEach(function (a) {
+      var sev = a.severity || a.level || 'warning';
+      var cls = sev === 'critical' || sev === 'error'
+        ? 'recommended-action-card--critical'
+        : (sev === 'info' ? 'recommended-action-card--info' : 'recommended-action-card--warning');
+
+      var icon = sev === 'critical' || sev === 'error' ? '🚨' : (sev === 'info' ? 'ℹ️' : '⚠️');
+
+      html += '<div class="recommended-action-card ' + cls + '">' +
+        '<div class="recommended-action-card__header">' +
+          '<strong>' + icon + ' ' + escapeHtml(a.label || 'راجع الحالة') + '</strong>' +
+          '<span class="recommended-action-card__severity">' + escapeHtml(sev) + '</span>' +
+        '</div>' +
+        (a.reason ? '<p>' + escapeHtml(a.reason) + '</p>' : '') +
+        (a.command ? '<code class="ops-command-chip">' + escapeHtml(a.command) + '</code>' : '') +
+        (a.adminRoute ? '<small class="runbook-link">Admin route: ' + escapeHtml(a.adminRoute) + '</small>' : '') +
+      '</div>';
+    });
+
+    if (actions.length > 3) {
+      html += '<p class="ops-help-text">+' + (actions.length - 3) + ' إجراءات أخرى موجودة في التفاصيل أسفل الصفحة.</p>';
+    }
+
+    el.innerHTML = html;
+  }
+
   async function connect() {
     var input = document.getElementById('adminTokenInput');
     if (!input || !input.value.trim()) {
@@ -3108,6 +3155,31 @@ var AdminApp = (function () {
     return '<span class="ops-status-pill ' + cls + '">' + escapeHtml(status || 'unknown') + '</span>';
   }
 
+  async function loadDeploymentGate() {
+    try {
+      var data = await api('/api/admin/production/deployment-gate');
+
+      renderRecommendedActions('opsRecommendedActions', data.recommendedActions || []);
+
+      var summaryEl = document.getElementById('productionReadinessSummary');
+      if (summaryEl && data.status) {
+        var existing = summaryEl.innerHTML || '';
+        var statusClass = data.status === 'ready'
+          ? 'deployment-gate-status ops-status-pill--ready'
+          : (data.status === 'blocked' ? 'deployment-gate-status ops-status-pill--bad' : 'deployment-gate-status ops-status-pill--warning');
+
+        summaryEl.insertAdjacentHTML('afterbegin',
+          '<div class="trust-metric-card">' +
+            '<div class="trust-metric-value"><span class="' + statusClass + '">' + escapeHtml(data.status) + '</span></div>' +
+            '<div class="trust-metric-label">Deployment Gate</div>' +
+          '</div>'
+        );
+      }
+    } catch (_) {
+      // Non-fatal; readiness loader still works.
+    }
+  }
+
   async function loadProductionReadiness() {
     var summaryEl = document.getElementById('productionReadinessSummary');
     var checksEl = document.getElementById('productionReadinessChecks');
@@ -3258,6 +3330,28 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadSchedulerCadence() {
+    try {
+      var data = await api('/api/admin/production/scheduler-cadence');
+      var report = data.report || {};
+
+      if (report.staleCount > 0) {
+        renderRecommendedActions('opsRecommendedActions', [{
+          id: 'scheduler_cadence_review',
+          label: 'مراجعة مهام الجدولة المتأخرة',
+          severity: 'warning',
+          command: 'node scripts/scheduler-cadence-report.js',
+          adminRoute: '/api/admin/production/scheduler-cadence',
+          reason: report.staleCount + ' scheduler job(s) stale or failed.',
+        }]);
+      }
+
+      return report;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function loadSchedulers() {
     var el = document.getElementById('schedulerTable');
     if (!el) return;
@@ -3335,6 +3429,18 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadOpsWeeklyReview() {
+    try {
+      var data = await api('/api/admin/production/ops-review');
+      if (data && data.ok && data.recommendedActions) {
+        renderRecommendedActions('opsRecommendedActions', data.recommendedActions || []);
+      }
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function loadOpsSlo() {
     var metricsEl = document.getElementById('opsSloMetrics');
     var rollupsEl = document.getElementById('opsRollupsTable');
@@ -3370,6 +3476,39 @@ var AdminApp = (function () {
           metricsEl.appendChild(card);
         });
       }
+
+      var opsActions = [];
+      if ((violations || []).length > 0) {
+        opsActions.push({
+          id: 'ops_slo_review',
+          label: 'مراجعة مخالفات SLO',
+          severity: 'warning',
+          command: 'node scripts/verify-production-readiness.js',
+          adminRoute: '/api/admin/ops/slo',
+          reason: 'يوجد مؤشرات تشغيل خارج الحدود المتفق عليها.',
+        });
+      }
+      if ((q.deadLetter || 0) > 0) {
+        opsActions.push({
+          id: 'ops_dlq_review',
+          label: 'مراجعة وظائف DLQ',
+          severity: q.deadLetter >= 5 ? 'critical' : 'warning',
+          command: 'node scripts/queue-retry-dlq.js --dry-run',
+          adminRoute: '/api/admin/ops-queue/dead-letter',
+          reason: 'DLQ = وظائف فشلت بعد كل المحاولات.',
+        });
+      }
+      if ((sched.stale || 0) > 0) {
+        opsActions.push({
+          id: 'ops_scheduler_review',
+          label: 'مراجعة Scheduler Stale',
+          severity: 'warning',
+          command: 'node scripts/scheduler-cadence-report.js',
+          adminRoute: '/api/admin/schedulers',
+          reason: 'Stale Scheduler = مهمة جدولتها تأخرت أو فشلت آخر مرة.',
+        });
+      }
+      renderRecommendedActions('opsRecommendedActions', opsActions);
 
       await loadOpsRollups();
     } catch (err) {
@@ -3618,6 +3757,7 @@ var AdminApp = (function () {
       var data = await api('/api/admin/scale-hygiene/overview');
       var o = data.overview || {};
 
+      renderRecommendedActions('scaleRecommendedActions', o.recommendedActions || []);
       renderScaleHygieneSummary(o);
       renderScaleHygieneDetails(o);
     } catch (err) {
@@ -4033,8 +4173,10 @@ var AdminApp = (function () {
       loadTrustCalibrationDashboard();
     } else if (tabName === 'ops') {
       loadProductionReadiness();
+      loadDeploymentGate();
       loadInstanceOps();
       loadSchedulers();
+      loadSchedulerCadence();
       loadOpsSlo();
       loadRestoreDrills();
       loadIncidents();
@@ -4089,6 +4231,20 @@ var AdminApp = (function () {
       var data = await api('/api/admin/marketplace-intelligence/dashboard');
       var dashboard = data.dashboard || {};
       renderMpiCards(dashboard.summary || {});
+
+      var mpiActions = [];
+      var warningsForActions = dashboard.warnings || [];
+      if (warningsForActions.length > 0) {
+        mpiActions.push({
+          id: 'marketplace_review',
+          label: 'راجع تحذيرات ذكاء السوق',
+          severity: 'warning',
+          command: 'node scripts/ops-weekly-review.js',
+          adminRoute: '/api/admin/marketplace-intelligence/dashboard',
+          reason: 'يوجد تحذيرات في ملخص السوق تحتاج مراجعة منتج/تشغيل.',
+        });
+      }
+      renderRecommendedActions('marketplaceRecommendedActions', mpiActions);
 
       if (details) {
         var warnings = dashboard.warnings || [];
@@ -4410,8 +4566,12 @@ var AdminApp = (function () {
     runTrustCalibrationReport: runTrustCalibrationReport,
     testWebhook: testWebhook,
     renderCsvExportProgress: renderCsvExportProgress,
+    renderRecommendedActions: renderRecommendedActions,
     // Phase 54 — Production Ops
     loadProductionReadiness: loadProductionReadiness,
+    loadDeploymentGate: loadDeploymentGate,
+    loadSchedulerCadence: loadSchedulerCadence,
+    loadOpsWeeklyReview: loadOpsWeeklyReview,
     loadInstanceOps: loadInstanceOps,
     loadProcessLocks: loadProcessLocks,
     releaseProcessLock: releaseProcessLock,

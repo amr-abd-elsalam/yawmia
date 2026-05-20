@@ -83,6 +83,9 @@ import {
 } from './handlers/queueHandler.js';
 import {
   handleProductionReadiness,
+  handleDeploymentGate,
+  handleSchedulerCadence,
+  handleOpsReview,
   handleInstanceMode,
   handleProcessLocks,
   handleReleaseProcessLock,
@@ -199,7 +202,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.52.0',
+        version: '0.53.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -480,7 +483,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.52.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.53.0' });
     },
   },
 
@@ -739,6 +742,9 @@ const routes = [
 
   // ── Phase 54 — Production Ops Hardening APIs ──
   { method: 'GET', path: '/api/admin/production/readiness', middlewares: [requireAdmin], handler: handleProductionReadiness },
+  { method: 'GET', path: '/api/admin/production/deployment-gate', middlewares: [requireAdmin], handler: handleDeploymentGate },
+  { method: 'GET', path: '/api/admin/production/scheduler-cadence', middlewares: [requireAdmin], handler: handleSchedulerCadence },
+  { method: 'GET', path: '/api/admin/production/ops-review', middlewares: [requireAdmin], handler: handleOpsReview },
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },

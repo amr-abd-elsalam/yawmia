@@ -135,6 +135,16 @@
           <h2>📈 SLO التشغيل</h2>
           <button class="refresh-btn" onclick="AdminApp.loadOpsSlo()">تحديث</button>
         </div>
+        <div class="ops-help-text">
+          <strong>مساعدة سريعة:</strong>
+          <span>DLQ = وظائف فشلت بعد كل المحاولات</span>
+          <span>SLO = مؤشر جودة التشغيل</span>
+          <span>Rollup = ملخص دوري محفوظ</span>
+          <span>Restore Drill = اختبار استعادة نسخة احتياطية</span>
+        </div>
+
+        <div id="opsRecommendedActions" class="recommended-actions"></div>
+
         <div id="opsSloMetrics" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
@@ -147,6 +157,8 @@
           <h2>🧹 نظافة التوسع</h2>
           <button class="refresh-btn" onclick="AdminApp.loadScaleHygiene()">تحديث</button>
         </div>
+
+        <div id="scaleRecommendedActions" class="recommended-actions"></div>
 
         <div id="scaleHygieneSummary" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
@@ -269,6 +281,8 @@
           <h2>🧠 ذكاء السوق</h2>
           <button class="refresh-btn" onclick="AdminApp.loadMarketplaceIntelligence()">تحديث</button>
         </div>
+
+        <div id="marketplaceRecommendedActions" class="recommended-actions"></div>
 
         <div id="marketplaceIntelligenceSummary" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>

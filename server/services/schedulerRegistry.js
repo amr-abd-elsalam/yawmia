@@ -737,6 +737,90 @@ export function stopSchedulerRegistry() {
   }
 }
 
+/**
+ * Phase 57: List stale enabled schedulers with reasons.
+ *
+ * @param {{ staleMs?: number }} options
+ */
+export async function listStaleSchedulers(options = {}) {
+  const rows = await listSchedulerJobs();
+  const staleMs = Number(options.staleMs || config.OPS_METRICS_ROLLUPS?.slo?.schedulerStaleWarningMs || (2 * 60 * 60 * 1000));
+  const now = Date.now();
+
+  return rows
+    .filter(row => row.enabled)
+    .map(row => {
+      const nextRunMs = parseMs(row.nextRunAt);
+      const staleByNextRun = nextRunMs > 0 && (now - nextRunMs) > staleMs;
+      const failed = row.lastStatus === 'failed';
+
+      const reasons = [];
+      if (staleByNextRun) reasons.push('nextRunAt is overdue');
+      if (failed) reasons.push('lastStatus is failed');
+
+      return {
+        ...row,
+        stale: reasons.length > 0,
+        staleReasons: reasons,
+        staleMs,
+      };
+    })
+    .filter(row => row.stale);
+}
+
+/**
+ * Phase 57: Scheduler cadence report.
+ *
+ * Lightweight: scheduler records + run history summary.
+ */
+export async function getSchedulerCadenceReport(options = {}) {
+  const rows = await listSchedulerJobs();
+  const staleRows = await listStaleSchedulers(options);
+  const staleByName = new Map(staleRows.map(r => [r.name, r]));
+
+  const schedulers = [];
+
+  for (const row of rows) {
+    let historySummary = null;
+
+    try {
+      const { listSchedulerRuns } = await import('./schedulerRunHistory.js');
+      const history = await listSchedulerRuns(row.name, { limit: 10, offset: 0 });
+      const runs = history.runs || [];
+      historySummary = {
+        totalRecent: history.total || 0,
+        lastRunStatus: runs[0]?.status || null,
+        lastRunAt: runs[0]?.startedAt || null,
+        recentFailed: runs.filter(r => r.status === 'failed').length,
+        recentQueued: runs.filter(r => r.status === 'queued').length,
+        recentSkipped: runs.filter(r => r.status === 'skipped').length,
+      };
+    } catch (_) {
+      historySummary = null;
+    }
+
+    const stale = staleByName.get(row.name);
+
+    schedulers.push({
+      ...row,
+      stale: !!stale,
+      staleReasons: stale ? stale.staleReasons : [],
+      historySummary,
+    });
+  }
+
+  return {
+    enabled: isEnabled(),
+    generatedAt: nowIso(),
+    total: schedulers.length,
+    enabledCount: schedulers.filter(s => s.enabled).length,
+    staleCount: schedulers.filter(s => s.stale).length,
+    failedCount: schedulers.filter(s => s.lastStatus === 'failed').length,
+    schedulers,
+    instance: getInstanceInfo(),
+  };
+}
+
 export const _testHelpers = {
   definitions,
   defaultDefinitions,

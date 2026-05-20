@@ -371,6 +371,72 @@ export async function cleanupOldRestoreDrills() {
   return await cleanupOldRestoreDrillRecords();
 }
 
+/**
+ * Phase 57: Latest restore drill freshness helper.
+ *
+ * @param {{ thresholdDays?: number }} options
+ */
+export async function getLatestRestoreDrillFreshness(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      latest: null,
+      ageDays: null,
+      fresh: false,
+      passed: false,
+      thresholdDays: options.thresholdDays || config.DEPLOYMENT_DISCIPLINE?.restoreDrillMaxAgeDays || 7,
+    };
+  }
+
+  const thresholdDays = Number(options.thresholdDays || config.DEPLOYMENT_DISCIPLINE?.restoreDrillMaxAgeDays || 7);
+
+  try {
+    const result = await listRestoreDrills({ limit: 1, offset: 0 });
+    const latest = result.drills && result.drills[0] ? result.drills[0] : null;
+
+    if (!latest) {
+      return {
+        enabled: true,
+        latest: null,
+        ageDays: null,
+        fresh: false,
+        passed: false,
+        thresholdDays,
+        status: 'missing',
+      };
+    }
+
+    const basis = latest.completedAt || latest.startedAt || latest.createdAt;
+    const ageDays = basis
+      ? Math.round(((Date.now() - new Date(basis).getTime()) / 86400000) * 10) / 10
+      : null;
+
+    const fresh = ageDays !== null && ageDays <= thresholdDays;
+    const passed = latest.status === 'passed';
+
+    return {
+      enabled: true,
+      latest,
+      ageDays,
+      fresh,
+      passed,
+      thresholdDays,
+      status: passed && fresh ? 'healthy' : (passed ? 'stale' : 'failed'),
+    };
+  } catch (err) {
+    return {
+      enabled: true,
+      latest: null,
+      ageDays: null,
+      fresh: false,
+      passed: false,
+      thresholdDays,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+}
+
 export const _testHelpers = {
   generateId,
   findLatestBackup,

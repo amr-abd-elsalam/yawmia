@@ -38,6 +38,11 @@ async function main() {
     }
   } catch (err) {
     console.error('❌ searchIndex rebuild failed:', err.message);
+    console.error('');
+    console.error('Run this first to detect corrupt or zero-byte JSON files:');
+    console.error('  node scripts/verify-data-json.js --strict');
+    console.error('');
+    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding search indexes.');
     process.exit(1);
   }
 
@@ -48,6 +53,11 @@ async function main() {
     }
   } catch (err) {
     console.error('❌ queryIndex rebuild failed:', err.message);
+    console.error('');
+    console.error('Run this first to detect corrupt or zero-byte JSON files:');
+    console.error('  node scripts/verify-data-json.js --strict');
+    console.error('');
+    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding query indexes.');
     process.exit(1);
   }
 

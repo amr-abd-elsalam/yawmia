@@ -8,8 +8,23 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
 async function main() {
-  console.log('\n🧪 يوميّة Marketplace Intelligence Verify\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  if (!JSON_OUT) console.log('\n🧪 يوميّة Marketplace Intelligence Verify\n');
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -20,10 +35,10 @@ async function main() {
     try {
       const result = await fn();
       checks.push({ name, ok: true, result });
-      console.log(`✅ ${name}`);
+      if (!JSON_OUT) console.log(`✅ ${name}`);
     } catch (err) {
       checks.push({ name, ok: false, error: err.message });
-      console.log(`❌ ${name}: ${err.message}`);
+      if (!JSON_OUT) console.log(`❌ ${name}: ${err.message}`);
     }
   }
 
@@ -57,19 +72,49 @@ async function main() {
     return await mod.getMarketplaceIntelligenceDashboard();
   });
 
+  await check('marketplace rollup freshness', async () => {
+    const mod = await import('../server/services/marketplaceIntelligenceRollups.js');
+    const freshness = await mod.getMarketplaceRollupFreshness();
+    if (STRICT && freshness.enabled && freshness.stale) {
+      throw new Error('Marketplace rollup is stale or missing');
+    }
+    return freshness;
+  });
+
   const failed = checks.filter(c => !c.ok);
-  console.log('');
+  if (!JSON_OUT) console.log('');
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify({
+      ok: failed.length === 0,
+      strict: STRICT,
+      generatedAt: new Date().toISOString(),
+      checks,
+      failed: failed.length,
+    }, null, 2));
+  }
 
   if (failed.length > 0) {
-    console.log(`❌ ${failed.length} check(s) failed`);
+    if (!JSON_OUT) console.log(`❌ ${failed.length} check(s) failed`);
     process.exit(1);
   }
 
-  console.log('✅ Marketplace intelligence verify passed\n');
+  if (!JSON_OUT) console.log('✅ Marketplace intelligence verify passed\n');
 }
 
 main().catch(err => {
-  console.error('\n❌ Verify failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Verify failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });

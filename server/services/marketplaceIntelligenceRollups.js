@@ -363,6 +363,73 @@ export async function getMarketplaceIntelligenceDashboard(options = {}) {
 }
 
 /**
+ * Phase 57: Marketplace rollup freshness helper.
+ *
+ * Lightweight: reads latest persisted rollup only.
+ *
+ * @param {{ thresholdHours?: number }} options
+ */
+export async function getMarketplaceRollupFreshness(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      latestDay: null,
+      latestGeneratedAt: null,
+      ageHours: null,
+      stale: false,
+      thresholdHours: options.thresholdHours || config.DEPLOYMENT_DISCIPLINE?.marketplaceRollupMaxAgeHours || 48,
+    };
+  }
+
+  const thresholdHours = Number(options.thresholdHours || config.DEPLOYMENT_DISCIPLINE?.marketplaceRollupMaxAgeHours || 48);
+
+  try {
+    const rows = await listMarketplaceIntelligenceRollups({ limit: 1 });
+    const latest = rows.rollups && rows.rollups[0] ? rows.rollups[0] : null;
+
+    if (!latest) {
+      return {
+        enabled: true,
+        latestDay: null,
+        latestGeneratedAt: null,
+        ageHours: null,
+        stale: true,
+        thresholdHours,
+        status: 'missing',
+      };
+    }
+
+    const generatedAt = latest.generatedAt || latest.updatedAt || latest.createdAt || null;
+    const ageHours = generatedAt
+      ? Math.round(((Date.now() - new Date(generatedAt).getTime()) / 3600000) * 10) / 10
+      : null;
+
+    const stale = ageHours === null ? true : ageHours > thresholdHours;
+
+    return {
+      enabled: true,
+      latestDay: latest.day || null,
+      latestGeneratedAt: generatedAt,
+      ageHours,
+      stale,
+      thresholdHours,
+      status: stale ? 'stale' : 'fresh',
+    };
+  } catch (err) {
+    return {
+      enabled: true,
+      latestDay: null,
+      latestGeneratedAt: null,
+      ageHours: null,
+      stale: true,
+      thresholdHours,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+}
+
+/**
  * Cleanup old rollups beyond retentionDays.
  */
 export async function cleanupOldMarketplaceIntelligenceRollups() {

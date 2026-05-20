@@ -498,7 +498,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.52.0',
+    cacheName: 'yawmia-v0.53.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1628,6 +1628,89 @@ const config = {
     defaultTab: 'overview',
     lazyLoadTabs: true,
     tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'settings'],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 100. انضباط النشر والإنتاج (DEPLOYMENT_DISCIPLINE) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  DEPLOYMENT_DISCIPLINE: {
+    enabled: true,
+    requirePredeployCheck: true,
+    requirePostdeploySmoke: true,
+    requireRecentBackupRestoreDrillInProduction: true,
+    restoreDrillMaxAgeDays: 7,
+    requireQueueHealthyInProduction: true,
+    requireNoCriticalScaleWarningsInProduction: true,
+    requireMarketplaceRollupFreshInProduction: false,
+    marketplaceRollupMaxAgeHours: 48,
+    allowDeployWithWarnings: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 101. فحص صحة الملفات (FILE_HEALTH) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  FILE_HEALTH: {
+    enabled: true,
+    jsonParseCheckEnabled: true,
+    zeroByteJsonIsCritical: true,
+    staleTmpWarningMinutes: 10,
+    staleTmpCriticalMinutes: 60,
+    largeJsonWarningKB: 1024,
+    largeJsonCriticalKB: 4096,
+    embeddedBase64DetectionEnabled: true,
+    embeddedBase64WarningKB: 256,
+    maxFilesPerScan: 200000,
+    batchSize: 250,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 102. حوكمة التشغيل (OPS_GOVERNANCE) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  OPS_GOVERNANCE: {
+    enabled: true,
+    weeklyReviewEnabled: true,
+    queueDlqReviewEnabled: true,
+    incidentRunbooksEnabled: true,
+    maintenanceApprovalRequired: false,
+    marketplaceReviewEnabled: true,
+    trustReviewEnabled: true,
+    restoreDrillReviewEnabled: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 103. التحكم في النسخ القراءة فقط (READ_ONLY_REPLICA_GUARD) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  READ_ONLY_REPLICA_GUARD: {
+    enabled: true,
+    blockWriteApisInReadOnlyReplica: true,
+    allowHealthAndConfig: true,
+    allowPublicReadApis: true,
+    allowAdminReadOnlyOps: true,
+    allowMaintenanceRead: true,
+    message: 'هذه النسخة للقراءة فقط. حاول من النسخة الرئيسية.',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 104. تصنيف الحوادث (INCIDENT_TAXONOMY) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  INCIDENT_TAXONOMY: {
+    enabled: true,
+    runbookBasePath: './INCIDENT_RUNBOOKS.md',
+    defaultSeverity: 'medium',
+    categories: [
+      'queue',
+      'scheduler',
+      'backup',
+      'json_corruption',
+      'search',
+      'audit',
+      'counter',
+      'workroom',
+      'marketplace_rollup',
+      'alert_delivery',
+      'maintenance',
+      'security',
+    ],
   },
 
 };

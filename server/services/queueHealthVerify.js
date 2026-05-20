@@ -335,6 +335,171 @@ export async function repairQueueStorage(options = {}) {
   return result;
 }
 
+/**
+ * Phase 57: Translate queue health into operational recommended actions.
+ * Report-only. No writes.
+ */
+export async function getQueueOperationalRecommendations(options = {}) {
+  const actions = [];
+
+  let health = options.health || null;
+
+  // Phase 57: do not run heavy queue verification implicitly from admin overview.
+  // If health is not supplied, use lightweight queue stats + summary only.
+  if (!health) {
+    try {
+      const { getQueueStats } = await import('./opsQueue.js');
+      const { readQueueSummary } = await import('./queueStorageIndex.js');
+
+      const [stats, summary] = await Promise.all([
+        getQueueStats(),
+        readQueueSummary().catch(() => null),
+      ]);
+
+      const byStatus = stats.byStatus || {};
+      const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+      const pending = byStatus.pending || 0;
+      const failed = byStatus.failed || 0;
+
+      if (summary && summary.stale) {
+        actions.push({
+          id: 'queue_summary_repair',
+          label: 'إصلاح ملخص الطابور',
+          severity: 'warning',
+          command: 'node scripts/repair-queue.js',
+          adminRoute: '/api/admin/queue/repair',
+          reason: 'Queue summary is stale.',
+        });
+      }
+
+      if (deadLetter > 0) {
+        actions.push({
+          id: 'queue_dlq_review',
+          label: 'مراجعة Dead Letter Queue',
+          severity: deadLetter >= 5 ? 'critical' : 'warning',
+          command: 'node scripts/queue-retry-dlq.js --dry-run',
+          adminRoute: '/api/admin/ops-queue/dead-letter',
+          reason: `${deadLetter} job(s) are in DLQ.`,
+        });
+      }
+
+      if (pending >= 500) {
+        actions.push({
+          id: 'queue_pending_backlog',
+          label: 'تفريغ Backlog الطابور',
+          severity: pending >= 5000 ? 'critical' : 'warning',
+          command: 'node scripts/queue-drain.js',
+          adminRoute: '/api/admin/ops-queue/jobs?status=pending',
+          reason: `${pending} pending job(s) are waiting.`,
+        });
+      }
+
+      if (failed >= 5) {
+        actions.push({
+          id: 'queue_failed_review',
+          label: 'مراجعة الوظائف الفاشلة',
+          severity: 'warning',
+          command: 'node scripts/verify-queue.js',
+          adminRoute: '/api/admin/ops-queue/jobs?status=failed',
+          reason: `${failed} failed job(s) need review.`,
+        });
+      }
+
+      return actions;
+    } catch (err) {
+      return [{
+        id: 'queue_recommendations_failed',
+        label: 'فشل توليد توصيات الطابور',
+        severity: 'warning',
+        command: 'node scripts/verify-queue.js',
+        adminRoute: '/api/admin/queue/health',
+        reason: err.message,
+      }];
+    }
+  }
+
+  const details = health.details || {};
+
+  if (details.summaryMismatches && details.summaryMismatches.length > 0) {
+    actions.push({
+      id: 'queue_summary_repair',
+      label: 'إصلاح ملخص الطابور',
+      severity: 'warning',
+      command: 'node scripts/repair-queue.js',
+      adminRoute: '/api/admin/queue/repair',
+      reason: 'Queue summary does not match scanned queue records.',
+    });
+  }
+
+  if (details.staleRunningJobs && details.staleRunningJobs.length > 0) {
+    actions.push({
+      id: 'queue_stale_running_recover',
+      label: 'استعادة وظائف Running قديمة',
+      severity: 'critical',
+      command: 'node scripts/queue-drain.js',
+      adminRoute: '/api/admin/ops-queue/jobs?status=running',
+      reason: `${details.staleRunningJobs.length} running job(s) appear stale.`,
+    });
+  }
+
+  try {
+    const { getQueueStats } = await import('./opsQueue.js');
+    const stats = await getQueueStats();
+    const byStatus = stats.byStatus || {};
+    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+    const pending = byStatus.pending || 0;
+    const failed = byStatus.failed || 0;
+
+    if (deadLetter > 0) {
+      actions.push({
+        id: 'queue_dlq_review',
+        label: 'مراجعة Dead Letter Queue',
+        severity: deadLetter >= 5 ? 'critical' : 'warning',
+        command: 'node scripts/queue-retry-dlq.js --dry-run',
+        adminRoute: '/api/admin/ops-queue/dead-letter',
+        reason: `${deadLetter} job(s) are in DLQ.`,
+      });
+    }
+
+    if (pending >= 500) {
+      actions.push({
+        id: 'queue_pending_backlog',
+        label: 'تفريغ Backlog الطابور',
+        severity: pending >= 5000 ? 'critical' : 'warning',
+        command: 'node scripts/queue-drain.js',
+        adminRoute: '/api/admin/ops-queue/jobs?status=pending',
+        reason: `${pending} pending job(s) are waiting.`,
+      });
+    }
+
+    if (failed >= 5) {
+      actions.push({
+        id: 'queue_failed_review',
+        label: 'مراجعة الوظائف الفاشلة',
+        severity: 'warning',
+        command: 'node scripts/verify-queue.js',
+        adminRoute: '/api/admin/ops-queue/jobs?status=failed',
+        reason: `${failed} failed job(s) need review.`,
+      });
+    }
+  } catch (_) {
+    // Stats enrichment failure should not break recommendations.
+  }
+
+  if (details.expiredIdempotency && details.expiredIdempotency.length > 0) {
+    actions.push({
+      id: 'queue_idempotency_cleanup',
+      label: 'تنظيف مفاتيح idempotency المنتهية',
+      severity: 'info',
+      command: 'node scripts/compact-queue.js',
+      adminRoute: '/api/admin/queue/compact',
+      reason: `${details.expiredIdempotency.length} expired idempotency record(s).`,
+    });
+  }
+
+  return actions;
+}
+
 export const _testHelpers = {
   expectedStatusFromPath,
   isQueueRecord,

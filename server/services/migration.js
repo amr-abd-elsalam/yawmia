@@ -441,6 +441,26 @@ const builtInMigrations = [
       logger.info('Migration v16: Phase 56 marketplace intelligence directories registered (search, product, matching, payment disputes)');
     },
   },
+  {
+    version: 17,
+    name: 'Phase 57: Deployment Discipline + Operational Governance',
+    up: async () => {
+      // Phase 57 is production discipline/governance:
+      //   - deployment and operations runbooks
+      //   - incident taxonomy documentation
+      //   - privacy data map
+      //   - JSON/file health verification scripts
+      //   - predeploy and postdeploy checks
+      //   - scheduler cadence reporting
+      //   - read-only replica write guard
+      //
+      // No new heavy data scan is performed here by design.
+      // File health scans are script-based:
+      //   node scripts/verify-data-json.js --strict
+      //   node scripts/verify-file-health.js --strict
+      logger.info('Migration v17: Phase 57 deployment discipline registered (no heavy schema scan)');
+    },
+  },
 ];
 
 /**

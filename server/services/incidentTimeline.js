@@ -144,6 +144,57 @@ function fingerprintForEvent(type, data = {}) {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
 
+/**
+ * Phase 57: Map event types to incident runbook keys.
+ */
+export function getIncidentRunbookKey(eventType, data = {}) {
+  const map = {
+    'ops_queue:job_dead_lettered': 'QUEUE_DLQ_SPIKE',
+    'alert_delivery:dead_lettered': 'ALERT_DELIVERY_DEAD_LETTER',
+    'backup_restore_drill:failed': 'BACKUP_RESTORE_DRILL_FAILED',
+    'scheduler:stale': 'SCHEDULER_STALE',
+    'counters:file_size_critical': 'COUNTER_FILE_CRITICAL',
+    'audit_index:stale': 'AUDIT_INDEX_STALE',
+    'marketplace_intelligence:rollup_stale': 'MARKETPLACE_ROLLUP_STALE',
+    'process_lock:stale_recovered': 'PROCESS_LOCK_STALE',
+    'process_lock:acquire_failed': 'PROCESS_LOCK_STALE',
+    'ops_slo:violated': 'PRODUCTION_READINESS_FAILED',
+    'predictive_abuse:scan_failed': 'SEARCH_REBUILD_FAILED',
+  };
+
+  return map[eventType] || 'GENERAL_OPERATIONAL_INCIDENT';
+}
+
+/**
+ * Phase 57: Expose incident taxonomy metadata for admin/docs/scripts.
+ */
+export function getIncidentTaxonomy() {
+  return {
+    enabled: !!(config.INCIDENT_TAXONOMY && config.INCIDENT_TAXONOMY.enabled),
+    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './INCIDENT_RUNBOOKS.md',
+    defaultSeverity: config.INCIDENT_TAXONOMY?.defaultSeverity || 'medium',
+    categories: config.INCIDENT_TAXONOMY?.categories || [],
+    runbooks: [
+      'QUEUE_DLQ_SPIKE',
+      'QUEUE_STALE_RUNNING',
+      'QUEUE_SUMMARY_MISMATCH',
+      'SCHEDULER_STALE',
+      'ALERT_DELIVERY_DEAD_LETTER',
+      'BACKUP_RESTORE_DRILL_FAILED',
+      'JSON_CORRUPTION',
+      'SEARCH_REBUILD_FAILED',
+      'AUDIT_INDEX_STALE',
+      'COUNTER_FILE_CRITICAL',
+      'WORKROOM_SIDECAR_CRITICAL',
+      'MARKETPLACE_ROLLUP_STALE',
+      'MAINTENANCE_ENABLED_TOO_LONG',
+      'PROCESS_LOCK_STALE',
+      'PRODUCTION_READINESS_FAILED',
+      'GENERAL_OPERATIONAL_INCIDENT',
+    ],
+  };
+}
+
 export async function openIncident(params = {}) {
   if (!isEnabled()) return { ok: false, disabled: true };
 
@@ -157,6 +208,7 @@ export async function openIncident(params = {}) {
     status: 'open',
     fingerprint: params.fingerprint || null,
     sourceType: params.sourceType || null,
+    runbookKey: params.runbookKey || getIncidentRunbookKey(params.sourceType || 'unknown', params.initialEvent?.data || {}),
     refs: sanitizeDetails(params.refs || {}),
     events: [],
     openedAt: now,
@@ -317,6 +369,7 @@ export async function autoOpenIncidentForEvent(eventType, data = {}) {
       title: buildIncidentTitle(eventType, data),
       severity: severityForEvent(eventType, data),
       sourceType: eventType,
+      runbookKey: getIncidentRunbookKey(eventType, data),
       fingerprint,
       refs: refsFromEvent(eventType, data),
       initialEvent: event,
@@ -354,5 +407,7 @@ export const _testHelpers = {
   severityForEvent,
   fingerprintForEvent,
   normalizeIncidentEvent,
+  getIncidentRunbookKey,
+  getIncidentTaxonomy,
   resetListenersForTest: () => { listenersRegistered = false; },
 };

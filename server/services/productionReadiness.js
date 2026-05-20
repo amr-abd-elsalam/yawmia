@@ -14,8 +14,10 @@ import { getQueueStats } from './opsQueue.js';
 import { getAlertDeliveryStats } from './alertDeliveryHistory.js';
 import { getAuditIndexStats } from './auditLogIndex.js';
 
-function check(id, status, message, details = {}) {
-  return { id, status, message, details };
+function check(id, status, message, details = {}, recommendation = null) {
+  const out = { id, status, message, details };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
 }
 
 function safeBool(value) {
@@ -195,6 +197,218 @@ async function checkPwaCacheVersion() {
   }
 }
 
+async function checkRestoreDrillFreshness(isProd) {
+  try {
+    const { getLatestRestoreDrillFreshness } = await import('./backupRestoreDrill.js');
+    const freshness = await getLatestRestoreDrillFreshness();
+
+    if (!freshness.enabled) {
+      return check('restore_drill_recent', isProd ? 'warn' : 'pass', 'Backup restore drill feature is disabled', freshness);
+    }
+
+    if (!freshness.latest) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        'No backup restore drill has been recorded',
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    if (!freshness.passed) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        'Latest backup restore drill did not pass',
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    if (!freshness.fresh) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        `Latest backup restore drill is stale (${freshness.ageDays} days old)`,
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    return check('restore_drill_recent', 'pass', 'Latest backup restore drill is recent and passing', freshness);
+  } catch (err) {
+    return check('restore_drill_recent', 'warn', 'Could not evaluate restore drill freshness', { error: err.message }, 'node scripts/run-backup-restore-drill.js');
+  }
+}
+
+async function checkMarketplaceRollupFreshness(isProd) {
+  try {
+    const { getMarketplaceRollupFreshness } = await import('./marketplaceIntelligenceRollups.js');
+    const freshness = await getMarketplaceRollupFreshness();
+
+    if (!freshness.enabled) {
+      return check('marketplace_rollup_fresh', 'pass', 'Marketplace intelligence is disabled', freshness);
+    }
+
+    if (freshness.stale) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireMarketplaceRollupFreshInProduction ? 'fail' : 'warn';
+      return check(
+        'marketplace_rollup_fresh',
+        status,
+        freshness.latestGeneratedAt ? 'Marketplace intelligence rollup is stale' : 'Marketplace intelligence rollup is missing',
+        freshness,
+        'node scripts/rollup-product-intelligence.js'
+      );
+    }
+
+    return check('marketplace_rollup_fresh', 'pass', 'Marketplace intelligence rollup is fresh', freshness);
+  } catch (err) {
+    return check('marketplace_rollup_fresh', 'warn', 'Could not evaluate marketplace rollup freshness', { error: err.message }, 'node scripts/verify-marketplace-intelligence.js');
+  }
+}
+
+async function checkSchedulerStaleness(isProd) {
+  try {
+    const { listStaleSchedulers } = await import('./schedulerRegistry.js');
+    const stale = await listStaleSchedulers();
+
+    if (stale.length > 0) {
+      return check(
+        'scheduler_no_stale',
+        isProd ? 'warn' : 'warn',
+        `${stale.length} scheduler job(s) are stale or failed`,
+        { stale: stale.slice(0, 10) },
+        'node scripts/scheduler-cadence-report.js'
+      );
+    }
+
+    return check('scheduler_no_stale', 'pass', 'No stale scheduler jobs detected');
+  } catch (err) {
+    return check('scheduler_no_stale', 'warn', 'Could not evaluate scheduler staleness', { error: err.message }, 'node scripts/scheduler-cadence-report.js');
+  }
+}
+
+async function checkQueueOperationalHealth(isProd) {
+  try {
+    const { getQueueStats } = await import('./opsQueue.js');
+    const { readQueueSummary } = await import('./queueStorageIndex.js');
+
+    const [stats, summary] = await Promise.all([
+      getQueueStats(),
+      readQueueSummary().catch(() => null),
+    ]);
+
+    if (!stats || stats.enabled === false) {
+      return check(
+        'queue_health',
+        'warn',
+        'Ops queue is disabled or unavailable',
+        { stats },
+        'Review OPS_QUEUE.enabled and node scripts/verify-queue.js'
+      );
+    }
+
+    const byStatus = stats.byStatus || {};
+    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+    const failed = byStatus.failed || 0;
+    const pending = byStatus.pending || 0;
+    const summaryStale = !!(summary && summary.stale);
+
+    if (summaryStale) {
+      return check(
+        'queue_health',
+        isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
+        'Queue summary is stale',
+        { summary },
+        'node scripts/repair-queue.js'
+      );
+    }
+
+    if (deadLetter >= 5) {
+      return check(
+        'queue_health',
+        isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
+        'Queue has elevated dead-letter jobs',
+        { deadLetter, failed, pending },
+        'node scripts/queue-retry-dlq.js --dry-run'
+      );
+    }
+
+    if (deadLetter > 0 || failed >= 5 || pending >= 5000) {
+      return check(
+        'queue_health',
+        'warn',
+        'Queue has operational warnings',
+        { deadLetter, failed, pending },
+        'node scripts/verify-queue.js'
+      );
+    }
+
+    return check('queue_health', 'pass', 'Queue summary and status counts are acceptable', {
+      deadLetter,
+      failed,
+      pending,
+      summaryStale,
+    });
+  } catch (err) {
+    return check(
+      'queue_health',
+      'warn',
+      'Could not evaluate queue operational health',
+      { error: err.message },
+      'node scripts/verify-queue.js'
+    );
+  }
+}
+
+async function checkMaintenanceInactive(isProd) {
+  try {
+    const { getMaintenanceMode, isFeatureEnabled } = await import('./maintenanceMode.js');
+    if (!isFeatureEnabled()) {
+      return check('maintenance_not_active', 'pass', 'Maintenance mode feature is disabled');
+    }
+
+    const state = await getMaintenanceMode();
+    if (state && state.enabled) {
+      return check(
+        'maintenance_not_active',
+        isProd ? 'warn' : 'warn',
+        'Maintenance mode is currently active',
+        { enabledAt: state.enabledAt || null, message: state.message || null },
+        'Review /api/admin/maintenance'
+      );
+    }
+
+    return check('maintenance_not_active', 'pass', 'Maintenance mode is not active');
+  } catch (err) {
+    return check('maintenance_not_active', 'warn', 'Could not evaluate maintenance mode', { error: err.message });
+  }
+}
+
+async function checkQueueNoStaleRunningGate(isProd) {
+  return check(
+    'queue_no_stale_running',
+    isProd ? 'warn' : 'warn',
+    'Stale running queue jobs require script-based verification',
+    { scriptAvailable: true },
+    'node scripts/verify-queue.js --strict'
+  );
+}
+
+async function checkJsonHealthGate(isProd) {
+  return check(
+    'json_health',
+    'warn',
+    'JSON corruption scan is script-based and should be run before deploy',
+    { scriptAvailable: true },
+    'node scripts/verify-data-json.js --strict'
+  );
+}
+
 export async function runReadinessChecks(options = {}) {
   const checks = [];
 
@@ -211,7 +425,15 @@ export async function runReadinessChecks(options = {}) {
   const defaultTokenBad = !adminToken || adminToken === 'change-me-in-production';
 
   if (config.PRODUCTION_READINESS?.requireNonDefaultAdminToken && defaultTokenBad) {
-    checks.push(check('admin_token', 'fail', 'ADMIN_TOKEN is missing or uses the default example value'));
+    checks.push(check(
+      'admin_token',
+      isProd ? 'fail' : 'warn',
+      isProd
+        ? 'ADMIN_TOKEN is missing or uses the default example value'
+        : 'ADMIN_TOKEN is default/missing; acceptable only outside production',
+      {},
+      'Set a strong ADMIN_TOKEN in .env'
+    ));
   } else {
     checks.push(check('admin_token', 'pass', 'ADMIN_TOKEN is configured'));
   }
@@ -285,8 +507,12 @@ export async function runReadinessChecks(options = {}) {
     const hasVapid = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
     checks.push(check(
       'vapid_keys',
-      hasVapid ? 'pass' : 'fail',
-      hasVapid ? 'VAPID keys are configured' : 'WEB_PUSH is enabled but VAPID keys are missing'
+      hasVapid ? 'pass' : (isProd ? 'fail' : 'warn'),
+      hasVapid
+        ? 'VAPID keys are configured'
+        : (isProd ? 'WEB_PUSH is enabled but VAPID keys are missing' : 'WEB_PUSH is enabled but VAPID keys are missing; acceptable only outside production'),
+      {},
+      'node scripts/generate-vapid-keys.js'
     ));
   }
 
@@ -318,6 +544,15 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkDomainConsistency());
 
   checks.push(await checkPwaCacheVersion());
+
+  // Phase 57 — Operational readiness gates.
+  checks.push(await checkQueueOperationalHealth(isProd));
+  checks.push(await checkQueueNoStaleRunningGate(isProd));
+  checks.push(await checkRestoreDrillFreshness(isProd));
+  checks.push(await checkMarketplaceRollupFreshness(isProd));
+  checks.push(await checkSchedulerStaleness(isProd));
+  checks.push(await checkMaintenanceInactive(isProd));
+  checks.push(await checkJsonHealthGate(isProd));
 
   return checks;
 }

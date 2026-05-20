@@ -48,6 +48,156 @@ export async function handleProductionReadiness(req, res) {
   }
 }
 
+/**
+ * GET /api/admin/production/deployment-gate
+ * Phase 57 — lightweight deployment gate for admin UI/scripts.
+ */
+export async function handleDeploymentGate(req, res) {
+  try {
+    const { getProductionReadiness } = await import('../services/productionReadiness.js');
+    const { getScaleHygieneOverview } = await import('../services/scaleHygiene.js');
+    const { getMarketplaceRollupFreshness } = await import('../services/marketplaceIntelligenceRollups.js');
+    const { getLatestRestoreDrillFreshness } = await import('../services/backupRestoreDrill.js');
+
+    const [readiness, scale, marketplace, restoreDrill] = await Promise.all([
+      getProductionReadiness(),
+      getScaleHygieneOverview().catch(err => ({ error: err.message, recommendedActions: [] })),
+      getMarketplaceRollupFreshness().catch(err => ({ error: err.message })),
+      getLatestRestoreDrillFreshness().catch(err => ({ error: err.message })),
+    ]);
+
+    const checks = readiness.checks || [];
+    const failCount = checks.filter(c => c.status === 'fail').length;
+    const warnCount = checks.filter(c => c.status === 'warn').length;
+
+    const recommendedActions = [
+      ...(scale.recommendedActions || []),
+    ];
+
+    if (marketplace.enabled && marketplace.stale) {
+      recommendedActions.push({
+        id: 'marketplace_rollup_run',
+        label: 'تحديث ملخص ذكاء السوق',
+        severity: 'warning',
+        command: 'node scripts/rollup-product-intelligence.js',
+        adminRoute: '/api/admin/marketplace-intelligence/rollup/run',
+        reason: 'Marketplace rollup is stale or missing.',
+      });
+    }
+
+    if (restoreDrill.enabled && (!restoreDrill.latest || !restoreDrill.fresh || !restoreDrill.passed)) {
+      recommendedActions.push({
+        id: 'restore_drill_run',
+        label: 'تشغيل Restore Drill',
+        severity: restoreDrill.latest && !restoreDrill.passed ? 'critical' : 'warning',
+        command: 'node scripts/run-backup-restore-drill.js',
+        adminRoute: '/api/admin/backups/restore-drill',
+        reason: 'Latest restore drill is missing, stale, or failing.',
+      });
+    }
+
+    return sendJSON(res, 200, {
+      ok: failCount === 0,
+      status: failCount > 0 ? 'blocked' : (warnCount > 0 ? 'warnings' : 'ready'),
+      generatedAt: new Date().toISOString(),
+      readiness,
+      marketplace,
+      restoreDrill,
+      scaleSummary: {
+        status: scale.status || 'unknown',
+        warningCount: scale.warningCount || 0,
+      },
+      recommendedActions: recommendedActions.slice(0, 12),
+    });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب Deployment Gate',
+      code: 'DEPLOYMENT_GATE_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/production/scheduler-cadence
+ * Phase 57 — scheduler cadence visibility.
+ */
+export async function handleSchedulerCadence(req, res) {
+  try {
+    const { registerDefaultSchedulerJobs, getSchedulerCadenceReport } = await import('../services/schedulerRegistry.js');
+
+    await registerDefaultSchedulerJobs().catch(() => {});
+    const report = await getSchedulerCadenceReport();
+
+    return sendJSON(res, 200, { ok: true, report });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب تقرير الجدولة',
+      code: 'SCHEDULER_CADENCE_ERROR',
+    });
+  }
+}
+
+/**
+ * GET /api/admin/production/ops-review
+ * Phase 57 — compact weekly-review style summary for admin UI.
+ */
+export async function handleOpsReview(req, res) {
+  try {
+    const { getProductionReadiness } = await import('../services/productionReadiness.js');
+    const { getQueueStats } = await import('../services/opsQueue.js');
+    const { computeOpsSlo } = await import('../services/metricsRollups.js');
+    const { getScaleHygieneOverview } = await import('../services/scaleHygiene.js');
+    const { getMarketplaceIntelligenceDashboard } = await import('../services/marketplaceIntelligenceRollups.js');
+    const { getPredictivePrecisionStats } = await import('../services/predictiveSignalRetention.js');
+    const { getPaymentDisputeAnalytics } = await import('../services/paymentDisputeAnalytics.js');
+
+    const [
+      readiness,
+      queue,
+      slo,
+      scale,
+      marketplace,
+      predictivePrecision,
+      paymentDisputes,
+    ] = await Promise.all([
+      getProductionReadiness().catch(err => ({ error: err.message })),
+      getQueueStats().catch(err => ({ error: err.message })),
+      computeOpsSlo().catch(err => ({ error: err.message, violations: [] })),
+      getScaleHygieneOverview().catch(err => ({ error: err.message, recommendedActions: [] })),
+      getMarketplaceIntelligenceDashboard().catch(err => ({ error: err.message })),
+      getPredictivePrecisionStats().catch(err => ({ error: err.message })),
+      getPaymentDisputeAnalytics().catch(err => ({ error: err.message })),
+    ]);
+
+    return sendJSON(res, 200, {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      summary: {
+        readinessStatus: readiness.status || 'unknown',
+        queueDeadLetter: queue.byStatus?.['dead-letter'] || queue.deadLetter || 0,
+        opsSloViolations: (slo.violations || []).length,
+        scaleStatus: scale.status || 'unknown',
+        marketplaceWarnings: marketplace.summary?.warningCount || 0,
+        predictivePrecisionRate: predictivePrecision.precisionRate || 0,
+        paymentDisputeRate: paymentDisputes.totals?.disputeRate || 0,
+      },
+      recommendedActions: scale.recommendedActions || [],
+      readiness,
+      queue,
+      slo,
+      scale,
+      marketplace,
+      predictivePrecision,
+      paymentDisputes,
+    });
+  } catch (err) {
+    return sendJSON(res, 500, {
+      error: 'خطأ في جلب مراجعة التشغيل',
+      code: 'OPS_REVIEW_ERROR',
+    });
+  }
+}
+
 export async function handleInstanceMode(req, res) {
   try {
     const { getInstanceInfo } = await import('../services/instanceMode.js');

@@ -23,6 +23,7 @@ import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { timingMiddleware } from './server/middleware/timing.js';
 import { maintenanceMiddleware } from './server/middleware/maintenance.js';
+import { readOnlyReplicaMiddleware } from './server/middleware/readOnlyReplica.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -163,6 +164,7 @@ const globalMiddleware = [
   requestIdMiddleware,
   rateLimitMiddleware,
   maintenanceMiddleware,
+  readOnlyReplicaMiddleware,
   bodyParserMiddleware,
 ];
 
