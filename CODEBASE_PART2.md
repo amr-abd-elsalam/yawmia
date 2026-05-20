@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.52.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-18T21:00:21.776Z
+# يوميّة (Yawmia) v0.53.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-20T22:25:20.873Z
 > Files in this part: 114
 
 ## Files
@@ -8162,6 +8162,72 @@ export async function cleanupOldRestoreDrills() {
   return await cleanupOldRestoreDrillRecords();
 }
 
+/**
+ * Phase 57: Latest restore drill freshness helper.
+ *
+ * @param {{ thresholdDays?: number }} options
+ */
+export async function getLatestRestoreDrillFreshness(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      latest: null,
+      ageDays: null,
+      fresh: false,
+      passed: false,
+      thresholdDays: options.thresholdDays || config.DEPLOYMENT_DISCIPLINE?.restoreDrillMaxAgeDays || 7,
+    };
+  }
+
+  const thresholdDays = Number(options.thresholdDays || config.DEPLOYMENT_DISCIPLINE?.restoreDrillMaxAgeDays || 7);
+
+  try {
+    const result = await listRestoreDrills({ limit: 1, offset: 0 });
+    const latest = result.drills && result.drills[0] ? result.drills[0] : null;
+
+    if (!latest) {
+      return {
+        enabled: true,
+        latest: null,
+        ageDays: null,
+        fresh: false,
+        passed: false,
+        thresholdDays,
+        status: 'missing',
+      };
+    }
+
+    const basis = latest.completedAt || latest.startedAt || latest.createdAt;
+    const ageDays = basis
+      ? Math.round(((Date.now() - new Date(basis).getTime()) / 86400000) * 10) / 10
+      : null;
+
+    const fresh = ageDays !== null && ageDays <= thresholdDays;
+    const passed = latest.status === 'passed';
+
+    return {
+      enabled: true,
+      latest,
+      ageDays,
+      fresh,
+      passed,
+      thresholdDays,
+      status: passed && fresh ? 'healthy' : (passed ? 'stale' : 'failed'),
+    };
+  } catch (err) {
+    return {
+      enabled: true,
+      latest: null,
+      ageDays: null,
+      fresh: false,
+      passed: false,
+      thresholdDays,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+}
+
 export const _testHelpers = {
   generateId,
   findLatestBackup,
@@ -14973,6 +15039,57 @@ function fingerprintForEvent(type, data = {}) {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
 
+/**
+ * Phase 57: Map event types to incident runbook keys.
+ */
+export function getIncidentRunbookKey(eventType, data = {}) {
+  const map = {
+    'ops_queue:job_dead_lettered': 'QUEUE_DLQ_SPIKE',
+    'alert_delivery:dead_lettered': 'ALERT_DELIVERY_DEAD_LETTER',
+    'backup_restore_drill:failed': 'BACKUP_RESTORE_DRILL_FAILED',
+    'scheduler:stale': 'SCHEDULER_STALE',
+    'counters:file_size_critical': 'COUNTER_FILE_CRITICAL',
+    'audit_index:stale': 'AUDIT_INDEX_STALE',
+    'marketplace_intelligence:rollup_stale': 'MARKETPLACE_ROLLUP_STALE',
+    'process_lock:stale_recovered': 'PROCESS_LOCK_STALE',
+    'process_lock:acquire_failed': 'PROCESS_LOCK_STALE',
+    'ops_slo:violated': 'PRODUCTION_READINESS_FAILED',
+    'predictive_abuse:scan_failed': 'SEARCH_REBUILD_FAILED',
+  };
+
+  return map[eventType] || 'GENERAL_OPERATIONAL_INCIDENT';
+}
+
+/**
+ * Phase 57: Expose incident taxonomy metadata for admin/docs/scripts.
+ */
+export function getIncidentTaxonomy() {
+  return {
+    enabled: !!(config.INCIDENT_TAXONOMY && config.INCIDENT_TAXONOMY.enabled),
+    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './INCIDENT_RUNBOOKS.md',
+    defaultSeverity: config.INCIDENT_TAXONOMY?.defaultSeverity || 'medium',
+    categories: config.INCIDENT_TAXONOMY?.categories || [],
+    runbooks: [
+      'QUEUE_DLQ_SPIKE',
+      'QUEUE_STALE_RUNNING',
+      'QUEUE_SUMMARY_MISMATCH',
+      'SCHEDULER_STALE',
+      'ALERT_DELIVERY_DEAD_LETTER',
+      'BACKUP_RESTORE_DRILL_FAILED',
+      'JSON_CORRUPTION',
+      'SEARCH_REBUILD_FAILED',
+      'AUDIT_INDEX_STALE',
+      'COUNTER_FILE_CRITICAL',
+      'WORKROOM_SIDECAR_CRITICAL',
+      'MARKETPLACE_ROLLUP_STALE',
+      'MAINTENANCE_ENABLED_TOO_LONG',
+      'PROCESS_LOCK_STALE',
+      'PRODUCTION_READINESS_FAILED',
+      'GENERAL_OPERATIONAL_INCIDENT',
+    ],
+  };
+}
+
 export async function openIncident(params = {}) {
   if (!isEnabled()) return { ok: false, disabled: true };
 
@@ -14986,6 +15103,7 @@ export async function openIncident(params = {}) {
     status: 'open',
     fingerprint: params.fingerprint || null,
     sourceType: params.sourceType || null,
+    runbookKey: params.runbookKey || getIncidentRunbookKey(params.sourceType || 'unknown', params.initialEvent?.data || {}),
     refs: sanitizeDetails(params.refs || {}),
     events: [],
     openedAt: now,
@@ -15146,6 +15264,7 @@ export async function autoOpenIncidentForEvent(eventType, data = {}) {
       title: buildIncidentTitle(eventType, data),
       severity: severityForEvent(eventType, data),
       sourceType: eventType,
+      runbookKey: getIncidentRunbookKey(eventType, data),
       fingerprint,
       refs: refsFromEvent(eventType, data),
       initialEvent: event,
@@ -15183,6 +15302,8 @@ export const _testHelpers = {
   severityForEvent,
   fingerprintForEvent,
   normalizeIncidentEvent,
+  getIncidentRunbookKey,
+  getIncidentTaxonomy,
   resetListenersForTest: () => { listenersRegistered = false; },
 };
 ```
@@ -18557,6 +18678,73 @@ export async function getMarketplaceIntelligenceDashboard(options = {}) {
 }
 
 /**
+ * Phase 57: Marketplace rollup freshness helper.
+ *
+ * Lightweight: reads latest persisted rollup only.
+ *
+ * @param {{ thresholdHours?: number }} options
+ */
+export async function getMarketplaceRollupFreshness(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      latestDay: null,
+      latestGeneratedAt: null,
+      ageHours: null,
+      stale: false,
+      thresholdHours: options.thresholdHours || config.DEPLOYMENT_DISCIPLINE?.marketplaceRollupMaxAgeHours || 48,
+    };
+  }
+
+  const thresholdHours = Number(options.thresholdHours || config.DEPLOYMENT_DISCIPLINE?.marketplaceRollupMaxAgeHours || 48);
+
+  try {
+    const rows = await listMarketplaceIntelligenceRollups({ limit: 1 });
+    const latest = rows.rollups && rows.rollups[0] ? rows.rollups[0] : null;
+
+    if (!latest) {
+      return {
+        enabled: true,
+        latestDay: null,
+        latestGeneratedAt: null,
+        ageHours: null,
+        stale: true,
+        thresholdHours,
+        status: 'missing',
+      };
+    }
+
+    const generatedAt = latest.generatedAt || latest.updatedAt || latest.createdAt || null;
+    const ageHours = generatedAt
+      ? Math.round(((Date.now() - new Date(generatedAt).getTime()) / 3600000) * 10) / 10
+      : null;
+
+    const stale = ageHours === null ? true : ageHours > thresholdHours;
+
+    return {
+      enabled: true,
+      latestDay: latest.day || null,
+      latestGeneratedAt: generatedAt,
+      ageHours,
+      stale,
+      thresholdHours,
+      status: stale ? 'stale' : 'fresh',
+    };
+  } catch (err) {
+    return {
+      enabled: true,
+      latestDay: null,
+      latestGeneratedAt: null,
+      ageHours: null,
+      stale: true,
+      thresholdHours,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+}
+
+/**
  * Cleanup old rollups beyond retentionDays.
  */
 export async function cleanupOldMarketplaceIntelligenceRollups() {
@@ -20572,6 +20760,26 @@ const builtInMigrations = [
       // Phase 56 also adds relevance and explainability services, but those are
       // rebuildable/stateless unless a rollup job persists aggregates.
       logger.info('Migration v16: Phase 56 marketplace intelligence directories registered (search, product, matching, payment disputes)');
+    },
+  },
+  {
+    version: 17,
+    name: 'Phase 57: Deployment Discipline + Operational Governance',
+    up: async () => {
+      // Phase 57 is production discipline/governance:
+      //   - deployment and operations runbooks
+      //   - incident taxonomy documentation
+      //   - privacy data map
+      //   - JSON/file health verification scripts
+      //   - predeploy and postdeploy checks
+      //   - scheduler cadence reporting
+      //   - read-only replica write guard
+      //
+      // No new heavy data scan is performed here by design.
+      // File health scans are script-based:
+      //   node scripts/verify-data-json.js --strict
+      //   node scripts/verify-file-health.js --strict
+      logger.info('Migration v17: Phase 57 deployment discipline registered (no heavy schema scan)');
     },
   },
 ];
@@ -27072,8 +27280,10 @@ import { getQueueStats } from './opsQueue.js';
 import { getAlertDeliveryStats } from './alertDeliveryHistory.js';
 import { getAuditIndexStats } from './auditLogIndex.js';
 
-function check(id, status, message, details = {}) {
-  return { id, status, message, details };
+function check(id, status, message, details = {}, recommendation = null) {
+  const out = { id, status, message, details };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
 }
 
 function safeBool(value) {
@@ -27253,6 +27463,218 @@ async function checkPwaCacheVersion() {
   }
 }
 
+async function checkRestoreDrillFreshness(isProd) {
+  try {
+    const { getLatestRestoreDrillFreshness } = await import('./backupRestoreDrill.js');
+    const freshness = await getLatestRestoreDrillFreshness();
+
+    if (!freshness.enabled) {
+      return check('restore_drill_recent', isProd ? 'warn' : 'pass', 'Backup restore drill feature is disabled', freshness);
+    }
+
+    if (!freshness.latest) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        'No backup restore drill has been recorded',
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    if (!freshness.passed) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        'Latest backup restore drill did not pass',
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    if (!freshness.fresh) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireRecentBackupRestoreDrillInProduction ? 'fail' : 'warn';
+      return check(
+        'restore_drill_recent',
+        status,
+        `Latest backup restore drill is stale (${freshness.ageDays} days old)`,
+        freshness,
+        'node scripts/run-backup-restore-drill.js'
+      );
+    }
+
+    return check('restore_drill_recent', 'pass', 'Latest backup restore drill is recent and passing', freshness);
+  } catch (err) {
+    return check('restore_drill_recent', 'warn', 'Could not evaluate restore drill freshness', { error: err.message }, 'node scripts/run-backup-restore-drill.js');
+  }
+}
+
+async function checkMarketplaceRollupFreshness(isProd) {
+  try {
+    const { getMarketplaceRollupFreshness } = await import('./marketplaceIntelligenceRollups.js');
+    const freshness = await getMarketplaceRollupFreshness();
+
+    if (!freshness.enabled) {
+      return check('marketplace_rollup_fresh', 'pass', 'Marketplace intelligence is disabled', freshness);
+    }
+
+    if (freshness.stale) {
+      const status = isProd && config.DEPLOYMENT_DISCIPLINE?.requireMarketplaceRollupFreshInProduction ? 'fail' : 'warn';
+      return check(
+        'marketplace_rollup_fresh',
+        status,
+        freshness.latestGeneratedAt ? 'Marketplace intelligence rollup is stale' : 'Marketplace intelligence rollup is missing',
+        freshness,
+        'node scripts/rollup-product-intelligence.js'
+      );
+    }
+
+    return check('marketplace_rollup_fresh', 'pass', 'Marketplace intelligence rollup is fresh', freshness);
+  } catch (err) {
+    return check('marketplace_rollup_fresh', 'warn', 'Could not evaluate marketplace rollup freshness', { error: err.message }, 'node scripts/verify-marketplace-intelligence.js');
+  }
+}
+
+async function checkSchedulerStaleness(isProd) {
+  try {
+    const { listStaleSchedulers } = await import('./schedulerRegistry.js');
+    const stale = await listStaleSchedulers();
+
+    if (stale.length > 0) {
+      return check(
+        'scheduler_no_stale',
+        isProd ? 'warn' : 'warn',
+        `${stale.length} scheduler job(s) are stale or failed`,
+        { stale: stale.slice(0, 10) },
+        'node scripts/scheduler-cadence-report.js'
+      );
+    }
+
+    return check('scheduler_no_stale', 'pass', 'No stale scheduler jobs detected');
+  } catch (err) {
+    return check('scheduler_no_stale', 'warn', 'Could not evaluate scheduler staleness', { error: err.message }, 'node scripts/scheduler-cadence-report.js');
+  }
+}
+
+async function checkQueueOperationalHealth(isProd) {
+  try {
+    const { getQueueStats } = await import('./opsQueue.js');
+    const { readQueueSummary } = await import('./queueStorageIndex.js');
+
+    const [stats, summary] = await Promise.all([
+      getQueueStats(),
+      readQueueSummary().catch(() => null),
+    ]);
+
+    if (!stats || stats.enabled === false) {
+      return check(
+        'queue_health',
+        'warn',
+        'Ops queue is disabled or unavailable',
+        { stats },
+        'Review OPS_QUEUE.enabled and node scripts/verify-queue.js'
+      );
+    }
+
+    const byStatus = stats.byStatus || {};
+    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+    const failed = byStatus.failed || 0;
+    const pending = byStatus.pending || 0;
+    const summaryStale = !!(summary && summary.stale);
+
+    if (summaryStale) {
+      return check(
+        'queue_health',
+        isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
+        'Queue summary is stale',
+        { summary },
+        'node scripts/repair-queue.js'
+      );
+    }
+
+    if (deadLetter >= 5) {
+      return check(
+        'queue_health',
+        isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
+        'Queue has elevated dead-letter jobs',
+        { deadLetter, failed, pending },
+        'node scripts/queue-retry-dlq.js --dry-run'
+      );
+    }
+
+    if (deadLetter > 0 || failed >= 5 || pending >= 5000) {
+      return check(
+        'queue_health',
+        'warn',
+        'Queue has operational warnings',
+        { deadLetter, failed, pending },
+        'node scripts/verify-queue.js'
+      );
+    }
+
+    return check('queue_health', 'pass', 'Queue summary and status counts are acceptable', {
+      deadLetter,
+      failed,
+      pending,
+      summaryStale,
+    });
+  } catch (err) {
+    return check(
+      'queue_health',
+      'warn',
+      'Could not evaluate queue operational health',
+      { error: err.message },
+      'node scripts/verify-queue.js'
+    );
+  }
+}
+
+async function checkMaintenanceInactive(isProd) {
+  try {
+    const { getMaintenanceMode, isFeatureEnabled } = await import('./maintenanceMode.js');
+    if (!isFeatureEnabled()) {
+      return check('maintenance_not_active', 'pass', 'Maintenance mode feature is disabled');
+    }
+
+    const state = await getMaintenanceMode();
+    if (state && state.enabled) {
+      return check(
+        'maintenance_not_active',
+        isProd ? 'warn' : 'warn',
+        'Maintenance mode is currently active',
+        { enabledAt: state.enabledAt || null, message: state.message || null },
+        'Review /api/admin/maintenance'
+      );
+    }
+
+    return check('maintenance_not_active', 'pass', 'Maintenance mode is not active');
+  } catch (err) {
+    return check('maintenance_not_active', 'warn', 'Could not evaluate maintenance mode', { error: err.message });
+  }
+}
+
+async function checkQueueNoStaleRunningGate(isProd) {
+  return check(
+    'queue_no_stale_running',
+    isProd ? 'warn' : 'warn',
+    'Stale running queue jobs require script-based verification',
+    { scriptAvailable: true },
+    'node scripts/verify-queue.js --strict'
+  );
+}
+
+async function checkJsonHealthGate(isProd) {
+  return check(
+    'json_health',
+    'warn',
+    'JSON corruption scan is script-based and should be run before deploy',
+    { scriptAvailable: true },
+    'node scripts/verify-data-json.js --strict'
+  );
+}
+
 export async function runReadinessChecks(options = {}) {
   const checks = [];
 
@@ -27269,7 +27691,15 @@ export async function runReadinessChecks(options = {}) {
   const defaultTokenBad = !adminToken || adminToken === 'change-me-in-production';
 
   if (config.PRODUCTION_READINESS?.requireNonDefaultAdminToken && defaultTokenBad) {
-    checks.push(check('admin_token', 'fail', 'ADMIN_TOKEN is missing or uses the default example value'));
+    checks.push(check(
+      'admin_token',
+      isProd ? 'fail' : 'warn',
+      isProd
+        ? 'ADMIN_TOKEN is missing or uses the default example value'
+        : 'ADMIN_TOKEN is default/missing; acceptable only outside production',
+      {},
+      'Set a strong ADMIN_TOKEN in .env'
+    ));
   } else {
     checks.push(check('admin_token', 'pass', 'ADMIN_TOKEN is configured'));
   }
@@ -27343,8 +27773,12 @@ export async function runReadinessChecks(options = {}) {
     const hasVapid = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
     checks.push(check(
       'vapid_keys',
-      hasVapid ? 'pass' : 'fail',
-      hasVapid ? 'VAPID keys are configured' : 'WEB_PUSH is enabled but VAPID keys are missing'
+      hasVapid ? 'pass' : (isProd ? 'fail' : 'warn'),
+      hasVapid
+        ? 'VAPID keys are configured'
+        : (isProd ? 'WEB_PUSH is enabled but VAPID keys are missing' : 'WEB_PUSH is enabled but VAPID keys are missing; acceptable only outside production'),
+      {},
+      'node scripts/generate-vapid-keys.js'
     ));
   }
 
@@ -27376,6 +27810,15 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkDomainConsistency());
 
   checks.push(await checkPwaCacheVersion());
+
+  // Phase 57 — Operational readiness gates.
+  checks.push(await checkQueueOperationalHealth(isProd));
+  checks.push(await checkQueueNoStaleRunningGate(isProd));
+  checks.push(await checkRestoreDrillFreshness(isProd));
+  checks.push(await checkMarketplaceRollupFreshness(isProd));
+  checks.push(await checkSchedulerStaleness(isProd));
+  checks.push(await checkMaintenanceInactive(isProd));
+  checks.push(await checkJsonHealthGate(isProd));
 
   return checks;
 }
@@ -29087,6 +29530,171 @@ export async function repairQueueStorage(options = {}) {
   });
 
   return result;
+}
+
+/**
+ * Phase 57: Translate queue health into operational recommended actions.
+ * Report-only. No writes.
+ */
+export async function getQueueOperationalRecommendations(options = {}) {
+  const actions = [];
+
+  let health = options.health || null;
+
+  // Phase 57: do not run heavy queue verification implicitly from admin overview.
+  // If health is not supplied, use lightweight queue stats + summary only.
+  if (!health) {
+    try {
+      const { getQueueStats } = await import('./opsQueue.js');
+      const { readQueueSummary } = await import('./queueStorageIndex.js');
+
+      const [stats, summary] = await Promise.all([
+        getQueueStats(),
+        readQueueSummary().catch(() => null),
+      ]);
+
+      const byStatus = stats.byStatus || {};
+      const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+      const pending = byStatus.pending || 0;
+      const failed = byStatus.failed || 0;
+
+      if (summary && summary.stale) {
+        actions.push({
+          id: 'queue_summary_repair',
+          label: 'إصلاح ملخص الطابور',
+          severity: 'warning',
+          command: 'node scripts/repair-queue.js',
+          adminRoute: '/api/admin/queue/repair',
+          reason: 'Queue summary is stale.',
+        });
+      }
+
+      if (deadLetter > 0) {
+        actions.push({
+          id: 'queue_dlq_review',
+          label: 'مراجعة Dead Letter Queue',
+          severity: deadLetter >= 5 ? 'critical' : 'warning',
+          command: 'node scripts/queue-retry-dlq.js --dry-run',
+          adminRoute: '/api/admin/ops-queue/dead-letter',
+          reason: `${deadLetter} job(s) are in DLQ.`,
+        });
+      }
+
+      if (pending >= 500) {
+        actions.push({
+          id: 'queue_pending_backlog',
+          label: 'تفريغ Backlog الطابور',
+          severity: pending >= 5000 ? 'critical' : 'warning',
+          command: 'node scripts/queue-drain.js',
+          adminRoute: '/api/admin/ops-queue/jobs?status=pending',
+          reason: `${pending} pending job(s) are waiting.`,
+        });
+      }
+
+      if (failed >= 5) {
+        actions.push({
+          id: 'queue_failed_review',
+          label: 'مراجعة الوظائف الفاشلة',
+          severity: 'warning',
+          command: 'node scripts/verify-queue.js',
+          adminRoute: '/api/admin/ops-queue/jobs?status=failed',
+          reason: `${failed} failed job(s) need review.`,
+        });
+      }
+
+      return actions;
+    } catch (err) {
+      return [{
+        id: 'queue_recommendations_failed',
+        label: 'فشل توليد توصيات الطابور',
+        severity: 'warning',
+        command: 'node scripts/verify-queue.js',
+        adminRoute: '/api/admin/queue/health',
+        reason: err.message,
+      }];
+    }
+  }
+
+  const details = health.details || {};
+
+  if (details.summaryMismatches && details.summaryMismatches.length > 0) {
+    actions.push({
+      id: 'queue_summary_repair',
+      label: 'إصلاح ملخص الطابور',
+      severity: 'warning',
+      command: 'node scripts/repair-queue.js',
+      adminRoute: '/api/admin/queue/repair',
+      reason: 'Queue summary does not match scanned queue records.',
+    });
+  }
+
+  if (details.staleRunningJobs && details.staleRunningJobs.length > 0) {
+    actions.push({
+      id: 'queue_stale_running_recover',
+      label: 'استعادة وظائف Running قديمة',
+      severity: 'critical',
+      command: 'node scripts/queue-drain.js',
+      adminRoute: '/api/admin/ops-queue/jobs?status=running',
+      reason: `${details.staleRunningJobs.length} running job(s) appear stale.`,
+    });
+  }
+
+  try {
+    const { getQueueStats } = await import('./opsQueue.js');
+    const stats = await getQueueStats();
+    const byStatus = stats.byStatus || {};
+    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
+    const pending = byStatus.pending || 0;
+    const failed = byStatus.failed || 0;
+
+    if (deadLetter > 0) {
+      actions.push({
+        id: 'queue_dlq_review',
+        label: 'مراجعة Dead Letter Queue',
+        severity: deadLetter >= 5 ? 'critical' : 'warning',
+        command: 'node scripts/queue-retry-dlq.js --dry-run',
+        adminRoute: '/api/admin/ops-queue/dead-letter',
+        reason: `${deadLetter} job(s) are in DLQ.`,
+      });
+    }
+
+    if (pending >= 500) {
+      actions.push({
+        id: 'queue_pending_backlog',
+        label: 'تفريغ Backlog الطابور',
+        severity: pending >= 5000 ? 'critical' : 'warning',
+        command: 'node scripts/queue-drain.js',
+        adminRoute: '/api/admin/ops-queue/jobs?status=pending',
+        reason: `${pending} pending job(s) are waiting.`,
+      });
+    }
+
+    if (failed >= 5) {
+      actions.push({
+        id: 'queue_failed_review',
+        label: 'مراجعة الوظائف الفاشلة',
+        severity: 'warning',
+        command: 'node scripts/verify-queue.js',
+        adminRoute: '/api/admin/ops-queue/jobs?status=failed',
+        reason: `${failed} failed job(s) need review.`,
+      });
+    }
+  } catch (_) {
+    // Stats enrichment failure should not break recommendations.
+  }
+
+  if (details.expiredIdempotency && details.expiredIdempotency.length > 0) {
+    actions.push({
+      id: 'queue_idempotency_cleanup',
+      label: 'تنظيف مفاتيح idempotency المنتهية',
+      severity: 'info',
+      command: 'node scripts/compact-queue.js',
+      adminRoute: '/api/admin/queue/compact',
+      reason: `${details.expiredIdempotency.length} expired idempotency record(s).`,
+    });
+  }
+
+  return actions;
 }
 
 export const _testHelpers = {
@@ -31489,6 +32097,18 @@ function normalizeWarning(source, warning) {
   };
 }
 
+function normalizeAction(action) {
+  if (!action) return null;
+  return {
+    id: action.id || 'ops_action',
+    label: action.label || action.message || 'راجع الحالة التشغيلية',
+    severity: action.severity || action.level || 'warning',
+    command: action.command || null,
+    adminRoute: action.adminRoute || null,
+    reason: action.reason || action.message || null,
+  };
+}
+
 /**
  * Get unified scale hygiene overview.
  */
@@ -31511,6 +32131,10 @@ export async function getScaleHygieneOverview() {
     trustRetention,
     predictiveArchiveIndex,
     schedulerHistory,
+    queueRecommendations,
+    marketplaceFreshness,
+    restoreDrillFreshness,
+    schedulerCadence,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -31519,6 +32143,16 @@ export async function getScaleHygieneOverview() {
     import('./trustSnapshotRollups.js').then(m => m.getTrustRetentionStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./predictiveArchiveIndex.js').then(m => m.getPredictiveArchiveIndexStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./schedulerRunHistory.js').then(m => m.getSchedulerHistoryStats()).catch(err => ({ enabled: false, error: err.message })),
+    import('./queueHealthVerify.js').then(m => m.getQueueOperationalRecommendations()).catch(err => ([{
+      id: 'queue_recommendations_unavailable',
+      label: 'تعذّر توليد توصيات الطابور',
+      severity: 'warning',
+      command: 'node scripts/verify-queue.js',
+      reason: err.message,
+    }])),
+    import('./marketplaceIntelligenceRollups.js').then(m => m.getMarketplaceRollupFreshness()).catch(err => ({ enabled: false, error: err.message })),
+    import('./backupRestoreDrill.js').then(m => m.getLatestRestoreDrillFreshness()).catch(err => ({ enabled: false, error: err.message })),
+    import('./schedulerRegistry.js').then(m => m.getSchedulerCadenceReport()).catch(err => ({ enabled: false, error: err.message })),
   ]);
 
   if (queueStats.summary && queueStats.summary.stale) {
@@ -31558,7 +32192,107 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  if (marketplaceFreshness && marketplaceFreshness.enabled && marketplaceFreshness.stale) {
+    warnings.push({
+      source: 'marketplace_rollup',
+      level: config.DEPLOYMENT_DISCIPLINE?.requireMarketplaceRollupFreshInProduction ? 'critical' : 'warning',
+      message: marketplaceFreshness.latestGeneratedAt
+        ? 'Marketplace intelligence rollup is stale'
+        : 'Marketplace intelligence rollup is missing',
+      details: marketplaceFreshness,
+    });
+  }
+
+  if (restoreDrillFreshness && restoreDrillFreshness.enabled) {
+    if (!restoreDrillFreshness.latest) {
+      warnings.push({
+        source: 'restore_drill',
+        level: 'warning',
+        message: 'No backup restore drill has been recorded',
+        details: restoreDrillFreshness,
+      });
+    } else if (!restoreDrillFreshness.passed) {
+      warnings.push({
+        source: 'restore_drill',
+        level: 'critical',
+        message: 'Latest backup restore drill failed',
+        details: restoreDrillFreshness,
+      });
+    } else if (!restoreDrillFreshness.fresh) {
+      warnings.push({
+        source: 'restore_drill',
+        level: 'warning',
+        message: 'Latest backup restore drill is stale',
+        details: restoreDrillFreshness,
+      });
+    }
+  }
+
+  if (schedulerCadence && schedulerCadence.staleCount > 0) {
+    warnings.push({
+      source: 'scheduler',
+      level: 'warning',
+      message: `${schedulerCadence.staleCount} scheduler job(s) are stale or failed`,
+      details: {
+        staleCount: schedulerCadence.staleCount,
+        failedCount: schedulerCadence.failedCount || 0,
+      },
+    });
+  }
+
+  const recommendedActions = [];
+
+  for (const action of queueRecommendations || []) {
+    const normalized = normalizeAction(action);
+    if (normalized) recommendedActions.push(normalized);
+  }
+
+  if (marketplaceFreshness && marketplaceFreshness.enabled && marketplaceFreshness.stale) {
+    recommendedActions.push({
+      id: 'marketplace_rollup_run',
+      label: 'تحديث ملخص ذكاء السوق',
+      severity: 'warning',
+      command: 'node scripts/rollup-product-intelligence.js',
+      adminRoute: '/api/admin/marketplace-intelligence/rollup/run',
+      reason: 'Marketplace rollup is stale or missing.',
+    });
+  }
+
+  if (restoreDrillFreshness && restoreDrillFreshness.enabled && (!restoreDrillFreshness.latest || !restoreDrillFreshness.passed || !restoreDrillFreshness.fresh)) {
+    recommendedActions.push({
+      id: 'restore_drill_run',
+      label: 'تشغيل اختبار استعادة النسخة الاحتياطية',
+      severity: restoreDrillFreshness.latest && !restoreDrillFreshness.passed ? 'critical' : 'warning',
+      command: 'node scripts/run-backup-restore-drill.js',
+      adminRoute: '/api/admin/backups/restore-drill',
+      reason: 'Latest restore drill is missing, stale, or failing.',
+    });
+  }
+
+  if (schedulerCadence && schedulerCadence.staleCount > 0) {
+    recommendedActions.push({
+      id: 'scheduler_cadence_review',
+      label: 'مراجعة مهام الجدولة المتأخرة',
+      severity: 'warning',
+      command: 'node scripts/scheduler-cadence-report.js',
+      adminRoute: '/api/admin/schedulers',
+      reason: `${schedulerCadence.staleCount} scheduler job(s) require review.`,
+    });
+  }
+
+  if (auditHygiene && auditHygiene.warnings && auditHygiene.warnings.length > 0) {
+    recommendedActions.push({
+      id: 'audit_index_hygiene_review',
+      label: 'مراجعة فهرس سجل العمليات',
+      severity: 'warning',
+      command: 'node scripts/verify-audit-index.js',
+      adminRoute: '/api/admin/audit-index/status',
+      reason: 'Audit index hygiene warnings detected.',
+    });
+  }
+
   warnings.sort((a, b) => severityRank(b.level) - severityRank(a.level));
+  recommendedActions.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
 
   const status = warnings.some(w => severityRank(w.level) >= 4)
     ? 'critical'
@@ -31579,6 +32313,14 @@ export async function getScaleHygieneOverview() {
     trust: trustRetention,
     predictiveArchive: predictiveArchiveIndex,
     schedulerHistory,
+    marketplace: {
+      freshness: marketplaceFreshness,
+    },
+    restoreDrill: {
+      freshness: restoreDrillFreshness,
+    },
+    schedulerCadence,
+    recommendedActions: recommendedActions.slice(0, 12),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
   };
@@ -32506,6 +33248,90 @@ export function stopSchedulerRegistry() {
     clearInterval(registryTimer);
     registryTimer = null;
   }
+}
+
+/**
+ * Phase 57: List stale enabled schedulers with reasons.
+ *
+ * @param {{ staleMs?: number }} options
+ */
+export async function listStaleSchedulers(options = {}) {
+  const rows = await listSchedulerJobs();
+  const staleMs = Number(options.staleMs || config.OPS_METRICS_ROLLUPS?.slo?.schedulerStaleWarningMs || (2 * 60 * 60 * 1000));
+  const now = Date.now();
+
+  return rows
+    .filter(row => row.enabled)
+    .map(row => {
+      const nextRunMs = parseMs(row.nextRunAt);
+      const staleByNextRun = nextRunMs > 0 && (now - nextRunMs) > staleMs;
+      const failed = row.lastStatus === 'failed';
+
+      const reasons = [];
+      if (staleByNextRun) reasons.push('nextRunAt is overdue');
+      if (failed) reasons.push('lastStatus is failed');
+
+      return {
+        ...row,
+        stale: reasons.length > 0,
+        staleReasons: reasons,
+        staleMs,
+      };
+    })
+    .filter(row => row.stale);
+}
+
+/**
+ * Phase 57: Scheduler cadence report.
+ *
+ * Lightweight: scheduler records + run history summary.
+ */
+export async function getSchedulerCadenceReport(options = {}) {
+  const rows = await listSchedulerJobs();
+  const staleRows = await listStaleSchedulers(options);
+  const staleByName = new Map(staleRows.map(r => [r.name, r]));
+
+  const schedulers = [];
+
+  for (const row of rows) {
+    let historySummary = null;
+
+    try {
+      const { listSchedulerRuns } = await import('./schedulerRunHistory.js');
+      const history = await listSchedulerRuns(row.name, { limit: 10, offset: 0 });
+      const runs = history.runs || [];
+      historySummary = {
+        totalRecent: history.total || 0,
+        lastRunStatus: runs[0]?.status || null,
+        lastRunAt: runs[0]?.startedAt || null,
+        recentFailed: runs.filter(r => r.status === 'failed').length,
+        recentQueued: runs.filter(r => r.status === 'queued').length,
+        recentSkipped: runs.filter(r => r.status === 'skipped').length,
+      };
+    } catch (_) {
+      historySummary = null;
+    }
+
+    const stale = staleByName.get(row.name);
+
+    schedulers.push({
+      ...row,
+      stale: !!stale,
+      staleReasons: stale ? stale.staleReasons : [],
+      historySummary,
+    });
+  }
+
+  return {
+    enabled: isEnabled(),
+    generatedAt: nowIso(),
+    total: schedulers.length,
+    enabledCount: schedulers.filter(s => s.enabled).length,
+    staleCount: schedulers.filter(s => s.stale).length,
+    failedCount: schedulers.filter(s => s.lastStatus === 'failed').length,
+    schedulers,
+    instance: getInstanceInfo(),
+  };
 }
 
 export const _testHelpers = {

@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.52.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-18T21:00:22.610Z
-> Files in this part: 64
+# يوميّة (Yawmia) v0.53.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-20T22:25:20.916Z
+> Files in this part: 70
 
 ## Files
 1. `frontend/404.html`
@@ -49,24 +49,30 @@
 44. `scripts/export-incident-timeline.js`
 45. `scripts/generate-vapid-keys.js`
 46. `scripts/migrate.js`
-47. `scripts/queue-drain.js`
-48. `scripts/queue-retry-dlq.js`
-49. `scripts/rebuild-audit-index.js`
-50. `scripts/rebuild-counters.js`
-51. `scripts/rebuild-predictive-archive-index.js`
-52. `scripts/rebuild-search-relevance.js`
-53. `scripts/rebuild-workroom-search.js`
-54. `scripts/repair-indexes.js`
-55. `scripts/repair-queue.js`
-56. `scripts/rollup-product-intelligence.js`
-57. `scripts/rollup-trust-snapshots.js`
-58. `scripts/run-backup-restore-drill.js`
-59. `scripts/run-trust-calibration.js`
-60. `scripts/verify-audit-index.js`
-61. `scripts/verify-marketplace-intelligence.js`
-62. `scripts/verify-production-readiness.js`
-63. `scripts/verify-queue.js`
-64. `scripts/verify-workroom-indexes.js`
+47. `scripts/ops-weekly-review.js`
+48. `scripts/postdeploy-smoke.js`
+49. `scripts/predeploy-check.js`
+50. `scripts/queue-drain.js`
+51. `scripts/queue-retry-dlq.js`
+52. `scripts/rebuild-audit-index.js`
+53. `scripts/rebuild-counters.js`
+54. `scripts/rebuild-predictive-archive-index.js`
+55. `scripts/rebuild-search-relevance.js`
+56. `scripts/rebuild-workroom-search.js`
+57. `scripts/repair-indexes.js`
+58. `scripts/repair-queue.js`
+59. `scripts/rollup-product-intelligence.js`
+60. `scripts/rollup-trust-snapshots.js`
+61. `scripts/run-backup-restore-drill.js`
+62. `scripts/run-trust-calibration.js`
+63. `scripts/scheduler-cadence-report.js`
+64. `scripts/verify-audit-index.js`
+65. `scripts/verify-data-json.js`
+66. `scripts/verify-file-health.js`
+67. `scripts/verify-marketplace-intelligence.js`
+68. `scripts/verify-production-readiness.js`
+69. `scripts/verify-queue.js`
+70. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -245,6 +251,16 @@
           <h2>📈 SLO التشغيل</h2>
           <button class="refresh-btn" onclick="AdminApp.loadOpsSlo()">تحديث</button>
         </div>
+        <div class="ops-help-text">
+          <strong>مساعدة سريعة:</strong>
+          <span>DLQ = وظائف فشلت بعد كل المحاولات</span>
+          <span>SLO = مؤشر جودة التشغيل</span>
+          <span>Rollup = ملخص دوري محفوظ</span>
+          <span>Restore Drill = اختبار استعادة نسخة احتياطية</span>
+        </div>
+
+        <div id="opsRecommendedActions" class="recommended-actions"></div>
+
         <div id="opsSloMetrics" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
@@ -257,6 +273,8 @@
           <h2>🧹 نظافة التوسع</h2>
           <button class="refresh-btn" onclick="AdminApp.loadScaleHygiene()">تحديث</button>
         </div>
+
+        <div id="scaleRecommendedActions" class="recommended-actions"></div>
 
         <div id="scaleHygieneSummary" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
@@ -379,6 +397,8 @@
           <h2>🧠 ذكاء السوق</h2>
           <button class="refresh-btn" onclick="AdminApp.loadMarketplaceIntelligence()">تحديث</button>
         </div>
+
+        <div id="marketplaceRecommendedActions" class="recommended-actions"></div>
 
         <div id="marketplaceIntelligenceSummary" class="analytics-grid">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
@@ -5772,6 +5792,146 @@ textarea:focus:not(:focus-visible) {
   border-color: rgba(239, 68, 68, 0.35);
 }
 
+/* ═══ Phase 57 — Production Ops Recommended Actions ═══ */
+.recommended-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+.recommended-actions__title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-block-end: 0.25rem;
+}
+
+.recommended-actions--empty {
+  margin-block-end: 1rem;
+}
+
+.recommended-action-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.recommended-action-card--critical {
+  border-inline-start-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.recommended-action-card--warning {
+  border-inline-start-color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.recommended-action-card--info {
+  border-inline-start-color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.recommended-action-card--ok {
+  border-inline-start-color: var(--color-success);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.recommended-action-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.recommended-action-card__severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.recommended-action-card p {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.runbook-link {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.ops-help-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin-block: 0.5rem 1rem;
+}
+
+.ops-help-text span {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.ops-command-chip {
+  display: inline-block;
+  direction: ltr;
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: #93c5fd;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.deployment-gate-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+}
+
+@media (max-width: 600px) {
+  .recommended-action-card {
+    padding: 1rem;
+  }
+
+  .recommended-action-card__header {
+    flex-direction: column;
+  }
+
+  .recommended-action-card .btn,
+  .recommended-action-card button {
+    min-height: 44px;
+  }
+
+  .ops-command-chip {
+    font-size: 0.72rem;
+  }
+}
+
 /* ═══ Phase 56 — Admin Dashboard IA + Marketplace Intelligence ═══ */
 .admin-tabs {
   display: flex;
@@ -6580,6 +6740,53 @@ var AdminApp = (function () {
     setTimeout(function () {
       el.style.display = 'none';
     }, 5000);
+  }
+
+  function renderRecommendedActions(containerId, actions) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+
+    actions = Array.isArray(actions) ? actions : [];
+
+    if (actions.length === 0) {
+      el.innerHTML =
+        '<div class="recommended-actions recommended-actions--empty">' +
+          '<div class="recommended-action-card recommended-action-card--ok">' +
+            '<strong>✅ لا توجد إجراءات عاجلة</strong>' +
+            '<p>كل المؤشرات الأساسية في هذا القسم تبدو مستقرة حالياً.</p>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    var top = actions.slice(0, 3);
+
+    var html = '<div class="recommended-actions__title">الإجراءات المقترحة</div>';
+
+    top.forEach(function (a) {
+      var sev = a.severity || a.level || 'warning';
+      var cls = sev === 'critical' || sev === 'error'
+        ? 'recommended-action-card--critical'
+        : (sev === 'info' ? 'recommended-action-card--info' : 'recommended-action-card--warning');
+
+      var icon = sev === 'critical' || sev === 'error' ? '🚨' : (sev === 'info' ? 'ℹ️' : '⚠️');
+
+      html += '<div class="recommended-action-card ' + cls + '">' +
+        '<div class="recommended-action-card__header">' +
+          '<strong>' + icon + ' ' + escapeHtml(a.label || 'راجع الحالة') + '</strong>' +
+          '<span class="recommended-action-card__severity">' + escapeHtml(sev) + '</span>' +
+        '</div>' +
+        (a.reason ? '<p>' + escapeHtml(a.reason) + '</p>' : '') +
+        (a.command ? '<code class="ops-command-chip">' + escapeHtml(a.command) + '</code>' : '') +
+        (a.adminRoute ? '<small class="runbook-link">Admin route: ' + escapeHtml(a.adminRoute) + '</small>' : '') +
+      '</div>';
+    });
+
+    if (actions.length > 3) {
+      html += '<p class="ops-help-text">+' + (actions.length - 3) + ' إجراءات أخرى موجودة في التفاصيل أسفل الصفحة.</p>';
+    }
+
+    el.innerHTML = html;
   }
 
   async function connect() {
@@ -9601,6 +9808,31 @@ var AdminApp = (function () {
     return '<span class="ops-status-pill ' + cls + '">' + escapeHtml(status || 'unknown') + '</span>';
   }
 
+  async function loadDeploymentGate() {
+    try {
+      var data = await api('/api/admin/production/deployment-gate');
+
+      renderRecommendedActions('opsRecommendedActions', data.recommendedActions || []);
+
+      var summaryEl = document.getElementById('productionReadinessSummary');
+      if (summaryEl && data.status) {
+        var existing = summaryEl.innerHTML || '';
+        var statusClass = data.status === 'ready'
+          ? 'deployment-gate-status ops-status-pill--ready'
+          : (data.status === 'blocked' ? 'deployment-gate-status ops-status-pill--bad' : 'deployment-gate-status ops-status-pill--warning');
+
+        summaryEl.insertAdjacentHTML('afterbegin',
+          '<div class="trust-metric-card">' +
+            '<div class="trust-metric-value"><span class="' + statusClass + '">' + escapeHtml(data.status) + '</span></div>' +
+            '<div class="trust-metric-label">Deployment Gate</div>' +
+          '</div>'
+        );
+      }
+    } catch (_) {
+      // Non-fatal; readiness loader still works.
+    }
+  }
+
   async function loadProductionReadiness() {
     var summaryEl = document.getElementById('productionReadinessSummary');
     var checksEl = document.getElementById('productionReadinessChecks');
@@ -9751,6 +9983,28 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadSchedulerCadence() {
+    try {
+      var data = await api('/api/admin/production/scheduler-cadence');
+      var report = data.report || {};
+
+      if (report.staleCount > 0) {
+        renderRecommendedActions('opsRecommendedActions', [{
+          id: 'scheduler_cadence_review',
+          label: 'مراجعة مهام الجدولة المتأخرة',
+          severity: 'warning',
+          command: 'node scripts/scheduler-cadence-report.js',
+          adminRoute: '/api/admin/production/scheduler-cadence',
+          reason: report.staleCount + ' scheduler job(s) stale or failed.',
+        }]);
+      }
+
+      return report;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function loadSchedulers() {
     var el = document.getElementById('schedulerTable');
     if (!el) return;
@@ -9828,6 +10082,18 @@ var AdminApp = (function () {
     }
   }
 
+  async function loadOpsWeeklyReview() {
+    try {
+      var data = await api('/api/admin/production/ops-review');
+      if (data && data.ok && data.recommendedActions) {
+        renderRecommendedActions('opsRecommendedActions', data.recommendedActions || []);
+      }
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function loadOpsSlo() {
     var metricsEl = document.getElementById('opsSloMetrics');
     var rollupsEl = document.getElementById('opsRollupsTable');
@@ -9863,6 +10129,39 @@ var AdminApp = (function () {
           metricsEl.appendChild(card);
         });
       }
+
+      var opsActions = [];
+      if ((violations || []).length > 0) {
+        opsActions.push({
+          id: 'ops_slo_review',
+          label: 'مراجعة مخالفات SLO',
+          severity: 'warning',
+          command: 'node scripts/verify-production-readiness.js',
+          adminRoute: '/api/admin/ops/slo',
+          reason: 'يوجد مؤشرات تشغيل خارج الحدود المتفق عليها.',
+        });
+      }
+      if ((q.deadLetter || 0) > 0) {
+        opsActions.push({
+          id: 'ops_dlq_review',
+          label: 'مراجعة وظائف DLQ',
+          severity: q.deadLetter >= 5 ? 'critical' : 'warning',
+          command: 'node scripts/queue-retry-dlq.js --dry-run',
+          adminRoute: '/api/admin/ops-queue/dead-letter',
+          reason: 'DLQ = وظائف فشلت بعد كل المحاولات.',
+        });
+      }
+      if ((sched.stale || 0) > 0) {
+        opsActions.push({
+          id: 'ops_scheduler_review',
+          label: 'مراجعة Scheduler Stale',
+          severity: 'warning',
+          command: 'node scripts/scheduler-cadence-report.js',
+          adminRoute: '/api/admin/schedulers',
+          reason: 'Stale Scheduler = مهمة جدولتها تأخرت أو فشلت آخر مرة.',
+        });
+      }
+      renderRecommendedActions('opsRecommendedActions', opsActions);
 
       await loadOpsRollups();
     } catch (err) {
@@ -10111,6 +10410,7 @@ var AdminApp = (function () {
       var data = await api('/api/admin/scale-hygiene/overview');
       var o = data.overview || {};
 
+      renderRecommendedActions('scaleRecommendedActions', o.recommendedActions || []);
       renderScaleHygieneSummary(o);
       renderScaleHygieneDetails(o);
     } catch (err) {
@@ -10526,8 +10826,10 @@ var AdminApp = (function () {
       loadTrustCalibrationDashboard();
     } else if (tabName === 'ops') {
       loadProductionReadiness();
+      loadDeploymentGate();
       loadInstanceOps();
       loadSchedulers();
+      loadSchedulerCadence();
       loadOpsSlo();
       loadRestoreDrills();
       loadIncidents();
@@ -10582,6 +10884,20 @@ var AdminApp = (function () {
       var data = await api('/api/admin/marketplace-intelligence/dashboard');
       var dashboard = data.dashboard || {};
       renderMpiCards(dashboard.summary || {});
+
+      var mpiActions = [];
+      var warningsForActions = dashboard.warnings || [];
+      if (warningsForActions.length > 0) {
+        mpiActions.push({
+          id: 'marketplace_review',
+          label: 'راجع تحذيرات ذكاء السوق',
+          severity: 'warning',
+          command: 'node scripts/ops-weekly-review.js',
+          adminRoute: '/api/admin/marketplace-intelligence/dashboard',
+          reason: 'يوجد تحذيرات في ملخص السوق تحتاج مراجعة منتج/تشغيل.',
+        });
+      }
+      renderRecommendedActions('marketplaceRecommendedActions', mpiActions);
 
       if (details) {
         var warnings = dashboard.warnings || [];
@@ -10903,8 +11219,12 @@ var AdminApp = (function () {
     runTrustCalibrationReport: runTrustCalibrationReport,
     testWebhook: testWebhook,
     renderCsvExportProgress: renderCsvExportProgress,
+    renderRecommendedActions: renderRecommendedActions,
     // Phase 54 — Production Ops
     loadProductionReadiness: loadProductionReadiness,
+    loadDeploymentGate: loadDeploymentGate,
+    loadSchedulerCadence: loadSchedulerCadence,
+    loadOpsWeeklyReview: loadOpsWeeklyReview,
     loadInstanceOps: loadInstanceOps,
     loadProcessLocks: loadProcessLocks,
     releaseProcessLock: releaseProcessLock,
@@ -20446,7 +20766,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.52.0';
+const CACHE_NAME = 'yawmia-v0.53.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21726,6 +22046,505 @@ main().catch(err => {
 
 ---
 
+## `scripts/ops-weekly-review.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/ops-weekly-review.js — Weekly Ops/Product Review (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/ops-weekly-review.js
+//   node scripts/ops-weekly-review.js --out=weekly-review.md
+// ═══════════════════════════════════════════════════════════════
+
+import { writeFile } from 'node:fs/promises';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function safe(label, fn, fallback = null) {
+  try {
+    return await fn();
+  } catch (err) {
+    return { error: err.message, label, fallback };
+  }
+}
+
+function lineStatus(ok) {
+  return ok ? '✅' : '⚠️';
+}
+
+async function main() {
+  const outPath = getArg('out', '');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const [
+    readiness,
+    queueStats,
+    opsSlo,
+    scaleHygiene,
+    restoreFreshness,
+    marketplaceDashboard,
+    predictivePrecision,
+    trustCalibration,
+    paymentDisputes,
+    schedulerCadence,
+  ] = await Promise.all([
+    safe('readiness', async () => (await import('../server/services/productionReadiness.js')).getProductionReadiness()),
+    safe('queueStats', async () => (await import('../server/services/opsQueue.js')).getQueueStats()),
+    safe('opsSlo', async () => (await import('../server/services/metricsRollups.js')).computeOpsSlo()),
+    safe('scaleHygiene', async () => (await import('../server/services/scaleHygiene.js')).getScaleHygieneOverview()),
+    safe('restoreFreshness', async () => (await import('../server/services/backupRestoreDrill.js')).getLatestRestoreDrillFreshness()),
+    safe('marketplaceDashboard', async () => (await import('../server/services/marketplaceIntelligenceRollups.js')).getMarketplaceIntelligenceDashboard()),
+    safe('predictivePrecision', async () => (await import('../server/services/predictiveSignalRetention.js')).getPredictivePrecisionStats()),
+    safe('trustCalibration', async () => (await import('../server/services/trustCalibration.js')).getCalibrationDashboard({})),
+    safe('paymentDisputes', async () => (await import('../server/services/paymentDisputeAnalytics.js')).getPaymentDisputeAnalytics()),
+    safe('schedulerCadence', async () => (await import('../server/services/schedulerRegistry.js')).getSchedulerCadenceReport()),
+  ]);
+
+  const byStatus = queueStats.byStatus || {};
+  const marketSummary = marketplaceDashboard.summary || {};
+  const scaleActions = scaleHygiene.recommendedActions || [];
+
+  const md = [];
+
+  md.push(`# يوميّة — Weekly Ops/Product Review`);
+  md.push(``);
+  md.push(`Generated: ${new Date().toISOString()}`);
+  md.push(``);
+
+  md.push(`## 1. Executive Summary`);
+  md.push(``);
+  md.push(`- ${lineStatus(readiness.ok)} Production readiness: **${readiness.status || 'unknown'}**`);
+  md.push(`- ${lineStatus((opsSlo.violations || []).length === 0)} Ops SLO violations: **${(opsSlo.violations || []).length}**`);
+  md.push(`- ${lineStatus((byStatus['dead-letter'] || 0) === 0)} Queue DLQ: **${byStatus['dead-letter'] || 0}**`);
+  md.push(`- ${lineStatus(restoreFreshness.passed && restoreFreshness.fresh)} Restore drill: **${restoreFreshness.status || 'unknown'}**`);
+  md.push(`- ${lineStatus(scaleHygiene.status === 'healthy')} Scale hygiene: **${scaleHygiene.status || 'unknown'}**`);
+  md.push(`- ${lineStatus((marketSummary.warningCount || 0) === 0)} Marketplace warnings: **${marketSummary.warningCount || 0}**`);
+  md.push(``);
+
+  md.push(`## 2. Recommended Actions`);
+  md.push(``);
+  if (scaleActions.length === 0) {
+    md.push(`✅ لا توجد إجراءات عاجلة مقترحة.`);
+  } else {
+    for (const a of scaleActions.slice(0, 10)) {
+      md.push(`- **[${a.severity}] ${a.label}**`);
+      if (a.reason) md.push(`  - Reason: ${a.reason}`);
+      if (a.command) md.push(`  - Command: \`${a.command}\``);
+      if (a.adminRoute) md.push(`  - Admin route: \`${a.adminRoute}\``);
+    }
+  }
+  md.push(``);
+
+  md.push(`## 3. Queue Review`);
+  md.push(``);
+  md.push(`- pending: ${byStatus.pending || 0}`);
+  md.push(`- running: ${byStatus.running || 0}`);
+  md.push(`- failed: ${byStatus.failed || 0}`);
+  md.push(`- dead-letter: ${byStatus['dead-letter'] || 0}`);
+  md.push(``);
+  md.push(`Recommended commands:`);
+  md.push(``);
+  md.push(`\`\`\`bash`);
+  md.push(`node scripts/verify-queue.js`);
+  md.push(`node scripts/repair-queue.js`);
+  md.push(`node scripts/queue-retry-dlq.js --dry-run`);
+  md.push(`\`\`\``);
+  md.push(``);
+
+  md.push(`## 4. Scheduler Cadence`);
+  md.push(``);
+  md.push(`- total: ${schedulerCadence.total || 0}`);
+  md.push(`- enabled: ${schedulerCadence.enabledCount || 0}`);
+  md.push(`- stale: ${schedulerCadence.staleCount || 0}`);
+  md.push(`- failed: ${schedulerCadence.failedCount || 0}`);
+  md.push(``);
+
+  md.push(`## 5. Marketplace/Product Intelligence`);
+  md.push(``);
+  md.push(`- searches: ${marketSummary.searches || 0}`);
+  md.push(`- zeroResultRate: ${marketSummary.zeroResultRate || 0}%`);
+  md.push(`- directOfferAcceptRate: ${marketSummary.directOfferAcceptRate || 0}%`);
+  md.push(`- paymentDisputes: ${marketSummary.paymentDisputes || 0}`);
+  md.push(``);
+
+  md.push(`## 6. Trust / Predictive Review`);
+  md.push(``);
+  md.push(`- predictive precision: ${predictivePrecision.precisionRate || 0}%`);
+  md.push(`- false positive rate: ${predictivePrecision.falsePositiveRate || 0}%`);
+  md.push(`- trust snapshots: ${trustCalibration.metrics?.snapshotCount || 0}`);
+  md.push(`- trust drift warnings: ${trustCalibration.metrics?.driftWarningCount || 0}`);
+  md.push(``);
+
+  md.push(`## 7. Payment Dispute Review`);
+  md.push(``);
+  md.push(`- disputes: ${paymentDisputes.totals?.disputes || 0}`);
+  md.push(`- disputeRate: ${paymentDisputes.totals?.disputeRate || 0}%`);
+  md.push(`- openDisputes: ${paymentDisputes.totals?.openDisputes || 0}`);
+  md.push(``);
+
+  md.push(`## 8. Next Week Checklist`);
+  md.push(``);
+  md.push(`- [ ] Run backup restore drill`);
+  md.push(`- [ ] Review DLQ and failed jobs`);
+  md.push(`- [ ] Review marketplace zero-result searches`);
+  md.push(`- [ ] Review payment dispute trends`);
+  md.push(`- [ ] Review predictive false positives`);
+  md.push(`- [ ] Run scale hygiene actions if needed`);
+  md.push(``);
+
+  const output = md.join('\n');
+
+  if (outPath) {
+    await writeFile(outPath, output, 'utf-8');
+    console.log(`✅ Weekly review written to ${outPath}`);
+  } else {
+    console.log(output);
+  }
+}
+
+main().catch(err => {
+  console.error('\n❌ Weekly review failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/postdeploy-smoke.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/postdeploy-smoke.js — Post-Deploy Smoke Tests (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/postdeploy-smoke.js --base=http://localhost:3002
+//   ADMIN_TOKEN=xxx node scripts/postdeploy-smoke.js --base=https://example.com
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+const BASE = (getArg('base', '') || `http://localhost:${process.env.PORT || 3002}`).replace(/\/+$/, '');
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+
+async function check(name, path, options = {}) {
+  const url = BASE + path;
+  const started = Date.now();
+
+  try {
+    const headers = options.admin && ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {};
+    const res = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(options.timeoutMs || 10000) });
+    const durationMs = Date.now() - started;
+
+    const ok = options.allowStatuses
+      ? options.allowStatuses.includes(res.status)
+      : res.status >= 200 && res.status < 400;
+
+    return {
+      name,
+      path,
+      ok,
+      status: res.status,
+      durationMs,
+    };
+  } catch (err) {
+    return {
+      name,
+      path,
+      ok: false,
+      status: 0,
+      durationMs: Date.now() - started,
+      error: err.message,
+    };
+  }
+}
+
+async function main() {
+  console.log(`\n🚬 يوميّة Post-Deploy Smoke\n`);
+  console.log(`Base: ${BASE}\n`);
+
+  const checks = [
+    ['health', '/api/health'],
+    ['config', '/api/config'],
+    ['docs', '/api/docs'],
+    ['home', '/'],
+    ['dashboard', '/dashboard.html'],
+    ['manifest', '/manifest.json'],
+  ];
+
+  if (ADMIN_TOKEN) {
+    checks.push(['admin readiness', '/api/admin/production/readiness', { admin: true }]);
+    checks.push(['admin ops slo', '/api/admin/ops/slo', { admin: true }]);
+    checks.push(['admin scale hygiene', '/api/admin/scale-hygiene/overview', { admin: true }]);
+    checks.push(['admin marketplace intelligence', '/api/admin/marketplace-intelligence/dashboard', { admin: true }]);
+  }
+
+  const results = [];
+  for (const row of checks) {
+    const [name, path, options] = row;
+    const result = await check(name, path, options || {});
+    results.push(result);
+
+    const icon = result.ok ? '✅' : '❌';
+    console.log(`${icon} ${name}: ${result.status} (${result.durationMs}ms) ${result.error || ''}`);
+  }
+
+  const failed = results.filter(r => !r.ok);
+
+  console.log('');
+  if (failed.length > 0) {
+    console.log(`❌ Smoke failed: ${failed.length} check(s) failed`);
+    process.exit(1);
+  }
+
+  console.log('✅ Post-deploy smoke passed\n');
+}
+
+main().catch(err => {
+  console.error('\n❌ Smoke script failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/predeploy-check.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/predeploy-check.js — Deployment Gate (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   NODE_ENV=production node scripts/predeploy-check.js --strict
+//   node scripts/predeploy-check.js --json
+// ═══════════════════════════════════════════════════════════════
+
+import { readFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const STRICT = process.argv.includes('--strict');
+const JSON_OUT = process.argv.includes('--json');
+
+function parsePossiblyNoisyJson(stdout) {
+  if (!stdout) return null;
+
+  try {
+    return JSON.parse(stdout);
+  } catch (_) {}
+
+  const firstBrace = stdout.indexOf('{');
+  const lastBrace = stdout.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(stdout.slice(firstBrace, lastBrace + 1));
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+function runScript(script, args = []) {
+  const proc = spawnSync(process.execPath, [script, ...args], {
+    env: process.env,
+    encoding: 'utf-8',
+  });
+
+  const parsed = parsePossiblyNoisyJson(proc.stdout);
+
+  return {
+    ok: proc.status === 0,
+    status: proc.status,
+    stdout: proc.stdout,
+    stderr: proc.stderr,
+    parsed,
+  };
+}
+
+function mk(id, status, message, recommendation = null, details = {}) {
+  const out = { id, status, message, details };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
+}
+
+async function main() {
+  const checks = [];
+
+  // Keep --json output machine-readable even if imported services log warnings.
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const config = (await import('../config.js')).default;
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  // package/version/deps
+  const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
+  checks.push(mk('package_version', pkg.version === '0.53.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.53.0' }));
+
+  const deps = Object.keys(pkg.dependencies || {});
+  const allowedDeps = new Set(['dotenv']);
+  const extraDeps = deps.filter(d => !allowedDeps.has(d));
+  checks.push(mk(
+    'dependencies',
+    extraDeps.length === 0 ? 'pass' : 'fail',
+    extraDeps.length === 0 ? 'No new dependencies detected' : `Unexpected dependencies: ${extraDeps.join(', ')}`,
+    null,
+    { dependencies: deps }
+  ));
+
+  // PWA cache consistency
+  const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.53.0';
+  checks.push(mk(
+    'pwa_cache',
+    cacheOk ? 'pass' : 'fail',
+    cacheOk ? 'PWA cache version is consistent' : 'PWA cache version mismatch',
+    null,
+    { configCache: config.PWA.cacheName }
+  ));
+
+  // Production readiness
+  const { getProductionReadiness } = await import('../server/services/productionReadiness.js');
+  const readiness = await getProductionReadiness();
+
+  for (const c of readiness.checks || []) {
+    checks.push({
+      id: `readiness:${c.id}`,
+      status: c.status,
+      message: c.message,
+      recommendation: c.recommendation || null,
+      details: c.details || {},
+    });
+  }
+
+  // JSON health
+  const jsonHealth = runScript('scripts/verify-data-json.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (jsonHealth.parsed) {
+    checks.push(mk(
+      'json_health',
+      jsonHealth.parsed.critical === 0 ? 'pass' : 'fail',
+      jsonHealth.parsed.critical === 0 ? 'No critical JSON corruption detected' : `${jsonHealth.parsed.critical} critical JSON issue(s) detected`,
+      'node scripts/verify-data-json.js --strict',
+      jsonHealth.parsed
+    ));
+  } else {
+    checks.push(mk('json_health', 'warn', 'Could not parse JSON health script output', 'node scripts/verify-data-json.js --strict'));
+  }
+
+  // File health
+  const fileHealth = runScript('scripts/verify-file-health.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (fileHealth.parsed) {
+    checks.push(mk(
+      'file_health',
+      fileHealth.parsed.critical === 0 ? 'pass' : 'fail',
+      fileHealth.parsed.critical === 0 ? 'No critical file health issues detected' : `${fileHealth.parsed.critical} critical file issue(s) detected`,
+      'node scripts/verify-file-health.js --strict',
+      fileHealth.parsed
+    ));
+  } else {
+    checks.push(mk('file_health', 'warn', 'Could not parse file health script output', 'node scripts/verify-file-health.js --strict'));
+  }
+
+  // Scheduler cadence
+  const scheduler = runScript('scripts/scheduler-cadence-report.js', ['--json']);
+  if (scheduler.parsed) {
+    checks.push(mk(
+      'scheduler_cadence',
+      scheduler.parsed.staleCount > 0 ? 'warn' : 'pass',
+      scheduler.parsed.staleCount > 0 ? `${scheduler.parsed.staleCount} stale scheduler(s)` : 'Scheduler cadence is healthy',
+      'node scripts/scheduler-cadence-report.js',
+      scheduler.parsed
+    ));
+  }
+
+  const summary = {
+    pass: checks.filter(c => c.status === 'pass').length,
+    warn: checks.filter(c => c.status === 'warn').length,
+    fail: checks.filter(c => c.status === 'fail').length,
+  };
+
+  const result = {
+    ok: summary.fail === 0 && (!STRICT || summary.warn === 0),
+    strict: STRICT,
+    generatedAt: new Date().toISOString(),
+    environment: config.ENV?.current || process.env.NODE_ENV || 'development',
+    summary,
+    checks,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('\n🚦 يوميّة Predeploy Check\n');
+    console.log(`Environment: ${result.environment}`);
+    console.log(`Summary: pass=${summary.pass}, warn=${summary.warn}, fail=${summary.fail}\n`);
+
+    for (const c of checks) {
+      const icon = c.status === 'pass' ? '✅' : c.status === 'warn' ? '⚠️' : '❌';
+      console.log(`${icon} ${c.id}: ${c.message}`);
+      if (c.recommendation) console.log(`   → ${c.recommendation}`);
+    }
+
+    console.log(result.ok ? '\n✅ Predeploy gate passed\n' : '\n❌ Predeploy gate failed\n');
+  }
+
+  if (!result.ok) process.exit(1);
+}
+
+main().catch(err => {
+  console.error('\n❌ Predeploy check failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/queue-drain.js`
 
 ```javascript
@@ -22097,6 +22916,11 @@ async function main() {
     }
   } catch (err) {
     console.error('❌ searchIndex rebuild failed:', err.message);
+    console.error('');
+    console.error('Run this first to detect corrupt or zero-byte JSON files:');
+    console.error('  node scripts/verify-data-json.js --strict');
+    console.error('');
+    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding search indexes.');
     process.exit(1);
   }
 
@@ -22107,6 +22931,11 @@ async function main() {
     }
   } catch (err) {
     console.error('❌ queryIndex rebuild failed:', err.message);
+    console.error('');
+    console.error('Run this first to detect corrupt or zero-byte JSON files:');
+    console.error('  node scripts/verify-data-json.js --strict');
+    console.error('');
+    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding query indexes.');
     process.exit(1);
   }
 
@@ -22984,6 +23813,111 @@ main().catch(err => {
 
 ---
 
+## `scripts/scheduler-cadence-report.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/scheduler-cadence-report.js — Scheduler Cadence Report (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/scheduler-cadence-report.js
+//   node scripts/scheduler-cadence-report.js --json
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const {
+    registerDefaultSchedulerJobs,
+    getSchedulerCadenceReport,
+  } = await import('../server/services/schedulerRegistry.js');
+
+  await registerDefaultSchedulerJobs().catch(() => {});
+
+  const report = await getSchedulerCadenceReport();
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log('\n⏱ يوميّة Scheduler Cadence Report\n');
+  console.log(`Enabled: ${report.enabled}`);
+  console.log(`Total: ${report.total}`);
+  console.log(`Enabled jobs: ${report.enabledCount}`);
+  console.log(`Stale: ${report.staleCount}`);
+  console.log(`Failed: ${report.failedCount}\n`);
+
+  for (const s of report.schedulers || []) {
+    const stale = s.stale ? ' ⚠️ STALE' : '';
+    console.log(`- ${s.name}${stale}`);
+    console.log(`  queueType: ${s.queueType}`);
+    console.log(`  enabled: ${s.enabled}`);
+    console.log(`  intervalMs: ${s.intervalMs}`);
+    console.log(`  lastStatus: ${s.lastStatus || '-'}`);
+    console.log(`  lastRunAt: ${s.lastRunAt || '-'}`);
+    console.log(`  nextRunAt: ${s.nextRunAt || '-'}`);
+    console.log(`  lastQueueJobId: ${s.lastQueueJobId || '-'}`);
+
+    if (s.staleReasons && s.staleReasons.length > 0) {
+      console.log(`  staleReasons: ${s.staleReasons.join(', ')}`);
+    }
+
+    if (s.historySummary) {
+      console.log(`  history: recent=${s.historySummary.totalRecent}, failed=${s.historySummary.recentFailed}, queued=${s.historySummary.recentQueued}, skipped=${s.historySummary.recentSkipped}`);
+    }
+
+    console.log('');
+  }
+
+  if (report.staleCount > 0) {
+    process.exitCode = 1;
+  }
+}
+
+main().catch(err => {
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      enabled: false,
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+      schedulers: [],
+    }, null, 2));
+  } else {
+    console.error('\n❌ Scheduler cadence report failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/verify-audit-index.js`
 
 ```javascript
@@ -23038,6 +23972,544 @@ main().catch(err => {
 
 ---
 
+## `scripts/verify-data-json.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-data-json.js — JSON Corruption Scanner (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-data-json.js
+//   node scripts/verify-data-json.js --collection=jobs
+//   node scripts/verify-data-json.js --strict
+//   node scripts/verify-data-json.js --json
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const args = new Set(process.argv.slice(2));
+const STRICT = args.has('--strict');
+const JSON_OUT = args.has('--json');
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+let config = null;
+try {
+  config = (await import('../config.js')).default;
+} catch (_) {
+  config = null;
+}
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || config?.DATABASE?.basePath || './data';
+const COLLECTION = getArg('collection', '');
+const BATCH_SIZE = config?.FILE_HEALTH?.batchSize || 250;
+const MAX_FILES = config?.FILE_HEALTH?.maxFilesPerScan || 200000;
+
+function collectionPath(collection) {
+  if (!collection) return DATA_DIR;
+  const rel = config?.DATABASE?.dirs?.[collection] || collection;
+  return join(DATA_DIR, rel);
+}
+
+async function walk(dir, out = []) {
+  if (out.length >= MAX_FILES) return out;
+
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    out.push({ filePath: dir, unreadableDir: true, error: err.message });
+    return out;
+  }
+
+  for (const entry of entries) {
+    if (out.length >= MAX_FILES) break;
+
+    const full = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      await walk(full, out);
+    } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp')) {
+      out.push({ filePath: full });
+    }
+
+    if (out.length % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return out;
+}
+
+async function scan() {
+  const root = collectionPath(COLLECTION);
+  const files = await walk(root);
+
+  const result = {
+    ok: true,
+    strict: STRICT,
+    collection: COLLECTION || null,
+    root,
+    scanned: 0,
+    invalid: 0,
+    zeroByte: 0,
+    unreadable: 0,
+    unreadableDirs: 0,
+    maxFilesReached: files.length >= MAX_FILES,
+    issues: [],
+    generatedAt: new Date().toISOString(),
+  };
+
+  for (let i = 0; i < files.length; i++) {
+    const item = files[i];
+
+    if (item.unreadableDir) {
+      result.unreadableDirs++;
+      result.issues.push({
+        type: 'unreadable_dir',
+        filePath: item.filePath,
+        error: item.error,
+        severity: 'warning',
+      });
+      continue;
+    }
+
+    result.scanned++;
+
+    try {
+      const st = await stat(item.filePath);
+      if (st.size === 0) {
+        result.zeroByte++;
+        result.issues.push({
+          type: 'zero_byte_json',
+          filePath: item.filePath,
+          severity: config?.FILE_HEALTH?.zeroByteJsonIsCritical === false ? 'warning' : 'critical',
+        });
+        continue;
+      }
+
+      const raw = await readFile(item.filePath, 'utf-8');
+      JSON.parse(raw);
+    } catch (err) {
+      if (err.name === 'SyntaxError') {
+        result.invalid++;
+        result.issues.push({
+          type: 'invalid_json',
+          filePath: item.filePath,
+          error: err.message,
+          severity: 'critical',
+        });
+      } else {
+        result.unreadable++;
+        result.issues.push({
+          type: 'unreadable_json',
+          filePath: item.filePath,
+          error: err.message,
+          severity: 'warning',
+        });
+      }
+    }
+
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  result.critical = result.issues.filter(i => i.severity === 'critical').length;
+  result.warning = result.issues.filter(i => i.severity === 'warning').length;
+  result.ok = result.critical === 0 && result.invalid === 0 && result.zeroByte === 0;
+
+  return result;
+}
+
+function printHuman(result) {
+  console.log('\n🧪 يوميّة JSON Health Scan\n');
+  console.log(`Root: ${result.root}`);
+  if (result.collection) console.log(`Collection: ${result.collection}`);
+  console.log('');
+  console.log(`Scanned: ${result.scanned}`);
+  console.log(`Invalid: ${result.invalid}`);
+  console.log(`Zero-byte: ${result.zeroByte}`);
+  console.log(`Unreadable: ${result.unreadable}`);
+  console.log(`Unreadable dirs: ${result.unreadableDirs}`);
+  console.log(`Critical: ${result.critical}`);
+  console.log(`Warnings: ${result.warning}`);
+
+  if (result.maxFilesReached) {
+    console.log(`\n⚠️ Max files reached; scan was capped.`);
+  }
+
+  if (result.issues.length > 0) {
+    console.log('\nIssues:');
+    for (const issue of result.issues.slice(0, 50)) {
+      const icon = issue.severity === 'critical' ? '❌' : '⚠️';
+      console.log(`  ${icon} ${issue.type}: ${issue.filePath}${issue.error ? ` — ${issue.error}` : ''}`);
+    }
+    if (result.issues.length > 50) {
+      console.log(`  ... ${result.issues.length - 50} more`);
+    }
+  }
+
+  console.log(result.ok ? '\n✅ JSON health scan complete\n' : '\n❌ JSON health issues detected\n');
+}
+
+const result = await scan();
+
+if (JSON_OUT) {
+  console.log(JSON.stringify(result, null, 2));
+} else {
+  printHuman(result);
+}
+
+if (STRICT && result.critical > 0) {
+  process.exit(1);
+}
+```
+
+---
+
+## `scripts/verify-file-health.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-file-health.js — File Health Scanner (Phase 57)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-file-health.js
+//   node scripts/verify-file-health.js --strict
+//   node scripts/verify-file-health.js --json
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const args = new Set(process.argv.slice(2));
+const STRICT = args.has('--strict');
+const JSON_OUT = args.has('--json');
+
+const config = (await import('../config.js')).default;
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+const FH = config.FILE_HEALTH || {};
+const BATCH_SIZE = FH.batchSize || 250;
+const MAX_FILES = FH.maxFilesPerScan || 200000;
+
+function nowMs() {
+  return Date.now();
+}
+
+async function walk(dir, out = []) {
+  if (out.length >= MAX_FILES) return out;
+
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    out.push({ filePath: dir, unreadableDir: true, error: err.message });
+    return out;
+  }
+
+  for (const entry of entries) {
+    if (out.length >= MAX_FILES) break;
+
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await walk(full, out);
+    } else if (entry.isFile()) {
+      out.push({ filePath: full, fileName: entry.name });
+    }
+
+    if (out.length % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return out;
+}
+
+function isLikelyBase64String(value) {
+  if (typeof value !== 'string') return false;
+  if (value.startsWith('data:image/') && value.includes(';base64,')) return true;
+  if (value.length < (FH.embeddedBase64WarningKB || 256) * 1024) return false;
+  return /^[A-Za-z0-9+/=\r\n]+$/.test(value.slice(0, 2048));
+}
+
+function findBase64Fields(obj, prefix = '', out = []) {
+  if (!obj || typeof obj !== 'object') return out;
+
+  for (const [key, value] of Object.entries(obj)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+
+    if (typeof value === 'string' && isLikelyBase64String(value)) {
+      out.push(path);
+    } else if (value && typeof value === 'object') {
+      findBase64Fields(value, path, out);
+    }
+
+    if (out.length >= 20) break;
+  }
+
+  return out;
+}
+
+async function readJsonSafe(filePath) {
+  try {
+    const raw = await readFile(filePath, 'utf-8');
+    if (!raw) return { ok: false, zero: true };
+    return { ok: true, data: JSON.parse(raw), raw };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function checkCriticalIndexes(result) {
+  const required = [
+    config.DATABASE.indexFiles.phoneIndex,
+    config.DATABASE.indexFiles.jobsIndex,
+  ];
+
+  for (const rel of required) {
+    const filePath = join(DATA_DIR, rel);
+    const parsed = await readJsonSafe(filePath);
+    if (!parsed.ok) {
+      result.issues.push({
+        type: 'missing_or_invalid_critical_index',
+        filePath,
+        severity: 'critical',
+        error: parsed.error || (parsed.zero ? 'zero-byte' : 'invalid'),
+      });
+    }
+  }
+}
+
+async function checkQueueSummary(result) {
+  const filePath = join(DATA_DIR, config.QUEUE_STORAGE?.summaryFile || 'metrics/queue/summary.json');
+  const parsed = await readJsonSafe(filePath);
+  if (!parsed.ok) return;
+
+  if (parsed.data && parsed.data.stale) {
+    result.issues.push({
+      type: 'queue_summary_stale',
+      filePath,
+      severity: 'warning',
+      staleReason: parsed.data.staleReason || null,
+    });
+  }
+}
+
+async function checkAuditIndex(result) {
+  const filePath = join(DATA_DIR, config.AUDIT_INDEX?.basePath || 'audit/indexes', 'meta.json');
+  const parsed = await readJsonSafe(filePath);
+  if (!parsed.ok) return;
+
+  if (parsed.data && parsed.data.stale) {
+    result.issues.push({
+      type: 'audit_index_stale',
+      filePath,
+      severity: 'warning',
+      staleReason: parsed.data.staleReason || null,
+    });
+  }
+}
+
+async function checkMarketplaceRollup(result) {
+  try {
+    const { getMarketplaceRollupFreshness } = await import('../server/services/marketplaceIntelligenceRollups.js');
+    const freshness = await getMarketplaceRollupFreshness();
+    if (freshness.enabled && freshness.stale) {
+      result.issues.push({
+        type: 'marketplace_rollup_stale',
+        severity: 'warning',
+        freshness,
+      });
+    }
+  } catch (_) {
+    // optional
+  }
+}
+
+async function scan() {
+  const files = await walk(DATA_DIR);
+
+  const result = {
+    ok: true,
+    strict: STRICT,
+    root: DATA_DIR,
+    scanned: 0,
+    jsonFiles: 0,
+    tmpFiles: 0,
+    staleTmp: 0,
+    largeJson: 0,
+    criticalLargeJson: 0,
+    embeddedBase64: 0,
+    unreadable: 0,
+    unreadableDirs: 0,
+    maxFilesReached: files.length >= MAX_FILES,
+    issues: [],
+    generatedAt: new Date().toISOString(),
+  };
+
+  const staleWarnMs = (FH.staleTmpWarningMinutes || 10) * 60 * 1000;
+  const staleCritMs = (FH.staleTmpCriticalMinutes || 60) * 60 * 1000;
+  const largeWarnBytes = (FH.largeJsonWarningKB || 1024) * 1024;
+  const largeCritBytes = (FH.largeJsonCriticalKB || 4096) * 1024;
+  const currentMs = nowMs();
+
+  for (let i = 0; i < files.length; i++) {
+    const item = files[i];
+
+    if (item.unreadableDir) {
+      result.unreadableDirs++;
+      result.issues.push({
+        type: 'unreadable_dir',
+        filePath: item.filePath,
+        severity: 'warning',
+        error: item.error,
+      });
+      continue;
+    }
+
+    result.scanned++;
+
+    let st;
+    try {
+      st = await stat(item.filePath);
+    } catch (err) {
+      result.unreadable++;
+      result.issues.push({
+        type: 'unreadable_file',
+        filePath: item.filePath,
+        severity: 'warning',
+        error: err.message,
+      });
+      continue;
+    }
+
+    if (item.fileName.endsWith('.tmp')) {
+      result.tmpFiles++;
+      const ageMs = currentMs - st.mtime.getTime();
+      if (ageMs >= staleWarnMs) {
+        result.staleTmp++;
+        result.issues.push({
+          type: 'stale_tmp',
+          filePath: item.filePath,
+          ageMinutes: Math.round(ageMs / 60000),
+          severity: ageMs >= staleCritMs ? 'critical' : 'warning',
+        });
+      }
+      continue;
+    }
+
+    if (!item.fileName.endsWith('.json')) continue;
+    result.jsonFiles++;
+
+    if (st.size === 0) {
+      result.issues.push({
+        type: 'zero_byte_json',
+        filePath: item.filePath,
+        severity: FH.zeroByteJsonIsCritical === false ? 'warning' : 'critical',
+      });
+      continue;
+    }
+
+    if (st.size >= largeWarnBytes) {
+      const isCritical = st.size >= largeCritBytes;
+      if (isCritical) result.criticalLargeJson++;
+      else result.largeJson++;
+
+      result.issues.push({
+        type: isCritical ? 'large_json_critical' : 'large_json_warning',
+        filePath: item.filePath,
+        sizeKB: Math.round(st.size / 1024),
+        severity: isCritical ? 'critical' : 'warning',
+      });
+    }
+
+    if (FH.embeddedBase64DetectionEnabled !== false) {
+      const parsed = await readJsonSafe(item.filePath);
+      if (parsed.ok) {
+        const fields = findBase64Fields(parsed.data);
+        if (fields.length > 0) {
+          result.embeddedBase64++;
+          result.issues.push({
+            type: 'embedded_base64',
+            filePath: item.filePath,
+            fields,
+            severity: 'warning',
+          });
+        }
+      }
+    }
+
+    if ((i + 1) % BATCH_SIZE === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  await checkCriticalIndexes(result);
+  await checkQueueSummary(result);
+  await checkAuditIndex(result);
+  await checkMarketplaceRollup(result);
+
+  result.critical = result.issues.filter(i => i.severity === 'critical').length;
+  result.warning = result.issues.filter(i => i.severity === 'warning').length;
+  result.ok = result.critical === 0;
+
+  return result;
+}
+
+function printHuman(result) {
+  console.log('\n🩺 يوميّة File Health Scan\n');
+  console.log(`Root: ${result.root}\n`);
+  console.log(`Scanned files: ${result.scanned}`);
+  console.log(`JSON files: ${result.jsonFiles}`);
+  console.log(`TMP files: ${result.tmpFiles}`);
+  console.log(`Stale TMP: ${result.staleTmp}`);
+  console.log(`Large JSON warnings: ${result.largeJson}`);
+  console.log(`Large JSON critical: ${result.criticalLargeJson}`);
+  console.log(`Embedded base64: ${result.embeddedBase64}`);
+  console.log(`Critical: ${result.critical}`);
+  console.log(`Warnings: ${result.warning}`);
+
+  if (result.issues.length > 0) {
+    console.log('\nIssues:');
+    for (const issue of result.issues.slice(0, 60)) {
+      const icon = issue.severity === 'critical' ? '❌' : '⚠️';
+      console.log(`  ${icon} ${issue.type}: ${issue.filePath || ''}${issue.reason ? ` — ${issue.reason}` : ''}`);
+    }
+    if (result.issues.length > 60) console.log(`  ... ${result.issues.length - 60} more`);
+  }
+
+  console.log(result.ok ? '\n✅ File health scan complete\n' : '\n❌ File health critical issues detected\n');
+}
+
+const result = await scan();
+
+if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+else printHuman(result);
+
+if (STRICT && result.critical > 0) process.exit(1);
+```
+
+---
+
 ## `scripts/verify-marketplace-intelligence.js`
 
 ```javascript
@@ -23051,8 +24523,23 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
 async function main() {
-  console.log('\n🧪 يوميّة Marketplace Intelligence Verify\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  if (!JSON_OUT) console.log('\n🧪 يوميّة Marketplace Intelligence Verify\n');
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -23063,10 +24550,10 @@ async function main() {
     try {
       const result = await fn();
       checks.push({ name, ok: true, result });
-      console.log(`✅ ${name}`);
+      if (!JSON_OUT) console.log(`✅ ${name}`);
     } catch (err) {
       checks.push({ name, ok: false, error: err.message });
-      console.log(`❌ ${name}: ${err.message}`);
+      if (!JSON_OUT) console.log(`❌ ${name}: ${err.message}`);
     }
   }
 
@@ -23100,20 +24587,50 @@ async function main() {
     return await mod.getMarketplaceIntelligenceDashboard();
   });
 
+  await check('marketplace rollup freshness', async () => {
+    const mod = await import('../server/services/marketplaceIntelligenceRollups.js');
+    const freshness = await mod.getMarketplaceRollupFreshness();
+    if (STRICT && freshness.enabled && freshness.stale) {
+      throw new Error('Marketplace rollup is stale or missing');
+    }
+    return freshness;
+  });
+
   const failed = checks.filter(c => !c.ok);
-  console.log('');
+  if (!JSON_OUT) console.log('');
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify({
+      ok: failed.length === 0,
+      strict: STRICT,
+      generatedAt: new Date().toISOString(),
+      checks,
+      failed: failed.length,
+    }, null, 2));
+  }
 
   if (failed.length > 0) {
-    console.log(`❌ ${failed.length} check(s) failed`);
+    if (!JSON_OUT) console.log(`❌ ${failed.length} check(s) failed`);
     process.exit(1);
   }
 
-  console.log('✅ Marketplace intelligence verify passed\n');
+  if (!JSON_OUT) console.log('✅ Marketplace intelligence verify passed\n');
 }
 
 main().catch(err => {
-  console.error('\n❌ Verify failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Verify failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```
@@ -23137,8 +24654,21 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const STRICT = process.argv.includes('--strict');
+const JSON_OUT = process.argv.includes('--json');
+
 async function main() {
-  console.log('\n🚦 يوميّة Production Readiness\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -23146,25 +24676,52 @@ async function main() {
   const { getProductionReadiness } = await import('../server/services/productionReadiness.js');
   const result = await getProductionReadiness();
 
-  console.log(`Status: ${result.status}`);
-  console.log(`Environment: ${result.environment}`);
-  console.log(`Summary: pass=${result.summary.pass}, warn=${result.summary.warn}, fail=${result.summary.fail}\n`);
+  const failCount = result.summary?.fail || 0;
+  const warnCount = result.summary?.warn || 0;
 
-  for (const c of result.checks || []) {
-    const icon = c.status === 'pass' ? '✅' : (c.status === 'warn' ? '⚠️' : '❌');
-    console.log(`${icon} ${c.id}: ${c.message}`);
+  result.strict = STRICT;
+  result.ok = failCount === 0 && (!STRICT || warnCount === 0);
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('\n🚦 يوميّة Production Readiness\n');
+    console.log(`Status: ${result.status}`);
+    console.log(`Environment: ${result.environment}`);
+    console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
+    console.log(`Summary: pass=${result.summary.pass}, warn=${result.summary.warn}, fail=${result.summary.fail}\n`);
+
+    for (const c of result.checks || []) {
+      const icon = c.status === 'pass' ? '✅' : (c.status === 'warn' ? '⚠️' : '❌');
+      console.log(`${icon} ${c.id}: ${c.message}`);
+      if (c.recommendation) {
+        console.log(`   → ${c.recommendation}`);
+      }
+    }
+
+    console.log(result.ok ? '\n✅ Production readiness passed\n' : '\n❌ Production readiness failed\n');
   }
 
-  console.log('');
-
-  if (result.status === 'not_ready') {
+  if (!result.ok) {
     process.exit(1);
   }
 }
 
 main().catch(err => {
-  console.error('\n❌ Readiness check failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      status: 'not_ready',
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Readiness check failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```
@@ -23188,45 +24745,100 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
 async function main() {
-  console.log('\n🧪 يوميّة Queue Health Verify\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  if (!JSON_OUT) console.log('\n🧪 يوميّة Queue Health Verify\n');
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { verifyQueueHealth } = await import('../server/services/queueHealthVerify.js');
+  const {
+    verifyQueueHealth,
+    getQueueOperationalRecommendations,
+  } = await import('../server/services/queueHealthVerify.js');
 
   const result = await verifyQueueHealth({ fullScan: true });
+  result.recommendedActions = await getQueueOperationalRecommendations({ health: result });
 
-  console.log(`Status: ${result.status}`);
-  console.log(`Parsed records: ${result.details?.parsedRecords || 0}`);
-  console.log(`Warnings: ${(result.warnings || []).length}`);
-  console.log(`Errors: ${(result.errors || []).length}`);
-  console.log(`Duration: ${result.durationMs || 0}ms\n`);
+  const hasErrors = (result.errors || []).length > 0;
+  const hasWarnings = (result.warnings || []).length > 0;
 
-  if (result.warnings && result.warnings.length > 0) {
-    console.log('Warnings:');
-    for (const w of result.warnings.slice(0, 20)) {
-      console.log(`  ⚠️ ${w}`);
+  result.strict = STRICT;
+  result.ok = !hasErrors && (!STRICT || !hasWarnings);
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`Status: ${result.status}`);
+    console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
+    console.log(`Parsed records: ${result.details?.parsedRecords || 0}`);
+    console.log(`Warnings: ${(result.warnings || []).length}`);
+    console.log(`Errors: ${(result.errors || []).length}`);
+    console.log(`Duration: ${result.durationMs || 0}ms\n`);
+
+    if (result.warnings && result.warnings.length > 0) {
+      console.log('Warnings:');
+      for (const w of result.warnings.slice(0, 20)) {
+        console.log(`  ⚠️ ${w}`);
+      }
+      console.log('');
     }
-    console.log('');
+
+    if (result.errors && result.errors.length > 0) {
+      console.log('Errors:');
+      for (const e of result.errors.slice(0, 20)) {
+        console.log(`  ❌ ${e}`);
+      }
+      console.log('');
+    }
+
+    if (result.recommendedActions && result.recommendedActions.length > 0) {
+      console.log('Recommended actions:');
+      for (const a of result.recommendedActions.slice(0, 10)) {
+        console.log(`  → ${a.label}`);
+        if (a.command) console.log(`    ${a.command}`);
+        if (a.reason) console.log(`    ${a.reason}`);
+      }
+      console.log('');
+    }
+
+    console.log(result.ok ? '✅ Queue verify complete\n' : '❌ Queue verify found issues\n');
   }
 
-  if (result.errors && result.errors.length > 0) {
-    console.log('Errors:');
-    for (const e of result.errors.slice(0, 20)) {
-      console.log(`  ❌ ${e}`);
-    }
-    console.log('');
+  if (!result.ok) {
     process.exit(1);
   }
-
-  console.log('✅ Queue verify complete\n');
 }
 
 main().catch(err => {
-  console.error('\n❌ Queue verify failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      status: 'failed',
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Queue verify failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```

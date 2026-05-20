@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.52.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-18T21:00:21.688Z
+# يوميّة (Yawmia) v0.53.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-20T22:25:20.868Z
 > Files in this part: 6
 
 ## Files
@@ -579,7 +579,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.52.0',
+    cacheName: 'yawmia-v0.53.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1711,6 +1711,89 @@ const config = {
     tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'settings'],
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 100. انضباط النشر والإنتاج (DEPLOYMENT_DISCIPLINE) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  DEPLOYMENT_DISCIPLINE: {
+    enabled: true,
+    requirePredeployCheck: true,
+    requirePostdeploySmoke: true,
+    requireRecentBackupRestoreDrillInProduction: true,
+    restoreDrillMaxAgeDays: 7,
+    requireQueueHealthyInProduction: true,
+    requireNoCriticalScaleWarningsInProduction: true,
+    requireMarketplaceRollupFreshInProduction: false,
+    marketplaceRollupMaxAgeHours: 48,
+    allowDeployWithWarnings: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 101. فحص صحة الملفات (FILE_HEALTH) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  FILE_HEALTH: {
+    enabled: true,
+    jsonParseCheckEnabled: true,
+    zeroByteJsonIsCritical: true,
+    staleTmpWarningMinutes: 10,
+    staleTmpCriticalMinutes: 60,
+    largeJsonWarningKB: 1024,
+    largeJsonCriticalKB: 4096,
+    embeddedBase64DetectionEnabled: true,
+    embeddedBase64WarningKB: 256,
+    maxFilesPerScan: 200000,
+    batchSize: 250,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 102. حوكمة التشغيل (OPS_GOVERNANCE) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  OPS_GOVERNANCE: {
+    enabled: true,
+    weeklyReviewEnabled: true,
+    queueDlqReviewEnabled: true,
+    incidentRunbooksEnabled: true,
+    maintenanceApprovalRequired: false,
+    marketplaceReviewEnabled: true,
+    trustReviewEnabled: true,
+    restoreDrillReviewEnabled: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 103. التحكم في النسخ القراءة فقط (READ_ONLY_REPLICA_GUARD) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  READ_ONLY_REPLICA_GUARD: {
+    enabled: true,
+    blockWriteApisInReadOnlyReplica: true,
+    allowHealthAndConfig: true,
+    allowPublicReadApis: true,
+    allowAdminReadOnlyOps: true,
+    allowMaintenanceRead: true,
+    message: 'هذه النسخة للقراءة فقط. حاول من النسخة الرئيسية.',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 104. تصنيف الحوادث (INCIDENT_TAXONOMY) — Phase 57
+  // ═══════════════════════════════════════════════════════════════
+  INCIDENT_TAXONOMY: {
+    enabled: true,
+    runbookBasePath: './INCIDENT_RUNBOOKS.md',
+    defaultSeverity: 'medium',
+    categories: [
+      'queue',
+      'scheduler',
+      'backup',
+      'json_corruption',
+      'search',
+      'audit',
+      'counter',
+      'workroom',
+      'marketplace_rollup',
+      'alert_delivery',
+      'maintenance',
+      'security',
+    ],
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1759,7 +1842,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.52.0",
+  "version": "0.53.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -1809,6 +1892,7 @@ import { bodyParserMiddleware } from './server/middleware/bodyParser.js';
 import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { timingMiddleware } from './server/middleware/timing.js';
 import { maintenanceMiddleware } from './server/middleware/maintenance.js';
+import { readOnlyReplicaMiddleware } from './server/middleware/readOnlyReplica.js';
 import { logger } from './server/services/logger.js';
 import { initDatabase } from './server/services/database.js';
 import { staticMiddleware } from './server/middleware/static.js';
@@ -1949,6 +2033,7 @@ const globalMiddleware = [
   requestIdMiddleware,
   rateLimitMiddleware,
   maintenanceMiddleware,
+  readOnlyReplicaMiddleware,
   bodyParserMiddleware,
 ];
 
@@ -2616,6 +2701,9 @@ import {
 } from './handlers/queueHandler.js';
 import {
   handleProductionReadiness,
+  handleDeploymentGate,
+  handleSchedulerCadence,
+  handleOpsReview,
   handleInstanceMode,
   handleProcessLocks,
   handleReleaseProcessLock,
@@ -2732,7 +2820,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.52.0',
+        version: '0.53.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -3013,7 +3101,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.52.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.53.0' });
     },
   },
 
@@ -3272,6 +3360,9 @@ const routes = [
 
   // ── Phase 54 — Production Ops Hardening APIs ──
   { method: 'GET', path: '/api/admin/production/readiness', middlewares: [requireAdmin], handler: handleProductionReadiness },
+  { method: 'GET', path: '/api/admin/production/deployment-gate', middlewares: [requireAdmin], handler: handleDeploymentGate },
+  { method: 'GET', path: '/api/admin/production/scheduler-cadence', middlewares: [requireAdmin], handler: handleSchedulerCadence },
+  { method: 'GET', path: '/api/admin/production/ops-review', middlewares: [requireAdmin], handler: handleOpsReview },
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
