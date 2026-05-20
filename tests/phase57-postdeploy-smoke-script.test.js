@@ -1,7 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+
+function runNode(args, options = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, {
+      cwd: new URL('..', import.meta.url).pathname,
+      env: options.env || process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', chunk => { stdout += chunk.toString(); });
+    child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+    child.on('close', code => {
+      resolve({ status: code, stdout, stderr });
+    });
+  });
+}
 
 test('postdeploy-smoke succeeds against a minimal compatible server', async () => {
   const server = createServer((req, res) => {
@@ -25,9 +45,15 @@ test('postdeploy-smoke succeeds against a minimal compatible server', async () =
       return;
     }
 
-    if (url.pathname === '/' || url.pathname === '/dashboard.html') {
+    if (url.pathname === '/') {
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end('<html></html>');
+      res.end('<html><body>home</body></html>');
+      return;
+    }
+
+    if (url.pathname === '/dashboard.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end('<html><body>dashboard</body></html>');
       return;
     }
 
@@ -37,21 +63,36 @@ test('postdeploy-smoke succeeds against a minimal compatible server', async () =
       return;
     }
 
-    res.writeHead(404);
-    res.end();
+    // Optional admin endpoints if ADMIN_TOKEN is inherited by environment.
+    if (
+      url.pathname === '/api/admin/production/readiness' ||
+      url.pathname === '/api/admin/ops/slo' ||
+      url.pathname === '/api/admin/scale-hygiene/overview' ||
+      url.pathname === '/api/admin/marketplace-intelligence/dashboard'
+    ) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not found' }));
   });
 
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
 
-  const proc = spawnSync(process.execPath, ['scripts/postdeploy-smoke.js', `--base=http://127.0.0.1:${port}`], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env: process.env,
-    encoding: 'utf-8',
-  });
+  try {
+    const proc = await runNode(['scripts/postdeploy-smoke.js', `--base=http://127.0.0.1:${port}`], {
+      env: {
+        ...process.env,
+        ADMIN_TOKEN: process.env.ADMIN_TOKEN || '',
+      },
+    });
 
-  await new Promise(resolve => server.close(resolve));
-
-  assert.equal(proc.status, 0, proc.stderr || proc.stdout);
-  assert.match(proc.stdout, /Post-deploy smoke passed/);
+    assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+    assert.match(proc.stdout, /Post-deploy smoke passed/);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
 });
