@@ -1,6 +1,6 @@
 # يوميّة — Deployment Runbook
-> Phase 57 — Production Deployment Discipline  
-> Version target: v0.53.0
+> Phase 58 — Governance Production Deployment Discipline  
+> Version target: v0.54.0
 
 هذا الملف يشرح طريقة نشر يوميّة في production مع الحفاظ على قاعدة أساسية:
 
@@ -225,11 +225,11 @@ frontend/sw.js CACHE_NAME
 
 لازم كلهم يتطابقوا.
 
-في Phase 57:
+في Phase 58:
 
 ```text
-0.53.0
-yawmia-v0.53.0
+0.54.0
+yawmia-v0.54.0
 ```
 
 ---
