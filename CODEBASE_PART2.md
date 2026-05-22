@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.53.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-20T23:11:19.131Z
-> Files in this part: 114
+# يوميّة (Yawmia) v0.54.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-22T15:49:20.301Z
+> Files in this part: 121
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -8,115 +8,122 @@
 3. `server/services/activitySummary.js`
 4. `server/services/adMatcher.js`
 5. `server/services/adminAlertChannels.js`
-6. `server/services/adminDecisionAnalytics.js`
-7. `server/services/alertDeliveryHistory.js`
-8. `server/services/analytics.js`
-9. `server/services/applicationStatus.js`
-10. `server/services/applications.js`
-11. `server/services/arabicNormalizer.js`
-12. `server/services/arabicSearchTokens.js`
-13. `server/services/attendance.js`
-14. `server/services/auditLog.js`
-15. `server/services/auditLogIndex.js`
-16. `server/services/auditLogRetention.js`
-17. `server/services/auditLogSearch.js`
-18. `server/services/auth.js`
-19. `server/services/availabilityAd.js`
-20. `server/services/availabilityWindow.js`
-21. `server/services/backupRestoreDrill.js`
-22. `server/services/backupScheduler.js`
-23. `server/services/cache.js`
-24. `server/services/cacheDebouncer.js`
-25. `server/services/channels/sms.js`
-26. `server/services/channels/whatsapp.js`
-27. `server/services/contentFilter.js`
-28. `server/services/counterCompaction.js`
-29. `server/services/csvExportProgress.js`
-30. `server/services/database.js`
-31. `server/services/directOffer.js`
-32. `server/services/directOfferAnalytics.js`
-33. `server/services/directOfferCounters.js`
-34. `server/services/errorAggregator.js`
-35. `server/services/eventBus.js`
-36. `server/services/eventReplayBuffer.js`
-37. `server/services/exportRegistry.js`
-38. `server/services/favorites.js`
-39. `server/services/financialExport.js`
-40. `server/services/geo.js`
-41. `server/services/imageStore.js`
-42. `server/services/incidentTimeline.js`
-43. `server/services/indexHealth.js`
-44. `server/services/instanceMode.js`
-45. `server/services/instantMatch.js`
-46. `server/services/jobAlerts.js`
-47. `server/services/jobMatcher.js`
-48. `server/services/jobs.js`
-49. `server/services/liveFeed.js`
-50. `server/services/logWriter.js`
-51. `server/services/logger.js`
-52. `server/services/maintenanceMode.js`
-53. `server/services/marketplaceIntelligenceRollups.js`
-54. `server/services/matchingIntelligence.js`
-55. `server/services/messages.js`
-56. `server/services/messaging.js`
-57. `server/services/metricsRollups.js`
-58. `server/services/migration.js`
-59. `server/services/monitor.js`
-60. `server/services/notificationActions.js`
-61. `server/services/notificationConversionMetrics.js`
-62. `server/services/notificationMessenger.js`
-63. `server/services/notifications.js`
-64. `server/services/offerAbuseDetector.js`
-65. `server/services/opsQueue.js`
-66. `server/services/paymentDisputeAnalytics.js`
-67. `server/services/payments.js`
-68. `server/services/predictiveAbuse.js`
-69. `server/services/predictiveArchiveIndex.js`
-70. `server/services/predictiveSignalRetention.js`
-71. `server/services/presenceService.js`
-72. `server/services/processLock.js`
-73. `server/services/productionReadiness.js`
-74. `server/services/profileCompleteness.js`
-75. `server/services/profileTasks.js`
-76. `server/services/queryIndex.js`
-77. `server/services/queueCompaction.js`
-78. `server/services/queueHealthVerify.js`
-79. `server/services/queueStorageIndex.js`
-80. `server/services/queueWorkers.js`
-81. `server/services/ratings.js`
-82. `server/services/reports.js`
-83. `server/services/resourceLock.js`
-84. `server/services/sanitizer.js`
-85. `server/services/scaleHygiene.js`
-86. `server/services/scheduledAbuseDetection.js`
-87. `server/services/schedulerRegistry.js`
-88. `server/services/schedulerRunHistory.js`
-89. `server/services/searchAnalytics.js`
-90. `server/services/searchIndex.js`
-91. `server/services/searchRelevance.js`
-92. `server/services/sessions.js`
-93. `server/services/snoozeReminders.js`
-94. `server/services/sseManager.js`
-95. `server/services/trust.js`
-96. `server/services/trustAnalytics.js`
-97. `server/services/trustCalibration.js`
-98. `server/services/trustScoreV2.js`
-99. `server/services/trustSnapshotRollups.js`
-100. `server/services/users.js`
-101. `server/services/validators.js`
-102. `server/services/verification.js`
-103. `server/services/webpush.js`
-104. `server/services/workerDiscovery.js`
-105. `server/services/workroom.js`
-106. `server/services/workroomAdoptionMetrics.js`
-107. `server/services/workroomAttachments.js`
-108. `server/services/workroomChecklist.js`
-109. `server/services/workroomHygiene.js`
-110. `server/services/workroomIndexHealth.js`
-111. `server/services/workroomPins.js`
-112. `server/services/workroomReceipts.js`
-113. `server/services/workroomSearch.js`
-114. `server/services/workroomTemplateMetrics.js`
+6. `server/services/adminApprovals.js`
+7. `server/services/adminDecisionAnalytics.js`
+8. `server/services/adminRbac.js`
+9. `server/services/alertDeliveryHistory.js`
+10. `server/services/analytics.js`
+11. `server/services/applicationStatus.js`
+12. `server/services/applications.js`
+13. `server/services/arabicNormalizer.js`
+14. `server/services/arabicSearchTokens.js`
+15. `server/services/attendance.js`
+16. `server/services/auditLog.js`
+17. `server/services/auditLogIndex.js`
+18. `server/services/auditLogRetention.js`
+19. `server/services/auditLogSearch.js`
+20. `server/services/auth.js`
+21. `server/services/availabilityAd.js`
+22. `server/services/availabilityWindow.js`
+23. `server/services/backupRestoreDrill.js`
+24. `server/services/backupScheduler.js`
+25. `server/services/cache.js`
+26. `server/services/cacheDebouncer.js`
+27. `server/services/channels/sms.js`
+28. `server/services/channels/whatsapp.js`
+29. `server/services/contentFilter.js`
+30. `server/services/counterCompaction.js`
+31. `server/services/csvExportProgress.js`
+32. `server/services/database.js`
+33. `server/services/directOffer.js`
+34. `server/services/directOfferAnalytics.js`
+35. `server/services/directOfferCounters.js`
+36. `server/services/errorAggregator.js`
+37. `server/services/eventBus.js`
+38. `server/services/eventReplayBuffer.js`
+39. `server/services/exportRegistry.js`
+40. `server/services/favorites.js`
+41. `server/services/financialExport.js`
+42. `server/services/geo.js`
+43. `server/services/imageStore.js`
+44. `server/services/incidentTimeline.js`
+45. `server/services/indexHealth.js`
+46. `server/services/instanceMode.js`
+47. `server/services/instantMatch.js`
+48. `server/services/jobAlerts.js`
+49. `server/services/jobMatcher.js`
+50. `server/services/jobs.js`
+51. `server/services/liveFeed.js`
+52. `server/services/logWriter.js`
+53. `server/services/logger.js`
+54. `server/services/maintenanceMode.js`
+55. `server/services/marketplaceIntelligenceRollups.js`
+56. `server/services/matchingIntelligence.js`
+57. `server/services/messages.js`
+58. `server/services/messaging.js`
+59. `server/services/metricsRollups.js`
+60. `server/services/migration.js`
+61. `server/services/monitor.js`
+62. `server/services/notificationActions.js`
+63. `server/services/notificationConversionMetrics.js`
+64. `server/services/notificationMessenger.js`
+65. `server/services/notifications.js`
+66. `server/services/offerAbuseDetector.js`
+67. `server/services/opsQueue.js`
+68. `server/services/opsReviewRecords.js`
+69. `server/services/paymentDisputeAnalytics.js`
+70. `server/services/payments.js`
+71. `server/services/postmortemRecords.js`
+72. `server/services/predictiveAbuse.js`
+73. `server/services/predictiveArchiveIndex.js`
+74. `server/services/predictiveSignalRetention.js`
+75. `server/services/presenceService.js`
+76. `server/services/privacyRequests.js`
+77. `server/services/processLock.js`
+78. `server/services/productionReadiness.js`
+79. `server/services/profileCompleteness.js`
+80. `server/services/profileTasks.js`
+81. `server/services/queryIndex.js`
+82. `server/services/queueCompaction.js`
+83. `server/services/queueHealthVerify.js`
+84. `server/services/queueStorageIndex.js`
+85. `server/services/queueWorkers.js`
+86. `server/services/ratings.js`
+87. `server/services/reports.js`
+88. `server/services/resourceLock.js`
+89. `server/services/sanitizer.js`
+90. `server/services/scaleHygiene.js`
+91. `server/services/scheduledAbuseDetection.js`
+92. `server/services/schedulerRegistry.js`
+93. `server/services/schedulerRunHistory.js`
+94. `server/services/searchAnalytics.js`
+95. `server/services/searchIndex.js`
+96. `server/services/searchRelevance.js`
+97. `server/services/sessions.js`
+98. `server/services/snoozeReminders.js`
+99. `server/services/sseManager.js`
+100. `server/services/trust.js`
+101. `server/services/trustAnalytics.js`
+102. `server/services/trustCalibration.js`
+103. `server/services/trustScoreV2.js`
+104. `server/services/trustSnapshotRollups.js`
+105. `server/services/userAnonymization.js`
+106. `server/services/userDataExport.js`
+107. `server/services/users.js`
+108. `server/services/validators.js`
+109. `server/services/verification.js`
+110. `server/services/webpush.js`
+111. `server/services/workerDiscovery.js`
+112. `server/services/workroom.js`
+113. `server/services/workroomAdoptionMetrics.js`
+114. `server/services/workroomAttachments.js`
+115. `server/services/workroomChecklist.js`
+116. `server/services/workroomHygiene.js`
+117. `server/services/workroomIndexHealth.js`
+118. `server/services/workroomPins.js`
+119. `server/services/workroomReceipts.js`
+120. `server/services/workroomSearch.js`
+121. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -2010,6 +2017,424 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/adminApprovals.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/adminApprovals.js — Dangerous Admin Action Approvals (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// File-backed approval records for dangerous admin actions.
+// Lifecycle:
+//   pending → approved | rejected | expired | consumed
+//
+// Important:
+//   - Approval does NOT execute the action.
+//   - Approval payload is sanitized.
+//   - consumeApproval() is one-time.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function isEnabled() {
+  return !!(config.ADMIN_APPROVALS && config.ADMIN_APPROVALS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'apr_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function approvalPath(id) {
+  return getRecordPath('admin_approvals', id);
+}
+
+function expiryIso(hours) {
+  const ttlHours = Number(hours || config.ADMIN_APPROVALS?.expiryHours || 24);
+  return new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString();
+}
+
+function sanitizePayload(payload) {
+  if (!payload || typeof payload !== 'object') return {};
+
+  const out = {};
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined) continue;
+
+    if (/token|secret|password|apikey|api_key|authorization|vapid/i.test(key)) {
+      out[key] = '[redacted]';
+      continue;
+    }
+
+    if (typeof value === 'string') {
+      out[key] = value.slice(0, 1000);
+    } else if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      out[key] = value;
+    } else {
+      try {
+        out[key] = JSON.parse(JSON.stringify(value));
+      } catch (_) {
+        out[key] = String(value).slice(0, 1000);
+      }
+    }
+  }
+
+  return out;
+}
+
+function validStatus(status) {
+  return ['pending', 'approved', 'rejected', 'expired', 'consumed'].includes(status);
+}
+
+function isExpired(record) {
+  if (!record || !record.expiresAt) return false;
+  return new Date(record.expiresAt).getTime() <= Date.now();
+}
+
+/**
+ * Create a new approval request.
+ *
+ * @param {{
+ *   action: string,
+ *   targetType?: string,
+ *   targetId?: string,
+ *   requestedBy: string,
+ *   reason?: string,
+ *   payload?: object,
+ *   expiresAt?: string
+ * }} params
+ */
+export async function createApprovalRequest(params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'ADMIN_APPROVALS_DISABLED' };
+
+  if (!params.action || typeof params.action !== 'string') {
+    return { ok: false, code: 'ACTION_REQUIRED', error: 'action is required' };
+  }
+
+  if (!params.requestedBy) {
+    return { ok: false, code: 'REQUESTED_BY_REQUIRED', error: 'requestedBy is required' };
+  }
+
+  const dangerous = config.ADMIN_APPROVALS?.dangerousActions || [];
+  if (!dangerous.includes(params.action)) {
+    return { ok: false, code: 'ACTION_NOT_DANGEROUS', error: 'action is not configured as dangerous' };
+  }
+
+  const id = params.id || generateId();
+  const now = nowIso();
+
+  const record = {
+    id,
+    action: params.action,
+    targetType: params.targetType || 'unknown',
+    targetId: params.targetId || 'unknown',
+    status: 'pending',
+    requestedBy: params.requestedBy,
+    requestedAt: now,
+    requestReason: params.reason ? String(params.reason).slice(0, 1000) : null,
+    payload: sanitizePayload(params.payload || {}),
+    approvedBy: null,
+    approvedAt: null,
+    approvalNote: null,
+    rejectedBy: null,
+    rejectedAt: null,
+    rejectionNote: null,
+    consumedAt: null,
+    consumedByAction: null,
+    consumedTargetId: null,
+    expiredAt: null,
+    expiresAt: params.expiresAt || expiryIso(),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await atomicWrite(approvalPath(id), record);
+
+  eventBus.emit('admin_approval:created', {
+    approvalId: id,
+    action: record.action,
+    targetType: record.targetType,
+    targetId: record.targetId,
+    requestedBy: record.requestedBy,
+    timestamp: now,
+  });
+
+  return { ok: true, approval: record };
+}
+
+/**
+ * Get approval by ID. Lazily marks expired pending records as expired.
+ */
+export async function getApproval(approvalId) {
+  if (!approvalId || typeof approvalId !== 'string') return null;
+
+  const record = await readJSON(approvalPath(approvalId));
+  if (!record) return null;
+
+  if (record.status === 'pending' && isExpired(record)) {
+    record.status = 'expired';
+    record.expiredAt = nowIso();
+    record.updatedAt = record.expiredAt;
+
+    try {
+      await atomicWrite(approvalPath(approvalId), record);
+      eventBus.emit('admin_approval:expired', {
+        approvalId,
+        action: record.action,
+        targetId: record.targetId,
+        timestamp: record.expiredAt,
+      });
+    } catch (err) {
+      logger.warn('adminApprovals: lazy expiry write failed', { approvalId, error: err.message });
+    }
+  }
+
+  return record;
+}
+
+/**
+ * List approvals newest first.
+ */
+export async function listApprovals(options = {}) {
+  if (!isEnabled()) return { approvals: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('admin_approvals');
+  let rows = await listJSON(dir);
+
+  rows = rows.filter(r => r && r.id && r.id.startsWith('apr_'));
+
+  // Lazily expire pending approvals while listing.
+  for (const row of rows) {
+    if (row.status === 'pending' && isExpired(row)) {
+      try {
+        row.status = 'expired';
+        row.expiredAt = nowIso();
+        row.updatedAt = row.expiredAt;
+        await atomicWrite(approvalPath(row.id), row);
+      } catch (_) {}
+    }
+  }
+
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.action) rows = rows.filter(r => r.action === options.action);
+  if (options.targetId) rows = rows.filter(r => r.targetId === options.targetId);
+  if (options.requestedBy) rows = rows.filter(r => r.requestedBy === options.requestedBy);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    approvals: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Approve a pending request.
+ */
+export async function approveRequest(approvalId, adminId, note) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'ADMIN_APPROVALS_DISABLED' };
+
+  return withLock(`admin-approval:${approvalId}`, async () => {
+    const record = await getApproval(approvalId);
+    if (!record) return { ok: false, code: 'APPROVAL_NOT_FOUND', error: 'approval not found' };
+
+    if (record.status !== 'pending') {
+      return { ok: false, code: 'APPROVAL_NOT_PENDING', error: 'approval is not pending', approval: record };
+    }
+
+    if (isExpired(record)) {
+      record.status = 'expired';
+      record.expiredAt = nowIso();
+      record.updatedAt = record.expiredAt;
+      await atomicWrite(approvalPath(approvalId), record);
+      return { ok: false, code: 'APPROVAL_EXPIRED', error: 'approval expired', approval: record };
+    }
+
+    const now = nowIso();
+    record.status = 'approved';
+    record.approvedBy = adminId || 'admin_token';
+    record.approvedAt = now;
+    record.approvalNote = note ? String(note).slice(0, 1000) : null;
+    record.updatedAt = now;
+
+    await atomicWrite(approvalPath(approvalId), record);
+
+    eventBus.emit('admin_approval:approved', {
+      approvalId,
+      action: record.action,
+      approvedBy: record.approvedBy,
+      targetId: record.targetId,
+      timestamp: now,
+    });
+
+    return { ok: true, approval: record };
+  });
+}
+
+/**
+ * Reject a pending request.
+ */
+export async function rejectRequest(approvalId, adminId, note) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'ADMIN_APPROVALS_DISABLED' };
+
+  return withLock(`admin-approval:${approvalId}`, async () => {
+    const record = await getApproval(approvalId);
+    if (!record) return { ok: false, code: 'APPROVAL_NOT_FOUND', error: 'approval not found' };
+
+    if (record.status !== 'pending') {
+      return { ok: false, code: 'APPROVAL_NOT_PENDING', error: 'approval is not pending', approval: record };
+    }
+
+    const now = nowIso();
+    record.status = 'rejected';
+    record.rejectedBy = adminId || 'admin_token';
+    record.rejectedAt = now;
+    record.rejectionNote = note ? String(note).slice(0, 1000) : null;
+    record.updatedAt = now;
+
+    await atomicWrite(approvalPath(approvalId), record);
+
+    eventBus.emit('admin_approval:rejected', {
+      approvalId,
+      action: record.action,
+      rejectedBy: record.rejectedBy,
+      targetId: record.targetId,
+      timestamp: now,
+    });
+
+    return { ok: true, approval: record };
+  });
+}
+
+/**
+ * Validate approval for action/target.
+ */
+export async function isApprovalValid(approvalId, action, targetId) {
+  const record = await getApproval(approvalId);
+  if (!record) return false;
+  if (record.status !== 'approved') return false;
+  if (record.action !== action) return false;
+  if (targetId && record.targetId !== targetId) return false;
+  if (isExpired(record)) return false;
+  return true;
+}
+
+/**
+ * Consume approval once.
+ */
+export async function consumeApproval(approvalId, action, targetId) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'ADMIN_APPROVALS_DISABLED' };
+
+  return withLock(`admin-approval:${approvalId}`, async () => {
+    const record = await getApproval(approvalId);
+    if (!record) return { ok: false, code: 'APPROVAL_NOT_FOUND', error: 'approval not found' };
+
+    if (record.status !== 'approved') {
+      return { ok: false, code: 'APPROVAL_NOT_APPROVED', error: 'approval is not approved', approval: record };
+    }
+
+    if (record.action !== action) {
+      return { ok: false, code: 'APPROVAL_ACTION_MISMATCH', error: 'approval action mismatch', approval: record };
+    }
+
+    if (targetId && record.targetId !== targetId) {
+      return { ok: false, code: 'APPROVAL_TARGET_MISMATCH', error: 'approval target mismatch', approval: record };
+    }
+
+    if (isExpired(record)) {
+      record.status = 'expired';
+      record.expiredAt = nowIso();
+      record.updatedAt = record.expiredAt;
+      await atomicWrite(approvalPath(approvalId), record);
+      return { ok: false, code: 'APPROVAL_EXPIRED', error: 'approval expired', approval: record };
+    }
+
+    const now = nowIso();
+    record.status = 'consumed';
+    record.consumedAt = now;
+    record.consumedByAction = action;
+    record.consumedTargetId = targetId || null;
+    record.updatedAt = now;
+
+    await atomicWrite(approvalPath(approvalId), record);
+
+    eventBus.emit('admin_approval:consumed', {
+      approvalId,
+      action,
+      targetId,
+      timestamp: now,
+    });
+
+    return { ok: true, approval: record };
+  });
+}
+
+/**
+ * Cleanup expired approvals older than retention.
+ */
+export async function cleanupExpiredApprovals() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.ADMIN_APPROVALS?.retentionDays || 365;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const dir = getCollectionPath('admin_approvals');
+  const rows = await listJSON(dir);
+
+  let touched = 0;
+
+  for (const row of rows) {
+    if (!row || !row.id || !row.id.startsWith('apr_')) continue;
+
+    if (row.status === 'pending' && isExpired(row)) {
+      row.status = 'expired';
+      row.expiredAt = nowIso();
+      row.updatedAt = row.expiredAt;
+      await atomicWrite(approvalPath(row.id), row).catch(() => {});
+      touched++;
+    }
+
+    // Phase 58 keeps old approval records; retention deletion can be added safely later.
+    const basis = row.updatedAt || row.createdAt;
+    if (basis && new Date(basis).getTime() < cutoffMs) {
+      // Intentionally not deleting yet to preserve audit/governance history.
+    }
+  }
+
+  return touched;
+}
+
+export const _testHelpers = {
+  generateId,
+  approvalPath,
+  sanitizePayload,
+  validStatus,
+  isExpired,
+};
+```
+
+---
+
 ## `server/services/adminDecisionAnalytics.js`
 
 ```javascript
@@ -2588,6 +3013,292 @@ export const _testHelpers = {
   calculatePriorityScore,
   clearAdminDecisionAnalyticsCache,
   cache,
+};
+```
+
+---
+
+## `server/services/adminRbac.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/adminRbac.js — Admin RBAC Capability Model (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Central capability checks for admin routes.
+// Compatible with existing requireAdmin behavior:
+//   - X-Admin-Token maps to config.ADMIN_RBAC.tokenRole
+//   - admin session maps to user.adminRole || defaultSessionAdminRole
+//   - ADMIN_RBAC.enabled=false preserves legacy admin behavior
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+import { verifySession } from './sessions.js';
+import { findById } from './users.js';
+
+function sendJSON(res, statusCode, data) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+function cfg() {
+  return config.ADMIN_RBAC || {};
+}
+
+function isEnabled() {
+  return !!(cfg().enabled);
+}
+
+function validRoles() {
+  return new Set(cfg().roles || ['super_admin']);
+}
+
+/**
+ * Return admin role from req or user.
+ *
+ * @param {object} reqOrUser
+ * @returns {string}
+ */
+export function getAdminRole(reqOrUser) {
+  const c = cfg();
+
+  if (!isEnabled()) return 'super_admin';
+
+  if (!reqOrUser) return c.defaultSessionAdminRole || 'super_admin';
+
+  // Request object with admin token.
+  if (reqOrUser.isAdmin && !reqOrUser.user) {
+    return c.tokenRole || 'super_admin';
+  }
+
+  // Request object with session user.
+  if (reqOrUser.user) {
+    if (reqOrUser.user.adminRole) return reqOrUser.user.adminRole;
+    if (reqOrUser.user.role === 'admin') return c.defaultSessionAdminRole || 'super_admin';
+  }
+
+  // User object.
+  if (reqOrUser.adminRole) return reqOrUser.adminRole;
+  if (reqOrUser.role === 'admin') return c.defaultSessionAdminRole || 'super_admin';
+
+  return c.defaultSessionAdminRole || 'super_admin';
+}
+
+/**
+ * Check role capability.
+ *
+ * @param {string} adminRole
+ * @param {string} capability
+ * @returns {boolean}
+ */
+export function hasCapability(adminRole, capability) {
+  if (!isEnabled()) return true;
+
+  if (!adminRole || !capability) return false;
+
+  const matrix = cfg().capabilities || {};
+  const caps = matrix[adminRole] || [];
+
+  if (caps.includes('*')) return true;
+  if (caps.includes(capability)) return true;
+
+  // Allow parent read capability for admin.read where useful.
+  if (capability !== 'admin.read' && caps.includes('admin.read') && capability.endsWith('.read')) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * List capabilities for one role.
+ *
+ * @param {string} role
+ * @returns {string[]}
+ */
+export function listRoleCapabilities(role) {
+  const matrix = cfg().capabilities || {};
+  return Array.isArray(matrix[role]) ? matrix[role].slice() : [];
+}
+
+/**
+ * Return full RBAC matrix, safe for admin UI.
+ */
+export function getRbacMatrix() {
+  const roles = cfg().roles || [];
+  const matrix = {};
+
+  for (const role of roles) {
+    matrix[role] = listRoleCapabilities(role);
+  }
+
+  return {
+    enabled: isEnabled(),
+    tokenRole: cfg().tokenRole || 'super_admin',
+    defaultSessionAdminRole: cfg().defaultSessionAdminRole || 'super_admin',
+    roles,
+    capabilities: matrix,
+    dangerousActionsRequireApproval: !!cfg().dangerousActionsRequireApproval,
+    allowSuperAdminBypassApproval: cfg().allowSuperAdminBypassApproval !== false,
+  };
+}
+
+/**
+ * Check if action is dangerous.
+ *
+ * @param {string} action
+ * @returns {boolean}
+ */
+export function isDangerousAction(action) {
+  if (!action || typeof action !== 'string') return false;
+  const dangerous = config.ADMIN_APPROVALS?.dangerousActions || [];
+  return dangerous.includes(action);
+}
+
+/**
+ * Check if action needs approval for admin role.
+ *
+ * @param {string} action
+ * @param {string} adminRole
+ * @returns {boolean}
+ */
+export function needsApproval(action, adminRole) {
+  if (!isEnabled()) return false;
+  if (!config.ADMIN_APPROVALS?.enabled) return false;
+  if (!cfg().dangerousActionsRequireApproval) return false;
+  if (!isDangerousAction(action)) return false;
+
+  if (
+    adminRole === 'super_admin' &&
+    cfg().allowSuperAdminBypassApproval === true
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+async function authenticateAdmin(req) {
+  // Existing requireAdmin compatibility: already authenticated by previous middleware.
+  if (req.isAdmin) {
+    req.adminRole = getAdminRole(req);
+    return { ok: true, role: req.adminRole };
+  }
+
+  if (req.user && req.user.role === 'admin') {
+    req.isAdmin = true;
+    req.adminRole = getAdminRole(req);
+    return { ok: true, role: req.adminRole };
+  }
+
+  // X-Admin-Token path.
+  const adminToken = req.headers['x-admin-token'];
+  if (adminToken && adminToken === process.env.ADMIN_TOKEN) {
+    req.isAdmin = true;
+    req.adminRole = cfg().tokenRole || 'super_admin';
+    return { ok: true, role: req.adminRole };
+  }
+
+  // Query token stays intentionally limited to direct-download endpoints.
+  const queryToken = req.query && (req.query.token || req.query._token);
+  const queryTokenAllowed =
+    req.method === 'GET' &&
+    (
+      req.pathname === '/api/admin/audit-log/export' ||
+      req.pathname.startsWith('/api/admin/export/') ||
+      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
+    );
+
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && queryTokenAllowed) {
+    req.isAdmin = true;
+    req.adminRole = cfg().tokenRole || 'super_admin';
+    return { ok: true, role: req.adminRole };
+  }
+
+  // Session admin path.
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+  if (!token) {
+    return { ok: false, status: 401, error: 'صلاحيات الأدمن مطلوبة', code: 'ADMIN_REQUIRED' };
+  }
+
+  const session = await verifySession(token);
+  if (!session) {
+    return { ok: false, status: 401, error: 'الجلسة غير صالحة', code: 'SESSION_INVALID' };
+  }
+
+  const user = await findById(session.userId);
+  if (!user || user.role !== 'admin') {
+    return { ok: false, status: 403, error: 'صلاحيات الأدمن مطلوبة', code: 'ADMIN_REQUIRED' };
+  }
+
+  if (user.status !== 'active') {
+    return { ok: false, status: 403, error: 'حساب الأدمن غير نشط', code: 'ADMIN_INACTIVE' };
+  }
+
+  req.user = user;
+  req.session = session;
+  req.isAdmin = true;
+  req.adminRole = getAdminRole(req);
+
+  return { ok: true, role: req.adminRole };
+}
+
+/**
+ * Native middleware factory.
+ *
+ * @param {string} capability
+ * @returns {Function}
+ */
+export function requireCapability(capability) {
+  return function adminCapabilityMiddleware(req, res, next) {
+    authenticateAdmin(req)
+      .then((auth) => {
+        if (!auth.ok) {
+          return sendJSON(res, auth.status || 401, {
+            error: auth.error || 'صلاحيات الأدمن مطلوبة',
+            code: auth.code || 'ADMIN_REQUIRED',
+          });
+        }
+
+        // Legacy compatibility: if RBAC disabled, admin auth is enough.
+        if (!isEnabled()) {
+          return next();
+        }
+
+        const role = auth.role || getAdminRole(req);
+
+        if (!validRoles().has(role)) {
+          return sendJSON(res, 403, {
+            error: 'دور الأدمن غير صالح',
+            code: 'ADMIN_ROLE_INVALID',
+            role,
+          });
+        }
+
+        if (!hasCapability(role, capability)) {
+          return sendJSON(res, 403, {
+            error: 'صلاحية الأدمن غير كافية',
+            code: 'ADMIN_CAPABILITY_REQUIRED',
+            capability,
+            role,
+          });
+        }
+
+        req.adminRole = role;
+        req.adminCapability = capability;
+        next();
+      })
+      .catch(() => {
+        sendJSON(res, 500, { error: 'خطأ في التحقق من صلاحيات الأدمن', code: 'ADMIN_RBAC_ERROR' });
+      });
+  };
+}
+
+export const _testHelpers = {
+  isEnabled,
+  authenticateAdmin,
+  validRoles,
 };
 ```
 
@@ -15237,7 +15948,28 @@ export async function listIncidents(options = {}) {
 
 export async function getIncident(incidentId) {
   if (!incidentId || typeof incidentId !== 'string') return null;
-  return await readJSON(incidentPath(incidentId));
+  const incident = await readJSON(incidentPath(incidentId));
+  if (!incident) return null;
+
+  // Phase 58 additive governance hint.
+  // Avoid recursion by not calling getIncidentGovernanceStatus() here.
+  try {
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+    const postmortem = await getPostmortemByIncident(incidentId);
+    incident.governance = {
+      postmortemRequired: isPostmortemRequired(incident),
+      postmortemExists: !!postmortem,
+      postmortemId: postmortem ? postmortem.id : null,
+    };
+  } catch (_) {
+    incident.governance = {
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+    };
+  }
+
+  return incident;
 }
 
 export async function autoOpenIncidentForEvent(eventType, data = {}) {
@@ -15292,6 +16024,95 @@ export function registerIncidentListeners() {
   }
 
   logger.info('Incident timeline: listeners registered', { count: AUTO_EVENTS.length });
+}
+
+/**
+ * Phase 58: Get governance status for one incident.
+ *
+ * Includes:
+ *   - postmortemRequired
+ *   - postmortemExists
+ *   - postmortemId
+ *   - openActionItems
+ *   - overdueActionItems
+ *
+ * @param {string} incidentId
+ */
+export async function getIncidentGovernanceStatus(incidentId) {
+  if (!incidentId || typeof incidentId !== 'string') {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'unknown',
+    };
+  }
+
+  const incident = await getIncident(incidentId);
+
+  if (!incident) {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'incident_not_found',
+    };
+  }
+
+  try {
+    const {
+      isPostmortemRequired,
+      getPostmortemByIncident,
+    } = await import('./postmortemRecords.js');
+
+    const required = isPostmortemRequired(incident);
+    const postmortem = await getPostmortemByIncident(incidentId);
+
+    let openActionItems = 0;
+    let overdueActionItems = 0;
+
+    if (postmortem && Array.isArray(postmortem.actionItems)) {
+      for (const item of postmortem.actionItems) {
+        if (item.status !== 'done' && item.status !== 'cancelled') {
+          openActionItems++;
+          if (item.dueDate && new Date(item.dueDate).getTime() < Date.now()) {
+            overdueActionItems++;
+          }
+        }
+      }
+    }
+
+    return {
+      incidentId,
+      severity: incident.severity || 'medium',
+      incidentStatus: incident.status || 'open',
+      postmortemRequired: required,
+      postmortemExists: !!postmortem,
+      postmortemId: postmortem ? postmortem.id : null,
+      openActionItems,
+      overdueActionItems,
+      status: required && !postmortem
+        ? 'postmortem_required'
+        : (overdueActionItems > 0 ? 'action_items_overdue' : 'ok'),
+    };
+  } catch (err) {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
 }
 
 export const _testHelpers = {
@@ -20782,6 +21603,22 @@ const builtInMigrations = [
       logger.info('Migration v17: Phase 57 deployment discipline registered (no heavy schema scan)');
     },
   },
+  {
+    version: 18,
+    name: 'Phase 58: Governance, Privacy, RBAC, and Operational Maturity',
+    up: async () => {
+      // Phase 58 registers additive governance/privacy structures:
+      //   - privacy_requests
+      //   - ops/reviews
+      //   - ops/postmortems
+      //   - ops/admin-approvals
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      // No destructive privacy/anonymization action runs during migration.
+      logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
+    },
+  },
 ];
 
 /**
@@ -23954,6 +24791,272 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/opsReviewRecords.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/opsReviewRecords.js — Operational Review Records (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Persistent review records for operational governance.
+// Types:
+//   weekly_ops_review, dlq_review, restore_drill_review,
+//   marketplace_review, trust_calibration_review,
+//   predictive_precision_review, payment_dispute_review,
+//   slo_breach_review
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+
+const DEFAULT_TYPES = [
+  'weekly_ops_review',
+  'dlq_review',
+  'restore_drill_review',
+  'marketplace_review',
+  'trust_calibration_review',
+  'predictive_precision_review',
+  'payment_dispute_review',
+  'slo_breach_review',
+];
+
+function isEnabled() {
+  return !!(config.OPS_REVIEW_RECORDS && config.OPS_REVIEW_RECORDS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'orv_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function reviewPath(id) {
+  return getRecordPath('ops_reviews', id);
+}
+
+function allowedTypes() {
+  return new Set(config.OPS_REVIEW_RECORDS?.reviewTypes || DEFAULT_TYPES);
+}
+
+function sanitizeText(value, max = 2000) {
+  if (!value || typeof value !== 'string') return null;
+  return value.trim().slice(0, max) || null;
+}
+
+function sanitizeList(items, maxItems = 50) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(0, maxItems).map(item => {
+    if (typeof item === 'string') return { text: sanitizeText(item, 1000) };
+    if (item && typeof item === 'object') {
+      return {
+        title: sanitizeText(item.title || item.text || item.label || '', 300),
+        note: sanitizeText(item.note || item.reason || item.description || '', 1000),
+        owner: sanitizeText(item.owner || '', 120),
+        dueDate: sanitizeText(item.dueDate || '', 40),
+        status: sanitizeText(item.status || 'open', 40) || 'open',
+      };
+    }
+    return { text: String(item).slice(0, 1000) };
+  });
+}
+
+function sanitizeRefs(refs) {
+  if (!refs || typeof refs !== 'object') return {};
+  const allowed = [
+    'queueJobId',
+    'incidentId',
+    'drillId',
+    'rollupId',
+    'signalId',
+    'reportId',
+    'exportId',
+    'schedulerName',
+  ];
+
+  const out = {};
+  for (const key of allowed) {
+    if (refs[key]) out[key] = String(refs[key]).slice(0, 120);
+  }
+  return out;
+}
+
+/**
+ * Create review record.
+ */
+export async function createReviewRecord(params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'OPS_REVIEW_RECORDS_DISABLED' };
+
+  if (!allowedTypes().has(params.type)) {
+    return { ok: false, code: 'INVALID_REVIEW_TYPE', error: 'invalid review type' };
+  }
+
+  const now = nowIso();
+  const id = params.id || generateId();
+
+  const record = {
+    id,
+    type: params.type,
+    status: params.status === 'completed' ? 'completed' : 'draft',
+    title: sanitizeText(params.title || params.type, 300) || params.type,
+    summary: sanitizeText(params.summary || '', 3000),
+    findings: sanitizeList(params.findings || [], 100),
+    actions: sanitizeList(params.actions || [], 100),
+    refs: sanitizeRefs(params.refs || {}),
+    createdBy: params.createdBy || 'admin_token',
+    completedBy: params.status === 'completed' ? (params.completedBy || params.createdBy || 'admin_token') : null,
+    completedAt: params.status === 'completed' ? now : null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await atomicWrite(reviewPath(id), record);
+
+  eventBus.emit('ops_review:created', {
+    reviewId: id,
+    type: record.type,
+    status: record.status,
+    createdBy: record.createdBy,
+    timestamp: now,
+  });
+
+  if (record.status === 'completed') {
+    eventBus.emit('ops_review:completed', {
+      reviewId: id,
+      type: record.type,
+      completedBy: record.completedBy,
+      timestamp: now,
+    });
+  }
+
+  return { ok: true, review: record };
+}
+
+/**
+ * Complete draft review.
+ */
+export async function completeReviewRecord(reviewId, params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'OPS_REVIEW_RECORDS_DISABLED' };
+
+  return withLock(`ops-review:${reviewId}`, async () => {
+    const record = await getReviewRecord(reviewId);
+    if (!record) return { ok: false, code: 'REVIEW_NOT_FOUND', error: 'review not found' };
+
+    if (record.status === 'completed') {
+      return { ok: true, review: record, alreadyCompleted: true };
+    }
+
+    const now = nowIso();
+
+    record.status = 'completed';
+    record.summary = sanitizeText(params.summary || record.summary || '', 3000);
+    if (params.findings) record.findings = sanitizeList(params.findings, 100);
+    if (params.actions) record.actions = sanitizeList(params.actions, 100);
+    if (params.refs) record.refs = { ...record.refs, ...sanitizeRefs(params.refs) };
+    record.completedBy = params.completedBy || 'admin_token';
+    record.completedAt = now;
+    record.updatedAt = now;
+
+    await atomicWrite(reviewPath(reviewId), record);
+
+    eventBus.emit('ops_review:completed', {
+      reviewId,
+      type: record.type,
+      completedBy: record.completedBy,
+      timestamp: now,
+    });
+
+    return { ok: true, review: record };
+  });
+}
+
+export async function getReviewRecord(reviewId) {
+  if (!reviewId || typeof reviewId !== 'string') return null;
+  return await readJSON(reviewPath(reviewId));
+}
+
+export async function listReviewRecords(options = {}) {
+  if (!isEnabled()) return { reviews: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('ops_reviews');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('orv_'));
+
+  if (options.type) rows = rows.filter(r => r.type === options.type);
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.createdBy) rows = rows.filter(r => r.createdBy === options.createdBy);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    reviews: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getLatestReviewByType(type) {
+  if (!allowedTypes().has(type)) return null;
+
+  const result = await listReviewRecords({ type, status: 'completed', limit: 1, offset: 0 });
+  return result.reviews && result.reviews[0] ? result.reviews[0] : null;
+}
+
+export async function getReviewFreshness(type, maxAgeDays) {
+  const latest = await getLatestReviewByType(type);
+  const thresholdDays = Number(maxAgeDays || config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7);
+
+  if (!latest) {
+    return {
+      type,
+      latest: null,
+      ageDays: null,
+      fresh: false,
+      thresholdDays,
+      status: 'missing',
+    };
+  }
+
+  const basis = latest.completedAt || latest.createdAt;
+  const ageDays = Math.round(((Date.now() - new Date(basis).getTime()) / 86400000) * 10) / 10;
+  const fresh = ageDays <= thresholdDays;
+
+  return {
+    type,
+    latest,
+    ageDays,
+    fresh,
+    thresholdDays,
+    status: fresh ? 'fresh' : 'stale',
+  };
+}
+
+export const _testHelpers = {
+  DEFAULT_TYPES,
+  generateId,
+  reviewPath,
+  allowedTypes,
+  sanitizeList,
+  sanitizeRefs,
+};
+```
+
+---
+
 ## `server/services/paymentDisputeAnalytics.js`
 
 ```javascript
@@ -24674,6 +25777,328 @@ export async function countByStatus() {
   }
   return counts;
 }
+```
+
+---
+
+## `server/services/postmortemRecords.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/postmortemRecords.js — Incident Postmortems (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// File-backed postmortems linked to incident timeline.
+// Critical incidents require postmortem when configured.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+
+const ACTION_STATUSES = new Set(['open', 'in_progress', 'done', 'cancelled']);
+
+function isEnabled() {
+  return !!(config.POSTMORTEMS && config.POSTMORTEMS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'pm_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function generateActionItemId() {
+  return 'act_' + crypto.randomBytes(5).toString('hex');
+}
+
+function postmortemPath(id) {
+  return getRecordPath('postmortems', id);
+}
+
+function sanitizeText(value, max = 5000) {
+  if (!value || typeof value !== 'string') return null;
+  return value.trim().slice(0, max) || null;
+}
+
+function sanitizeTimeline(items) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(0, 200).map(item => ({
+    timestamp: sanitizeText(item.timestamp || item.time || '', 80),
+    event: sanitizeText(item.event || item.summary || item.text || '', 1000),
+  })).filter(i => i.timestamp || i.event);
+}
+
+function sanitizeActionItem(item = {}) {
+  return {
+    id: item.id || generateActionItemId(),
+    title: sanitizeText(item.title || item.text || '', 300) || 'Action item',
+    owner: sanitizeText(item.owner || '', 120),
+    dueDate: sanitizeText(item.dueDate || '', 40),
+    status: ACTION_STATUSES.has(item.status) ? item.status : 'open',
+    createdAt: item.createdAt || nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+function sanitizePatch(patch = {}) {
+  const out = {};
+
+  const fields = [
+    'summary',
+    'impact',
+    'rootCause',
+    'whatWentWell',
+    'whatWentWrong',
+    'detection',
+    'resolution',
+    'prevention',
+    'followUpStatus',
+  ];
+
+  for (const field of fields) {
+    if (patch[field] !== undefined) {
+      out[field] = sanitizeText(patch[field], 5000);
+    }
+  }
+
+  if (patch.timeline !== undefined) out.timeline = sanitizeTimeline(patch.timeline);
+
+  return out;
+}
+
+/**
+ * Create postmortem.
+ */
+export async function createPostmortem(params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'POSTMORTEMS_DISABLED' };
+
+  if (!params.incidentId || typeof params.incidentId !== 'string') {
+    return { ok: false, code: 'INCIDENT_ID_REQUIRED', error: 'incidentId is required' };
+  }
+
+  const existing = await getPostmortemByIncident(params.incidentId);
+  if (existing) {
+    return { ok: true, postmortem: existing, alreadyExists: true };
+  }
+
+  const now = nowIso();
+  const id = params.id || generateId();
+
+  const record = {
+    id,
+    incidentId: params.incidentId,
+    severity: params.severity || null,
+    status: params.status || 'draft',
+    summary: sanitizeText(params.summary || '', 5000),
+    impact: sanitizeText(params.impact || '', 5000),
+    timeline: sanitizeTimeline(params.timeline || []),
+    rootCause: sanitizeText(params.rootCause || '', 5000),
+    whatWentWell: sanitizeText(params.whatWentWell || '', 5000),
+    whatWentWrong: sanitizeText(params.whatWentWrong || '', 5000),
+    detection: sanitizeText(params.detection || '', 5000),
+    resolution: sanitizeText(params.resolution || '', 5000),
+    prevention: sanitizeText(params.prevention || '', 5000),
+    followUpStatus: sanitizeText(params.followUpStatus || 'pending', 80) || 'pending',
+    actionItems: Array.isArray(params.actionItems)
+      ? params.actionItems.slice(0, config.POSTMORTEMS?.maxActionItems || 50).map(sanitizeActionItem)
+      : [],
+    createdBy: params.createdBy || 'admin_token',
+    updatedBy: params.createdBy || 'admin_token',
+    createdAt: now,
+    updatedAt: now,
+    completedAt: params.status === 'completed' ? now : null,
+  };
+
+  await atomicWrite(postmortemPath(id), record);
+
+  eventBus.emit('postmortem:created', {
+    postmortemId: id,
+    incidentId: record.incidentId,
+    severity: record.severity,
+    createdBy: record.createdBy,
+    timestamp: now,
+  });
+
+  return { ok: true, postmortem: record };
+}
+
+/**
+ * Update postmortem.
+ */
+export async function updatePostmortem(id, patch = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'POSTMORTEMS_DISABLED' };
+
+  return withLock(`postmortem:${id}`, async () => {
+    const record = await getPostmortem(id);
+    if (!record) return { ok: false, code: 'POSTMORTEM_NOT_FOUND', error: 'postmortem not found' };
+
+    const sanitized = sanitizePatch(patch);
+    Object.assign(record, sanitized);
+
+    if (patch.status) record.status = String(patch.status).slice(0, 40);
+    if (patch.updatedBy) record.updatedBy = String(patch.updatedBy).slice(0, 120);
+
+    if (record.status === 'completed' && !record.completedAt) {
+      record.completedAt = nowIso();
+    }
+
+    record.updatedAt = nowIso();
+
+    await atomicWrite(postmortemPath(id), record);
+
+    eventBus.emit('postmortem:updated', {
+      postmortemId: id,
+      incidentId: record.incidentId,
+      status: record.status,
+      timestamp: record.updatedAt,
+    });
+
+    return { ok: true, postmortem: record };
+  });
+}
+
+export async function getPostmortem(id) {
+  if (!id || typeof id !== 'string') return null;
+  return await readJSON(postmortemPath(id));
+}
+
+export async function getPostmortemByIncident(incidentId) {
+  if (!incidentId || typeof incidentId !== 'string') return null;
+
+  const dir = getCollectionPath('postmortems');
+  const rows = await listJSON(dir);
+
+  return rows.find(r => r && r.id && r.id.startsWith('pm_') && r.incidentId === incidentId) || null;
+}
+
+export async function listPostmortems(options = {}) {
+  if (!isEnabled()) return { postmortems: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('postmortems');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('pm_'));
+
+  if (options.incidentId) rows = rows.filter(r => r.incidentId === options.incidentId);
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.severity) rows = rows.filter(r => r.severity === options.severity);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    postmortems: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function addActionItem(postmortemId, item) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'POSTMORTEMS_DISABLED' };
+
+  return withLock(`postmortem:${postmortemId}`, async () => {
+    const record = await getPostmortem(postmortemId);
+    if (!record) return { ok: false, code: 'POSTMORTEM_NOT_FOUND', error: 'postmortem not found' };
+
+    const max = config.POSTMORTEMS?.maxActionItems || 50;
+    record.actionItems = Array.isArray(record.actionItems) ? record.actionItems : [];
+
+    if (record.actionItems.length >= max) {
+      return { ok: false, code: 'MAX_ACTION_ITEMS', error: `max action items reached (${max})` };
+    }
+
+    const actionItem = sanitizeActionItem(item || {});
+    record.actionItems.push(actionItem);
+    record.updatedAt = nowIso();
+
+    await atomicWrite(postmortemPath(postmortemId), record);
+
+    eventBus.emit('postmortem:action_item_added', {
+      postmortemId,
+      incidentId: record.incidentId,
+      itemId: actionItem.id,
+      timestamp: record.updatedAt,
+    });
+
+    return { ok: true, postmortem: record, actionItem };
+  });
+}
+
+export async function updateActionItem(postmortemId, itemId, patch = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'POSTMORTEMS_DISABLED' };
+
+  return withLock(`postmortem:${postmortemId}`, async () => {
+    const record = await getPostmortem(postmortemId);
+    if (!record) return { ok: false, code: 'POSTMORTEM_NOT_FOUND', error: 'postmortem not found' };
+
+    record.actionItems = Array.isArray(record.actionItems) ? record.actionItems : [];
+
+    const item = record.actionItems.find(i => i.id === itemId);
+    if (!item) return { ok: false, code: 'ACTION_ITEM_NOT_FOUND', error: 'action item not found' };
+
+    if (patch.title !== undefined) item.title = sanitizeText(patch.title, 300) || item.title;
+    if (patch.owner !== undefined) item.owner = sanitizeText(patch.owner, 120);
+    if (patch.dueDate !== undefined) item.dueDate = sanitizeText(patch.dueDate, 40);
+    if (patch.status !== undefined && ACTION_STATUSES.has(patch.status)) item.status = patch.status;
+    item.updatedAt = nowIso();
+
+    record.updatedAt = item.updatedAt;
+
+    await atomicWrite(postmortemPath(postmortemId), record);
+
+    eventBus.emit('postmortem:action_item_updated', {
+      postmortemId,
+      incidentId: record.incidentId,
+      itemId,
+      status: item.status,
+      timestamp: record.updatedAt,
+    });
+
+    return { ok: true, postmortem: record, actionItem: item };
+  });
+}
+
+/**
+ * Determine if postmortem is required for an incident.
+ */
+export function isPostmortemRequired(incident) {
+  if (!isEnabled()) return false;
+  if (!incident) return false;
+
+  const severity = incident.severity || 'medium';
+
+  if (severity === 'critical' && config.POSTMORTEMS?.requireForCriticalIncidents) {
+    return true;
+  }
+
+  if (severity === 'high' && config.POSTMORTEMS?.requireForHighIncidents) {
+    return true;
+  }
+
+  return false;
+}
+
+export const _testHelpers = {
+  generateId,
+  generateActionItemId,
+  postmortemPath,
+  sanitizeActionItem,
+  sanitizeTimeline,
+  ACTION_STATUSES,
+};
 ```
 
 ---
@@ -26945,6 +28370,391 @@ if (config.PRESENCE && config.PRESENCE.enabled) {
 
 ---
 
+## `server/services/privacyRequests.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/privacyRequests.js — Privacy Request Lifecycle (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// File-backed privacy requests:
+//   requested → queued → processing → completed | failed | cancelled | expired
+//
+// Types:
+//   - user_data_export
+//   - user_anonymization
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+import { withLock } from './resourceLock.js';
+import { eventBus } from './eventBus.js';
+
+const VALID_TYPES = new Set(['user_data_export', 'user_anonymization']);
+const VALID_STATUSES = new Set(['requested', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'expired']);
+
+function isEnabled() {
+  return !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'prq_' + Date.now().toString(36) + '_' + crypto.randomBytes(5).toString('hex');
+}
+
+function requestPath(id) {
+  return getRecordPath('privacy_requests', id);
+}
+
+function exportExpiresAt() {
+  const hours = config.PRIVACY_REQUESTS?.exportRetentionHours || 72;
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+}
+
+function sanitizeReason(reason) {
+  if (!reason || typeof reason !== 'string') return null;
+  return reason.trim().slice(0, 1000) || null;
+}
+
+/**
+ * Create a privacy request.
+ */
+export async function createPrivacyRequest(params = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true, code: 'PRIVACY_REQUESTS_DISABLED' };
+
+  const type = params.type;
+  if (!VALID_TYPES.has(type)) {
+    return { ok: false, code: 'INVALID_PRIVACY_REQUEST_TYPE', error: 'invalid privacy request type' };
+  }
+
+  if (!params.userId || typeof params.userId !== 'string') {
+    return { ok: false, code: 'USER_ID_REQUIRED', error: 'userId is required' };
+  }
+
+  const now = nowIso();
+  const id = params.id || generateId();
+
+  const record = {
+    id,
+    type,
+    status: 'requested',
+    userId: params.userId,
+    requestedBy: params.requestedBy || 'admin_token',
+    requestReason: sanitizeReason(params.reason),
+    approvalId: params.approvalId || null,
+    queueJobId: null,
+    exportFilePath: null,
+    exportExpiresAt: null,
+    result: null,
+    error: null,
+    createdAt: now,
+    updatedAt: now,
+    queuedAt: null,
+    processingAt: null,
+    completedAt: null,
+    failedAt: null,
+    cancelledAt: null,
+    cancelledBy: null,
+  };
+
+  await atomicWrite(requestPath(id), record);
+
+  eventBus.emit('privacy_request:created', {
+    requestId: id,
+    type,
+    userId: params.userId,
+    requestedBy: record.requestedBy,
+    timestamp: now,
+  });
+
+  return { ok: true, request: record };
+}
+
+export async function getPrivacyRequest(id) {
+  if (!id || typeof id !== 'string') return null;
+  return await readJSON(requestPath(id));
+}
+
+export async function listPrivacyRequests(options = {}) {
+  if (!isEnabled()) return { requests: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('privacy_requests');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('prq_'));
+
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.type) rows = rows.filter(r => r.type === options.type);
+  if (options.userId) rows = rows.filter(r => r.userId === options.userId);
+
+  rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    requests: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+async function patchRequest(id, patch) {
+  return withLock(`privacy-request:${id}`, async () => {
+    const record = await getPrivacyRequest(id);
+    if (!record) return null;
+
+    const next = {
+      ...record,
+      ...patch,
+      id: record.id,
+      type: record.type,
+      userId: record.userId,
+      createdAt: record.createdAt,
+      updatedAt: nowIso(),
+    };
+
+    await atomicWrite(requestPath(id), next);
+    return next;
+  });
+}
+
+/**
+ * Queue privacy export job.
+ */
+export async function queuePrivacyExport(requestId, adminId) {
+  if (!isEnabled() || !config.PRIVACY_REQUESTS.exportEnabled) {
+    return { ok: false, code: 'PRIVACY_EXPORT_DISABLED', error: 'privacy export disabled' };
+  }
+
+  const record = await getPrivacyRequest(requestId);
+  if (!record) return { ok: false, code: 'PRIVACY_REQUEST_NOT_FOUND', error: 'privacy request not found' };
+  if (record.type !== 'user_data_export') {
+    return { ok: false, code: 'INVALID_REQUEST_TYPE', error: 'request is not user_data_export' };
+  }
+  if (!['requested', 'failed'].includes(record.status)) {
+    return { ok: false, code: 'INVALID_REQUEST_STATUS', error: 'request cannot be queued from current status', request: record };
+  }
+
+  const { enqueueJob } = await import('./opsQueue.js');
+
+  const enqueueResult = await enqueueJob({
+    type: 'privacy_user_data_export',
+    priority: 'normal',
+    payload: {
+      requestId,
+      userId: record.userId,
+      options: {
+        includeMessages: config.PRIVACY_REQUESTS.includeMessagesInExport !== false,
+        includeAuditRefs: !!config.PRIVACY_REQUESTS.includeAuditRefsInExport,
+      },
+    },
+    idempotencyKey: `privacy_export:${requestId}`,
+    createdBy: adminId || 'admin_token',
+  });
+
+  if (!enqueueResult.ok) {
+    return { ok: false, code: 'QUEUE_ENQUEUE_FAILED', error: enqueueResult.error || 'queue enqueue failed' };
+  }
+
+  const updated = await patchRequest(requestId, {
+    status: 'queued',
+    queueJobId: enqueueResult.job.id,
+    queuedAt: nowIso(),
+    error: null,
+  });
+
+  eventBus.emit('privacy_request:queued', {
+    requestId,
+    type: record.type,
+    userId: record.userId,
+    queueJobId: enqueueResult.job.id,
+    timestamp: nowIso(),
+  });
+
+  return { ok: true, request: updated, queueJob: enqueueResult.job, deduped: !!enqueueResult.deduped };
+}
+
+/**
+ * Queue user anonymization job.
+ */
+export async function queueUserAnonymization(requestId, adminId, approvalId) {
+  if (!isEnabled() || !config.PRIVACY_REQUESTS.anonymizeEnabled) {
+    return { ok: false, code: 'PRIVACY_ANONYMIZE_DISABLED', error: 'privacy anonymize disabled' };
+  }
+
+  const record = await getPrivacyRequest(requestId);
+  if (!record) return { ok: false, code: 'PRIVACY_REQUEST_NOT_FOUND', error: 'privacy request not found' };
+  if (record.type !== 'user_anonymization') {
+    return { ok: false, code: 'INVALID_REQUEST_TYPE', error: 'request is not user_anonymization' };
+  }
+  if (!['requested', 'failed'].includes(record.status)) {
+    return { ok: false, code: 'INVALID_REQUEST_STATUS', error: 'request cannot be queued from current status', request: record };
+  }
+
+  if (config.ADMIN_APPROVALS?.enabled && config.ADMIN_RBAC?.dangerousActionsRequireApproval) {
+    const { isApprovalValid } = await import('./adminApprovals.js');
+    const valid = await isApprovalValid(approvalId || record.approvalId, 'privacy_anonymize', record.userId);
+    if (!valid) {
+      return { ok: false, code: 'VALID_APPROVAL_REQUIRED', error: 'valid approval is required for anonymization' };
+    }
+  }
+
+  const { enqueueJob } = await import('./opsQueue.js');
+
+  const enqueueResult = await enqueueJob({
+    type: 'privacy_user_anonymization',
+    priority: 'high',
+    payload: {
+      requestId,
+      userId: record.userId,
+      approvalId: approvalId || record.approvalId || null,
+      options: {
+        confirm: true,
+      },
+    },
+    idempotencyKey: `privacy_anonymize:${requestId}`,
+    createdBy: adminId || 'admin_token',
+  });
+
+  if (!enqueueResult.ok) {
+    return { ok: false, code: 'QUEUE_ENQUEUE_FAILED', error: enqueueResult.error || 'queue enqueue failed' };
+  }
+
+  const updated = await patchRequest(requestId, {
+    status: 'queued',
+    queueJobId: enqueueResult.job.id,
+    approvalId: approvalId || record.approvalId || null,
+    queuedAt: nowIso(),
+    error: null,
+  });
+
+  eventBus.emit('privacy_request:queued', {
+    requestId,
+    type: record.type,
+    userId: record.userId,
+    queueJobId: enqueueResult.job.id,
+    timestamp: nowIso(),
+  });
+
+  return { ok: true, request: updated, queueJob: enqueueResult.job, deduped: !!enqueueResult.deduped };
+}
+
+export async function completePrivacyRequest(id, patch = {}) {
+  const now = nowIso();
+
+  const updated = await patchRequest(id, {
+    status: 'completed',
+    completedAt: now,
+    exportFilePath: patch.exportFilePath || null,
+    exportExpiresAt: patch.exportExpiresAt || (patch.exportFilePath ? exportExpiresAt() : null),
+    result: patch.result || null,
+    error: null,
+  });
+
+  if (updated) {
+    eventBus.emit('privacy_request:completed', {
+      requestId: id,
+      type: updated.type,
+      userId: updated.userId,
+      timestamp: now,
+    });
+  }
+
+  return updated ? { ok: true, request: updated } : { ok: false, code: 'PRIVACY_REQUEST_NOT_FOUND' };
+}
+
+export async function failPrivacyRequest(id, error) {
+  const now = nowIso();
+
+  const updated = await patchRequest(id, {
+    status: 'failed',
+    failedAt: now,
+    error: error ? String(error).slice(0, 2000) : 'Unknown error',
+  });
+
+  if (updated) {
+    eventBus.emit('privacy_request:failed', {
+      requestId: id,
+      type: updated.type,
+      userId: updated.userId,
+      error: updated.error,
+      timestamp: now,
+    });
+  }
+
+  return updated ? { ok: true, request: updated } : { ok: false, code: 'PRIVACY_REQUEST_NOT_FOUND' };
+}
+
+export async function cancelPrivacyRequest(id, adminId) {
+  const record = await getPrivacyRequest(id);
+  if (!record) return { ok: false, code: 'PRIVACY_REQUEST_NOT_FOUND', error: 'privacy request not found' };
+
+  if (['completed', 'cancelled', 'expired'].includes(record.status)) {
+    return { ok: false, code: 'PRIVACY_REQUEST_ALREADY_FINISHED', error: 'request already finished', request: record };
+  }
+
+  const now = nowIso();
+  const updated = await patchRequest(id, {
+    status: 'cancelled',
+    cancelledAt: now,
+    cancelledBy: adminId || 'admin_token',
+  });
+
+  eventBus.emit('privacy_request:cancelled', {
+    requestId: id,
+    type: record.type,
+    userId: record.userId,
+    cancelledBy: adminId || 'admin_token',
+    timestamp: now,
+  });
+
+  return { ok: true, request: updated };
+}
+
+/**
+ * Mark old completed export files as expired.
+ * Phase 58 does not delete files here; deletion can be added by hygiene later.
+ */
+export async function cleanupExpiredPrivacyExports() {
+  if (!isEnabled()) return 0;
+
+  const result = await listPrivacyRequests({ status: 'completed', limit: 1000, offset: 0 });
+  let expired = 0;
+
+  for (const r of result.requests || []) {
+    if (r.exportExpiresAt && new Date(r.exportExpiresAt).getTime() <= Date.now()) {
+      const updated = await patchRequest(r.id, {
+        status: 'expired',
+      });
+      if (updated) expired++;
+    }
+  }
+
+  return expired;
+}
+
+export const _testHelpers = {
+  VALID_TYPES,
+  VALID_STATUSES,
+  generateId,
+  requestPath,
+  exportExpiresAt,
+};
+```
+
+---
+
 ## `server/services/processLock.js`
 
 ```javascript
@@ -27675,6 +29485,207 @@ async function checkJsonHealthGate(isProd) {
   );
 }
 
+async function fileExists(path) {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function checkAdminRbacGovernance(isProd) {
+  const enabled = !!(config.ADMIN_RBAC && config.ADMIN_RBAC.enabled);
+  const roles = config.ADMIN_RBAC?.roles || [];
+  const caps = config.ADMIN_RBAC?.capabilities || {};
+
+  const hasSuper = roles.includes('super_admin') && Array.isArray(caps.super_admin) && caps.super_admin.includes('*');
+
+  if (!enabled) {
+    return check(
+      'admin_rbac_enabled',
+      isProd ? 'fail' : 'warn',
+      'ADMIN_RBAC is disabled',
+      { enabled },
+      'Enable ADMIN_RBAC in config.js'
+    );
+  }
+
+  if (!hasSuper) {
+    return check(
+      'admin_rbac_enabled',
+      'fail',
+      'ADMIN_RBAC is enabled but super_admin wildcard capability is missing',
+      { roles },
+      'Ensure ADMIN_RBAC.capabilities.super_admin includes "*"'
+    );
+  }
+
+  return check('admin_rbac_enabled', 'pass', 'ADMIN_RBAC is enabled and super_admin is configured', {
+    roles: roles.length,
+  });
+}
+
+async function checkGovernanceDocs() {
+  const docs = [
+    { id: 'admin_rbac_runbook_exists', path: './ADMIN_RBAC_MODEL.md', label: 'ADMIN_RBAC_MODEL.md' },
+    { id: 'privacy_runbook_exists', path: './PRIVACY_REQUEST_RUNBOOK.md', label: 'PRIVACY_REQUEST_RUNBOOK.md' },
+    { id: 'postmortem_template_exists', path: './POSTMORTEM_TEMPLATE.md', label: 'POSTMORTEM_TEMPLATE.md' },
+    { id: 'data_governance_runbook_exists', path: './DATA_GOVERNANCE_RUNBOOK.md', label: 'DATA_GOVERNANCE_RUNBOOK.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : 'warn',
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkPrivacyGovernance(isProd) {
+  const enabled = !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.enabled);
+  if (!enabled) {
+    return check(
+      'privacy_requests_enabled',
+      isProd ? 'fail' : 'warn',
+      'PRIVACY_REQUESTS is disabled',
+      {},
+      'Enable PRIVACY_REQUESTS in config.js'
+    );
+  }
+
+  const requiredScripts = [
+    './scripts/export-user-data.js',
+    './scripts/anonymize-user-data.js',
+    './scripts/verify-privacy-governance.js',
+  ];
+
+  const missingScripts = [];
+  for (const s of requiredScripts) {
+    if (!await fileExists(s)) missingScripts.push(s);
+  }
+
+  if (missingScripts.length > 0) {
+    return check(
+      'privacy_governance_scripts_available',
+      isProd ? 'fail' : 'warn',
+      'Some privacy governance scripts are missing',
+      { missingScripts },
+      'Add missing Phase 58 privacy scripts'
+    );
+  }
+
+  return check('privacy_requests_enabled', 'pass', 'Privacy request workflow is enabled and scripts are present', {
+    exportEnabled: !!config.PRIVACY_REQUESTS.exportEnabled,
+    anonymizeEnabled: !!config.PRIVACY_REQUESTS.anonymizeEnabled,
+  });
+}
+
+async function checkDangerousActionApprovals(isProd) {
+  const enabled = !!(config.ADMIN_APPROVALS && config.ADMIN_APPROVALS.enabled);
+  const required = !!(config.ADMIN_RBAC && config.ADMIN_RBAC.dangerousActionsRequireApproval);
+  const actions = config.ADMIN_APPROVALS?.dangerousActions || [];
+
+  if (!enabled || !required) {
+    return check(
+      'dangerous_actions_approval_configured',
+      isProd ? 'fail' : 'warn',
+      'Dangerous admin action approvals are not fully enabled',
+      { enabled, required },
+      'Enable ADMIN_APPROVALS.enabled and ADMIN_RBAC.dangerousActionsRequireApproval'
+    );
+  }
+
+  if (actions.length === 0) {
+    return check(
+      'dangerous_actions_approval_configured',
+      'fail',
+      'Dangerous action approval list is empty',
+      {},
+      'Configure ADMIN_APPROVALS.dangerousActions'
+    );
+  }
+
+  return check('dangerous_actions_approval_configured', 'pass', 'Dangerous admin action approval config is present', {
+    actionCount: actions.length,
+  });
+}
+
+async function checkWeeklyOpsReviewFreshness(isProd) {
+  try {
+    const { getReviewFreshness } = await import('./opsReviewRecords.js');
+    const freshness = await getReviewFreshness(
+      'weekly_ops_review',
+      config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7
+    );
+
+    if (!freshness.fresh) {
+      return check(
+        'weekly_ops_review_fresh',
+        isProd && config.OPS_REVIEW_RECORDS?.requiredWeeklyReview ? 'fail' : 'warn',
+        freshness.status === 'missing'
+          ? 'No weekly ops review record exists'
+          : `Weekly ops review is stale (${freshness.ageDays} days old)`,
+        freshness,
+        'node scripts/ops-weekly-review.js --persist'
+      );
+    }
+
+    return check('weekly_ops_review_fresh', 'pass', 'Weekly ops review is fresh', freshness);
+  } catch (err) {
+    return check('weekly_ops_review_fresh', 'warn', 'Could not evaluate weekly ops review freshness', {
+      error: err.message,
+    }, 'node scripts/ops-weekly-review.js --persist');
+  }
+}
+
+async function checkCriticalIncidentPostmortems(isProd) {
+  try {
+    const { listIncidents } = await import('./incidentTimeline.js');
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+
+    const result = await listIncidents({ limit: 100, offset: 0 });
+    const incidents = result.incidents || [];
+
+    const missing = [];
+    for (const inc of incidents) {
+      if (!isPostmortemRequired(inc)) continue;
+      const pm = await getPostmortemByIncident(inc.id);
+      if (!pm) {
+        missing.push({
+          incidentId: inc.id,
+          severity: inc.severity,
+          title: inc.title,
+          status: inc.status,
+        });
+      }
+    }
+
+    if (missing.length > 0) {
+      return check(
+        'critical_incidents_have_postmortem',
+        isProd ? 'fail' : 'warn',
+        `${missing.length} incident(s) require postmortem`,
+        { missing: missing.slice(0, 10) },
+        'Create postmortems from /api/admin/incidents/:id/postmortem'
+      );
+    }
+
+    return check('critical_incidents_have_postmortem', 'pass', 'Critical incident postmortem requirement is satisfied');
+  } catch (err) {
+    return check('critical_incidents_have_postmortem', 'warn', 'Could not evaluate incident postmortem governance', {
+      error: err.message,
+    });
+  }
+}
+
 export async function runReadinessChecks(options = {}) {
   const checks = [];
 
@@ -27819,6 +29830,14 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkSchedulerStaleness(isProd));
   checks.push(await checkMaintenanceInactive(isProd));
   checks.push(await checkJsonHealthGate(isProd));
+
+  // Phase 58 — Governance / Privacy / RBAC readiness.
+  checks.push(await checkAdminRbacGovernance(isProd));
+  checks.push(...await checkGovernanceDocs());
+  checks.push(await checkPrivacyGovernance(isProd));
+  checks.push(await checkDangerousActionApprovals(isProd));
+  checks.push(await checkWeeklyOpsReviewFreshness(isProd));
+  checks.push(await checkCriticalIncidentPostmortems(isProd));
 
   return checks;
 }
@@ -30453,6 +32472,8 @@ export const _testHelpers = {
 //   - trust_calibration_report
 //   - predictive_signal_retention
 //   - workroom_search_rebuild
+//   - privacy_user_data_export
+//   - privacy_user_anonymization
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
@@ -30550,6 +32571,10 @@ function registerBuiltIns() {
   registerJobHandler('notification_conversion_rollup', handleNotificationConversionRollupJob);
   registerJobHandler('activation_funnel_rollup', handleActivationFunnelRollupJob);
   registerJobHandler('search_relevance_rebuild', handleSearchRelevanceRebuildJob);
+
+  // Phase 58 — Privacy Governance
+  registerJobHandler('privacy_user_data_export', handlePrivacyUserDataExportJob);
+  registerJobHandler('privacy_user_anonymization', handlePrivacyUserAnonymizationJob);
 }
 
 export async function startQueueWorkers() {
@@ -31361,6 +33386,118 @@ async function handleSearchRelevanceRebuildJob({ payload }) {
   return result;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Phase 58 Built-in handlers — Privacy Governance
+// ═══════════════════════════════════════════════════════════════
+
+async function handlePrivacyUserDataExportJob({ payload }) {
+  if (!payload || !payload.requestId || !payload.userId) {
+    const err = new Error('requestId and userId are required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const privacy = await import('./privacyRequests.js');
+  const exporter = await import('./userDataExport.js');
+
+  try {
+    const result = await exporter.persistUserDataExport(
+      payload.requestId,
+      payload.userId,
+      payload.options || {}
+    );
+
+    if (!result || !result.ok) {
+      const err = new Error(result?.error || result?.code || 'PRIVACY_EXPORT_FAILED');
+      err.retryable = false;
+      throw err;
+    }
+
+    await privacy.completePrivacyRequest(payload.requestId, {
+      exportFilePath: result.relativePath,
+      result: {
+        userId: payload.userId,
+        filePath: result.relativePath,
+        generatedAt: result.export?.generatedAt || new Date().toISOString(),
+      },
+    });
+
+    return {
+      requestId: payload.requestId,
+      userId: payload.userId,
+      exportFilePath: result.relativePath,
+      completed: true,
+    };
+  } catch (err) {
+    await privacy.failPrivacyRequest(payload.requestId, err.message || String(err)).catch(() => {});
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
+}
+
+async function handlePrivacyUserAnonymizationJob({ payload }) {
+  if (!payload || !payload.requestId || !payload.userId) {
+    const err = new Error('requestId and userId are required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const privacy = await import('./privacyRequests.js');
+
+  try {
+    if (payload.approvalId) {
+      const approvals = await import('./adminApprovals.js');
+      const consumed = await approvals.consumeApproval(
+        payload.approvalId,
+        'privacy_anonymize',
+        payload.userId
+      );
+
+      if (!consumed.ok) {
+        const err = new Error(consumed.error || consumed.code || 'APPROVAL_CONSUME_FAILED');
+        err.retryable = false;
+        throw err;
+      }
+    }
+
+    const anonymizer = await import('./userAnonymization.js');
+
+    const result = await anonymizer.anonymizeUserData(payload.userId, {
+      ...(payload.options || {}),
+      dryRun: false,
+      preview: false,
+    });
+
+    if (!result || !result.ok) {
+      const err = new Error(result?.error || result?.code || 'PRIVACY_ANONYMIZATION_FAILED');
+      err.retryable = false;
+      throw err;
+    }
+
+    await privacy.completePrivacyRequest(payload.requestId, {
+      result: {
+        userId: payload.userId,
+        anonId: result.anonId || null,
+        counts: result.counts || {},
+        anonymizationResult: result.result || {},
+        durationMs: result.durationMs || 0,
+      },
+    });
+
+    return {
+      requestId: payload.requestId,
+      userId: payload.userId,
+      anonId: result.anonId || null,
+      completed: true,
+      idempotent: !!result.idempotent,
+    };
+  } catch (err) {
+    await privacy.failPrivacyRequest(payload.requestId, err.message || String(err)).catch(() => {});
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
+}
+
 export const _testHelpers = {
   handlers,
   processOneJob,
@@ -32109,6 +34246,37 @@ function normalizeAction(action) {
   };
 }
 
+async function collectPostmortemBacklog() {
+  try {
+    const { listIncidents } = await import('./incidentTimeline.js');
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+
+    const result = await listIncidents({ limit: 100, offset: 0 });
+    const incidents = result.incidents || [];
+
+    const missing = [];
+    for (const inc of incidents) {
+      if (!isPostmortemRequired(inc)) continue;
+      const pm = await getPostmortemByIncident(inc.id);
+      if (!pm) {
+        missing.push({
+          incidentId: inc.id,
+          severity: inc.severity,
+          title: inc.title,
+          status: inc.status,
+        });
+      }
+    }
+
+    return {
+      missing,
+      missingCount: missing.length,
+    };
+  } catch (err) {
+    return { error: err.message, missing: [], missingCount: 0 };
+  }
+}
+
 /**
  * Get unified scale hygiene overview.
  */
@@ -32135,6 +34303,9 @@ export async function getScaleHygieneOverview() {
     marketplaceFreshness,
     restoreDrillFreshness,
     schedulerCadence,
+    weeklyOpsReviewFreshness,
+    postmortemBacklog,
+    rbacMatrix,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -32153,6 +34324,13 @@ export async function getScaleHygieneOverview() {
     import('./marketplaceIntelligenceRollups.js').then(m => m.getMarketplaceRollupFreshness()).catch(err => ({ enabled: false, error: err.message })),
     import('./backupRestoreDrill.js').then(m => m.getLatestRestoreDrillFreshness()).catch(err => ({ enabled: false, error: err.message })),
     import('./schedulerRegistry.js').then(m => m.getSchedulerCadenceReport()).catch(err => ({ enabled: false, error: err.message })),
+    import('./opsReviewRecords.js')
+      .then(m => m.getReviewFreshness('weekly_ops_review', config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7))
+      .catch(err => ({ enabled: false, error: err.message })),
+    collectPostmortemBacklog().catch(err => ({ error: err.message, missing: [] })),
+    import('./adminRbac.js')
+      .then(m => m.getRbacMatrix())
+      .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
   if (queueStats.summary && queueStats.summary.stale) {
@@ -32240,6 +34418,36 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 58 — Governance warnings.
+  if (!rbacMatrix || rbacMatrix.enabled === false) {
+    warnings.push({
+      source: 'governance',
+      level: 'critical',
+      message: 'Admin RBAC is disabled or unavailable',
+      details: rbacMatrix || {},
+    });
+  }
+
+  if (weeklyOpsReviewFreshness && weeklyOpsReviewFreshness.fresh === false) {
+    warnings.push({
+      source: 'governance',
+      level: 'warning',
+      message: weeklyOpsReviewFreshness.status === 'missing'
+        ? 'Weekly ops review record is missing'
+        : 'Weekly ops review record is stale',
+      details: weeklyOpsReviewFreshness,
+    });
+  }
+
+  if (postmortemBacklog && postmortemBacklog.missingCount > 0) {
+    warnings.push({
+      source: 'postmortems',
+      level: 'critical',
+      message: `${postmortemBacklog.missingCount} incident(s) require postmortem`,
+      details: postmortemBacklog,
+    });
+  }
+
   const recommendedActions = [];
 
   for (const action of queueRecommendations || []) {
@@ -32291,6 +34499,40 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 58 — Governance recommended actions.
+  if (!rbacMatrix || rbacMatrix.enabled === false) {
+    recommendedActions.push({
+      id: 'admin_rbac_enable',
+      label: 'تفعيل صلاحيات الأدمن RBAC',
+      severity: 'critical',
+      command: 'node scripts/verify-admin-rbac.js --strict',
+      adminRoute: '/api/admin/rbac/matrix',
+      reason: 'RBAC يحمي إجراءات الأدمن الحساسة بمبدأ أقل صلاحية.',
+    });
+  }
+
+  if (weeklyOpsReviewFreshness && weeklyOpsReviewFreshness.fresh === false) {
+    recommendedActions.push({
+      id: 'weekly_ops_review_persist',
+      label: 'تسجيل مراجعة التشغيل الأسبوعية',
+      severity: 'warning',
+      command: 'node scripts/ops-weekly-review.js --persist',
+      adminRoute: '/api/admin/ops/reviews',
+      reason: 'لا توجد مراجعة تشغيل حديثة موثقة.',
+    });
+  }
+
+  if (postmortemBacklog && postmortemBacklog.missingCount > 0) {
+    recommendedActions.push({
+      id: 'incident_postmortems_required',
+      label: 'إنشاء Postmortem للحوادث الحرجة',
+      severity: 'critical',
+      command: 'راجع /api/admin/incidents ثم أنشئ postmortem',
+      adminRoute: '/api/admin/postmortems',
+      reason: 'بعض الحوادث تتطلب تحليل سبب جذري وخطة منع تكرار.',
+    });
+  }
+
   warnings.sort((a, b) => severityRank(b.level) - severityRank(a.level));
   recommendedActions.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
 
@@ -32320,6 +34562,18 @@ export async function getScaleHygieneOverview() {
       freshness: restoreDrillFreshness,
     },
     schedulerCadence,
+    governance: {
+      rbac: rbacMatrix || { enabled: false },
+      reviews: {
+        weeklyOpsReview: weeklyOpsReviewFreshness || null,
+      },
+      postmortems: postmortemBacklog || { missingCount: 0, missing: [] },
+      privacy: {
+        enabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.enabled),
+        exportEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.exportEnabled),
+        anonymizeEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.anonymizeEnabled),
+      },
+    },
     recommendedActions: recommendedActions.slice(0, 12),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
@@ -37770,6 +40024,681 @@ export const _testHelpers = {
   rollupPath,
   emptyRollup,
   addSnapshotToRollup,
+};
+```
+
+---
+
+## `server/services/userAnonymization.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/userAnonymization.js — User Privacy Anonymization (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Previewable and idempotent anonymization workflow.
+// Does not blindly delete financial or audit records.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+  readIndex,
+  writeIndex,
+} from './database.js';
+import { eventBus } from './eventBus.js';
+import { logger } from './logger.js';
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function anonMarker(userId) {
+  const hash = crypto.createHash('sha256').update(String(userId)).digest('hex').slice(0, 12);
+  return `${config.PRIVACY_REQUESTS?.anonymizeUserIdPrefix || 'anon_'}${hash}`;
+}
+
+async function listCollection(collection) {
+  try {
+    const dir = getCollectionPath(collection);
+    return await listJSON(dir);
+  } catch (_) {
+    return [];
+  }
+}
+
+function isUserAlreadyAnonymized(user) {
+  return !!(user && (user.status === 'anonymized' || user.anonymizedAt));
+}
+
+function countRelated(rows, userId, fields) {
+  return rows.filter(r => r && fields.some(f => r[f] === userId)).length;
+}
+
+async function collectAffectedCounts(userId) {
+  const [
+    sessions,
+    applications,
+    jobs,
+    attendance,
+    payments,
+    ratings,
+    reports,
+    verifications,
+    notifications,
+    directOffers,
+    messages,
+    predictiveSignals,
+  ] = await Promise.all([
+    listCollection('sessions'),
+    listCollection('applications'),
+    listCollection('jobs'),
+    listCollection('attendance'),
+    listCollection('payments'),
+    listCollection('ratings'),
+    listCollection('reports'),
+    listCollection('verifications'),
+    listCollection('notifications'),
+    listCollection('direct_offers'),
+    listCollection('messages'),
+    listCollection('predictive_signals'),
+  ]);
+
+  return {
+    sessions: countRelated(sessions, userId, ['userId']),
+    applications: countRelated(applications, userId, ['workerId']),
+    jobs: countRelated(jobs, userId, ['employerId']),
+    attendance: countRelated(attendance, userId, ['workerId', 'employerId']),
+    payments: countRelated(payments, userId, ['employerId', 'disputedBy']),
+    ratings: countRelated(ratings, userId, ['fromUserId', 'toUserId']),
+    reports: countRelated(reports, userId, ['reporterId', 'targetId']),
+    verifications: countRelated(verifications, userId, ['userId']),
+    notifications: countRelated(notifications, userId, ['userId']),
+    directOffers: countRelated(directOffers, userId, ['employerId', 'workerId']),
+    messages: countRelated(messages, userId, ['senderId', 'recipientId']),
+    predictiveSignals: countRelated(predictiveSignals, userId, ['entityId', 'relatedUserId']),
+  };
+}
+
+/**
+ * Preview anonymization.
+ */
+export async function previewUserAnonymization(userId, options = {}) {
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+
+  if (!user) {
+    return { ok: false, code: 'USER_NOT_FOUND', error: 'user not found' };
+  }
+
+  if (user.role === 'admin') {
+    return { ok: false, code: 'CANNOT_ANONYMIZE_ADMIN', error: 'cannot anonymize admin users' };
+  }
+
+  const counts = await collectAffectedCounts(userId);
+
+  return {
+    ok: true,
+    userId,
+    anonymized: isUserAlreadyAnonymized(user),
+    anonId: anonMarker(userId),
+    counts,
+    destructive: true,
+    dryRun: true,
+    policy: {
+      deleteVerificationImagesOnAnonymize: !!config.PRIVACY_REQUESTS?.deleteVerificationImagesOnAnonymize,
+      deleteSessionsOnAnonymize: config.PRIVACY_REQUESTS?.deleteSessionsOnAnonymize !== false,
+      preserveFinancialRecords: true,
+      preserveAuditRecords: true,
+      preserveMessageHistory: true,
+    },
+  };
+}
+
+async function destroySessions(userId) {
+  if (config.PRIVACY_REQUESTS?.deleteSessionsOnAnonymize === false) return 0;
+  const { destroyAllByUser } = await import('./sessions.js');
+  return await destroyAllByUser(userId);
+}
+
+async function anonymizeUserRecord(user) {
+  const now = nowIso();
+  const marker = anonMarker(user.id);
+
+  const phoneIndex = await readIndex('phoneIndex');
+  if (user.phone && phoneIndex[user.phone]) {
+    delete phoneIndex[user.phone];
+    await writeIndex('phoneIndex', phoneIndex);
+  }
+
+  const next = {
+    ...user,
+    phone: marker,
+    name: 'مستخدم محذوف',
+    governorate: null,
+    categories: [],
+    lat: null,
+    lng: null,
+    notificationPreferences: null,
+    verificationStatus: 'unverified',
+    verificationSubmittedAt: null,
+    status: 'anonymized',
+    anonymizedAt: user.anonymizedAt || now,
+    deletedAt: user.deletedAt || now,
+    updatedAt: now,
+  };
+
+  await atomicWrite(getRecordPath('users', user.id), next);
+  return next;
+}
+
+async function anonymizeVerifications(userId) {
+  const rows = await listCollection('verifications');
+  let updated = 0;
+  let deletedImages = 0;
+
+  for (const v of rows) {
+    if (!v || v.userId !== userId) continue;
+
+    const refs = [v.nationalIdImageRef, v.selfieImageRef].filter(Boolean);
+
+    if (config.PRIVACY_REQUESTS?.deleteVerificationImagesOnAnonymize) {
+      try {
+        const { deleteImage } = await import('./imageStore.js');
+        for (const ref of refs) {
+          const did = await deleteImage(ref).catch(() => false);
+          if (did) deletedImages++;
+        }
+      } catch (_) {}
+    }
+
+    v.nationalIdImageRef = null;
+    v.selfieImageRef = null;
+    v.nationalIdImage = null;
+    v.selfieImage = null;
+    v.status = v.status === 'pending' ? 'rejected' : v.status;
+    v.adminNotes = v.adminNotes ? '[redacted due to privacy request]' : v.adminNotes;
+    v.updatedAt = nowIso();
+
+    await atomicWrite(getRecordPath('verifications', v.id), v);
+    updated++;
+  }
+
+  return { updated, deletedImages };
+}
+
+async function deleteUserNotifications(userId) {
+  const rows = await listCollection('notifications');
+  let deleted = 0;
+
+  for (const n of rows) {
+    if (!n || n.userId !== userId) continue;
+    await deleteJSON(getRecordPath('notifications', n.id)).catch(() => {});
+    deleted++;
+  }
+
+  return deleted;
+}
+
+async function scrubDirectOffers(userId) {
+  const rows = await listCollection('direct_offers');
+  let updated = 0;
+
+  for (const offer of rows) {
+    if (!offer || (offer.employerId !== userId && offer.workerId !== userId)) continue;
+
+    if (offer.employerId === userId) {
+      if (offer.preAcceptEmployerSummary) {
+        offer.preAcceptEmployerSummary.displayName = 'مستخدم محذوف';
+      }
+      if (offer.revealedToWorker) {
+        offer.revealedToWorker.employerName = 'مستخدم محذوف';
+        offer.revealedToWorker.employerPhone = null;
+      }
+    }
+
+    if (offer.workerId === userId) {
+      if (offer.preAcceptWorkerSummary) {
+        offer.preAcceptWorkerSummary.displayName = 'مستخدم محذوف';
+      }
+      if (offer.revealedToEmployer) {
+        offer.revealedToEmployer.workerName = 'مستخدم محذوف';
+        offer.revealedToEmployer.workerPhone = null;
+      }
+    }
+
+    offer.privacyAnonymizedAt = offer.privacyAnonymizedAt || nowIso();
+    offer.updatedAt = nowIso();
+
+    await atomicWrite(getRecordPath('direct_offers', offer.id), offer);
+    updated++;
+  }
+
+  return updated;
+}
+
+async function scrubPredictiveSignals(userId) {
+  const rows = await listCollection('predictive_signals');
+  let updated = 0;
+
+  for (const sig of rows) {
+    if (!sig || (sig.entityId !== userId && sig.relatedUserId !== userId)) continue;
+
+    sig.entityAnonymized = sig.entityAnonymized || sig.entityId === userId;
+    sig.relatedUserAnonymized = sig.relatedUserAnonymized || sig.relatedUserId === userId;
+    sig.privacyAnonymizedAt = sig.privacyAnonymizedAt || nowIso();
+    sig.updatedAt = nowIso();
+
+    await atomicWrite(getRecordPath('predictive_signals', sig.id), sig);
+    updated++;
+  }
+
+  return updated;
+}
+
+/**
+ * Confirm anonymization. Idempotent.
+ */
+export async function anonymizeUserData(userId, options = {}) {
+  const preview = await previewUserAnonymization(userId, options);
+  if (!preview.ok) return preview;
+
+  if (options.dryRun || options.preview) {
+    return preview;
+  }
+
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+  if (!user) return { ok: false, code: 'USER_NOT_FOUND', error: 'user not found' };
+
+  if (isUserAlreadyAnonymized(user)) {
+    return {
+      ok: true,
+      idempotent: true,
+      userId,
+      anonId: anonMarker(userId),
+      counts: preview.counts,
+      result: {
+        alreadyAnonymized: true,
+      },
+    };
+  }
+
+  const started = Date.now();
+
+  const result = {
+    sessionsDestroyed: 0,
+    userUpdated: false,
+    verificationsUpdated: 0,
+    verificationImagesDeleted: 0,
+    notificationsDeleted: 0,
+    directOffersScrubbed: 0,
+    predictiveSignalsScrubbed: 0,
+    financialRecordsPreserved: true,
+    auditRecordsPreserved: true,
+    messageHistoryPreserved: true,
+  };
+
+  try {
+    result.sessionsDestroyed = await destroySessions(userId);
+    await anonymizeUserRecord(user);
+    result.userUpdated = true;
+
+    const vrf = await anonymizeVerifications(userId);
+    result.verificationsUpdated = vrf.updated;
+    result.verificationImagesDeleted = vrf.deletedImages;
+
+    result.notificationsDeleted = await deleteUserNotifications(userId);
+    result.directOffersScrubbed = await scrubDirectOffers(userId);
+    result.predictiveSignalsScrubbed = await scrubPredictiveSignals(userId);
+
+    eventBus.emit('privacy:user_anonymized', {
+      userId,
+      anonId: anonMarker(userId),
+      durationMs: Date.now() - started,
+      timestamp: nowIso(),
+    });
+
+    return {
+      ok: true,
+      userId,
+      anonId: anonMarker(userId),
+      counts: preview.counts,
+      result,
+      durationMs: Date.now() - started,
+    };
+  } catch (err) {
+    logger.error('userAnonymization: anonymizeUserData failed', { userId, error: err.message });
+    return {
+      ok: false,
+      code: 'ANONYMIZATION_FAILED',
+      error: err.message,
+      partialResult: result,
+    };
+  }
+}
+
+export const _testHelpers = {
+  anonMarker,
+  isUserAlreadyAnonymized,
+  collectAffectedCounts,
+};
+```
+
+---
+
+## `server/services/userDataExport.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/userDataExport.js — Privacy-Safe User Data Export (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Generates user-scoped JSON export.
+// Excludes raw secrets/session tokens/raw identity images.
+// Does not expose unrevealed third-party phones.
+// ═══════════════════════════════════════════════════════════════
+
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+const BASE_PATH = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function exportPath(requestId) {
+  return join(BASE_PATH, config.PRIVACY_REQUESTS?.basePath || 'privacy_requests', `${requestId}-export.json`);
+}
+
+function publicSafeUser(user) {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    role: user.role,
+    name: user.name || null,
+    phone: user.phone || null,
+    governorate: user.governorate || null,
+    categories: user.categories || [],
+    lat: user.lat ?? null,
+    lng: user.lng ?? null,
+    rating: user.rating || { avg: 0, count: 0 },
+    status: user.status,
+    verificationStatus: user.verificationStatus || 'unverified',
+    termsAcceptedAt: user.termsAcceptedAt || null,
+    termsVersion: user.termsVersion || null,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt || null,
+  };
+}
+
+function stripSession(session) {
+  if (!session) return null;
+
+  return {
+    userId: session.userId,
+    role: session.role,
+    createdAt: session.createdAt,
+    expiresAt: session.expiresAt,
+    ip: session.ip || null,
+    userAgent: session.userAgent ? String(session.userAgent).slice(0, 500) : null,
+    token: '[redacted]',
+  };
+}
+
+function verificationMetadata(v) {
+  if (!v) return null;
+
+  return {
+    id: v.id,
+    userId: v.userId,
+    status: v.status,
+    adminNotes: v.adminNotes || null,
+    reviewedBy: v.reviewedBy || null,
+    reviewedAt: v.reviewedAt || null,
+    createdAt: v.createdAt,
+    updatedAt: v.updatedAt || null,
+    nationalIdImageRef: v.nationalIdImageRef ? '[withheld]' : null,
+    selfieImageRef: v.selfieImageRef ? '[withheld]' : null,
+    nationalIdImage: v.nationalIdImage ? '[withheld]' : null,
+    selfieImage: v.selfieImage ? '[withheld]' : null,
+  };
+}
+
+function sanitizeOfferForExport(offer, userId) {
+  if (!offer) return null;
+  const copy = JSON.parse(JSON.stringify(offer));
+
+  // Never include third-party phones in privacy export.
+  if (copy.revealedToWorker && copy.revealedToWorker.employerId !== userId) {
+    copy.revealedToWorker.employerPhone = '[redacted]';
+  }
+  if (copy.revealedToEmployer && copy.revealedToEmployer.workerId !== userId) {
+    copy.revealedToEmployer.workerPhone = '[redacted]';
+  }
+
+  return copy;
+}
+
+function notificationExport(n) {
+  if (!n) return null;
+  return {
+    id: n.id,
+    userId: n.userId,
+    type: n.type,
+    message: n.message,
+    meta: n.meta || {},
+    action: n.action || null,
+    read: !!n.read,
+    createdAt: n.createdAt,
+    readAt: n.readAt || null,
+  };
+}
+
+async function listCollection(collection) {
+  try {
+    const dir = getCollectionPath(collection);
+    return await listJSON(dir);
+  } catch (_) {
+    return [];
+  }
+}
+
+function relatedToUserByFields(row, userId, fields) {
+  if (!row) return false;
+  return fields.some(f => row[f] === userId);
+}
+
+/**
+ * Generate privacy-safe export object.
+ */
+export async function generateUserDataExport(userId, options = {}) {
+  if (!userId || typeof userId !== 'string') {
+    return { ok: false, code: 'USER_ID_REQUIRED', error: 'userId is required' };
+  }
+
+  const { findById } = await import('./users.js');
+  const user = await findById(userId);
+
+  if (!user) {
+    return { ok: false, code: 'USER_NOT_FOUND', error: 'user not found' };
+  }
+
+  const includeMessages = options.includeMessages !== false && config.PRIVACY_REQUESTS?.includeMessagesInExport !== false;
+  const includeAuditRefs = !!options.includeAuditRefs && !!config.PRIVACY_REQUESTS?.includeAuditRefsInExport;
+
+  const [
+    sessions,
+    applications,
+    jobs,
+    attendance,
+    payments,
+    ratings,
+    reports,
+    verifications,
+    notifications,
+    directOffers,
+    messages,
+    workrooms,
+    privacyRequests,
+    audit,
+  ] = await Promise.all([
+    listCollection('sessions'),
+    listCollection('applications'),
+    listCollection('jobs'),
+    listCollection('attendance'),
+    listCollection('payments'),
+    listCollection('ratings'),
+    listCollection('reports'),
+    listCollection('verifications'),
+    listCollection('notifications'),
+    listCollection('direct_offers'),
+    includeMessages ? listCollection('messages') : Promise.resolve([]),
+    listCollection('workrooms'),
+    listCollection('privacy_requests'),
+    includeAuditRefs ? listCollection('audit') : Promise.resolve([]),
+  ]);
+
+  const ownedJobIds = new Set(jobs.filter(j => j.employerId === userId).map(j => j.id));
+  const appJobIds = new Set(applications.filter(a => a.workerId === userId).map(a => a.jobId));
+  const relatedJobIds = new Set([...ownedJobIds, ...appJobIds]);
+
+  const exportObject = {
+    kind: 'user_data_export',
+    version: 1,
+    generatedAt: nowIso(),
+    userId,
+    user: publicSafeUser(user),
+
+    sessions: sessions
+      .filter(s => s && s.userId === userId)
+      .map(stripSession),
+
+    jobs: jobs.filter(j => j && j.employerId === userId),
+
+    applications: applications.filter(a => a && a.workerId === userId),
+
+    attendance: attendance.filter(a =>
+      relatedToUserByFields(a, userId, ['workerId', 'employerId'])
+    ),
+
+    payments: payments.filter(p =>
+      p && (
+        p.employerId === userId ||
+        p.disputedBy === userId ||
+        relatedJobIds.has(p.jobId)
+      )
+    ),
+
+    ratings: ratings.filter(r =>
+      relatedToUserByFields(r, userId, ['fromUserId', 'toUserId'])
+    ),
+
+    reports: reports.filter(r =>
+      relatedToUserByFields(r, userId, ['reporterId', 'targetId'])
+    ),
+
+    verifications: verifications
+      .filter(v => v && v.userId === userId)
+      .map(verificationMetadata),
+
+    notifications: notifications
+      .filter(n => n && n.userId === userId)
+      .map(notificationExport),
+
+    directOffers: directOffers
+      .filter(o => relatedToUserByFields(o, userId, ['employerId', 'workerId']))
+      .map(o => sanitizeOfferForExport(o, userId)),
+
+    workrooms: workrooms.filter(w => {
+      if (!w) return false;
+      if (w.employerId === userId || w.workerId === userId) return true;
+      if (w.jobId && relatedJobIds.has(w.jobId)) return true;
+      return false;
+    }),
+
+    messages: includeMessages
+      ? messages.filter(m =>
+          relatedToUserByFields(m, userId, ['senderId', 'recipientId']) ||
+          (m.jobId && relatedJobIds.has(m.jobId))
+        ).map(m => ({
+          ...m,
+          attachments: Array.isArray(m.attachments)
+            ? m.attachments.map(a => ({ ...a, rawData: undefined, dataUri: undefined }))
+            : [],
+        }))
+      : [],
+
+    auditRefs: includeAuditRefs
+      ? audit.filter(a =>
+          a && (
+            a.adminId === userId ||
+            a.targetId === userId ||
+            (a.details && JSON.stringify(a.details).includes(userId))
+          )
+        ).map(a => ({
+          id: a.id,
+          action: a.action,
+          targetType: a.targetType,
+          targetId: a.targetId,
+          createdAt: a.createdAt,
+          details: '[withheld]',
+          ip: a.ip ? '[withheld]' : null,
+        }))
+      : [],
+
+    privacyRequests: privacyRequests.filter(p => p && p.userId === userId),
+
+    excluded: {
+      sessionTokens: true,
+      rawIdentityImages: true,
+      rawImageBinaries: true,
+      adminSecrets: true,
+      unrevealedThirdPartyPhones: true,
+      auditDetails: !includeAuditRefs,
+    },
+  };
+
+  return { ok: true, export: exportObject };
+}
+
+/**
+ * Persist export JSON for a privacy request.
+ */
+export async function persistUserDataExport(requestId, userId, options = {}) {
+  const generated = await generateUserDataExport(userId, options);
+  if (!generated.ok) return generated;
+
+  const filePath = exportPath(requestId);
+  await atomicWrite(filePath, generated.export);
+
+  return {
+    ok: true,
+    export: generated.export,
+    filePath,
+    relativePath: `${config.PRIVACY_REQUESTS?.basePath || 'privacy_requests'}/${requestId}-export.json`,
+  };
+}
+
+export const _testHelpers = {
+  exportPath,
+  stripSession,
+  verificationMetadata,
+  sanitizeOfferForExport,
+  publicSafeUser,
 };
 ```
 

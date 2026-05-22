@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.53.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-20T23:11:19.170Z
-> Files in this part: 70
+# يوميّة (Yawmia) v0.54.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-22T15:49:20.349Z
+> Files in this part: 74
 
 ## Files
 1. `frontend/404.html`
@@ -38,41 +38,45 @@
 33. `frontend/sw.js`
 34. `frontend/terms.html`
 35. `frontend/user.html`
-36. `scripts/backup.js`
-37. `scripts/benchmark.js`
-38. `scripts/bundle-for-review.js`
-39. `scripts/cleanup-attachments.js`
-40. `scripts/compact-counters.js`
-41. `scripts/compact-predictive-signals.js`
-42. `scripts/compact-queue.js`
-43. `scripts/compact-workrooms.js`
-44. `scripts/export-incident-timeline.js`
-45. `scripts/generate-vapid-keys.js`
-46. `scripts/migrate.js`
-47. `scripts/ops-weekly-review.js`
-48. `scripts/postdeploy-smoke.js`
-49. `scripts/predeploy-check.js`
-50. `scripts/queue-drain.js`
-51. `scripts/queue-retry-dlq.js`
-52. `scripts/rebuild-audit-index.js`
-53. `scripts/rebuild-counters.js`
-54. `scripts/rebuild-predictive-archive-index.js`
-55. `scripts/rebuild-search-relevance.js`
-56. `scripts/rebuild-workroom-search.js`
-57. `scripts/repair-indexes.js`
-58. `scripts/repair-queue.js`
-59. `scripts/rollup-product-intelligence.js`
-60. `scripts/rollup-trust-snapshots.js`
-61. `scripts/run-backup-restore-drill.js`
-62. `scripts/run-trust-calibration.js`
-63. `scripts/scheduler-cadence-report.js`
-64. `scripts/verify-audit-index.js`
-65. `scripts/verify-data-json.js`
-66. `scripts/verify-file-health.js`
-67. `scripts/verify-marketplace-intelligence.js`
-68. `scripts/verify-production-readiness.js`
-69. `scripts/verify-queue.js`
-70. `scripts/verify-workroom-indexes.js`
+36. `scripts/anonymize-user-data.js`
+37. `scripts/backup.js`
+38. `scripts/benchmark.js`
+39. `scripts/bundle-for-review.js`
+40. `scripts/cleanup-attachments.js`
+41. `scripts/compact-counters.js`
+42. `scripts/compact-predictive-signals.js`
+43. `scripts/compact-queue.js`
+44. `scripts/compact-workrooms.js`
+45. `scripts/export-incident-timeline.js`
+46. `scripts/export-user-data.js`
+47. `scripts/generate-vapid-keys.js`
+48. `scripts/migrate.js`
+49. `scripts/ops-weekly-review.js`
+50. `scripts/postdeploy-smoke.js`
+51. `scripts/predeploy-check.js`
+52. `scripts/queue-drain.js`
+53. `scripts/queue-retry-dlq.js`
+54. `scripts/rebuild-audit-index.js`
+55. `scripts/rebuild-counters.js`
+56. `scripts/rebuild-predictive-archive-index.js`
+57. `scripts/rebuild-search-relevance.js`
+58. `scripts/rebuild-workroom-search.js`
+59. `scripts/repair-indexes.js`
+60. `scripts/repair-queue.js`
+61. `scripts/rollup-product-intelligence.js`
+62. `scripts/rollup-trust-snapshots.js`
+63. `scripts/run-backup-restore-drill.js`
+64. `scripts/run-trust-calibration.js`
+65. `scripts/scheduler-cadence-report.js`
+66. `scripts/verify-admin-rbac.js`
+67. `scripts/verify-audit-index.js`
+68. `scripts/verify-data-json.js`
+69. `scripts/verify-file-health.js`
+70. `scripts/verify-marketplace-intelligence.js`
+71. `scripts/verify-privacy-governance.js`
+72. `scripts/verify-production-readiness.js`
+73. `scripts/verify-queue.js`
+74. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -160,6 +164,7 @@
         <button class="admin-tab" data-admin-tab="ops">التشغيل</button>
         <button class="admin-tab" data-admin-tab="scale">التوسع</button>
         <button class="admin-tab" data-admin-tab="audit">السجل والتصدير</button>
+        <button class="admin-tab" data-admin-tab="governance">الحوكمة</button>
         <button class="admin-tab" data-admin-tab="settings">الإعدادات</button>
       </nav>
 
@@ -656,6 +661,117 @@
         </div>
 
         <div id="exportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 58 — Governance / RBAC / Privacy / Reviews / Postmortems -->
+      <div class="admin-section" id="governanceOverviewSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>⚖️ حوكمة المنصة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadGovernanceDashboard()">تحديث</button>
+        </div>
+
+        <div id="governanceRecommendedActions" class="recommended-actions"></div>
+
+        <div id="governanceSummaryGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-start:0.75rem;">
+          تعرض هذه اللوحة حالة صلاحيات الأدمن، طلبات الخصوصية، موافقات الإجراءات الحساسة،
+          مراجعات التشغيل، وملفات ما بعد الحوادث. الهدف هو تقليل المخاطر بدون تعقيد يومي.
+        </p>
+      </div>
+
+      <div class="admin-section" id="rbacSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🛡 صلاحيات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRbacMatrix()">تحديث</button>
+        </div>
+        <div id="rbacMeInfo"></div>
+        <div id="rbacMatrixArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="approvalQueueSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>✅ موافقات الإجراءات الحساسة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadApprovals()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="approvalStatusFilter" class="form-input form-input--sm" onchange="AdminApp.loadApprovals()">
+            <option value="pending">قيد الانتظار</option>
+            <option value="">كل الحالات</option>
+            <option value="approved">تمت الموافقة</option>
+            <option value="rejected">مرفوض</option>
+            <option value="expired">منتهي</option>
+            <option value="consumed">مستخدم</option>
+          </select>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.openCreateApprovalPrompt()">طلب موافقة جديد</button>
+        </div>
+
+        <div id="approvalsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="privacyRequestsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🔐 طلبات الخصوصية</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPrivacyRequests()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <input id="privacyUserIdInput" class="form-input form-input--sm" placeholder="User ID مثل usr_x..." style="min-width:220px;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.createPrivacyExportRequest()">طلب تصدير بيانات</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.createPrivacyAnonymizeRequest()">طلب إخفاء بيانات</button>
+        </div>
+
+        <div id="privacyRequestsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="opsReviewRecordsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>📝 مراجعات التشغيل</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadOpsReviewRecords()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="opsReviewTypeFilter" class="form-input form-input--sm" onchange="AdminApp.loadOpsReviewRecords()">
+            <option value="">كل المراجعات</option>
+            <option value="weekly_ops_review">مراجعة أسبوعية</option>
+            <option value="dlq_review">مراجعة DLQ</option>
+            <option value="restore_drill_review">مراجعة Restore Drill</option>
+            <option value="marketplace_review">مراجعة السوق</option>
+            <option value="trust_calibration_review">مراجعة معايرة الثقة</option>
+            <option value="predictive_precision_review">مراجعة دقة المخاطر</option>
+            <option value="payment_dispute_review">مراجعة نزاعات الدفع</option>
+            <option value="slo_breach_review">مراجعة SLO</option>
+          </select>
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.createOpsReviewRecord()">إنشاء مراجعة</button>
+        </div>
+
+        <div id="opsReviewsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="postmortemsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🚨 ما بعد الحوادث — Postmortems</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPostmortems()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          الحوادث الحرجة تحتاج Postmortem لتوثيق السبب الجذري وخطة منع التكرار.
+        </p>
+
+        <div id="postmortemsArea">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
@@ -6049,6 +6165,180 @@ textarea:focus:not(:focus-visible) {
     flex: 0 0 auto;
   }
 }
+
+/* ═══ Phase 58 — Governance / RBAC / Privacy / Postmortems ═══ */
+.governance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.governance-card,
+.rbac-role-card,
+.review-record-card,
+.postmortem-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.governance-card--compact {
+  padding: 0.9rem 1rem;
+}
+
+.governance-card--warning {
+  border-inline-start: 4px solid var(--color-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.governance-card--critical {
+  border-inline-start: 4px solid var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.governance-card__value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.governance-card__label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.35rem;
+  text-align: center;
+}
+
+.governance-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-block-end: 0.5rem;
+}
+
+.governance-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.75rem;
+}
+
+.capability-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  margin: 0.12rem;
+  direction: ltr;
+}
+
+.approval-status-badge,
+.privacy-request-status-badge,
+.action-item-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.approval-status-badge--pending,
+.privacy-request-status-badge--requested,
+.privacy-request-status-badge--queued,
+.privacy-request-status-badge--processing {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.approval-status-badge--approved,
+.privacy-request-status-badge--completed,
+.action-item-status--done {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.approval-status-badge--rejected,
+.privacy-request-status-badge--failed {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.approval-status-badge--expired,
+.approval-status-badge--consumed,
+.privacy-request-status-badge--cancelled,
+.privacy-request-status-badge--expired {
+  color: var(--color-text-muted);
+  background: rgba(139, 143, 163, 0.12);
+}
+
+.rbac-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.rbac-role-card h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-block-end: 0.65rem;
+}
+
+.rbac-role-card__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.review-record-card {
+  border-inline-start: 4px solid var(--color-primary);
+}
+
+.postmortem-card {
+  border-inline-start: 4px solid var(--color-warning);
+}
+
+.postmortem-card[data-severity="critical"],
+.postmortem-card--critical {
+  border-inline-start-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+@media (max-width: 600px) {
+  .governance-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .governance-card__actions .btn,
+  .governance-card__actions button {
+    min-height: 44px;
+  }
+
+  .rbac-role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .capability-chip {
+    font-size: 0.68rem;
+  }
+}
 ```
 
 ---
@@ -6836,6 +7126,7 @@ var AdminApp = (function () {
         loadTrustDashboard(),
         loadTrustCalibrationDashboard(),
         loadScaleHygiene(),
+        loadGovernanceDashboard(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -7124,6 +7415,36 @@ var AdminApp = (function () {
 
             if (typeof loadScaleHygiene === 'function') loadScaleHygiene();
             if (typeof loadOpsQueueStats === 'function') loadOpsQueueStats();
+          } catch (_) {}
+        });
+      });
+
+      // Phase 58 — Governance events
+      [
+        'admin_approval:created',
+        'admin_approval:approved',
+        'admin_approval:rejected',
+        'admin_approval:expired',
+        'admin_approval:consumed',
+        'privacy_request:created',
+        'privacy_request:queued',
+        'privacy_request:completed',
+        'privacy_request:failed',
+        'privacy_request:cancelled',
+        'ops_review:created',
+        'ops_review:completed',
+        'postmortem:created',
+        'postmortem:updated',
+        'postmortem:action_item_added',
+        'postmortem:action_item_updated'
+      ].forEach(function (eventName) {
+        adminSseSource.addEventListener(eventName, function () {
+          try {
+            if (typeof loadGovernanceDashboard === 'function') loadGovernanceDashboard();
+            if (typeof loadApprovals === 'function') loadApprovals();
+            if (typeof loadPrivacyRequests === 'function') loadPrivacyRequests();
+            if (typeof loadOpsReviewRecords === 'function') loadOpsReviewRecords();
+            if (typeof loadPostmortems === 'function') loadPostmortems();
           } catch (_) {}
         });
       });
@@ -10292,11 +10613,17 @@ var AdminApp = (function () {
             ' · أحداث: ' + escapeHtml(String(inc.eventCount || 0)) +
           '</div>';
 
+        html += '<div style="margin-block-start:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">';
+
         if (!resolved) {
-          html += '<div style="margin-block-start:0.75rem;">' +
-            '<button class="btn btn--primary btn--sm" onclick="AdminApp.resolveIncident(\'' + escapeHtml(inc.id) + '\')">Resolve</button>' +
-          '</div>';
+          html += '<button class="btn btn--primary btn--sm" onclick="AdminApp.resolveIncident(\'' + escapeHtml(inc.id) + '\')">Resolve</button>';
         }
+
+        if (inc.governance && inc.governance.postmortemRequired && !inc.governance.postmortemExists) {
+          html += '<button class="btn btn--warning btn--sm" onclick="AdminApp.createIncidentPostmortem(\'' + escapeHtml(inc.id) + '\')">Postmortem مطلوب</button>';
+        }
+
+        html += '</div>';
 
         html += '</div>';
       });
@@ -10739,6 +11066,14 @@ var AdminApp = (function () {
       'auditIndexSection',
       'exportsSection'
     ],
+    governance: [
+      'governanceOverviewSection',
+      'rbacSection',
+      'approvalQueueSection',
+      'privacyRequestsSection',
+      'opsReviewRecordsSection',
+      'postmortemsSection'
+    ],
     settings: [
       'usersTable',
       'jobsTable',
@@ -10842,6 +11177,13 @@ var AdminApp = (function () {
     } else if (tabName === 'audit') {
       loadAuditIndexStatus();
       loadExports();
+    } else if (tabName === 'governance') {
+      loadGovernanceDashboard();
+      loadRbacMatrix();
+      loadApprovals();
+      loadPrivacyRequests();
+      loadOpsReviewRecords();
+      loadPostmortems();
     }
   }
 
@@ -11150,6 +11492,644 @@ var AdminApp = (function () {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Phase 58 — Governance / RBAC / Privacy / Reviews / Postmortems
+  // ═══════════════════════════════════════════════════════════════
+
+  function approvalStatusBadge(status) {
+    var s = status || 'pending';
+    return '<span class="approval-status-badge approval-status-badge--' + escapeHtml(s) + '">' + escapeHtml(s) + '</span>';
+  }
+
+  function privacyStatusBadge(status) {
+    var s = status || 'requested';
+    return '<span class="privacy-request-status-badge privacy-request-status-badge--' + escapeHtml(s) + '">' + escapeHtml(s) + '</span>';
+  }
+
+  async function loadGovernanceDashboard() {
+    var grid = document.getElementById('governanceSummaryGrid');
+    if (grid) grid.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var results = await Promise.allSettled([
+        api('/api/admin/rbac/me'),
+        api('/api/admin/rbac/matrix'),
+        api('/api/admin/approvals?status=pending&limit=100'),
+        api('/api/admin/privacy/requests?limit=100'),
+        api('/api/admin/ops/reviews?limit=100'),
+        api('/api/admin/postmortems?limit=100'),
+        api('/api/admin/scale-hygiene/overview')
+      ]);
+
+      var me = results[0].status === 'fulfilled' ? results[0].value : {};
+      var matrix = results[1].status === 'fulfilled' ? results[1].value.rbac || {} : {};
+      var approvals = results[2].status === 'fulfilled' ? results[2].value : { total: 0 };
+      var privacy = results[3].status === 'fulfilled' ? results[3].value : { requests: [] };
+      var reviews = results[4].status === 'fulfilled' ? results[4].value : { reviews: [] };
+      var postmortems = results[5].status === 'fulfilled' ? results[5].value : { postmortems: [] };
+      var scale = results[6].status === 'fulfilled' ? results[6].value.overview || {} : {};
+
+      var privacyOpen = (privacy.requests || []).filter(function (r) {
+        return ['requested', 'queued', 'processing', 'failed'].indexOf(r.status) !== -1;
+      }).length;
+
+      var staleWeekly = false;
+      try {
+        staleWeekly = !!(scale.governance && scale.governance.reviews && scale.governance.reviews.weeklyOpsReview && scale.governance.reviews.weeklyOpsReview.fresh === false);
+      } catch (_) {}
+
+      var missingPostmortems = 0;
+      try {
+        missingPostmortems = scale.governance && scale.governance.postmortems ? (scale.governance.postmortems.missingCount || 0) : 0;
+      } catch (_) {}
+
+      var cards = [
+        { value: escapeHtml(me.role || 'unknown'), label: 'دور الأدمن الحالي' },
+        { value: matrix.enabled ? 'مفعل' : 'غير مفعل', label: 'RBAC' },
+        { value: approvals.total || 0, label: 'موافقات معلقة' },
+        { value: privacyOpen, label: 'طلبات خصوصية نشطة' },
+        { value: staleWeekly ? 'متأخرة' : 'حديثة/غير مطلوبة', label: 'مراجعة التشغيل' },
+        { value: missingPostmortems, label: 'Postmortems مطلوبة' },
+      ];
+
+      if (grid) {
+        grid.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'governance-card' + ((c.value === 'غير مفعل' || c.value === 'متأخرة' || Number(c.value) > 0) ? ' governance-card--warning' : '');
+          card.innerHTML =
+            '<div class="governance-card__value">' + c.value + '</div>' +
+            '<div class="governance-card__label">' + escapeHtml(c.label) + '</div>';
+          grid.appendChild(card);
+        });
+      }
+
+      var actions = [];
+      if (!matrix.enabled) {
+        actions.push({
+          label: 'تفعيل RBAC',
+          severity: 'critical',
+          command: 'node scripts/verify-admin-rbac.js --strict',
+          adminRoute: '/api/admin/rbac/matrix',
+          reason: 'صلاحيات الأدمن غير مفعلة أو غير واضحة.',
+        });
+      }
+      if ((approvals.total || 0) > 0) {
+        actions.push({
+          label: 'مراجعة الموافقات المعلقة',
+          severity: 'warning',
+          adminRoute: '/api/admin/approvals',
+          reason: 'يوجد إجراءات حساسة تنتظر موافقة.',
+        });
+      }
+      if (privacyOpen > 0) {
+        actions.push({
+          label: 'مراجعة طلبات الخصوصية',
+          severity: 'warning',
+          adminRoute: '/api/admin/privacy/requests',
+          reason: 'يوجد طلبات export/anonymization تحتاج متابعة.',
+        });
+      }
+      if (missingPostmortems > 0) {
+        actions.push({
+          label: 'إنشاء Postmortems للحوادث الحرجة',
+          severity: 'critical',
+          adminRoute: '/api/admin/postmortems',
+          reason: 'بعض الحوادث تتطلب تحليل سبب جذري وخطة منع تكرار.',
+        });
+      }
+
+      renderRecommendedActions('governanceRecommendedActions', actions);
+    } catch (err) {
+      if (grid) grid.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الحوكمة</p>';
+    }
+  }
+
+  async function loadRbacMatrix() {
+    var meEl = document.getElementById('rbacMeInfo');
+    var area = document.getElementById('rbacMatrixArea');
+
+    if (area) area.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+
+    try {
+      var me = await api('/api/admin/rbac/me');
+      var data = await api('/api/admin/rbac/matrix');
+      var rbac = data.rbac || {};
+      var caps = rbac.capabilities || {};
+
+      if (meEl) {
+        meEl.innerHTML =
+          '<div class="governance-card">' +
+            '<div class="governance-card__value">' + escapeHtml(me.role || 'unknown') + '</div>' +
+            '<div class="governance-card__label">دور الأدمن الحالي</div>' +
+            '<div style="margin-block-start:0.5rem;">' +
+              (me.capabilities || []).slice(0, 12).map(function (c) {
+                return '<span class="capability-chip">' + escapeHtml(c) + '</span>';
+              }).join(' ') +
+            '</div>' +
+          '</div>';
+      }
+
+      if (!area) return;
+
+      var html = '<div class="rbac-role-grid">';
+      Object.keys(caps).forEach(function (role) {
+        html += '<div class="rbac-role-card">' +
+          '<h3>' + escapeHtml(role) + '</h3>' +
+          '<div class="rbac-role-card__caps">' +
+            (caps[role] || []).map(function (c) {
+              return '<span class="capability-chip">' + escapeHtml(c) + '</span>';
+            }).join(' ') +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+
+      area.innerHTML = html;
+    } catch (err) {
+      if (area) area.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل صلاحيات الأدمن</p>';
+    }
+  }
+
+  async function loadApprovals() {
+    var el = document.getElementById('approvalsArea');
+    if (!el) return;
+
+    try {
+      var statusEl = document.getElementById('approvalStatusFilter');
+      var status = statusEl ? statusEl.value : 'pending';
+      var url = '/api/admin/approvals?limit=50';
+      if (status) url += '&status=' + encodeURIComponent(status);
+
+      var data = await api(url);
+      var rows = data.approvals || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد موافقات بهذه الحالة</p>';
+        return;
+      }
+
+      var html = '<div class="governance-list">';
+      rows.forEach(function (a) {
+        html += '<div class="governance-card governance-card--compact">' +
+          '<div class="governance-card__header">' +
+            '<strong>' + escapeHtml(a.action || '-') + '</strong>' +
+            approvalStatusBadge(a.status) +
+          '</div>' +
+          '<p><small>Target: ' + escapeHtml(a.targetType || '-') + ':' + escapeHtml(a.targetId || '-') + '</small></p>' +
+          '<p><small>Requested by: ' + escapeHtml(a.requestedBy || '-') + '</small></p>' +
+          (a.requestReason ? '<p>' + escapeHtml(a.requestReason) + '</p>' : '') +
+          '<p><small>Expires: ' + escapeHtml(a.expiresAt ? new Date(a.expiresAt).toLocaleString('ar-EG') : '-') + '</small></p>';
+
+        if (a.status === 'pending') {
+          html += '<div class="governance-card__actions">' +
+            '<button class="btn btn--success btn--sm" onclick="AdminApp.approveApproval(\'' + escapeHtml(a.id) + '\')">موافقة</button>' +
+            '<button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.rejectApproval(\'' + escapeHtml(a.id) + '\')">رفض</button>' +
+          '</div>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل الموافقات</p>';
+    }
+  }
+
+  async function openCreateApprovalPrompt() {
+    try {
+      var action = await YawmiaModal.prompt({
+        title: 'طلب موافقة جديد',
+        message: 'اكتب اسم الإجراء الحساس مثل privacy_anonymize أو queue_repair',
+        placeholder: 'privacy_anonymize',
+        required: true,
+      });
+      if (!action) return;
+
+      var targetId = await YawmiaModal.prompt({
+        title: 'هدف الإجراء',
+        message: 'اكتب targetId مثل usr_x أو queue',
+        placeholder: 'usr_x',
+        required: true,
+      });
+      if (!targetId) return;
+
+      var reason = await YawmiaModal.prompt({
+        title: 'سبب طلب الموافقة',
+        message: 'اكتب سبب واضح ومختصر',
+        placeholder: 'سبب الإجراء...',
+        required: true,
+        minLength: 5,
+      });
+      if (!reason) return;
+
+      await apiWrite('POST', '/api/admin/approvals', {
+        action: action,
+        targetType: action.indexOf('privacy') === 0 ? 'user' : 'admin_action',
+        targetId: targetId,
+        reason: reason,
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إنشاء طلب الموافقة');
+      loadApprovals();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء الموافقة');
+    }
+  }
+
+  async function approveApproval(id) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'الموافقة على الإجراء',
+        message: 'ملاحظة اختيارية',
+        placeholder: 'تمت المراجعة...',
+      });
+      if (note === null) note = '';
+
+      await apiWrite('POST', '/api/admin/approvals/' + id + '/approve', { note: note });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تمت الموافقة');
+      loadApprovals();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في الموافقة');
+    }
+  }
+
+  async function rejectApproval(id) {
+    try {
+      var note = await YawmiaModal.prompt({
+        title: 'رفض طلب الموافقة',
+        message: 'اكتب سبب الرفض',
+        placeholder: 'سبب الرفض...',
+      });
+      if (note === null) return;
+
+      await apiWrite('POST', '/api/admin/approvals/' + id + '/reject', { note: note });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم رفض الطلب');
+      loadApprovals();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في رفض الموافقة');
+    }
+  }
+
+  async function loadPrivacyRequests() {
+    var el = document.getElementById('privacyRequestsArea');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/privacy/requests?limit=50');
+      var rows = data.requests || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد طلبات خصوصية بعد</p>';
+        return;
+      }
+
+      var html = '<div class="governance-list">';
+      rows.forEach(function (r) {
+        html += '<div class="governance-card governance-card--compact">' +
+          '<div class="governance-card__header">' +
+            '<strong>' + escapeHtml(r.type || '-') + '</strong>' +
+            privacyStatusBadge(r.status) +
+          '</div>' +
+          '<p><small>User: <a class="worker-link" href="/user.html?id=' + escapeHtml(r.userId || '') + '">' + escapeHtml(r.userId || '-') + '</a></small></p>' +
+          '<p><small>Created: ' + escapeHtml(r.createdAt ? new Date(r.createdAt).toLocaleString('ar-EG') : '-') + '</small></p>' +
+          (r.error ? '<p style="color:var(--color-error);">' + escapeHtml(r.error) + '</p>' : '');
+
+        html += '<div class="governance-card__actions">';
+        if (r.type === 'user_data_export' && (r.status === 'requested' || r.status === 'failed')) {
+          html += '<button class="btn btn--primary btn--sm" onclick="AdminApp.queuePrivacyExport(\'' + escapeHtml(r.id) + '\')">تشغيل التصدير</button>';
+        }
+        if (r.type === 'user_anonymization' && (r.status === 'requested' || r.status === 'failed')) {
+          html += '<button class="btn btn--ghost btn--sm" onclick="AdminApp.previewPrivacyAnonymize(\'' + escapeHtml(r.id) + '\')">معاينة التأثير</button>';
+          html += '<button class="btn btn--warning btn--sm" onclick="AdminApp.queuePrivacyAnonymize(\'' + escapeHtml(r.id) + '\')">تشغيل الإخفاء</button>';
+        }
+        if (['requested','queued','processing','failed'].indexOf(r.status) !== -1) {
+          html += '<button class="btn btn--ghost btn--sm" style="color:var(--color-error);border-color:var(--color-error);" onclick="AdminApp.cancelPrivacyRequest(\'' + escapeHtml(r.id) + '\')">إلغاء</button>';
+        }
+        html += '</div>';
+
+        if (r.exportFilePath) {
+          html += '<p><small>Export: ' + escapeHtml(r.exportFilePath) + '</small></p>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل طلبات الخصوصية</p>';
+    }
+  }
+
+  async function createPrivacyExportRequest() {
+    var input = document.getElementById('privacyUserIdInput');
+    var userId = input ? input.value.trim() : '';
+    if (!userId) {
+      showError('اكتب User ID أولاً');
+      return;
+    }
+
+    try {
+      await apiWrite('POST', '/api/admin/privacy/requests', {
+        type: 'user_data_export',
+        userId: userId,
+        reason: 'Admin requested user data export',
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إنشاء طلب تصدير البيانات');
+      loadPrivacyRequests();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء طلب الخصوصية');
+    }
+  }
+
+  async function createPrivacyAnonymizeRequest() {
+    var input = document.getElementById('privacyUserIdInput');
+    var userId = input ? input.value.trim() : '';
+    if (!userId) {
+      showError('اكتب User ID أولاً');
+      return;
+    }
+
+    var confirmed = await YawmiaModal.confirm({
+      title: 'طلب إخفاء بيانات',
+      message: 'هذا إجراء حساس ويحتاج موافقة قبل التنفيذ. هل تريد إنشاء الطلب؟',
+      confirmText: 'إنشاء الطلب',
+      cancelText: 'إلغاء',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiWrite('POST', '/api/admin/privacy/requests', {
+        type: 'user_anonymization',
+        userId: userId,
+        reason: 'Admin requested user anonymization',
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم إنشاء طلب إخفاء البيانات — يحتاج Approval');
+      loadPrivacyRequests();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء طلب الإخفاء');
+    }
+  }
+
+  async function queuePrivacyExport(id) {
+    try {
+      var data = await apiWrite('POST', '/api/admin/privacy/requests/' + id + '/export', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم وضع تصدير البيانات في الطابور');
+        loadPrivacyRequests();
+        loadOpsQueueStats();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل التصدير');
+    }
+  }
+
+  async function previewPrivacyAnonymize(id) {
+    try {
+      var data = await apiWrite('POST', '/api/admin/privacy/requests/' + id + '/anonymize-preview', {});
+      if (!data || !data.ok || !data.preview) {
+        showError('تعذّر إنشاء المعاينة');
+        return;
+      }
+
+      var p = data.preview;
+      var counts = p.counts || {};
+      var lines = Object.keys(counts).map(function (k) {
+        return k + ': ' + counts[k];
+      }).join('\n');
+
+      await YawmiaModal.prompt({
+        title: 'معاينة إخفاء البيانات',
+        message: 'السجلات المتأثرة:\n' + lines + '\n\nهذه معاينة فقط — لا توجد بيانات تغيرت.',
+        inputType: 'textarea',
+        placeholder: 'اضغط إلغاء للإغلاق',
+      });
+    } catch (err) {
+      showError(err.message || 'خطأ في معاينة إخفاء البيانات');
+    }
+  }
+
+  async function queuePrivacyAnonymize(id) {
+    try {
+      var approvalId = await YawmiaModal.prompt({
+        title: 'Approval ID مطلوب',
+        message: 'اكتب رقم الموافقة المعتمدة لهذا الإجراء',
+        placeholder: 'apr_x...',
+        required: true,
+      });
+      if (!approvalId) return;
+
+      var confirmed = await YawmiaModal.confirm({
+        title: 'تشغيل إخفاء البيانات',
+        message: 'سيتم وضع عملية إخفاء بيانات المستخدم في الطابور. تأكد من وجود backup.',
+        confirmText: 'تشغيل',
+        cancelText: 'إلغاء',
+        danger: true,
+      });
+      if (!confirmed) return;
+
+      var data = await apiWrite('POST', '/api/admin/privacy/requests/' + id + '/anonymize', {
+        approvalId: approvalId,
+      });
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.warning('تم وضع إخفاء البيانات في الطابور');
+        loadPrivacyRequests();
+        loadOpsQueueStats();
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل الإخفاء');
+    }
+  }
+
+  async function cancelPrivacyRequest(id) {
+    try {
+      await apiWrite('POST', '/api/admin/privacy/requests/' + id + '/cancel', {});
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.info('تم إلغاء طلب الخصوصية');
+      loadPrivacyRequests();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إلغاء الطلب');
+    }
+  }
+
+  async function loadOpsReviewRecords() {
+    var el = document.getElementById('opsReviewsArea');
+    if (!el) return;
+
+    try {
+      var filter = document.getElementById('opsReviewTypeFilter');
+      var type = filter ? filter.value : '';
+      var url = '/api/admin/ops/reviews?limit=50';
+      if (type) url += '&type=' + encodeURIComponent(type);
+
+      var data = await api(url);
+      var rows = data.reviews || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد مراجعات تشغيل بعد</p>';
+        return;
+      }
+
+      var html = '<div class="governance-list">';
+      rows.forEach(function (r) {
+        html += '<div class="review-record-card">' +
+          '<div class="governance-card__header">' +
+            '<strong>' + escapeHtml(r.title || r.type) + '</strong>' +
+            '<span class="approval-status-badge approval-status-badge--' + escapeHtml(r.status || 'draft') + '">' + escapeHtml(r.status || 'draft') + '</span>' +
+          '</div>' +
+          '<p><small>' + escapeHtml(r.type || '-') + ' · ' + escapeHtml(r.createdAt ? new Date(r.createdAt).toLocaleString('ar-EG') : '-') + '</small></p>' +
+          (r.summary ? '<p>' + escapeHtml(String(r.summary).slice(0, 250)) + '</p>' : '');
+
+        if (r.status !== 'completed') {
+          html += '<button class="btn btn--primary btn--sm" onclick="AdminApp.completeOpsReviewRecord(\'' + escapeHtml(r.id) + '\')">إكمال المراجعة</button>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل مراجعات التشغيل</p>';
+    }
+  }
+
+  async function createOpsReviewRecord() {
+    try {
+      var type = await YawmiaModal.prompt({
+        title: 'نوع مراجعة التشغيل',
+        message: 'مثال: weekly_ops_review أو dlq_review',
+        placeholder: 'weekly_ops_review',
+        required: true,
+      });
+      if (!type) return;
+
+      var summary = await YawmiaModal.prompt({
+        title: 'ملخص المراجعة',
+        message: 'اكتب ملخصًا قصيرًا',
+        placeholder: 'تمت مراجعة المؤشرات...',
+      });
+      if (summary === null) summary = '';
+
+      await apiWrite('POST', '/api/admin/ops/reviews', {
+        type: type,
+        title: type,
+        summary: summary,
+        status: 'draft',
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إنشاء مراجعة التشغيل');
+      loadOpsReviewRecords();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء المراجعة');
+    }
+  }
+
+  async function completeOpsReviewRecord(id) {
+    try {
+      var summary = await YawmiaModal.prompt({
+        title: 'إكمال مراجعة التشغيل',
+        message: 'اكتب ملخص الإكمال',
+        placeholder: 'تمت المراجعة ولا توجد إجراءات عاجلة...',
+      });
+      if (summary === null) return;
+
+      await apiWrite('POST', '/api/admin/ops/reviews/' + id + '/complete', {
+        summary: summary,
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إكمال المراجعة');
+      loadOpsReviewRecords();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إكمال المراجعة');
+    }
+  }
+
+  async function loadPostmortems() {
+    var el = document.getElementById('postmortemsArea');
+    if (!el) return;
+
+    try {
+      var data = await api('/api/admin/postmortems?limit=50');
+      var rows = data.postmortems || [];
+
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد Postmortems بعد</p>';
+        return;
+      }
+
+      var html = '<div class="governance-list">';
+      rows.forEach(function (p) {
+        var openItems = (p.actionItems || []).filter(function (i) {
+          return i.status !== 'done' && i.status !== 'cancelled';
+        }).length;
+
+        html += '<div class="postmortem-card">' +
+          '<div class="governance-card__header">' +
+            '<strong>' + escapeHtml(p.summary || p.incidentId || p.id) + '</strong>' +
+            '<span class="approval-status-badge approval-status-badge--' + escapeHtml(p.status || 'draft') + '">' + escapeHtml(p.status || 'draft') + '</span>' +
+          '</div>' +
+          '<p><small>Incident: ' + escapeHtml(p.incidentId || '-') + ' · Severity: ' + escapeHtml(p.severity || '-') + '</small></p>' +
+          '<p><small>Action items open: ' + openItems + '</small></p>' +
+          '<button class="btn btn--ghost btn--sm" onclick="AdminApp.updatePostmortemStatus(\'' + escapeHtml(p.id) + '\', \'completed\')">تعليم كمكتمل</button>' +
+        '</div>';
+      });
+      html += '</div>';
+
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Postmortems</p>';
+    }
+  }
+
+  async function createIncidentPostmortem(incidentId) {
+    try {
+      var summary = await YawmiaModal.prompt({
+        title: 'إنشاء Postmortem',
+        message: 'اكتب ملخص الحادث',
+        placeholder: 'ملخص قصير...',
+        required: true,
+      });
+      if (!summary) return;
+
+      await apiWrite('POST', '/api/admin/incidents/' + encodeURIComponent(incidentId) + '/postmortem', {
+        summary: summary,
+      });
+
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم إنشاء Postmortem');
+      loadPostmortems();
+      loadIncidents();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في إنشاء Postmortem');
+    }
+  }
+
+  async function updatePostmortemStatus(id, status) {
+    try {
+      await apiWrite('PUT', '/api/admin/postmortems/' + id, {
+        status: status,
+      });
+      if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم تحديث Postmortem');
+      loadPostmortems();
+      loadGovernanceDashboard();
+    } catch (err) {
+      showError(err.message || 'خطأ في تحديث Postmortem');
+    }
+  }
+
   return {
     connect: connect,
     loadHealth: loadHealth,
@@ -11267,6 +12247,27 @@ var AdminApp = (function () {
     loadSchedulerHistory: loadSchedulerHistory,
     // Phase 48 — Admin Real-Time Operations
     connectAdminSse: connectAdminSse,
+
+    // Phase 58 — Governance / RBAC / Privacy / Reviews / Postmortems
+    loadGovernanceDashboard: loadGovernanceDashboard,
+    loadRbacMatrix: loadRbacMatrix,
+    loadApprovals: loadApprovals,
+    openCreateApprovalPrompt: openCreateApprovalPrompt,
+    approveApproval: approveApproval,
+    rejectApproval: rejectApproval,
+    loadPrivacyRequests: loadPrivacyRequests,
+    createPrivacyExportRequest: createPrivacyExportRequest,
+    createPrivacyAnonymizeRequest: createPrivacyAnonymizeRequest,
+    queuePrivacyExport: queuePrivacyExport,
+    previewPrivacyAnonymize: previewPrivacyAnonymize,
+    queuePrivacyAnonymize: queuePrivacyAnonymize,
+    cancelPrivacyRequest: cancelPrivacyRequest,
+    loadOpsReviewRecords: loadOpsReviewRecords,
+    createOpsReviewRecord: createOpsReviewRecord,
+    completeOpsReviewRecord: completeOpsReviewRecord,
+    loadPostmortems: loadPostmortems,
+    createIncidentPostmortem: createIncidentPostmortem,
+    updatePostmortemStatus: updatePostmortemStatus,
   };
 })();
 ```
@@ -20766,7 +21767,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.53.0';
+const CACHE_NAME = 'yawmia-v0.54.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21217,6 +22218,105 @@ function sanitizeNotificationUrl(url) {
   <script src="./assets/js/user.js"></script>
 </body>
 </html>
+```
+
+---
+
+## `scripts/anonymize-user-data.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/anonymize-user-data.js — User Data Anonymization CLI (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/anonymize-user-data.js --userId=usr_x --dry-run
+//   node scripts/anonymize-user-data.js --userId=usr_x --confirm
+//
+// Default is dry-run. Destructive mutation requires --confirm.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const userId = getArg('userId', '');
+  const confirm = process.argv.includes('--confirm');
+  const dryRun = process.argv.includes('--dry-run') || !confirm;
+
+  if (!userId) {
+    console.error('❌ Missing --userId=usr_x');
+    process.exit(1);
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const {
+    previewUserAnonymization,
+    anonymizeUserData,
+  } = await import('../server/services/userAnonymization.js');
+
+  console.log(`\n🕶️ يوميّة User Anonymization ${dryRun ? '(DRY RUN)' : '(CONFIRM)'}\n`);
+  console.log(`User: ${userId}\n`);
+
+  if (dryRun) {
+    const preview = await previewUserAnonymization(userId);
+
+    if (!preview.ok) {
+      console.error(`❌ Preview failed: ${preview.error || preview.code}`);
+      process.exit(1);
+    }
+
+    console.log('Preview:');
+    console.log(JSON.stringify(preview, null, 2));
+    console.log('\nNo data was changed.');
+    console.log('\nTo apply destructive anonymization:');
+    console.log(`  node scripts/anonymize-user-data.js --userId=${userId} --confirm\n`);
+    return;
+  }
+
+  console.log('⚠️  This will mutate user data.');
+  console.log('Recommended before running:');
+  console.log('  node scripts/backup.js\n');
+
+  const result = await anonymizeUserData(userId, {
+    dryRun: false,
+    preview: false,
+  });
+
+  if (!result.ok) {
+    console.error(`❌ Anonymization failed: ${result.error || result.code}`);
+    if (result.partialResult) {
+      console.error(JSON.stringify(result.partialResult, null, 2));
+    }
+    process.exit(1);
+  }
+
+  console.log('✅ Anonymization complete');
+  console.log(`   userId: ${userId}`);
+  console.log(`   anonId: ${result.anonId}`);
+  console.log(`   idempotent: ${result.idempotent ? 'yes' : 'no'}`);
+  console.log(`   durationMs: ${result.durationMs || 0}`);
+  console.log('\nResult:');
+  console.log(JSON.stringify(result.result || {}, null, 2));
+  console.log('');
+}
+
+main().catch(err => {
+  console.error('\n❌ User anonymization failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
 ```
 
 ---
@@ -21943,6 +23043,88 @@ main().catch(err => {
 
 ---
 
+## `scripts/export-user-data.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/export-user-data.js — User Data Export CLI (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/export-user-data.js --userId=usr_x
+//   node scripts/export-user-data.js --userId=usr_x --out=exports/user.json
+// ═══════════════════════════════════════════════════════════════
+
+import { writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const userId = getArg('userId', '');
+  const out = getArg('out', '');
+
+  if (!userId) {
+    console.error('❌ Missing --userId=usr_x');
+    process.exit(1);
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { generateUserDataExport } = await import('../server/services/userDataExport.js');
+
+  const result = await generateUserDataExport(userId, {
+    includeMessages: true,
+    includeAuditRefs: false,
+  });
+
+  if (!result.ok) {
+    console.error(`❌ Export failed: ${result.error || result.code}`);
+    process.exit(1);
+  }
+
+  const json = JSON.stringify(result.export, null, 2);
+
+  if (out) {
+    await mkdir(dirname(out), { recursive: true });
+    await writeFile(out, json, 'utf-8');
+    console.log(`✅ User data export written: ${out}`);
+  } else {
+    console.log(json);
+  }
+
+  const e = result.export;
+  console.error('\nSummary:');
+  console.error(`   userId: ${userId}`);
+  console.error(`   jobs: ${e.jobs.length}`);
+  console.error(`   applications: ${e.applications.length}`);
+  console.error(`   attendance: ${e.attendance.length}`);
+  console.error(`   payments: ${e.payments.length}`);
+  console.error(`   messages: ${e.messages.length}`);
+  console.error(`   directOffers: ${e.directOffers.length}`);
+  console.error('');
+}
+
+main().catch(err => {
+  console.error('\n❌ User data export failed:', err.message);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/generate-vapid-keys.js`
 
 ```javascript
@@ -22086,6 +23268,7 @@ function lineStatus(ok) {
 
 async function main() {
   const outPath = getArg('out', '');
+  const persist = process.argv.includes('--persist');
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -22207,6 +23390,35 @@ async function main() {
   md.push(``);
 
   const output = md.join('\n');
+
+  if (persist) {
+    try {
+      const { createReviewRecord } = await import('../server/services/opsReviewRecords.js');
+      const record = await createReviewRecord({
+        type: 'weekly_ops_review',
+        status: 'completed',
+        title: 'Weekly Ops/Product Review',
+        summary: output.slice(0, 3000),
+        findings: [
+          `Production readiness: ${readiness.status || 'unknown'}`,
+          `Queue DLQ: ${byStatus['dead-letter'] || 0}`,
+          `Ops SLO violations: ${(opsSlo.violations || []).length}`,
+          `Scale hygiene: ${scaleHygiene.status || 'unknown'}`,
+          `Marketplace warnings: ${marketSummary.warningCount || 0}`,
+        ],
+        actions: scaleActions.slice(0, 20),
+        refs: {},
+        createdBy: 'weekly_review_script',
+        completedBy: 'weekly_review_script',
+      });
+
+      if (record && record.ok) {
+        console.error(`✅ Persisted weekly ops review: ${record.review.id}`);
+      }
+    } catch (err) {
+      console.error(`⚠️ Failed to persist weekly ops review: ${err.message}`);
+    }
+  }
 
   if (outPath) {
     await writeFile(outPath, output, 'utf-8');
@@ -22497,6 +23709,34 @@ async function main() {
       'node scripts/scheduler-cadence-report.js',
       scheduler.parsed
     ));
+  }
+
+  // Phase 58 — Admin RBAC governance.
+  const rbac = runScript('scripts/verify-admin-rbac.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (rbac.parsed) {
+    checks.push(mk(
+      'admin_rbac_governance',
+      rbac.parsed.summary?.fail > 0 ? 'fail' : ((rbac.parsed.summary?.warn || 0) > 0 ? 'warn' : 'pass'),
+      rbac.parsed.ok ? 'Admin RBAC governance is healthy' : 'Admin RBAC governance has issues',
+      'node scripts/verify-admin-rbac.js --strict',
+      rbac.parsed
+    ));
+  } else {
+    checks.push(mk('admin_rbac_governance', 'warn', 'Could not parse admin RBAC verification output', 'node scripts/verify-admin-rbac.js --strict'));
+  }
+
+  // Phase 58 — Privacy governance.
+  const privacyGov = runScript('scripts/verify-privacy-governance.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (privacyGov.parsed) {
+    checks.push(mk(
+      'privacy_governance',
+      privacyGov.parsed.summary?.fail > 0 ? 'fail' : ((privacyGov.parsed.summary?.warn || 0) > 0 ? 'warn' : 'pass'),
+      privacyGov.parsed.ok ? 'Privacy governance is healthy' : 'Privacy governance has issues',
+      'node scripts/verify-privacy-governance.js --strict',
+      privacyGov.parsed
+    ));
+  } else {
+    checks.push(mk('privacy_governance', 'warn', 'Could not parse privacy governance verification output', 'node scripts/verify-privacy-governance.js --strict'));
   }
 
   const summary = {
@@ -23918,6 +25158,200 @@ main().catch(err => {
 
 ---
 
+## `scripts/verify-admin-rbac.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-admin-rbac.js — Admin RBAC Verification (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-admin-rbac.js
+//   node scripts/verify-admin-rbac.js --json
+//   node scripts/verify-admin-rbac.js --strict
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
+function check(id, status, message, details = {}, recommendation = null) {
+  const out = { id, status, message, details };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const config = (await import('../config.js')).default;
+
+  const checks = [];
+  const rbac = config.ADMIN_RBAC || {};
+  const approvals = config.ADMIN_APPROVALS || {};
+
+  checks.push(check(
+    'admin_rbac_enabled',
+    rbac.enabled ? 'pass' : 'fail',
+    rbac.enabled ? 'ADMIN_RBAC is enabled' : 'ADMIN_RBAC is disabled'
+  ));
+
+  const roles = Array.isArray(rbac.roles) ? rbac.roles : [];
+  const capabilities = rbac.capabilities || {};
+
+  checks.push(check(
+    'roles_defined',
+    roles.length > 0 ? 'pass' : 'fail',
+    roles.length > 0 ? `${roles.length} role(s) defined` : 'No admin roles defined',
+    { roles }
+  ));
+
+  const superCaps = capabilities.super_admin || [];
+  checks.push(check(
+    'super_admin_wildcard',
+    Array.isArray(superCaps) && superCaps.includes('*') ? 'pass' : 'fail',
+    Array.isArray(superCaps) && superCaps.includes('*')
+      ? 'super_admin has wildcard capability'
+      : 'super_admin must include "*" capability'
+  ));
+
+  const unknownCapabilityRoles = Object.keys(capabilities).filter(r => !roles.includes(r));
+  checks.push(check(
+    'no_unknown_roles_in_capabilities',
+    unknownCapabilityRoles.length === 0 ? 'pass' : 'fail',
+    unknownCapabilityRoles.length === 0
+      ? 'Capability matrix contains only known roles'
+      : 'Capability matrix contains unknown roles',
+    { unknownCapabilityRoles }
+  ));
+
+  const requiredCapabilities = [
+    'admin.read',
+    'admin.ops.read',
+    'admin.queue.repair',
+    'admin.schedulers.toggle',
+    'admin.locks.release',
+    'admin.maintenance.toggle',
+    'admin.trust.read',
+    'admin.predictive.review',
+    'admin.trust.calibration',
+    'admin.users.status_limited',
+    'admin.verifications.review',
+    'admin.payments.complete',
+  ];
+
+  const allCaps = new Set();
+  for (const caps of Object.values(capabilities)) {
+    if (Array.isArray(caps)) {
+      for (const cap of caps) allCaps.add(cap);
+    }
+  }
+
+  const missingRequiredCapabilities = requiredCapabilities.filter(cap => !allCaps.has(cap) && !superCaps.includes('*'));
+  checks.push(check(
+    'required_capabilities_present',
+    missingRequiredCapabilities.length === 0 ? 'pass' : 'warn',
+    missingRequiredCapabilities.length === 0
+      ? 'Required capability names are present'
+      : 'Some expected capability names are not explicitly present outside wildcard',
+    { missingRequiredCapabilities }
+  ));
+
+  const dangerousActions = approvals.dangerousActions || [];
+  checks.push(check(
+    'dangerous_actions_mapped',
+    approvals.enabled && dangerousActions.length > 0 ? 'pass' : 'fail',
+    approvals.enabled && dangerousActions.length > 0
+      ? `${dangerousActions.length} dangerous action(s) configured`
+      : 'Dangerous action approvals are disabled or empty',
+    { enabled: approvals.enabled, dangerousActions }
+  ));
+
+  const tokenRole = rbac.tokenRole || 'super_admin';
+  checks.push(check(
+    'token_role_known',
+    roles.includes(tokenRole) ? 'pass' : 'fail',
+    roles.includes(tokenRole) ? `ADMIN_TOKEN maps to ${tokenRole}` : `Unknown tokenRole: ${tokenRole}`,
+    { tokenRole }
+  ));
+
+  if ((process.env.NODE_ENV || 'development') === 'production' && tokenRole === 'super_admin') {
+    checks.push(check(
+      'production_token_role_super_admin',
+      'warn',
+      'ADMIN_TOKEN maps to super_admin in production; rotate and restrict access',
+      { tokenRole },
+      'Do not share ADMIN_TOKEN broadly. Prefer session admin roles for daily work.'
+    ));
+  }
+
+  const summary = {
+    pass: checks.filter(c => c.status === 'pass').length,
+    warn: checks.filter(c => c.status === 'warn').length,
+    fail: checks.filter(c => c.status === 'fail').length,
+  };
+
+  const result = {
+    ok: summary.fail === 0 && (!STRICT || summary.warn === 0),
+    strict: STRICT,
+    generatedAt: new Date().toISOString(),
+    summary,
+    checks,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('\n🛡️ يوميّة Admin RBAC Verification\n');
+    console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
+    console.log(`Summary: pass=${summary.pass}, warn=${summary.warn}, fail=${summary.fail}\n`);
+
+    for (const c of checks) {
+      const icon = c.status === 'pass' ? '✅' : c.status === 'warn' ? '⚠️' : '❌';
+      console.log(`${icon} ${c.id}: ${c.message}`);
+      if (c.recommendation) console.log(`   → ${c.recommendation}`);
+    }
+
+    console.log(result.ok ? '\n✅ RBAC verification passed\n' : '\n❌ RBAC verification failed\n');
+  }
+
+  if (!result.ok) process.exit(1);
+}
+
+main().catch(err => {
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ RBAC verification failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/verify-audit-index.js`
 
 ```javascript
@@ -24629,6 +26063,220 @@ main().catch(err => {
     }, null, 2));
   } else {
     console.error('\n❌ Verify failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/verify-privacy-governance.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-privacy-governance.js — Privacy Governance Verification (Phase 58)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-privacy-governance.js
+//   node scripts/verify-privacy-governance.js --json
+//   node scripts/verify-privacy-governance.js --strict
+// ═══════════════════════════════════════════════════════════════
+
+import { access, constants } from 'node:fs/promises';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
+function check(id, status, message, details = {}, recommendation = null) {
+  const out = { id, status, message, details };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
+}
+
+async function exists(path) {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const config = (await import('../config.js')).default;
+  const { initDatabase, getCollectionPath } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const checks = [];
+
+  const docs = [
+    'PRIVACY_DATA_MAP.md',
+    'PRIVACY_REQUEST_RUNBOOK.md',
+    'DATA_GOVERNANCE_RUNBOOK.md',
+  ];
+
+  for (const d of docs) {
+    const ok = await exists(d);
+    checks.push(check(
+      `doc:${d}`,
+      ok ? 'pass' : 'fail',
+      ok ? `${d} exists` : `${d} is missing`,
+      { path: d },
+      ok ? null : `Create ${d}`
+    ));
+  }
+
+  const pr = config.PRIVACY_REQUESTS || {};
+  checks.push(check(
+    'privacy_requests_enabled',
+    pr.enabled ? 'pass' : 'fail',
+    pr.enabled ? 'PRIVACY_REQUESTS is enabled' : 'PRIVACY_REQUESTS is disabled'
+  ));
+
+  checks.push(check(
+    'privacy_export_enabled',
+    pr.exportEnabled ? 'pass' : 'fail',
+    pr.exportEnabled ? 'Privacy export workflow is enabled' : 'Privacy export workflow is disabled'
+  ));
+
+  checks.push(check(
+    'privacy_anonymize_enabled',
+    pr.anonymizeEnabled ? 'pass' : 'fail',
+    pr.anonymizeEnabled ? 'Privacy anonymization workflow is enabled' : 'Privacy anonymization workflow is disabled'
+  ));
+
+  const dirs = ['privacy_requests', 'ops_reviews', 'postmortems', 'admin_approvals'];
+  for (const dirName of dirs) {
+    let ok = false;
+    let fullPath = '';
+    try {
+      fullPath = getCollectionPath(dirName);
+      ok = await exists(fullPath);
+    } catch (_) {
+      ok = false;
+    }
+
+    checks.push(check(
+      `dir:${dirName}`,
+      ok ? 'pass' : 'fail',
+      ok ? `${dirName} directory exists` : `${dirName} directory missing`,
+      { fullPath }
+    ));
+  }
+
+  const scripts = [
+    'scripts/export-user-data.js',
+    'scripts/anonymize-user-data.js',
+    'scripts/verify-privacy-governance.js',
+  ];
+
+  for (const s of scripts) {
+    const ok = await exists(s);
+    checks.push(check(
+      `script:${s}`,
+      ok ? 'pass' : 'fail',
+      ok ? `${s} exists` : `${s} is missing`,
+      { path: s }
+    ));
+  }
+
+  checks.push(check(
+    'verification_image_policy',
+    pr.deleteVerificationImagesOnAnonymize ? 'pass' : 'warn',
+    pr.deleteVerificationImagesOnAnonymize
+      ? 'Verification image refs are configured for deletion on anonymization'
+      : 'Verification image deletion on anonymization is disabled',
+    { deleteVerificationImagesOnAnonymize: !!pr.deleteVerificationImagesOnAnonymize }
+  ));
+
+  checks.push(check(
+    'sessions_delete_policy',
+    pr.deleteSessionsOnAnonymize !== false ? 'pass' : 'warn',
+    pr.deleteSessionsOnAnonymize !== false
+      ? 'Sessions will be destroyed on anonymization'
+      : 'Session deletion on anonymization is disabled',
+    { deleteSessionsOnAnonymize: pr.deleteSessionsOnAnonymize !== false }
+  ));
+
+  checks.push(check(
+    'request_retention',
+    Number(pr.requestRetentionDays || 0) > 0 ? 'pass' : 'warn',
+    Number(pr.requestRetentionDays || 0) > 0
+      ? `Privacy request retention configured: ${pr.requestRetentionDays} days`
+      : 'Privacy request retention is not configured',
+    { requestRetentionDays: pr.requestRetentionDays || null }
+  ));
+
+  checks.push(check(
+    'audit_logging_available',
+    config.AUDIT?.enabled ? 'pass' : 'fail',
+    config.AUDIT?.enabled ? 'Audit logging is enabled' : 'Audit logging is disabled'
+  ));
+
+  const summary = {
+    pass: checks.filter(c => c.status === 'pass').length,
+    warn: checks.filter(c => c.status === 'warn').length,
+    fail: checks.filter(c => c.status === 'fail').length,
+  };
+
+  const result = {
+    ok: summary.fail === 0 && (!STRICT || summary.warn === 0),
+    strict: STRICT,
+    generatedAt: new Date().toISOString(),
+    summary,
+    checks,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('\n🔐 يوميّة Privacy Governance Verification\n');
+    console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
+    console.log(`Summary: pass=${summary.pass}, warn=${summary.warn}, fail=${summary.fail}\n`);
+
+    for (const c of checks) {
+      const icon = c.status === 'pass' ? '✅' : c.status === 'warn' ? '⚠️' : '❌';
+      console.log(`${icon} ${c.id}: ${c.message}`);
+      if (c.recommendation) console.log(`   → ${c.recommendation}`);
+    }
+
+    console.log(result.ok ? '\n✅ Privacy governance verification passed\n' : '\n❌ Privacy governance verification failed\n');
+  }
+
+  if (!result.ok) process.exit(1);
+}
+
+main().catch(err => {
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Privacy governance verification failed:', err.message);
     if (err.stack) console.error(err.stack);
   }
   process.exit(1);
