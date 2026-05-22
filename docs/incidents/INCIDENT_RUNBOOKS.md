@@ -1,15 +1,50 @@
 # يوميّة — Incident Runbooks
-> Phase 57 — Incident Taxonomy + Response Playbooks
+> Phase 58 — Incident Taxonomy, Response Playbooks, and Postmortems
 
 كل incident في Phase 57 يفضل أن يحتوي على:
 
-```text
 runbookKey
 severity
 sourceType
 refs
 events
-```
+
+---
+
+# Phase 58 Postmortem Requirement
+
+إذا كان incident severity:
+
+critical
+
+وكان:
+
+POSTMORTEMS.requireForCriticalIncidents=true
+
+يجب إنشاء Postmortem قبل اعتبار الحادث مغلقًا تشغيليًا.
+
+Postmortem يجب أن يحتوي:
+
+summary
+impact
+timeline
+root cause
+resolution
+prevention
+action items
+owners
+due dates
+
+Admin route:
+
+GET  /api/admin/incidents/:id/postmortem
+POST /api/admin/incidents/:id/postmortem
+GET  /api/admin/postmortems
+PUT  /api/admin/postmortems/:id
+
+Template:
+
+POSTMORTEM_TEMPLATE.md
 
 ---
 
@@ -24,10 +59,8 @@ Severity: high
 
 ## Commands
 
-```bash
 node scripts/verify-queue.js
 node scripts/queue-retry-dlq.js --dry-run
-```
 
 ## Safe remediation
 
@@ -59,10 +92,8 @@ Severity: high
 
 ## Commands
 
-```bash
 node scripts/verify-queue.js
 node scripts/queue-drain.js
-```
 
 ## Safe remediation
 
@@ -82,10 +113,8 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/repair-queue.js
 node scripts/verify-queue.js
-```
 
 ## Safe remediation
 
@@ -105,9 +134,7 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/scheduler-cadence-report.js
-```
 
 ## Safe remediation
 
@@ -127,9 +154,7 @@ Severity: high
 
 ## Commands
 
-```bash
 node scripts/verify-queue.js
-```
 
 ## Safe remediation
 
@@ -150,10 +175,8 @@ Severity: critical
 
 ## Commands
 
-```bash
 node scripts/run-backup-restore-drill.js --keep
 node scripts/verify-data-json.js --strict
-```
 
 ## Safe remediation
 
@@ -175,10 +198,8 @@ Severity: critical
 
 ## Commands
 
-```bash
 node scripts/verify-data-json.js --strict
 node scripts/verify-file-health.js --strict
-```
 
 ## Safe remediation
 
@@ -198,10 +219,8 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/verify-data-json.js --strict
 node scripts/rebuild-search-relevance.js
-```
 
 ## Safe remediation
 
@@ -220,10 +239,8 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/rebuild-audit-index.js
 node scripts/verify-audit-index.js
-```
 
 ## Safe remediation
 
@@ -243,10 +260,8 @@ Severity: high
 
 ## Commands
 
-```bash
 node scripts/compact-counters.js
 node scripts/rebuild-counters.js
-```
 
 ## Safe remediation
 
@@ -266,10 +281,8 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/compact-workrooms.js
 node scripts/verify-workroom-indexes.js
-```
 
 ## Safe remediation
 
@@ -289,10 +302,8 @@ Severity: low/medium
 
 ## Commands
 
-```bash
 node scripts/rollup-product-intelligence.js
 node scripts/verify-marketplace-intelligence.js
-```
 
 ## Safe remediation
 
@@ -311,9 +322,7 @@ Severity: medium
 
 ## Commands
 
-```bash
 node scripts/postdeploy-smoke.js --base=http://localhost:3002
-```
 
 ## Safe remediation
 
@@ -333,9 +342,7 @@ Severity: medium/high
 
 ## Commands
 
-```bash
 node scripts/verify-production-readiness.js
-```
 
 ## Safe remediation
 
@@ -354,10 +361,8 @@ Severity: high
 
 ## Commands
 
-```bash
 node scripts/predeploy-check.js --strict
 node scripts/verify-production-readiness.js --strict
-```
 
 ## Safe remediation
 
@@ -378,3 +383,7 @@ Severity: medium
 
 - راجع incident timeline.
 - اربط event بنوع incident جديد في phase لاحقة.
+
+## Postmortem
+
+إذا تطور الحادث إلى high أو critical، راجع متطلبات Postmortem في أعلى الملف.

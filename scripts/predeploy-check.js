@@ -160,6 +160,34 @@ async function main() {
     ));
   }
 
+  // Phase 58 — Admin RBAC governance.
+  const rbac = runScript('scripts/verify-admin-rbac.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (rbac.parsed) {
+    checks.push(mk(
+      'admin_rbac_governance',
+      rbac.parsed.summary?.fail > 0 ? 'fail' : ((rbac.parsed.summary?.warn || 0) > 0 ? 'warn' : 'pass'),
+      rbac.parsed.ok ? 'Admin RBAC governance is healthy' : 'Admin RBAC governance has issues',
+      'node scripts/verify-admin-rbac.js --strict',
+      rbac.parsed
+    ));
+  } else {
+    checks.push(mk('admin_rbac_governance', 'warn', 'Could not parse admin RBAC verification output', 'node scripts/verify-admin-rbac.js --strict'));
+  }
+
+  // Phase 58 — Privacy governance.
+  const privacyGov = runScript('scripts/verify-privacy-governance.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (privacyGov.parsed) {
+    checks.push(mk(
+      'privacy_governance',
+      privacyGov.parsed.summary?.fail > 0 ? 'fail' : ((privacyGov.parsed.summary?.warn || 0) > 0 ? 'warn' : 'pass'),
+      privacyGov.parsed.ok ? 'Privacy governance is healthy' : 'Privacy governance has issues',
+      'node scripts/verify-privacy-governance.js --strict',
+      privacyGov.parsed
+    ));
+  } else {
+    checks.push(mk('privacy_governance', 'warn', 'Could not parse privacy governance verification output', 'node scripts/verify-privacy-governance.js --strict'));
+  }
+
   const summary = {
     pass: checks.filter(c => c.status === 'pass').length,
     warn: checks.filter(c => c.status === 'warn').length,

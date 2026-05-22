@@ -5211,3 +5211,177 @@ textarea:focus:not(:focus-visible) {
     flex: 0 0 auto;
   }
 }
+
+/* ═══ Phase 58 — Governance / RBAC / Privacy / Postmortems ═══ */
+.governance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.governance-card,
+.rbac-role-card,
+.review-record-card,
+.postmortem-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.governance-card--compact {
+  padding: 0.9rem 1rem;
+}
+
+.governance-card--warning {
+  border-inline-start: 4px solid var(--color-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.governance-card--critical {
+  border-inline-start: 4px solid var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.governance-card__value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.governance-card__label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-block-start: 0.35rem;
+  text-align: center;
+}
+
+.governance-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-block-end: 0.5rem;
+}
+
+.governance-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.75rem;
+}
+
+.capability-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  margin: 0.12rem;
+  direction: ltr;
+}
+
+.approval-status-badge,
+.privacy-request-status-badge,
+.action-item-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.approval-status-badge--pending,
+.privacy-request-status-badge--requested,
+.privacy-request-status-badge--queued,
+.privacy-request-status-badge--processing {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.approval-status-badge--approved,
+.privacy-request-status-badge--completed,
+.action-item-status--done {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.approval-status-badge--rejected,
+.privacy-request-status-badge--failed {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.approval-status-badge--expired,
+.approval-status-badge--consumed,
+.privacy-request-status-badge--cancelled,
+.privacy-request-status-badge--expired {
+  color: var(--color-text-muted);
+  background: rgba(139, 143, 163, 0.12);
+}
+
+.rbac-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.rbac-role-card h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-block-end: 0.65rem;
+}
+
+.rbac-role-card__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.review-record-card {
+  border-inline-start: 4px solid var(--color-primary);
+}
+
+.postmortem-card {
+  border-inline-start: 4px solid var(--color-warning);
+}
+
+.postmortem-card[data-severity="critical"],
+.postmortem-card--critical {
+  border-inline-start-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+@media (max-width: 600px) {
+  .governance-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .governance-card__actions .btn,
+  .governance-card__actions button {
+    min-height: 44px;
+  }
+
+  .rbac-role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .capability-chip {
+    font-size: 0.68rem;
+  }
+}

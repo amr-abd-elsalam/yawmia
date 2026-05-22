@@ -15,6 +15,8 @@
 //   - trust_calibration_report
 //   - predictive_signal_retention
 //   - workroom_search_rebuild
+//   - privacy_user_data_export
+//   - privacy_user_anonymization
 // ═══════════════════════════════════════════════════════════════
 
 import config from '../../config.js';
@@ -112,6 +114,10 @@ function registerBuiltIns() {
   registerJobHandler('notification_conversion_rollup', handleNotificationConversionRollupJob);
   registerJobHandler('activation_funnel_rollup', handleActivationFunnelRollupJob);
   registerJobHandler('search_relevance_rebuild', handleSearchRelevanceRebuildJob);
+
+  // Phase 58 — Privacy Governance
+  registerJobHandler('privacy_user_data_export', handlePrivacyUserDataExportJob);
+  registerJobHandler('privacy_user_anonymization', handlePrivacyUserAnonymizationJob);
 }
 
 export async function startQueueWorkers() {
@@ -921,6 +927,118 @@ async function handleSearchRelevanceRebuildJob({ payload }) {
   }
 
   return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 58 Built-in handlers — Privacy Governance
+// ═══════════════════════════════════════════════════════════════
+
+async function handlePrivacyUserDataExportJob({ payload }) {
+  if (!payload || !payload.requestId || !payload.userId) {
+    const err = new Error('requestId and userId are required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const privacy = await import('./privacyRequests.js');
+  const exporter = await import('./userDataExport.js');
+
+  try {
+    const result = await exporter.persistUserDataExport(
+      payload.requestId,
+      payload.userId,
+      payload.options || {}
+    );
+
+    if (!result || !result.ok) {
+      const err = new Error(result?.error || result?.code || 'PRIVACY_EXPORT_FAILED');
+      err.retryable = false;
+      throw err;
+    }
+
+    await privacy.completePrivacyRequest(payload.requestId, {
+      exportFilePath: result.relativePath,
+      result: {
+        userId: payload.userId,
+        filePath: result.relativePath,
+        generatedAt: result.export?.generatedAt || new Date().toISOString(),
+      },
+    });
+
+    return {
+      requestId: payload.requestId,
+      userId: payload.userId,
+      exportFilePath: result.relativePath,
+      completed: true,
+    };
+  } catch (err) {
+    await privacy.failPrivacyRequest(payload.requestId, err.message || String(err)).catch(() => {});
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
+}
+
+async function handlePrivacyUserAnonymizationJob({ payload }) {
+  if (!payload || !payload.requestId || !payload.userId) {
+    const err = new Error('requestId and userId are required');
+    err.retryable = false;
+    throw err;
+  }
+
+  const privacy = await import('./privacyRequests.js');
+
+  try {
+    if (payload.approvalId) {
+      const approvals = await import('./adminApprovals.js');
+      const consumed = await approvals.consumeApproval(
+        payload.approvalId,
+        'privacy_anonymize',
+        payload.userId
+      );
+
+      if (!consumed.ok) {
+        const err = new Error(consumed.error || consumed.code || 'APPROVAL_CONSUME_FAILED');
+        err.retryable = false;
+        throw err;
+      }
+    }
+
+    const anonymizer = await import('./userAnonymization.js');
+
+    const result = await anonymizer.anonymizeUserData(payload.userId, {
+      ...(payload.options || {}),
+      dryRun: false,
+      preview: false,
+    });
+
+    if (!result || !result.ok) {
+      const err = new Error(result?.error || result?.code || 'PRIVACY_ANONYMIZATION_FAILED');
+      err.retryable = false;
+      throw err;
+    }
+
+    await privacy.completePrivacyRequest(payload.requestId, {
+      result: {
+        userId: payload.userId,
+        anonId: result.anonId || null,
+        counts: result.counts || {},
+        anonymizationResult: result.result || {},
+        durationMs: result.durationMs || 0,
+      },
+    });
+
+    return {
+      requestId: payload.requestId,
+      userId: payload.userId,
+      anonId: result.anonId || null,
+      completed: true,
+      idempotent: !!result.idempotent,
+    };
+  } catch (err) {
+    await privacy.failPrivacyRequest(payload.requestId, err.message || String(err)).catch(() => {});
+    err.retryable = err.retryable !== false;
+    throw err;
+  }
 }
 
 export const _testHelpers = {

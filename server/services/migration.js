@@ -461,6 +461,22 @@ const builtInMigrations = [
       logger.info('Migration v17: Phase 57 deployment discipline registered (no heavy schema scan)');
     },
   },
+  {
+    version: 18,
+    name: 'Phase 58: Governance, Privacy, RBAC, and Operational Maturity',
+    up: async () => {
+      // Phase 58 registers additive governance/privacy structures:
+      //   - privacy_requests
+      //   - ops/reviews
+      //   - ops/postmortems
+      //   - ops/admin-approvals
+      //
+      // initDatabase() creates configured dirs before migrations run.
+      // No heavy scan is performed here by design.
+      // No destructive privacy/anonymization action runs during migration.
+      logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
+    },
+  },
 ];
 
 /**

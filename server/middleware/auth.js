@@ -134,3 +134,5 @@ export function requireAdmin(req, res, next) {
       sendJSON(res, 500, { error: 'خطأ في التحقق', code: 'AUTH_ERROR' });
     });
 }
+
+export { requireCapability } from '../services/adminRbac.js';

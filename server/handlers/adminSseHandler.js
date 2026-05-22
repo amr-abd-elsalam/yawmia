@@ -99,6 +99,24 @@ const SUBSCRIBED_EVENTS = [
   'activation_funnel:rollup_completed',
   'workroom_adoption:rollup_completed',
   'payment_dispute_analytics:rollup_completed',
+
+  // Phase 58 — Governance / Privacy / RBAC
+  'admin_approval:created',
+  'admin_approval:approved',
+  'admin_approval:rejected',
+  'admin_approval:expired',
+  'admin_approval:consumed',
+  'privacy_request:created',
+  'privacy_request:queued',
+  'privacy_request:completed',
+  'privacy_request:failed',
+  'privacy_request:cancelled',
+  'ops_review:created',
+  'ops_review:completed',
+  'postmortem:created',
+  'postmortem:updated',
+  'postmortem:action_item_added',
+  'postmortem:action_item_updated',
 ];
 
 let listenersRegistered = false;

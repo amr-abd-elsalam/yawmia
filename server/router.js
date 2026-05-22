@@ -4,7 +4,7 @@
 
 import config from '../config.js';
 import { isValidId } from './services/database.js';
-import { requireAuth, requireRole, requireAdmin } from './middleware/auth.js';
+import { requireAuth, requireRole, requireAdmin, requireCapability } from './middleware/auth.js';
 import { handleSendOtp, handleVerifyOtp, handleGetMe, handleUpdateProfile, handleLogout, handleLogoutAll, handleAcceptTerms, handleDeleteAccount } from './handlers/authHandler.js';
 import { handleCreateJob, handleListJobs, handleGetJob, handleStartJob, handleCompleteJob, handleCancelJob, handleListMyJobs, handleNearbyJobs, handleRenewJob, handleDuplicateJob } from './handlers/jobsHandler.js';
 import { handleApplyToJob, handleAcceptWorker, handleRejectWorker, handleListJobApplications, handleListMyApplications, handleWithdrawApplication, handleWorkerConfirm, handleWorkerDecline } from './handlers/applicationsHandler.js';
@@ -133,6 +133,29 @@ import {
   handleMatchingQuality,
   handleRunMarketplaceIntelligenceRollup,
 } from './handlers/marketplaceIntelligenceHandler.js';
+import {
+  handleAdminRbacMatrix,
+  handleAdminRbacMe,
+  handleListApprovals,
+  handleCreateApproval,
+  handleApproveApproval,
+  handleRejectApproval,
+  handleListPrivacyRequests,
+  handleCreatePrivacyRequest,
+  handleGetPrivacyRequest,
+  handleQueuePrivacyExport,
+  handleQueuePrivacyAnonymize,
+  handlePreviewPrivacyAnonymize,
+  handleCancelPrivacyRequest,
+  handleListOpsReviews,
+  handleCreateOpsReview,
+  handleGetOpsReview,
+  handleCompleteOpsReview,
+  handleGetIncidentPostmortem,
+  handleCreateIncidentPostmortem,
+  handleUpdatePostmortem,
+  handleListPostmortems,
+} from './handlers/governanceHandler.js';
 import { handleListNotifications, handleMarkAsRead, handleMarkAllAsRead, handleNotificationActionClick } from './handlers/notificationsHandler.js';
 import { handleSubmitRating, handleListJobRatings, handleListUserRatings, handleUserRatingSummary, handleGetPendingRatings } from './handlers/ratingsHandler.js';
 import { handleCreatePayment, handleConfirmPayment, handleAdminCompletePayment, handleDisputePayment, handleGetJobPayment, handleAdminFinancialSummary } from './handlers/paymentsHandler.js';
@@ -202,7 +225,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.53.0',
+        version: '0.54.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -483,7 +506,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.53.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.54.0' });
     },
   },
 
@@ -676,12 +699,12 @@ const routes = [
   { method: 'GET', path: '/api/admin/users', middlewares: [requireAdmin], handler: handleAdminUsers },
   { method: 'GET', path: '/api/admin/jobs', middlewares: [requireAdmin], handler: handleAdminJobs },
   { method: 'GET', path: '/api/admin/financial-summary', middlewares: [requireAdmin], handler: handleAdminFinancialSummary },
-  { method: 'POST', path: '/api/admin/payments/:id/complete', middlewares: [requireAdmin], handler: handleAdminCompletePayment },
-  { method: 'PUT', path: '/api/admin/users/:id/status', middlewares: [requireAdmin], handler: handleAdminUpdateUserStatus },
+  { method: 'POST', path: '/api/admin/payments/:id/complete', middlewares: [requireCapability('admin.payments.complete')], handler: handleAdminCompletePayment },
+  { method: 'PUT', path: '/api/admin/users/:id/status', middlewares: [requireCapability('admin.users.status_limited')], handler: handleAdminUpdateUserStatus },
   { method: 'GET', path: '/api/admin/reports', middlewares: [requireAdmin], handler: handleAdminListReports },
-  { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireAdmin], handler: handleAdminReviewReport },
+  { method: 'PUT', path: '/api/admin/reports/:id', middlewares: [requireCapability('admin.reports.review')], handler: handleAdminReviewReport },
   { method: 'GET', path: '/api/admin/verifications', middlewares: [requireAdmin], handler: handleAdminListVerifications },
-  { method: 'PUT', path: '/api/admin/verifications/:id', middlewares: [requireAdmin], handler: handleAdminReviewVerification },
+  { method: 'PUT', path: '/api/admin/verifications/:id', middlewares: [requireCapability('admin.verifications.review')], handler: handleAdminReviewVerification },
 
   // ── Admin Audit Log ──
   {
@@ -715,7 +738,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/users/:id/warnings-remaining', middlewares: [requireAdmin], handler: handleAdminUserWarningsRemaining },
   { method: 'GET', path: '/api/admin/users/:id/trust-v2', middlewares: [requireAdmin], handler: handleAdminUserTrustV2 },
   { method: 'GET', path: '/api/admin/audit-log/search', middlewares: [requireAdmin], handler: handleAdminAuditLogSearch },
-  { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireAdmin], handler: handleAdminAuditLogExport },
+  { method: 'GET', path: '/api/admin/audit-log/export', middlewares: [requireCapability('admin.audit.export')], handler: handleAdminAuditLogExport },
 
   // ── Phase 48 — Admin SSE Channel (self-authenticated via header OR query token) ──
   { method: 'GET', path: '/api/admin/events', middlewares: [], handler: handleAdminEventStream },
@@ -723,8 +746,8 @@ const routes = [
   // ── Phase 53 — Trust Score V2 Calibration Admin APIs ──
   { method: 'GET', path: '/api/admin/trust/calibration/dashboard', middlewares: [requireAdmin], handler: handleAdminTrustCalibrationDashboard },
   { method: 'GET', path: '/api/admin/trust/snapshots', middlewares: [requireAdmin], handler: handleAdminTrustSnapshots },
-  { method: 'POST', path: '/api/admin/trust/calibration/snapshot-batch', middlewares: [requireAdmin], handler: handleAdminRunTrustSnapshotBatch },
-  { method: 'POST', path: '/api/admin/trust/calibration/report', middlewares: [requireAdmin], handler: handleAdminRunTrustCalibrationReport },
+  { method: 'POST', path: '/api/admin/trust/calibration/snapshot-batch', middlewares: [requireCapability('admin.trust.calibration')], handler: handleAdminRunTrustSnapshotBatch },
+  { method: 'POST', path: '/api/admin/trust/calibration/report', middlewares: [requireCapability('admin.trust.calibration')], handler: handleAdminRunTrustCalibrationReport },
 
   // ── Phase 49 — Marketplace Trust Analytics + Multi-Channel Admin Alerting ──
   { method: 'GET', path: '/api/admin/trust/resolution-time', middlewares: [requireAdmin], handler: handleAdminTrustResolutionTime },
@@ -747,7 +770,34 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/ops-review', middlewares: [requireAdmin], handler: handleOpsReview },
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
-  { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireAdmin], handler: handleReleaseProcessLock },
+  { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireCapability('admin.locks.release')], handler: handleReleaseProcessLock },
+
+  // ── Phase 58 — Governance / RBAC / Privacy / Reviews / Postmortems ──
+  { method: 'GET', path: '/api/admin/rbac/matrix', middlewares: [requireCapability('admin.read')], handler: handleAdminRbacMatrix },
+  { method: 'GET', path: '/api/admin/rbac/me', middlewares: [requireCapability('admin.read')], handler: handleAdminRbacMe },
+
+  { method: 'GET', path: '/api/admin/approvals', middlewares: [requireCapability('admin.read')], handler: handleListApprovals },
+  { method: 'POST', path: '/api/admin/approvals', middlewares: [requireCapability('admin.approvals.write')], handler: handleCreateApproval },
+  { method: 'POST', path: '/api/admin/approvals/:id/approve', middlewares: [requireCapability('admin.approvals.write')], handler: handleApproveApproval },
+  { method: 'POST', path: '/api/admin/approvals/:id/reject', middlewares: [requireCapability('admin.approvals.write')], handler: handleRejectApproval },
+
+  { method: 'GET', path: '/api/admin/privacy/requests', middlewares: [requireCapability('admin.privacy.read')], handler: handleListPrivacyRequests },
+  { method: 'POST', path: '/api/admin/privacy/requests', middlewares: [requireCapability('admin.privacy.write')], handler: handleCreatePrivacyRequest },
+  { method: 'GET', path: '/api/admin/privacy/requests/:id', middlewares: [requireCapability('admin.privacy.read')], handler: handleGetPrivacyRequest },
+  { method: 'POST', path: '/api/admin/privacy/requests/:id/export', middlewares: [requireCapability('admin.privacy.export')], handler: handleQueuePrivacyExport },
+  { method: 'POST', path: '/api/admin/privacy/requests/:id/anonymize-preview', middlewares: [requireCapability('admin.privacy.read')], handler: handlePreviewPrivacyAnonymize },
+  { method: 'POST', path: '/api/admin/privacy/requests/:id/anonymize', middlewares: [requireCapability('admin.privacy.anonymize')], handler: handleQueuePrivacyAnonymize },
+  { method: 'POST', path: '/api/admin/privacy/requests/:id/cancel', middlewares: [requireCapability('admin.privacy.write')], handler: handleCancelPrivacyRequest },
+
+  { method: 'GET', path: '/api/admin/ops/reviews', middlewares: [requireCapability('admin.ops.read')], handler: handleListOpsReviews },
+  { method: 'POST', path: '/api/admin/ops/reviews', middlewares: [requireCapability('admin.ops.review')], handler: handleCreateOpsReview },
+  { method: 'GET', path: '/api/admin/ops/reviews/:id', middlewares: [requireCapability('admin.ops.read')], handler: handleGetOpsReview },
+  { method: 'POST', path: '/api/admin/ops/reviews/:id/complete', middlewares: [requireCapability('admin.ops.review')], handler: handleCompleteOpsReview },
+
+  { method: 'GET', path: '/api/admin/incidents/:id/postmortem', middlewares: [requireCapability('admin.incidents.read')], handler: handleGetIncidentPostmortem },
+  { method: 'POST', path: '/api/admin/incidents/:id/postmortem', middlewares: [requireCapability('admin.postmortems.write')], handler: handleCreateIncidentPostmortem },
+  { method: 'PUT', path: '/api/admin/postmortems/:id', middlewares: [requireCapability('admin.postmortems.write')], handler: handleUpdatePostmortem },
+  { method: 'GET', path: '/api/admin/postmortems', middlewares: [requireCapability('admin.incidents.read')], handler: handleListPostmortems },
 
   // ── Phase 56 — Marketplace Intelligence Admin APIs ──
   { method: 'GET', path: '/api/admin/marketplace-intelligence/dashboard', middlewares: [requireAdmin], handler: handleMarketplaceIntelligenceDashboard },
@@ -766,7 +816,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },
   { method: 'POST', path: '/api/admin/queue/compact', middlewares: [requireAdmin], handler: handleQueueCompact },
-  { method: 'POST', path: '/api/admin/queue/repair', middlewares: [requireAdmin], handler: handleQueueRepair },
+  { method: 'POST', path: '/api/admin/queue/repair', middlewares: [requireCapability('admin.queue.repair')], handler: handleQueueRepair },
 
   { method: 'GET', path: '/api/admin/workroom-hygiene/overview', middlewares: [requireAdmin], handler: handleWorkroomHygieneOverview },
   { method: 'POST', path: '/api/admin/workroom-hygiene/compact', middlewares: [requireAdmin], handler: handleWorkroomCompact },
@@ -782,9 +832,9 @@ const routes = [
   { method: 'GET', path: '/api/admin/schedulers/:name/history', middlewares: [requireAdmin], handler: handleSchedulerHistory },
 
   { method: 'GET', path: '/api/admin/schedulers', middlewares: [requireAdmin], handler: handleListSchedulers },
-  { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireAdmin], handler: handleRunSchedulerNow },
-  { method: 'POST', path: '/api/admin/schedulers/:name/enable', middlewares: [requireAdmin], handler: handleEnableScheduler },
-  { method: 'POST', path: '/api/admin/schedulers/:name/disable', middlewares: [requireAdmin], handler: handleDisableScheduler },
+  { method: 'POST', path: '/api/admin/schedulers/:name/run', middlewares: [requireCapability('admin.schedulers.run')], handler: handleRunSchedulerNow },
+  { method: 'POST', path: '/api/admin/schedulers/:name/enable', middlewares: [requireCapability('admin.schedulers.toggle')], handler: handleEnableScheduler },
+  { method: 'POST', path: '/api/admin/schedulers/:name/disable', middlewares: [requireCapability('admin.schedulers.toggle')], handler: handleDisableScheduler },
   { method: 'GET', path: '/api/admin/schedulers/:name', middlewares: [requireAdmin], handler: handleGetScheduler },
 
   { method: 'GET', path: '/api/admin/ops/rollups', middlewares: [requireAdmin], handler: handleOpsRollups },
@@ -799,8 +849,8 @@ const routes = [
   { method: 'GET', path: '/api/admin/backups/restore-drills/:id', middlewares: [requireAdmin], handler: handleGetBackupRestoreDrill },
 
   { method: 'GET', path: '/api/admin/maintenance', middlewares: [requireAdmin], handler: handleGetMaintenanceMode },
-  { method: 'POST', path: '/api/admin/maintenance/enable', middlewares: [requireAdmin], handler: handleEnableMaintenanceMode },
-  { method: 'POST', path: '/api/admin/maintenance/disable', middlewares: [requireAdmin], handler: handleDisableMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/enable', middlewares: [requireCapability('admin.maintenance.toggle')], handler: handleEnableMaintenanceMode },
+  { method: 'POST', path: '/api/admin/maintenance/disable', middlewares: [requireCapability('admin.maintenance.toggle')], handler: handleDisableMaintenanceMode },
 
   // ── Phase 50 — Audit Indexed Search Admin Ops ──
   { method: 'GET', path: '/api/admin/audit-index/status', middlewares: [requireAdmin], handler: handleAdminAuditIndexStatus },
@@ -817,7 +867,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/ops-queue/jobs/:id', middlewares: [requireAdmin], handler: handleAdminQueueJobDetail },
 
   // ── Phase 50/52 — Persistent Export Registry + Async Export Jobs ──
-  { method: 'POST', path: '/api/admin/exports/audit-log', middlewares: [requireAdmin], handler: handleAdminCreateAuditExportJob },
+  { method: 'POST', path: '/api/admin/exports/audit-log', middlewares: [requireCapability('admin.audit.export')], handler: handleAdminCreateAuditExportJob },
   { method: 'GET', path: '/api/admin/exports', middlewares: [requireAdmin], handler: handleAdminListExports },
   { method: 'GET', path: '/api/admin/exports/:id/download', middlewares: [requireAdmin], handler: handleAdminDownloadExport },
   { method: 'POST', path: '/api/admin/exports/:id/cancel', middlewares: [requireAdmin], handler: handleAdminCancelExport },
@@ -834,10 +884,10 @@ const routes = [
   { method: 'GET', path: '/api/admin/predictive-abuse/precision', middlewares: [requireAdmin], handler: handleAdminPredictivePrecision },
   { method: 'POST', path: '/api/admin/predictive-abuse/run-scan', middlewares: [requireAdmin], handler: handleAdminRunPredictiveAbuseScan },
   { method: 'POST', path: '/api/admin/predictive-abuse/retention/run', middlewares: [requireAdmin], handler: handleAdminRunPredictiveSignalRetention },
-  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/false-positive', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveFalsePositive },
-  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/confirm', middlewares: [requireAdmin], handler: handleAdminMarkPredictiveConfirmed },
-  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireAdmin], handler: handleAdminDismissPredictiveSignal },
-  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireAdmin], handler: handleAdminEscalatePredictiveSignal },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/false-positive', middlewares: [requireCapability('admin.predictive.review')], handler: handleAdminMarkPredictiveFalsePositive },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/confirm', middlewares: [requireCapability('admin.predictive.review')], handler: handleAdminMarkPredictiveConfirmed },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/dismiss', middlewares: [requireCapability('admin.predictive.review')], handler: handleAdminDismissPredictiveSignal },
+  { method: 'POST', path: '/api/admin/predictive-abuse/signals/:id/escalate', middlewares: [requireCapability('admin.predictive.review')], handler: handleAdminEscalatePredictiveSignal },
 
   // ── Phase 51 — Admin Decision Quality ──
   { method: 'GET', path: '/api/admin/trust/decision-quality', middlewares: [requireAdmin], handler: handleAdminTrustDecisionQuality },

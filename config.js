@@ -292,6 +292,12 @@ const config = {
       backup_restore_drills: 'metrics/backup-restore-drills',
       ops: 'ops',
 
+      // Phase 58 — Governance, Privacy, RBAC, Operational Maturity
+      privacy_requests: 'privacy_requests',
+      ops_reviews: 'ops/reviews',
+      postmortems: 'ops/postmortems',
+      admin_approvals: 'ops/admin-approvals',
+
       // Phase 55 — File-Based Scale Hygiene
       queue_pending: 'ops_queue/pending',
       queue_running: 'ops_queue/running',
@@ -498,7 +504,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.53.0',
+    cacheName: 'yawmia-v0.54.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1627,7 +1633,7 @@ const config = {
     enabled: true,
     defaultTab: 'overview',
     lazyLoadTabs: true,
-    tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'settings'],
+    tabs: ['overview', 'marketplace', 'trust', 'ops', 'scale', 'audit', 'governance', 'settings'],
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -1711,6 +1717,153 @@ const config = {
       'maintenance',
       'security',
     ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 105. صلاحيات الأدمن (ADMIN_RBAC) — Phase 58
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_RBAC: {
+    enabled: true,
+    tokenRole: 'super_admin',
+    defaultSessionAdminRole: 'super_admin',
+    roles: [
+      'super_admin',
+      'ops_admin',
+      'trust_admin',
+      'support_admin',
+      'finance_admin',
+      'read_only_admin',
+    ],
+    dangerousActionsRequireApproval: true,
+    allowSuperAdminBypassApproval: true,
+    approvalExpiryHours: 24,
+    capabilities: {
+      super_admin: ['*'],
+      ops_admin: [
+        'admin.read',
+        'admin.ops.read',
+        'admin.queue.read',
+        'admin.queue.retry',
+        'admin.queue.cancel',
+        'admin.queue.repair',
+        'admin.schedulers.read',
+        'admin.schedulers.run',
+        'admin.schedulers.toggle',
+        'admin.incidents.read',
+        'admin.incidents.resolve',
+        'admin.postmortems.write',
+        'admin.maintenance.toggle',
+        'admin.locks.release',
+        'admin.readiness.read',
+        'admin.scale.read',
+        'admin.ops.review',
+      ],
+      trust_admin: [
+        'admin.read',
+        'admin.trust.read',
+        'admin.reports.review',
+        'admin.abuse.review',
+        'admin.abuse.warn',
+        'admin.predictive.review',
+        'admin.trust.calibration',
+        'admin.decision_quality.read',
+      ],
+      support_admin: [
+        'admin.read',
+        'admin.users.read',
+        'admin.users.status_limited',
+        'admin.verifications.review',
+        'admin.notifications.read',
+      ],
+      finance_admin: [
+        'admin.read',
+        'admin.finance.read',
+        'admin.payments.complete',
+        'admin.disputes.read',
+        'admin.exports.finance',
+      ],
+      read_only_admin: [
+        'admin.read',
+        'admin.ops.read',
+        'admin.trust.read',
+        'admin.finance.read',
+        'admin.marketplace.read',
+        'admin.audit.read',
+        'admin.privacy.read',
+      ],
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 106. طلبات الخصوصية (PRIVACY_REQUESTS) — Phase 58
+  // ═══════════════════════════════════════════════════════════════
+  PRIVACY_REQUESTS: {
+    enabled: true,
+    basePath: 'privacy_requests',
+    exportEnabled: true,
+    anonymizeEnabled: true,
+    maxConcurrentPrivacyJobs: 1,
+    exportRetentionHours: 72,
+    requestRetentionDays: 365,
+    includeMessagesInExport: true,
+    includeAuditRefsInExport: false,
+    deleteVerificationImagesOnAnonymize: true,
+    deleteSessionsOnAnonymize: true,
+    anonymizeUserIdPrefix: 'anon_',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 107. سجلات المراجعات التشغيلية (OPS_REVIEW_RECORDS) — Phase 58
+  // ═══════════════════════════════════════════════════════════════
+  OPS_REVIEW_RECORDS: {
+    enabled: true,
+    basePath: 'ops/reviews',
+    requiredWeeklyReview: true,
+    weeklyReviewMaxAgeDays: 7,
+    reviewTypes: [
+      'weekly_ops_review',
+      'dlq_review',
+      'restore_drill_review',
+      'marketplace_review',
+      'trust_calibration_review',
+      'predictive_precision_review',
+      'payment_dispute_review',
+      'slo_breach_review',
+    ],
+    retentionDays: 365,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 108. سجلات ما بعد الحوادث (POSTMORTEMS) — Phase 58
+  // ═══════════════════════════════════════════════════════════════
+  POSTMORTEMS: {
+    enabled: true,
+    basePath: 'ops/postmortems',
+    requireForCriticalIncidents: true,
+    requireForHighIncidents: false,
+    actionItemRetentionDays: 365,
+    maxActionItems: 50,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 109. موافقات إجراءات الأدمن الخطيرة (ADMIN_APPROVALS) — Phase 58
+  // ═══════════════════════════════════════════════════════════════
+  ADMIN_APPROVALS: {
+    enabled: true,
+    basePath: 'ops/admin-approvals',
+    expiryHours: 24,
+    dangerousActions: [
+      'user_ban',
+      'bulk_abuse_action',
+      'process_lock_force_release',
+      'maintenance_enable',
+      'queue_repair',
+      'scheduler_disable',
+      'payment_complete',
+      'audit_export',
+      'privacy_anonymize',
+    ],
+    retentionDays: 365,
   },
 
 };

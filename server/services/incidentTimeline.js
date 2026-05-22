@@ -342,7 +342,28 @@ export async function listIncidents(options = {}) {
 
 export async function getIncident(incidentId) {
   if (!incidentId || typeof incidentId !== 'string') return null;
-  return await readJSON(incidentPath(incidentId));
+  const incident = await readJSON(incidentPath(incidentId));
+  if (!incident) return null;
+
+  // Phase 58 additive governance hint.
+  // Avoid recursion by not calling getIncidentGovernanceStatus() here.
+  try {
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+    const postmortem = await getPostmortemByIncident(incidentId);
+    incident.governance = {
+      postmortemRequired: isPostmortemRequired(incident),
+      postmortemExists: !!postmortem,
+      postmortemId: postmortem ? postmortem.id : null,
+    };
+  } catch (_) {
+    incident.governance = {
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+    };
+  }
+
+  return incident;
 }
 
 export async function autoOpenIncidentForEvent(eventType, data = {}) {
@@ -397,6 +418,95 @@ export function registerIncidentListeners() {
   }
 
   logger.info('Incident timeline: listeners registered', { count: AUTO_EVENTS.length });
+}
+
+/**
+ * Phase 58: Get governance status for one incident.
+ *
+ * Includes:
+ *   - postmortemRequired
+ *   - postmortemExists
+ *   - postmortemId
+ *   - openActionItems
+ *   - overdueActionItems
+ *
+ * @param {string} incidentId
+ */
+export async function getIncidentGovernanceStatus(incidentId) {
+  if (!incidentId || typeof incidentId !== 'string') {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'unknown',
+    };
+  }
+
+  const incident = await getIncident(incidentId);
+
+  if (!incident) {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'incident_not_found',
+    };
+  }
+
+  try {
+    const {
+      isPostmortemRequired,
+      getPostmortemByIncident,
+    } = await import('./postmortemRecords.js');
+
+    const required = isPostmortemRequired(incident);
+    const postmortem = await getPostmortemByIncident(incidentId);
+
+    let openActionItems = 0;
+    let overdueActionItems = 0;
+
+    if (postmortem && Array.isArray(postmortem.actionItems)) {
+      for (const item of postmortem.actionItems) {
+        if (item.status !== 'done' && item.status !== 'cancelled') {
+          openActionItems++;
+          if (item.dueDate && new Date(item.dueDate).getTime() < Date.now()) {
+            overdueActionItems++;
+          }
+        }
+      }
+    }
+
+    return {
+      incidentId,
+      severity: incident.severity || 'medium',
+      incidentStatus: incident.status || 'open',
+      postmortemRequired: required,
+      postmortemExists: !!postmortem,
+      postmortemId: postmortem ? postmortem.id : null,
+      openActionItems,
+      overdueActionItems,
+      status: required && !postmortem
+        ? 'postmortem_required'
+        : (overdueActionItems > 0 ? 'action_items_overdue' : 'ok'),
+    };
+  } catch (err) {
+    return {
+      incidentId,
+      postmortemRequired: false,
+      postmortemExists: false,
+      postmortemId: null,
+      openActionItems: 0,
+      overdueActionItems: 0,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
 }
 
 export const _testHelpers = {

@@ -1,6 +1,6 @@
 # يوميّة — Deployment Runbook
-> Phase 57 — Production Deployment Discipline  
-> Version target: v0.53.0
+> Phase 58 — Production Deployment + Governance Discipline  
+> Version target: v0.54.0
 
 هذا الملف يشرح طريقة نشر يوميّة في production مع الحفاظ على قاعدة أساسية:
 
@@ -12,13 +12,11 @@
 
 قبل أي deploy:
 
-```bash
 node --version
 npm test
 node scripts/predeploy-check.js --strict
 node scripts/verify-data-json.js --strict
 node scripts/verify-file-health.js --strict
-```
 
 المطلوب:
 
@@ -39,7 +37,6 @@ node scripts/verify-file-health.js --strict
 
 مثال production:
 
-```bash
 NODE_ENV=production
 PORT=3002
 HOST=0.0.0.0
@@ -49,16 +46,13 @@ INSTANCE_MODE=single_writer
 INSTANCE_ID=prod-main-01
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
-```
 
 لو messaging مفعّل:
 
-```bash
 WHATSAPP_PHONE_NUMBER_ID=...
 WHATSAPP_ACCESS_TOKEN=...
 INFOBIP_API_KEY=...
 INFOBIP_BASE_URL=...
-```
 
 ---
 
@@ -67,13 +61,11 @@ INFOBIP_BASE_URL=...
 يوميّة في Phase 57 يستخدم file-based JSON persistence.  
 هذا يعني:
 
-```text
 مسموح: instance واحد writer
 مسموح: read-only replicas للقراءة فقط
 ممنوع: multiple writer instances
 ممنوع: PM2 cluster mode
 ممنوع: Kubernetes replicas تعمل writes بدون external DB/lock system
-```
 
 ---
 
@@ -81,7 +73,6 @@ INFOBIP_BASE_URL=...
 
 ملف مثال:
 
-```ini
 [Unit]
 Description=Yawmia Node.js App
 After=network.target
@@ -100,24 +91,19 @@ PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
-```
 
 Commands:
 
-```bash
 sudo systemctl daemon-reload
 sudo systemctl enable yawmia
 sudo systemctl start yawmia
 sudo systemctl status yawmia
-```
 
 Restart آمن:
 
-```bash
 node scripts/predeploy-check.js --strict
 sudo systemctl restart yawmia
 node scripts/postdeploy-smoke.js --base=http://localhost:3002
-```
 
 ---
 
@@ -125,18 +111,14 @@ node scripts/postdeploy-smoke.js --base=http://localhost:3002
 
 مسموح فقط single process:
 
-```bash
 pm2 start server.js --name yawmia --instances 1
 pm2 save
 pm2 status
-```
 
 ممنوع:
 
-```bash
 pm2 start server.js -i max
 pm2 start server.js --instances 2
-```
 
 > لا تستخدم PM2 cluster mode في Phase 57.
 
@@ -146,7 +128,6 @@ pm2 start server.js --instances 2
 
 مثال:
 
-```nginx
 server {
   listen 80;
   server_name yowmia.com www.yowmia.com;
@@ -186,15 +167,12 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   }
 }
-```
 
 ممنوع cache لـ:
 
-```text
 /api/*
 /api/notifications/stream
 /api/admin/events
-```
 
 ---
 
@@ -215,28 +193,23 @@ server {
 
 عند كل release:
 
-```text
 package.json version
 config.PWA.cacheName
 frontend/sw.js CACHE_NAME
 /api/health version
 /api/docs version
-```
 
 لازم كلهم يتطابقوا.
 
-في Phase 57:
+في Phase 58:
 
-```text
-0.53.0
-yawmia-v0.53.0
-```
+0.54.0
+yawmia-v0.54.0
 
 ---
 
 ## 9. Pre-deploy checklist
 
-```bash
 git status
 npm test
 node scripts/verify-data-json.js --strict
@@ -244,9 +217,72 @@ node scripts/verify-file-health.js --strict
 node scripts/verify-queue.js
 node scripts/verify-production-readiness.js --strict
 node scripts/predeploy-check.js --strict
-```
 
 لو أي critical fail: لا تعمل deploy.
+
+---
+
+## Phase 58 Governance deployment checks
+
+قبل deploy أي نسخة Phase 58+:
+
+node scripts/verify-admin-rbac.js --strict
+node scripts/verify-privacy-governance.js --strict
+node scripts/predeploy-check.js --strict
+
+تأكد من:
+
+ADMIN_RBAC.enabled=true
+ADMIN_APPROVALS.enabled=true
+PRIVACY_REQUESTS.enabled=true
+POSTMORTEMS.enabled=true
+OPS_REVIEW_RECORDS.enabled=true
+
+---
+
+## Admin token governance
+
+`ADMIN_TOKEN` ما زال مدعومًا للـ backward compatibility، لكنه يساوي غالبًا:
+
+super_admin
+
+لا تشاركه مع الدعم اليومي.
+
+للدعم اليومي استخدم admin sessions مع roles:
+
+ops_admin
+trust_admin
+support_admin
+finance_admin
+read_only_admin
+
+---
+
+## Privacy workflows
+
+قبل تشغيل anonymization:
+
+node scripts/backup.js
+node scripts/anonymize-user-data.js --userId=usr_x --dry-run
+
+ثم بعد approval:
+
+node scripts/anonymize-user-data.js --userId=usr_x --confirm
+
+لا تحذف financial أو audit records يدويًا.
+
+---
+
+## Incident postmortems
+
+الحوادث `critical` تحتاج Postmortem إذا:
+
+POSTMORTEMS.requireForCriticalIncidents=true
+
+راجع:
+
+POSTMORTEM_TEMPLATE.md
+/api/admin/postmortems
 
 ---
 
@@ -254,26 +290,20 @@ node scripts/predeploy-check.js --strict
 
 يدويًا:
 
-```bash
 node scripts/backup.js
-```
 
 أو تأكد من backup scheduler في production.
 
 ثم تأكد من restore drill:
 
-```bash
 node scripts/run-backup-restore-drill.js
-```
 
 ---
 
 ## 11. Migration procedure
 
-```bash
 node scripts/migrate.js --dry-run
 node scripts/migrate.js
-```
 
 Migration في Phase 57 لا يعمل heavy scan.
 
@@ -281,31 +311,23 @@ Migration في Phase 57 لا يعمل heavy scan.
 
 ## 12. Safe restart procedure
 
-```bash
 node scripts/predeploy-check.js --strict
 sudo systemctl restart yawmia
 node scripts/postdeploy-smoke.js --base=http://localhost:3002
-```
 
 راقب:
 
-```bash
 journalctl -u yawmia -f
-```
 
 ---
 
 ## 13. Post-deploy smoke
 
-```bash
 node scripts/postdeploy-smoke.js --base=https://yowmia.com
-```
 
 مع admin token:
 
-```bash
 ADMIN_TOKEN=xxx node scripts/postdeploy-smoke.js --base=https://yowmia.com
-```
 
 ---
 
@@ -313,22 +335,18 @@ ADMIN_TOKEN=xxx node scripts/postdeploy-smoke.js --base=https://yowmia.com
 
 1. فعّل maintenance لو لازم:
 
-```bash
 curl -X POST https://yowmia.com/api/admin/maintenance/enable \
   -H "X-Admin-Token: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message":"المنصة تحت الصيانة مؤقتاً. حاول بعد قليل."}'
-```
 
 2. ارجع commit السابق:
 
-```bash
 git checkout <previous-good-commit>
 npm install
 node scripts/migrate.js
 sudo systemctl restart yawmia
 node scripts/postdeploy-smoke.js --base=http://localhost:3002
-```
 
 3. عطّل maintenance.
 
@@ -338,10 +356,8 @@ node scripts/postdeploy-smoke.js --base=http://localhost:3002
 
 Replica للقراءة فقط:
 
-```bash
 INSTANCE_MODE=read_only_replica
 INSTANCE_ID=read-replica-01
-```
 
 المتوقع:
 
@@ -356,7 +372,6 @@ INSTANCE_ID=read-replica-01
 
 ## 16. What NOT to do
 
-```text
 Do not run PM2 cluster mode.
 Do not run multiple writer instances.
 Do not cache /api/*.
@@ -367,13 +382,12 @@ Do not run queue-drain from multiple machines at once.
 Do not run writer and read-only replica against same writable disk.
 Do not deploy with default ADMIN_TOKEN.
 Do not ignore failed restore drill in production.
-```
 
 ---
 
 ## Phase 60+ externalization boundary
 
-Phase 57 لا يضيف PostgreSQL ولا external search.  
+Phase 58 ما زال يحافظ على نفس قيود المعمارية: لا PostgreSQL ولا external search ولا external DB.  
 عند Phase 60+، أول candidates للـ external DB:
 
 1. `users`

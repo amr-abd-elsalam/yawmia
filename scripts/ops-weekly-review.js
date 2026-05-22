@@ -35,6 +35,7 @@ function lineStatus(ok) {
 
 async function main() {
   const outPath = getArg('out', '');
+  const persist = process.argv.includes('--persist');
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -156,6 +157,35 @@ async function main() {
   md.push(``);
 
   const output = md.join('\n');
+
+  if (persist) {
+    try {
+      const { createReviewRecord } = await import('../server/services/opsReviewRecords.js');
+      const record = await createReviewRecord({
+        type: 'weekly_ops_review',
+        status: 'completed',
+        title: 'Weekly Ops/Product Review',
+        summary: output.slice(0, 3000),
+        findings: [
+          `Production readiness: ${readiness.status || 'unknown'}`,
+          `Queue DLQ: ${byStatus['dead-letter'] || 0}`,
+          `Ops SLO violations: ${(opsSlo.violations || []).length}`,
+          `Scale hygiene: ${scaleHygiene.status || 'unknown'}`,
+          `Marketplace warnings: ${marketSummary.warningCount || 0}`,
+        ],
+        actions: scaleActions.slice(0, 20),
+        refs: {},
+        createdBy: 'weekly_review_script',
+        completedBy: 'weekly_review_script',
+      });
+
+      if (record && record.ok) {
+        console.error(`✅ Persisted weekly ops review: ${record.review.id}`);
+      }
+    } catch (err) {
+      console.error(`⚠️ Failed to persist weekly ops review: ${err.message}`);
+    }
+  }
 
   if (outPath) {
     await writeFile(outPath, output, 'utf-8');

@@ -44,6 +44,7 @@
         <button class="admin-tab" data-admin-tab="ops">التشغيل</button>
         <button class="admin-tab" data-admin-tab="scale">التوسع</button>
         <button class="admin-tab" data-admin-tab="audit">السجل والتصدير</button>
+        <button class="admin-tab" data-admin-tab="governance">الحوكمة</button>
         <button class="admin-tab" data-admin-tab="settings">الإعدادات</button>
       </nav>
 
@@ -540,6 +541,117 @@
         </div>
 
         <div id="exportsTable">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 58 — Governance / RBAC / Privacy / Reviews / Postmortems -->
+      <div class="admin-section" id="governanceOverviewSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>⚖️ حوكمة المنصة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadGovernanceDashboard()">تحديث</button>
+        </div>
+
+        <div id="governanceRecommendedActions" class="recommended-actions"></div>
+
+        <div id="governanceSummaryGrid" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-start:0.75rem;">
+          تعرض هذه اللوحة حالة صلاحيات الأدمن، طلبات الخصوصية، موافقات الإجراءات الحساسة،
+          مراجعات التشغيل، وملفات ما بعد الحوادث. الهدف هو تقليل المخاطر بدون تعقيد يومي.
+        </p>
+      </div>
+
+      <div class="admin-section" id="rbacSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🛡 صلاحيات الأدمن</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRbacMatrix()">تحديث</button>
+        </div>
+        <div id="rbacMeInfo"></div>
+        <div id="rbacMatrixArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="approvalQueueSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>✅ موافقات الإجراءات الحساسة</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadApprovals()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="approvalStatusFilter" class="form-input form-input--sm" onchange="AdminApp.loadApprovals()">
+            <option value="pending">قيد الانتظار</option>
+            <option value="">كل الحالات</option>
+            <option value="approved">تمت الموافقة</option>
+            <option value="rejected">مرفوض</option>
+            <option value="expired">منتهي</option>
+            <option value="consumed">مستخدم</option>
+          </select>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.openCreateApprovalPrompt()">طلب موافقة جديد</button>
+        </div>
+
+        <div id="approvalsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="privacyRequestsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🔐 طلبات الخصوصية</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPrivacyRequests()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <input id="privacyUserIdInput" class="form-input form-input--sm" placeholder="User ID مثل usr_x..." style="min-width:220px;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.createPrivacyExportRequest()">طلب تصدير بيانات</button>
+          <button class="btn btn--warning btn--sm" onclick="AdminApp.createPrivacyAnonymizeRequest()">طلب إخفاء بيانات</button>
+        </div>
+
+        <div id="privacyRequestsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="opsReviewRecordsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>📝 مراجعات التشغيل</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadOpsReviewRecords()">تحديث</button>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <select id="opsReviewTypeFilter" class="form-input form-input--sm" onchange="AdminApp.loadOpsReviewRecords()">
+            <option value="">كل المراجعات</option>
+            <option value="weekly_ops_review">مراجعة أسبوعية</option>
+            <option value="dlq_review">مراجعة DLQ</option>
+            <option value="restore_drill_review">مراجعة Restore Drill</option>
+            <option value="marketplace_review">مراجعة السوق</option>
+            <option value="trust_calibration_review">مراجعة معايرة الثقة</option>
+            <option value="predictive_precision_review">مراجعة دقة المخاطر</option>
+            <option value="payment_dispute_review">مراجعة نزاعات الدفع</option>
+            <option value="slo_breach_review">مراجعة SLO</option>
+          </select>
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.createOpsReviewRecord()">إنشاء مراجعة</button>
+        </div>
+
+        <div id="opsReviewsArea">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <div class="admin-section" id="postmortemsSection" data-admin-tab-panel="governance">
+        <div class="admin-section__header">
+          <h2>🚨 ما بعد الحوادث — Postmortems</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPostmortems()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          الحوادث الحرجة تحتاج Postmortem لتوثيق السبب الجذري وخطة منع التكرار.
+        </p>
+
+        <div id="postmortemsArea">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>

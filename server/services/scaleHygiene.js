@@ -41,6 +41,37 @@ function normalizeAction(action) {
   };
 }
 
+async function collectPostmortemBacklog() {
+  try {
+    const { listIncidents } = await import('./incidentTimeline.js');
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+
+    const result = await listIncidents({ limit: 100, offset: 0 });
+    const incidents = result.incidents || [];
+
+    const missing = [];
+    for (const inc of incidents) {
+      if (!isPostmortemRequired(inc)) continue;
+      const pm = await getPostmortemByIncident(inc.id);
+      if (!pm) {
+        missing.push({
+          incidentId: inc.id,
+          severity: inc.severity,
+          title: inc.title,
+          status: inc.status,
+        });
+      }
+    }
+
+    return {
+      missing,
+      missingCount: missing.length,
+    };
+  } catch (err) {
+    return { error: err.message, missing: [], missingCount: 0 };
+  }
+}
+
 /**
  * Get unified scale hygiene overview.
  */
@@ -67,6 +98,9 @@ export async function getScaleHygieneOverview() {
     marketplaceFreshness,
     restoreDrillFreshness,
     schedulerCadence,
+    weeklyOpsReviewFreshness,
+    postmortemBacklog,
+    rbacMatrix,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -85,6 +119,13 @@ export async function getScaleHygieneOverview() {
     import('./marketplaceIntelligenceRollups.js').then(m => m.getMarketplaceRollupFreshness()).catch(err => ({ enabled: false, error: err.message })),
     import('./backupRestoreDrill.js').then(m => m.getLatestRestoreDrillFreshness()).catch(err => ({ enabled: false, error: err.message })),
     import('./schedulerRegistry.js').then(m => m.getSchedulerCadenceReport()).catch(err => ({ enabled: false, error: err.message })),
+    import('./opsReviewRecords.js')
+      .then(m => m.getReviewFreshness('weekly_ops_review', config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7))
+      .catch(err => ({ enabled: false, error: err.message })),
+    collectPostmortemBacklog().catch(err => ({ error: err.message, missing: [] })),
+    import('./adminRbac.js')
+      .then(m => m.getRbacMatrix())
+      .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
   if (queueStats.summary && queueStats.summary.stale) {
@@ -172,6 +213,36 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 58 — Governance warnings.
+  if (!rbacMatrix || rbacMatrix.enabled === false) {
+    warnings.push({
+      source: 'governance',
+      level: 'critical',
+      message: 'Admin RBAC is disabled or unavailable',
+      details: rbacMatrix || {},
+    });
+  }
+
+  if (weeklyOpsReviewFreshness && weeklyOpsReviewFreshness.fresh === false) {
+    warnings.push({
+      source: 'governance',
+      level: 'warning',
+      message: weeklyOpsReviewFreshness.status === 'missing'
+        ? 'Weekly ops review record is missing'
+        : 'Weekly ops review record is stale',
+      details: weeklyOpsReviewFreshness,
+    });
+  }
+
+  if (postmortemBacklog && postmortemBacklog.missingCount > 0) {
+    warnings.push({
+      source: 'postmortems',
+      level: 'critical',
+      message: `${postmortemBacklog.missingCount} incident(s) require postmortem`,
+      details: postmortemBacklog,
+    });
+  }
+
   const recommendedActions = [];
 
   for (const action of queueRecommendations || []) {
@@ -223,6 +294,40 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 58 — Governance recommended actions.
+  if (!rbacMatrix || rbacMatrix.enabled === false) {
+    recommendedActions.push({
+      id: 'admin_rbac_enable',
+      label: 'تفعيل صلاحيات الأدمن RBAC',
+      severity: 'critical',
+      command: 'node scripts/verify-admin-rbac.js --strict',
+      adminRoute: '/api/admin/rbac/matrix',
+      reason: 'RBAC يحمي إجراءات الأدمن الحساسة بمبدأ أقل صلاحية.',
+    });
+  }
+
+  if (weeklyOpsReviewFreshness && weeklyOpsReviewFreshness.fresh === false) {
+    recommendedActions.push({
+      id: 'weekly_ops_review_persist',
+      label: 'تسجيل مراجعة التشغيل الأسبوعية',
+      severity: 'warning',
+      command: 'node scripts/ops-weekly-review.js --persist',
+      adminRoute: '/api/admin/ops/reviews',
+      reason: 'لا توجد مراجعة تشغيل حديثة موثقة.',
+    });
+  }
+
+  if (postmortemBacklog && postmortemBacklog.missingCount > 0) {
+    recommendedActions.push({
+      id: 'incident_postmortems_required',
+      label: 'إنشاء Postmortem للحوادث الحرجة',
+      severity: 'critical',
+      command: 'راجع /api/admin/incidents ثم أنشئ postmortem',
+      adminRoute: '/api/admin/postmortems',
+      reason: 'بعض الحوادث تتطلب تحليل سبب جذري وخطة منع تكرار.',
+    });
+  }
+
   warnings.sort((a, b) => severityRank(b.level) - severityRank(a.level));
   recommendedActions.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
 
@@ -252,6 +357,18 @@ export async function getScaleHygieneOverview() {
       freshness: restoreDrillFreshness,
     },
     schedulerCadence,
+    governance: {
+      rbac: rbacMatrix || { enabled: false },
+      reviews: {
+        weeklyOpsReview: weeklyOpsReviewFreshness || null,
+      },
+      postmortems: postmortemBacklog || { missingCount: 0, missing: [] },
+      privacy: {
+        enabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.enabled),
+        exportEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.exportEnabled),
+        anonymizeEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.anonymizeEnabled),
+      },
+    },
     recommendedActions: recommendedActions.slice(0, 12),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,

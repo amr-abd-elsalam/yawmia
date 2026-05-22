@@ -409,6 +409,207 @@ async function checkJsonHealthGate(isProd) {
   );
 }
 
+async function fileExists(path) {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function checkAdminRbacGovernance(isProd) {
+  const enabled = !!(config.ADMIN_RBAC && config.ADMIN_RBAC.enabled);
+  const roles = config.ADMIN_RBAC?.roles || [];
+  const caps = config.ADMIN_RBAC?.capabilities || {};
+
+  const hasSuper = roles.includes('super_admin') && Array.isArray(caps.super_admin) && caps.super_admin.includes('*');
+
+  if (!enabled) {
+    return check(
+      'admin_rbac_enabled',
+      isProd ? 'fail' : 'warn',
+      'ADMIN_RBAC is disabled',
+      { enabled },
+      'Enable ADMIN_RBAC in config.js'
+    );
+  }
+
+  if (!hasSuper) {
+    return check(
+      'admin_rbac_enabled',
+      'fail',
+      'ADMIN_RBAC is enabled but super_admin wildcard capability is missing',
+      { roles },
+      'Ensure ADMIN_RBAC.capabilities.super_admin includes "*"'
+    );
+  }
+
+  return check('admin_rbac_enabled', 'pass', 'ADMIN_RBAC is enabled and super_admin is configured', {
+    roles: roles.length,
+  });
+}
+
+async function checkGovernanceDocs() {
+  const docs = [
+    { id: 'admin_rbac_runbook_exists', path: './ADMIN_RBAC_MODEL.md', label: 'ADMIN_RBAC_MODEL.md' },
+    { id: 'privacy_runbook_exists', path: './PRIVACY_REQUEST_RUNBOOK.md', label: 'PRIVACY_REQUEST_RUNBOOK.md' },
+    { id: 'postmortem_template_exists', path: './POSTMORTEM_TEMPLATE.md', label: 'POSTMORTEM_TEMPLATE.md' },
+    { id: 'data_governance_runbook_exists', path: './DATA_GOVERNANCE_RUNBOOK.md', label: 'DATA_GOVERNANCE_RUNBOOK.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : 'warn',
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkPrivacyGovernance(isProd) {
+  const enabled = !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.enabled);
+  if (!enabled) {
+    return check(
+      'privacy_requests_enabled',
+      isProd ? 'fail' : 'warn',
+      'PRIVACY_REQUESTS is disabled',
+      {},
+      'Enable PRIVACY_REQUESTS in config.js'
+    );
+  }
+
+  const requiredScripts = [
+    './scripts/export-user-data.js',
+    './scripts/anonymize-user-data.js',
+    './scripts/verify-privacy-governance.js',
+  ];
+
+  const missingScripts = [];
+  for (const s of requiredScripts) {
+    if (!await fileExists(s)) missingScripts.push(s);
+  }
+
+  if (missingScripts.length > 0) {
+    return check(
+      'privacy_governance_scripts_available',
+      isProd ? 'fail' : 'warn',
+      'Some privacy governance scripts are missing',
+      { missingScripts },
+      'Add missing Phase 58 privacy scripts'
+    );
+  }
+
+  return check('privacy_requests_enabled', 'pass', 'Privacy request workflow is enabled and scripts are present', {
+    exportEnabled: !!config.PRIVACY_REQUESTS.exportEnabled,
+    anonymizeEnabled: !!config.PRIVACY_REQUESTS.anonymizeEnabled,
+  });
+}
+
+async function checkDangerousActionApprovals(isProd) {
+  const enabled = !!(config.ADMIN_APPROVALS && config.ADMIN_APPROVALS.enabled);
+  const required = !!(config.ADMIN_RBAC && config.ADMIN_RBAC.dangerousActionsRequireApproval);
+  const actions = config.ADMIN_APPROVALS?.dangerousActions || [];
+
+  if (!enabled || !required) {
+    return check(
+      'dangerous_actions_approval_configured',
+      isProd ? 'fail' : 'warn',
+      'Dangerous admin action approvals are not fully enabled',
+      { enabled, required },
+      'Enable ADMIN_APPROVALS.enabled and ADMIN_RBAC.dangerousActionsRequireApproval'
+    );
+  }
+
+  if (actions.length === 0) {
+    return check(
+      'dangerous_actions_approval_configured',
+      'fail',
+      'Dangerous action approval list is empty',
+      {},
+      'Configure ADMIN_APPROVALS.dangerousActions'
+    );
+  }
+
+  return check('dangerous_actions_approval_configured', 'pass', 'Dangerous admin action approval config is present', {
+    actionCount: actions.length,
+  });
+}
+
+async function checkWeeklyOpsReviewFreshness(isProd) {
+  try {
+    const { getReviewFreshness } = await import('./opsReviewRecords.js');
+    const freshness = await getReviewFreshness(
+      'weekly_ops_review',
+      config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7
+    );
+
+    if (!freshness.fresh) {
+      return check(
+        'weekly_ops_review_fresh',
+        isProd && config.OPS_REVIEW_RECORDS?.requiredWeeklyReview ? 'fail' : 'warn',
+        freshness.status === 'missing'
+          ? 'No weekly ops review record exists'
+          : `Weekly ops review is stale (${freshness.ageDays} days old)`,
+        freshness,
+        'node scripts/ops-weekly-review.js --persist'
+      );
+    }
+
+    return check('weekly_ops_review_fresh', 'pass', 'Weekly ops review is fresh', freshness);
+  } catch (err) {
+    return check('weekly_ops_review_fresh', 'warn', 'Could not evaluate weekly ops review freshness', {
+      error: err.message,
+    }, 'node scripts/ops-weekly-review.js --persist');
+  }
+}
+
+async function checkCriticalIncidentPostmortems(isProd) {
+  try {
+    const { listIncidents } = await import('./incidentTimeline.js');
+    const { isPostmortemRequired, getPostmortemByIncident } = await import('./postmortemRecords.js');
+
+    const result = await listIncidents({ limit: 100, offset: 0 });
+    const incidents = result.incidents || [];
+
+    const missing = [];
+    for (const inc of incidents) {
+      if (!isPostmortemRequired(inc)) continue;
+      const pm = await getPostmortemByIncident(inc.id);
+      if (!pm) {
+        missing.push({
+          incidentId: inc.id,
+          severity: inc.severity,
+          title: inc.title,
+          status: inc.status,
+        });
+      }
+    }
+
+    if (missing.length > 0) {
+      return check(
+        'critical_incidents_have_postmortem',
+        isProd ? 'fail' : 'warn',
+        `${missing.length} incident(s) require postmortem`,
+        { missing: missing.slice(0, 10) },
+        'Create postmortems from /api/admin/incidents/:id/postmortem'
+      );
+    }
+
+    return check('critical_incidents_have_postmortem', 'pass', 'Critical incident postmortem requirement is satisfied');
+  } catch (err) {
+    return check('critical_incidents_have_postmortem', 'warn', 'Could not evaluate incident postmortem governance', {
+      error: err.message,
+    });
+  }
+}
+
 export async function runReadinessChecks(options = {}) {
   const checks = [];
 
@@ -553,6 +754,14 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkSchedulerStaleness(isProd));
   checks.push(await checkMaintenanceInactive(isProd));
   checks.push(await checkJsonHealthGate(isProd));
+
+  // Phase 58 — Governance / Privacy / RBAC readiness.
+  checks.push(await checkAdminRbacGovernance(isProd));
+  checks.push(...await checkGovernanceDocs());
+  checks.push(await checkPrivacyGovernance(isProd));
+  checks.push(await checkDangerousActionApprovals(isProd));
+  checks.push(await checkWeeklyOpsReviewFreshness(isProd));
+  checks.push(await checkCriticalIncidentPostmortems(isProd));
 
   return checks;
 }

@@ -1,7 +1,7 @@
 # يوميّة — Privacy Data Map
-> Phase 57 — Initial Privacy Inventory for Phase 58
+> Phase 58 — Privacy Inventory, Export Behavior, and Anonymization Map
 
-هذا الملف توثيق فقط. لا يضيف data export/delete implementation في Phase 57.
+هذا الملف يصف خريطة البيانات الحساسة وسلوك export/anonymization بعد تفعيل Phase 58.
 
 ---
 
@@ -352,3 +352,256 @@ Required later:
 - PII field inventory enforcement
 - retention policy dashboard
 - admin audit around privacy access
+
+# Phase 58 workflow behavior
+
+بعد Phase 58، هذا الملف لم يعد inventory فقط.  
+كل collection يجب أن يكون له:
+
+Export behavior
+Anonymization behavior
+Delete behavior
+Retention owner
+Admin access capability
+
+---
+
+## users — Phase 58 behavior
+
+Export behavior:
+- included in user data export.
+- includes phone/name/location for requesting user only.
+
+Anonymization behavior:
+- phone replaced by anon marker.
+- name becomes `مستخدم محذوف`.
+- governorate/lat/lng removed.
+- notificationPreferences removed.
+- status becomes `anonymized`.
+
+Delete behavior:
+- no hard delete by default.
+- preserves referential integrity.
+
+Retention owner:
+- platform governance.
+
+Admin access capability:
+- `admin.users.read`
+- privacy actions require `admin.privacy.*`
+
+---
+
+## sessions — Phase 58 behavior
+
+Export behavior:
+- metadata only.
+- token always redacted.
+
+Anonymization behavior:
+- destroyed if `PRIVACY_REQUESTS.deleteSessionsOnAnonymize=true`.
+
+Delete behavior:
+- delete session files.
+
+Retention owner:
+- auth/session lifecycle.
+
+Admin access capability:
+- no broad admin export of tokens.
+
+---
+
+## verifications / images — Phase 58 behavior
+
+Export behavior:
+- metadata only.
+- raw image refs withheld.
+- raw binaries never included.
+
+Anonymization behavior:
+- image refs removed.
+- image binaries deleted best-effort if configured.
+
+Delete behavior:
+- delete image refs and optionally image files.
+
+Retention owner:
+- privacy governance.
+
+Admin access capability:
+- `admin.verifications.review`
+- anonymization requires `admin.privacy.anonymize`
+
+---
+
+## messages / workrooms — Phase 58 behavior
+
+Export behavior:
+- included only if user is participant and config allows.
+- no raw base64.
+- attachments metadata only.
+
+Anonymization behavior:
+- message history preserved by default.
+- identity display should resolve to anonymized user record.
+- do not delete conversation history blindly.
+
+Delete behavior:
+- no hard delete by default.
+
+Retention owner:
+- workroom retention policy.
+
+Admin access capability:
+- raw message content should not be broadly exposed.
+
+---
+
+## payments — Phase 58 behavior
+
+Export behavior:
+- included if user is involved.
+- financial amounts preserved.
+
+Anonymization behavior:
+- preserve financial/legal records.
+- do not remove amount/platformFee/workerPayout.
+
+Delete behavior:
+- no hard delete by privacy anonymization.
+
+Retention owner:
+- finance/legal governance.
+
+Admin access capability:
+- `admin.finance.read`
+- `admin.payments.complete`
+
+---
+
+## reports / predictive_signals — Phase 58 behavior
+
+Export behavior:
+- included if user is reporter/target/entity.
+- admin-only explanations remain limited.
+
+Anonymization behavior:
+- preserve safety history.
+- mark entity as anonymized where applicable.
+
+Delete behavior:
+- no blind delete.
+
+Retention owner:
+- trust and safety governance.
+
+Admin access capability:
+- `admin.trust.read`
+- `admin.predictive.review`
+
+---
+
+## audit — Phase 58 behavior
+
+Export behavior:
+- audit export is admin-only and capability-protected.
+- privacy export does not include raw audit details by default.
+
+Anonymization behavior:
+- audit records are not blindly deleted.
+- future phases may hash targetId/details if legally required.
+
+Delete behavior:
+- governed by `AUDIT_RETENTION`.
+
+Retention owner:
+- security/governance.
+
+Admin access capability:
+- `admin.audit.read`
+- `admin.audit.export`
+
+---
+
+## privacy_requests — Phase 58 behavior
+
+Export behavior:
+- request metadata is exportable to the requesting user.
+
+Anonymization behavior:
+- request records preserved for governance.
+
+Delete behavior:
+- retention via `PRIVACY_REQUESTS.requestRetentionDays`.
+
+Retention owner:
+- privacy governance.
+
+Admin access capability:
+- `admin.privacy.read`
+- `admin.privacy.write`
+- `admin.privacy.export`
+- `admin.privacy.anonymize`
+
+## admin_approvals — Phase 58 behavior
+
+PII:
+- adminId
+- requesterId
+- targetId
+- reason
+- sanitized payload
+
+Export behavior:
+- governance/internal only.
+- not included in user privacy export by default.
+
+Anonymization behavior:
+- preserve approval records for audit.
+- remove embedded PII from payload where possible.
+
+Retention owner:
+- governance/security.
+
+Admin access capability:
+- `admin.approvals.read`
+- `admin.approvals.write`
+
+## ops_review_records — Phase 58 behavior
+
+PII:
+- may include adminId, incidentId, drillId, queue job refs, findings.
+
+Export behavior:
+- internal governance only.
+
+Anonymization behavior:
+- preserve operational record.
+- avoid raw user PII in findings.
+
+Retention owner:
+- operations governance.
+
+Admin access capability:
+- `admin.ops.reviews.read`
+- `admin.ops.reviews.write`
+
+## postmortems — Phase 58 behavior
+
+PII:
+- may include incident refs, owner ids, user impact summaries.
+
+Export behavior:
+- internal governance only.
+
+Anonymization behavior:
+- preserve incident accountability.
+- avoid raw user PII in narrative.
+
+Retention owner:
+- incident governance.
+
+Admin access capability:
+- `admin.postmortems.read`
+- `admin.postmortems.write`
