@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.54.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-23T03:52:07.726Z
+> Auto-generated: 2026-05-23T04:19:49.872Z
 > Files in this part: 74
 
 ## Files
@@ -23551,7 +23551,7 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/predeploy-check.js — Deployment Gate (Phase 57)
+// scripts/predeploy-check.js — Deployment Gate (Phase 58)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   NODE_ENV=production node scripts/predeploy-check.js --strict
@@ -23568,6 +23568,7 @@ try {
 
 const STRICT = process.argv.includes('--strict');
 const JSON_OUT = process.argv.includes('--json');
+const PREDEPLOY_CHILD_TIMEOUT_MS = Number.parseInt(process.env.PREDEPLOY_CHILD_TIMEOUT_MS || '120000', 10);
 
 function parsePossiblyNoisyJson(stdout) {
   if (!stdout) return null;
@@ -23591,6 +23592,7 @@ function runScript(script, args = []) {
   const proc = spawnSync(process.execPath, [script, ...args], {
     env: process.env,
     encoding: 'utf-8',
+    timeout: PREDEPLOY_CHILD_TIMEOUT_MS,
   });
 
   const parsed = parsePossiblyNoisyJson(proc.stdout);
@@ -23601,6 +23603,8 @@ function runScript(script, args = []) {
     stdout: proc.stdout,
     stderr: proc.stderr,
     parsed,
+    error: proc.error?.message || null,
+    timedOut: proc.error?.code === 'ETIMEDOUT',
   };
 }
 
@@ -23633,7 +23637,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.53.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.53.0' }));
+  checks.push(mk('package_version', pkg.version === '0.54.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.54.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -23648,7 +23652,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.53.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.54.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
