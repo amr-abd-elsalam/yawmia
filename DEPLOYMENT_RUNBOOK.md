@@ -1,6 +1,6 @@
 # يوميّة — Deployment Runbook
-> Phase 58 — Governance Production Deployment Discipline  
-> Version target: v0.54.0
+> Phase 59 — File-Based Scale Limits + Externalization Readiness  
+> Version target: v0.55.0
 
 هذا الملف يشرح طريقة نشر يوميّة في production مع الحفاظ على قاعدة أساسية:
 
@@ -18,6 +18,8 @@ npm test
 node scripts/predeploy-check.js --strict
 node scripts/verify-data-json.js --strict
 node scripts/verify-file-health.js --strict
+node scripts/verify-scale-thresholds.js --strict
+node scripts/measure-storage-pressure.js
 ```
 
 المطلوب:
@@ -225,12 +227,11 @@ frontend/sw.js CACHE_NAME
 
 لازم كلهم يتطابقوا.
 
-في Phase 58:
+في Phase 59:
 
 ```text
-0.54.0
-yawmia-v0.54.0
-```
+0.55.0
+yawmia-v0.55.0```
 
 ---
 
@@ -367,7 +368,53 @@ INSTANCE_ID=read-replica-01
 
 ---
 
-## 16. What NOT to do
+## 16. Phase 59 scale and storage pressure gate
+
+قبل production deploy، شغّل:
+
+```bash
+node scripts/measure-storage-pressure.js
+node scripts/verify-scale-thresholds.js --strict
+node scripts/benchmark-file-paths.js --json
+```
+
+راجع Admin:
+
+```text
+/api/admin/storage-pressure
+/api/admin/scale-thresholds
+/api/admin/externalization/readiness
+/api/admin/production/multi-instance-boundary
+```
+
+قواعد Phase 59:
+
+```text
+Storage warning لا يعني migration فوراً.
+Critical pressure يتطلب backup + verify + compact/repair.
+Repeated critical pressure بعد remediation يفتح مراجعة Phase 60+ فقط.
+لا يتم تنفيذ PostgreSQL أو external queue أو external search في Phase 59.
+```
+
+لو pressure critical في production:
+
+```bash
+node scripts/backup.js
+node scripts/verify-data-json.js --strict
+node scripts/verify-file-health.js --strict
+node scripts/verify-scale-thresholds.js --strict
+```
+
+ثم اتبع:
+
+```text
+STORAGE_PRESSURE_RUNBOOK.md
+SCALE_LIMITS.md
+EXTERNALIZATION_READINESS.md
+MULTI_INSTANCE_BOUNDARY.md
+```
+
+## 17. What NOT to do
 
 ```text
 Do not run PM2 cluster mode.
@@ -386,7 +433,25 @@ Do not ignore failed restore drill in production.
 
 ## Phase 60+ externalization boundary
 
-Phase 57 لا يضيف PostgreSQL ولا external search.  
+Phase 59 لا يضيف PostgreSQL ولا external search ولا external queue.  
+Phase 59 يضيف فقط scale thresholds وstorage pressure وbenchmarks وmigration snapshot formats.
+
+قبل Phase 60+، راجع:
+
+```bash
+node scripts/measure-storage-pressure.js --json
+node scripts/benchmark-file-paths.js --json
+node scripts/export-migration-snapshot.js --dry-run
+```
+
+ثم اقرأ:
+
+```text
+EXTERNALIZATION_READINESS.md
+DATA_MIGRATION_FORMATS.md
+MULTI_INSTANCE_BOUNDARY.md
+```
+
 عند Phase 60+، أول candidates للـ external DB:
 
 1. `users`

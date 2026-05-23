@@ -402,6 +402,88 @@ export async function cleanupExpiredApprovals() {
   return touched;
 }
 
+/**
+ * Phase 59: lightweight governance pressure stats for admin approvals.
+ *
+ * No PII/secrets are returned. Payloads are not exposed.
+ */
+export async function getAdminApprovalPressureStats() {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      expired: 0,
+      consumed: 0,
+      stale: 0,
+      oldestPendingAt: null,
+      expiringSoon: 0,
+    };
+  }
+
+  const result = {
+    enabled: true,
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    expired: 0,
+    consumed: 0,
+    stale: 0,
+    oldestPendingAt: null,
+    expiringSoon: 0,
+    generatedAt: nowIso(),
+  };
+
+  try {
+    const rows = await listApprovals({ limit: 100000, offset: 0 });
+    const approvals = rows.approvals || [];
+
+    const soonMs = 6 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const record of approvals) {
+      if (!record || !record.id) continue;
+      result.total++;
+
+      if (record.status === 'pending') {
+        result.pending++;
+
+        if (!result.oldestPendingAt || record.createdAt < result.oldestPendingAt) {
+          result.oldestPendingAt = record.createdAt || null;
+        }
+
+        if (isExpired(record)) {
+          result.stale++;
+        } else if (record.expiresAt) {
+          const expiresMs = new Date(record.expiresAt).getTime();
+          if (Number.isFinite(expiresMs) && expiresMs > now && expiresMs - now <= soonMs) {
+            result.expiringSoon++;
+          }
+        }
+      } else if (record.status === 'approved') {
+        result.approved++;
+      } else if (record.status === 'rejected') {
+        result.rejected++;
+      } else if (record.status === 'expired') {
+        result.expired++;
+      } else if (record.status === 'consumed') {
+        result.consumed++;
+      }
+    }
+
+    return result;
+  } catch (err) {
+    return {
+      ...result,
+      error: err.message,
+      status: 'unknown',
+    };
+  }
+}
+
 export const _testHelpers = {
   generateId,
   approvalPath,

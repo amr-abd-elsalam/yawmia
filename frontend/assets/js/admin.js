@@ -182,6 +182,9 @@ var AdminApp = (function () {
         loadCounterHygiene(),
         loadTrustDashboard(),
         loadTrustCalibrationDashboard(),
+        loadStoragePressure(),
+        loadExternalizationReadiness(),
+        loadMultiInstanceBoundary(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
       ]).catch(function () {});
@@ -3767,6 +3770,466 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 59 — Storage Pressure + Externalization Readiness
+  // ═══════════════════════════════════════════════════════════════
+
+  function pressureStatusLabel(status) {
+    var labels = {
+      ok: 'مستقر',
+      healthy: 'مستقر',
+      warning: 'يحتاج متابعة',
+      warnings: 'يحتاج متابعة',
+      critical: 'يحتاج إجراء',
+      unknown: 'غير معروف',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  function pressureStatusClass(status) {
+    if (status === 'critical') return 'storage-pressure-card--critical';
+    if (status === 'warning' || status === 'warnings') return 'storage-pressure-card--warning';
+    return 'storage-pressure-card--ok';
+  }
+
+  function thresholdBadge(status) {
+    var s = status || 'ok';
+    var label = pressureStatusLabel(s);
+    var cls = s === 'critical'
+      ? 'scale-threshold-badge--critical'
+      : (s === 'warning' || s === 'warnings' ? 'scale-threshold-badge--warning' : 'scale-threshold-badge--ok');
+
+    return '<span class="scale-threshold-badge ' + cls + '">' + escapeHtml(label) + '</span>';
+  }
+
+  async function loadStoragePressure() {
+    var summaryEl = document.getElementById('storagePressureSummary');
+    var detailsEl = document.getElementById('storagePressureDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (detailsEl) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/storage-pressure');
+      var pressure = data.storagePressure || {};
+
+      renderStoragePressureSummary(pressure);
+      renderStoragePressureRecommendations(pressure.recommendations || []);
+      renderStoragePressureDetails(pressure);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل ضغط التخزين</p>';
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  async function captureStoragePressure() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري قياس ضغط التخزين...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/storage-pressure/capture', {});
+      var pressure = data.storagePressure || {};
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم قياس ضغط التخزين — الحالة: ' + pressureStatusLabel(pressure.status));
+      }
+
+      renderStoragePressureSummary(pressure);
+      renderStoragePressureRecommendations(pressure.recommendations || []);
+      renderStoragePressureDetails(pressure);
+      loadScaleHygiene();
+    } catch (err) {
+      showError(err.message || 'خطأ في قياس ضغط التخزين');
+    }
+  }
+
+  async function loadScaleThresholds() {
+    var detailsEl = document.getElementById('storagePressureDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/scale-thresholds');
+      var scale = data.scaleLimits || {};
+      var th = scale.thresholds || {};
+
+      var html =
+        '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">إعدادات حدود التوسع</h3>' +
+        '<div class="health-row"><span class="health-row__label">الوضع</span><span class="health-row__value">' + escapeHtml(scale.mode || 'advisory') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Deep scan افتراضي</span><span class="health-row__value">' + (scale.deepScanDefaultEnabled ? 'نعم' : 'لا') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">أقصى shallow scan</span><span class="health-row__value">' + escapeHtml(String(scale.shallowScanMaxFiles || 0)) + ' ملف</span></div>';
+
+      if (th.queue) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Queue</h4>';
+        html += '<table class="admin-table"><thead><tr><th>Metric</th><th>Warning</th><th>Critical</th></tr></thead><tbody>' +
+          '<tr><td>Pending</td><td>' + escapeHtml(String(th.queue.pendingWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.pendingCritical || 0)) + '</td></tr>' +
+          '<tr><td>Running</td><td>' + escapeHtml(String(th.queue.runningWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.runningCritical || 0)) + '</td></tr>' +
+          '<tr><td>Dead Letter</td><td>' + escapeHtml(String(th.queue.deadLetterWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.deadLetterCritical || 0)) + '</td></tr>' +
+        '</tbody></table>';
+      }
+
+      if (th.collections) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Collections</h4>';
+        html += '<table class="admin-table"><thead><tr><th>Collection</th><th>Warning</th><th>Critical</th></tr></thead><tbody>';
+
+        Object.keys(th.collections).forEach(function (name) {
+          var c = th.collections[name] || {};
+          var warn = c.warningFiles || c.warningFilesPerShard || '-';
+          var crit = c.criticalFiles || c.criticalFilesPerShard || '-';
+          html += '<tr><td>' + escapeHtml(name) + '</td><td>' + escapeHtml(String(warn)) + '</td><td>' + escapeHtml(String(crit)) + '</td></tr>';
+        });
+
+        html += '</tbody></table>';
+      }
+
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حدود التوسع</p>';
+    }
+  }
+
+  async function verifyScaleThresholds() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري التحقق من حدود التوسع...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/scale-thresholds/verify', {});
+      var verification = data.verification || {};
+
+      if (typeof YawmiaToast !== 'undefined') {
+        if (verification.status === 'critical') {
+          YawmiaToast.error('حدود التوسع بها مؤشرات حرجة');
+        } else if (verification.status === 'warning') {
+          YawmiaToast.warning('حدود التوسع بها تحذيرات');
+        } else {
+          YawmiaToast.success('حدود التوسع مستقرة');
+        }
+      }
+
+      var detailsEl = document.getElementById('storagePressureDetails');
+      if (detailsEl) {
+        var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">نتيجة التحقق من الحدود</h3>';
+        html += '<div class="health-row"><span class="health-row__label">الحالة</span><span class="health-row__value">' + thresholdBadge(verification.status) + '</span></div>';
+        html += '<div class="health-row"><span class="health-row__label">تحذيرات</span><span class="health-row__value">' + escapeHtml(String((verification.warnings || []).length)) + '</span></div>';
+        html += '<div class="health-row"><span class="health-row__label">حرجة</span><span class="health-row__value">' + escapeHtml(String((verification.criticals || []).length)) + '</span></div>';
+
+        var issues = (verification.criticals || []).concat(verification.warnings || []).slice(0, 10);
+        if (issues.length > 0) {
+          html += '<div class="scale-hygiene-warning-list" style="margin-block-start:1rem;">';
+          issues.forEach(function (issue) {
+            var cls = issue.level === 'critical' ? 'scale-hygiene-warning--high' : 'scale-hygiene-warning--medium';
+            html += '<div class="scale-hygiene-warning ' + cls + '">' +
+              '<strong>' + escapeHtml(issue.code || 'threshold') + '</strong>: ' +
+              escapeHtml(issue.message || '') +
+              (issue.recommendation ? '<br><small>' + escapeHtml(issue.recommendation) + '</small>' : '') +
+            '</div>';
+          });
+          html += '</div>';
+        }
+
+        detailsEl.innerHTML = html;
+      }
+
+      loadStoragePressure();
+    } catch (err) {
+      showError(err.message || 'خطأ في التحقق من حدود التوسع');
+    }
+  }
+
+  function renderStoragePressureSummary(pressure) {
+    var el = document.getElementById('storagePressureSummary');
+    if (!el) return;
+
+    var summary = pressure.summary || {};
+    var queue = pressure.queue || {};
+    var qStatus = queue.byStatus || {};
+    var indexes = pressure.indexes || {};
+    var auditToken = indexes.auditTokenIndex || {};
+    var workrooms = pressure.workrooms || {};
+    var governance = pressure.governance || {};
+    var images = pressure.images || {};
+
+    var cards = [
+      {
+        value: thresholdBadge(pressure.status || 'ok'),
+        label: 'الحالة العامة'
+      },
+      {
+        value: summary.totalFiles || 0,
+        label: 'إجمالي ملفات JSON'
+      },
+      {
+        value: (summary.totalSizeKB || 0) + ' KB',
+        label: 'حجم JSON تقريبي'
+      },
+      {
+        value: summary.largestJsonKB || 0,
+        label: 'أكبر JSON KB'
+      },
+      {
+        value: qStatus.pending || 0,
+        label: 'Queue Pending'
+      },
+      {
+        value: qStatus['dead-letter'] || queue.deadLetter || 0,
+        label: 'Queue DLQ'
+      },
+      {
+        value: auditToken.fileCount || 0,
+        label: 'Audit Token Files'
+      },
+      {
+        value: workrooms.largestSidecarKB || 0,
+        label: 'أكبر Workroom Sidecar KB'
+      },
+      {
+        value: (governance.privacyRequests && governance.privacyRequests.open) || 0,
+        label: 'طلبات خصوصية مفتوحة'
+      },
+      {
+        value: images.binaryFileCount || 0,
+        label: 'ملفات صور/مرفقات'
+      },
+      {
+        value: pressure.scannedFiles || 0,
+        label: 'ملفات JSON تم قياسها'
+      },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c, idx) {
+      var card = document.createElement('div');
+      var cls = idx === 0 ? pressureStatusClass(pressure.status || 'ok') : '';
+      card.className = 'storage-pressure-card ' + cls;
+      card.innerHTML =
+        '<div class="storage-pressure-card__value">' + c.value + '</div>' +
+        '<div class="storage-pressure-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderStoragePressureRecommendations(recommendations) {
+    renderRecommendedActions('storagePressureRecommendedActions', recommendations || []);
+  }
+
+  function renderStoragePressureDetails(pressure) {
+    var el = document.getElementById('storagePressureDetails');
+    if (!el) return;
+
+    var collections = pressure.collections || {};
+    var topCollections = Object.values(collections)
+      .filter(function (c) { return c && c.collection; })
+      .sort(function (a, b) { return (b.fileCount || 0) - (a.fileCount || 0); })
+      .slice(0, 10);
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أعلى Collections حسب عدد الملفات</h3>';
+
+    if (topCollections.length === 0) {
+      html += '<p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات collections</p>';
+    } else {
+      html += '<table class="admin-table"><thead><tr>' +
+        '<th>Collection</th><th>Files</th><th>Size</th><th>Largest</th><th>Stale tmp</th>' +
+      '</tr></thead><tbody>';
+
+      topCollections.forEach(function (c) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(c.collection || '-') + '</td>' +
+          '<td>' + escapeHtml(String(c.fileCount || 0)) + '</td>' +
+          '<td>' + escapeHtml(String(c.totalSizeKB || 0)) + ' KB</td>' +
+          '<td>' + escapeHtml(String(c.largestJsonKB || 0)) + ' KB</td>' +
+          '<td>' + escapeHtml(String(c.staleTmpCount || 0)) + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+    }
+
+    if (pressure.images) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">ضغط الصور والمرفقات</h3>';
+      html += '<div class="health-row"><span class="health-row__label">Buckets</span><span class="health-row__value">' + escapeHtml(String(pressure.images.bucketCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Binary files</span><span class="health-row__value">' + escapeHtml(String(pressure.images.binaryFileCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Meta files</span><span class="health-row__value">' + escapeHtml(String(pressure.images.metaFileCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Total size</span><span class="health-row__value">' + escapeHtml(String(pressure.images.totalSizeKB || 0)) + ' KB</span></div>';
+    }
+
+    var largestFiles = (pressure.summary && pressure.summary.largestFiles) || [];
+    if (largestFiles.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أكبر الملفات</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Path</th><th>Collection</th><th>Size</th></tr></thead><tbody>';
+
+      largestFiles.slice(0, 10).forEach(function (f) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(f.path || '-') + '</small></td>' +
+          '<td>' + escapeHtml(f.collection || '-') + '</td>' +
+          '<td>' + escapeHtml(String(f.sizeKB || 0)) + ' KB</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+    }
+
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:1rem;">' +
+      'ملاحظة: القياس افتراضيًا shallow ولا يقرأ محتوى الملفات. استخدم CLI مع --deep خارج وقت الذروة عند الحاجة.' +
+    '</p>';
+
+    el.innerHTML = html;
+  }
+
+  async function loadExternalizationReadiness() {
+    var summaryEl = document.getElementById('externalizationReadinessSummary');
+    var candidatesEl = document.getElementById('externalizationCandidates');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (candidatesEl) {
+      candidatesEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/externalization/readiness');
+      var readiness = data.readiness || {};
+
+      renderExternalizationSummary(readiness);
+      renderExternalizationCandidates(readiness.candidates || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جاهزية النقل</p>';
+      if (candidatesEl) candidatesEl.innerHTML = '';
+    }
+  }
+
+  function renderExternalizationSummary(readiness) {
+    var el = document.getElementById('externalizationReadinessSummary');
+    if (!el) return;
+
+    var pressure = readiness.pressureSnapshot || {};
+    var cards = [
+      { value: readiness.implementationAllowed ? 'نعم' : 'لا', label: 'تنفيذ النقل في Phase 59؟' },
+      { value: readiness.noExternalizationBeforePhase || 60, label: 'أقرب Phase للتنفيذ' },
+      { value: pressure.status || 'unknown', label: 'آخر ضغط تخزين' },
+      { value: pressure.criticalCount || 0, label: 'Critical pressure' },
+      { value: (readiness.candidates || []).length, label: 'مرشحين للمراجعة' },
+      { value: 'single-writer', label: 'وضع الإنتاج الحالي' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'externalization-candidate-card';
+      card.innerHTML =
+        '<div class="externalization-candidate-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="externalization-candidate-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderExternalizationCandidates(candidates) {
+    var el = document.getElementById('externalizationCandidates');
+    if (!el) return;
+
+    if (!candidates || candidates.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات مرشحين بعد</p>';
+      return;
+    }
+
+    var html = '<div class="governance-list">';
+    candidates.slice(0, 10).forEach(function (c) {
+      var ready = c.status === 'review_phase60';
+      var cls = ready ? 'externalization-candidate-card--ready' : 'externalization-candidate-card--watch';
+      var score = Math.round((c.score || 0) * 100);
+
+      html += '<div class="externalization-candidate-card ' + cls + '">' +
+        '<div class="governance-card__header">' +
+          '<strong>' + escapeHtml(c.name || '-') + '</strong>' +
+          '<span class="scale-threshold-badge ' + (ready ? 'scale-threshold-badge--warning' : 'scale-threshold-badge--ok') + '">' +
+            escapeHtml(ready ? 'مراجعة Phase 60' : 'راقب') +
+          '</span>' +
+        '</div>' +
+        '<div class="storage-pressure-meter" aria-label="درجة جاهزية النقل">' +
+          '<div class="storage-pressure-meter__fill" style="width:' + score + '%"></div>' +
+        '</div>' +
+        '<p style="color:var(--color-text-muted);font-size:0.85rem;margin-block-start:0.5rem;">Score: ' + score + '%</p>';
+
+      if (c.evidence && c.evidence.length > 0) {
+        html += '<ul style="color:var(--color-text-muted);font-size:0.82rem;line-height:1.7;margin-block-start:0.5rem;">';
+        c.evidence.slice(0, 3).forEach(function (e) {
+          html += '<li>' + escapeHtml(e.label || '') + (e.details ? ' — ' + escapeHtml(e.details) : '') + '</li>';
+        });
+        html += '</ul>';
+      }
+
+      html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:0.5rem;">' +
+        escapeHtml(c.recommendation || 'راقب فقط.') +
+      '</p>' +
+      '</div>';
+    });
+    html += '</div>';
+
+    el.innerHTML = html;
+  }
+
+  async function loadMultiInstanceBoundary() {
+    var summaryEl = document.getElementById('multiInstanceBoundarySummary');
+    var detailsEl = document.getElementById('multiInstanceBoundaryDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/production/multi-instance-boundary');
+      var boundary = data.boundary || {};
+      var inst = boundary.currentInstance || {};
+
+      if (summaryEl) {
+        var cards = [
+          { value: inst.mode || 'unknown', label: 'INSTANCE_MODE' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.multiWriterProduction ? 'نعم' : 'لا', label: 'Multi-writer production' },
+          { value: inst.canRunQueueWorkers ? 'مسموح' : 'ممنوع', label: 'Queue workers' },
+          { value: inst.canRunSchedulers ? 'مسموح' : 'ممنوع', label: 'Schedulers' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.eventBusBridge ? 'موجود' : 'غير موجود', label: 'EventBus bridge' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.sseFanout ? 'موجود' : 'غير موجود', label: 'SSE fanout' },
+        ];
+
+        summaryEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'storage-pressure-card ' + (c.value === 'لا' || c.value === 'غير موجود' ? 'storage-pressure-card--warning' : 'storage-pressure-card--ok');
+          card.innerHTML =
+            '<div class="storage-pressure-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="storage-pressure-card__label">' + escapeHtml(c.label) + '</div>';
+          summaryEl.appendChild(card);
+        });
+      }
+
+      if (detailsEl) {
+        var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">قيود مهمة</h3>';
+        html += '<div class="scale-hygiene-warning-list">';
+        (boundary.limitations || []).forEach(function (l) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--medium">' + escapeHtml(l) + '</div>';
+        });
+        html += '</div>';
+
+        html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">متطلبات Phase 60+</h3>';
+        html += '<ul style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.8;">';
+        (boundary.phase60Requirements || []).forEach(function (r) {
+          html += '<li>' + escapeHtml(r) + '</li>';
+        });
+        html += '</ul>';
+
+        detailsEl.innerHTML = html;
+      }
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حدود النسخ المتعددة</p>';
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -4220,6 +4683,7 @@ var AdminApp = (function () {
       loadProductionReadiness();
       loadDeploymentGate();
       loadInstanceOps();
+      loadMultiInstanceBoundary();
       loadSchedulers();
       loadSchedulerCadence();
       loadOpsSlo();
@@ -4227,6 +4691,8 @@ var AdminApp = (function () {
       loadIncidents();
       loadMaintenanceMode();
     } else if (tabName === 'scale') {
+      loadStoragePressure();
+      loadExternalizationReadiness();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -5290,6 +5756,17 @@ var AdminApp = (function () {
     loadPaymentDisputeAnalytics: loadPaymentDisputeAnalytics,
     loadMatchingQuality: loadMatchingQuality,
     runMarketplaceIntelligenceRollup: runMarketplaceIntelligenceRollup,
+
+    // Phase 59 — Storage Pressure + Externalization Readiness
+    loadStoragePressure: loadStoragePressure,
+    captureStoragePressure: captureStoragePressure,
+    loadScaleThresholds: loadScaleThresholds,
+    verifyScaleThresholds: verifyScaleThresholds,
+    loadExternalizationReadiness: loadExternalizationReadiness,
+    loadMultiInstanceBoundary: loadMultiInstanceBoundary,
+    renderStoragePressureSummary: renderStoragePressureSummary,
+    renderStoragePressureRecommendations: renderStoragePressureRecommendations,
+    renderExternalizationCandidates: renderExternalizationCandidates,
 
     // Phase 55 — Scale Hygiene
     loadScaleHygiene: loadScaleHygiene,

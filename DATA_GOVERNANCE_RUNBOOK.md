@@ -153,7 +153,41 @@ ops review records
 
 ---
 
-## 10. Retention policy
+## 10. Phase 59 migration snapshot policy
+
+Migration snapshots are for Phase 60+ readiness only.
+
+Command:
+
+```bash
+node scripts/export-migration-snapshot.js --dry-run
+node scripts/export-migration-snapshot.js --out=./migration-snapshots/test --confirm
+```
+
+Rules:
+
+```text
+Do not export raw session tokens.
+Do not export ADMIN_TOKEN or webhook secrets.
+Do not inline raw identity images or base64 attachments.
+Do not expose migration snapshots publicly.
+Do not import snapshots into external DB in Phase 59.
+Do not use snapshots to bypass anonymization/privacy rules.
+```
+
+Snapshot format is documented in:
+
+```text
+DATA_MIGRATION_FORMATS.md
+```
+
+Externalization readiness is documented in:
+
+```text
+EXTERNALIZATION_READINESS.md
+```
+
+## 11. Retention policy
 
 Follow config:
 
@@ -165,7 +199,7 @@ POSTMORTEMS.actionItemRetentionDays
 
 ---
 
-## 11. Admin audit policy
+## 12. Admin audit policy
 
 Every privacy/admin governance action must write audit:
 
@@ -182,7 +216,7 @@ ops_review_completed
 
 ---
 
-## 12. Privacy review cadence
+## 13. Privacy review cadence
 
 Weekly:
 

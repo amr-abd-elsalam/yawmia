@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/verify-production-readiness.js — Phase 54 Readiness CLI
+// scripts/verify-production-readiness.js — Phase 59 Readiness CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   node scripts/verify-production-readiness.js
-// Exits 1 when readiness status is not_ready.
+//   node scripts/verify-production-readiness.js --json
+//   node scripts/verify-production-readiness.js --strict
+//
+// Includes Phase 59 scale threshold and storage pressure readiness checks.
+// Exits 1 when readiness status is not_ready, or when --strict sees warnings.
 // ═══════════════════════════════════════════════════════════════
 
 try {

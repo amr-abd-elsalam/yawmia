@@ -149,6 +149,172 @@ async function checkScaleHygiene() {
   }
 }
 
+async function checkScaleThresholdsConfigured(isProd) {
+  const enabled = !!(config.SCALE_LIMITS && config.SCALE_LIMITS.enabled);
+  const hasThresholds = !!(config.SCALE_LIMITS && config.SCALE_LIMITS.thresholds);
+
+  if (!enabled || !hasThresholds) {
+    return check(
+      'scale_thresholds_configured',
+      isProd ? 'fail' : 'warn',
+      'Phase 59 scale thresholds are not configured',
+      { enabled, hasThresholds },
+      'Configure SCALE_LIMITS in config.js'
+    );
+  }
+
+  return check('scale_thresholds_configured', 'pass', 'Phase 59 scale thresholds are configured', {
+    mode: config.SCALE_LIMITS.mode || 'advisory',
+  });
+}
+
+async function checkStoragePressureReadiness(isProd) {
+  if (!config.STORAGE_PRESSURE || !config.STORAGE_PRESSURE.enabled) {
+    return check(
+      'storage_pressure_available',
+      isProd ? 'fail' : 'warn',
+      'Storage pressure monitoring is disabled',
+      {},
+      'Enable STORAGE_PRESSURE in config.js'
+    );
+  }
+
+  try {
+    const { getLatestStoragePressureSnapshot } = await import('./storagePressure.js');
+    const latest = await getLatestStoragePressureSnapshot();
+
+    if (!latest) {
+      return check(
+        'storage_pressure_available',
+        'warn',
+        'No storage pressure snapshot exists yet',
+        {},
+        'node scripts/measure-storage-pressure.js'
+      );
+    }
+
+    const warningCount = Array.isArray(latest.warnings) ? latest.warnings.length : 0;
+    const criticalCount = Array.isArray(latest.criticals) ? latest.criticals.length : 0;
+    const ageHours = latest.timestamp
+      ? Math.round(((Date.now() - new Date(latest.timestamp).getTime()) / 3600000) * 10) / 10
+      : null;
+
+    if (latest.status === 'critical' || criticalCount > 0) {
+      return check(
+        'storage_pressure_critical',
+        isProd ? 'fail' : 'warn',
+        'Latest storage pressure snapshot has critical findings',
+        {
+          snapshotId: latest.id,
+          timestamp: latest.timestamp,
+          ageHours,
+          warningCount,
+          criticalCount,
+        },
+        'node scripts/verify-scale-thresholds.js --strict'
+      );
+    }
+
+    if (latest.status === 'warning' || warningCount > 0) {
+      return check(
+        'storage_pressure_available',
+        'warn',
+        'Latest storage pressure snapshot has warnings',
+        {
+          snapshotId: latest.id,
+          timestamp: latest.timestamp,
+          ageHours,
+          warningCount,
+          criticalCount,
+        },
+        'node scripts/measure-storage-pressure.js'
+      );
+    }
+
+    return check('storage_pressure_available', 'pass', 'Latest storage pressure snapshot is healthy', {
+      snapshotId: latest.id,
+      timestamp: latest.timestamp,
+      ageHours,
+      warningCount,
+      criticalCount,
+    });
+  } catch (err) {
+    return check(
+      'storage_pressure_available',
+      'warn',
+      'Could not evaluate storage pressure readiness',
+      { error: err.message },
+      'node scripts/measure-storage-pressure.js'
+    );
+  }
+}
+
+async function checkPhase59Docs(isProd) {
+  const docs = [
+    { id: 'scale_limits_doc_exists', path: './SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
+    { id: 'externalization_readiness_doc_exists', path: './EXTERNALIZATION_READINESS.md', label: 'EXTERNALIZATION_READINESS.md' },
+    { id: 'multi_instance_boundary_doc_exists', path: './MULTI_INSTANCE_BOUNDARY.md', label: 'MULTI_INSTANCE_BOUNDARY.md' },
+    { id: 'data_migration_formats_doc_exists', path: './DATA_MIGRATION_FORMATS.md', label: 'DATA_MIGRATION_FORMATS.md' },
+    { id: 'storage_pressure_runbook_exists', path: './STORAGE_PRESSURE_RUNBOOK.md', label: 'STORAGE_PRESSURE_RUNBOOK.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : (isProd ? 'fail' : 'warn'),
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkMultiInstanceBoundaryConfig(isProd) {
+  const enabled = !!(config.MULTI_INSTANCE_BOUNDARY && config.MULTI_INSTANCE_BOUNDARY.enabled);
+
+  if (!enabled) {
+    return check(
+      'multi_instance_boundary_configured',
+      isProd ? 'fail' : 'warn',
+      'MULTI_INSTANCE_BOUNDARY config is disabled',
+      {},
+      'Enable MULTI_INSTANCE_BOUNDARY in config.js'
+    );
+  }
+
+  return check('multi_instance_boundary_configured', 'pass', 'Multi-instance boundary config is enabled', {
+    requireSingleWriterForQueueAndSchedulers: !!config.MULTI_INSTANCE_BOUNDARY.requireSingleWriterForQueueAndSchedulers,
+    eventBusBridgeRequiredForMultiInstance: !!config.MULTI_INSTANCE_BOUNDARY.eventBusBridgeRequiredForMultiInstance,
+    sseFanoutRequiredForMultiInstance: !!config.MULTI_INSTANCE_BOUNDARY.sseFanoutRequiredForMultiInstance,
+    externalQueueRequiredForMultiWriter: !!config.MULTI_INSTANCE_BOUNDARY.externalQueueRequiredForMultiWriter,
+  });
+}
+
+async function checkExternalizationReadinessConfig(isProd) {
+  const enabled = !!(config.EXTERNALIZATION_READINESS && config.EXTERNALIZATION_READINESS.enabled);
+  const phase = config.EXTERNALIZATION_READINESS?.noExternalizationBeforePhase || 60;
+
+  if (!enabled) {
+    return check(
+      'externalization_readiness_configured',
+      isProd ? 'fail' : 'warn',
+      'EXTERNALIZATION_READINESS config is disabled',
+      {},
+      'Enable EXTERNALIZATION_READINESS in config.js'
+    );
+  }
+
+  return check('externalization_readiness_configured', 'pass', 'Externalization readiness config is advisory-only and enabled', {
+    noExternalizationBeforePhase: phase,
+    candidates: config.EXTERNALIZATION_READINESS?.candidates || [],
+    implementationAllowedInPhase59: false,
+  });
+}
+
 async function checkDomainConsistency() {
   try {
     const brandDomain = config.BRAND?.domain || '';
@@ -742,6 +908,14 @@ export async function runReadinessChecks(options = {}) {
 
   // Phase 55 — Scale hygiene + domain consistency.
   checks.push(await checkScaleHygiene());
+
+  // Phase 59 — File-based scale limits + storage pressure readiness.
+  checks.push(await checkScaleThresholdsConfigured(isProd));
+  checks.push(await checkStoragePressureReadiness(isProd));
+  checks.push(await checkMultiInstanceBoundaryConfig(isProd));
+  checks.push(await checkExternalizationReadinessConfig(isProd));
+  checks.push(...await checkPhase59Docs(isProd));
+
   checks.push(await checkDomainConsistency());
 
   checks.push(await checkPwaCacheVersion());

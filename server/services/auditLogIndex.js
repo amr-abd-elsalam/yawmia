@@ -693,6 +693,72 @@ export async function getAuditIndexHygieneStats(options = {}) {
 }
 
 /**
+ * Phase 59: lightweight audit index pressure stats.
+ *
+ * Reuses Phase 55 token hygiene stats and normalizes the shape for
+ * storagePressure.js / scaleThresholds.js.
+ *
+ * @param {{ limit?: number }} options
+ */
+export async function getAuditIndexPressureStats(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      fileCount: 0,
+      totalSizeBytes: 0,
+      totalSizeKB: 0,
+      totalIds: 0,
+      largestTokenFiles: [],
+      status: 'disabled',
+      stale: false,
+      recordCount: 0,
+    };
+  }
+
+  const [stats, metaStats] = await Promise.all([
+    getAuditIndexHygieneStats({ limit: options.limit || 20 }).catch(err => ({
+      enabled: true,
+      tokenIndex: {
+        enabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+        fileCount: 0,
+        totalSizeBytes: 0,
+        totalSizeKB: 0,
+        totalIds: 0,
+        largestTokenFiles: [],
+      },
+      warnings: [{ level: 'warning', type: 'audit_index_pressure_failed', error: err.message }],
+    })),
+    getAuditIndexStats().catch(() => ({
+      enabled: true,
+      status: 'unknown',
+      recordCount: 0,
+      stale: true,
+      staleReason: 'stats_failed',
+    })),
+  ]);
+
+  const token = stats.tokenIndex || {};
+
+  return {
+    enabled: true,
+    tokenIndexEnabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+    fileCount: token.fileCount || 0,
+    totalSizeBytes: token.totalSizeBytes || 0,
+    totalSizeKB: token.totalSizeKB || 0,
+    totalIds: token.totalIds || 0,
+    largestTokenFiles: token.largestTokenFiles || [],
+    warnings: stats.warnings || [],
+    status: metaStats.status || 'unknown',
+    stale: !!metaStats.stale,
+    staleReason: metaStats.staleReason || null,
+    recordCount: metaStats.recordCount || 0,
+    lastBuiltAt: metaStats.lastBuiltAt || null,
+    lastUpdatedAt: metaStats.lastUpdatedAt || null,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * Phase 55: compact token index files.
  * Removes duplicate IDs and IDs whose raw audit record is missing.
  * Search correctness remains protected by final record re-read/filtering.

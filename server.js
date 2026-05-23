@@ -387,6 +387,20 @@ if (config.EXPORTS && config.EXPORTS.enabled) {
   if (exportCleanupTimer.unref) exportCleanupTimer.unref();
 }
 
+// ── Phase 59 — Storage Pressure Snapshot Cleanup Timer ──────
+if (config.STORAGE_PRESSURE && config.STORAGE_PRESSURE.enabled) {
+  const storagePressureCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupOldStoragePressureSnapshots } = await import('./server/services/storagePressure.js');
+      const cleaned = await cleanupOldStoragePressureSnapshots();
+      if (cleaned > 0) logger.info(`Storage pressure: cleaned ${cleaned} old snapshot(s)`);
+    } catch (err) {
+      logger.warn('Storage pressure cleanup error', { error: err.message });
+    }
+  }, 24 * 60 * 60 * 1000);
+  if (storagePressureCleanupTimer.unref) storagePressureCleanupTimer.unref();
+}
+
 // ── Backup Scheduler Timer (separate — checks hourly if backup is due) ──
 if (config.BACKUP && config.BACKUP.enabled) {
   const backupTimer = setInterval(async () => {

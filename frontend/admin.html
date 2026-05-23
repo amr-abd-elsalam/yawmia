@@ -119,6 +119,22 @@
         <div id="processLocksTable"></div>
       </div>
 
+      <!-- Phase 59 — Multi-instance Boundary -->
+      <div class="admin-section" id="multiInstanceBoundarySection" data-admin-tab-panel="ops">
+        <div class="admin-section__header">
+          <h2>🧱 حدود التشغيل متعدد النسخ</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMultiInstanceBoundary()">تحديث</button>
+        </div>
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          يوضح هذا القسم ما هو آمن في نسخة قراءة فقط، وما يظل single-writer فقط.
+          <strong>File locks ليست distributed consensus.</strong>
+        </p>
+        <div id="multiInstanceBoundarySummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="multiInstanceBoundaryDetails"></div>
+      </div>
+
       <!-- Phase 54 — Scheduler Registry -->
       <div class="admin-section" id="schedulerSection">
         <div class="admin-section__header">
@@ -150,6 +166,56 @@
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
         <div id="opsRollupsTable"></div>
+      </div>
+
+      <!-- Phase 59 — Storage Pressure -->
+      <div class="admin-section" id="storagePressureSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🧭 ضغط التخزين وحدود التوسع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadStoragePressure()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          قياس خفيف لعدد الملفات، حجم الفهارس، ضغط Queue، Workrooms، وملفات الحوكمة.
+          التحذير لا يعني نقل قاعدة البيانات فوراً — ابدأ بالضغط/الإصلاح/التحقق.
+        </p>
+
+        <div id="storagePressureRecommendedActions" class="recommended-actions"></div>
+
+        <div id="storagePressureSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.captureStoragePressure()">قياس جديد</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyScaleThresholds()">تحقق من الحدود</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadScaleThresholds()">عرض إعدادات الحدود</button>
+        </div>
+
+        <div id="storagePressureDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 59 — Externalization Readiness -->
+      <div class="admin-section" id="externalizationReadinessSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚚 جاهزية النقل المستقبلي — Phase 60</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadExternalizationReadiness()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          هذا القسم استشاري فقط. Phase 59 لا تنفذ PostgreSQL ولا external queue ولا external search.
+          يتم ترتيب المرشحين بناءً على ضغط التخزين والـ benchmarks.
+        </p>
+
+        <div id="externalizationReadinessSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="externalizationCandidates">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
       </div>
 
       <!-- Phase 55 — Scale Hygiene -->

@@ -477,6 +477,26 @@ const builtInMigrations = [
       logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
     },
   },
+  {
+    version: 19,
+    name: 'Phase 59: File-Based Scale Limits and Externalization Readiness',
+    up: async () => {
+      // Phase 59 registers additive advisory/measurement structures:
+      //   - metrics/storage-pressure
+      //   - metrics/scale-thresholds
+      //   - migration-snapshots
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - externalize any data
+      //   - introduce PostgreSQL/search/queue dependencies
+      //
+      // Phase 59 is about limits, visibility, benchmarks, docs, and readiness only.
+      logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
+    },
+  },
 ];
 
 /**

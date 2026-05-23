@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/predeploy-check.js — Deployment Gate (Phase 58)
+// scripts/predeploy-check.js — Deployment Gate (Phase 59)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   NODE_ENV=production node scripts/predeploy-check.js --strict
 //   node scripts/predeploy-check.js --json
+//
+// Phase 59 adds:
+// - scale threshold verification
+// - storage pressure readiness
+// - externalization readiness docs/scripts checks
+// - no external DB/search/queue implementation discipline
 // ═══════════════════════════════════════════════════════════════
 
 import { readFile } from 'node:fs/promises';
@@ -86,7 +92,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.54.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.54.0' }));
+  checks.push(mk('package_version', pkg.version === '0.55.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.55.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -101,7 +107,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.54.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.55.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -190,6 +196,72 @@ async function main() {
     ));
   } else {
     checks.push(mk('privacy_governance', 'warn', 'Could not parse privacy governance verification output', 'node scripts/verify-privacy-governance.js --strict'));
+  }
+
+  // Phase 59 — Scale thresholds / storage pressure verification.
+  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (scaleThresholds.parsed) {
+    checks.push(mk(
+      'scale_thresholds',
+      scaleThresholds.parsed.status === 'critical'
+        ? 'fail'
+        : ((scaleThresholds.parsed.warnings || []).length > 0 ? 'warn' : 'pass'),
+      scaleThresholds.parsed.status === 'critical'
+        ? 'Scale thresholds have critical findings'
+        : 'Scale thresholds verification completed',
+      'node scripts/verify-scale-thresholds.js --strict',
+      scaleThresholds.parsed
+    ));
+  } else {
+    checks.push(mk(
+      'scale_thresholds',
+      'warn',
+      'Could not parse scale threshold verification output',
+      'node scripts/verify-scale-thresholds.js --json'
+    ));
+  }
+
+  const phase59Docs = [
+    'SCALE_LIMITS.md',
+    'EXTERNALIZATION_READINESS.md',
+    'MULTI_INSTANCE_BOUNDARY.md',
+    'DATA_MIGRATION_FORMATS.md',
+    'STORAGE_PRESSURE_RUNBOOK.md',
+  ];
+
+  for (const doc of phase59Docs) {
+    try {
+      await readFile(doc, 'utf-8');
+      checks.push(mk(`phase59_doc:${doc}`, 'pass', `${doc} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase59_doc:${doc}`,
+        STRICT ? 'fail' : 'warn',
+        `${doc} is missing`,
+        `Create ${doc}`
+      ));
+    }
+  }
+
+  const phase59Scripts = [
+    'scripts/measure-storage-pressure.js',
+    'scripts/benchmark-file-paths.js',
+    'scripts/verify-scale-thresholds.js',
+    'scripts/export-migration-snapshot.js',
+  ];
+
+  for (const script of phase59Scripts) {
+    try {
+      await readFile(script, 'utf-8');
+      checks.push(mk(`phase59_script:${script}`, 'pass', `${script} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase59_script:${script}`,
+        STRICT ? 'fail' : 'warn',
+        `${script} is missing`,
+        `Create ${script}`
+      ));
+    }
   }
 
   const summary = {

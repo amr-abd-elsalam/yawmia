@@ -249,6 +249,85 @@ export async function getReviewFreshness(type, maxAgeDays) {
   };
 }
 
+/**
+ * Phase 59: lightweight governance pressure stats for operational reviews.
+ */
+export async function getOpsReviewPressureStats() {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      total: 0,
+      draft: 0,
+      completed: 0,
+      stale: 0,
+      latestWeeklyReviewAt: null,
+      weeklyFresh: false,
+      staleReviewTypes: [],
+    };
+  }
+
+  const result = {
+    enabled: true,
+    total: 0,
+    draft: 0,
+    completed: 0,
+    stale: 0,
+    latestWeeklyReviewAt: null,
+    weeklyFresh: false,
+    staleReviewTypes: [],
+    generatedAt: nowIso(),
+  };
+
+  try {
+    const rows = await listReviewRecords({ limit: 100000, offset: 0 });
+    const reviews = rows.reviews || [];
+
+    for (const review of reviews) {
+      if (!review || !review.id) continue;
+
+      result.total++;
+
+      if (review.status === 'completed') result.completed++;
+      else result.draft++;
+    }
+
+    const weekly = await getReviewFreshness(
+      'weekly_ops_review',
+      config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7
+    ).catch(() => null);
+
+    if (weekly) {
+      result.latestWeeklyReviewAt = weekly.latest
+        ? (weekly.latest.completedAt || weekly.latest.createdAt || null)
+        : null;
+      result.weeklyFresh = !!weekly.fresh;
+      if (!weekly.fresh) {
+        result.stale++;
+        result.staleReviewTypes.push('weekly_ops_review');
+      }
+    }
+
+    // Check each configured review type for a stale/missing completed review.
+    const maxAgeDays = config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7;
+    for (const type of allowedTypes()) {
+      if (type === 'weekly_ops_review') continue;
+      const freshness = await getReviewFreshness(type, maxAgeDays).catch(() => null);
+      if (freshness && freshness.status !== 'fresh') {
+        result.stale++;
+        result.staleReviewTypes.push(type);
+      }
+    }
+
+    return result;
+  } catch (err) {
+    return {
+      ...result,
+      error: err.message,
+      status: 'unknown',
+    };
+  }
+}
+
 export const _testHelpers = {
   DEFAULT_TYPES,
   generateId,

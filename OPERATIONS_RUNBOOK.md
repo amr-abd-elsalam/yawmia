@@ -1,5 +1,5 @@
 # يوميّة — Operations Runbook
-> Phase 57 — Operational Governance
+> Phase 59 — Operational Governance + Storage Pressure
 
 هذا الملف يشرح daily/weekly/monthly operations لمنصة يوميّة.
 
@@ -52,6 +52,50 @@ DLQ = وظائف فشلت بعد كل المحاولات
 pending = وظائف تنتظر التنفيذ
 running = وظائف قيد التنفيذ
 failed = وظائف فشلت ويمكن إعادة المحاولة
+```
+
+---
+
+### 2b. Storage pressure
+
+Phase 59 adds unified storage pressure visibility.
+
+CLI:
+
+```bash
+node scripts/measure-storage-pressure.js
+node scripts/verify-scale-thresholds.js
+```
+
+Admin:
+
+```text
+/api/admin/storage-pressure
+/api/admin/scale-thresholds
+/api/admin/externalization/readiness
+```
+
+راجع:
+
+- أكبر collections
+- ضغط Queue
+- ضغط audit/search indexes
+- ضغط Workroom sidecars
+- ملفات governance المفتوحة أو stale
+- recommended actions
+
+قاعدة مهمة:
+
+```text
+warning = متابعة وضغط/تحقق
+critical = backup + verify + compact/repair + incident إذا يوجد user impact
+```
+
+اتبع:
+
+```text
+STORAGE_PRESSURE_RUNBOOK.md
+SCALE_LIMITS.md
 ```
 
 ---
@@ -142,13 +186,34 @@ node scripts/verify-data-json.js
 node scripts/compact-queue.js
 node scripts/compact-workrooms.js
 node scripts/compact-counters.js
+node scripts/measure-storage-pressure.js
+node scripts/verify-scale-thresholds.js
 ```
 
 Admin:
 
 ```text
 /api/admin/scale-hygiene/overview
+/api/admin/storage-pressure
 ```
+
+---
+
+### 2b. File path benchmarks
+
+Weekly or before Phase 60 review:
+
+```bash
+node scripts/benchmark-file-paths.js --json
+```
+
+If pressure is repeated:
+
+```bash
+node scripts/benchmark-file-paths.js --include-heavy --json
+```
+
+Use benchmark output in weekly ops review and externalization readiness review.
 
 ---
 
@@ -262,6 +327,20 @@ node scripts/cleanup-attachments.js
 
 ---
 
+### 7. Migration snapshot dry run
+
+Phase 59 فقط — للتحقق من الجاهزية المستقبلية:
+
+```bash
+node scripts/export-migration-snapshot.js --dry-run
+```
+
+لا تستخدم snapshot لتنفيذ external DB migration في Phase 59.
+
+---
+
+---
+
 ## Weekly review generator
 
 ```bash
@@ -347,6 +426,11 @@ Escalate immediately if:
 - JSON corruption critical
 - DLQ spike
 - counter file critical
+- storage pressure critical
+- scale threshold critical
 - audit index stale with admin audit required
+- workroom sidecar critical
 - scheduler stale for more than one cadence
 - repeated alert delivery DLQ
+- repeated pressure after compaction/repair
+

@@ -123,6 +123,15 @@ import {
   handleSchedulerHistory,
 } from './handlers/scaleHygieneHandler.js';
 import {
+  handleGetStoragePressure,
+  handleCaptureStoragePressure,
+  handleListStoragePressureSnapshots,
+  handleGetScaleThresholds,
+  handleVerifyScaleThresholds,
+  handleExternalizationReadiness,
+  handleMultiInstanceBoundary,
+} from './handlers/storagePressureHandler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -225,7 +234,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.54.0',
+        version: '0.55.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -506,7 +515,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.54.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.55.0' });
     },
   },
 
@@ -769,6 +778,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/scheduler-cadence', middlewares: [requireAdmin], handler: handleSchedulerCadence },
   { method: 'GET', path: '/api/admin/production/ops-review', middlewares: [requireAdmin], handler: handleOpsReview },
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
+  { method: 'GET', path: '/api/admin/production/multi-instance-boundary', middlewares: [requireCapability('admin.ops.read')], handler: handleMultiInstanceBoundary },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireCapability('admin.locks.release')], handler: handleReleaseProcessLock },
 
@@ -812,6 +822,14 @@ const routes = [
 
   // ── Phase 55 — Scale Hygiene Admin APIs ──
   { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },
+
+  // ── Phase 59 — Storage Pressure + Scale Thresholds + Externalization Readiness ──
+  { method: 'GET', path: '/api/admin/storage-pressure', middlewares: [requireCapability('admin.scale.read')], handler: handleGetStoragePressure },
+  { method: 'POST', path: '/api/admin/storage-pressure/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCaptureStoragePressure },
+  { method: 'GET', path: '/api/admin/storage-pressure/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListStoragePressureSnapshots },
+  { method: 'GET', path: '/api/admin/scale-thresholds', middlewares: [requireCapability('admin.scale.read')], handler: handleGetScaleThresholds },
+  { method: 'POST', path: '/api/admin/scale-thresholds/verify', middlewares: [requireCapability('admin.ops.review')], handler: handleVerifyScaleThresholds },
+  { method: 'GET', path: '/api/admin/externalization/readiness', middlewares: [requireCapability('admin.scale.read')], handler: handleExternalizationReadiness },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },

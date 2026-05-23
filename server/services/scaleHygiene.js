@@ -101,6 +101,7 @@ export async function getScaleHygieneOverview() {
     weeklyOpsReviewFreshness,
     postmortemBacklog,
     rbacMatrix,
+    storagePressure,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -125,6 +126,9 @@ export async function getScaleHygieneOverview() {
     collectPostmortemBacklog().catch(err => ({ error: err.message, missing: [] })),
     import('./adminRbac.js')
       .then(m => m.getRbacMatrix())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./storagePressure.js')
+      .then(m => m.getStoragePressure({ persist: false }))
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -243,11 +247,67 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 59 — Storage pressure warnings.
+  if (storagePressure && storagePressure.enabled !== false) {
+    for (const c of storagePressure.criticals || []) {
+      warnings.push({
+        source: 'storage_pressure',
+        level: 'critical',
+        message: c.message || c.code || 'Storage pressure critical finding',
+        details: c,
+      });
+    }
+
+    for (const w of storagePressure.warnings || []) {
+      warnings.push({
+        source: 'storage_pressure',
+        level: w.level || 'warning',
+        message: w.message || w.code || 'Storage pressure warning',
+        details: w,
+      });
+    }
+  } else if (storagePressure && storagePressure.error) {
+    warnings.push({
+      source: 'storage_pressure',
+      level: 'warning',
+      message: 'Storage pressure could not be evaluated',
+      details: storagePressure,
+    });
+  }
+
   const recommendedActions = [];
 
   for (const action of queueRecommendations || []) {
     const normalized = normalizeAction(action);
     if (normalized) recommendedActions.push(normalized);
+  }
+
+  // Phase 59 — Storage pressure recommended actions.
+  if (storagePressure && Array.isArray(storagePressure.recommendations)) {
+    for (const action of storagePressure.recommendations) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (storagePressure && storagePressure.status === 'critical') {
+    recommendedActions.push({
+      id: 'storage_pressure_critical_review',
+      label: 'مراجعة ضغط التخزين الحرج',
+      severity: 'critical',
+      command: 'node scripts/verify-scale-thresholds.js --strict',
+      adminRoute: '/api/admin/storage-pressure',
+      reason: 'Storage pressure has critical findings. ابدأ بالتحقق والضغط/الإصلاح قبل أي Phase 60 externalization.',
+    });
+  } else if (storagePressure && storagePressure.status === 'warning') {
+    recommendedActions.push({
+      id: 'storage_pressure_warning_review',
+      label: 'مراجعة ضغط التخزين',
+      severity: 'warning',
+      command: 'node scripts/measure-storage-pressure.js',
+      adminRoute: '/api/admin/storage-pressure',
+      reason: 'Storage pressure has warnings. التحذير لا يعني نقل قاعدة البيانات فوراً.',
+    });
   }
 
   if (marketplaceFreshness && marketplaceFreshness.enabled && marketplaceFreshness.stale) {
@@ -350,6 +410,10 @@ export async function getScaleHygieneOverview() {
     trust: trustRetention,
     predictiveArchive: predictiveArchiveIndex,
     schedulerHistory,
+    storagePressure: storagePressure || {
+      enabled: false,
+      status: 'unknown',
+    },
     marketplace: {
       freshness: marketplaceFreshness,
     },
