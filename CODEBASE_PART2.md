@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.55.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-23T16:02:05.823Z
+> Auto-generated: 2026-05-23T16:06:20.214Z
 > Files in this part: 124
 
 ## Files
@@ -22227,7 +22227,7 @@ const builtInMigrations = [
       //   - externalize any data
       //   - introduce PostgreSQL/search/queue dependencies
       //
-      // Phase 59 is about limits, visibility, benchmarks, docs, and readiness only.
+      // Phase 59 is about limits, visibility, measurement docs, and readiness only.
       logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
     },
   },
