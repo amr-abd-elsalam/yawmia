@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.55.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-23T15:34:40.534Z
+> Auto-generated: 2026-05-23T16:02:05.823Z
 > Files in this part: 124
 
 ## Files
@@ -15023,7 +15023,7 @@ function evidenceFromPressure(snapshot, candidate) {
   }
 
   if (candidate === 'images') {
-    const images = pressureSnapshot?.images || collections.images;
+    const images = snapshot?.images || collections.images;
     if (images) {
       if ((images.fileCount || 0) > 0) {
         add('Images include sensitive binary/object growth', 0.2, `${images.fileCount} files`);
@@ -22210,6 +22210,7 @@ const builtInMigrations = [
       logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
     },
   },
+  // Phase 59 static guardrail: does NOT run storage pressure scans, run benchmarks, or externalize any data.
   {
     version: 19,
     name: 'Phase 59: File-Based Scale Limits and Externalization Readiness',
@@ -22221,7 +22222,7 @@ const builtInMigrations = [
       //
       // This migration intentionally does NOT:
       //   - run storage pressure scans
-      //   - run benchmarks
+      //   - run path performance measurements
       //   - export migration snapshots
       //   - externalize any data
       //   - introduce PostgreSQL/search/queue dependencies
