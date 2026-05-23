@@ -494,7 +494,7 @@ const builtInMigrations = [
       //   - externalize any data
       //   - introduce PostgreSQL/search/queue dependencies
       //
-      // Phase 59 is about limits, visibility, benchmarks, docs, and readiness only.
+      // Phase 59 is about limits, visibility, measurement docs, and readiness only.
       logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
     },
   },
