@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.54.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-23T04:19:49.828Z
-> Files in this part: 121
+# يوميّة (Yawmia) v0.55.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-23T15:34:40.534Z
+> Files in this part: 124
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -42,88 +42,91 @@
 37. `server/services/eventBus.js`
 38. `server/services/eventReplayBuffer.js`
 39. `server/services/exportRegistry.js`
-40. `server/services/favorites.js`
-41. `server/services/financialExport.js`
-42. `server/services/geo.js`
-43. `server/services/imageStore.js`
-44. `server/services/incidentTimeline.js`
-45. `server/services/indexHealth.js`
-46. `server/services/instanceMode.js`
-47. `server/services/instantMatch.js`
-48. `server/services/jobAlerts.js`
-49. `server/services/jobMatcher.js`
-50. `server/services/jobs.js`
-51. `server/services/liveFeed.js`
-52. `server/services/logWriter.js`
-53. `server/services/logger.js`
-54. `server/services/maintenanceMode.js`
-55. `server/services/marketplaceIntelligenceRollups.js`
-56. `server/services/matchingIntelligence.js`
-57. `server/services/messages.js`
-58. `server/services/messaging.js`
-59. `server/services/metricsRollups.js`
-60. `server/services/migration.js`
-61. `server/services/monitor.js`
-62. `server/services/notificationActions.js`
-63. `server/services/notificationConversionMetrics.js`
-64. `server/services/notificationMessenger.js`
-65. `server/services/notifications.js`
-66. `server/services/offerAbuseDetector.js`
-67. `server/services/opsQueue.js`
-68. `server/services/opsReviewRecords.js`
-69. `server/services/paymentDisputeAnalytics.js`
-70. `server/services/payments.js`
-71. `server/services/postmortemRecords.js`
-72. `server/services/predictiveAbuse.js`
-73. `server/services/predictiveArchiveIndex.js`
-74. `server/services/predictiveSignalRetention.js`
-75. `server/services/presenceService.js`
-76. `server/services/privacyRequests.js`
-77. `server/services/processLock.js`
-78. `server/services/productionReadiness.js`
-79. `server/services/profileCompleteness.js`
-80. `server/services/profileTasks.js`
-81. `server/services/queryIndex.js`
-82. `server/services/queueCompaction.js`
-83. `server/services/queueHealthVerify.js`
-84. `server/services/queueStorageIndex.js`
-85. `server/services/queueWorkers.js`
-86. `server/services/ratings.js`
-87. `server/services/reports.js`
-88. `server/services/resourceLock.js`
-89. `server/services/sanitizer.js`
-90. `server/services/scaleHygiene.js`
-91. `server/services/scheduledAbuseDetection.js`
-92. `server/services/schedulerRegistry.js`
-93. `server/services/schedulerRunHistory.js`
-94. `server/services/searchAnalytics.js`
-95. `server/services/searchIndex.js`
-96. `server/services/searchRelevance.js`
-97. `server/services/sessions.js`
-98. `server/services/snoozeReminders.js`
-99. `server/services/sseManager.js`
-100. `server/services/trust.js`
-101. `server/services/trustAnalytics.js`
-102. `server/services/trustCalibration.js`
-103. `server/services/trustScoreV2.js`
-104. `server/services/trustSnapshotRollups.js`
-105. `server/services/userAnonymization.js`
-106. `server/services/userDataExport.js`
-107. `server/services/users.js`
-108. `server/services/validators.js`
-109. `server/services/verification.js`
-110. `server/services/webpush.js`
-111. `server/services/workerDiscovery.js`
-112. `server/services/workroom.js`
-113. `server/services/workroomAdoptionMetrics.js`
-114. `server/services/workroomAttachments.js`
-115. `server/services/workroomChecklist.js`
-116. `server/services/workroomHygiene.js`
-117. `server/services/workroomIndexHealth.js`
-118. `server/services/workroomPins.js`
-119. `server/services/workroomReceipts.js`
-120. `server/services/workroomSearch.js`
-121. `server/services/workroomTemplateMetrics.js`
+40. `server/services/externalizationReadiness.js`
+41. `server/services/favorites.js`
+42. `server/services/financialExport.js`
+43. `server/services/geo.js`
+44. `server/services/imageStore.js`
+45. `server/services/incidentTimeline.js`
+46. `server/services/indexHealth.js`
+47. `server/services/instanceMode.js`
+48. `server/services/instantMatch.js`
+49. `server/services/jobAlerts.js`
+50. `server/services/jobMatcher.js`
+51. `server/services/jobs.js`
+52. `server/services/liveFeed.js`
+53. `server/services/logWriter.js`
+54. `server/services/logger.js`
+55. `server/services/maintenanceMode.js`
+56. `server/services/marketplaceIntelligenceRollups.js`
+57. `server/services/matchingIntelligence.js`
+58. `server/services/messages.js`
+59. `server/services/messaging.js`
+60. `server/services/metricsRollups.js`
+61. `server/services/migration.js`
+62. `server/services/monitor.js`
+63. `server/services/notificationActions.js`
+64. `server/services/notificationConversionMetrics.js`
+65. `server/services/notificationMessenger.js`
+66. `server/services/notifications.js`
+67. `server/services/offerAbuseDetector.js`
+68. `server/services/opsQueue.js`
+69. `server/services/opsReviewRecords.js`
+70. `server/services/paymentDisputeAnalytics.js`
+71. `server/services/payments.js`
+72. `server/services/postmortemRecords.js`
+73. `server/services/predictiveAbuse.js`
+74. `server/services/predictiveArchiveIndex.js`
+75. `server/services/predictiveSignalRetention.js`
+76. `server/services/presenceService.js`
+77. `server/services/privacyRequests.js`
+78. `server/services/processLock.js`
+79. `server/services/productionReadiness.js`
+80. `server/services/profileCompleteness.js`
+81. `server/services/profileTasks.js`
+82. `server/services/queryIndex.js`
+83. `server/services/queueCompaction.js`
+84. `server/services/queueHealthVerify.js`
+85. `server/services/queueStorageIndex.js`
+86. `server/services/queueWorkers.js`
+87. `server/services/ratings.js`
+88. `server/services/reports.js`
+89. `server/services/resourceLock.js`
+90. `server/services/sanitizer.js`
+91. `server/services/scaleHygiene.js`
+92. `server/services/scaleThresholds.js`
+93. `server/services/scheduledAbuseDetection.js`
+94. `server/services/schedulerRegistry.js`
+95. `server/services/schedulerRunHistory.js`
+96. `server/services/searchAnalytics.js`
+97. `server/services/searchIndex.js`
+98. `server/services/searchRelevance.js`
+99. `server/services/sessions.js`
+100. `server/services/snoozeReminders.js`
+101. `server/services/sseManager.js`
+102. `server/services/storagePressure.js`
+103. `server/services/trust.js`
+104. `server/services/trustAnalytics.js`
+105. `server/services/trustCalibration.js`
+106. `server/services/trustScoreV2.js`
+107. `server/services/trustSnapshotRollups.js`
+108. `server/services/userAnonymization.js`
+109. `server/services/userDataExport.js`
+110. `server/services/users.js`
+111. `server/services/validators.js`
+112. `server/services/verification.js`
+113. `server/services/webpush.js`
+114. `server/services/workerDiscovery.js`
+115. `server/services/workroom.js`
+116. `server/services/workroomAdoptionMetrics.js`
+117. `server/services/workroomAttachments.js`
+118. `server/services/workroomChecklist.js`
+119. `server/services/workroomHygiene.js`
+120. `server/services/workroomIndexHealth.js`
+121. `server/services/workroomPins.js`
+122. `server/services/workroomReceipts.js`
+123. `server/services/workroomSearch.js`
+124. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -2422,6 +2425,88 @@ export async function cleanupExpiredApprovals() {
   }
 
   return touched;
+}
+
+/**
+ * Phase 59: lightweight governance pressure stats for admin approvals.
+ *
+ * No PII/secrets are returned. Payloads are not exposed.
+ */
+export async function getAdminApprovalPressureStats() {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      expired: 0,
+      consumed: 0,
+      stale: 0,
+      oldestPendingAt: null,
+      expiringSoon: 0,
+    };
+  }
+
+  const result = {
+    enabled: true,
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    expired: 0,
+    consumed: 0,
+    stale: 0,
+    oldestPendingAt: null,
+    expiringSoon: 0,
+    generatedAt: nowIso(),
+  };
+
+  try {
+    const rows = await listApprovals({ limit: 100000, offset: 0 });
+    const approvals = rows.approvals || [];
+
+    const soonMs = 6 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const record of approvals) {
+      if (!record || !record.id) continue;
+      result.total++;
+
+      if (record.status === 'pending') {
+        result.pending++;
+
+        if (!result.oldestPendingAt || record.createdAt < result.oldestPendingAt) {
+          result.oldestPendingAt = record.createdAt || null;
+        }
+
+        if (isExpired(record)) {
+          result.stale++;
+        } else if (record.expiresAt) {
+          const expiresMs = new Date(record.expiresAt).getTime();
+          if (Number.isFinite(expiresMs) && expiresMs > now && expiresMs - now <= soonMs) {
+            result.expiringSoon++;
+          }
+        }
+      } else if (record.status === 'approved') {
+        result.approved++;
+      } else if (record.status === 'rejected') {
+        result.rejected++;
+      } else if (record.status === 'expired') {
+        result.expired++;
+      } else if (record.status === 'consumed') {
+        result.consumed++;
+      }
+    }
+
+    return result;
+  } catch (err) {
+    return {
+      ...result,
+      error: err.message,
+      status: 'unknown',
+    };
+  }
 }
 
 export const _testHelpers = {
@@ -6589,6 +6674,72 @@ export async function getAuditIndexHygieneStats(options = {}) {
       largestTokenFiles: largestTokenFiles.slice(0, options.limit || 20),
     },
     warnings,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Phase 59: lightweight audit index pressure stats.
+ *
+ * Reuses Phase 55 token hygiene stats and normalizes the shape for
+ * storagePressure.js / scaleThresholds.js.
+ *
+ * @param {{ limit?: number }} options
+ */
+export async function getAuditIndexPressureStats(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      fileCount: 0,
+      totalSizeBytes: 0,
+      totalSizeKB: 0,
+      totalIds: 0,
+      largestTokenFiles: [],
+      status: 'disabled',
+      stale: false,
+      recordCount: 0,
+    };
+  }
+
+  const [stats, metaStats] = await Promise.all([
+    getAuditIndexHygieneStats({ limit: options.limit || 20 }).catch(err => ({
+      enabled: true,
+      tokenIndex: {
+        enabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+        fileCount: 0,
+        totalSizeBytes: 0,
+        totalSizeKB: 0,
+        totalIds: 0,
+        largestTokenFiles: [],
+      },
+      warnings: [{ level: 'warning', type: 'audit_index_pressure_failed', error: err.message }],
+    })),
+    getAuditIndexStats().catch(() => ({
+      enabled: true,
+      status: 'unknown',
+      recordCount: 0,
+      stale: true,
+      staleReason: 'stats_failed',
+    })),
+  ]);
+
+  const token = stats.tokenIndex || {};
+
+  return {
+    enabled: true,
+    tokenIndexEnabled: !!config.AUDIT_INDEX?.tokenIndexEnabled,
+    fileCount: token.fileCount || 0,
+    totalSizeBytes: token.totalSizeBytes || 0,
+    totalSizeKB: token.totalSizeKB || 0,
+    totalIds: token.totalIds || 0,
+    largestTokenFiles: token.largestTokenFiles || [],
+    warnings: stats.warnings || [],
+    status: metaStats.status || 'unknown',
+    stale: !!metaStats.stale,
+    staleReason: metaStats.staleReason || null,
+    recordCount: metaStats.recordCount || 0,
+    lastBuiltAt: metaStats.lastBuiltAt || null,
+    lastUpdatedAt: metaStats.lastUpdatedAt || null,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -14720,6 +14871,446 @@ export const _testHelpers = {
 
 ---
 
+## `server/services/externalizationReadiness.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/externalizationReadiness.js — Advisory Readiness (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Advisory-only service for future Phase 60+ externalization planning.
+//
+// Important:
+// - Does NOT implement PostgreSQL.
+// - Does NOT implement external search.
+// - Does NOT implement external queue.
+// - Does NOT create connection strings.
+// - Does NOT add dependencies.
+// - Uses storage pressure as evidence input.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+function isEnabled() {
+  return !!(config.EXTERNALIZATION_READINESS && config.EXTERNALIZATION_READINESS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function clampScore(n) {
+  const x = Number(n) || 0;
+  return Math.max(0, Math.min(1, x));
+}
+
+function pressureWeight(status) {
+  if (status === 'critical') return 1;
+  if (status === 'warning') return 0.55;
+  return 0;
+}
+
+function evidenceFromPressure(snapshot, candidate) {
+  const evidence = [];
+  let score = 0;
+
+  const collections = snapshot?.collections || {};
+  const indexes = snapshot?.indexes || {};
+  const queue = snapshot?.queue || {};
+  const workrooms = snapshot?.workrooms || {};
+  const governance = snapshot?.governance || {};
+
+  function add(label, weight, details) {
+    evidence.push({
+      label,
+      details: details || null,
+      weight: Math.round(weight * 100) / 100,
+    });
+    score += weight;
+  }
+
+  if (candidate === 'users') {
+    const s = collections.users;
+    if (s) {
+      if ((s.fileCount || 0) > 0) add('Users are core identity data', 0.1, `${s.fileCount} files`);
+      if ((s.largestJsonKB || 0) >= 512) add('Large user JSON records detected', 0.25, `${s.largestJsonKB}KB largest`);
+    }
+  }
+
+  if (candidate === 'jobs') {
+    const s = collections.jobs;
+    if (s) {
+      const maxShard = Math.max(0, ...Object.values(s.shards || {}).map(x => x.fileCount || 0));
+      if (maxShard > 0) add('Jobs are sharded and high-read marketplace data', 0.2, `${maxShard} files in largest shard`);
+      if (maxShard >= 20000) add('Jobs shard warning pressure', 0.35, `${maxShard} files`);
+      if (maxShard >= 50000) add('Jobs shard critical pressure', 0.6, `${maxShard} files`);
+    }
+  }
+
+  if (candidate === 'applications') {
+    const s = collections.applications;
+    if (s) {
+      const maxShard = Math.max(0, ...Object.values(s.shards || {}).map(x => x.fileCount || 0));
+      if (maxShard > 0) add('Applications are high-growth relation data', 0.2, `${maxShard} files in largest shard`);
+      if (maxShard >= 50000) add('Applications shard warning pressure', 0.35, `${maxShard} files`);
+      if (maxShard >= 100000) add('Applications shard critical pressure', 0.6, `${maxShard} files`);
+    }
+  }
+
+  if (candidate === 'payments') {
+    const s = collections.payments;
+    if (s) {
+      const maxShard = Math.max(0, ...Object.values(s.shards || {}).map(x => x.fileCount || 0));
+      if (maxShard > 0) add('Payments are financial system-of-record candidates', 0.25, `${maxShard} files in largest shard`);
+    }
+  }
+
+  if (candidate === 'messages') {
+    const msg = collections.messages;
+    const wr = workrooms || {};
+    if (msg) {
+      const maxShard = Math.max(0, ...Object.values(msg.shards || {}).map(x => x.fileCount || 0));
+      if (maxShard > 0) add('Messages are high-volume Workroom data', 0.25, `${maxShard} files in largest shard`);
+      if (maxShard >= 100000) add('Messages shard warning pressure', 0.4, `${maxShard} files`);
+      if (maxShard >= 250000) add('Messages shard critical pressure', 0.7, `${maxShard} files`);
+    }
+    if ((wr.largestSidecarKB || 0) >= 512) {
+      add('Workroom sidecar pressure affects message experience', 0.35, `${wr.largestSidecarKB}KB largest sidecar`);
+    }
+    if ((wr.largestSearchIndexKB || 0) >= 1024) {
+      add('Workroom search index pressure', 0.25, `${wr.largestSearchIndexKB}KB largest search index`);
+    }
+  }
+
+  if (candidate === 'ops_queue') {
+    const byStatus = queue.byStatus || {};
+    const pending = byStatus.pending || queue.pending || 0;
+    const dlq = byStatus['dead-letter'] || queue.deadLetter || 0;
+
+    if (pending > 0) add('Queue pending backlog exists', 0.15, `${pending} pending`);
+    if (pending >= 1000) add('Queue pending warning pressure', 0.35, `${pending} pending`);
+    if (pending >= 5000) add('Queue pending critical pressure', 0.75, `${pending} pending`);
+    if (dlq >= 10) add('Queue DLQ warning pressure', 0.35, `${dlq} DLQ`);
+    if (dlq >= 50) add('Queue DLQ critical pressure', 0.75, `${dlq} DLQ`);
+  }
+
+  if (candidate === 'audit') {
+    const audit = collections.audit;
+    const token = indexes.auditTokenIndex || {};
+    if (audit) {
+      if ((audit.fileCount || 0) > 0) add('Audit is append-only and admin-critical', 0.2, `${audit.fileCount} records`);
+      if ((audit.fileCount || 0) >= 100000) add('Audit raw record warning pressure', 0.35, `${audit.fileCount} records`);
+      if ((audit.fileCount || 0) >= 250000) add('Audit raw record critical pressure', 0.65, `${audit.fileCount} records`);
+    }
+    if ((token.fileCount || 0) >= 50000) {
+      add('Audit token index warning pressure', 0.4, `${token.fileCount} token files`);
+    }
+    if ((token.fileCount || 0) >= 150000) {
+      add('Audit token index critical pressure', 0.75, `${token.fileCount} token files`);
+    }
+  }
+
+  if (candidate === 'search') {
+    const search = indexes.searchIndex || {};
+    const token = indexes.auditTokenIndex || {};
+    const searchAnalytics = snapshot?.analytics?.searchAnalytics || {};
+    if ((search.size || 0) > 0) add('Search index exists and is rebuildable', 0.1, `${search.size} entries`);
+    if ((searchAnalytics.fileCount || 0) >= 5000) {
+      add('Search analytics warning pressure', 0.25, `${searchAnalytics.fileCount} files`);
+    }
+    if ((token.fileCount || 0) >= 50000) {
+      add('Audit/search token fanout pressure', 0.3, `${token.fileCount} token files`);
+    }
+  }
+
+  if (candidate === 'images') {
+    const images = pressureSnapshot?.images || collections.images;
+    if (images) {
+      if ((images.fileCount || 0) > 0) {
+        add('Images include sensitive binary/object growth', 0.2, `${images.fileCount} files`);
+      }
+      if ((images.binaryFileCount || 0) > 0) {
+        add('Image store has binary files that may need object-storage planning', 0.2, `${images.binaryFileCount} binary files`);
+      }
+      if ((images.totalSizeKB || 0) >= 1024 * 1024) {
+        add('Image store size pressure', 0.45, `${images.totalSizeKB}KB`);
+      }
+      if ((images.largestFileKB || 0) >= 2048) {
+        add('Large image/object files detected', 0.25, `${images.largestFileKB}KB largest`);
+      }
+    }
+  }
+
+  // Governance pressure can raise advisory priority for audit/users.
+  if ((governance.privacyRequests?.open || 0) > 0 && candidate === 'users') {
+    add('Open privacy requests increase identity data governance pressure', 0.15, `${governance.privacyRequests.open} open`);
+  }
+
+  return {
+    score: clampScore(score),
+    evidence,
+  };
+}
+
+/**
+ * Rank future externalization candidates using pressure snapshot evidence.
+ *
+ * @param {object} pressureSnapshot
+ * @param {object} options
+ */
+export function rankExternalizationCandidates(pressureSnapshot, options = {}) {
+  const configured = config.EXTERNALIZATION_READINESS?.candidates || [];
+  const candidates = Array.isArray(options.candidates) && options.candidates.length > 0
+    ? options.candidates
+    : configured;
+
+  const rows = candidates.map(name => {
+    const evidence = evidenceFromPressure(pressureSnapshot || {}, name);
+
+    let status = 'watch';
+    if (evidence.score >= 0.75) status = 'review_phase60';
+    else if (evidence.score >= 0.4) status = 'watch';
+
+    return {
+      name,
+      score: Math.round(evidence.score * 100) / 100,
+      status,
+      implementationAllowed: false,
+      phase: 59,
+      evidence: evidence.evidence,
+      recommendation: status === 'review_phase60'
+        ? 'مرشح لمراجعة Phase 60+ إذا استمر الضغط بعد compaction/repair والbenchmark.'
+        : 'راقب الضغط ولا تبدأ externalization بدون evidence إضافي.',
+    };
+  });
+
+  rows.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  return rows;
+}
+
+/**
+ * Build decision matrix from pressure snapshot.
+ */
+export function buildExternalizationDecisionMatrix(pressureSnapshot) {
+  const candidates = rankExternalizationCandidates(pressureSnapshot);
+
+  return candidates.map(c => ({
+    candidate: c.name,
+    readinessScore: c.score,
+    status: c.status,
+    phase59Action: c.score >= 0.75
+      ? 'Run benchmarks, compact/repair, document weekly review, then open Phase 60 readiness review.'
+      : c.score >= 0.4
+        ? 'Monitor, compact where possible, collect benchmark evidence.'
+        : 'No externalization action. Continue normal file-based operation.',
+    phase60Requirement: phase60RequirementForCandidate(c.name),
+    implementationAllowedNow: false,
+  }));
+}
+
+function phase60RequirementForCandidate(candidate) {
+  const map = {
+    users: 'External DB with strict privacy/anonymization support and session-token exclusion.',
+    jobs: 'External DB with indexed search/filter paths and migration validation.',
+    applications: 'External DB with referential integrity to users/jobs.',
+    payments: 'External DB with financial audit preservation and no blind deletion.',
+    messages: 'External message/workroom store with search, receipts, and privacy controls.',
+    ops_queue: 'External queue with atomic claim, visibility timeout, DLQ, idempotency.',
+    audit: 'External append-only audit store plus search/index strategy.',
+    search: 'External search engine with Arabic normalization and explainable ranking.',
+    images: 'External object storage with private access control and image reference migration.',
+  };
+  return map[candidate] || 'Phase 60+ design required before implementation.';
+}
+
+/**
+ * Repository boundary proposal.
+ */
+export function getRepositoryBoundaryProposal() {
+  return [
+    {
+      name: 'UserRepository',
+      collections: ['users', 'sessions'],
+      responsibilities: ['identity lookup', 'phone index', 'profile updates', 'privacy anonymization support'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'JobRepository',
+      collections: ['jobs', 'applications', 'attendance'],
+      responsibilities: ['job lifecycle', 'applications relation', 'attendance relation', 'query indexes'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'PaymentRepository',
+      collections: ['payments'],
+      responsibilities: ['payment lifecycle', 'disputes', 'financial preservation'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'MessageRepository',
+      collections: ['messages', 'workrooms', 'workroom_receipts', 'workroom_pins', 'workroom_checklists'],
+      responsibilities: ['workroom messages', 'receipts', 'pins', 'checklists', 'search sidecars'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'NotificationRepository',
+      collections: ['notifications', 'push_subscriptions'],
+      responsibilities: ['in-app notifications', 'unread indexes', 'push subscriptions'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'AuditRepository',
+      collections: ['audit', 'audit_indexes'],
+      responsibilities: ['append-only admin audit', 'indexed search', 'retention'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'QueueRepository',
+      collections: ['ops_queue', 'queue_pending', 'queue_running', 'queue_completed', 'queue_failed', 'queue_cancelled', 'ops_queue_dead_letter'],
+      responsibilities: ['durable jobs', 'idempotency', 'claiming', 'retry', 'DLQ'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'MetricsRepository',
+      collections: ['metrics', 'search_analytics', 'product_intelligence', 'payment_dispute_analytics'],
+      responsibilities: ['rollups', 'analytics snapshots', 'retention'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'GovernanceRepository',
+      collections: ['privacy_requests', 'admin_approvals', 'ops_reviews', 'postmortems', 'incidents'],
+      responsibilities: ['privacy workflows', 'approval workflows', 'ops reviews', 'postmortems'],
+      phase59Status: 'proposal_only',
+    },
+    {
+      name: 'ImageObjectStore',
+      collections: ['images'],
+      responsibilities: ['content-addressed images', 'private image serving', 'future object storage boundary'],
+      phase59Status: 'proposal_only',
+    },
+  ];
+}
+
+/**
+ * Phase 60+ requirements.
+ */
+export function getPhase60Requirements() {
+  return [
+    {
+      area: 'external_database',
+      required: true,
+      description: 'A transactional external database is required before multi-writer production.',
+    },
+    {
+      area: 'external_queue',
+      required: true,
+      description: 'External queue must support atomic claim, visibility timeout, DLQ, retries, idempotency.',
+    },
+    {
+      area: 'event_bridge',
+      required: true,
+      description: 'In-memory EventBus must be replaced or bridged for cross-instance events.',
+    },
+    {
+      area: 'sse_fanout',
+      required: true,
+      description: 'User/Admin SSE needs cross-instance fanout or sticky routing.',
+    },
+    {
+      area: 'migration_snapshots',
+      required: true,
+      description: 'NDJSON snapshots with manifest/checksums must exist before migration.',
+    },
+    {
+      area: 'dual_read_write',
+      required: true,
+      description: 'Dual-read/write and mismatch logging strategy must be implemented before cutover.',
+    },
+    {
+      area: 'rollback',
+      required: true,
+      description: 'Rollback plan must be tested with backup and migration snapshot.',
+    },
+    {
+      area: 'privacy_controls',
+      required: true,
+      description: 'Privacy export/anonymization behavior must be preserved in externalized stores.',
+    },
+    {
+      area: 'observability',
+      required: true,
+      description: 'Benchmarks, pressure snapshots, queue metrics and SLOs must be available during migration.',
+    },
+  ];
+}
+
+/**
+ * Main advisory endpoint/service.
+ */
+export async function getExternalizationReadiness(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      phase: 59,
+      implementationAllowed: false,
+      generatedAt: nowIso(),
+    };
+  }
+
+  let pressureSnapshot = options.pressureSnapshot || null;
+
+  if (!pressureSnapshot && options.loadPressure !== false) {
+    try {
+      const { getLatestStoragePressureSnapshot, getStoragePressure } = await import('./storagePressure.js');
+      pressureSnapshot = await getLatestStoragePressureSnapshot();
+      if (!pressureSnapshot && options.captureIfMissing) {
+        pressureSnapshot = await getStoragePressure({ persist: true, force: true });
+      }
+    } catch (_) {
+      pressureSnapshot = null;
+    }
+  }
+
+  const candidates = rankExternalizationCandidates(pressureSnapshot || {}, options);
+  const decisionMatrix = buildExternalizationDecisionMatrix(pressureSnapshot || {});
+
+  return {
+    enabled: true,
+    phase: 59,
+    implementationAllowed: false,
+    noExternalizationBeforePhase: config.EXTERNALIZATION_READINESS?.noExternalizationBeforePhase || 60,
+    generatedAt: nowIso(),
+    pressureSnapshot: pressureSnapshot ? {
+      id: pressureSnapshot.id || null,
+      timestamp: pressureSnapshot.timestamp || null,
+      status: pressureSnapshot.status || 'unknown',
+      warningCount: Array.isArray(pressureSnapshot.warnings) ? pressureSnapshot.warnings.length : 0,
+      criticalCount: Array.isArray(pressureSnapshot.criticals) ? pressureSnapshot.criticals.length : 0,
+    } : null,
+    candidates,
+    decisionMatrix,
+    repositoryBoundaries: getRepositoryBoundaryProposal(),
+    phase60Requirements: getPhase60Requirements(),
+    guardrails: [
+      'No PostgreSQL implementation in Phase 59.',
+      'No external queue implementation in Phase 59.',
+      'No external search implementation in Phase 59.',
+      'Do not run multiple writers.',
+      'Do not treat file locks as distributed consensus.',
+      'Use benchmarks and repeated pressure evidence before Phase 60 decisions.',
+    ],
+  };
+}
+
+export const _testHelpers = {
+  clampScore,
+  pressureWeight,
+  evidenceFromPressure,
+  phase60RequirementForCandidate,
+};
+```
+
+---
+
 ## `server/services/favorites.js`
 
 ```javascript
@@ -21619,6 +22210,26 @@ const builtInMigrations = [
       logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
     },
   },
+  {
+    version: 19,
+    name: 'Phase 59: File-Based Scale Limits and Externalization Readiness',
+    up: async () => {
+      // Phase 59 registers additive advisory/measurement structures:
+      //   - metrics/storage-pressure
+      //   - metrics/scale-thresholds
+      //   - migration-snapshots
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - externalize any data
+      //   - introduce PostgreSQL/search/queue dependencies
+      //
+      // Phase 59 is about limits, visibility, benchmarks, docs, and readiness only.
+      logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
+    },
+  },
 ];
 
 /**
@@ -25043,6 +25654,85 @@ export async function getReviewFreshness(type, maxAgeDays) {
     thresholdDays,
     status: fresh ? 'fresh' : 'stale',
   };
+}
+
+/**
+ * Phase 59: lightweight governance pressure stats for operational reviews.
+ */
+export async function getOpsReviewPressureStats() {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      total: 0,
+      draft: 0,
+      completed: 0,
+      stale: 0,
+      latestWeeklyReviewAt: null,
+      weeklyFresh: false,
+      staleReviewTypes: [],
+    };
+  }
+
+  const result = {
+    enabled: true,
+    total: 0,
+    draft: 0,
+    completed: 0,
+    stale: 0,
+    latestWeeklyReviewAt: null,
+    weeklyFresh: false,
+    staleReviewTypes: [],
+    generatedAt: nowIso(),
+  };
+
+  try {
+    const rows = await listReviewRecords({ limit: 100000, offset: 0 });
+    const reviews = rows.reviews || [];
+
+    for (const review of reviews) {
+      if (!review || !review.id) continue;
+
+      result.total++;
+
+      if (review.status === 'completed') result.completed++;
+      else result.draft++;
+    }
+
+    const weekly = await getReviewFreshness(
+      'weekly_ops_review',
+      config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7
+    ).catch(() => null);
+
+    if (weekly) {
+      result.latestWeeklyReviewAt = weekly.latest
+        ? (weekly.latest.completedAt || weekly.latest.createdAt || null)
+        : null;
+      result.weeklyFresh = !!weekly.fresh;
+      if (!weekly.fresh) {
+        result.stale++;
+        result.staleReviewTypes.push('weekly_ops_review');
+      }
+    }
+
+    // Check each configured review type for a stale/missing completed review.
+    const maxAgeDays = config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7;
+    for (const type of allowedTypes()) {
+      if (type === 'weekly_ops_review') continue;
+      const freshness = await getReviewFreshness(type, maxAgeDays).catch(() => null);
+      if (freshness && freshness.status !== 'fresh') {
+        result.stale++;
+        result.staleReviewTypes.push(type);
+      }
+    }
+
+    return result;
+  } catch (err) {
+    return {
+      ...result,
+      error: err.message,
+      status: 'unknown',
+    };
+  }
 }
 
 export const _testHelpers = {
@@ -29225,6 +29915,172 @@ async function checkScaleHygiene() {
   }
 }
 
+async function checkScaleThresholdsConfigured(isProd) {
+  const enabled = !!(config.SCALE_LIMITS && config.SCALE_LIMITS.enabled);
+  const hasThresholds = !!(config.SCALE_LIMITS && config.SCALE_LIMITS.thresholds);
+
+  if (!enabled || !hasThresholds) {
+    return check(
+      'scale_thresholds_configured',
+      isProd ? 'fail' : 'warn',
+      'Phase 59 scale thresholds are not configured',
+      { enabled, hasThresholds },
+      'Configure SCALE_LIMITS in config.js'
+    );
+  }
+
+  return check('scale_thresholds_configured', 'pass', 'Phase 59 scale thresholds are configured', {
+    mode: config.SCALE_LIMITS.mode || 'advisory',
+  });
+}
+
+async function checkStoragePressureReadiness(isProd) {
+  if (!config.STORAGE_PRESSURE || !config.STORAGE_PRESSURE.enabled) {
+    return check(
+      'storage_pressure_available',
+      isProd ? 'fail' : 'warn',
+      'Storage pressure monitoring is disabled',
+      {},
+      'Enable STORAGE_PRESSURE in config.js'
+    );
+  }
+
+  try {
+    const { getLatestStoragePressureSnapshot } = await import('./storagePressure.js');
+    const latest = await getLatestStoragePressureSnapshot();
+
+    if (!latest) {
+      return check(
+        'storage_pressure_available',
+        'warn',
+        'No storage pressure snapshot exists yet',
+        {},
+        'node scripts/measure-storage-pressure.js'
+      );
+    }
+
+    const warningCount = Array.isArray(latest.warnings) ? latest.warnings.length : 0;
+    const criticalCount = Array.isArray(latest.criticals) ? latest.criticals.length : 0;
+    const ageHours = latest.timestamp
+      ? Math.round(((Date.now() - new Date(latest.timestamp).getTime()) / 3600000) * 10) / 10
+      : null;
+
+    if (latest.status === 'critical' || criticalCount > 0) {
+      return check(
+        'storage_pressure_critical',
+        isProd ? 'fail' : 'warn',
+        'Latest storage pressure snapshot has critical findings',
+        {
+          snapshotId: latest.id,
+          timestamp: latest.timestamp,
+          ageHours,
+          warningCount,
+          criticalCount,
+        },
+        'node scripts/verify-scale-thresholds.js --strict'
+      );
+    }
+
+    if (latest.status === 'warning' || warningCount > 0) {
+      return check(
+        'storage_pressure_available',
+        'warn',
+        'Latest storage pressure snapshot has warnings',
+        {
+          snapshotId: latest.id,
+          timestamp: latest.timestamp,
+          ageHours,
+          warningCount,
+          criticalCount,
+        },
+        'node scripts/measure-storage-pressure.js'
+      );
+    }
+
+    return check('storage_pressure_available', 'pass', 'Latest storage pressure snapshot is healthy', {
+      snapshotId: latest.id,
+      timestamp: latest.timestamp,
+      ageHours,
+      warningCount,
+      criticalCount,
+    });
+  } catch (err) {
+    return check(
+      'storage_pressure_available',
+      'warn',
+      'Could not evaluate storage pressure readiness',
+      { error: err.message },
+      'node scripts/measure-storage-pressure.js'
+    );
+  }
+}
+
+async function checkPhase59Docs(isProd) {
+  const docs = [
+    { id: 'scale_limits_doc_exists', path: './SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
+    { id: 'externalization_readiness_doc_exists', path: './EXTERNALIZATION_READINESS.md', label: 'EXTERNALIZATION_READINESS.md' },
+    { id: 'multi_instance_boundary_doc_exists', path: './MULTI_INSTANCE_BOUNDARY.md', label: 'MULTI_INSTANCE_BOUNDARY.md' },
+    { id: 'data_migration_formats_doc_exists', path: './DATA_MIGRATION_FORMATS.md', label: 'DATA_MIGRATION_FORMATS.md' },
+    { id: 'storage_pressure_runbook_exists', path: './STORAGE_PRESSURE_RUNBOOK.md', label: 'STORAGE_PRESSURE_RUNBOOK.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : (isProd ? 'fail' : 'warn'),
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkMultiInstanceBoundaryConfig(isProd) {
+  const enabled = !!(config.MULTI_INSTANCE_BOUNDARY && config.MULTI_INSTANCE_BOUNDARY.enabled);
+
+  if (!enabled) {
+    return check(
+      'multi_instance_boundary_configured',
+      isProd ? 'fail' : 'warn',
+      'MULTI_INSTANCE_BOUNDARY config is disabled',
+      {},
+      'Enable MULTI_INSTANCE_BOUNDARY in config.js'
+    );
+  }
+
+  return check('multi_instance_boundary_configured', 'pass', 'Multi-instance boundary config is enabled', {
+    requireSingleWriterForQueueAndSchedulers: !!config.MULTI_INSTANCE_BOUNDARY.requireSingleWriterForQueueAndSchedulers,
+    eventBusBridgeRequiredForMultiInstance: !!config.MULTI_INSTANCE_BOUNDARY.eventBusBridgeRequiredForMultiInstance,
+    sseFanoutRequiredForMultiInstance: !!config.MULTI_INSTANCE_BOUNDARY.sseFanoutRequiredForMultiInstance,
+    externalQueueRequiredForMultiWriter: !!config.MULTI_INSTANCE_BOUNDARY.externalQueueRequiredForMultiWriter,
+  });
+}
+
+async function checkExternalizationReadinessConfig(isProd) {
+  const enabled = !!(config.EXTERNALIZATION_READINESS && config.EXTERNALIZATION_READINESS.enabled);
+  const phase = config.EXTERNALIZATION_READINESS?.noExternalizationBeforePhase || 60;
+
+  if (!enabled) {
+    return check(
+      'externalization_readiness_configured',
+      isProd ? 'fail' : 'warn',
+      'EXTERNALIZATION_READINESS config is disabled',
+      {},
+      'Enable EXTERNALIZATION_READINESS in config.js'
+    );
+  }
+
+  return check('externalization_readiness_configured', 'pass', 'Externalization readiness config is advisory-only and enabled', {
+    noExternalizationBeforePhase: phase,
+    candidates: config.EXTERNALIZATION_READINESS?.candidates || [],
+    implementationAllowedInPhase59: false,
+  });
+}
+
 async function checkDomainConsistency() {
   try {
     const brandDomain = config.BRAND?.domain || '';
@@ -29818,6 +30674,14 @@ export async function runReadinessChecks(options = {}) {
 
   // Phase 55 — Scale hygiene + domain consistency.
   checks.push(await checkScaleHygiene());
+
+  // Phase 59 — File-based scale limits + storage pressure readiness.
+  checks.push(await checkScaleThresholdsConfigured(isProd));
+  checks.push(await checkStoragePressureReadiness(isProd));
+  checks.push(await checkMultiInstanceBoundaryConfig(isProd));
+  checks.push(await checkExternalizationReadinessConfig(isProd));
+  checks.push(...await checkPhase59Docs(isProd));
+
   checks.push(await checkDomainConsistency());
 
   checks.push(await checkPwaCacheVersion());
@@ -34306,6 +35170,7 @@ export async function getScaleHygieneOverview() {
     weeklyOpsReviewFreshness,
     postmortemBacklog,
     rbacMatrix,
+    storagePressure,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -34330,6 +35195,9 @@ export async function getScaleHygieneOverview() {
     collectPostmortemBacklog().catch(err => ({ error: err.message, missing: [] })),
     import('./adminRbac.js')
       .then(m => m.getRbacMatrix())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./storagePressure.js')
+      .then(m => m.getStoragePressure({ persist: false }))
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -34448,11 +35316,67 @@ export async function getScaleHygieneOverview() {
     });
   }
 
+  // Phase 59 — Storage pressure warnings.
+  if (storagePressure && storagePressure.enabled !== false) {
+    for (const c of storagePressure.criticals || []) {
+      warnings.push({
+        source: 'storage_pressure',
+        level: 'critical',
+        message: c.message || c.code || 'Storage pressure critical finding',
+        details: c,
+      });
+    }
+
+    for (const w of storagePressure.warnings || []) {
+      warnings.push({
+        source: 'storage_pressure',
+        level: w.level || 'warning',
+        message: w.message || w.code || 'Storage pressure warning',
+        details: w,
+      });
+    }
+  } else if (storagePressure && storagePressure.error) {
+    warnings.push({
+      source: 'storage_pressure',
+      level: 'warning',
+      message: 'Storage pressure could not be evaluated',
+      details: storagePressure,
+    });
+  }
+
   const recommendedActions = [];
 
   for (const action of queueRecommendations || []) {
     const normalized = normalizeAction(action);
     if (normalized) recommendedActions.push(normalized);
+  }
+
+  // Phase 59 — Storage pressure recommended actions.
+  if (storagePressure && Array.isArray(storagePressure.recommendations)) {
+    for (const action of storagePressure.recommendations) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (storagePressure && storagePressure.status === 'critical') {
+    recommendedActions.push({
+      id: 'storage_pressure_critical_review',
+      label: 'مراجعة ضغط التخزين الحرج',
+      severity: 'critical',
+      command: 'node scripts/verify-scale-thresholds.js --strict',
+      adminRoute: '/api/admin/storage-pressure',
+      reason: 'Storage pressure has critical findings. ابدأ بالتحقق والضغط/الإصلاح قبل أي Phase 60 externalization.',
+    });
+  } else if (storagePressure && storagePressure.status === 'warning') {
+    recommendedActions.push({
+      id: 'storage_pressure_warning_review',
+      label: 'مراجعة ضغط التخزين',
+      severity: 'warning',
+      command: 'node scripts/measure-storage-pressure.js',
+      adminRoute: '/api/admin/storage-pressure',
+      reason: 'Storage pressure has warnings. التحذير لا يعني نقل قاعدة البيانات فوراً.',
+    });
   }
 
   if (marketplaceFreshness && marketplaceFreshness.enabled && marketplaceFreshness.stale) {
@@ -34555,6 +35479,10 @@ export async function getScaleHygieneOverview() {
     trust: trustRetention,
     predictiveArchive: predictiveArchiveIndex,
     schedulerHistory,
+    storagePressure: storagePressure || {
+      enabled: false,
+      status: 'unknown',
+    },
     marketplace: {
       freshness: marketplaceFreshness,
     },
@@ -34579,6 +35507,830 @@ export async function getScaleHygieneOverview() {
     warningCount: warnings.length,
   };
 }
+```
+
+---
+
+## `server/services/scaleThresholds.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/scaleThresholds.js — Scale Threshold Evaluation (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Central advisory evaluator for file-based scale thresholds.
+//
+// Important:
+// - Pure helpers do NOT scan the filesystem.
+// - Heavy/shallow scanning is delegated to storagePressure.js.
+// - Default mode is advisory.
+// - No external DB/search/queue implementation in Phase 59.
+// ═══════════════════════════════════════════════════════════════
+
+import config from '../../config.js';
+
+function cfg() {
+  return config.SCALE_LIMITS || {};
+}
+
+function thresholds() {
+  return cfg().thresholds || {};
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function normalizeStatus(status) {
+  if (status === 'critical') return 'critical';
+  if (status === 'warning') return 'warning';
+  return 'ok';
+}
+
+function worseStatus(a, b) {
+  const order = { ok: 0, warning: 1, critical: 2 };
+  return (order[normalizeStatus(b)] || 0) > (order[normalizeStatus(a)] || 0)
+    ? normalizeStatus(b)
+    : normalizeStatus(a);
+}
+
+function pushIssue(target, level, issue) {
+  if (!target || !issue) return;
+  const row = {
+    level,
+    code: issue.code || 'SCALE_THRESHOLD',
+    message: issue.message || '',
+    metric: issue.metric || null,
+    value: issue.value,
+    threshold: issue.threshold,
+    scope: issue.scope || null,
+    recommendation: issue.recommendation || null,
+  };
+
+  if (level === 'critical') target.criticals.push(row);
+  else if (level === 'warning') target.warnings.push(row);
+}
+
+/**
+ * Return Phase 59 scale threshold config.
+ */
+export function getScaleThresholdConfig() {
+  return {
+    enabled: !!cfg().enabled,
+    mode: cfg().mode || 'advisory',
+    shallowScanMaxFiles: cfg().shallowScanMaxFiles || 250000,
+    deepScanDefaultEnabled: !!cfg().deepScanDefaultEnabled,
+    thresholds: thresholds(),
+  };
+}
+
+/**
+ * Evaluate a numeric value against warning/critical thresholds.
+ *
+ * @param {number} value
+ * @param {number} warning
+ * @param {number} critical
+ * @returns {'ok'|'warning'|'critical'}
+ */
+export function evaluateThreshold(value, warning, critical) {
+  const v = Number(value) || 0;
+  const w = Number(warning) || 0;
+  const c = Number(critical) || 0;
+
+  if (c > 0 && v >= c) return 'critical';
+  if (w > 0 && v >= w) return 'warning';
+  return 'ok';
+}
+
+/**
+ * Evaluate collection pressure.
+ *
+ * Expected collectionStats shape:
+ * {
+ *   [collectionName]: {
+ *     fileCount,
+ *     totalSizeKB,
+ *     largestJsonKB,
+ *     shards: {
+ *       'YYYY-MM': { fileCount, totalSizeKB, largestJsonKB }
+ *     }
+ *   }
+ * }
+ */
+export function evaluateCollectionPressure(collectionStats = {}, collectionThresholds = thresholds().collections || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  for (const [collection, stats] of Object.entries(collectionStats || {})) {
+    const th = collectionThresholds[collection];
+    if (!th) continue;
+
+    const row = {
+      collection,
+      status: 'ok',
+      checks: [],
+    };
+
+    // Flat/global file count threshold.
+    if (th.warningFiles || th.criticalFiles) {
+      const status = evaluateThreshold(stats.fileCount || 0, th.warningFiles, th.criticalFiles);
+      row.status = worseStatus(row.status, status);
+      row.checks.push({
+        metric: 'fileCount',
+        value: stats.fileCount || 0,
+        status,
+      });
+
+      if (status !== 'ok') {
+        pushIssue(result, status, {
+          code: 'COLLECTION_FILE_COUNT_PRESSURE',
+          scope: collection,
+          metric: 'fileCount',
+          value: stats.fileCount || 0,
+          threshold: status === 'critical' ? th.criticalFiles : th.warningFiles,
+          message: `Collection ${collection} file count reached ${status} threshold.`,
+          recommendation: `راجع ${collection}: archive/compact/verify قبل التفكير في Phase 60 externalization.`,
+        });
+      }
+    }
+
+    // Largest JSON threshold.
+    if (th.warningLargestJsonKB || th.criticalLargestJsonKB) {
+      const status = evaluateThreshold(
+        stats.largestJsonKB || 0,
+        th.warningLargestJsonKB,
+        th.criticalLargestJsonKB
+      );
+      row.status = worseStatus(row.status, status);
+      row.checks.push({
+        metric: 'largestJsonKB',
+        value: stats.largestJsonKB || 0,
+        status,
+      });
+
+      if (status !== 'ok') {
+        pushIssue(result, status, {
+          code: 'COLLECTION_LARGEST_JSON_PRESSURE',
+          scope: collection,
+          metric: 'largestJsonKB',
+          value: stats.largestJsonKB || 0,
+          threshold: status === 'critical' ? th.criticalLargestJsonKB : th.warningLargestJsonKB,
+          message: `Collection ${collection} has large JSON files.`,
+          recommendation: `افحص أكبر ملفات ${collection} وشغّل verify-file-health قبل أي إجراء.`,
+        });
+      }
+    }
+
+    // Per-shard thresholds.
+    if (th.warningFilesPerShard || th.criticalFilesPerShard) {
+      const shards = stats.shards || {};
+      for (const [shard, shardStats] of Object.entries(shards)) {
+        const status = evaluateThreshold(
+          shardStats.fileCount || 0,
+          th.warningFilesPerShard,
+          th.criticalFilesPerShard
+        );
+
+        row.status = worseStatus(row.status, status);
+        row.checks.push({
+          metric: 'filesPerShard',
+          shard,
+          value: shardStats.fileCount || 0,
+          status,
+        });
+
+        if (status !== 'ok') {
+          pushIssue(result, status, {
+            code: 'COLLECTION_SHARD_FILE_COUNT_PRESSURE',
+            scope: `${collection}/${shard}`,
+            metric: 'filesPerShard',
+            value: shardStats.fileCount || 0,
+            threshold: status === 'critical' ? th.criticalFilesPerShard : th.warningFilesPerShard,
+            message: `Collection ${collection} shard ${shard} reached ${status} file threshold.`,
+            recommendation: `راجع shard ${collection}/${shard}: قد تحتاج archive أو Phase 60 planning لو تكرر الضغط.`,
+          });
+        }
+      }
+    }
+
+    result.evaluations[collection] = row;
+    result.status = worseStatus(result.status, row.status);
+  }
+
+  return result;
+}
+
+/**
+ * Evaluate index pressure.
+ *
+ * Expected indexStats shape:
+ * {
+ *   setIndexes: [{ name, sizeKB }],
+ *   auditTokenIndex: { fileCount, totalSizeKB, largestTokenFiles: [] },
+ *   searchIndex: { sizeKB }
+ * }
+ */
+export function evaluateIndexPressure(indexStats = {}, indexThresholds = thresholds().indexes || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  const setIndexes = Array.isArray(indexStats.setIndexes) ? indexStats.setIndexes : [];
+  const setRows = [];
+
+  for (const idx of setIndexes) {
+    const status = evaluateThreshold(
+      idx.sizeKB || 0,
+      indexThresholds.setIndexWarningKB,
+      indexThresholds.setIndexCriticalKB
+    );
+
+    setRows.push({ ...idx, status });
+    result.status = worseStatus(result.status, status);
+
+    if (status !== 'ok') {
+      pushIssue(result, status, {
+        code: 'SET_INDEX_SIZE_PRESSURE',
+        scope: idx.name,
+        metric: 'sizeKB',
+        value: idx.sizeKB || 0,
+        threshold: status === 'critical'
+          ? indexThresholds.setIndexCriticalKB
+          : indexThresholds.setIndexWarningKB,
+        message: `Set index ${idx.name} reached ${status} size threshold.`,
+        recommendation: `شغّل repair-indexes أو راجع تقسيم index ${idx.name}.`,
+      });
+    }
+  }
+
+  result.evaluations.setIndexes = setRows;
+
+  const auditToken = indexStats.auditTokenIndex || {};
+  const auditTokenStatus = evaluateThreshold(
+    auditToken.fileCount || 0,
+    indexThresholds.auditTokenFilesWarning,
+    indexThresholds.auditTokenFilesCritical
+  );
+
+  result.evaluations.auditTokenIndex = {
+    ...auditToken,
+    status: auditTokenStatus,
+  };
+  result.status = worseStatus(result.status, auditTokenStatus);
+
+  if (auditTokenStatus !== 'ok') {
+    pushIssue(result, auditTokenStatus, {
+      code: 'AUDIT_TOKEN_INDEX_FILE_PRESSURE',
+      scope: 'auditTokenIndex',
+      metric: 'fileCount',
+      value: auditToken.fileCount || 0,
+      threshold: auditTokenStatus === 'critical'
+        ? indexThresholds.auditTokenFilesCritical
+        : indexThresholds.auditTokenFilesWarning,
+      message: `Audit token index file count reached ${auditTokenStatus} threshold.`,
+      recommendation: 'شغّل audit token compaction ثم verify-audit-index. لو الضغط مستمر، سجّل مراجعة external search Phase 60+.',
+    });
+  }
+
+  const searchIndex = indexStats.searchIndex || {};
+  const searchStatus = evaluateThreshold(
+    searchIndex.sizeKB || 0,
+    indexThresholds.searchIndexWarningKB,
+    indexThresholds.searchIndexCriticalKB
+  );
+
+  result.evaluations.searchIndex = {
+    ...searchIndex,
+    status: searchStatus,
+  };
+  result.status = worseStatus(result.status, searchStatus);
+
+  if (searchStatus !== 'ok') {
+    pushIssue(result, searchStatus, {
+      code: 'SEARCH_INDEX_SIZE_PRESSURE',
+      scope: 'searchIndex',
+      metric: 'sizeKB',
+      value: searchIndex.sizeKB || 0,
+      threshold: searchStatus === 'critical'
+        ? indexThresholds.searchIndexCriticalKB
+        : indexThresholds.searchIndexWarningKB,
+      message: `Search index reached ${searchStatus} size threshold.`,
+      recommendation: 'شغّل rebuild-search-relevance وراجع search analytics قبل التفكير في external search Phase 60+.',
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Evaluate ops queue pressure.
+ */
+export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresholds().queue || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  const byStatus = queueStats.byStatus || queueStats.statusCounts || {};
+
+  const checks = [
+    {
+      key: 'pending',
+      value: byStatus.pending || queueStats.pending || 0,
+      warning: queueThresholds.pendingWarning,
+      critical: queueThresholds.pendingCritical,
+      code: 'QUEUE_PENDING_PRESSURE',
+      message: 'Queue pending jobs pressure detected.',
+      recommendation: 'راجع queue workers/schedulers وشغّل compact/verify queue. لا تشغّل multiple writers.',
+    },
+    {
+      key: 'running',
+      value: byStatus.running || queueStats.running || 0,
+      warning: queueThresholds.runningWarning,
+      critical: queueThresholds.runningCritical,
+      code: 'QUEUE_RUNNING_PRESSURE',
+      message: 'Queue running jobs pressure detected.',
+      recommendation: 'افحص stale running jobs والـ leases قبل retry أو repair.',
+    },
+    {
+      key: 'deadLetter',
+      value: byStatus['dead-letter'] || queueStats.deadLetter || 0,
+      warning: queueThresholds.deadLetterWarning,
+      critical: queueThresholds.deadLetterCritical,
+      code: 'QUEUE_DEAD_LETTER_PRESSURE',
+      message: 'Queue dead-letter pressure detected.',
+      recommendation: 'راجع DLQ runbook. استخدم queue-retry-dlq --dry-run ولا تعمل retry جماعي بدون فهم السبب.',
+    },
+  ];
+
+  for (const check of checks) {
+    const status = evaluateThreshold(check.value, check.warning, check.critical);
+    result.evaluations[check.key] = { ...check, status };
+    result.status = worseStatus(result.status, status);
+
+    if (status !== 'ok') {
+      pushIssue(result, status, {
+        code: check.code,
+        scope: 'ops_queue',
+        metric: check.key,
+        value: check.value,
+        threshold: status === 'critical' ? check.critical : check.warning,
+        message: check.message,
+        recommendation: check.recommendation,
+      });
+    }
+  }
+
+  const summary = queueStats.summary || {};
+  if (summary.lastUpdatedAt) {
+    const ageMs = Date.now() - new Date(summary.lastUpdatedAt).getTime();
+    const ageMinutes = Math.round(ageMs / 60000);
+    const warningMinutes = queueThresholds.staleSummaryWarningMinutes || 30;
+    const criticalMinutes = (queueThresholds.staleSummaryCriticalHours || 6) * 60;
+
+    const status = evaluateThreshold(ageMinutes, warningMinutes, criticalMinutes);
+    result.evaluations.summaryAgeMinutes = {
+      value: ageMinutes,
+      status,
+    };
+    result.status = worseStatus(result.status, status);
+
+    if (status !== 'ok') {
+      pushIssue(result, status, {
+        code: 'QUEUE_SUMMARY_STALE',
+        scope: 'ops_queue_summary',
+        metric: 'summaryAgeMinutes',
+        value: ageMinutes,
+        threshold: status === 'critical' ? criticalMinutes : warningMinutes,
+        message: 'Queue summary/location index is stale.',
+        recommendation: 'شغّل verify-queue ثم repair-queue إذا ظهر mismatch.',
+      });
+    }
+  } else if (summary.stale) {
+    result.status = worseStatus(result.status, 'warning');
+    pushIssue(result, 'warning', {
+      code: 'QUEUE_SUMMARY_STALE',
+      scope: 'ops_queue_summary',
+      metric: 'stale',
+      value: true,
+      threshold: true,
+      message: 'Queue summary is marked stale.',
+      recommendation: 'شغّل verify-queue ثم repair-queue.',
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Evaluate Workroom pressure.
+ */
+export function evaluateWorkroomPressure(workroomStats = {}, workroomThresholds = thresholds().workrooms || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  const sidecarStatus = evaluateThreshold(
+    workroomStats.largestSidecarKB || 0,
+    workroomThresholds.sidecarWarningKB,
+    workroomThresholds.sidecarCriticalKB
+  );
+
+  result.evaluations.largestSidecarKB = {
+    value: workroomStats.largestSidecarKB || 0,
+    status: sidecarStatus,
+  };
+  result.status = worseStatus(result.status, sidecarStatus);
+
+  if (sidecarStatus !== 'ok') {
+    pushIssue(result, sidecarStatus, {
+      code: 'WORKROOM_SIDECAR_PRESSURE',
+      scope: 'workrooms',
+      metric: 'largestSidecarKB',
+      value: workroomStats.largestSidecarKB || 0,
+      threshold: sidecarStatus === 'critical'
+        ? workroomThresholds.sidecarCriticalKB
+        : workroomThresholds.sidecarWarningKB,
+      message: 'Workroom sidecar size pressure detected.',
+      recommendation: 'شغّل compact-workrooms و verify-workroom-indexes. راجع read receipts write amplification.',
+    });
+  }
+
+  const searchStatus = evaluateThreshold(
+    workroomStats.largestSearchIndexKB || 0,
+    workroomThresholds.searchIndexWarningKB,
+    workroomThresholds.searchIndexCriticalKB
+  );
+
+  result.evaluations.largestSearchIndexKB = {
+    value: workroomStats.largestSearchIndexKB || 0,
+    status: searchStatus,
+  };
+  result.status = worseStatus(result.status, searchStatus);
+
+  if (searchStatus !== 'ok') {
+    pushIssue(result, searchStatus, {
+      code: 'WORKROOM_SEARCH_INDEX_PRESSURE',
+      scope: 'workroom_search',
+      metric: 'largestSearchIndexKB',
+      value: workroomStats.largestSearchIndexKB || 0,
+      threshold: searchStatus === 'critical'
+        ? workroomThresholds.searchIndexCriticalKB
+        : workroomThresholds.searchIndexWarningKB,
+      message: 'Workroom search index size pressure detected.',
+      recommendation: 'شغّل rebuild-workroom-search أو verify-workroom-indexes قبل أي external search discussion.',
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Evaluate image/object store pressure.
+ *
+ * Expected imageStats shape:
+ * {
+ *   binaryFileCount,
+ *   metaFileCount,
+ *   totalSizeKB,
+ *   largestFileKB
+ * }
+ */
+export function evaluateImagePressure(imageStats = {}, imageThresholds = thresholds().images || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  const totalSizeMB = Math.round(((imageStats.totalSizeKB || 0) / 1024) * 10) / 10;
+  const largestFileMB = Math.round(((imageStats.largestFileKB || 0) / 1024) * 10) / 10;
+
+  const totalSizeStatus = evaluateThreshold(
+    totalSizeMB,
+    imageThresholds.totalSizeWarningMB,
+    imageThresholds.totalSizeCriticalMB
+  );
+
+  result.evaluations.totalSizeMB = {
+    value: totalSizeMB,
+    status: totalSizeStatus,
+  };
+  result.status = worseStatus(result.status, totalSizeStatus);
+
+  if (totalSizeStatus !== 'ok') {
+    pushIssue(result, totalSizeStatus, {
+      code: 'IMAGE_STORE_SIZE_PRESSURE',
+      scope: 'images',
+      metric: 'totalSizeMB',
+      value: totalSizeMB,
+      threshold: totalSizeStatus === 'critical'
+        ? imageThresholds.totalSizeCriticalMB
+        : imageThresholds.totalSizeWarningMB,
+      message: 'Image/object store size pressure detected.',
+      recommendation: 'راجع cleanup-attachments و image object storage readiness. لا تنقل الصور خارجياً قبل Phase 60+ decision.',
+    });
+  }
+
+  const largestFileStatus = evaluateThreshold(
+    largestFileMB,
+    imageThresholds.largestFileWarningMB,
+    imageThresholds.largestFileCriticalMB
+  );
+
+  result.evaluations.largestFileMB = {
+    value: largestFileMB,
+    status: largestFileStatus,
+  };
+  result.status = worseStatus(result.status, largestFileStatus);
+
+  if (largestFileStatus !== 'ok') {
+    pushIssue(result, largestFileStatus, {
+      code: 'IMAGE_LARGEST_FILE_PRESSURE',
+      scope: 'images',
+      metric: 'largestFileMB',
+      value: largestFileMB,
+      threshold: largestFileStatus === 'critical'
+        ? imageThresholds.largestFileCriticalMB
+        : imageThresholds.largestFileWarningMB,
+      message: 'Large image/object file detected.',
+      recommendation: 'افحص image size policy وverify-file-health. لا تعرض raw image data في التقارير.',
+    });
+  }
+
+  const binaryCountStatus = evaluateThreshold(
+    imageStats.binaryFileCount || 0,
+    imageThresholds.binaryFilesWarning,
+    imageThresholds.binaryFilesCritical
+  );
+
+  result.evaluations.binaryFileCount = {
+    value: imageStats.binaryFileCount || 0,
+    status: binaryCountStatus,
+  };
+  result.status = worseStatus(result.status, binaryCountStatus);
+
+  if (binaryCountStatus !== 'ok') {
+    pushIssue(result, binaryCountStatus, {
+      code: 'IMAGE_BINARY_FILE_COUNT_PRESSURE',
+      scope: 'images',
+      metric: 'binaryFileCount',
+      value: imageStats.binaryFileCount || 0,
+      threshold: binaryCountStatus === 'critical'
+        ? imageThresholds.binaryFilesCritical
+        : imageThresholds.binaryFilesWarning,
+      message: 'Image/object binary file count pressure detected.',
+      recommendation: 'شغّل cleanup-attachments وراجع object storage candidate في EXTERNALIZATION_READINESS.md.',
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Evaluate governance pressure.
+ */
+export function evaluateGovernancePressure(governanceStats = {}, collectionThresholds = thresholds().collections || {}) {
+  const result = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    evaluations: {},
+  };
+
+  const map = {
+    privacyRequests: {
+      collection: 'privacy_requests',
+      label: 'Privacy requests',
+    },
+    adminApprovals: {
+      collection: 'admin_approvals',
+      label: 'Admin approvals',
+    },
+    opsReviews: {
+      collection: 'ops_reviews',
+      label: 'Ops reviews',
+    },
+    postmortems: {
+      collection: 'postmortems',
+      label: 'Postmortems',
+    },
+  };
+
+  for (const [key, def] of Object.entries(map)) {
+    const stats = governanceStats[key] || {};
+    const th = collectionThresholds[def.collection] || {};
+    const status = evaluateThreshold(stats.total || 0, th.warningFiles, th.criticalFiles);
+
+    result.evaluations[key] = {
+      ...stats,
+      status,
+    };
+    result.status = worseStatus(result.status, status);
+
+    if (status !== 'ok') {
+      pushIssue(result, status, {
+        code: 'GOVERNANCE_RECORD_PRESSURE',
+        scope: def.collection,
+        metric: 'total',
+        value: stats.total || 0,
+        threshold: status === 'critical' ? th.criticalFiles : th.warningFiles,
+        message: `${def.label} reached ${status} record threshold.`,
+        recommendation: 'راجع retention/cadence وسجّل مراجعة تشغيل أسبوعية إذا كان النمو غير متوقع.',
+      });
+    }
+
+    if ((stats.stale || 0) > 0 || (stats.overdue || 0) > 0 || (stats.failed || 0) > 0) {
+      result.status = worseStatus(result.status, 'warning');
+      pushIssue(result, 'warning', {
+        code: 'GOVERNANCE_STALE_RECORDS',
+        scope: def.collection,
+        metric: 'staleOrOverdue',
+        value: (stats.stale || 0) + (stats.overdue || 0) + (stats.failed || 0),
+        threshold: 1,
+        message: `${def.label} has stale, overdue, or failed records.`,
+        recommendation: 'راجع Governance tab، عالج الطلبات/الموافقات/المراجعات المفتوحة ووثّق القرار.',
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Build action-first recommendations from evaluations.
+ */
+export function buildScaleRecommendations(evaluations = {}) {
+  const allIssues = [];
+
+  for (const group of Object.values(evaluations || {})) {
+    if (!group || typeof group !== 'object') continue;
+    if (Array.isArray(group.criticals)) allIssues.push(...group.criticals);
+    if (Array.isArray(group.warnings)) allIssues.push(...group.warnings);
+  }
+
+  const seen = new Set();
+  const recommendations = [];
+
+  for (const issue of allIssues) {
+    const key = `${issue.code}:${issue.scope || ''}:${issue.metric || ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    let severity = issue.level || 'warning';
+    let command = null;
+    let adminRoute = null;
+
+    if (issue.code && issue.code.startsWith('QUEUE_')) {
+      command = 'node scripts/verify-queue.js';
+      adminRoute = '/api/admin/ops-queue/stats';
+    } else if (issue.code && issue.code.includes('AUDIT')) {
+      command = 'node scripts/verify-audit-index.js';
+      adminRoute = '/api/admin/audit-index/status';
+    } else if (issue.code && issue.code.includes('WORKROOM')) {
+      command = 'node scripts/verify-workroom-indexes.js';
+      adminRoute = '/api/admin/workroom-hygiene/overview';
+    } else if (issue.code && issue.code.includes('IMAGE')) {
+      command = 'node scripts/cleanup-attachments.js --dry-run';
+      adminRoute = '/api/admin/storage-pressure';
+    } else if (issue.code && issue.code.includes('COLLECTION')) {
+      command = 'node scripts/measure-storage-pressure.js';
+      adminRoute = '/api/admin/storage-pressure';
+    } else if (issue.code && issue.code.includes('GOVERNANCE')) {
+      command = 'node scripts/verify-privacy-governance.js';
+      adminRoute = '/api/admin/rbac/matrix';
+    } else {
+      command = 'node scripts/verify-scale-thresholds.js';
+      adminRoute = '/api/admin/scale-thresholds';
+    }
+
+    recommendations.push({
+      id: key.toLowerCase().replace(/[^a-z0-9_-]+/g, '_').slice(0, 120),
+      severity,
+      label: issue.message || 'راجع حدود التوسع',
+      reason: issue.recommendation || 'راجع pressure details قبل أي قرار externalization.',
+      command,
+      adminRoute,
+      source: issue.scope || null,
+      metric: issue.metric || null,
+      value: issue.value,
+      threshold: issue.threshold,
+    });
+  }
+
+  const order = { critical: 0, warning: 1, info: 2 };
+  recommendations.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+
+  const limit = config.STORAGE_PRESSURE?.recommendationLimit || 10;
+  return recommendations.slice(0, limit);
+}
+
+/**
+ * Verify all scale thresholds using a provided or freshly loaded storage pressure snapshot.
+ *
+ * @param {{ pressureSnapshot?: object, deep?: boolean, persist?: boolean }} options
+ */
+export async function verifyScaleThresholds(options = {}) {
+  if (!cfg().enabled) {
+    return {
+      enabled: false,
+      status: 'ok',
+      warnings: [],
+      criticals: [],
+      recommendations: [],
+      generatedAt: nowIso(),
+    };
+  }
+
+  let snapshot = options.pressureSnapshot || null;
+
+  if (!snapshot) {
+    const storagePressure = await import('./storagePressure.js').catch(() => null);
+    if (storagePressure && storagePressure.getStoragePressure) {
+      snapshot = await storagePressure.getStoragePressure({
+        deep: !!options.deep,
+        persist: options.persist !== false,
+      }).catch(() => null);
+    }
+  }
+
+  if (!snapshot) {
+    return {
+      enabled: true,
+      status: 'warning',
+      warnings: [{
+        level: 'warning',
+        code: 'STORAGE_PRESSURE_UNAVAILABLE',
+        message: 'Storage pressure snapshot is unavailable.',
+        recommendation: 'شغّل node scripts/measure-storage-pressure.js أو راجع /api/admin/storage-pressure.',
+      }],
+      criticals: [],
+      recommendations: [{
+        id: 'storage_pressure_unavailable',
+        severity: 'warning',
+        label: 'قياس ضغط التخزين غير متاح',
+        reason: 'شغّل قياس ضغط التخزين قبل اتخاذ قرارات توسع.',
+        command: 'node scripts/measure-storage-pressure.js',
+        adminRoute: '/api/admin/storage-pressure',
+      }],
+      generatedAt: nowIso(),
+    };
+  }
+
+  const th = thresholds();
+
+  const evaluations = {
+    collections: evaluateCollectionPressure(snapshot.collections || {}, th.collections || {}),
+    indexes: evaluateIndexPressure(snapshot.indexes || {}, th.indexes || {}),
+    queue: evaluateQueuePressure(snapshot.queue || {}, th.queue || {}),
+    workrooms: evaluateWorkroomPressure(snapshot.workrooms || {}, th.workrooms || {}),
+    images: evaluateImagePressure(snapshot.images || {}, th.images || {}),
+    governance: evaluateGovernancePressure(snapshot.governance || {}, th.collections || {}),
+  };
+
+  let status = 'ok';
+  const warnings = [];
+  const criticals = [];
+
+  for (const group of Object.values(evaluations)) {
+    status = worseStatus(status, group.status);
+    if (Array.isArray(group.warnings)) warnings.push(...group.warnings);
+    if (Array.isArray(group.criticals)) criticals.push(...group.criticals);
+  }
+
+  const recommendations = buildScaleRecommendations(evaluations);
+
+  return {
+    enabled: true,
+    mode: cfg().mode || 'advisory',
+    status,
+    warnings,
+    criticals,
+    recommendations,
+    evaluations,
+    snapshotId: snapshot.id || null,
+    snapshotTimestamp: snapshot.timestamp || null,
+    generatedAt: nowIso(),
+  };
+}
+
+export const _testHelpers = {
+  worseStatus,
+  pushIssue,
+  normalizeStatus,
+};
 ```
 
 ---
@@ -37513,6 +39265,1172 @@ if (config.SSE.enabled) {
 // ── Export connections Map for testing ────────────────────────
 
 export const _connections = connections;
+```
+
+---
+
+## `server/services/storagePressure.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/storagePressure.js — Unified Storage Pressure (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Shallow-first filesystem pressure inspection for file-based storage.
+//
+// Goals:
+// - Count files/sizes without parsing JSON by default.
+// - Be shard-aware for monthly sharded collections.
+// - Surface collection/index/queue/workroom/governance/analytics pressure.
+// - Persist snapshots for readiness/admin dashboards.
+// - Avoid PII leakage: output paths are relative; no file content previews.
+// - Respect YAWMIA_DATA_PATH dynamically through database helpers.
+// - No external DB/search/queue implementation in Phase 59.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { readdir, stat, readFile } from 'node:fs/promises';
+import { join, relative, sep } from 'node:path';
+
+import config from '../../config.js';
+import {
+  atomicWrite,
+  deleteJSON,
+  getCollectionPath,
+  getRecordPath,
+  listJSON,
+  readJSON,
+} from './database.js';
+import { logger } from './logger.js';
+
+const cache = new Map();
+
+function isEnabled() {
+  return !!(config.STORAGE_PRESSURE && config.STORAGE_PRESSURE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function basePath() {
+  return process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+}
+
+function cacheTtlMs() {
+  return config.STORAGE_PRESSURE?.cacheTtlMs || (5 * 60 * 1000);
+}
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  cache.set(key, {
+    value,
+    expiresAt: Date.now() + cacheTtlMs(),
+  });
+}
+
+export function clearStoragePressureCache() {
+  cache.clear();
+}
+
+function generateSnapshotId() {
+  return 'sp_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function bytesToKB(bytes) {
+  return Math.round(((Number(bytes) || 0) / 1024) * 10) / 10;
+}
+
+function safeRelative(filePath) {
+  try {
+    const rel = relative(basePath(), filePath).split(sep).join('/');
+    if (!rel || rel.startsWith('..')) return '[outside-data-path]';
+    return rel;
+  } catch (_) {
+    return '[unknown]';
+  }
+}
+
+function isJsonFile(name) {
+  return name.endsWith('.json') && !name.endsWith('.tmp');
+}
+
+function isTmpFile(name) {
+  return name.endsWith('.tmp');
+}
+
+function isShardDir(name) {
+  return /^\d{4}-\d{2}$/.test(name);
+}
+
+function emptyCollectionStats(collection) {
+  return {
+    collection,
+    path: null,
+    fileCount: 0,
+    tmpFileCount: 0,
+    staleTmpCount: 0,
+    totalSizeBytes: 0,
+    totalSizeKB: 0,
+    largestJsonKB: 0,
+    largestFiles: [],
+    shards: {},
+    sampleParse: {
+      enabled: false,
+      checked: 0,
+      failed: 0,
+    },
+    scanMode: 'shallow',
+    scannedAt: nowIso(),
+  };
+}
+
+function addLargestFile(stats, fileInfo, limit) {
+  if (!fileInfo || !stats) return;
+  stats.largestFiles.push(fileInfo);
+  stats.largestFiles.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+  while (stats.largestFiles.length > limit) stats.largestFiles.pop();
+
+  if (fileInfo.sizeKB > (stats.largestJsonKB || 0)) {
+    stats.largestJsonKB = fileInfo.sizeKB;
+  }
+}
+
+function mergeLargestFiles(target, source, limit) {
+  const files = Array.isArray(source) ? source : [];
+  for (const f of files) addLargestFile(target, f, limit);
+}
+
+async function readDirEntries(dirPath) {
+  try {
+    return await readdir(dirPath, { withFileTypes: true });
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Scan one flat directory shallowly.
+ *
+ * Does not parse JSON unless options.sampleJsonParseCount > 0.
+ */
+async function scanFlatJsonDir(dirPath, options = {}) {
+  const limit = options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20;
+  const staleTmpMinutes = options.staleTmpMinutes || config.FILE_HEALTH?.staleTmpWarningMinutes || 10;
+  const staleTmpCutoffMs = Date.now() - staleTmpMinutes * 60 * 1000;
+  const sampleJsonParseCount = Math.max(0, Number(options.sampleJsonParseCount) || 0);
+
+  const stats = {
+    fileCount: 0,
+    tmpFileCount: 0,
+    staleTmpCount: 0,
+    totalSizeBytes: 0,
+    totalSizeKB: 0,
+    largestJsonKB: 0,
+    largestFiles: [],
+    sampleParse: {
+      enabled: sampleJsonParseCount > 0,
+      checked: 0,
+      failed: 0,
+      failures: [],
+    },
+  };
+
+  const entries = await readDirEntries(dirPath);
+  let parsedSamples = 0;
+  let processed = 0;
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+
+    const fullPath = join(dirPath, entry.name);
+
+    if (isTmpFile(entry.name)) {
+      stats.tmpFileCount++;
+      try {
+        const st = await stat(fullPath);
+        if (st.mtimeMs <= staleTmpCutoffMs) stats.staleTmpCount++;
+      } catch (_) {
+        // Ignore stat errors for tmp files.
+      }
+      continue;
+    }
+
+    if (!isJsonFile(entry.name)) continue;
+
+    try {
+      const st = await stat(fullPath);
+      const sizeBytes = st.size;
+      const sizeKB = bytesToKB(sizeBytes);
+
+      stats.fileCount++;
+      stats.totalSizeBytes += sizeBytes;
+      stats.totalSizeKB = bytesToKB(stats.totalSizeBytes);
+
+      addLargestFile(stats, {
+        path: safeRelative(fullPath),
+        fileName: entry.name,
+        sizeBytes,
+        sizeKB,
+        mtime: st.mtime ? st.mtime.toISOString() : null,
+      }, limit);
+
+      if (sampleJsonParseCount > 0 && parsedSamples < sampleJsonParseCount) {
+        parsedSamples++;
+        stats.sampleParse.checked++;
+        try {
+          const raw = await readFile(fullPath, 'utf-8');
+          JSON.parse(raw);
+        } catch (err) {
+          stats.sampleParse.failed++;
+          if (stats.sampleParse.failures.length < 10) {
+            stats.sampleParse.failures.push({
+              path: safeRelative(fullPath),
+              error: err.message,
+            });
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore individual file stat/read errors. File health scripts handle details.
+    }
+
+    processed++;
+    if (processed % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * Get storage stats for one collection.
+ *
+ * Shard-aware:
+ * - root flat JSON files
+ * - YYYY-MM shard directories
+ *
+ * Shallow by default.
+ */
+export async function getCollectionStorageStats(collection, options = {}) {
+  const started = Date.now();
+  const stats = emptyCollectionStats(collection);
+  const limit = options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20;
+
+  try {
+    const dirPath = getCollectionPath(collection);
+    stats.path = safeRelative(dirPath);
+    stats.scanMode = options.deep ? 'deep' : 'shallow';
+
+    const rootStats = await scanFlatJsonDir(dirPath, {
+      largestFilesLimit: limit,
+      sampleJsonParseCount: options.sampleJsonParseCount || 0,
+      staleTmpMinutes: options.staleTmpMinutes,
+    });
+
+    stats.fileCount += rootStats.fileCount;
+    stats.tmpFileCount += rootStats.tmpFileCount;
+    stats.staleTmpCount += rootStats.staleTmpCount;
+    stats.totalSizeBytes += rootStats.totalSizeBytes;
+    stats.totalSizeKB = bytesToKB(stats.totalSizeBytes);
+    stats.sampleParse.enabled = rootStats.sampleParse.enabled;
+    stats.sampleParse.checked += rootStats.sampleParse.checked;
+    stats.sampleParse.failed += rootStats.sampleParse.failed;
+    if (rootStats.sampleParse.failures) {
+      stats.sampleParse.failures = rootStats.sampleParse.failures;
+    }
+    mergeLargestFiles(stats, rootStats.largestFiles, limit);
+
+    const entries = await readDirEntries(dirPath);
+    const shardDirs = entries
+      .filter(e => e.isDirectory() && isShardDir(e.name))
+      .map(e => e.name)
+      .sort();
+
+    for (const shard of shardDirs) {
+      const shardPath = join(dirPath, shard);
+      const shardStats = await scanFlatJsonDir(shardPath, {
+        largestFilesLimit: limit,
+        sampleJsonParseCount: options.sampleJsonParseCountPerShard || 0,
+        staleTmpMinutes: options.staleTmpMinutes,
+      });
+
+      stats.shards[shard] = {
+        shard,
+        path: safeRelative(shardPath),
+        fileCount: shardStats.fileCount,
+        tmpFileCount: shardStats.tmpFileCount,
+        staleTmpCount: shardStats.staleTmpCount,
+        totalSizeBytes: shardStats.totalSizeBytes,
+        totalSizeKB: shardStats.totalSizeKB,
+        largestJsonKB: shardStats.largestJsonKB,
+        largestFiles: shardStats.largestFiles,
+      };
+
+      stats.fileCount += shardStats.fileCount;
+      stats.tmpFileCount += shardStats.tmpFileCount;
+      stats.staleTmpCount += shardStats.staleTmpCount;
+      stats.totalSizeBytes += shardStats.totalSizeBytes;
+      stats.totalSizeKB = bytesToKB(stats.totalSizeBytes);
+      mergeLargestFiles(stats, shardStats.largestFiles, limit);
+    }
+
+    stats.durationMs = Date.now() - started;
+    return stats;
+  } catch (err) {
+    return {
+      ...stats,
+      error: err.message,
+      durationMs: Date.now() - started,
+    };
+  }
+}
+
+/**
+ * Get index pressure stats.
+ *
+ * Includes:
+ * - configured set indexes sizes
+ * - audit token index pressure stats if available
+ * - search index in-memory stats if available
+ */
+export async function getIndexStorageStats(options = {}) {
+  const started = Date.now();
+  const result = {
+    setIndexes: [],
+    auditTokenIndex: {
+      enabled: false,
+      fileCount: 0,
+      totalSizeKB: 0,
+      largestTokenFiles: [],
+      status: 'unknown',
+    },
+    searchIndex: {
+      enabled: !!(config.SEARCH_INDEX && config.SEARCH_INDEX.enabled),
+      size: 0,
+      sizeKB: 0,
+      lastBuilt: null,
+    },
+    durationMs: 0,
+  };
+
+  // Set-based index files.
+  for (const [name, relPath] of Object.entries(config.DATABASE.indexFiles || {})) {
+    const filePath = join(basePath(), relPath);
+    try {
+      const st = await stat(filePath);
+      result.setIndexes.push({
+        name,
+        path: relPath,
+        sizeBytes: st.size,
+        sizeKB: bytesToKB(st.size),
+        mtime: st.mtime ? st.mtime.toISOString() : null,
+      });
+    } catch (_) {
+      result.setIndexes.push({
+        name,
+        path: relPath,
+        sizeBytes: 0,
+        sizeKB: 0,
+        missing: true,
+      });
+    }
+  }
+
+  result.setIndexes.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+
+  // Audit token index pressure.
+  try {
+    const auditIndex = await import('./auditLogIndex.js');
+
+    if (auditIndex.getAuditIndexPressureStats) {
+      result.auditTokenIndex = await auditIndex.getAuditIndexPressureStats(options);
+    } else if (auditIndex.getAuditIndexHygieneStats) {
+      const stats = await auditIndex.getAuditIndexHygieneStats({
+        limit: options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20,
+      });
+      const token = stats.tokenIndex || {};
+      result.auditTokenIndex = {
+        enabled: !!token.enabled,
+        fileCount: token.fileCount || 0,
+        totalSizeBytes: token.totalSizeBytes || 0,
+        totalSizeKB: token.totalSizeKB || 0,
+        totalIds: token.totalIds || 0,
+        largestTokenFiles: token.largestTokenFiles || [],
+        warnings: stats.warnings || [],
+      };
+    }
+  } catch (_) {
+    // Non-fatal.
+  }
+
+  // Search index stats.
+  try {
+    const searchIndex = await import('./searchIndex.js');
+    if (searchIndex.getStats) {
+      const s = searchIndex.getStats();
+      result.searchIndex = {
+        enabled: !!(config.SEARCH_INDEX && config.SEARCH_INDEX.enabled),
+        size: s.size || 0,
+        sizeKB: 0,
+        lastBuilt: s.lastBuilt || null,
+        raw: s,
+      };
+    }
+  } catch (_) {
+    // Non-fatal.
+  }
+
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+/**
+ * Queue pressure stats.
+ *
+ * Uses queue summary/stats when available, plus cheap segmented dir counts.
+ */
+export async function getQueuePressureStats(options = {}) {
+  const started = Date.now();
+  const result = {
+    enabled: !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled),
+    byStatus: {},
+    byType: {},
+    summary: {},
+    segmentedDirs: {},
+    archive: {},
+    durationMs: 0,
+  };
+
+  try {
+    const opsQueue = await import('./opsQueue.js');
+    if (opsQueue.getQueueStats) {
+      const stats = await opsQueue.getQueueStats();
+      Object.assign(result, stats || {});
+    }
+  } catch (err) {
+    result.error = err.message;
+  }
+
+  // Cheap segmented directory counts/sizes.
+  const segmented = {
+    pending: 'queue_pending',
+    running: 'queue_running',
+    completed: 'queue_completed',
+    failed: 'queue_failed',
+    cancelled: 'queue_cancelled',
+    deadLetter: 'ops_queue_dead_letter',
+  };
+
+  for (const [status, collection] of Object.entries(segmented)) {
+    try {
+      const stats = await getCollectionStorageStats(collection, {
+        largestFilesLimit: 3,
+      });
+      result.segmentedDirs[status] = {
+        fileCount: stats.fileCount,
+        totalSizeKB: stats.totalSizeKB,
+        staleTmpCount: stats.staleTmpCount,
+      };
+    } catch (_) {
+      result.segmentedDirs[status] = {
+        fileCount: 0,
+        totalSizeKB: 0,
+      };
+    }
+  }
+
+  try {
+    const archiveStats = await getCollectionStorageStats('queue_archive', {
+      largestFilesLimit: 3,
+    });
+    result.archive = {
+      fileCount: archiveStats.fileCount,
+      totalSizeKB: archiveStats.totalSizeKB,
+      largestJsonKB: archiveStats.largestJsonKB,
+    };
+  } catch (_) {
+    result.archive = {
+      fileCount: 0,
+      totalSizeKB: 0,
+    };
+  }
+
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+/**
+ * Workroom pressure stats.
+ *
+ * Prefer workroomHygiene helper if available; fallback to shallow sidecar scans.
+ */
+export async function getWorkroomPressureStats(options = {}) {
+  const started = Date.now();
+  const result = {
+    enabled: !!(config.WORKROOM && config.WORKROOM.enabled),
+    totalSidecarKB: 0,
+    largestSidecarKB: 0,
+    largestSearchIndexKB: 0,
+    sidecars: {},
+    largestSidecars: [],
+    warnings: [],
+    durationMs: 0,
+  };
+
+  try {
+    const hygiene = await import('./workroomHygiene.js');
+    if (hygiene.getWorkroomPressureStats) {
+      return await hygiene.getWorkroomPressureStats(options);
+    }
+  } catch (_) {
+    // Fallback below.
+  }
+
+  const sidecarCollections = {
+    receipts: 'workroom_receipts',
+    pins: 'workroom_pins',
+    checklists: 'workroom_checklists',
+    searchIndexes: 'workroom_search_indexes',
+  };
+
+  for (const [kind, collection] of Object.entries(sidecarCollections)) {
+    try {
+      const stats = await getCollectionStorageStats(collection, {
+        largestFilesLimit: options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20,
+      });
+
+      result.sidecars[kind] = {
+        fileCount: stats.fileCount,
+        totalSizeKB: stats.totalSizeKB,
+        largestJsonKB: stats.largestJsonKB,
+        staleTmpCount: stats.staleTmpCount,
+      };
+
+      result.totalSidecarKB += stats.totalSizeKB || 0;
+
+      if (kind === 'searchIndexes') {
+        result.largestSearchIndexKB = Math.max(result.largestSearchIndexKB, stats.largestJsonKB || 0);
+      } else {
+        result.largestSidecarKB = Math.max(result.largestSidecarKB, stats.largestJsonKB || 0);
+      }
+
+      for (const file of stats.largestFiles || []) {
+        result.largestSidecars.push({
+          kind,
+          ...file,
+        });
+      }
+    } catch (_) {
+      result.sidecars[kind] = {
+        fileCount: 0,
+        totalSizeKB: 0,
+        largestJsonKB: 0,
+      };
+    }
+  }
+
+  result.largestSidecars.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+  result.largestSidecars = result.largestSidecars.slice(0, config.STORAGE_PRESSURE?.largestFilesLimit || 20);
+  result.totalSidecarKB = Math.round(result.totalSidecarKB * 10) / 10;
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+/**
+ * Governance pressure stats.
+ *
+ * Uses helper exports when available; fallback to lightweight listJSON on low-volume collections.
+ */
+export async function getGovernancePressureStats(options = {}) {
+  const started = Date.now();
+  const result = {
+    privacyRequests: { total: 0 },
+    adminApprovals: { total: 0 },
+    opsReviews: { total: 0 },
+    postmortems: { total: 0 },
+    incidents: { total: 0 },
+    exports: { total: 0 },
+    durationMs: 0,
+  };
+
+  // Privacy requests.
+  try {
+    const mod = await import('./privacyRequests.js');
+    if (mod.getPrivacyRequestPressureStats) {
+      result.privacyRequests = await mod.getPrivacyRequestPressureStats();
+    } else {
+      const rows = await listJSON(getCollectionPath('privacy_requests'));
+      const open = rows.filter(r => ['requested', 'queued', 'processing', 'failed'].includes(r.status)).length;
+      result.privacyRequests = {
+        total: rows.filter(r => r && r.id).length,
+        open,
+        failed: rows.filter(r => r.status === 'failed').length,
+      };
+    }
+  } catch (_) {}
+
+  // Admin approvals.
+  try {
+    const mod = await import('./adminApprovals.js');
+    if (mod.getAdminApprovalPressureStats) {
+      result.adminApprovals = await mod.getAdminApprovalPressureStats();
+    } else {
+      const rows = await listJSON(getCollectionPath('admin_approvals'));
+      result.adminApprovals = {
+        total: rows.filter(r => r && r.id).length,
+        pending: rows.filter(r => r.status === 'pending').length,
+        expired: rows.filter(r => r.status === 'expired').length,
+      };
+    }
+  } catch (_) {}
+
+  // Ops reviews.
+  try {
+    const mod = await import('./opsReviewRecords.js');
+    if (mod.getOpsReviewPressureStats) {
+      result.opsReviews = await mod.getOpsReviewPressureStats();
+    } else {
+      const rows = await listJSON(getCollectionPath('ops_reviews'));
+      result.opsReviews = {
+        total: rows.filter(r => r && r.id).length,
+        draft: rows.filter(r => r.status === 'draft').length,
+        completed: rows.filter(r => r.status === 'completed').length,
+      };
+    }
+  } catch (_) {}
+
+  // Postmortems.
+  try {
+    const mod = await import('./postmortemRecords.js');
+    if (mod.getPostmortemPressureStats) {
+      result.postmortems = await mod.getPostmortemPressureStats();
+    } else {
+      const rows = await listJSON(getCollectionPath('postmortems'));
+      let openActionItems = 0;
+      let overdue = 0;
+      for (const row of rows) {
+        const items = Array.isArray(row.actionItems) ? row.actionItems : [];
+        for (const item of items) {
+          if (item.status !== 'done' && item.status !== 'cancelled') {
+            openActionItems++;
+            if (item.dueDate && new Date(item.dueDate).getTime() < Date.now()) overdue++;
+          }
+        }
+      }
+      result.postmortems = {
+        total: rows.filter(r => r && r.id).length,
+        openActionItems,
+        overdue,
+      };
+    }
+  } catch (_) {}
+
+  // Incidents.
+  try {
+    const rows = await listJSON(getCollectionPath('incidents'));
+    result.incidents = {
+      total: rows.filter(r => r && r.id).length,
+      open: rows.filter(r => r.status === 'open').length,
+      critical: rows.filter(r => r.severity === 'critical').length,
+    };
+  } catch (_) {}
+
+  // Exports.
+  try {
+    const rows = await listJSON(getCollectionPath('exports'));
+    result.exports = {
+      total: rows.filter(r => r && r.id && String(r.id).startsWith('exp_')).length,
+      pending: rows.filter(r => r.status === 'pending').length,
+      running: rows.filter(r => r.status === 'running').length,
+      failed: rows.filter(r => r.status === 'failed').length,
+    };
+  } catch (_) {}
+
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+/**
+ * Analytics/product intelligence pressure.
+ */
+async function getAnalyticsPressureStats(options = {}) {
+  const started = Date.now();
+  const result = {
+    searchAnalytics: { fileCount: 0, totalSizeKB: 0 },
+    productIntelligence: { fileCount: 0, totalSizeKB: 0 },
+    paymentDisputes: { fileCount: 0, totalSizeKB: 0 },
+    matching: { fileCount: 0, totalSizeKB: 0 },
+    durationMs: 0,
+  };
+
+  const map = {
+    searchAnalytics: 'search_analytics',
+    productIntelligence: 'product_intelligence',
+    paymentDisputes: 'payment_dispute_analytics',
+    matching: 'matching_metrics',
+  };
+
+  for (const [key, collection] of Object.entries(map)) {
+    try {
+      const stats = await getCollectionStorageStats(collection, {
+        largestFilesLimit: 5,
+      });
+      result[key] = {
+        fileCount: stats.fileCount,
+        totalSizeKB: stats.totalSizeKB,
+        largestJsonKB: stats.largestJsonKB,
+      };
+    } catch (_) {}
+  }
+
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+/**
+ * Phase 59: Image/object store pressure.
+ *
+ * The image store is content-addressed and bucketed by hash prefix, not a
+ * standard JSON collection. This helper counts binary files and metadata files
+ * without reading file contents.
+ *
+ * No PII is returned. Only relative paths, sizes, and counts.
+ */
+export async function getImageStorePressureStats(options = {}) {
+  const started = Date.now();
+  const limit = options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20;
+  const imageDir = process.env.YAWMIA_DATA_PATH
+    ? join(basePath(), 'images')
+    : (config.IMAGE_STORAGE?.basePath || join(basePath(), 'images'));
+
+  const result = {
+    enabled: !!(config.IMAGE_STORAGE && config.IMAGE_STORAGE.enabled),
+    path: safeRelative(imageDir),
+    bucketCount: 0,
+    fileCount: 0,
+    binaryFileCount: 0,
+    metaFileCount: 0,
+    totalSizeBytes: 0,
+    totalSizeKB: 0,
+    largestFileKB: 0,
+    largestFiles: [],
+    durationMs: 0,
+    generatedAt: nowIso(),
+  };
+
+  try {
+    const buckets = await readDirEntries(imageDir);
+
+    for (const bucket of buckets) {
+      if (!bucket.isDirectory()) continue;
+
+      result.bucketCount++;
+      const bucketPath = join(imageDir, bucket.name);
+      const files = await readDirEntries(bucketPath);
+
+      let processed = 0;
+
+      for (const entry of files) {
+        if (!entry.isFile()) continue;
+
+        const fullPath = join(bucketPath, entry.name);
+
+        try {
+          const st = await stat(fullPath);
+          const sizeBytes = st.size;
+          const sizeKB = bytesToKB(sizeBytes);
+
+          result.fileCount++;
+          result.totalSizeBytes += sizeBytes;
+          result.totalSizeKB = bytesToKB(result.totalSizeBytes);
+          result.largestFileKB = Math.max(result.largestFileKB, sizeKB);
+
+          if (entry.name.endsWith('.meta.json')) result.metaFileCount++;
+          else result.binaryFileCount++;
+
+          addLargestFile(result, {
+            path: safeRelative(fullPath),
+            fileName: entry.name,
+            sizeBytes,
+            sizeKB,
+            mtime: st.mtime ? st.mtime.toISOString() : null,
+          }, limit);
+        } catch (_) {
+          // Ignore individual file stat errors; file health scripts provide details.
+        }
+
+        processed++;
+        if (processed % 250 === 0) {
+          await new Promise(resolve => setImmediate(resolve));
+        }
+      }
+    }
+  } catch (err) {
+    result.error = err.message;
+  }
+
+  result.durationMs = Date.now() - started;
+  return result;
+}
+
+function summarizeCollectionPressure(collections) {
+  const summary = {
+    totalFiles: 0,
+    totalSizeKB: 0,
+    staleTmpCount: 0,
+    largestJsonKB: 0,
+    largestFiles: [],
+  };
+
+  const limit = config.STORAGE_PRESSURE?.largestFilesLimit || 20;
+
+  for (const stats of Object.values(collections || {})) {
+    summary.totalFiles += stats.fileCount || 0;
+    summary.totalSizeKB += stats.totalSizeKB || 0;
+    summary.staleTmpCount += stats.staleTmpCount || 0;
+    summary.largestJsonKB = Math.max(summary.largestJsonKB, stats.largestJsonKB || 0);
+
+    for (const f of stats.largestFiles || []) {
+      addLargestFile(summary, {
+        ...f,
+        collection: stats.collection,
+      }, limit);
+    }
+  }
+
+  summary.totalSizeKB = Math.round(summary.totalSizeKB * 10) / 10;
+  return summary;
+}
+
+function selectedCollections(options = {}) {
+  if (options.collection) return [options.collection];
+
+  if (Array.isArray(options.collections) && options.collections.length > 0) {
+    return options.collections;
+  }
+
+  return Object.keys(config.DATABASE.dirs || {});
+}
+
+/**
+ * Capture and persist a storage pressure snapshot.
+ */
+export async function captureStoragePressureSnapshot(options = {}) {
+  const snapshot = await buildStoragePressureSnapshot({
+    ...options,
+    persist: false,
+  });
+
+  if (!isEnabled()) return snapshot;
+
+  try {
+    await atomicWrite(getRecordPath('storage_pressure', snapshot.id), snapshot);
+    clearStoragePressureCache();
+  } catch (err) {
+    logger.warn('storagePressure: failed to persist snapshot', { error: err.message });
+    snapshot.persistError = err.message;
+  }
+
+  return snapshot;
+}
+
+/**
+ * Get storage pressure, cached by default.
+ *
+ * options:
+ * - force: bypass cache
+ * - persist: persist new snapshot
+ * - deep: allow sample parsing / deeper checks
+ * - collection: only one collection
+ */
+export async function getStoragePressure(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      status: 'ok',
+      warnings: [],
+      criticals: [],
+      recommendations: [],
+      timestamp: nowIso(),
+    };
+  }
+
+  const key = JSON.stringify({
+    collection: options.collection || null,
+    deep: !!options.deep,
+    sampleJsonParseCount: options.sampleJsonParseCount || 0,
+  });
+
+  if (!options.force) {
+    const cached = cacheGet(key);
+    if (cached) return cached;
+  }
+
+  const snapshot = options.persist === false
+    ? await buildStoragePressureSnapshot(options)
+    : await captureStoragePressureSnapshot(options);
+
+  cacheSet(key, snapshot);
+  return snapshot;
+}
+
+async function buildStoragePressureSnapshot(options = {}) {
+  const started = Date.now();
+  const id = options.id || generateSnapshotId();
+  const timestamp = nowIso();
+
+  const deepAllowed = !!(
+    options.deep ||
+    (
+      config.STORAGE_PRESSURE?.deepScanEnabled &&
+      config.SCALE_LIMITS?.deepScanDefaultEnabled
+    )
+  );
+
+  const sampleJsonParseCount = deepAllowed
+    ? Math.max(
+        0,
+        Number(options.sampleJsonParseCount ?? config.STORAGE_PRESSURE?.sampleJsonParseCount ?? 100)
+      )
+    : 0;
+
+  const collections = {};
+  const collectionNames = selectedCollections(options);
+  const maxFiles = config.SCALE_LIMITS?.shallowScanMaxFiles || 250000;
+
+  let scannedFiles = 0;
+  let truncated = false;
+
+  for (const collection of collectionNames) {
+    if (!config.DATABASE.dirs[collection]) continue;
+
+    const stats = await getCollectionStorageStats(collection, {
+      deep: deepAllowed,
+      sampleJsonParseCount,
+      largestFilesLimit: options.largestFilesLimit || config.STORAGE_PRESSURE?.largestFilesLimit || 20,
+    });
+
+    collections[collection] = stats;
+    scannedFiles += stats.fileCount || 0;
+
+    if (scannedFiles >= maxFiles && !options.deep) {
+      truncated = true;
+      break;
+    }
+  }
+
+  const [
+    indexes,
+    queue,
+    workrooms,
+    governance,
+    analytics,
+    images,
+  ] = await Promise.all([
+    getIndexStorageStats(options).catch(err => ({ error: err.message })),
+    getQueuePressureStats(options).catch(err => ({ error: err.message })),
+    getWorkroomPressureStats(options).catch(err => ({ error: err.message })),
+    getGovernancePressureStats(options).catch(err => ({ error: err.message })),
+    getAnalyticsPressureStats(options).catch(err => ({ error: err.message })),
+    getImageStorePressureStats(options).catch(err => ({ error: err.message })),
+  ]);
+
+  const summary = summarizeCollectionPressure(collections);
+
+  let verification = {
+    status: 'ok',
+    warnings: [],
+    criticals: [],
+    recommendations: [],
+  };
+
+  const baseSnapshot = {
+    id,
+    timestamp,
+    enabled: true,
+    mode: deepAllowed ? 'deep' : 'shallow',
+    truncated,
+    scannedFiles,
+    summary,
+    collections,
+    indexes,
+    queue,
+    workrooms,
+    governance,
+    analytics,
+    images,
+    warnings: [],
+    criticals: [],
+    recommendations: [],
+    durationMs: 0,
+  };
+
+  try {
+    const scale = await import('./scaleThresholds.js');
+    verification = await scale.verifyScaleThresholds({
+      pressureSnapshot: baseSnapshot,
+      persist: false,
+    });
+  } catch (err) {
+    verification = {
+      status: 'warning',
+      warnings: [{
+        level: 'warning',
+        code: 'SCALE_THRESHOLD_EVALUATION_FAILED',
+        message: 'Scale threshold evaluation failed.',
+        error: err.message,
+      }],
+      criticals: [],
+      recommendations: [{
+        id: 'scale_threshold_evaluation_failed',
+        severity: 'warning',
+        label: 'تعذّر تقييم حدود التوسع',
+        reason: 'راجع خدمة scaleThresholds أو شغّل verify-scale-thresholds.js.',
+        command: 'node scripts/verify-scale-thresholds.js',
+        adminRoute: '/api/admin/scale-thresholds',
+      }],
+    };
+  }
+
+  const snapshot = {
+    ...baseSnapshot,
+    status: verification.status || 'ok',
+    warnings: verification.warnings || [],
+    criticals: verification.criticals || [],
+    recommendations: verification.recommendations || [],
+    thresholdVerification: {
+      mode: verification.mode || config.SCALE_LIMITS?.mode || 'advisory',
+      snapshotId: verification.snapshotId || id,
+      generatedAt: verification.generatedAt || nowIso(),
+    },
+    durationMs: Date.now() - started,
+  };
+
+  if (truncated) {
+    snapshot.status = snapshot.status === 'critical' ? 'critical' : 'warning';
+    snapshot.warnings.push({
+      level: 'warning',
+      code: 'STORAGE_PRESSURE_SCAN_TRUNCATED',
+      message: 'Storage pressure shallow scan reached max file count and was truncated.',
+      metric: 'scannedFiles',
+      value: scannedFiles,
+      threshold: maxFiles,
+      recommendation: 'شغّل قياس مخصص collection-by-collection أو --deep خارج وقت الذروة.',
+    });
+    snapshot.recommendations.unshift({
+      id: 'storage_pressure_scan_truncated',
+      severity: 'warning',
+      label: 'قياس ضغط التخزين تم اختصاره',
+      reason: 'عدد الملفات كبير. شغّل قياسًا مخصصًا لكل collection أو deep scan من CLI.',
+      command: 'node scripts/measure-storage-pressure.js --collection=jobs',
+      adminRoute: '/api/admin/storage-pressure',
+    });
+  }
+
+  return snapshot;
+}
+
+/**
+ * List persisted storage pressure snapshots newest-first.
+ */
+export async function listStoragePressureSnapshots(options = {}) {
+  if (!isEnabled()) {
+    return { snapshots: [], total: 0, limit: 20, offset: 0 };
+  }
+
+  const dir = getCollectionPath('storage_pressure');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && String(r.id).startsWith('sp_'));
+
+  rows.sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    snapshots: rows.slice(offset, offset + limit).map(s => ({
+      id: s.id,
+      timestamp: s.timestamp,
+      status: s.status,
+      mode: s.mode,
+      durationMs: s.durationMs || 0,
+      scannedFiles: s.scannedFiles || 0,
+      warningCount: Array.isArray(s.warnings) ? s.warnings.length : 0,
+      criticalCount: Array.isArray(s.criticals) ? s.criticals.length : 0,
+      recommendations: Array.isArray(s.recommendations) ? s.recommendations.slice(0, 3) : [],
+      summary: s.summary || {},
+    })),
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Cleanup old storage pressure snapshots.
+ */
+export async function cleanupOldStoragePressureSnapshots() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.STORAGE_PRESSURE?.snapshotRetentionDays || 30;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const dir = getCollectionPath('storage_pressure');
+  const rows = await listJSON(dir);
+
+  let cleaned = 0;
+
+  for (const row of rows) {
+    if (!row || !row.id || !String(row.id).startsWith('sp_')) continue;
+
+    const basis = row.timestamp || row.createdAt;
+    if (basis && new Date(basis).getTime() < cutoffMs) {
+      await deleteJSON(getRecordPath('storage_pressure', row.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    logger.info('storagePressure: cleaned old snapshots', { cleaned });
+  }
+
+  return cleaned;
+}
+
+/**
+ * Read latest persisted snapshot, or null.
+ */
+export async function getLatestStoragePressureSnapshot() {
+  const result = await listStoragePressureSnapshots({ limit: 1, offset: 0 });
+  if (!result.snapshots || result.snapshots.length === 0) return null;
+
+  const id = result.snapshots[0].id;
+  return await readJSON(getRecordPath('storage_pressure', id)).catch(() => null);
+}
+
+export const _testHelpers = {
+  basePath,
+  bytesToKB,
+  safeRelative,
+  isShardDir,
+  isJsonFile,
+  isTmpFile,
+  scanFlatJsonDir,
+  summarizeCollectionPressure,
+  selectedCollections,
+  clearStoragePressureCache,
+};
 ```
 
 ---

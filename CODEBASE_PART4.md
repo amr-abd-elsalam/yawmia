@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.54.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-23T04:19:49.872Z
-> Files in this part: 74
+# يوميّة (Yawmia) v0.55.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-23T15:34:40.589Z
+> Files in this part: 78
 
 ## Files
 1. `frontend/404.html`
@@ -40,43 +40,47 @@
 35. `frontend/user.html`
 36. `scripts/anonymize-user-data.js`
 37. `scripts/backup.js`
-38. `scripts/benchmark.js`
-39. `scripts/bundle-for-review.js`
-40. `scripts/cleanup-attachments.js`
-41. `scripts/compact-counters.js`
-42. `scripts/compact-predictive-signals.js`
-43. `scripts/compact-queue.js`
-44. `scripts/compact-workrooms.js`
-45. `scripts/export-incident-timeline.js`
-46. `scripts/export-user-data.js`
-47. `scripts/generate-vapid-keys.js`
-48. `scripts/migrate.js`
-49. `scripts/ops-weekly-review.js`
-50. `scripts/postdeploy-smoke.js`
-51. `scripts/predeploy-check.js`
-52. `scripts/queue-drain.js`
-53. `scripts/queue-retry-dlq.js`
-54. `scripts/rebuild-audit-index.js`
-55. `scripts/rebuild-counters.js`
-56. `scripts/rebuild-predictive-archive-index.js`
-57. `scripts/rebuild-search-relevance.js`
-58. `scripts/rebuild-workroom-search.js`
-59. `scripts/repair-indexes.js`
-60. `scripts/repair-queue.js`
-61. `scripts/rollup-product-intelligence.js`
-62. `scripts/rollup-trust-snapshots.js`
-63. `scripts/run-backup-restore-drill.js`
-64. `scripts/run-trust-calibration.js`
-65. `scripts/scheduler-cadence-report.js`
-66. `scripts/verify-admin-rbac.js`
-67. `scripts/verify-audit-index.js`
-68. `scripts/verify-data-json.js`
-69. `scripts/verify-file-health.js`
-70. `scripts/verify-marketplace-intelligence.js`
-71. `scripts/verify-privacy-governance.js`
-72. `scripts/verify-production-readiness.js`
-73. `scripts/verify-queue.js`
-74. `scripts/verify-workroom-indexes.js`
+38. `scripts/benchmark-file-paths.js`
+39. `scripts/benchmark.js`
+40. `scripts/bundle-for-review.js`
+41. `scripts/cleanup-attachments.js`
+42. `scripts/compact-counters.js`
+43. `scripts/compact-predictive-signals.js`
+44. `scripts/compact-queue.js`
+45. `scripts/compact-workrooms.js`
+46. `scripts/export-incident-timeline.js`
+47. `scripts/export-migration-snapshot.js`
+48. `scripts/export-user-data.js`
+49. `scripts/generate-vapid-keys.js`
+50. `scripts/measure-storage-pressure.js`
+51. `scripts/migrate.js`
+52. `scripts/ops-weekly-review.js`
+53. `scripts/postdeploy-smoke.js`
+54. `scripts/predeploy-check.js`
+55. `scripts/queue-drain.js`
+56. `scripts/queue-retry-dlq.js`
+57. `scripts/rebuild-audit-index.js`
+58. `scripts/rebuild-counters.js`
+59. `scripts/rebuild-predictive-archive-index.js`
+60. `scripts/rebuild-search-relevance.js`
+61. `scripts/rebuild-workroom-search.js`
+62. `scripts/repair-indexes.js`
+63. `scripts/repair-queue.js`
+64. `scripts/rollup-product-intelligence.js`
+65. `scripts/rollup-trust-snapshots.js`
+66. `scripts/run-backup-restore-drill.js`
+67. `scripts/run-trust-calibration.js`
+68. `scripts/scheduler-cadence-report.js`
+69. `scripts/verify-admin-rbac.js`
+70. `scripts/verify-audit-index.js`
+71. `scripts/verify-data-json.js`
+72. `scripts/verify-file-health.js`
+73. `scripts/verify-marketplace-intelligence.js`
+74. `scripts/verify-privacy-governance.js`
+75. `scripts/verify-production-readiness.js`
+76. `scripts/verify-queue.js`
+77. `scripts/verify-scale-thresholds.js`
+78. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -239,6 +243,22 @@
         <div id="processLocksTable"></div>
       </div>
 
+      <!-- Phase 59 — Multi-instance Boundary -->
+      <div class="admin-section" id="multiInstanceBoundarySection" data-admin-tab-panel="ops">
+        <div class="admin-section__header">
+          <h2>🧱 حدود التشغيل متعدد النسخ</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMultiInstanceBoundary()">تحديث</button>
+        </div>
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          يوضح هذا القسم ما هو آمن في نسخة قراءة فقط، وما يظل single-writer فقط.
+          <strong>File locks ليست distributed consensus.</strong>
+        </p>
+        <div id="multiInstanceBoundarySummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+        <div id="multiInstanceBoundaryDetails"></div>
+      </div>
+
       <!-- Phase 54 — Scheduler Registry -->
       <div class="admin-section" id="schedulerSection">
         <div class="admin-section__header">
@@ -270,6 +290,56 @@
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
         <div id="opsRollupsTable"></div>
+      </div>
+
+      <!-- Phase 59 — Storage Pressure -->
+      <div class="admin-section" id="storagePressureSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🧭 ضغط التخزين وحدود التوسع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadStoragePressure()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          قياس خفيف لعدد الملفات، حجم الفهارس، ضغط Queue، Workrooms، وملفات الحوكمة.
+          التحذير لا يعني نقل قاعدة البيانات فوراً — ابدأ بالضغط/الإصلاح/التحقق.
+        </p>
+
+        <div id="storagePressureRecommendedActions" class="recommended-actions"></div>
+
+        <div id="storagePressureSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.captureStoragePressure()">قياس جديد</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.verifyScaleThresholds()">تحقق من الحدود</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadScaleThresholds()">عرض إعدادات الحدود</button>
+        </div>
+
+        <div id="storagePressureDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 59 — Externalization Readiness -->
+      <div class="admin-section" id="externalizationReadinessSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚚 جاهزية النقل المستقبلي — Phase 60</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadExternalizationReadiness()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          هذا القسم استشاري فقط. Phase 59 لا تنفذ PostgreSQL ولا external queue ولا external search.
+          يتم ترتيب المرشحين بناءً على ضغط التخزين والـ benchmarks.
+        </p>
+
+        <div id="externalizationReadinessSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="externalizationCandidates">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
       </div>
 
       <!-- Phase 55 — Scale Hygiene -->
@@ -6048,6 +6118,141 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 59 — Storage Pressure + Externalization Readiness ═══ */
+.storage-pressure-card,
+.externalization-candidate-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.storage-pressure-card {
+  text-align: center;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.storage-pressure-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.storage-pressure-card--warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.storage-pressure-card--critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.storage-pressure-card__value,
+.externalization-candidate-card__value {
+  color: var(--color-primary);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.storage-pressure-card--ok .storage-pressure-card__value {
+  color: var(--color-success);
+}
+
+.storage-pressure-card--warning .storage-pressure-card__value {
+  color: var(--color-warning);
+}
+
+.storage-pressure-card--critical .storage-pressure-card__value {
+  color: var(--color-error);
+}
+
+.storage-pressure-card__label,
+.externalization-candidate-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.35rem;
+}
+
+.storage-pressure-meter {
+  width: 100%;
+  height: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-block-start: 0.75rem;
+}
+
+.storage-pressure-meter__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.externalization-candidate-card {
+  border-inline-start: 4px solid var(--color-primary);
+  margin-block-end: 0.75rem;
+}
+
+.externalization-candidate-card--ready {
+  border-inline-start-color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.externalization-candidate-card--watch {
+  border-inline-start-color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.scale-threshold-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.scale-threshold-badge--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.scale-threshold-badge--warning {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.scale-threshold-badge--critical {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 600px) {
+  .storage-pressure-card,
+  .externalization-candidate-card {
+    padding: 0.9rem;
+  }
+
+  #storagePressureSection .btn,
+  #externalizationReadinessSection .btn,
+  #multiInstanceBoundarySection .btn {
+    min-height: 44px;
+  }
+}
+
 /* ═══ Phase 56 — Admin Dashboard IA + Marketplace Intelligence ═══ */
 .admin-tabs {
   display: flex;
@@ -7125,6 +7330,9 @@ var AdminApp = (function () {
         loadCounterHygiene(),
         loadTrustDashboard(),
         loadTrustCalibrationDashboard(),
+        loadStoragePressure(),
+        loadExternalizationReadiness(),
+        loadMultiInstanceBoundary(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
       ]).catch(function () {});
@@ -10710,6 +10918,466 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 59 — Storage Pressure + Externalization Readiness
+  // ═══════════════════════════════════════════════════════════════
+
+  function pressureStatusLabel(status) {
+    var labels = {
+      ok: 'مستقر',
+      healthy: 'مستقر',
+      warning: 'يحتاج متابعة',
+      warnings: 'يحتاج متابعة',
+      critical: 'يحتاج إجراء',
+      unknown: 'غير معروف',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  function pressureStatusClass(status) {
+    if (status === 'critical') return 'storage-pressure-card--critical';
+    if (status === 'warning' || status === 'warnings') return 'storage-pressure-card--warning';
+    return 'storage-pressure-card--ok';
+  }
+
+  function thresholdBadge(status) {
+    var s = status || 'ok';
+    var label = pressureStatusLabel(s);
+    var cls = s === 'critical'
+      ? 'scale-threshold-badge--critical'
+      : (s === 'warning' || s === 'warnings' ? 'scale-threshold-badge--warning' : 'scale-threshold-badge--ok');
+
+    return '<span class="scale-threshold-badge ' + cls + '">' + escapeHtml(label) + '</span>';
+  }
+
+  async function loadStoragePressure() {
+    var summaryEl = document.getElementById('storagePressureSummary');
+    var detailsEl = document.getElementById('storagePressureDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (detailsEl) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/storage-pressure');
+      var pressure = data.storagePressure || {};
+
+      renderStoragePressureSummary(pressure);
+      renderStoragePressureRecommendations(pressure.recommendations || []);
+      renderStoragePressureDetails(pressure);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل ضغط التخزين</p>';
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  async function captureStoragePressure() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري قياس ضغط التخزين...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/storage-pressure/capture', {});
+      var pressure = data.storagePressure || {};
+
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.success('تم قياس ضغط التخزين — الحالة: ' + pressureStatusLabel(pressure.status));
+      }
+
+      renderStoragePressureSummary(pressure);
+      renderStoragePressureRecommendations(pressure.recommendations || []);
+      renderStoragePressureDetails(pressure);
+      loadScaleHygiene();
+    } catch (err) {
+      showError(err.message || 'خطأ في قياس ضغط التخزين');
+    }
+  }
+
+  async function loadScaleThresholds() {
+    var detailsEl = document.getElementById('storagePressureDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/scale-thresholds');
+      var scale = data.scaleLimits || {};
+      var th = scale.thresholds || {};
+
+      var html =
+        '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">إعدادات حدود التوسع</h3>' +
+        '<div class="health-row"><span class="health-row__label">الوضع</span><span class="health-row__value">' + escapeHtml(scale.mode || 'advisory') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">Deep scan افتراضي</span><span class="health-row__value">' + (scale.deepScanDefaultEnabled ? 'نعم' : 'لا') + '</span></div>' +
+        '<div class="health-row"><span class="health-row__label">أقصى shallow scan</span><span class="health-row__value">' + escapeHtml(String(scale.shallowScanMaxFiles || 0)) + ' ملف</span></div>';
+
+      if (th.queue) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Queue</h4>';
+        html += '<table class="admin-table"><thead><tr><th>Metric</th><th>Warning</th><th>Critical</th></tr></thead><tbody>' +
+          '<tr><td>Pending</td><td>' + escapeHtml(String(th.queue.pendingWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.pendingCritical || 0)) + '</td></tr>' +
+          '<tr><td>Running</td><td>' + escapeHtml(String(th.queue.runningWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.runningCritical || 0)) + '</td></tr>' +
+          '<tr><td>Dead Letter</td><td>' + escapeHtml(String(th.queue.deadLetterWarning || 0)) + '</td><td>' + escapeHtml(String(th.queue.deadLetterCritical || 0)) + '</td></tr>' +
+        '</tbody></table>';
+      }
+
+      if (th.collections) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Collections</h4>';
+        html += '<table class="admin-table"><thead><tr><th>Collection</th><th>Warning</th><th>Critical</th></tr></thead><tbody>';
+
+        Object.keys(th.collections).forEach(function (name) {
+          var c = th.collections[name] || {};
+          var warn = c.warningFiles || c.warningFilesPerShard || '-';
+          var crit = c.criticalFiles || c.criticalFilesPerShard || '-';
+          html += '<tr><td>' + escapeHtml(name) + '</td><td>' + escapeHtml(String(warn)) + '</td><td>' + escapeHtml(String(crit)) + '</td></tr>';
+        });
+
+        html += '</tbody></table>';
+      }
+
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حدود التوسع</p>';
+    }
+  }
+
+  async function verifyScaleThresholds() {
+    try {
+      if (typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('جاري التحقق من حدود التوسع...');
+      }
+
+      var data = await apiWrite('POST', '/api/admin/scale-thresholds/verify', {});
+      var verification = data.verification || {};
+
+      if (typeof YawmiaToast !== 'undefined') {
+        if (verification.status === 'critical') {
+          YawmiaToast.error('حدود التوسع بها مؤشرات حرجة');
+        } else if (verification.status === 'warning') {
+          YawmiaToast.warning('حدود التوسع بها تحذيرات');
+        } else {
+          YawmiaToast.success('حدود التوسع مستقرة');
+        }
+      }
+
+      var detailsEl = document.getElementById('storagePressureDetails');
+      if (detailsEl) {
+        var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">نتيجة التحقق من الحدود</h3>';
+        html += '<div class="health-row"><span class="health-row__label">الحالة</span><span class="health-row__value">' + thresholdBadge(verification.status) + '</span></div>';
+        html += '<div class="health-row"><span class="health-row__label">تحذيرات</span><span class="health-row__value">' + escapeHtml(String((verification.warnings || []).length)) + '</span></div>';
+        html += '<div class="health-row"><span class="health-row__label">حرجة</span><span class="health-row__value">' + escapeHtml(String((verification.criticals || []).length)) + '</span></div>';
+
+        var issues = (verification.criticals || []).concat(verification.warnings || []).slice(0, 10);
+        if (issues.length > 0) {
+          html += '<div class="scale-hygiene-warning-list" style="margin-block-start:1rem;">';
+          issues.forEach(function (issue) {
+            var cls = issue.level === 'critical' ? 'scale-hygiene-warning--high' : 'scale-hygiene-warning--medium';
+            html += '<div class="scale-hygiene-warning ' + cls + '">' +
+              '<strong>' + escapeHtml(issue.code || 'threshold') + '</strong>: ' +
+              escapeHtml(issue.message || '') +
+              (issue.recommendation ? '<br><small>' + escapeHtml(issue.recommendation) + '</small>' : '') +
+            '</div>';
+          });
+          html += '</div>';
+        }
+
+        detailsEl.innerHTML = html;
+      }
+
+      loadStoragePressure();
+    } catch (err) {
+      showError(err.message || 'خطأ في التحقق من حدود التوسع');
+    }
+  }
+
+  function renderStoragePressureSummary(pressure) {
+    var el = document.getElementById('storagePressureSummary');
+    if (!el) return;
+
+    var summary = pressure.summary || {};
+    var queue = pressure.queue || {};
+    var qStatus = queue.byStatus || {};
+    var indexes = pressure.indexes || {};
+    var auditToken = indexes.auditTokenIndex || {};
+    var workrooms = pressure.workrooms || {};
+    var governance = pressure.governance || {};
+    var images = pressure.images || {};
+
+    var cards = [
+      {
+        value: thresholdBadge(pressure.status || 'ok'),
+        label: 'الحالة العامة'
+      },
+      {
+        value: summary.totalFiles || 0,
+        label: 'إجمالي ملفات JSON'
+      },
+      {
+        value: (summary.totalSizeKB || 0) + ' KB',
+        label: 'حجم JSON تقريبي'
+      },
+      {
+        value: summary.largestJsonKB || 0,
+        label: 'أكبر JSON KB'
+      },
+      {
+        value: qStatus.pending || 0,
+        label: 'Queue Pending'
+      },
+      {
+        value: qStatus['dead-letter'] || queue.deadLetter || 0,
+        label: 'Queue DLQ'
+      },
+      {
+        value: auditToken.fileCount || 0,
+        label: 'Audit Token Files'
+      },
+      {
+        value: workrooms.largestSidecarKB || 0,
+        label: 'أكبر Workroom Sidecar KB'
+      },
+      {
+        value: (governance.privacyRequests && governance.privacyRequests.open) || 0,
+        label: 'طلبات خصوصية مفتوحة'
+      },
+      {
+        value: images.binaryFileCount || 0,
+        label: 'ملفات صور/مرفقات'
+      },
+      {
+        value: pressure.scannedFiles || 0,
+        label: 'ملفات JSON تم قياسها'
+      },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c, idx) {
+      var card = document.createElement('div');
+      var cls = idx === 0 ? pressureStatusClass(pressure.status || 'ok') : '';
+      card.className = 'storage-pressure-card ' + cls;
+      card.innerHTML =
+        '<div class="storage-pressure-card__value">' + c.value + '</div>' +
+        '<div class="storage-pressure-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderStoragePressureRecommendations(recommendations) {
+    renderRecommendedActions('storagePressureRecommendedActions', recommendations || []);
+  }
+
+  function renderStoragePressureDetails(pressure) {
+    var el = document.getElementById('storagePressureDetails');
+    if (!el) return;
+
+    var collections = pressure.collections || {};
+    var topCollections = Object.values(collections)
+      .filter(function (c) { return c && c.collection; })
+      .sort(function (a, b) { return (b.fileCount || 0) - (a.fileCount || 0); })
+      .slice(0, 10);
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أعلى Collections حسب عدد الملفات</h3>';
+
+    if (topCollections.length === 0) {
+      html += '<p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات collections</p>';
+    } else {
+      html += '<table class="admin-table"><thead><tr>' +
+        '<th>Collection</th><th>Files</th><th>Size</th><th>Largest</th><th>Stale tmp</th>' +
+      '</tr></thead><tbody>';
+
+      topCollections.forEach(function (c) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(c.collection || '-') + '</td>' +
+          '<td>' + escapeHtml(String(c.fileCount || 0)) + '</td>' +
+          '<td>' + escapeHtml(String(c.totalSizeKB || 0)) + ' KB</td>' +
+          '<td>' + escapeHtml(String(c.largestJsonKB || 0)) + ' KB</td>' +
+          '<td>' + escapeHtml(String(c.staleTmpCount || 0)) + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+    }
+
+    if (pressure.images) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">ضغط الصور والمرفقات</h3>';
+      html += '<div class="health-row"><span class="health-row__label">Buckets</span><span class="health-row__value">' + escapeHtml(String(pressure.images.bucketCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Binary files</span><span class="health-row__value">' + escapeHtml(String(pressure.images.binaryFileCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Meta files</span><span class="health-row__value">' + escapeHtml(String(pressure.images.metaFileCount || 0)) + '</span></div>';
+      html += '<div class="health-row"><span class="health-row__label">Total size</span><span class="health-row__value">' + escapeHtml(String(pressure.images.totalSizeKB || 0)) + ' KB</span></div>';
+    }
+
+    var largestFiles = (pressure.summary && pressure.summary.largestFiles) || [];
+    if (largestFiles.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">أكبر الملفات</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Path</th><th>Collection</th><th>Size</th></tr></thead><tbody>';
+
+      largestFiles.slice(0, 10).forEach(function (f) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(f.path || '-') + '</small></td>' +
+          '<td>' + escapeHtml(f.collection || '-') + '</td>' +
+          '<td>' + escapeHtml(String(f.sizeKB || 0)) + ' KB</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+    }
+
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:1rem;">' +
+      'ملاحظة: القياس افتراضيًا shallow ولا يقرأ محتوى الملفات. استخدم CLI مع --deep خارج وقت الذروة عند الحاجة.' +
+    '</p>';
+
+    el.innerHTML = html;
+  }
+
+  async function loadExternalizationReadiness() {
+    var summaryEl = document.getElementById('externalizationReadinessSummary');
+    var candidatesEl = document.getElementById('externalizationCandidates');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+    if (candidatesEl) {
+      candidatesEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/externalization/readiness');
+      var readiness = data.readiness || {};
+
+      renderExternalizationSummary(readiness);
+      renderExternalizationCandidates(readiness.candidates || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل جاهزية النقل</p>';
+      if (candidatesEl) candidatesEl.innerHTML = '';
+    }
+  }
+
+  function renderExternalizationSummary(readiness) {
+    var el = document.getElementById('externalizationReadinessSummary');
+    if (!el) return;
+
+    var pressure = readiness.pressureSnapshot || {};
+    var cards = [
+      { value: readiness.implementationAllowed ? 'نعم' : 'لا', label: 'تنفيذ النقل في Phase 59؟' },
+      { value: readiness.noExternalizationBeforePhase || 60, label: 'أقرب Phase للتنفيذ' },
+      { value: pressure.status || 'unknown', label: 'آخر ضغط تخزين' },
+      { value: pressure.criticalCount || 0, label: 'Critical pressure' },
+      { value: (readiness.candidates || []).length, label: 'مرشحين للمراجعة' },
+      { value: 'single-writer', label: 'وضع الإنتاج الحالي' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'externalization-candidate-card';
+      card.innerHTML =
+        '<div class="externalization-candidate-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="externalization-candidate-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderExternalizationCandidates(candidates) {
+    var el = document.getElementById('externalizationCandidates');
+    if (!el) return;
+
+    if (!candidates || candidates.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد بيانات مرشحين بعد</p>';
+      return;
+    }
+
+    var html = '<div class="governance-list">';
+    candidates.slice(0, 10).forEach(function (c) {
+      var ready = c.status === 'review_phase60';
+      var cls = ready ? 'externalization-candidate-card--ready' : 'externalization-candidate-card--watch';
+      var score = Math.round((c.score || 0) * 100);
+
+      html += '<div class="externalization-candidate-card ' + cls + '">' +
+        '<div class="governance-card__header">' +
+          '<strong>' + escapeHtml(c.name || '-') + '</strong>' +
+          '<span class="scale-threshold-badge ' + (ready ? 'scale-threshold-badge--warning' : 'scale-threshold-badge--ok') + '">' +
+            escapeHtml(ready ? 'مراجعة Phase 60' : 'راقب') +
+          '</span>' +
+        '</div>' +
+        '<div class="storage-pressure-meter" aria-label="درجة جاهزية النقل">' +
+          '<div class="storage-pressure-meter__fill" style="width:' + score + '%"></div>' +
+        '</div>' +
+        '<p style="color:var(--color-text-muted);font-size:0.85rem;margin-block-start:0.5rem;">Score: ' + score + '%</p>';
+
+      if (c.evidence && c.evidence.length > 0) {
+        html += '<ul style="color:var(--color-text-muted);font-size:0.82rem;line-height:1.7;margin-block-start:0.5rem;">';
+        c.evidence.slice(0, 3).forEach(function (e) {
+          html += '<li>' + escapeHtml(e.label || '') + (e.details ? ' — ' + escapeHtml(e.details) : '') + '</li>';
+        });
+        html += '</ul>';
+      }
+
+      html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:0.5rem;">' +
+        escapeHtml(c.recommendation || 'راقب فقط.') +
+      '</p>' +
+      '</div>';
+    });
+    html += '</div>';
+
+    el.innerHTML = html;
+  }
+
+  async function loadMultiInstanceBoundary() {
+    var summaryEl = document.getElementById('multiInstanceBoundarySummary');
+    var detailsEl = document.getElementById('multiInstanceBoundaryDetails');
+
+    if (summaryEl) {
+      summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    }
+
+    try {
+      var data = await api('/api/admin/production/multi-instance-boundary');
+      var boundary = data.boundary || {};
+      var inst = boundary.currentInstance || {};
+
+      if (summaryEl) {
+        var cards = [
+          { value: inst.mode || 'unknown', label: 'INSTANCE_MODE' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.multiWriterProduction ? 'نعم' : 'لا', label: 'Multi-writer production' },
+          { value: inst.canRunQueueWorkers ? 'مسموح' : 'ممنوع', label: 'Queue workers' },
+          { value: inst.canRunSchedulers ? 'مسموح' : 'ممنوع', label: 'Schedulers' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.eventBusBridge ? 'موجود' : 'غير موجود', label: 'EventBus bridge' },
+          { value: boundary.implementationAllowed && boundary.implementationAllowed.sseFanout ? 'موجود' : 'غير موجود', label: 'SSE fanout' },
+        ];
+
+        summaryEl.innerHTML = '';
+        cards.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'storage-pressure-card ' + (c.value === 'لا' || c.value === 'غير موجود' ? 'storage-pressure-card--warning' : 'storage-pressure-card--ok');
+          card.innerHTML =
+            '<div class="storage-pressure-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+            '<div class="storage-pressure-card__label">' + escapeHtml(c.label) + '</div>';
+          summaryEl.appendChild(card);
+        });
+      }
+
+      if (detailsEl) {
+        var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">قيود مهمة</h3>';
+        html += '<div class="scale-hygiene-warning-list">';
+        (boundary.limitations || []).forEach(function (l) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--medium">' + escapeHtml(l) + '</div>';
+        });
+        html += '</div>';
+
+        html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">متطلبات Phase 60+</h3>';
+        html += '<ul style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.8;">';
+        (boundary.phase60Requirements || []).forEach(function (r) {
+          html += '<li>' + escapeHtml(r) + '</li>';
+        });
+        html += '</ul>';
+
+        detailsEl.innerHTML = html;
+      }
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل حدود النسخ المتعددة</p>';
+      if (detailsEl) detailsEl.innerHTML = '';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -11163,6 +11831,7 @@ var AdminApp = (function () {
       loadProductionReadiness();
       loadDeploymentGate();
       loadInstanceOps();
+      loadMultiInstanceBoundary();
       loadSchedulers();
       loadSchedulerCadence();
       loadOpsSlo();
@@ -11170,6 +11839,8 @@ var AdminApp = (function () {
       loadIncidents();
       loadMaintenanceMode();
     } else if (tabName === 'scale') {
+      loadStoragePressure();
+      loadExternalizationReadiness();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -12233,6 +12904,17 @@ var AdminApp = (function () {
     loadPaymentDisputeAnalytics: loadPaymentDisputeAnalytics,
     loadMatchingQuality: loadMatchingQuality,
     runMarketplaceIntelligenceRollup: runMarketplaceIntelligenceRollup,
+
+    // Phase 59 — Storage Pressure + Externalization Readiness
+    loadStoragePressure: loadStoragePressure,
+    captureStoragePressure: captureStoragePressure,
+    loadScaleThresholds: loadScaleThresholds,
+    verifyScaleThresholds: verifyScaleThresholds,
+    loadExternalizationReadiness: loadExternalizationReadiness,
+    loadMultiInstanceBoundary: loadMultiInstanceBoundary,
+    renderStoragePressureSummary: renderStoragePressureSummary,
+    renderStoragePressureRecommendations: renderStoragePressureRecommendations,
+    renderExternalizationCandidates: renderExternalizationCandidates,
 
     // Phase 55 — Scale Hygiene
     loadScaleHygiene: loadScaleHygiene,
@@ -21767,7 +22449,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.54.0';
+const CACHE_NAME = 'yawmia-v0.55.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -22379,6 +23061,272 @@ async function backup() {
 
 backup().catch(err => {
   console.error('❌ Backup failed:', err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/benchmark-file-paths.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/benchmark-file-paths.js — File Path Benchmarks (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/benchmark-file-paths.js
+//   node scripts/benchmark-file-paths.js --json
+//   node scripts/benchmark-file-paths.js --sample=100
+//   node scripts/benchmark-file-paths.js --include-heavy
+//
+// Default is read-only and avoids destructive operations.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const INCLUDE_HEAVY = process.argv.includes('--include-heavy');
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+const SAMPLE = Math.max(1, Math.min(1000, parseInt(getArg('sample', '10')) || 10));
+
+function percentile(values, p) {
+  if (!values.length) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+  return Math.round(sorted[idx] * 100) / 100;
+}
+
+function summarize(times) {
+  if (!times.length) {
+    return { count: 0, avgMs: 0, minMs: 0, maxMs: 0, p50Ms: 0, p95Ms: 0 };
+  }
+
+  const total = times.reduce((sum, x) => sum + x, 0);
+  return {
+    count: times.length,
+    avgMs: Math.round((total / times.length) * 100) / 100,
+    minMs: Math.round(Math.min(...times) * 100) / 100,
+    maxMs: Math.round(Math.max(...times) * 100) / 100,
+    p50Ms: percentile(times, 0.5),
+    p95Ms: percentile(times, 0.95),
+  };
+}
+
+async function bench(label, fn, iterations = SAMPLE) {
+  const times = [];
+  let skipped = false;
+  let skipReason = null;
+  let error = null;
+
+  for (let i = 0; i < iterations; i++) {
+    const start = performance.now();
+    try {
+      const result = await fn(i);
+      if (result && result.skipped) {
+        skipped = true;
+        skipReason = result.reason || 'skipped';
+        break;
+      }
+      times.push(performance.now() - start);
+    } catch (err) {
+      error = err.message;
+      break;
+    }
+  }
+
+  return {
+    label,
+    skipped,
+    skipReason,
+    error,
+    ...summarize(times),
+  };
+}
+
+async function getFirstRecord(collection, prefix) {
+  try {
+    const { getCollectionPath, listJSON } = await import('../server/services/database.js');
+    const rows = await listJSON(getCollectionPath(collection), prefix ? { prefix } : {});
+    return rows.find(r => r && r.id) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const results = [];
+
+  const firstUser = await getFirstRecord('users', 'usr_');
+  const firstJob = await getFirstRecord('jobs', 'job_');
+  const firstWorkroom = await getFirstRecord('workrooms', null);
+
+  results.push(await bench('read user by id', async () => {
+    if (!firstUser) return { skipped: true, reason: 'no users' };
+    const { findById } = await import('../server/services/users.js');
+    await findById(firstUser.id);
+  }));
+
+  results.push(await bench('read job by id', async () => {
+    if (!firstJob) return { skipped: true, reason: 'no jobs' };
+    const { findById } = await import('../server/services/jobs.js');
+    await findById(firstJob.id);
+  }));
+
+  results.push(await bench('list jobs open', async () => {
+    const { list } = await import('../server/services/jobs.js');
+    await list({ status: 'open' });
+  }, Math.max(1, Math.min(SAMPLE, 20))));
+
+  results.push(await bench('query jobs index', async () => {
+    try {
+      const { queryJobs, getStats } = await import('../server/services/queryIndex.js');
+      const stats = getStats();
+      if (!stats || stats.totalJobs === 0) return { skipped: true, reason: 'query index empty' };
+      queryJobs({ status: 'open' });
+    } catch (_) {
+      return { skipped: true, reason: 'query index unavailable' };
+    }
+  }));
+
+  results.push(await bench('audit indexed search', async () => {
+    const { searchActions } = await import('../server/services/auditLogSearch.js');
+    await searchActions({ limit: 20 });
+  }, Math.max(1, Math.min(SAMPLE, 20))));
+
+  if (INCLUDE_HEAVY) {
+    results.push(await bench('audit full fallback search', async () => {
+      const mod = await import('../server/services/auditLogSearch.js');
+      if (!mod._testHelpers || !mod._testHelpers.fullScanSearchActions) {
+        return { skipped: true, reason: 'fallback helper unavailable' };
+      }
+      await mod._testHelpers.fullScanSearchActions({ limit: 20 });
+    }, Math.max(1, Math.min(SAMPLE, 5))));
+  }
+
+  results.push(await bench('queue list pending', async () => {
+    const { listJobs } = await import('../server/services/opsQueue.js');
+    await listJobs({ status: 'pending', limit: 20 });
+  }));
+
+  results.push(await bench('queue stats', async () => {
+    const { getQueueStats } = await import('../server/services/opsQueue.js');
+    await getQueueStats();
+  }));
+
+  results.push(await bench('workroom search', async () => {
+    if (!firstWorkroom || !firstWorkroom.jobId) return { skipped: true, reason: 'no workrooms' };
+    try {
+      const { searchWorkroomMessages } = await import('../server/services/workroomSearch.js');
+      await searchWorkroomMessages(firstWorkroom.jobId, 'test', { limit: 20 });
+    } catch (_) {
+      return { skipped: true, reason: 'workroom search unavailable' };
+    }
+  }, Math.max(1, Math.min(SAMPLE, 10))));
+
+  results.push(await bench('search relevance query', async () => {
+    const { list } = await import('../server/services/jobs.js');
+    await list({ status: 'open', search: 'عامل' });
+  }, Math.max(1, Math.min(SAMPLE, 10))));
+
+  results.push(await bench('export registry list', async () => {
+    const { listExports } = await import('../server/services/exportRegistry.js');
+    await listExports({ limit: 20 });
+  }));
+
+  results.push(await bench('privacy request list', async () => {
+    try {
+      const { listPrivacyRequests } = await import('../server/services/privacyRequests.js');
+      await listPrivacyRequests({ limit: 20 });
+    } catch (_) {
+      return { skipped: true, reason: 'privacy request service unavailable' };
+    }
+  }));
+
+  results.push(await bench('admin approval list', async () => {
+    const { listApprovals } = await import('../server/services/adminApprovals.js');
+    await listApprovals({ limit: 20 });
+  }));
+
+  results.push(await bench('storage pressure shallow scan', async () => {
+    const { getStoragePressure } = await import('../server/services/storagePressure.js');
+    await getStoragePressure({ force: true, persist: false });
+  }, Math.max(1, Math.min(SAMPLE, 3))));
+
+  const output = {
+    ok: results.every(r => !r.error),
+    generatedAt: new Date().toISOString(),
+    sample: SAMPLE,
+    includeHeavy: INCLUDE_HEAVY,
+    dataPath: process.env.YAWMIA_DATA_PATH || './data',
+    results,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log('\n⏱ يوميّة File Path Benchmarks\n');
+    console.log(`Sample: ${SAMPLE}`);
+    console.log(`Include heavy: ${INCLUDE_HEAVY ? 'yes' : 'no'}\n`);
+
+    for (const r of results) {
+      if (r.skipped) {
+        console.log(`  ${r.label}: skipped (${r.skipReason})`);
+      } else if (r.error) {
+        console.log(`  ${r.label}: ERROR ${r.error}`);
+      } else {
+        console.log(`  ${r.label}: avg=${r.avgMs}ms p50=${r.p50Ms}ms p95=${r.p95Ms}ms min=${r.minMs}ms max=${r.maxMs}ms`);
+      }
+    }
+
+    console.log('\n✅ Benchmark complete\n');
+  }
+
+  if (!output.ok) process.exit(1);
+}
+
+main().catch(err => {
+  const payload = {
+    ok: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    console.error('\n❌ Benchmark failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -23043,6 +23991,403 @@ main().catch(err => {
 
 ---
 
+## `scripts/export-migration-snapshot.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/export-migration-snapshot.js — NDJSON Snapshot Export (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/export-migration-snapshot.js --dry-run
+//   node scripts/export-migration-snapshot.js --out=./migration-snapshots/test --confirm
+//   node scripts/export-migration-snapshot.js --collections=users,jobs,applications --out=./migration-snapshots/test --confirm
+//   node scripts/export-migration-snapshot.js --overwrite --out=./migration-snapshots/test --confirm
+//
+// Default is dry-run unless --confirm is provided.
+// Does NOT import into any external database.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { appendFile, mkdir, rm, stat, writeFile, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const DRY_RUN = process.argv.includes('--dry-run') || !process.argv.includes('--confirm');
+const CONFIRM = process.argv.includes('--confirm');
+const JSON_OUT = process.argv.includes('--json');
+const OVERWRITE = process.argv.includes('--overwrite');
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+function nowSnapshotName() {
+  return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+function sha256(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+async function fileSha256(filePath) {
+  const raw = await readFile(filePath);
+  return sha256(raw);
+}
+
+async function pathExists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function parseCollections(config) {
+  const raw = getArg('collections', '');
+  if (raw) {
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  return [
+    'users',
+    'jobs',
+    'applications',
+    'attendance',
+    'payments',
+    'ratings',
+    'reports',
+    'verifications',
+    'messages',
+    'workrooms',
+    'notifications',
+    'direct_offers',
+    'availability_ads',
+    'alerts',
+    'favorites',
+    'audit',
+    'privacy_requests',
+    'admin_approvals',
+    'ops_reviews',
+    'postmortems',
+  ].filter(c => config.DATABASE.dirs[c]);
+}
+
+function sanitizeKeyValue(key, value) {
+  if (value === undefined) return undefined;
+
+  if (/token|secret|password|apikey|api_key|authorization|vapid_private|private_key/i.test(key)) {
+    return '[redacted]';
+  }
+
+  if (
+    key === 'nationalIdImage' ||
+    key === 'selfieImage' ||
+    key === 'rawImage' ||
+    key === 'base64' ||
+    key === 'dataUri'
+  ) {
+    return '[omitted]';
+  }
+
+  if (typeof value === 'string') {
+    // Avoid carrying huge embedded base64 accidentally.
+    if (value.length > 4096 && /^[A-Za-z0-9+/=\r\n]+$/.test(value.slice(0, 200))) {
+      return '[large-string-omitted]';
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item, idx) => sanitizeRecord(item, `${key}_${idx}`));
+  }
+
+  if (value && typeof value === 'object') {
+    return sanitizeRecord(value, key);
+  }
+
+  return value;
+}
+
+function sanitizeRecord(record, contextKey = '') {
+  if (!record || typeof record !== 'object') return record;
+
+  const out = {};
+  for (const [key, value] of Object.entries(record)) {
+    const clean = sanitizeKeyValue(key, value);
+    if (clean !== undefined) out[key] = clean;
+  }
+
+  // Sessions are special: never export raw token.
+  if (contextKey === 'sessions' || out.token) {
+    if (out.token) out.token = '[redacted]';
+  }
+
+  return out;
+}
+
+async function appendNdjson(filePath, record) {
+  await appendFile(filePath, JSON.stringify(record) + '\n', 'utf-8');
+}
+
+async function exportCollection({ collection, outDir, config, includeChecksums }) {
+  const { getCollectionPath, listJSON } = await import('../server/services/database.js');
+
+  const dir = getCollectionPath(collection);
+  const fileName = `${collection}.ndjson`;
+  const filePath = join(outDir, fileName);
+
+  let rows = [];
+  try {
+    rows = await listJSON(dir);
+  } catch (_) {
+    rows = [];
+  }
+
+  let count = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || typeof row !== 'object') {
+      skipped++;
+      continue;
+    }
+
+    const sanitized = sanitizeRecord(row, collection);
+
+    if (!DRY_RUN) {
+      await appendNdjson(filePath, sanitized);
+    }
+
+    count++;
+
+    if ((i + 1) % 250 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+
+  const meta = {
+    file: fileName,
+    count,
+    skipped,
+    sizeBytes: 0,
+    sha256: null,
+  };
+
+  if (!DRY_RUN) {
+    const st = await stat(filePath).catch(() => null);
+    meta.sizeBytes = st ? st.size : 0;
+    if (includeChecksums) meta.sha256 = await fileSha256(filePath);
+  }
+
+  return meta;
+}
+
+async function exportIndexes({ outDir, config, includeChecksums }) {
+  const indexDir = join(outDir, 'indexes');
+  const indexes = {};
+
+  if (!DRY_RUN) {
+    await mkdir(indexDir, { recursive: true });
+  }
+
+  for (const [name, relPath] of Object.entries(config.DATABASE.indexFiles || {})) {
+    const sourcePath = join(process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath, relPath);
+    const targetName = `${name}.json`;
+    const targetPath = join(indexDir, targetName);
+
+    try {
+      const raw = await readFile(sourcePath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      const sanitized = sanitizeRecord(parsed, `index_${name}`);
+      const serialized = JSON.stringify(sanitized, null, 2);
+
+      if (!DRY_RUN) {
+        await writeFile(targetPath, serialized, 'utf-8');
+      }
+
+      indexes[name] = {
+        file: `indexes/${targetName}`,
+        sizeBytes: Buffer.byteLength(serialized, 'utf-8'),
+        sha256: includeChecksums ? sha256(serialized) : null,
+      };
+    } catch (_) {
+      indexes[name] = {
+        file: `indexes/${targetName}`,
+        missing: true,
+        sizeBytes: 0,
+        sha256: null,
+      };
+    }
+  }
+
+  return indexes;
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const config = (await import('../config.js')).default;
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const collections = parseCollections(config);
+  const includeChecksums = config.EXTERNALIZATION_READINESS?.includeChecksums !== false;
+
+  const outArg = getArg('out', '');
+  const baseOut = config.EXTERNALIZATION_READINESS?.migrationSnapshotBasePath || './migration-snapshots';
+  const outDir = outArg || join(baseOut, nowSnapshotName());
+
+  const manifest = {
+    formatVersion: 1,
+    phase: 59,
+    implementationAllowed: false,
+    dryRun: DRY_RUN,
+    createdAt: new Date().toISOString(),
+    completedAt: null,
+    source: {
+      app: 'yawmia',
+      version: config.PWA?.cacheName || 'unknown',
+      dataPath: process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath,
+    },
+    options: {
+      collections,
+      includeChecksums,
+      redactSecrets: true,
+      overwrite: OVERWRITE,
+    },
+    outputDir: outDir,
+    collections: {},
+    indexes: {},
+    warnings: [],
+  };
+
+  if (DRY_RUN) {
+    manifest.warnings.push('Dry run: no files were written. Add --confirm to create snapshot files.');
+  } else {
+    if (await pathExists(outDir)) {
+      if (!OVERWRITE) {
+        throw new Error(`Output directory already exists: ${outDir}. Use --overwrite to replace it.`);
+      }
+      await rm(outDir, { recursive: true, force: true });
+    }
+
+    await mkdir(outDir, { recursive: true });
+  }
+
+  for (const collection of collections) {
+    if (!config.DATABASE.dirs[collection]) {
+      manifest.warnings.push(`Unknown collection skipped: ${collection}`);
+      continue;
+    }
+
+    const meta = await exportCollection({
+      collection,
+      outDir,
+      config,
+      includeChecksums,
+    });
+
+    manifest.collections[collection] = meta;
+  }
+
+  manifest.indexes = await exportIndexes({
+    outDir,
+    config,
+    includeChecksums,
+  });
+
+  manifest.completedAt = new Date().toISOString();
+
+  if (!DRY_RUN) {
+    const manifestPath = join(outDir, 'manifest.json');
+    await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+
+    if (includeChecksums) {
+      const raw = await readFile(manifestPath);
+      manifest.manifestSha256 = sha256(raw);
+      await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+    }
+  }
+
+  const result = {
+    ok: true,
+    dryRun: DRY_RUN,
+    outDir,
+    collectionCount: Object.keys(manifest.collections).length,
+    totalRecords: Object.values(manifest.collections).reduce((sum, c) => sum + (c.count || 0), 0),
+    manifest,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`\n📦 يوميّة Migration Snapshot ${DRY_RUN ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+    console.log(`Output: ${outDir}`);
+    console.log(`Collections: ${collections.join(', ')}`);
+    console.log(`Checksums: ${includeChecksums ? 'yes' : 'no'}`);
+
+    console.log('\n── Collection Counts ──');
+    for (const [name, meta] of Object.entries(manifest.collections)) {
+      console.log(`  ${name}: ${meta.count || 0} records`);
+    }
+
+    if (DRY_RUN) {
+      console.log('\nNo files were written.');
+      console.log('To write snapshot:');
+      console.log(`  node scripts/export-migration-snapshot.js --out=${outDir} --confirm`);
+    } else {
+      console.log('\n✅ Snapshot written');
+      console.log(`   manifest: ${join(outDir, 'manifest.json')}`);
+    }
+
+    console.log('');
+  }
+}
+
+main().catch(err => {
+  const payload = {
+    ok: false,
+    error: err.message,
+    dryRun: DRY_RUN,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    console.error('\n❌ Migration snapshot export failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/export-user-data.js`
 
 ```javascript
@@ -23163,6 +24508,167 @@ console.log(`VAPID_PUBLIC_KEY=${publicKeyB64}`);
 console.log(`VAPID_PRIVATE_KEY=${privateKeyB64}`);
 console.log('\n⚠️  Keep VAPID_PRIVATE_KEY secret! Never commit it to git.');
 console.log('⚠️  If you regenerate keys, all existing push subscriptions will become invalid.\n');
+```
+
+---
+
+## `scripts/measure-storage-pressure.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/measure-storage-pressure.js — Storage Pressure Report (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/measure-storage-pressure.js
+//   node scripts/measure-storage-pressure.js --json
+//   node scripts/measure-storage-pressure.js --deep
+//   node scripts/measure-storage-pressure.js --collection=jobs
+//
+// Default scan is shallow and persists a snapshot.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const DEEP = process.argv.includes('--deep');
+const NO_PERSIST = process.argv.includes('--no-persist');
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+function printTopCollections(collections = {}) {
+  const rows = Object.values(collections)
+    .filter(c => c && c.collection)
+    .sort((a, b) => (b.fileCount || 0) - (a.fileCount || 0))
+    .slice(0, 10);
+
+  if (rows.length === 0) {
+    console.log('No collections scanned.');
+    return;
+  }
+
+  for (const c of rows) {
+    console.log(`  ${c.collection}: files=${c.fileCount || 0}, size=${c.totalSizeKB || 0}KB, largest=${c.largestJsonKB || 0}KB`);
+  }
+}
+
+function printRecommendations(recommendations = []) {
+  if (!recommendations.length) {
+    console.log('  ✅ لا توجد إجراءات مقترحة حالياً');
+    return;
+  }
+
+  for (const r of recommendations.slice(0, 10)) {
+    const icon = r.severity === 'critical' ? '🚨' : r.severity === 'warning' ? '⚠️' : 'ℹ️';
+    console.log(`  ${icon} ${r.label}`);
+    if (r.command) console.log(`     ${r.command}`);
+    if (r.reason) console.log(`     ${r.reason}`);
+  }
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const collection = getArg('collection', '');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { getStoragePressure } = await import('../server/services/storagePressure.js');
+
+  const result = await getStoragePressure({
+    force: true,
+    persist: !NO_PERSIST,
+    deep: DEEP,
+    collection: collection || undefined,
+  });
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify({
+      ok: result.status !== 'critical',
+      storagePressure: result,
+    }, null, 2));
+    return;
+  }
+
+  console.log('\n🧭 يوميّة Storage Pressure\n');
+  console.log(`Snapshot: ${result.id || '-'}`);
+  console.log(`Status: ${result.status || 'unknown'}`);
+  console.log(`Mode: ${result.mode || 'shallow'}`);
+  console.log(`Persisted: ${NO_PERSIST ? 'no' : 'yes'}`);
+  console.log(`Scanned files: ${result.scannedFiles || 0}`);
+  console.log(`Duration: ${result.durationMs || 0}ms`);
+
+  if (collection) {
+    console.log(`Collection: ${collection}`);
+  }
+
+  console.log('\n── Summary ──');
+  const summary = result.summary || {};
+  console.log(`Total files: ${summary.totalFiles || 0}`);
+  console.log(`Total size: ${summary.totalSizeKB || 0} KB`);
+  console.log(`Largest JSON: ${summary.largestJsonKB || 0} KB`);
+  console.log(`Stale tmp files: ${summary.staleTmpCount || 0}`);
+
+  console.log('\n── Top Collections ──');
+  printTopCollections(result.collections || {});
+
+  if (result.criticals && result.criticals.length > 0) {
+    console.log('\n── Criticals ──');
+    for (const c of result.criticals.slice(0, 20)) {
+      console.log(`  ❌ ${c.code || 'CRITICAL'}: ${c.message || ''}`);
+      if (c.recommendation) console.log(`     ${c.recommendation}`);
+    }
+  }
+
+  if (result.warnings && result.warnings.length > 0) {
+    console.log('\n── Warnings ──');
+    for (const w of result.warnings.slice(0, 20)) {
+      console.log(`  ⚠️ ${w.code || 'WARNING'}: ${w.message || ''}`);
+      if (w.recommendation) console.log(`     ${w.recommendation}`);
+    }
+  }
+
+  console.log('\n── Recommended Actions ──');
+  printRecommendations(result.recommendations || []);
+
+  console.log('\n✅ Storage pressure measurement complete\n');
+}
+
+main().catch(err => {
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Storage pressure measurement failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+  process.exit(1);
+});
 ```
 
 ---
@@ -23551,11 +25057,17 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/predeploy-check.js — Deployment Gate (Phase 58)
+// scripts/predeploy-check.js — Deployment Gate (Phase 59)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   NODE_ENV=production node scripts/predeploy-check.js --strict
 //   node scripts/predeploy-check.js --json
+//
+// Phase 59 adds:
+// - scale threshold verification
+// - storage pressure readiness
+// - externalization readiness docs/scripts checks
+// - no external DB/search/queue implementation discipline
 // ═══════════════════════════════════════════════════════════════
 
 import { readFile } from 'node:fs/promises';
@@ -23637,7 +25149,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.54.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.54.0' }));
+  checks.push(mk('package_version', pkg.version === '0.55.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.55.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -23652,7 +25164,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.54.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.55.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -23741,6 +25253,72 @@ async function main() {
     ));
   } else {
     checks.push(mk('privacy_governance', 'warn', 'Could not parse privacy governance verification output', 'node scripts/verify-privacy-governance.js --strict'));
+  }
+
+  // Phase 59 — Scale thresholds / storage pressure verification.
+  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  if (scaleThresholds.parsed) {
+    checks.push(mk(
+      'scale_thresholds',
+      scaleThresholds.parsed.status === 'critical'
+        ? 'fail'
+        : ((scaleThresholds.parsed.warnings || []).length > 0 ? 'warn' : 'pass'),
+      scaleThresholds.parsed.status === 'critical'
+        ? 'Scale thresholds have critical findings'
+        : 'Scale thresholds verification completed',
+      'node scripts/verify-scale-thresholds.js --strict',
+      scaleThresholds.parsed
+    ));
+  } else {
+    checks.push(mk(
+      'scale_thresholds',
+      'warn',
+      'Could not parse scale threshold verification output',
+      'node scripts/verify-scale-thresholds.js --json'
+    ));
+  }
+
+  const phase59Docs = [
+    'SCALE_LIMITS.md',
+    'EXTERNALIZATION_READINESS.md',
+    'MULTI_INSTANCE_BOUNDARY.md',
+    'DATA_MIGRATION_FORMATS.md',
+    'STORAGE_PRESSURE_RUNBOOK.md',
+  ];
+
+  for (const doc of phase59Docs) {
+    try {
+      await readFile(doc, 'utf-8');
+      checks.push(mk(`phase59_doc:${doc}`, 'pass', `${doc} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase59_doc:${doc}`,
+        STRICT ? 'fail' : 'warn',
+        `${doc} is missing`,
+        `Create ${doc}`
+      ));
+    }
+  }
+
+  const phase59Scripts = [
+    'scripts/measure-storage-pressure.js',
+    'scripts/benchmark-file-paths.js',
+    'scripts/verify-scale-thresholds.js',
+    'scripts/export-migration-snapshot.js',
+  ];
+
+  for (const script of phase59Scripts) {
+    try {
+      await readFile(script, 'utf-8');
+      checks.push(mk(`phase59_script:${script}`, 'pass', `${script} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase59_script:${script}`,
+        STRICT ? 'fail' : 'warn',
+        `${script} is missing`,
+        `Create ${script}`
+      ));
+    }
   }
 
   const summary = {
@@ -26294,11 +27872,15 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/verify-production-readiness.js — Phase 54 Readiness CLI
+// scripts/verify-production-readiness.js — Phase 59 Readiness CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   node scripts/verify-production-readiness.js
-// Exits 1 when readiness status is not_ready.
+//   node scripts/verify-production-readiness.js --json
+//   node scripts/verify-production-readiness.js --strict
+//
+// Includes Phase 59 scale threshold and storage pressure readiness checks.
+// Exits 1 when readiness status is not_ready, or when --strict sees warnings.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -26491,6 +28073,178 @@ main().catch(err => {
     console.error('\n❌ Queue verify failed:', err.message);
     if (err.stack) console.error(err.stack);
   }
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/verify-scale-thresholds.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-scale-thresholds.js — Scale Threshold Verification (Phase 59)
+// ═══════════════════════════════════════════════════════════════
+// Usage:
+//   node scripts/verify-scale-thresholds.js
+//   node scripts/verify-scale-thresholds.js --json
+//   node scripts/verify-scale-thresholds.js --strict
+//   node scripts/verify-scale-thresholds.js --fail-on-warning
+//   node scripts/verify-scale-thresholds.js --deep
+//
+// Default scan is shallow. Deep scan requires --deep.
+// Exits 1 on critical in --strict mode, or on warning with --fail-on-warning.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
+const DEEP = process.argv.includes('--deep');
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  return found.slice(prefix.length);
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const collection = getArg('collection', '');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { getStoragePressure } = await import('../server/services/storagePressure.js');
+  const { verifyScaleThresholds } = await import('../server/services/scaleThresholds.js');
+
+  const pressureSnapshot = await getStoragePressure({
+    force: true,
+    persist: false,
+    deep: DEEP,
+    collection: collection || undefined,
+  });
+
+  const verification = await verifyScaleThresholds({
+    pressureSnapshot,
+    persist: false,
+    deep: DEEP,
+  });
+
+  const warningCount = Array.isArray(verification.warnings) ? verification.warnings.length : 0;
+  const criticalCount = Array.isArray(verification.criticals) ? verification.criticals.length : 0;
+
+  const result = {
+    ok: criticalCount === 0 && (!FAIL_ON_WARNING || warningCount === 0) && (!STRICT || criticalCount === 0),
+    status: verification.status || 'ok',
+    strict: STRICT,
+    failOnWarning: FAIL_ON_WARNING,
+    deep: DEEP,
+    collection: collection || null,
+    generatedAt: new Date().toISOString(),
+    summary: {
+      warnings: warningCount,
+      criticals: criticalCount,
+      recommendations: Array.isArray(verification.recommendations) ? verification.recommendations.length : 0,
+      scannedFiles: pressureSnapshot.scannedFiles || 0,
+      scanMode: pressureSnapshot.mode || 'shallow',
+      scanDurationMs: pressureSnapshot.durationMs || 0,
+    },
+    warnings: verification.warnings || [],
+    criticals: verification.criticals || [],
+    recommendations: verification.recommendations || [],
+    snapshot: {
+      id: pressureSnapshot.id || null,
+      timestamp: pressureSnapshot.timestamp || null,
+      status: pressureSnapshot.status || null,
+      mode: pressureSnapshot.mode || 'shallow',
+      truncated: !!pressureSnapshot.truncated,
+      scannedFiles: pressureSnapshot.scannedFiles || 0,
+      durationMs: pressureSnapshot.durationMs || 0,
+    },
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('\n📏 يوميّة Scale Threshold Verification\n');
+    console.log(`Status: ${result.status}`);
+    console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
+    console.log(`Fail on warning: ${FAIL_ON_WARNING ? 'yes' : 'no'}`);
+    console.log(`Scan mode: ${result.summary.scanMode}`);
+    console.log(`Scanned files: ${result.summary.scannedFiles}`);
+    console.log(`Warnings: ${warningCount}`);
+    console.log(`Criticals: ${criticalCount}\n`);
+
+    if (criticalCount > 0) {
+      console.log('── Criticals ──');
+      for (const c of result.criticals.slice(0, 20)) {
+        console.log(`❌ ${c.code || 'CRITICAL'}: ${c.message || ''}`);
+        if (c.recommendation) console.log(`   → ${c.recommendation}`);
+      }
+      console.log('');
+    }
+
+    if (warningCount > 0) {
+      console.log('── Warnings ──');
+      for (const w of result.warnings.slice(0, 20)) {
+        console.log(`⚠️ ${w.code || 'WARNING'}: ${w.message || ''}`);
+        if (w.recommendation) console.log(`   → ${w.recommendation}`);
+      }
+      console.log('');
+    }
+
+    if (result.recommendations.length > 0) {
+      console.log('── Recommended Actions ──');
+      for (const action of result.recommendations.slice(0, 10)) {
+        console.log(`• ${action.label}`);
+        if (action.command) console.log(`  ${action.command}`);
+        if (action.reason) console.log(`  ${action.reason}`);
+      }
+      console.log('');
+    }
+
+    console.log(result.ok ? '✅ Scale thresholds acceptable\n' : '❌ Scale thresholds require action\n');
+  }
+
+  if (!result.ok) process.exit(1);
+}
+
+main().catch(err => {
+  const payload = {
+    ok: false,
+    status: 'critical',
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    console.error('\n❌ Scale threshold verification failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```

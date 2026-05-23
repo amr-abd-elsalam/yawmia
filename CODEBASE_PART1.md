@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.54.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-23T04:19:49.822Z
+# يوميّة (Yawmia) v0.55.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-23T15:34:40.529Z
 > Files in this part: 6
 
 ## Files
@@ -397,6 +397,11 @@ const config = {
       product_intelligence: 'metrics/product-intelligence',
       matching_metrics: 'metrics/matching',
       payment_dispute_analytics: 'metrics/payment-disputes',
+
+      // Phase 59 — File-Based Scale Limits + Externalization Readiness
+      storage_pressure: 'metrics/storage-pressure',
+      scale_thresholds: 'metrics/scale-thresholds',
+      migration_snapshots: 'migration-snapshots',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -585,7 +590,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.54.0',
+    cacheName: 'yawmia-v0.55.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1871,6 +1876,7 @@ const config = {
         'admin.marketplace.read',
         'admin.audit.read',
         'admin.privacy.read',
+        'admin.scale.read',
       ],
     },
   },
@@ -1947,6 +1953,154 @@ const config = {
     retentionDays: 365,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 110. حدود التوسع للتخزين الملفي (SCALE_LIMITS) — Phase 59
+  // ═══════════════════════════════════════════════════════════════
+  SCALE_LIMITS: {
+    enabled: true,
+    mode: 'advisory', // advisory | strict
+    shallowScanMaxFiles: 250000,
+    deepScanDefaultEnabled: false,
+    thresholds: {
+      collections: {
+        users: {
+          warningFiles: 50000,
+          criticalFiles: 100000,
+          warningLargestJsonKB: 512,
+          criticalLargestJsonKB: 2048,
+        },
+        jobs: {
+          warningFilesPerShard: 20000,
+          criticalFilesPerShard: 50000,
+        },
+        applications: {
+          warningFilesPerShard: 50000,
+          criticalFilesPerShard: 100000,
+        },
+        messages: {
+          warningFilesPerShard: 100000,
+          criticalFilesPerShard: 250000,
+        },
+        notifications: {
+          warningFilesPerShard: 100000,
+          criticalFilesPerShard: 250000,
+        },
+        audit: {
+          warningFiles: 100000,
+          criticalFiles: 250000,
+        },
+        direct_offers: {
+          warningFilesPerShard: 50000,
+          criticalFilesPerShard: 100000,
+        },
+        privacy_requests: {
+          warningFiles: 5000,
+          criticalFiles: 20000,
+        },
+        admin_approvals: {
+          warningFiles: 5000,
+          criticalFiles: 20000,
+        },
+        ops_reviews: {
+          warningFiles: 5000,
+          criticalFiles: 20000,
+        },
+        postmortems: {
+          warningFiles: 2000,
+          criticalFiles: 10000,
+        },
+      },
+      indexes: {
+        setIndexWarningKB: 2048,
+        setIndexCriticalKB: 8192,
+        auditTokenFilesWarning: 50000,
+        auditTokenFilesCritical: 150000,
+        searchIndexWarningKB: 4096,
+        searchIndexCriticalKB: 16384,
+      },
+      queue: {
+        pendingWarning: 1000,
+        pendingCritical: 5000,
+        runningWarning: 100,
+        runningCritical: 500,
+        deadLetterWarning: 10,
+        deadLetterCritical: 50,
+        staleSummaryWarningMinutes: 30,
+        staleSummaryCriticalHours: 6,
+      },
+      workrooms: {
+        sidecarWarningKB: 512,
+        sidecarCriticalKB: 2048,
+        searchIndexWarningKB: 1024,
+        searchIndexCriticalKB: 4096,
+      },
+      images: {
+        totalSizeWarningMB: 1024,       // 1GB image/object store warning
+        totalSizeCriticalMB: 5120,      // 5GB image/object store critical
+        largestFileWarningMB: 2,        // mirrors current max image size
+        largestFileCriticalMB: 10,      // unexpected large binary/object
+        binaryFilesWarning: 50000,
+        binaryFilesCritical: 200000,
+      },
+      analytics: {
+        searchAnalyticsWarningFiles: 5000,
+        searchAnalyticsCriticalFiles: 20000,
+        productIntelligenceWarningFiles: 5000,
+        productIntelligenceCriticalFiles: 20000,
+      },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 111. مراقبة ضغط التخزين (STORAGE_PRESSURE) — Phase 59
+  // ═══════════════════════════════════════════════════════════════
+  STORAGE_PRESSURE: {
+    enabled: true,
+    basePath: 'metrics/storage-pressure',
+    snapshotRetentionDays: 30,
+    shallowScanEnabled: true,
+    deepScanEnabled: false,
+    sampleJsonParseCount: 100,
+    largestFilesLimit: 20,
+    recommendationLimit: 10,
+    cacheTtlMs: 5 * 60 * 1000,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 112. جاهزية النقل المستقبلي للخارج (EXTERNALIZATION_READINESS) — Phase 59
+  // ═══════════════════════════════════════════════════════════════
+  EXTERNALIZATION_READINESS: {
+    enabled: true,
+    noExternalizationBeforePhase: 60,
+    candidates: [
+      'users',
+      'jobs',
+      'applications',
+      'payments',
+      'messages',
+      'ops_queue',
+      'audit',
+      'search',
+      'images',
+    ],
+    migrationSnapshotBasePath: './migration-snapshots',
+    ndjsonExportEnabled: true,
+    includeChecksums: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 113. حدود التشغيل متعدد النسخ (MULTI_INSTANCE_BOUNDARY) — Phase 59
+  // ═══════════════════════════════════════════════════════════════
+  MULTI_INSTANCE_BOUNDARY: {
+    enabled: true,
+    documentSafeReadOnlyApis: true,
+    documentUnsafeWriterApis: true,
+    requireSingleWriterForQueueAndSchedulers: true,
+    eventBusBridgeRequiredForMultiInstance: true,
+    sseFanoutRequiredForMultiInstance: true,
+    externalQueueRequiredForMultiWriter: true,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1995,7 +2149,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.54.0",
+  "version": "0.55.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -2407,6 +2561,20 @@ if (config.EXPORTS && config.EXPORTS.enabled) {
     }
   }, config.EXPORTS.cleanupIntervalMs || (60 * 60 * 1000));
   if (exportCleanupTimer.unref) exportCleanupTimer.unref();
+}
+
+// ── Phase 59 — Storage Pressure Snapshot Cleanup Timer ──────
+if (config.STORAGE_PRESSURE && config.STORAGE_PRESSURE.enabled) {
+  const storagePressureCleanupTimer = setInterval(async () => {
+    try {
+      const { cleanupOldStoragePressureSnapshots } = await import('./server/services/storagePressure.js');
+      const cleaned = await cleanupOldStoragePressureSnapshots();
+      if (cleaned > 0) logger.info(`Storage pressure: cleaned ${cleaned} old snapshot(s)`);
+    } catch (err) {
+      logger.warn('Storage pressure cleanup error', { error: err.message });
+    }
+  }, 24 * 60 * 60 * 1000);
+  if (storagePressureCleanupTimer.unref) storagePressureCleanupTimer.unref();
 }
 
 // ── Backup Scheduler Timer (separate — checks hourly if backup is due) ──
@@ -2894,6 +3062,15 @@ import {
   handleSchedulerHistory,
 } from './handlers/scaleHygieneHandler.js';
 import {
+  handleGetStoragePressure,
+  handleCaptureStoragePressure,
+  handleListStoragePressureSnapshots,
+  handleGetScaleThresholds,
+  handleVerifyScaleThresholds,
+  handleExternalizationReadiness,
+  handleMultiInstanceBoundary,
+} from './handlers/storagePressureHandler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -2996,7 +3173,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.54.0',
+        version: '0.55.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -3277,7 +3454,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.54.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.55.0' });
     },
   },
 
@@ -3540,6 +3717,7 @@ const routes = [
   { method: 'GET', path: '/api/admin/production/scheduler-cadence', middlewares: [requireAdmin], handler: handleSchedulerCadence },
   { method: 'GET', path: '/api/admin/production/ops-review', middlewares: [requireAdmin], handler: handleOpsReview },
   { method: 'GET', path: '/api/admin/production/instance-mode', middlewares: [requireAdmin], handler: handleInstanceMode },
+  { method: 'GET', path: '/api/admin/production/multi-instance-boundary', middlewares: [requireCapability('admin.ops.read')], handler: handleMultiInstanceBoundary },
   { method: 'GET', path: '/api/admin/production/process-locks', middlewares: [requireAdmin], handler: handleProcessLocks },
   { method: 'POST', path: '/api/admin/production/process-locks/:name/release', middlewares: [requireCapability('admin.locks.release')], handler: handleReleaseProcessLock },
 
@@ -3583,6 +3761,14 @@ const routes = [
 
   // ── Phase 55 — Scale Hygiene Admin APIs ──
   { method: 'GET', path: '/api/admin/scale-hygiene/overview', middlewares: [requireAdmin], handler: handleScaleHygieneOverview },
+
+  // ── Phase 59 — Storage Pressure + Scale Thresholds + Externalization Readiness ──
+  { method: 'GET', path: '/api/admin/storage-pressure', middlewares: [requireCapability('admin.scale.read')], handler: handleGetStoragePressure },
+  { method: 'POST', path: '/api/admin/storage-pressure/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCaptureStoragePressure },
+  { method: 'GET', path: '/api/admin/storage-pressure/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListStoragePressureSnapshots },
+  { method: 'GET', path: '/api/admin/scale-thresholds', middlewares: [requireCapability('admin.scale.read')], handler: handleGetScaleThresholds },
+  { method: 'POST', path: '/api/admin/scale-thresholds/verify', middlewares: [requireCapability('admin.ops.review')], handler: handleVerifyScaleThresholds },
+  { method: 'GET', path: '/api/admin/externalization/readiness', middlewares: [requireCapability('admin.scale.read')], handler: handleExternalizationReadiness },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },
