@@ -96,6 +96,12 @@ cancelled
 
 ---
 
+## Due dates
+
+Each action item must have an explicit due date before the postmortem is considered complete.
+
+---
+
 ## Prevention
 
 كيف نمنع تكرار الحادث؟

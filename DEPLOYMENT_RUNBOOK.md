@@ -242,8 +242,21 @@ npm test
 node scripts/verify-data-json.js --strict
 node scripts/verify-file-health.js --strict
 node scripts/verify-queue.js
+node scripts/verify-admin-rbac.js --strict
+node scripts/verify-privacy-governance.js --strict
 node scripts/verify-production-readiness.js --strict
 node scripts/predeploy-check.js --strict
+```
+
+Phase 58 governance configuration must be enabled and verified before production deploy:
+
+```text
+ADMIN_RBAC.enabled=true
+PRIVACY_REQUESTS.enabled=true
+ADMIN_APPROVALS.enabled=true
+OPS_REVIEW_RECORDS.enabled=true
+POSTMORTEMS.enabled=true
+POSTMORTEMS.requireForCriticalIncidents=true
 ```
 
 لو أي critical fail: لا تعمل deploy.
