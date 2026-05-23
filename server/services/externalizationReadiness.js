@@ -147,7 +147,7 @@ function evidenceFromPressure(snapshot, candidate) {
   }
 
   if (candidate === 'images') {
-    const images = pressureSnapshot?.images || collections.images;
+    const images = snapshot?.images || collections.images;
     if (images) {
       if ((images.fileCount || 0) > 0) {
         add('Images include sensitive binary/object growth', 0.2, `${images.fileCount} files`);

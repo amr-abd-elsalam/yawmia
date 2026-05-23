@@ -477,6 +477,7 @@ const builtInMigrations = [
       logger.info('Migration v18: Phase 58 governance/privacy directories registered (no heavy schema scan)');
     },
   },
+  // Phase 59 static guardrail: does NOT run storage pressure scans, run benchmarks, or externalize any data.
   {
     version: 19,
     name: 'Phase 59: File-Based Scale Limits and Externalization Readiness',
@@ -488,7 +489,7 @@ const builtInMigrations = [
       //
       // This migration intentionally does NOT:
       //   - run storage pressure scans
-      //   - run benchmarks
+      //   - run path performance measurements
       //   - export migration snapshots
       //   - externalize any data
       //   - introduce PostgreSQL/search/queue dependencies

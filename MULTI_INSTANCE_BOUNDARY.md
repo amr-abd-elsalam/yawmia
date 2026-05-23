@@ -293,6 +293,7 @@ repository boundaries
 
 ```text
 Do not run PM2 cluster mode.
+Do not run multiple writers.
 Do not run node server.js multiple times against same writable data path.
 Do not run multiple Kubernetes replicas as writers.
 Do not run queue workers on read-only replicas.
