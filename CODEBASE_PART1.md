@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.55.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-23T16:06:20.208Z
+# يوميّة (Yawmia) v0.56.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-24T02:08:11.717Z
 > Files in this part: 6
 
 ## Files
@@ -402,6 +402,11 @@ const config = {
       storage_pressure: 'metrics/storage-pressure',
       scale_thresholds: 'metrics/scale-thresholds',
       migration_snapshots: 'migration-snapshots',
+
+      // Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal
+      benchmark_history: 'metrics/benchmarks',
+      migration_rehearsals: 'migration-snapshots/rehearsals',
+      externalization_decisions: 'metrics/externalization-decisions',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -590,7 +595,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.55.0',
+    cacheName: 'yawmia-v0.56.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -2101,6 +2106,68 @@ const config = {
     externalQueueRequiredForMultiWriter: true,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 114. قرار النقل المستقبلي المبني على الدليل (EXTERNALIZATION_DECISION) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  EXTERNALIZATION_DECISION: {
+    enabled: true,
+    advisoryOnly: true,
+    requireRepeatedEvidence: true,
+    repeatedWarningMinSnapshots: 3,
+    repeatedCriticalMinSnapshots: 2,
+    evidenceWindowDays: 30,
+    benchmarkHistoryRetentionDays: 90,
+    decisionStatuses: [
+      'no_action',
+      'monitor',
+      'mitigate_file_based',
+      'rehearsal_required',
+      'pilot_candidate',
+      'deferred',
+    ],
+    noImplementationBeforeApproval: true,
+    basePath: 'metrics/externalization-decisions',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 115. تحقق لقطات الهجرة (MIGRATION_SNAPSHOT_VALIDATION) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  MIGRATION_SNAPSHOT_VALIDATION: {
+    enabled: true,
+    requireManifest: true,
+    requireChecksums: true,
+    validateNdjson: true,
+    validateRedaction: true,
+    validateReferentialIntegrity: true,
+    sampleReferenceCheckLimit: 1000,
+    forbiddenKeysRegex: '(token|secret|password|apiKey|api_key|authorization|vapidPrivateKey)',
+    rawBase64WarningKB: 32,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 116. تدريب الهجرة والرجوع (MIGRATION_REHEARSAL) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  MIGRATION_REHEARSAL: {
+    enabled: true,
+    basePath: 'migration-snapshots/rehearsals',
+    requireBackupBeforeRehearsal: true,
+    requireRollbackPlan: true,
+    persistReports: true,
+    retentionCount: 10,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 117. تاريخ Benchmarks (BENCHMARK_HISTORY) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  BENCHMARK_HISTORY: {
+    enabled: true,
+    basePath: 'metrics/benchmarks',
+    retentionDays: 90,
+    persistJsonArtifacts: true,
+    p95WarningMs: 1000,
+    p95CriticalMs: 3000,
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2149,7 +2216,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -3071,6 +3138,14 @@ import {
   handleMultiInstanceBoundary,
 } from './handlers/storagePressureHandler.js';
 import {
+  handleGetExternalizationDecision,
+  handleCaptureExternalizationDecision,
+  handleListExternalizationDecisionSnapshots,
+  handleValidateMigrationSnapshot,
+  handleRunMigrationRehearsal,
+  handleBenchmarkHistory,
+} from './handlers/externalizationDecisionHandler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -3173,7 +3248,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.55.0',
+        version: '0.56.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -3454,7 +3529,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.55.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.56.0' });
     },
   },
 
@@ -3769,6 +3844,14 @@ const routes = [
   { method: 'GET', path: '/api/admin/scale-thresholds', middlewares: [requireCapability('admin.scale.read')], handler: handleGetScaleThresholds },
   { method: 'POST', path: '/api/admin/scale-thresholds/verify', middlewares: [requireCapability('admin.ops.review')], handler: handleVerifyScaleThresholds },
   { method: 'GET', path: '/api/admin/externalization/readiness', middlewares: [requireCapability('admin.scale.read')], handler: handleExternalizationReadiness },
+
+  // ── Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal ──
+  { method: 'GET', path: '/api/admin/externalization/decision', middlewares: [requireCapability('admin.scale.read')], handler: handleGetExternalizationDecision },
+  { method: 'POST', path: '/api/admin/externalization/decision/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCaptureExternalizationDecision },
+  { method: 'GET', path: '/api/admin/externalization/decision/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListExternalizationDecisionSnapshots },
+  { method: 'POST', path: '/api/admin/migration-snapshots/validate', middlewares: [requireCapability('admin.ops.review')], handler: handleValidateMigrationSnapshot },
+  { method: 'POST', path: '/api/admin/migration-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunMigrationRehearsal },
+  { method: 'GET', path: '/api/admin/benchmarks/history', middlewares: [requireCapability('admin.scale.read')], handler: handleBenchmarkHistory },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },

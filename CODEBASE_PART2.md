@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.55.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-23T16:06:20.214Z
-> Files in this part: 124
+# يوميّة (Yawmia) v0.56.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-24T02:08:11.722Z
+> Files in this part: 128
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -27,106 +27,110 @@
 22. `server/services/availabilityWindow.js`
 23. `server/services/backupRestoreDrill.js`
 24. `server/services/backupScheduler.js`
-25. `server/services/cache.js`
-26. `server/services/cacheDebouncer.js`
-27. `server/services/channels/sms.js`
-28. `server/services/channels/whatsapp.js`
-29. `server/services/contentFilter.js`
-30. `server/services/counterCompaction.js`
-31. `server/services/csvExportProgress.js`
-32. `server/services/database.js`
-33. `server/services/directOffer.js`
-34. `server/services/directOfferAnalytics.js`
-35. `server/services/directOfferCounters.js`
-36. `server/services/errorAggregator.js`
-37. `server/services/eventBus.js`
-38. `server/services/eventReplayBuffer.js`
-39. `server/services/exportRegistry.js`
-40. `server/services/externalizationReadiness.js`
-41. `server/services/favorites.js`
-42. `server/services/financialExport.js`
-43. `server/services/geo.js`
-44. `server/services/imageStore.js`
-45. `server/services/incidentTimeline.js`
-46. `server/services/indexHealth.js`
-47. `server/services/instanceMode.js`
-48. `server/services/instantMatch.js`
-49. `server/services/jobAlerts.js`
-50. `server/services/jobMatcher.js`
-51. `server/services/jobs.js`
-52. `server/services/liveFeed.js`
-53. `server/services/logWriter.js`
-54. `server/services/logger.js`
-55. `server/services/maintenanceMode.js`
-56. `server/services/marketplaceIntelligenceRollups.js`
-57. `server/services/matchingIntelligence.js`
-58. `server/services/messages.js`
-59. `server/services/messaging.js`
-60. `server/services/metricsRollups.js`
-61. `server/services/migration.js`
-62. `server/services/monitor.js`
-63. `server/services/notificationActions.js`
-64. `server/services/notificationConversionMetrics.js`
-65. `server/services/notificationMessenger.js`
-66. `server/services/notifications.js`
-67. `server/services/offerAbuseDetector.js`
-68. `server/services/opsQueue.js`
-69. `server/services/opsReviewRecords.js`
-70. `server/services/paymentDisputeAnalytics.js`
-71. `server/services/payments.js`
-72. `server/services/postmortemRecords.js`
-73. `server/services/predictiveAbuse.js`
-74. `server/services/predictiveArchiveIndex.js`
-75. `server/services/predictiveSignalRetention.js`
-76. `server/services/presenceService.js`
-77. `server/services/privacyRequests.js`
-78. `server/services/processLock.js`
-79. `server/services/productionReadiness.js`
-80. `server/services/profileCompleteness.js`
-81. `server/services/profileTasks.js`
-82. `server/services/queryIndex.js`
-83. `server/services/queueCompaction.js`
-84. `server/services/queueHealthVerify.js`
-85. `server/services/queueStorageIndex.js`
-86. `server/services/queueWorkers.js`
-87. `server/services/ratings.js`
-88. `server/services/reports.js`
-89. `server/services/resourceLock.js`
-90. `server/services/sanitizer.js`
-91. `server/services/scaleHygiene.js`
-92. `server/services/scaleThresholds.js`
-93. `server/services/scheduledAbuseDetection.js`
-94. `server/services/schedulerRegistry.js`
-95. `server/services/schedulerRunHistory.js`
-96. `server/services/searchAnalytics.js`
-97. `server/services/searchIndex.js`
-98. `server/services/searchRelevance.js`
-99. `server/services/sessions.js`
-100. `server/services/snoozeReminders.js`
-101. `server/services/sseManager.js`
-102. `server/services/storagePressure.js`
-103. `server/services/trust.js`
-104. `server/services/trustAnalytics.js`
-105. `server/services/trustCalibration.js`
-106. `server/services/trustScoreV2.js`
-107. `server/services/trustSnapshotRollups.js`
-108. `server/services/userAnonymization.js`
-109. `server/services/userDataExport.js`
-110. `server/services/users.js`
-111. `server/services/validators.js`
-112. `server/services/verification.js`
-113. `server/services/webpush.js`
-114. `server/services/workerDiscovery.js`
-115. `server/services/workroom.js`
-116. `server/services/workroomAdoptionMetrics.js`
-117. `server/services/workroomAttachments.js`
-118. `server/services/workroomChecklist.js`
-119. `server/services/workroomHygiene.js`
-120. `server/services/workroomIndexHealth.js`
-121. `server/services/workroomPins.js`
-122. `server/services/workroomReceipts.js`
-123. `server/services/workroomSearch.js`
-124. `server/services/workroomTemplateMetrics.js`
+25. `server/services/benchmarkHistory.js`
+26. `server/services/cache.js`
+27. `server/services/cacheDebouncer.js`
+28. `server/services/channels/sms.js`
+29. `server/services/channels/whatsapp.js`
+30. `server/services/contentFilter.js`
+31. `server/services/counterCompaction.js`
+32. `server/services/csvExportProgress.js`
+33. `server/services/database.js`
+34. `server/services/directOffer.js`
+35. `server/services/directOfferAnalytics.js`
+36. `server/services/directOfferCounters.js`
+37. `server/services/errorAggregator.js`
+38. `server/services/eventBus.js`
+39. `server/services/eventReplayBuffer.js`
+40. `server/services/exportRegistry.js`
+41. `server/services/externalizationDecision.js`
+42. `server/services/externalizationReadiness.js`
+43. `server/services/favorites.js`
+44. `server/services/financialExport.js`
+45. `server/services/geo.js`
+46. `server/services/imageStore.js`
+47. `server/services/incidentTimeline.js`
+48. `server/services/indexHealth.js`
+49. `server/services/instanceMode.js`
+50. `server/services/instantMatch.js`
+51. `server/services/jobAlerts.js`
+52. `server/services/jobMatcher.js`
+53. `server/services/jobs.js`
+54. `server/services/liveFeed.js`
+55. `server/services/logWriter.js`
+56. `server/services/logger.js`
+57. `server/services/maintenanceMode.js`
+58. `server/services/marketplaceIntelligenceRollups.js`
+59. `server/services/matchingIntelligence.js`
+60. `server/services/messages.js`
+61. `server/services/messaging.js`
+62. `server/services/metricsRollups.js`
+63. `server/services/migration.js`
+64. `server/services/migrationSnapshotValidation.js`
+65. `server/services/monitor.js`
+66. `server/services/notificationActions.js`
+67. `server/services/notificationConversionMetrics.js`
+68. `server/services/notificationMessenger.js`
+69. `server/services/notifications.js`
+70. `server/services/offerAbuseDetector.js`
+71. `server/services/opsQueue.js`
+72. `server/services/opsReviewRecords.js`
+73. `server/services/paymentDisputeAnalytics.js`
+74. `server/services/payments.js`
+75. `server/services/phase60Readiness.js`
+76. `server/services/postmortemRecords.js`
+77. `server/services/predictiveAbuse.js`
+78. `server/services/predictiveArchiveIndex.js`
+79. `server/services/predictiveSignalRetention.js`
+80. `server/services/presenceService.js`
+81. `server/services/privacyRequests.js`
+82. `server/services/processLock.js`
+83. `server/services/productionReadiness.js`
+84. `server/services/profileCompleteness.js`
+85. `server/services/profileTasks.js`
+86. `server/services/queryIndex.js`
+87. `server/services/queueCompaction.js`
+88. `server/services/queueHealthVerify.js`
+89. `server/services/queueStorageIndex.js`
+90. `server/services/queueWorkers.js`
+91. `server/services/ratings.js`
+92. `server/services/reports.js`
+93. `server/services/resourceLock.js`
+94. `server/services/sanitizer.js`
+95. `server/services/scaleHygiene.js`
+96. `server/services/scaleThresholds.js`
+97. `server/services/scheduledAbuseDetection.js`
+98. `server/services/schedulerRegistry.js`
+99. `server/services/schedulerRunHistory.js`
+100. `server/services/searchAnalytics.js`
+101. `server/services/searchIndex.js`
+102. `server/services/searchRelevance.js`
+103. `server/services/sessions.js`
+104. `server/services/snoozeReminders.js`
+105. `server/services/sseManager.js`
+106. `server/services/storagePressure.js`
+107. `server/services/trust.js`
+108. `server/services/trustAnalytics.js`
+109. `server/services/trustCalibration.js`
+110. `server/services/trustScoreV2.js`
+111. `server/services/trustSnapshotRollups.js`
+112. `server/services/userAnonymization.js`
+113. `server/services/userDataExport.js`
+114. `server/services/users.js`
+115. `server/services/validators.js`
+116. `server/services/verification.js`
+117. `server/services/webpush.js`
+118. `server/services/workerDiscovery.js`
+119. `server/services/workroom.js`
+120. `server/services/workroomAdoptionMetrics.js`
+121. `server/services/workroomAttachments.js`
+122. `server/services/workroomChecklist.js`
+123. `server/services/workroomHygiene.js`
+124. `server/services/workroomIndexHealth.js`
+125. `server/services/workroomPins.js`
+126. `server/services/workroomReceipts.js`
+127. `server/services/workroomSearch.js`
+128. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -9300,6 +9304,199 @@ export function getLastBackupInfo() {
 
 ---
 
+## `server/services/benchmarkHistory.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/benchmarkHistory.js — Benchmark Artifact History (Phase 60)
+// ═══════════════════════════════════════════════════════════════
+// Stores read-only benchmark artifacts for evidence-based externalization decisions.
+// No PII, no secrets, no benchmark execution here.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+function isEnabled() {
+  return !!(config.BENCHMARK_HISTORY && config.BENCHMARK_HISTORY.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'bmk_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function benchmarkPath(id) {
+  return getRecordPath('benchmark_history', id);
+}
+
+function sanitizeValue(value) {
+  if (value === undefined) return undefined;
+
+  if (typeof value === 'string') {
+    if (/token|secret|password|apikey|api_key|authorization|vapid/i.test(value)) {
+      return '[redacted]';
+    }
+    return value.slice(0, 2000);
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 1000).map(sanitizeValue);
+  }
+
+  if (typeof value === 'object') {
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (/token|secret|password|apikey|api_key|authorization|vapid/i.test(key)) {
+        out[key] = '[redacted]';
+      } else {
+        const clean = sanitizeValue(val);
+        if (clean !== undefined) out[key] = clean;
+      }
+    }
+    return out;
+  }
+
+  return String(value).slice(0, 1000);
+}
+
+export function evaluateBenchmarkThresholds(result, options = {}) {
+  const warningMs = Number(options.p95WarningMs || config.BENCHMARK_HISTORY?.p95WarningMs || 1000);
+  const criticalMs = Number(options.p95CriticalMs || config.BENCHMARK_HISTORY?.p95CriticalMs || 3000);
+
+  const rows = Array.isArray(result?.results) ? result.results : [];
+  const warnings = [];
+  const criticals = [];
+
+  for (const row of rows) {
+    const p95 = Number(row.p95Ms || row.p95 || row.durationP95Ms || 0);
+    if (!Number.isFinite(p95) || p95 <= 0) continue;
+
+    const item = {
+      path: row.path || row.name || row.operation || row.label || 'unknown',
+      p95Ms: p95,
+      thresholdWarningMs: warningMs,
+      thresholdCriticalMs: criticalMs,
+    };
+
+    if (p95 >= criticalMs) {
+      criticals.push({ ...item, level: 'critical' });
+    } else if (p95 >= warningMs) {
+      warnings.push({ ...item, level: 'warning' });
+    }
+  }
+
+  return {
+    status: criticals.length > 0 ? 'critical' : (warnings.length > 0 ? 'warning' : 'ok'),
+    warningCount: warnings.length,
+    criticalCount: criticals.length,
+    warnings,
+    criticals,
+  };
+}
+
+export async function persistBenchmarkResult(result, options = {}) {
+  if (!isEnabled()) return { ok: false, disabled: true };
+
+  const id = options.id || result?.id || generateId();
+  const timestamp = result?.timestamp || nowIso();
+  const evaluation = evaluateBenchmarkThresholds(result, options);
+
+  const record = {
+    id,
+    kind: 'benchmark_history',
+    version: '0.56.0',
+    timestamp,
+    source: options.source || result?.source || 'benchmark-file-paths',
+    status: evaluation.status,
+    summary: {
+      ...(sanitizeValue(result?.summary || {})),
+      warningCount: evaluation.warningCount,
+      criticalCount: evaluation.criticalCount,
+    },
+    results: sanitizeValue(result?.results || []),
+    warnings: evaluation.warnings,
+    criticals: evaluation.criticals,
+    createdAt: nowIso(),
+  };
+
+  await atomicWrite(benchmarkPath(id), record);
+  return { ok: true, benchmark: record };
+}
+
+export async function listBenchmarkResults(options = {}) {
+  if (!isEnabled()) return { benchmarks: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('benchmark_history');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('bmk_'));
+
+  if (options.status) rows = rows.filter(r => r.status === options.status);
+  if (options.source) rows = rows.filter(r => r.source === options.source);
+
+  rows.sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    benchmarks: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getLatestBenchmarkResult(options = {}) {
+  const result = await listBenchmarkResults({ ...options, limit: 1, offset: 0 });
+  return result.benchmarks && result.benchmarks[0] ? result.benchmarks[0] : null;
+}
+
+export async function cleanupOldBenchmarkResults() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = config.BENCHMARK_HISTORY?.retentionDays || 90;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+  const result = await listBenchmarkResults({ limit: 100000, offset: 0 });
+  let cleaned = 0;
+
+  for (const row of result.benchmarks || []) {
+    const ts = new Date(row.timestamp || row.createdAt || 0).getTime();
+    if (Number.isFinite(ts) && ts > 0 && ts < cutoffMs) {
+      await deleteJSON(benchmarkPath(row.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  return cleaned;
+}
+
+export const _testHelpers = {
+  benchmarkPath,
+  sanitizeValue,
+  generateId,
+};
+```
+
+---
+
 ## `server/services/cache.js`
 
 ```javascript
@@ -14866,6 +15063,494 @@ export const _testHelpers = {
   safePublicExport,
   registryPath,
   getExportCsvAbsolutePath,
+};
+```
+
+---
+
+## `server/services/externalizationDecision.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/externalizationDecision.js — Evidence-Based Decision (Phase 60)
+// ═══════════════════════════════════════════════════════════════
+// Aggregates persisted evidence into advisory externalization decisions.
+// No external DB/search/queue implementation.
+// No connection strings.
+// No heavy scans by default.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+function isEnabled() {
+  return !!(config.EXTERNALIZATION_DECISION && config.EXTERNALIZATION_DECISION.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'edc_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function decisionPath(id) {
+  return getRecordPath('externalization_decisions', id);
+}
+
+function candidateNames() {
+  return config.EXTERNALIZATION_READINESS?.candidates || [
+    'users',
+    'jobs',
+    'applications',
+    'payments',
+    'messages',
+    'ops_queue',
+    'audit',
+    'search',
+    'images',
+  ];
+}
+
+function normalizeStatus(status) {
+  const allowed = config.EXTERNALIZATION_DECISION?.decisionStatuses || [];
+  return allowed.includes(status) ? status : 'monitor';
+}
+
+export function evaluateRepeatedPressureEvidence(snapshots, options = {}) {
+  const cfg = config.EXTERNALIZATION_DECISION || {};
+  const warningMin = Number(options.repeatedWarningMinSnapshots || cfg.repeatedWarningMinSnapshots || 3);
+  const criticalMin = Number(options.repeatedCriticalMinSnapshots || cfg.repeatedCriticalMinSnapshots || 2);
+  const windowDays = Number(options.evidenceWindowDays || cfg.evidenceWindowDays || 30);
+  const cutoffMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+
+  const rows = Array.isArray(snapshots) ? snapshots : [];
+  const recent = rows.filter(s => {
+    const ts = new Date(s.timestamp || s.createdAt || 0).getTime();
+    return Number.isFinite(ts) && ts >= cutoffMs;
+  });
+
+  const byCandidate = {};
+  for (const name of candidateNames()) {
+    byCandidate[name] = {
+      candidate: name,
+      warningSnapshots: 0,
+      criticalSnapshots: 0,
+      latestStatus: 'ok',
+      evidence: [],
+    };
+  }
+
+  function addCandidateEvidence(candidate, level, label, details) {
+    if (!byCandidate[candidate]) return;
+    if (level === 'critical') byCandidate[candidate].criticalSnapshots++;
+    else if (level === 'warning') byCandidate[candidate].warningSnapshots++;
+    byCandidate[candidate].latestStatus = level;
+    byCandidate[candidate].evidence.push({ level, label, details: details || null });
+  }
+
+  for (const snap of recent) {
+    const status = snap.status || 'ok';
+    const warnings = Array.isArray(snap.warnings) ? snap.warnings : [];
+    const criticals = Array.isArray(snap.criticals) ? snap.criticals : [];
+
+    for (const c of criticals) {
+      const code = String(c.code || c.type || c.metric || '').toLowerCase();
+      if (code.includes('queue')) addCandidateEvidence('ops_queue', 'critical', c.code || 'queue_critical', c.message);
+      if (code.includes('audit')) addCandidateEvidence('audit', 'critical', c.code || 'audit_critical', c.message);
+      if (code.includes('search')) addCandidateEvidence('search', 'critical', c.code || 'search_critical', c.message);
+      if (code.includes('image')) addCandidateEvidence('images', 'critical', c.code || 'images_critical', c.message);
+      if (code.includes('workroom') || code.includes('message')) addCandidateEvidence('messages', 'critical', c.code || 'messages_critical', c.message);
+      if (code.includes('job')) addCandidateEvidence('jobs', 'critical', c.code || 'jobs_critical', c.message);
+      if (code.includes('application')) addCandidateEvidence('applications', 'critical', c.code || 'applications_critical', c.message);
+      if (code.includes('user')) addCandidateEvidence('users', 'critical', c.code || 'users_critical', c.message);
+      if (code.includes('payment')) addCandidateEvidence('payments', 'critical', c.code || 'payments_critical', c.message);
+    }
+
+    for (const w of warnings) {
+      const code = String(w.code || w.type || w.metric || '').toLowerCase();
+      if (code.includes('queue')) addCandidateEvidence('ops_queue', 'warning', w.code || 'queue_warning', w.message);
+      if (code.includes('audit')) addCandidateEvidence('audit', 'warning', w.code || 'audit_warning', w.message);
+      if (code.includes('search')) addCandidateEvidence('search', 'warning', w.code || 'search_warning', w.message);
+      if (code.includes('image')) addCandidateEvidence('images', 'warning', w.code || 'images_warning', w.message);
+      if (code.includes('workroom') || code.includes('message')) addCandidateEvidence('messages', 'warning', w.code || 'messages_warning', w.message);
+      if (code.includes('job')) addCandidateEvidence('jobs', 'warning', w.code || 'jobs_warning', w.message);
+      if (code.includes('application')) addCandidateEvidence('applications', 'warning', w.code || 'applications_warning', w.message);
+      if (code.includes('user')) addCandidateEvidence('users', 'warning', w.code || 'users_warning', w.message);
+      if (code.includes('payment')) addCandidateEvidence('payments', 'warning', w.code || 'payments_warning', w.message);
+    }
+
+    if (status === 'critical') {
+      // General pressure without specific code should not force any candidate.
+    }
+  }
+
+  const candidates = Object.values(byCandidate).map(row => {
+    let repeated = 'none';
+    if (row.criticalSnapshots >= criticalMin) repeated = 'critical';
+    else if (row.warningSnapshots >= warningMin) repeated = 'warning';
+
+    return {
+      ...row,
+      repeated,
+      repeatedWarningMinSnapshots: warningMin,
+      repeatedCriticalMinSnapshots: criticalMin,
+    };
+  });
+
+  return {
+    windowDays,
+    snapshotCount: recent.length,
+    candidates,
+  };
+}
+
+export function evaluateBenchmarkEvidence(benchmarks, options = {}) {
+  const rows = Array.isArray(benchmarks) ? benchmarks : [];
+  const byCandidate = {};
+
+  for (const name of candidateNames()) {
+    byCandidate[name] = {
+      candidate: name,
+      warningBenchmarks: 0,
+      criticalBenchmarks: 0,
+      evidence: [],
+    };
+  }
+
+  function mapPathToCandidate(path) {
+    const p = String(path || '').toLowerCase();
+    if (p.includes('queue')) return 'ops_queue';
+    if (p.includes('audit')) return 'audit';
+    if (p.includes('search')) return 'search';
+    if (p.includes('image')) return 'images';
+    if (p.includes('message') || p.includes('workroom')) return 'messages';
+    if (p.includes('job')) return 'jobs';
+    if (p.includes('application')) return 'applications';
+    if (p.includes('user')) return 'users';
+    if (p.includes('payment')) return 'payments';
+    return null;
+  }
+
+  for (const b of rows) {
+    const warnings = Array.isArray(b.warnings) ? b.warnings : [];
+    const criticals = Array.isArray(b.criticals) ? b.criticals : [];
+
+    for (const c of criticals) {
+      const candidate = mapPathToCandidate(c.path);
+      if (!candidate || !byCandidate[candidate]) continue;
+      byCandidate[candidate].criticalBenchmarks++;
+      byCandidate[candidate].evidence.push({ level: 'critical', path: c.path, p95Ms: c.p95Ms });
+    }
+
+    for (const w of warnings) {
+      const candidate = mapPathToCandidate(w.path);
+      if (!candidate || !byCandidate[candidate]) continue;
+      byCandidate[candidate].warningBenchmarks++;
+      byCandidate[candidate].evidence.push({ level: 'warning', path: w.path, p95Ms: w.p95Ms });
+    }
+  }
+
+  return {
+    benchmarkCount: rows.length,
+    candidates: Object.values(byCandidate),
+  };
+}
+
+export function buildCandidateDecisionRows(evidence, readiness, options = {}) {
+  const pressure = evidence?.pressure?.candidates || [];
+  const benchmark = evidence?.benchmarks?.candidates || [];
+  const readinessCandidates = readiness?.candidates || [];
+
+  const byName = {};
+
+  for (const name of candidateNames()) {
+    byName[name] = {
+      candidate: name,
+      status: 'no_action',
+      score: 0,
+      reasons: [],
+      recommendedAction: 'استمر بالمراقبة ولا تنفذ نقل خارجي.',
+      implementationAllowed: false,
+    };
+  }
+
+  for (const p of pressure) {
+    const row = byName[p.candidate];
+    if (!row) continue;
+
+    if (p.repeated === 'critical') {
+      row.score += 0.6;
+      row.reasons.push('Repeated critical storage pressure');
+      row.status = 'rehearsal_required';
+    } else if (p.repeated === 'warning') {
+      row.score += 0.35;
+      row.reasons.push('Repeated warning storage pressure');
+      row.status = 'mitigate_file_based';
+    } else if (p.warningSnapshots > 0 || p.criticalSnapshots > 0) {
+      row.score += 0.1;
+      row.reasons.push('Single pressure signal only');
+      row.status = 'monitor';
+    }
+  }
+
+  for (const b of benchmark) {
+    const row = byName[b.candidate];
+    if (!row) continue;
+
+    if (b.criticalBenchmarks > 0) {
+      row.score += 0.3;
+      row.reasons.push('Critical benchmark evidence');
+      if (row.status === 'mitigate_file_based') row.status = 'rehearsal_required';
+    } else if (b.warningBenchmarks > 0) {
+      row.score += 0.15;
+      row.reasons.push('Warning benchmark evidence');
+      if (row.status === 'no_action') row.status = 'monitor';
+    }
+  }
+
+  for (const rc of readinessCandidates) {
+    const row = byName[rc.name];
+    if (!row) continue;
+    row.score += Math.min(0.25, Number(rc.score || 0) * 0.25);
+    if (rc.evidence && rc.evidence.length > 0) {
+      row.reasons.push('Externalization readiness advisory evidence');
+    }
+  }
+
+  for (const row of Object.values(byName)) {
+    row.score = Math.round(Math.min(1, row.score) * 100) / 100;
+
+    if (row.status === 'no_action') {
+      row.recommendedAction = 'لا يوجد إجراء خارجي. استمر بالمراقبة.';
+    } else if (row.status === 'monitor') {
+      row.recommendedAction = 'اجمع evidence إضافي قبل أي قرار.';
+    } else if (row.status === 'mitigate_file_based') {
+      row.recommendedAction = 'نفذ compact/repair/verify ثم أعد القياس.';
+    } else if (row.status === 'rehearsal_required') {
+      row.recommendedAction = 'شغّل migration snapshot validation + rehearsal قبل التفكير في pilot.';
+    }
+
+    // Phase 60 guardrail: never pilot unless explicitly passed by options and evidence is strong.
+    if (options.allowPilotCandidate === true && row.status === 'rehearsal_required' && row.score >= 0.9) {
+      row.status = 'pilot_candidate';
+      row.recommendedAction = 'مرشح Pilot محدود — يتطلب Approval وخطة Rollback.';
+    }
+
+    row.status = normalizeStatus(row.status);
+    row.implementationAllowed = false;
+  }
+
+  return Object.values(byName).sort((a, b) => b.score - a.score || a.candidate.localeCompare(b.candidate));
+}
+
+export function buildPhase60RecommendedActions(report) {
+  const actions = [];
+
+  if (!report) return actions;
+
+  if (!report.evidence?.pressure || report.evidence.pressure.snapshotCount === 0) {
+    actions.push({
+      id: 'capture_storage_pressure',
+      label: 'قياس ضغط التخزين',
+      severity: 'warning',
+      command: 'node scripts/measure-storage-pressure.js --json',
+      adminRoute: '/api/admin/storage-pressure/capture',
+      reason: 'لا توجد pressure snapshots كافية لاتخاذ قرار Phase 60.',
+    });
+  }
+
+  if (!report.evidence?.benchmarks || report.evidence.benchmarks.benchmarkCount === 0) {
+    actions.push({
+      id: 'run_benchmark_file_paths',
+      label: 'تشغيل Benchmarks للمسارات الملفية',
+      severity: 'warning',
+      command: 'node scripts/benchmark-file-paths.js --json --persist',
+      adminRoute: '/api/admin/benchmarks/history',
+      reason: 'لا يوجد benchmark history لتقييم p95 قبل أي externalization.',
+    });
+  }
+
+  const needsRehearsal = (report.candidates || []).some(c => c.status === 'rehearsal_required');
+  if (needsRehearsal) {
+    actions.push({
+      id: 'run_migration_rehearsal',
+      label: 'تشغيل تدريب الهجرة',
+      severity: 'warning',
+      command: 'node scripts/run-migration-rehearsal.js --dry-run --json',
+      adminRoute: '/api/admin/migration-rehearsal/run',
+      reason: 'يوجد candidate يحتاج rehearsal قبل أي pilot.',
+    });
+  }
+
+  actions.push({
+    id: 'weekly_ops_review',
+    label: 'تحديث مراجعة التشغيل الأسبوعية',
+    severity: 'info',
+    command: 'node scripts/ops-weekly-review.js --persist',
+    adminRoute: '/api/admin/ops/reviews',
+    reason: 'قرارات Phase 60 يجب أن تُوثق داخل governance workflow.',
+  });
+
+  return actions;
+}
+
+async function loadPressureSnapshots(limit = 30) {
+  try {
+    const dir = getCollectionPath('storage_pressure');
+    const rows = await listJSON(dir);
+    return rows
+      .filter(r => r && (r.id || r.timestamp))
+      .sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))
+      .slice(0, limit);
+  } catch (_) {
+    return [];
+  }
+}
+
+async function loadBenchmarkSnapshots(limit = 30) {
+  try {
+    const { listBenchmarkResults } = await import('./benchmarkHistory.js');
+    const result = await listBenchmarkResults({ limit, offset: 0 });
+    return result.benchmarks || [];
+  } catch (_) {
+    return [];
+  }
+}
+
+export async function getExternalizationDecisionReport(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      phase: 60,
+      implementationAllowed: false,
+      status: 'deferred',
+    };
+  }
+
+  const pressureSnapshots = options.pressureSnapshots || await loadPressureSnapshots(options.limit || 30);
+  const benchmarkSnapshots = options.benchmarks || await loadBenchmarkSnapshots(options.limit || 30);
+
+  let readiness = null;
+  try {
+    const { getExternalizationReadiness } = await import('./externalizationReadiness.js');
+    readiness = await getExternalizationReadiness({ loadPressure: true });
+  } catch (_) {
+    readiness = { enabled: false, candidates: [] };
+  }
+
+  const pressureEvidence = evaluateRepeatedPressureEvidence(pressureSnapshots, options);
+  const benchmarkEvidence = evaluateBenchmarkEvidence(benchmarkSnapshots, options);
+
+  const evidence = {
+    pressure: pressureEvidence,
+    benchmarks: benchmarkEvidence,
+    readiness: readiness ? {
+      enabled: !!readiness.enabled,
+      pressureSnapshot: readiness.pressureSnapshot || null,
+    } : null,
+  };
+
+  const candidates = buildCandidateDecisionRows(evidence, readiness, options);
+
+  let status = 'no_action';
+  if (candidates.some(c => c.status === 'pilot_candidate')) status = 'pilot_candidate';
+  else if (candidates.some(c => c.status === 'rehearsal_required')) status = 'rehearsal_required';
+  else if (candidates.some(c => c.status === 'mitigate_file_based')) status = 'mitigate_file_based';
+  else if (candidates.some(c => c.status === 'monitor')) status = 'monitor';
+
+  const report = {
+    enabled: true,
+    phase: 60,
+    advisoryOnly: true,
+    implementationAllowed: false,
+    status: normalizeStatus(status),
+    generatedAt: nowIso(),
+    evidence,
+    candidates,
+    recommendations: [],
+    requiredApprovals: status === 'pilot_candidate'
+      ? ['admin approval', 'rollback rehearsal', 'privacy review', 'production readiness review']
+      : [],
+    guardrails: [
+      'لا يوجد نقل تلقائي في Phase 60.',
+      'تحذير واحد لا يبرر PostgreSQL أو external queue أو external search.',
+      'Repeated critical evidence يمكن أن يوصي بتدريب الهجرة، وليس migration مباشر.',
+      'file-backed source of truth يبقى محفوظًا حتى وجود موافقة صريحة.',
+    ],
+  };
+
+  report.recommendations = buildPhase60RecommendedActions(report);
+  return report;
+}
+
+export async function captureExternalizationDecisionSnapshot(options = {}) {
+  const report = await getExternalizationDecisionReport(options);
+
+  if (!isEnabled()) return { ok: false, disabled: true, report };
+
+  const id = options.id || generateId();
+  const record = {
+    id,
+    kind: 'externalization_decision',
+    version: '0.56.0',
+    ...report,
+    createdAt: nowIso(),
+  };
+
+  await atomicWrite(decisionPath(id), record);
+  return { ok: true, decision: record };
+}
+
+export async function listExternalizationDecisionSnapshots(options = {}) {
+  if (!isEnabled()) return { decisions: [], total: 0, limit: 20, offset: 0 };
+
+  const dir = getCollectionPath('externalization_decisions');
+  let rows = await listJSON(dir);
+  rows = rows.filter(r => r && r.id && r.id.startsWith('edc_'));
+  rows.sort((a, b) => new Date(b.createdAt || b.generatedAt) - new Date(a.createdAt || a.generatedAt));
+
+  const total = rows.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    decisions: rows.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function cleanupOldExternalizationDecisionSnapshots() {
+  const retentionDays = config.EXTERNALIZATION_DECISION?.evidenceWindowDays || 30;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const result = await listExternalizationDecisionSnapshots({ limit: 100000, offset: 0 });
+
+  let cleaned = 0;
+  for (const row of result.decisions || []) {
+    const ts = new Date(row.createdAt || row.generatedAt || 0).getTime();
+    if (Number.isFinite(ts) && ts > 0 && ts < cutoffMs) {
+      await deleteJSON(decisionPath(row.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+  return cleaned;
+}
+
+export const _testHelpers = {
+  generateId,
+  decisionPath,
+  normalizeStatus,
 };
 ```
 
@@ -22231,6 +22916,28 @@ const builtInMigrations = [
       logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
     },
   },
+  {
+    version: 20,
+    name: 'Phase 60: Evidence-Based Externalization Decision and Migration Rehearsal',
+    up: async () => {
+      // Phase 60 registers additive evidence/rehearsal structures:
+      //   - metrics/benchmarks
+      //   - migration-snapshots/rehearsals
+      //   - metrics/externalization-decisions
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - validate snapshots
+      //   - run migration rehearsals
+      //   - externalize any data
+      //   - connect to external DB/search/queue
+      //
+      // Phase 60 remains evidence-based and advisory by default.
+      logger.info('Migration v20: Phase 60 evidence + rehearsal directories registered (no heavy scan, no externalization)');
+    },
+  },
 ];
 
 /**
@@ -22288,6 +22995,505 @@ export async function runMigrations() {
 
   return { applied, current: state.version };
 }
+```
+
+---
+
+## `server/services/migrationSnapshotValidation.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/migrationSnapshotValidation.js — Snapshot Validation (Phase 60)
+// ═══════════════════════════════════════════════════════════════
+// Validates Phase 59 migration snapshots without mutating source data.
+// Checks manifest, NDJSON, counts, checksums, redaction, reference samples.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { createReadStream } from 'node:fs';
+import { readFile, stat } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
+import config from '../../config.js';
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function cfg() {
+  return config.MIGRATION_SNAPSHOT_VALIDATION || {};
+}
+
+function forbiddenRegex() {
+  return new RegExp(cfg().forbiddenKeysRegex || '(token|secret|password|apiKey|api_key|authorization|vapidPrivateKey)', 'i');
+}
+
+function sha256File(filePath) {
+  return new Promise((resolvePromise, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = createReadStream(filePath);
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolvePromise(hash.digest('hex')));
+  });
+}
+
+async function lineByLine(filePath, onLine) {
+  const rl = createInterface({
+    input: createReadStream(filePath, { encoding: 'utf-8' }),
+    crlfDelay: Infinity,
+  });
+
+  let lineNo = 0;
+  for await (const line of rl) {
+    lineNo++;
+    if (!line.trim()) continue;
+    await onLine(line, lineNo);
+    if (lineNo % 500 === 0) {
+      await new Promise(resolvePromise => setImmediate(resolvePromise));
+    }
+  }
+
+  return lineNo;
+}
+
+function hasForbiddenKeys(obj, path = '') {
+  const hits = [];
+  const rx = forbiddenRegex();
+
+  function walk(value, currentPath) {
+    if (!value || typeof value !== 'object') return;
+
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        walk(value[i], `${currentPath}[${i}]`);
+      }
+      return;
+    }
+
+    for (const [key, val] of Object.entries(value)) {
+      const p = currentPath ? `${currentPath}.${key}` : key;
+
+      if (rx.test(key)) {
+        hits.push({ path: p, key });
+      }
+
+      if (typeof val === 'string') {
+        const looksBase64Image =
+          val.startsWith('data:image/') ||
+          (/^[A-Za-z0-9+/=]{200,}$/.test(val) && val.length > (cfg().rawBase64WarningKB || 32) * 1024);
+
+        if (looksBase64Image) {
+          hits.push({ path: p, key, reason: 'raw_base64_or_image_payload' });
+        }
+      }
+
+      walk(val, p);
+    }
+  }
+
+  walk(obj, path);
+  return hits;
+}
+
+export async function validateManifest(snapshotPath, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const full = resolve(snapshotPath || '');
+  const manifestPath = join(full, 'manifest.json');
+
+  let manifest = null;
+
+  try {
+    const raw = await readFile(manifestPath, 'utf-8');
+    manifest = JSON.parse(raw);
+  } catch (err) {
+    errors.push({
+      check: 'manifest',
+      code: 'MANIFEST_READ_FAILED',
+      message: err.message,
+    });
+    return { ok: false, manifest: null, errors, warnings };
+  }
+
+  if (!manifest || typeof manifest !== 'object') {
+    errors.push({ check: 'manifest', code: 'MANIFEST_INVALID', message: 'manifest is not an object' });
+  }
+
+  if (!manifest.collections || typeof manifest.collections !== 'object') {
+    errors.push({ check: 'manifest', code: 'MANIFEST_COLLECTIONS_MISSING', message: 'manifest.collections missing' });
+  }
+
+  if (cfg().requireChecksums && manifest.collections) {
+    for (const [name, row] of Object.entries(manifest.collections)) {
+      if (!row.sha256) {
+        errors.push({
+          check: 'manifest',
+          code: 'COLLECTION_CHECKSUM_MISSING',
+          collection: name,
+        });
+      }
+      if (!row.file) {
+        errors.push({
+          check: 'manifest',
+          code: 'COLLECTION_FILE_MISSING',
+          collection: name,
+        });
+      }
+    }
+  }
+
+  return { ok: errors.length === 0, manifest, errors, warnings };
+}
+
+export async function validateNdjsonFile(filePath, options = {}) {
+  const errors = [];
+  const warnings = [];
+  let count = 0;
+
+  try {
+    await stat(filePath);
+  } catch (err) {
+    return {
+      ok: false,
+      status: 'failed',
+      count: 0,
+      errors: [{ check: 'ndjson', code: 'FILE_NOT_FOUND', filePath, message: err.message }],
+      warnings,
+    };
+  }
+
+  try {
+    await lineByLine(filePath, async (line, lineNo) => {
+      try {
+        const parsed = JSON.parse(line);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          warnings.push({ check: 'ndjson', code: 'LINE_NOT_OBJECT', filePath, lineNo });
+        }
+        count++;
+      } catch (err) {
+        errors.push({
+          check: 'ndjson',
+          code: 'INVALID_JSON_LINE',
+          filePath,
+          lineNo,
+          message: err.message,
+        });
+      }
+    });
+  } catch (err) {
+    errors.push({ check: 'ndjson', code: 'READ_FAILED', filePath, message: err.message });
+  }
+
+  return {
+    ok: errors.length === 0,
+    status: errors.length === 0 ? 'passed' : 'failed',
+    count,
+    errors,
+    warnings,
+  };
+}
+
+export async function validateSnapshotChecksums(snapshotPath, manifest, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const checksums = {};
+
+  if (!manifest || !manifest.collections) {
+    return { ok: false, checksums, errors: [{ check: 'checksums', code: 'MANIFEST_MISSING' }], warnings };
+  }
+
+  for (const [name, row] of Object.entries(manifest.collections)) {
+    if (!row || !row.file) continue;
+    const filePath = join(snapshotPath, row.file);
+
+    if (!row.sha256) {
+      warnings.push({ check: 'checksums', code: 'CHECKSUM_NOT_DECLARED', collection: name });
+      continue;
+    }
+
+    try {
+      const actual = await sha256File(filePath);
+      checksums[name] = { expected: row.sha256, actual };
+      if (actual !== row.sha256) {
+        errors.push({
+          check: 'checksums',
+          code: 'CHECKSUM_MISMATCH',
+          collection: name,
+          expected: row.sha256,
+          actual,
+        });
+      }
+    } catch (err) {
+      errors.push({
+        check: 'checksums',
+        code: 'CHECKSUM_FAILED',
+        collection: name,
+        message: err.message,
+      });
+    }
+  }
+
+  return { ok: errors.length === 0, checksums, errors, warnings };
+}
+
+export async function validateSnapshotRedaction(snapshotPath, manifest, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const redaction = { scannedRecords: 0, hits: [] };
+
+  if (!manifest || !manifest.collections) {
+    return { ok: false, redaction, errors: [{ check: 'redaction', code: 'MANIFEST_MISSING' }], warnings };
+  }
+
+  for (const [name, row] of Object.entries(manifest.collections)) {
+    if (!row || !row.file || !row.file.endsWith('.ndjson')) continue;
+
+    const filePath = join(snapshotPath, row.file);
+
+    try {
+      await lineByLine(filePath, async (line, lineNo) => {
+        let obj;
+        try {
+          obj = JSON.parse(line);
+        } catch (_) {
+          return;
+        }
+
+        redaction.scannedRecords++;
+        const hits = hasForbiddenKeys(obj);
+        for (const hit of hits) {
+          const item = { collection: name, lineNo, ...hit };
+          redaction.hits.push(item);
+          errors.push({
+            check: 'redaction',
+            code: hit.reason === 'raw_base64_or_image_payload' ? 'RAW_BASE64_PAYLOAD' : 'FORBIDDEN_KEY',
+            ...item,
+          });
+        }
+      });
+    } catch (err) {
+      errors.push({
+        check: 'redaction',
+        code: 'REDACTION_SCAN_FAILED',
+        collection: name,
+        message: err.message,
+      });
+    }
+  }
+
+  return { ok: errors.length === 0, redaction, errors, warnings };
+}
+
+export async function validateReferentialIntegrity(snapshotPath, manifest, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const references = {
+    users: new Set(),
+    jobs: new Set(),
+    checked: 0,
+    missing: [],
+  };
+
+  const sampleLimit = Number(options.sampleReferenceCheckLimit || cfg().sampleReferenceCheckLimit || 1000);
+
+  async function loadIds(collectionName, set) {
+    const row = manifest.collections?.[collectionName];
+    if (!row || !row.file) return;
+
+    const filePath = join(snapshotPath, row.file);
+    await lineByLine(filePath, async (line) => {
+      if (set.size >= sampleLimit) return;
+      try {
+        const obj = JSON.parse(line);
+        if (obj && obj.id) set.add(obj.id);
+      } catch (_) {}
+    });
+  }
+
+  if (!manifest || !manifest.collections) {
+    return { ok: false, references: {}, errors: [{ check: 'references', code: 'MANIFEST_MISSING' }], warnings };
+  }
+
+  try {
+    await loadIds('users', references.users);
+    await loadIds('jobs', references.jobs);
+  } catch (err) {
+    warnings.push({ check: 'references', code: 'REFERENCE_ID_LOAD_FAILED', message: err.message });
+  }
+
+  async function checkCollection(collectionName, rules) {
+    const row = manifest.collections?.[collectionName];
+    if (!row || !row.file) return;
+
+    const filePath = join(snapshotPath, row.file);
+    let checkedInCollection = 0;
+
+    await lineByLine(filePath, async (line, lineNo) => {
+      if (checkedInCollection >= sampleLimit) return;
+      let obj;
+      try { obj = JSON.parse(line); } catch (_) { return; }
+
+      checkedInCollection++;
+      references.checked++;
+
+      for (const rule of rules) {
+        const value = obj[rule.field];
+        if (!value) continue;
+        const targetSet = rule.target === 'users' ? references.users : references.jobs;
+        if (targetSet.size > 0 && !targetSet.has(value)) {
+          const miss = {
+            collection: collectionName,
+            lineNo,
+            field: rule.field,
+            value,
+            target: rule.target,
+          };
+          references.missing.push(miss);
+          warnings.push({ check: 'references', code: 'REFERENCE_NOT_FOUND_IN_SAMPLE', ...miss });
+        }
+      }
+    });
+  }
+
+  try {
+    await checkCollection('jobs', [{ field: 'employerId', target: 'users' }]);
+    await checkCollection('applications', [
+      { field: 'jobId', target: 'jobs' },
+      { field: 'workerId', target: 'users' },
+    ]);
+    await checkCollection('payments', [
+      { field: 'jobId', target: 'jobs' },
+      { field: 'employerId', target: 'users' },
+    ]);
+    await checkCollection('messages', [
+      { field: 'jobId', target: 'jobs' },
+      { field: 'senderId', target: 'users' },
+      { field: 'recipientId', target: 'users' },
+    ]);
+    await checkCollection('direct_offers', [
+      { field: 'employerId', target: 'users' },
+      { field: 'workerId', target: 'users' },
+    ]);
+  } catch (err) {
+    warnings.push({ check: 'references', code: 'REFERENCE_SCAN_FAILED', message: err.message });
+  }
+
+  return {
+    ok: errors.length === 0,
+    references: {
+      usersSample: references.users.size,
+      jobsSample: references.jobs.size,
+      checked: references.checked,
+      missing: references.missing.slice(0, 100),
+    },
+    errors,
+    warnings,
+  };
+}
+
+export async function validateMigrationSnapshot(snapshotPath, options = {}) {
+  const started = Date.now();
+  const fullPath = resolve(snapshotPath || '');
+  const errors = [];
+  const warnings = [];
+  const counts = {};
+
+  const manifestResult = await validateManifest(fullPath, options);
+  errors.push(...manifestResult.errors);
+  warnings.push(...manifestResult.warnings);
+
+  const manifest = manifestResult.manifest;
+
+  if (!manifest) {
+    return {
+      ok: false,
+      status: 'failed',
+      snapshotPath: fullPath,
+      errors,
+      warnings,
+      counts,
+      generatedAt: nowIso(),
+      durationMs: Date.now() - started,
+    };
+  }
+
+  if (cfg().validateNdjson !== false && manifest.collections) {
+    for (const [name, row] of Object.entries(manifest.collections)) {
+      if (!row || !row.file || !row.file.endsWith('.ndjson')) continue;
+
+      const filePath = join(fullPath, row.file);
+      const result = await validateNdjsonFile(filePath, options);
+
+      counts[name] = {
+        manifestCount: row.count || 0,
+        actualCount: result.count,
+      };
+
+      if (typeof row.count === 'number' && row.count !== result.count) {
+        warnings.push({
+          check: 'counts',
+          code: 'COUNT_MISMATCH',
+          collection: name,
+          manifestCount: row.count,
+          actualCount: result.count,
+        });
+      }
+
+      errors.push(...result.errors);
+      warnings.push(...result.warnings);
+    }
+  }
+
+  let checksumResult = { ok: true, checksums: {}, errors: [], warnings: [] };
+  if (cfg().requireChecksums !== false) {
+    checksumResult = await validateSnapshotChecksums(fullPath, manifest, options);
+    errors.push(...checksumResult.errors);
+    warnings.push(...checksumResult.warnings);
+  }
+
+  let redactionResult = { ok: true, redaction: {}, errors: [], warnings: [] };
+  if (cfg().validateRedaction !== false) {
+    redactionResult = await validateSnapshotRedaction(fullPath, manifest, options);
+    errors.push(...redactionResult.errors);
+    warnings.push(...redactionResult.warnings);
+  }
+
+  let referenceResult = { ok: true, references: {}, errors: [], warnings: [] };
+  if (cfg().validateReferentialIntegrity !== false) {
+    referenceResult = await validateReferentialIntegrity(fullPath, manifest, options);
+    errors.push(...referenceResult.errors);
+    warnings.push(...referenceResult.warnings);
+  }
+
+  const status = errors.length > 0 ? 'failed' : (warnings.length > 0 ? 'warning' : 'passed');
+
+  return {
+    ok: errors.length === 0,
+    status,
+    snapshotPath: fullPath,
+    manifest: {
+      formatVersion: manifest.formatVersion || null,
+      phase: manifest.phase || null,
+      createdAt: manifest.createdAt || null,
+      source: manifest.source || null,
+    },
+    errors,
+    warnings,
+    counts,
+    checksums: checksumResult.checksums,
+    redaction: redactionResult.redaction,
+    references: referenceResult.references,
+    generatedAt: nowIso(),
+    durationMs: Date.now() - started,
+  };
+}
+
+export const _testHelpers = {
+  forbiddenRegex,
+  hasForbiddenKeys,
+  sha256File,
+};
 ```
 
 ---
@@ -26472,6 +27678,141 @@ export async function countByStatus() {
 
 ---
 
+## `server/services/phase60Readiness.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/phase60Readiness.js — Lightweight Phase 60 Checks
+// ═══════════════════════════════════════════════════════════════
+
+import { stat } from 'node:fs/promises';
+import config from '../../config.js';
+
+async function exists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function check(id, status, message) {
+  return { id, status, message };
+}
+
+export async function getPhase60ReadinessChecks() {
+  const checks = [];
+
+  const requiredDocs = [
+    'PHASE60_EXTERNALIZATION_DECISION.md',
+    'PHASE60_MIGRATION_REHEARSAL.md',
+    'PHASE60_ROLLBACK_PLAN.md',
+    'PHASE60_REPOSITORY_BOUNDARIES.md',
+    'PHASE60_EVENT_BRIDGE_DESIGN.md',
+    'PHASE60_SSE_FANOUT_DESIGN.md',
+    'PHASE60_OBJECT_STORAGE_DECISION.md',
+    'PHASE60_EXTERNAL_QUEUE_DECISION.md',
+    'PHASE60_EXTERNAL_SEARCH_DECISION.md',
+  ];
+
+  for (const doc of requiredDocs) {
+    checks.push(check(
+      `phase60_doc_${doc}`,
+      await exists(doc) ? 'pass' : 'warn',
+      await exists(doc) ? `${doc} exists` : `${doc} is missing`
+    ));
+  }
+
+  const scripts = [
+    'scripts/validate-migration-snapshot.js',
+    'scripts/run-migration-rehearsal.js',
+    'scripts/capture-externalization-decision.js',
+    'scripts/list-benchmark-history.js',
+  ];
+
+  for (const script of scripts) {
+    checks.push(check(
+      `phase60_script_${script}`,
+      await exists(script) ? 'pass' : 'warn',
+      await exists(script) ? `${script} exists` : `${script} is missing`
+    ));
+  }
+
+  checks.push(check(
+    'phase60_advisory_only',
+    config.EXTERNALIZATION_DECISION?.advisoryOnly !== false ? 'pass' : 'fail',
+    config.EXTERNALIZATION_DECISION?.advisoryOnly !== false
+      ? 'Phase 60 externalization decision is advisory-only.'
+      : 'Phase 60 advisoryOnly is disabled.'
+  ));
+
+  checks.push(check(
+    'phase60_no_implementation_before_approval',
+    config.EXTERNALIZATION_DECISION?.noImplementationBeforeApproval !== false ? 'pass' : 'fail',
+    config.EXTERNALIZATION_DECISION?.noImplementationBeforeApproval !== false
+      ? 'External implementation requires approval.'
+      : 'External implementation approval guard is disabled.'
+  ));
+
+  let latestDecision = null;
+  try {
+    const { listExternalizationDecisionSnapshots } = await import('./externalizationDecision.js');
+    const result = await listExternalizationDecisionSnapshots({ limit: 1, offset: 0 });
+    latestDecision = result.decisions && result.decisions[0] ? result.decisions[0] : null;
+  } catch (_) {}
+
+  checks.push(check(
+    'phase60_latest_decision_snapshot',
+    latestDecision ? 'pass' : 'warn',
+    latestDecision
+      ? `Latest Phase 60 decision snapshot: ${latestDecision.status}`
+      : 'No Phase 60 externalization decision snapshot captured yet.'
+  ));
+
+  let latestBenchmark = null;
+  try {
+    const { getLatestBenchmarkResult } = await import('./benchmarkHistory.js');
+    latestBenchmark = await getLatestBenchmarkResult();
+  } catch (_) {}
+
+  checks.push(check(
+    'phase60_latest_benchmark_artifact',
+    latestBenchmark ? 'pass' : 'warn',
+    latestBenchmark
+      ? `Latest benchmark artifact: ${latestBenchmark.status}`
+      : 'No benchmark history artifact captured yet.'
+  ));
+
+  return checks;
+}
+
+export async function getPhase60EvidenceSummary() {
+  let decision = null;
+  let benchmark = null;
+
+  try {
+    const { getExternalizationDecisionReport } = await import('./externalizationDecision.js');
+    decision = await getExternalizationDecisionReport();
+  } catch (_) {}
+
+  try {
+    const { getLatestBenchmarkResult } = await import('./benchmarkHistory.js');
+    benchmark = await getLatestBenchmarkResult();
+  } catch (_) {}
+
+  return {
+    enabled: true,
+    decisionStatus: decision ? decision.status : 'unknown',
+    implementationAllowed: false,
+    latestBenchmarkStatus: benchmark ? benchmark.status : 'missing',
+    recommendations: decision ? decision.recommendations || [] : [],
+  };
+}
+```
+
+---
+
 ## `server/services/postmortemRecords.js`
 
 ```javascript
@@ -29780,6 +31121,7 @@ import { getWorkerStats } from './queueWorkers.js';
 import { getQueueStats } from './opsQueue.js';
 import { getAlertDeliveryStats } from './alertDeliveryHistory.js';
 import { getAuditIndexStats } from './auditLogIndex.js';
+import { getPhase60ReadinessChecks } from './phase60Readiness.js';
 
 function check(id, status, message, details = {}, recommendation = null) {
   const out = { id, status, message, details };
@@ -30703,6 +32045,20 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkDangerousActionApprovals(isProd));
   checks.push(await checkWeeklyOpsReviewFreshness(isProd));
   checks.push(await checkCriticalIncidentPostmortems(isProd));
+
+  // Phase 60 — Evidence-based externalization decision + migration rehearsal readiness.
+  try {
+    const phase60Checks = await getPhase60ReadinessChecks();
+    for (const c of phase60Checks) checks.push(c);
+  } catch (err) {
+    checks.push(check(
+      'phase60_readiness',
+      'warn',
+      'Could not evaluate Phase 60 readiness checks',
+      { error: err.message },
+      'node scripts/capture-externalization-decision.js --json'
+    ));
+  }
 
   return checks;
 }
@@ -35172,6 +36528,7 @@ export async function getScaleHygieneOverview() {
     postmortemBacklog,
     rbacMatrix,
     storagePressure,
+    phase60Evidence,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -35199,6 +36556,9 @@ export async function getScaleHygieneOverview() {
       .catch(err => ({ enabled: false, error: err.message })),
     import('./storagePressure.js')
       .then(m => m.getStoragePressure({ persist: false }))
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./phase60Readiness.js')
+      .then(m => m.getPhase60EvidenceSummary())
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -35360,6 +36720,31 @@ export async function getScaleHygieneOverview() {
     }
   }
 
+  // Phase 60 — Evidence collection recommended actions.
+  if (phase60Evidence && phase60Evidence.enabled !== false) {
+    if (phase60Evidence.decisionStatus === 'unknown') {
+      recommendedActions.push({
+        id: 'phase60_capture_decision',
+        label: 'حفظ قرار Phase 60',
+        severity: 'warning',
+        command: 'node scripts/capture-externalization-decision.js --persist',
+        adminRoute: '/api/admin/externalization/decision',
+        reason: 'لا يوجد قرار Phase 60 محفوظ يربط pressure والbenchmarks والتدريب.',
+      });
+    }
+
+    if (phase60Evidence.latestBenchmarkStatus === 'missing') {
+      recommendedActions.push({
+        id: 'phase60_benchmark_history',
+        label: 'تشغيل benchmark history',
+        severity: 'warning',
+        command: 'node scripts/benchmark-file-paths.js --json --persist',
+        adminRoute: '/api/admin/benchmarks/history',
+        reason: 'قرارات externalization تحتاج benchmark history وليس snapshot واحد.',
+      });
+    }
+  }
+
   if (storagePressure && storagePressure.status === 'critical') {
     recommendedActions.push({
       id: 'storage_pressure_critical_review',
@@ -35502,6 +36887,12 @@ export async function getScaleHygieneOverview() {
         exportEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.exportEnabled),
         anonymizeEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.anonymizeEnabled),
       },
+    },
+    phase60Evidence: phase60Evidence || {
+      enabled: false,
+      decisionStatus: 'unknown',
+      latestBenchmarkStatus: 'missing',
+      recommendations: [],
     },
     recommendedActions: recommendedActions.slice(0, 12),
     warnings: warnings.slice(0, 100),

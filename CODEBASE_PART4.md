@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.55.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-23T16:06:20.258Z
-> Files in this part: 78
+# يوميّة (Yawmia) v0.56.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-24T02:08:11.761Z
+> Files in this part: 82
 
 ## Files
 1. `frontend/404.html`
@@ -43,44 +43,48 @@
 38. `scripts/benchmark-file-paths.js`
 39. `scripts/benchmark.js`
 40. `scripts/bundle-for-review.js`
-41. `scripts/cleanup-attachments.js`
-42. `scripts/compact-counters.js`
-43. `scripts/compact-predictive-signals.js`
-44. `scripts/compact-queue.js`
-45. `scripts/compact-workrooms.js`
-46. `scripts/export-incident-timeline.js`
-47. `scripts/export-migration-snapshot.js`
-48. `scripts/export-user-data.js`
-49. `scripts/generate-vapid-keys.js`
-50. `scripts/measure-storage-pressure.js`
-51. `scripts/migrate.js`
-52. `scripts/ops-weekly-review.js`
-53. `scripts/postdeploy-smoke.js`
-54. `scripts/predeploy-check.js`
-55. `scripts/queue-drain.js`
-56. `scripts/queue-retry-dlq.js`
-57. `scripts/rebuild-audit-index.js`
-58. `scripts/rebuild-counters.js`
-59. `scripts/rebuild-predictive-archive-index.js`
-60. `scripts/rebuild-search-relevance.js`
-61. `scripts/rebuild-workroom-search.js`
-62. `scripts/repair-indexes.js`
-63. `scripts/repair-queue.js`
-64. `scripts/rollup-product-intelligence.js`
-65. `scripts/rollup-trust-snapshots.js`
-66. `scripts/run-backup-restore-drill.js`
-67. `scripts/run-trust-calibration.js`
-68. `scripts/scheduler-cadence-report.js`
-69. `scripts/verify-admin-rbac.js`
-70. `scripts/verify-audit-index.js`
-71. `scripts/verify-data-json.js`
-72. `scripts/verify-file-health.js`
-73. `scripts/verify-marketplace-intelligence.js`
-74. `scripts/verify-privacy-governance.js`
-75. `scripts/verify-production-readiness.js`
-76. `scripts/verify-queue.js`
-77. `scripts/verify-scale-thresholds.js`
-78. `scripts/verify-workroom-indexes.js`
+41. `scripts/capture-externalization-decision.js`
+42. `scripts/cleanup-attachments.js`
+43. `scripts/compact-counters.js`
+44. `scripts/compact-predictive-signals.js`
+45. `scripts/compact-queue.js`
+46. `scripts/compact-workrooms.js`
+47. `scripts/export-incident-timeline.js`
+48. `scripts/export-migration-snapshot.js`
+49. `scripts/export-user-data.js`
+50. `scripts/generate-vapid-keys.js`
+51. `scripts/list-benchmark-history.js`
+52. `scripts/measure-storage-pressure.js`
+53. `scripts/migrate.js`
+54. `scripts/ops-weekly-review.js`
+55. `scripts/postdeploy-smoke.js`
+56. `scripts/predeploy-check.js`
+57. `scripts/queue-drain.js`
+58. `scripts/queue-retry-dlq.js`
+59. `scripts/rebuild-audit-index.js`
+60. `scripts/rebuild-counters.js`
+61. `scripts/rebuild-predictive-archive-index.js`
+62. `scripts/rebuild-search-relevance.js`
+63. `scripts/rebuild-workroom-search.js`
+64. `scripts/repair-indexes.js`
+65. `scripts/repair-queue.js`
+66. `scripts/rollup-product-intelligence.js`
+67. `scripts/rollup-trust-snapshots.js`
+68. `scripts/run-backup-restore-drill.js`
+69. `scripts/run-migration-rehearsal.js`
+70. `scripts/run-trust-calibration.js`
+71. `scripts/scheduler-cadence-report.js`
+72. `scripts/validate-migration-snapshot.js`
+73. `scripts/verify-admin-rbac.js`
+74. `scripts/verify-audit-index.js`
+75. `scripts/verify-data-json.js`
+76. `scripts/verify-file-health.js`
+77. `scripts/verify-marketplace-intelligence.js`
+78. `scripts/verify-privacy-governance.js`
+79. `scripts/verify-production-readiness.js`
+80. `scripts/verify-queue.js`
+81. `scripts/verify-scale-thresholds.js`
+82. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -338,6 +342,80 @@
         </div>
 
         <div id="externalizationCandidates">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 60 — Evidence-Based Externalization Decision -->
+      <div class="admin-section" id="phase60DecisionSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚦 قرار Phase 60 المبني على الدليل</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPhase60Decision()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          Phase 60 = قرار وتدريب، وليس نقل قاعدة بيانات افتراضي.
+          لا يوجد PostgreSQL أو external queue أو external search بدون أدلة متكررة وموافقة واضحة.
+        </p>
+
+        <div id="phase60DecisionRecommendations" class="recommended-actions"></div>
+
+        <div id="phase60DecisionSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePhase60Decision()">حفظ قرار جديد</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPhase60DecisionSnapshots()">سجل القرارات</button>
+        </div>
+
+        <div id="phase60DecisionDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 60 — Migration Rehearsal -->
+      <div class="admin-section" id="migrationRehearsalSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🧪 تدريب الهجرة والتحقق من Snapshot</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMigrationRehearsal()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          التدريب آمن: لا يغيّر بيانات الإنتاج، ولا يتصل بأي DB خارجي.
+          أدخل مسار snapshot تم إنشاؤه سابقاً لتشغيل validation/rehearsal.
+        </p>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <input id="migrationSnapshotPathInput" class="form-input form-input--sm" placeholder="./migration-snapshots/test" style="min-width:260px;flex:1;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.validateMigrationSnapshot()">تحقق من Snapshot</button>
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.runMigrationRehearsal()">تشغيل التدريب</button>
+        </div>
+
+        <div id="migrationRehearsalStatus" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">لا يوجد تدريب معروض حالياً</p>
+        </div>
+
+        <div id="migrationRehearsalDetails"></div>
+      </div>
+
+      <!-- Phase 60 — Benchmark History -->
+      <div class="admin-section" id="benchmarkHistorySection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📊 سجل Benchmarks</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadBenchmarkHistory()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          سجل Benchmarks يساعدنا نعرف هل بطء المسارات الملفية متكرر أم حالة عابرة.
+          تحذير واحد لا يكفي لاتخاذ قرار externalization.
+        </p>
+
+        <div id="benchmarkHistorySummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="benchmarkHistoryDetails">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
@@ -6253,6 +6331,109 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal ═══ */
+.phase60-decision-card,
+.migration-rehearsal-card,
+.benchmark-history-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.phase60-decision-card--no-action,
+.migration-rehearsal-card--passed,
+.benchmark-history-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.phase60-decision-card--monitor,
+.migration-rehearsal-card--warning,
+.benchmark-history-card--warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.phase60-decision-card--rehearsal {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.phase60-decision-card--pilot,
+.migration-rehearsal-card--failed,
+.benchmark-history-card--critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.phase60-decision-card__value,
+.migration-rehearsal-card__value,
+.benchmark-history-card__value {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.phase60-decision-card__label,
+.migration-rehearsal-card__label,
+.benchmark-history-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.35rem;
+}
+
+.phase60-status-pill,
+.benchmark-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.benchmark-status-badge--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.benchmark-status-badge--warning {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.benchmark-status-badge--critical {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 600px) {
+  #phase60DecisionSection .btn,
+  #migrationRehearsalSection .btn,
+  #benchmarkHistorySection .btn {
+    min-height: 44px;
+  }
+
+  .phase60-decision-card,
+  .migration-rehearsal-card,
+  .benchmark-history-card {
+    padding: 0.9rem;
+  }
+}
+
 /* ═══ Phase 56 — Admin Dashboard IA + Marketplace Intelligence ═══ */
 .admin-tabs {
   display: flex;
@@ -7332,6 +7513,9 @@ var AdminApp = (function () {
         loadTrustCalibrationDashboard(),
         loadStoragePressure(),
         loadExternalizationReadiness(),
+        loadPhase60Decision(),
+        loadMigrationRehearsal(),
+        loadBenchmarkHistory(),
         loadMultiInstanceBoundary(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
@@ -11378,6 +11562,379 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 60 — Evidence-Based Externalization Decision + Rehearsal
+  // ═══════════════════════════════════════════════════════════════
+
+  function phase60DecisionClass(status) {
+    if (status === 'no_action') return 'phase60-decision-card--no-action';
+    if (status === 'monitor') return 'phase60-decision-card--monitor';
+    if (status === 'mitigate_file_based') return 'phase60-decision-card--monitor';
+    if (status === 'rehearsal_required') return 'phase60-decision-card--rehearsal';
+    if (status === 'pilot_candidate') return 'phase60-decision-card--pilot';
+    return 'phase60-decision-card--monitor';
+  }
+
+  function phase60DecisionLabel(status) {
+    var labels = {
+      no_action: 'لا يوجد إجراء',
+      monitor: 'راقب الأدلة',
+      mitigate_file_based: 'خفّف بالملفات أولاً',
+      rehearsal_required: 'تدريب مطلوب',
+      pilot_candidate: 'مرشح Pilot — يحتاج موافقة',
+      deferred: 'مؤجل',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  async function loadPhase60Decision() {
+    var summaryEl = document.getElementById('phase60DecisionSummary');
+    var detailsEl = document.getElementById('phase60DecisionDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/externalization/decision');
+      var decision = data.decision || {};
+
+      renderPhase60DecisionSummary(decision);
+      renderCandidateDecisionRows(decision.candidates || []);
+      renderRecommendedActions('phase60DecisionRecommendations', decision.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل قرار Phase 60</p>';
+    }
+  }
+
+  async function capturePhase60Decision() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/externalization/decision/capture', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم حفظ قرار Phase 60');
+        }
+        renderPhase60DecisionSummary(data.decision || {});
+        renderCandidateDecisionRows((data.decision && data.decision.candidates) || []);
+        renderRecommendedActions('phase60DecisionRecommendations', (data.decision && data.decision.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ قرار Phase 60');
+    }
+  }
+
+  async function loadPhase60DecisionSnapshots() {
+    var detailsEl = document.getElementById('phase60DecisionDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/externalization/decision/snapshots?limit=20');
+      var rows = data.decisions || [];
+
+      if (rows.length === 0) {
+        detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد سجل قرارات بعد</p>';
+        return;
+      }
+
+      var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">سجل قرارات Phase 60</h3>';
+      html += '<table class="admin-table"><thead><tr><th>ID</th><th>Status</th><th>Candidates</th><th>Generated</th></tr></thead><tbody>';
+
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(r.id || '-') + '</small></td>' +
+          '<td>' + escapeHtml(phase60DecisionLabel(r.status)) + '</td>' +
+          '<td>' + escapeHtml(String((r.candidates || []).length)) + '</td>' +
+          '<td><small>' + escapeHtml(r.generatedAt ? new Date(r.generatedAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل القرارات</p>';
+    }
+  }
+
+  function renderPhase60DecisionSummary(decision) {
+    var el = document.getElementById('phase60DecisionSummary');
+    if (!el) return;
+
+    var evidence = decision.evidence || {};
+    var pressure = evidence.pressure || {};
+    var benchmarks = evidence.benchmarks || {};
+
+    var cards = [
+      {
+        value: '<span class="phase60-status-pill">' + escapeHtml(phase60DecisionLabel(decision.status)) + '</span>',
+        label: 'قرار Phase 60'
+      },
+      {
+        value: decision.implementationAllowed ? 'نعم' : 'لا',
+        label: 'يوجد نقل تلقائي؟'
+      },
+      {
+        value: pressure.snapshotCount || 0,
+        label: 'Pressure snapshots'
+      },
+      {
+        value: benchmarks.benchmarkCount || 0,
+        label: 'Benchmark artifacts'
+      },
+      {
+        value: (decision.candidates || []).filter(function (c) { return c.status === 'rehearsal_required'; }).length,
+        label: 'تحتاج تدريب'
+      },
+      {
+        value: (decision.recommendations || []).length,
+        label: 'إجراءات مقترحة'
+      },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'phase60-decision-card ' + phase60DecisionClass(decision.status);
+      card.innerHTML =
+        '<div class="phase60-decision-card__value">' + c.value + '</div>' +
+        '<div class="phase60-decision-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderCandidateDecisionRows(candidates) {
+    var el = document.getElementById('phase60DecisionDetails');
+    if (!el) return;
+
+    if (!candidates || candidates.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد candidates</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Candidate Decision Matrix</h3>';
+    html += '<table class="admin-table"><thead><tr>' +
+      '<th>Candidate</th><th>Status</th><th>Score</th><th>Reasons</th><th>Action</th>' +
+    '</tr></thead><tbody>';
+
+    candidates.slice(0, 12).forEach(function (c) {
+      html += '<tr>' +
+        '<td><strong>' + escapeHtml(c.candidate || '-') + '</strong></td>' +
+        '<td>' + escapeHtml(phase60DecisionLabel(c.status)) + '</td>' +
+        '<td>' + Math.round((c.score || 0) * 100) + '%</td>' +
+        '<td><small>' + escapeHtml((c.reasons || []).slice(0, 3).join(' · ') || '-') + '</small></td>' +
+        '<td><small>' + escapeHtml(c.recommendedAction || '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:0.75rem;">' +
+      'قاعدة Phase 60: repeated criticals يمكن أن توصي بالتدريب، وليس نقل تلقائي.' +
+    '</p>';
+
+    el.innerHTML = html;
+  }
+
+  function getSnapshotPathInput() {
+    var input = document.getElementById('migrationSnapshotPathInput');
+    return input ? input.value.trim() : '';
+  }
+
+  async function validateMigrationSnapshot() {
+    var snapshotPath = getSnapshotPathInput();
+    if (!snapshotPath) {
+      showError('اكتب مسار snapshot أولاً');
+      return;
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/migration-snapshots/validate', {
+        snapshotPath: snapshotPath,
+      });
+
+      renderMigrationRehearsalStatus({
+        status: data.validation ? data.validation.status : 'unknown',
+        validation: data.validation,
+      });
+    } catch (err) {
+      renderMigrationRehearsalStatus({
+        status: 'failed',
+        error: err.message || 'خطأ في التحقق من snapshot',
+      });
+    }
+  }
+
+  async function runMigrationRehearsal() {
+    var snapshotPath = getSnapshotPathInput();
+    if (!snapshotPath) {
+      showError('اكتب مسار snapshot أولاً');
+      return;
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/migration-rehearsal/run', {
+        snapshotPath: snapshotPath,
+      });
+
+      renderMigrationRehearsalStatus(data.rehearsal || {});
+    } catch (err) {
+      renderMigrationRehearsalStatus({
+        status: 'failed',
+        error: err.message || 'خطأ في تشغيل التدريب',
+      });
+    }
+  }
+
+  function loadMigrationRehearsal() {
+    renderMigrationRehearsalStatus({
+      status: 'idle',
+      notes: [
+        'أدخل مسار snapshot ثم شغّل التحقق أو التدريب.',
+        'لا يوجد نقل تلقائي ولا اتصال خارجي.',
+      ],
+    });
+  }
+
+  function renderMigrationRehearsalStatus(report) {
+    var summaryEl = document.getElementById('migrationRehearsalStatus');
+    var detailsEl = document.getElementById('migrationRehearsalDetails');
+    if (!summaryEl) return;
+
+    var status = report.status || 'idle';
+    var cls = status === 'passed'
+      ? 'migration-rehearsal-card--passed'
+      : (status === 'failed' ? 'migration-rehearsal-card--failed' : 'migration-rehearsal-card--warning');
+
+    var validation = report.validation || {};
+    var errors = validation.errors || [];
+    var warnings = validation.warnings || [];
+
+    var cards = [
+      { value: status, label: 'حالة التدريب' },
+      { value: report.sourceDataMutated ? 'نعم' : 'لا', label: 'تم تعديل المصدر؟' },
+      { value: report.externalDbConnected ? 'نعم' : 'لا', label: 'اتصال DB خارجي؟' },
+      { value: errors.length || 0, label: 'Errors' },
+      { value: warnings.length || 0, label: 'Warnings' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'migration-rehearsal-card ' + cls;
+      card.innerHTML =
+        '<div class="migration-rehearsal-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="migration-rehearsal-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (detailsEl) {
+      var html = '';
+      if (report.error) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' + escapeHtml(report.error) + '</div>';
+      }
+
+      if (errors.length > 0) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Errors</h4>';
+        html += '<div class="scale-hygiene-warning-list">';
+        errors.slice(0, 10).forEach(function (e) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' +
+            '<strong>' + escapeHtml(e.code || 'ERROR') + '</strong> ' +
+            escapeHtml(e.collection || '') + ' ' +
+            escapeHtml(e.message || '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      if (warnings.length > 0) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Warnings</h4>';
+        html += '<div class="scale-hygiene-warning-list">';
+        warnings.slice(0, 10).forEach(function (w) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--medium">' +
+            '<strong>' + escapeHtml(w.code || 'WARNING') + '</strong> ' +
+            escapeHtml(w.collection || '') + ' ' +
+            escapeHtml(w.message || '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      if (!html && report.notes) {
+        html = '<ul style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.8;">' +
+          report.notes.map(function (n) { return '<li>' + escapeHtml(n) + '</li>'; }).join('') +
+        '</ul>';
+      }
+
+      detailsEl.innerHTML = html;
+    }
+  }
+
+  async function loadBenchmarkHistory() {
+    var summaryEl = document.getElementById('benchmarkHistorySummary');
+    var detailsEl = document.getElementById('benchmarkHistoryDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/benchmarks/history?limit=20');
+      renderBenchmarkHistory(data);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Benchmark history</p>';
+    }
+  }
+
+  function renderBenchmarkHistory(data) {
+    var summaryEl = document.getElementById('benchmarkHistorySummary');
+    var detailsEl = document.getElementById('benchmarkHistoryDetails');
+    if (!summaryEl) return;
+
+    var latest = data.latest || null;
+    var rows = data.benchmarks || [];
+
+    var cards = [
+      { value: data.total || 0, label: 'Artifacts' },
+      { value: latest ? latest.status : 'missing', label: 'آخر حالة' },
+      { value: latest && latest.summary ? latest.summary.warningCount || 0 : 0, label: 'Warnings' },
+      { value: latest && latest.summary ? latest.summary.criticalCount || 0 : 0, label: 'Criticals' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var cls = c.value === 'critical' || Number(c.value) > 0 && c.label === 'Criticals'
+        ? 'benchmark-history-card--critical'
+        : (c.value === 'warning' || Number(c.value) > 0 && c.label === 'Warnings' ? 'benchmark-history-card--warning' : '');
+      var card = document.createElement('div');
+      card.className = 'benchmark-history-card ' + cls;
+      card.innerHTML =
+        '<div class="benchmark-history-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="benchmark-history-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (!detailsEl) return;
+
+    if (rows.length === 0) {
+      detailsEl.innerHTML =
+        '<p style="color:var(--color-text-muted);text-align:center;">لا توجد Benchmark artifacts بعد. شغّل: <code>node scripts/benchmark-file-paths.js --json --persist</code></p>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>ID</th><th>Status</th><th>Warnings</th><th>Criticals</th><th>Timestamp</th>' +
+    '</tr></thead><tbody>';
+
+    rows.forEach(function (b) {
+      html += '<tr>' +
+        '<td><small>' + escapeHtml(b.id || '-') + '</small></td>' +
+        '<td><span class="benchmark-status-badge benchmark-status-badge--' + escapeHtml(b.status || 'ok') + '">' + escapeHtml(b.status || 'ok') + '</span></td>' +
+        '<td>' + escapeHtml(String((b.summary && b.summary.warningCount) || 0)) + '</td>' +
+        '<td>' + escapeHtml(String((b.summary && b.summary.criticalCount) || 0)) + '</td>' +
+        '<td><small>' + escapeHtml(b.timestamp ? new Date(b.timestamp).toLocaleString('ar-EG') : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    detailsEl.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -11841,6 +12398,9 @@ var AdminApp = (function () {
     } else if (tabName === 'scale') {
       loadStoragePressure();
       loadExternalizationReadiness();
+      loadPhase60Decision();
+      loadMigrationRehearsal();
+      loadBenchmarkHistory();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -12915,6 +13475,19 @@ var AdminApp = (function () {
     renderStoragePressureSummary: renderStoragePressureSummary,
     renderStoragePressureRecommendations: renderStoragePressureRecommendations,
     renderExternalizationCandidates: renderExternalizationCandidates,
+
+    // Phase 60 — Evidence-Based Decision + Migration Rehearsal + Benchmark History
+    loadPhase60Decision: loadPhase60Decision,
+    capturePhase60Decision: capturePhase60Decision,
+    loadPhase60DecisionSnapshots: loadPhase60DecisionSnapshots,
+    renderPhase60DecisionSummary: renderPhase60DecisionSummary,
+    renderCandidateDecisionRows: renderCandidateDecisionRows,
+    loadMigrationRehearsal: loadMigrationRehearsal,
+    runMigrationRehearsal: runMigrationRehearsal,
+    validateMigrationSnapshot: validateMigrationSnapshot,
+    renderMigrationRehearsalStatus: renderMigrationRehearsalStatus,
+    loadBenchmarkHistory: loadBenchmarkHistory,
+    renderBenchmarkHistory: renderBenchmarkHistory,
 
     // Phase 55 — Scale Hygiene
     loadScaleHygiene: loadScaleHygiene,
@@ -22449,7 +23022,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.55.0';
+const CACHE_NAME = 'yawmia-v0.56.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -23079,6 +23652,7 @@ backup().catch(err => {
 //   node scripts/benchmark-file-paths.js --json
 //   node scripts/benchmark-file-paths.js --sample=100
 //   node scripts/benchmark-file-paths.js --include-heavy
+//   node scripts/benchmark-file-paths.js --json --persist
 //
 // Default is read-only and avoids destructive operations.
 // ═══════════════════════════════════════════════════════════════
@@ -23090,6 +23664,7 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const INCLUDE_HEAVY = process.argv.includes('--include-heavy');
+const PERSIST = process.argv.includes('--persist');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -23278,14 +23853,45 @@ async function main() {
     await getStoragePressure({ force: true, persist: false });
   }, Math.max(1, Math.min(SAMPLE, 3))));
 
+  const warningThresholdMs = 1000;
+  const criticalThresholdMs = 3000;
+  const warningRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= warningThresholdMs && (r.p95Ms || 0) < criticalThresholdMs);
+  const criticalRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= criticalThresholdMs);
+  const worst = results
+    .filter(r => !r.skipped && !r.error)
+    .sort((a, b) => (b.p95Ms || 0) - (a.p95Ms || 0))[0] || null;
+
   const output = {
+    id: 'bmk_' + Date.now().toString(36),
     ok: results.every(r => !r.error),
+    timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
+    version: '0.56.0',
     sample: SAMPLE,
     includeHeavy: INCLUDE_HEAVY,
+    persisted: false,
     dataPath: process.env.YAWMIA_DATA_PATH || './data',
+    summary: {
+      p95WorstPath: worst ? worst.label : null,
+      p95WorstMs: worst ? worst.p95Ms : 0,
+      warningCount: warningRows.length,
+      criticalCount: criticalRows.length,
+    },
     results,
   };
+
+  if (PERSIST) {
+    try {
+      const { persistBenchmarkResult } = await import('../server/services/benchmarkHistory.js');
+      const persisted = await persistBenchmarkResult(output, { source: 'benchmark-file-paths' });
+      output.persisted = !!(persisted && persisted.ok);
+      output.persistedId = persisted && persisted.benchmark ? persisted.benchmark.id : null;
+    } catch (err) {
+      output.persisted = false;
+      output.persistError = err.message;
+      output.ok = false;
+    }
+  }
 
   if (JSON_OUT) {
     console.log = originalConsole.log;
@@ -23295,7 +23901,8 @@ async function main() {
   } else {
     console.log('\n⏱ يوميّة File Path Benchmarks\n');
     console.log(`Sample: ${SAMPLE}`);
-    console.log(`Include heavy: ${INCLUDE_HEAVY ? 'yes' : 'no'}\n`);
+    console.log(`Include heavy: ${INCLUDE_HEAVY ? 'yes' : 'no'}`);
+    console.log(`Persist: ${PERSIST ? 'yes' : 'no'}\n`);
 
     for (const r of results) {
       if (r.skipped) {
@@ -23306,6 +23913,12 @@ async function main() {
         console.log(`  ${r.label}: avg=${r.avgMs}ms p50=${r.p50Ms}ms p95=${r.p95Ms}ms min=${r.minMs}ms max=${r.maxMs}ms`);
       }
     }
+
+    console.log('\nSummary:');
+    console.log(`  Worst p95: ${output.summary.p95WorstPath || '-'} (${output.summary.p95WorstMs || 0}ms)`);
+    console.log(`  Warnings: ${output.summary.warningCount}`);
+    console.log(`  Criticals: ${output.summary.criticalCount}`);
+    if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');
   }
@@ -23585,6 +24198,86 @@ main().catch(err => {
   console.error('❌', err.message);
   process.exit(1);
 });
+```
+
+---
+
+## `scripts/capture-externalization-decision.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/capture-externalization-decision.js — Phase 60 Decision
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--persist') args.persist = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/capture-externalization-decision.js
+  node scripts/capture-externalization-decision.js --json
+  node scripts/capture-externalization-decision.js --persist
+
+Phase 60:
+  Aggregates evidence into an advisory decision.
+  Does not implement external DB/search/queue.
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  let result;
+
+  if (args.persist) {
+    const { captureExternalizationDecisionSnapshot } = await import('../server/services/externalizationDecision.js');
+    result = await captureExternalizationDecisionSnapshot({ allowPilotCandidate: false });
+    result = result.decision || result;
+  } else {
+    const { getExternalizationDecisionReport } = await import('../server/services/externalizationDecision.js');
+    result = await getExternalizationDecisionReport({ allowPilotCandidate: false });
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`Phase: ${result.phase}`);
+    console.log(`Status: ${result.status}`);
+    console.log(`Implementation allowed: ${result.implementationAllowed ? 'yes' : 'no'}`);
+    console.log(`Candidates: ${(result.candidates || []).length}`);
+    console.log(`Recommendations: ${(result.recommendations || []).length}`);
+    console.log('\nTop candidates:');
+    for (const c of (result.candidates || []).slice(0, 5)) {
+      console.log(`- ${c.candidate}: ${c.status} (${Math.round((c.score || 0) * 100)}%)`);
+    }
+  }
+
+  process.exit(0);
+} catch (err) {
+  const out = { ok: false, error: err.message };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
 ```
 
 ---
@@ -24512,6 +25205,81 @@ console.log('⚠️  If you regenerate keys, all existing push subscriptions wil
 
 ---
 
+## `scripts/list-benchmark-history.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/list-benchmark-history.js — Phase 60 Benchmark History
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = { limit: 20 };
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg.startsWith('--limit=')) args.limit = parseInt(arg.slice('--limit='.length)) || 20;
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/list-benchmark-history.js
+  node scripts/list-benchmark-history.js --json
+  node scripts/list-benchmark-history.js --limit=50
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  const { listBenchmarkResults, getLatestBenchmarkResult } = await import('../server/services/benchmarkHistory.js');
+  const [list, latest] = await Promise.all([
+    listBenchmarkResults({ limit: args.limit, offset: 0 }),
+    getLatestBenchmarkResult(),
+  ]);
+
+  const output = {
+    ok: true,
+    latest,
+    ...list,
+  };
+
+  if (args.json) {
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log(`Benchmarks: ${output.total}`);
+    if (latest) {
+      console.log(`Latest: ${latest.id} — ${latest.status} — ${latest.timestamp}`);
+    }
+    for (const b of output.benchmarks || []) {
+      console.log(`- ${b.id} | ${b.status} | warnings=${b.summary?.warningCount || 0} criticals=${b.summary?.criticalCount || 0}`);
+    }
+  }
+
+  process.exit(0);
+} catch (err) {
+  const out = { ok: false, error: err.message };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
+```
+
+---
+
 ## `scripts/measure-storage-pressure.js`
 
 ```javascript
@@ -25057,7 +25825,7 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/predeploy-check.js — Deployment Gate (Phase 59)
+// scripts/predeploy-check.js — Deployment Gate (Phase 60)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   NODE_ENV=production node scripts/predeploy-check.js --strict
@@ -25149,7 +25917,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.55.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.55.0' }));
+  checks.push(mk('package_version', pkg.version === '0.56.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.56.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -25164,7 +25932,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.55.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.56.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -25319,6 +26087,108 @@ async function main() {
         `Create ${script}`
       ));
     }
+  }
+
+  // Phase 60 — Evidence-based externalization decision + migration rehearsal.
+  const phase60Docs = [
+    'PHASE60_EXTERNALIZATION_DECISION.md',
+    'PHASE60_MIGRATION_REHEARSAL.md',
+    'PHASE60_ROLLBACK_PLAN.md',
+    'PHASE60_REPOSITORY_BOUNDARIES.md',
+    'PHASE60_EVENT_BRIDGE_DESIGN.md',
+    'PHASE60_SSE_FANOUT_DESIGN.md',
+    'PHASE60_OBJECT_STORAGE_DECISION.md',
+    'PHASE60_EXTERNAL_QUEUE_DECISION.md',
+    'PHASE60_EXTERNAL_SEARCH_DECISION.md',
+  ];
+
+  for (const doc of phase60Docs) {
+    try {
+      await readFile(doc, 'utf-8');
+      checks.push(mk(`phase60_doc:${doc}`, 'pass', `${doc} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase60_doc:${doc}`,
+        STRICT ? 'fail' : 'warn',
+        `${doc} is missing`,
+        `Create ${doc}`
+      ));
+    }
+  }
+
+  const phase60Scripts = [
+    'scripts/validate-migration-snapshot.js',
+    'scripts/run-migration-rehearsal.js',
+    'scripts/capture-externalization-decision.js',
+    'scripts/list-benchmark-history.js',
+  ];
+
+  for (const script of phase60Scripts) {
+    try {
+      await readFile(script, 'utf-8');
+      checks.push(mk(`phase60_script:${script}`, 'pass', `${script} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase60_script:${script}`,
+        STRICT ? 'fail' : 'warn',
+        `${script} is missing`,
+        `Create ${script}`
+      ));
+    }
+  }
+
+  try {
+    const decision = runScript('scripts/capture-externalization-decision.js', ['--json']);
+    if (decision.parsed) {
+      checks.push(mk(
+        'phase60_externalization_decision',
+        decision.parsed.implementationAllowed === false ? 'pass' : 'fail',
+        decision.parsed.implementationAllowed === false
+          ? `Phase 60 decision is advisory (${decision.parsed.status || 'unknown'})`
+          : 'Phase 60 decision unexpectedly allows implementation',
+        'node scripts/capture-externalization-decision.js --json',
+        {
+          status: decision.parsed.status,
+          implementationAllowed: decision.parsed.implementationAllowed,
+        }
+      ));
+    } else {
+      checks.push(mk(
+        'phase60_externalization_decision',
+        'warn',
+        'Could not parse Phase 60 externalization decision output',
+        'node scripts/capture-externalization-decision.js --json'
+      ));
+    }
+  } catch (_) {
+    checks.push(mk(
+      'phase60_externalization_decision',
+      'warn',
+      'Could not run Phase 60 decision script',
+      'node scripts/capture-externalization-decision.js --json'
+    ));
+  }
+
+  try {
+    const benchmarkHistory = runScript('scripts/list-benchmark-history.js', ['--json']);
+    if (benchmarkHistory.parsed) {
+      checks.push(mk(
+        'phase60_benchmark_history',
+        benchmarkHistory.parsed.total > 0 ? 'pass' : 'warn',
+        benchmarkHistory.parsed.total > 0
+          ? `${benchmarkHistory.parsed.total} benchmark artifact(s) available`
+          : 'No benchmark history artifacts exist yet',
+        'node scripts/benchmark-file-paths.js --json --persist',
+        { total: benchmarkHistory.parsed.total || 0 }
+      ));
+    }
+  } catch (_) {
+    checks.push(mk(
+      'phase60_benchmark_history',
+      'warn',
+      'Could not evaluate benchmark history',
+      'node scripts/list-benchmark-history.js --json'
+    ));
   }
 
   const summary = {
@@ -26528,6 +27398,162 @@ main().catch(err => {
 
 ---
 
+## `scripts/run-migration-rehearsal.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/run-migration-rehearsal.js — Phase 60 Migration Rehearsal
+// ═══════════════════════════════════════════════════════════════
+// Safe validation-only rehearsal in Phase 60.
+// No external DB.
+// No source mutation.
+// ═══════════════════════════════════════════════════════════════
+
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--confirm') args.confirm = true;
+    else if (arg === '--strict') args.strict = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg.startsWith('--snapshot=')) args.snapshot = arg.slice('--snapshot='.length);
+    else if (arg.startsWith('--out=')) args.out = arg.slice('--out='.length);
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --dry-run --json
+  node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --out=./migration-snapshots/rehearsals/test --confirm
+  node scripts/run-migration-rehearsal.js --help
+
+Phase 60:
+  Runs a safe migration rehearsal based on snapshot validation.
+  Does not mutate source data.
+  Does not connect to external DB/search/queue.
+`);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+async function writeReport(outDir, report) {
+  const abs = resolve(outDir);
+  await mkdir(abs, { recursive: true });
+  const filePath = join(abs, 'rehearsal-report.json');
+  await writeFile(filePath, JSON.stringify(report, null, 2), 'utf-8');
+  return filePath;
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+if (!args.snapshot) {
+  const out = {
+    ok: false,
+    error: 'SNAPSHOT_REQUIRED',
+    message: 'Use --snapshot=./migration-snapshots/path',
+  };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else {
+    console.error(out.message);
+    printHelp();
+  }
+  process.exit(1);
+}
+
+try {
+  const started = Date.now();
+  const snapshotPath = resolve(args.snapshot);
+
+  const { validateMigrationSnapshot } = await import('../server/services/migrationSnapshotValidation.js');
+
+  const validation = await validateMigrationSnapshot(snapshotPath, {
+    strict: !!args.strict,
+  });
+
+  const report = {
+    ok: validation.ok && (!args.strict || validation.warnings.length === 0),
+    status: validation.ok
+      ? (validation.warnings.length > 0 ? 'warning' : 'passed')
+      : 'failed',
+    phase: 60,
+    version: '0.56.0',
+    rehearsalType: 'snapshot_validation_only',
+    dryRun: !!args.dryRun,
+    confirm: !!args.confirm,
+    sourceDataMutated: false,
+    externalDbConnected: false,
+    externalSearchConnected: false,
+    externalQueueConnected: false,
+    snapshotPath,
+    validation,
+    rollbackPlanRequired: true,
+    nextSteps: validation.ok
+      ? [
+          'Document rehearsal in weekly ops review.',
+          'Keep file-backed source of truth.',
+          'Do not start external pilot without approval.',
+        ]
+      : [
+          'Fix snapshot validation errors.',
+          'Re-run validate-migration-snapshot.js.',
+          'Do not proceed to pilot.',
+        ],
+    generatedAt: nowIso(),
+    durationMs: Date.now() - started,
+  };
+
+  if (args.confirm && args.out) {
+    report.reportPath = await writeReport(args.out, report);
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(`Migration rehearsal status: ${report.status}`);
+    console.log(`Snapshot: ${report.snapshotPath}`);
+    console.log(`Source mutated: ${report.sourceDataMutated ? 'yes' : 'no'}`);
+    console.log(`External DB connected: ${report.externalDbConnected ? 'yes' : 'no'}`);
+    console.log(`Validation errors: ${validation.errors.length}`);
+    console.log(`Validation warnings: ${validation.warnings.length}`);
+    if (report.reportPath) console.log(`Report: ${report.reportPath}`);
+  }
+
+  process.exit(report.ok ? 0 : 1);
+} catch (err) {
+  const out = {
+    ok: false,
+    status: 'failed',
+    error: err.message,
+    sourceDataMutated: false,
+    externalDbConnected: false,
+  };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
+```
+
+---
+
 ## `scripts/run-trust-calibration.js`
 
 ```javascript
@@ -26736,6 +27762,102 @@ main().catch(err => {
   }
   process.exit(1);
 });
+```
+
+---
+
+## `scripts/validate-migration-snapshot.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/validate-migration-snapshot.js — Phase 60 Snapshot Validation
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--strict') args.strict = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg.startsWith('--snapshot=')) args.snapshot = arg.slice('--snapshot='.length);
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/validate-migration-snapshot.js --snapshot=./migration-snapshots/test
+  node scripts/validate-migration-snapshot.js --snapshot=./migration-snapshots/test --json
+  node scripts/validate-migration-snapshot.js --snapshot=./migration-snapshots/test --strict
+
+Phase 60:
+  Validates manifest, NDJSON, counts, checksums, redaction and reference samples.
+  Does not mutate source data.
+  Does not connect to external DB.
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+if (!args.snapshot) {
+  const out = { ok: false, error: 'SNAPSHOT_REQUIRED' };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else {
+    console.error('Missing --snapshot=...');
+    printHelp();
+  }
+  process.exit(1);
+}
+
+try {
+  const { validateMigrationSnapshot } = await import('../server/services/migrationSnapshotValidation.js');
+  const report = await validateMigrationSnapshot(args.snapshot, { strict: args.strict });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(`Snapshot: ${report.snapshotPath}`);
+    console.log(`Status: ${report.status}`);
+    console.log(`Errors: ${report.errors.length}`);
+    console.log(`Warnings: ${report.warnings.length}`);
+    console.log(`Duration: ${report.durationMs}ms`);
+
+    if (report.errors.length > 0) {
+      console.log('\nErrors:');
+      for (const err of report.errors.slice(0, 20)) {
+        console.log(`- ${err.code || 'ERROR'} ${err.collection || ''} ${err.message || ''}`);
+      }
+    }
+
+    if (report.warnings.length > 0) {
+      console.log('\nWarnings:');
+      for (const warn of report.warnings.slice(0, 20)) {
+        console.log(`- ${warn.code || 'WARNING'} ${warn.collection || ''} ${warn.message || ''}`);
+      }
+    }
+  }
+
+  if (!report.ok) process.exit(1);
+  if (args.strict && report.warnings.length > 0) process.exit(1);
+  process.exit(0);
+} catch (err) {
+  const out = { ok: false, error: err.message };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
 ```
 
 ---
