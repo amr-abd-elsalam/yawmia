@@ -307,6 +307,29 @@ export function buildPhase60RecommendedActions(report) {
     });
   }
 
+  const benchmarkEvidence = report.evidence?.benchmarks || {};
+  if ((benchmarkEvidence.latestErrorCount || 0) > 0) {
+    actions.push({
+      id: 'diagnose_benchmark_errors',
+      label: 'تشخيص أخطاء Benchmark',
+      severity: 'critical',
+      command: 'node scripts/verify-data-json.js --strict && node scripts/find-null-json-files.js --json',
+      adminRoute: '/api/admin/production/readiness',
+      reason: 'آخر Benchmark احتوى على أخطاء قراءة/JSON. أصلح سلامة الملفات قبل أي قرار externalization.',
+    });
+  }
+
+  if ((benchmarkEvidence.latestCriticalCount || 0) > 0) {
+    actions.push({
+      id: 'review_critical_benchmark_paths',
+      label: 'مراجعة مسارات Benchmark الحرجة',
+      severity: 'warning',
+      command: 'node scripts/benchmark-file-paths.js --json --persist',
+      adminRoute: '/api/admin/benchmarks/history',
+      reason: 'آخر Benchmark يحتوي p95 critical. هذا يطلب قياسًا متكررًا وتحليل السبب قبل أي rehearsal.',
+    });
+  }
+
   const needsRehearsal = (report.candidates || []).some(c => c.status === 'rehearsal_required');
   if (needsRehearsal) {
     actions.push({
@@ -377,10 +400,20 @@ export async function getExternalizationDecisionReport(options = {}) {
 
   const pressureEvidence = evaluateRepeatedPressureEvidence(pressureSnapshots, options);
   const benchmarkEvidence = evaluateBenchmarkEvidence(benchmarkSnapshots, options);
+  const latestBenchmark = benchmarkSnapshots && benchmarkSnapshots[0] ? benchmarkSnapshots[0] : null;
+  const latestBenchmarkStatus = latestBenchmark ? latestBenchmark.status : 'missing';
+  const latestBenchmarkErrorCount = latestBenchmark?.summary?.errorCount || 0;
+  const latestBenchmarkCriticalCount = latestBenchmark?.summary?.criticalCount || 0;
 
   const evidence = {
     pressure: pressureEvidence,
-    benchmarks: benchmarkEvidence,
+    benchmarks: {
+      ...benchmarkEvidence,
+      latestStatus: latestBenchmarkStatus,
+      latestErrorCount: latestBenchmarkErrorCount,
+      latestCriticalCount: latestBenchmarkCriticalCount,
+      latestId: latestBenchmark ? latestBenchmark.id : null,
+    },
     readiness: readiness ? {
       enabled: !!readiness.enabled,
       pressureSnapshot: readiness.pressureSnapshot || null,
@@ -394,6 +427,12 @@ export async function getExternalizationDecisionReport(options = {}) {
   else if (candidates.some(c => c.status === 'rehearsal_required')) status = 'rehearsal_required';
   else if (candidates.some(c => c.status === 'mitigate_file_based')) status = 'mitigate_file_based';
   else if (candidates.some(c => c.status === 'monitor')) status = 'monitor';
+
+  // Phase 60 guardrail:
+  // benchmark errors/criticals should ask for diagnosis or mitigation, not migration.
+  if (status === 'no_action' && (latestBenchmarkErrorCount > 0 || latestBenchmarkCriticalCount > 0)) {
+    status = 'monitor';
+  }
 
   const report = {
     enabled: true,

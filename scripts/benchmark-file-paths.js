@@ -210,6 +210,7 @@ async function main() {
 
   const warningThresholdMs = 1000;
   const criticalThresholdMs = 3000;
+  const errorRows = results.filter(r => !!r.error);
   const warningRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= warningThresholdMs && (r.p95Ms || 0) < criticalThresholdMs);
   const criticalRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= criticalThresholdMs);
   const worst = results
@@ -218,7 +219,7 @@ async function main() {
 
   const output = {
     id: 'bmk_' + Date.now().toString(36),
-    ok: results.every(r => !r.error),
+    ok: errorRows.length === 0,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
     version: '0.56.0',
@@ -231,6 +232,8 @@ async function main() {
       p95WorstMs: worst ? worst.p95Ms : 0,
       warningCount: warningRows.length,
       criticalCount: criticalRows.length,
+      errorCount: errorRows.length,
+      errorPaths: errorRows.map(r => r.label),
     },
     results,
   };
@@ -273,6 +276,7 @@ async function main() {
     console.log(`  Worst p95: ${output.summary.p95WorstPath || '-'} (${output.summary.p95WorstMs || 0}ms)`);
     console.log(`  Warnings: ${output.summary.warningCount}`);
     console.log(`  Criticals: ${output.summary.criticalCount}`);
+    console.log(`  Errors: ${output.summary.errorCount}`);
     if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');

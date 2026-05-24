@@ -55,3 +55,29 @@ test('repeated criticals can recommend rehearsal but not automatic migration', a
   assert.equal(queue.implementationAllowed, false);
   assert.equal(report.implementationAllowed, false);
 });
+
+test('benchmark errors produce monitor recommendation, not pilot', async () => {
+  const mod = await import('../server/services/externalizationDecision.js');
+
+  const report = await mod.getExternalizationDecisionReport({
+    pressureSnapshots: [],
+    benchmarks: [
+      {
+        id: 'bmk_error',
+        status: 'critical',
+        summary: {
+          errorCount: 1,
+          criticalCount: 0,
+        },
+        results: [
+          { label: 'list jobs open', error: 'Unexpected token \\u0000' },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(report.status, 'monitor');
+  assert.equal(report.implementationAllowed, false);
+  assert.equal(report.candidates.some(c => c.status === 'pilot_candidate'), false);
+  assert.ok(report.recommendations.some(r => r.id === 'diagnose_benchmark_errors'));
+});

@@ -36,9 +36,8 @@ function sanitizeValue(value) {
   if (value === undefined) return undefined;
 
   if (typeof value === 'string') {
-    if (/token|secret|password|apikey|api_key|authorization|vapid/i.test(value)) {
-      return '[redacted]';
-    }
+    // Do not redact generic error strings like "Unexpected token".
+    // Key-based redaction below handles actual secret fields.
     return value.slice(0, 2000);
   }
 
@@ -92,10 +91,19 @@ export function evaluateBenchmarkThresholds(result, options = {}) {
     }
   }
 
+  const errorRows = rows.filter(r => !!r.error);
+
   return {
-    status: criticals.length > 0 ? 'critical' : (warnings.length > 0 ? 'warning' : 'ok'),
+    status: errorRows.length > 0 || criticals.length > 0
+      ? 'critical'
+      : (warnings.length > 0 ? 'warning' : 'ok'),
     warningCount: warnings.length,
     criticalCount: criticals.length,
+    errorCount: errorRows.length,
+    errorRows: errorRows.map(r => ({
+      path: r.path || r.name || r.operation || r.label || 'unknown',
+      error: String(r.error || '').slice(0, 1000),
+    })),
     warnings,
     criticals,
   };
@@ -119,6 +127,8 @@ export async function persistBenchmarkResult(result, options = {}) {
       ...(sanitizeValue(result?.summary || {})),
       warningCount: evaluation.warningCount,
       criticalCount: evaluation.criticalCount,
+      errorCount: evaluation.errorCount,
+      errorRows: sanitizeValue(evaluation.errorRows || []),
     },
     results: sanitizeValue(result?.results || []),
     warnings: evaluation.warnings,

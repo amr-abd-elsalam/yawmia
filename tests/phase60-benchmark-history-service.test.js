@@ -46,3 +46,28 @@ test('benchmark thresholds classify critical p95', async () => {
   assert.equal(evalResult.status, 'critical');
   assert.equal(evalResult.criticalCount, 1);
 });
+
+test('benchmark history keeps generic Unexpected token errors unredacted', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'yawmia-p60-bench-redaction-'));
+  process.env.YAWMIA_DATA_PATH = dir;
+
+  const db = await import('../server/services/database.js');
+  await db.initDatabase();
+
+  const mod = await import('../server/services/benchmarkHistory.js');
+
+  const result = await mod.persistBenchmarkResult({
+    id: 'bmk_error_message',
+    timestamp: new Date().toISOString(),
+    results: [
+      {
+        label: 'list jobs open',
+        error: 'Unexpected token \\u0000 in JSON',
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.benchmark.summary.errorCount, 1);
+  assert.match(result.benchmark.summary.errorRows[0].error, /Unexpected token/);
+});
