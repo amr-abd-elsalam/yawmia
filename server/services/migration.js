@@ -498,6 +498,28 @@ const builtInMigrations = [
       logger.info('Migration v19: Phase 59 scale limits + storage pressure directories registered (no heavy scan)');
     },
   },
+  {
+    version: 20,
+    name: 'Phase 60: Evidence-Based Externalization Decision and Migration Rehearsal',
+    up: async () => {
+      // Phase 60 registers additive evidence/rehearsal structures:
+      //   - metrics/benchmarks
+      //   - migration-snapshots/rehearsals
+      //   - metrics/externalization-decisions
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - validate snapshots
+      //   - run migration rehearsals
+      //   - externalize any data
+      //   - connect to external DB/search/queue
+      //
+      // Phase 60 remains evidence-based and advisory by default.
+      logger.info('Migration v20: Phase 60 evidence + rehearsal directories registered (no heavy scan, no externalization)');
+    },
+  },
 ];
 
 /**

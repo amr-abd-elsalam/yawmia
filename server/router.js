@@ -132,6 +132,14 @@ import {
   handleMultiInstanceBoundary,
 } from './handlers/storagePressureHandler.js';
 import {
+  handleGetExternalizationDecision,
+  handleCaptureExternalizationDecision,
+  handleListExternalizationDecisionSnapshots,
+  handleValidateMigrationSnapshot,
+  handleRunMigrationRehearsal,
+  handleBenchmarkHistory,
+} from './handlers/externalizationDecisionHandler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -234,7 +242,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.55.0',
+        version: '0.56.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -515,7 +523,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.55.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.56.0' });
     },
   },
 
@@ -830,6 +838,14 @@ const routes = [
   { method: 'GET', path: '/api/admin/scale-thresholds', middlewares: [requireCapability('admin.scale.read')], handler: handleGetScaleThresholds },
   { method: 'POST', path: '/api/admin/scale-thresholds/verify', middlewares: [requireCapability('admin.ops.review')], handler: handleVerifyScaleThresholds },
   { method: 'GET', path: '/api/admin/externalization/readiness', middlewares: [requireCapability('admin.scale.read')], handler: handleExternalizationReadiness },
+
+  // ── Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal ──
+  { method: 'GET', path: '/api/admin/externalization/decision', middlewares: [requireCapability('admin.scale.read')], handler: handleGetExternalizationDecision },
+  { method: 'POST', path: '/api/admin/externalization/decision/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCaptureExternalizationDecision },
+  { method: 'GET', path: '/api/admin/externalization/decision/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListExternalizationDecisionSnapshots },
+  { method: 'POST', path: '/api/admin/migration-snapshots/validate', middlewares: [requireCapability('admin.ops.review')], handler: handleValidateMigrationSnapshot },
+  { method: 'POST', path: '/api/admin/migration-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunMigrationRehearsal },
+  { method: 'GET', path: '/api/admin/benchmarks/history', middlewares: [requireCapability('admin.scale.read')], handler: handleBenchmarkHistory },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },

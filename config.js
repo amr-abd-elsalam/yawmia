@@ -321,6 +321,11 @@ const config = {
       storage_pressure: 'metrics/storage-pressure',
       scale_thresholds: 'metrics/scale-thresholds',
       migration_snapshots: 'migration-snapshots',
+
+      // Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal
+      benchmark_history: 'metrics/benchmarks',
+      migration_rehearsals: 'migration-snapshots/rehearsals',
+      externalization_decisions: 'metrics/externalization-decisions',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -509,7 +514,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.55.0',
+    cacheName: 'yawmia-v0.56.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -2018,6 +2023,68 @@ const config = {
     eventBusBridgeRequiredForMultiInstance: true,
     sseFanoutRequiredForMultiInstance: true,
     externalQueueRequiredForMultiWriter: true,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 114. قرار النقل المستقبلي المبني على الدليل (EXTERNALIZATION_DECISION) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  EXTERNALIZATION_DECISION: {
+    enabled: true,
+    advisoryOnly: true,
+    requireRepeatedEvidence: true,
+    repeatedWarningMinSnapshots: 3,
+    repeatedCriticalMinSnapshots: 2,
+    evidenceWindowDays: 30,
+    benchmarkHistoryRetentionDays: 90,
+    decisionStatuses: [
+      'no_action',
+      'monitor',
+      'mitigate_file_based',
+      'rehearsal_required',
+      'pilot_candidate',
+      'deferred',
+    ],
+    noImplementationBeforeApproval: true,
+    basePath: 'metrics/externalization-decisions',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 115. تحقق لقطات الهجرة (MIGRATION_SNAPSHOT_VALIDATION) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  MIGRATION_SNAPSHOT_VALIDATION: {
+    enabled: true,
+    requireManifest: true,
+    requireChecksums: true,
+    validateNdjson: true,
+    validateRedaction: true,
+    validateReferentialIntegrity: true,
+    sampleReferenceCheckLimit: 1000,
+    forbiddenKeysRegex: '(token|secret|password|apiKey|api_key|authorization|vapidPrivateKey)',
+    rawBase64WarningKB: 32,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 116. تدريب الهجرة والرجوع (MIGRATION_REHEARSAL) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  MIGRATION_REHEARSAL: {
+    enabled: true,
+    basePath: 'migration-snapshots/rehearsals',
+    requireBackupBeforeRehearsal: true,
+    requireRollbackPlan: true,
+    persistReports: true,
+    retentionCount: 10,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 117. تاريخ Benchmarks (BENCHMARK_HISTORY) — Phase 60
+  // ═══════════════════════════════════════════════════════════════
+  BENCHMARK_HISTORY: {
+    enabled: true,
+    basePath: 'metrics/benchmarks',
+    retentionDays: 90,
+    persistJsonArtifacts: true,
+    p95WarningMs: 1000,
+    p95CriticalMs: 3000,
   },
 
 };

@@ -184,6 +184,9 @@ var AdminApp = (function () {
         loadTrustCalibrationDashboard(),
         loadStoragePressure(),
         loadExternalizationReadiness(),
+        loadPhase60Decision(),
+        loadMigrationRehearsal(),
+        loadBenchmarkHistory(),
         loadMultiInstanceBoundary(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
@@ -4230,6 +4233,379 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 60 — Evidence-Based Externalization Decision + Rehearsal
+  // ═══════════════════════════════════════════════════════════════
+
+  function phase60DecisionClass(status) {
+    if (status === 'no_action') return 'phase60-decision-card--no-action';
+    if (status === 'monitor') return 'phase60-decision-card--monitor';
+    if (status === 'mitigate_file_based') return 'phase60-decision-card--monitor';
+    if (status === 'rehearsal_required') return 'phase60-decision-card--rehearsal';
+    if (status === 'pilot_candidate') return 'phase60-decision-card--pilot';
+    return 'phase60-decision-card--monitor';
+  }
+
+  function phase60DecisionLabel(status) {
+    var labels = {
+      no_action: 'لا يوجد إجراء',
+      monitor: 'راقب الأدلة',
+      mitigate_file_based: 'خفّف بالملفات أولاً',
+      rehearsal_required: 'تدريب مطلوب',
+      pilot_candidate: 'مرشح Pilot — يحتاج موافقة',
+      deferred: 'مؤجل',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  async function loadPhase60Decision() {
+    var summaryEl = document.getElementById('phase60DecisionSummary');
+    var detailsEl = document.getElementById('phase60DecisionDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/externalization/decision');
+      var decision = data.decision || {};
+
+      renderPhase60DecisionSummary(decision);
+      renderCandidateDecisionRows(decision.candidates || []);
+      renderRecommendedActions('phase60DecisionRecommendations', decision.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل قرار Phase 60</p>';
+    }
+  }
+
+  async function capturePhase60Decision() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/externalization/decision/capture', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') {
+          YawmiaToast.success('تم حفظ قرار Phase 60');
+        }
+        renderPhase60DecisionSummary(data.decision || {});
+        renderCandidateDecisionRows((data.decision && data.decision.candidates) || []);
+        renderRecommendedActions('phase60DecisionRecommendations', (data.decision && data.decision.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ قرار Phase 60');
+    }
+  }
+
+  async function loadPhase60DecisionSnapshots() {
+    var detailsEl = document.getElementById('phase60DecisionDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/externalization/decision/snapshots?limit=20');
+      var rows = data.decisions || [];
+
+      if (rows.length === 0) {
+        detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد سجل قرارات بعد</p>';
+        return;
+      }
+
+      var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">سجل قرارات Phase 60</h3>';
+      html += '<table class="admin-table"><thead><tr><th>ID</th><th>Status</th><th>Candidates</th><th>Generated</th></tr></thead><tbody>';
+
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(r.id || '-') + '</small></td>' +
+          '<td>' + escapeHtml(phase60DecisionLabel(r.status)) + '</td>' +
+          '<td>' + escapeHtml(String((r.candidates || []).length)) + '</td>' +
+          '<td><small>' + escapeHtml(r.generatedAt ? new Date(r.generatedAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل القرارات</p>';
+    }
+  }
+
+  function renderPhase60DecisionSummary(decision) {
+    var el = document.getElementById('phase60DecisionSummary');
+    if (!el) return;
+
+    var evidence = decision.evidence || {};
+    var pressure = evidence.pressure || {};
+    var benchmarks = evidence.benchmarks || {};
+
+    var cards = [
+      {
+        value: '<span class="phase60-status-pill">' + escapeHtml(phase60DecisionLabel(decision.status)) + '</span>',
+        label: 'قرار Phase 60'
+      },
+      {
+        value: decision.implementationAllowed ? 'نعم' : 'لا',
+        label: 'يوجد نقل تلقائي؟'
+      },
+      {
+        value: pressure.snapshotCount || 0,
+        label: 'Pressure snapshots'
+      },
+      {
+        value: benchmarks.benchmarkCount || 0,
+        label: 'Benchmark artifacts'
+      },
+      {
+        value: (decision.candidates || []).filter(function (c) { return c.status === 'rehearsal_required'; }).length,
+        label: 'تحتاج تدريب'
+      },
+      {
+        value: (decision.recommendations || []).length,
+        label: 'إجراءات مقترحة'
+      },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'phase60-decision-card ' + phase60DecisionClass(decision.status);
+      card.innerHTML =
+        '<div class="phase60-decision-card__value">' + c.value + '</div>' +
+        '<div class="phase60-decision-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderCandidateDecisionRows(candidates) {
+    var el = document.getElementById('phase60DecisionDetails');
+    if (!el) return;
+
+    if (!candidates || candidates.length === 0) {
+      el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد candidates</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Candidate Decision Matrix</h3>';
+    html += '<table class="admin-table"><thead><tr>' +
+      '<th>Candidate</th><th>Status</th><th>Score</th><th>Reasons</th><th>Action</th>' +
+    '</tr></thead><tbody>';
+
+    candidates.slice(0, 12).forEach(function (c) {
+      html += '<tr>' +
+        '<td><strong>' + escapeHtml(c.candidate || '-') + '</strong></td>' +
+        '<td>' + escapeHtml(phase60DecisionLabel(c.status)) + '</td>' +
+        '<td>' + Math.round((c.score || 0) * 100) + '%</td>' +
+        '<td><small>' + escapeHtml((c.reasons || []).slice(0, 3).join(' · ') || '-') + '</small></td>' +
+        '<td><small>' + escapeHtml(c.recommendedAction || '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:0.75rem;">' +
+      'قاعدة Phase 60: repeated criticals يمكن أن توصي بالتدريب، وليس نقل تلقائي.' +
+    '</p>';
+
+    el.innerHTML = html;
+  }
+
+  function getSnapshotPathInput() {
+    var input = document.getElementById('migrationSnapshotPathInput');
+    return input ? input.value.trim() : '';
+  }
+
+  async function validateMigrationSnapshot() {
+    var snapshotPath = getSnapshotPathInput();
+    if (!snapshotPath) {
+      showError('اكتب مسار snapshot أولاً');
+      return;
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/migration-snapshots/validate', {
+        snapshotPath: snapshotPath,
+      });
+
+      renderMigrationRehearsalStatus({
+        status: data.validation ? data.validation.status : 'unknown',
+        validation: data.validation,
+      });
+    } catch (err) {
+      renderMigrationRehearsalStatus({
+        status: 'failed',
+        error: err.message || 'خطأ في التحقق من snapshot',
+      });
+    }
+  }
+
+  async function runMigrationRehearsal() {
+    var snapshotPath = getSnapshotPathInput();
+    if (!snapshotPath) {
+      showError('اكتب مسار snapshot أولاً');
+      return;
+    }
+
+    try {
+      var data = await apiWrite('POST', '/api/admin/migration-rehearsal/run', {
+        snapshotPath: snapshotPath,
+      });
+
+      renderMigrationRehearsalStatus(data.rehearsal || {});
+    } catch (err) {
+      renderMigrationRehearsalStatus({
+        status: 'failed',
+        error: err.message || 'خطأ في تشغيل التدريب',
+      });
+    }
+  }
+
+  function loadMigrationRehearsal() {
+    renderMigrationRehearsalStatus({
+      status: 'idle',
+      notes: [
+        'أدخل مسار snapshot ثم شغّل التحقق أو التدريب.',
+        'لا يوجد نقل تلقائي ولا اتصال خارجي.',
+      ],
+    });
+  }
+
+  function renderMigrationRehearsalStatus(report) {
+    var summaryEl = document.getElementById('migrationRehearsalStatus');
+    var detailsEl = document.getElementById('migrationRehearsalDetails');
+    if (!summaryEl) return;
+
+    var status = report.status || 'idle';
+    var cls = status === 'passed'
+      ? 'migration-rehearsal-card--passed'
+      : (status === 'failed' ? 'migration-rehearsal-card--failed' : 'migration-rehearsal-card--warning');
+
+    var validation = report.validation || {};
+    var errors = validation.errors || [];
+    var warnings = validation.warnings || [];
+
+    var cards = [
+      { value: status, label: 'حالة التدريب' },
+      { value: report.sourceDataMutated ? 'نعم' : 'لا', label: 'تم تعديل المصدر؟' },
+      { value: report.externalDbConnected ? 'نعم' : 'لا', label: 'اتصال DB خارجي؟' },
+      { value: errors.length || 0, label: 'Errors' },
+      { value: warnings.length || 0, label: 'Warnings' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'migration-rehearsal-card ' + cls;
+      card.innerHTML =
+        '<div class="migration-rehearsal-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="migration-rehearsal-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (detailsEl) {
+      var html = '';
+      if (report.error) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' + escapeHtml(report.error) + '</div>';
+      }
+
+      if (errors.length > 0) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Errors</h4>';
+        html += '<div class="scale-hygiene-warning-list">';
+        errors.slice(0, 10).forEach(function (e) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' +
+            '<strong>' + escapeHtml(e.code || 'ERROR') + '</strong> ' +
+            escapeHtml(e.collection || '') + ' ' +
+            escapeHtml(e.message || '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      if (warnings.length > 0) {
+        html += '<h4 style="font-size:0.95rem;margin-block:1rem 0.5rem;">Warnings</h4>';
+        html += '<div class="scale-hygiene-warning-list">';
+        warnings.slice(0, 10).forEach(function (w) {
+          html += '<div class="scale-hygiene-warning scale-hygiene-warning--medium">' +
+            '<strong>' + escapeHtml(w.code || 'WARNING') + '</strong> ' +
+            escapeHtml(w.collection || '') + ' ' +
+            escapeHtml(w.message || '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      if (!html && report.notes) {
+        html = '<ul style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.8;">' +
+          report.notes.map(function (n) { return '<li>' + escapeHtml(n) + '</li>'; }).join('') +
+        '</ul>';
+      }
+
+      detailsEl.innerHTML = html;
+    }
+  }
+
+  async function loadBenchmarkHistory() {
+    var summaryEl = document.getElementById('benchmarkHistorySummary');
+    var detailsEl = document.getElementById('benchmarkHistoryDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/benchmarks/history?limit=20');
+      renderBenchmarkHistory(data);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل Benchmark history</p>';
+    }
+  }
+
+  function renderBenchmarkHistory(data) {
+    var summaryEl = document.getElementById('benchmarkHistorySummary');
+    var detailsEl = document.getElementById('benchmarkHistoryDetails');
+    if (!summaryEl) return;
+
+    var latest = data.latest || null;
+    var rows = data.benchmarks || [];
+
+    var cards = [
+      { value: data.total || 0, label: 'Artifacts' },
+      { value: latest ? latest.status : 'missing', label: 'آخر حالة' },
+      { value: latest && latest.summary ? latest.summary.warningCount || 0 : 0, label: 'Warnings' },
+      { value: latest && latest.summary ? latest.summary.criticalCount || 0 : 0, label: 'Criticals' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var cls = c.value === 'critical' || Number(c.value) > 0 && c.label === 'Criticals'
+        ? 'benchmark-history-card--critical'
+        : (c.value === 'warning' || Number(c.value) > 0 && c.label === 'Warnings' ? 'benchmark-history-card--warning' : '');
+      var card = document.createElement('div');
+      card.className = 'benchmark-history-card ' + cls;
+      card.innerHTML =
+        '<div class="benchmark-history-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="benchmark-history-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (!detailsEl) return;
+
+    if (rows.length === 0) {
+      detailsEl.innerHTML =
+        '<p style="color:var(--color-text-muted);text-align:center;">لا توجد Benchmark artifacts بعد. شغّل: <code>node scripts/benchmark-file-paths.js --json --persist</code></p>';
+      return;
+    }
+
+    var html = '<table class="admin-table"><thead><tr>' +
+      '<th>ID</th><th>Status</th><th>Warnings</th><th>Criticals</th><th>Timestamp</th>' +
+    '</tr></thead><tbody>';
+
+    rows.forEach(function (b) {
+      html += '<tr>' +
+        '<td><small>' + escapeHtml(b.id || '-') + '</small></td>' +
+        '<td><span class="benchmark-status-badge benchmark-status-badge--' + escapeHtml(b.status || 'ok') + '">' + escapeHtml(b.status || 'ok') + '</span></td>' +
+        '<td>' + escapeHtml(String((b.summary && b.summary.warningCount) || 0)) + '</td>' +
+        '<td>' + escapeHtml(String((b.summary && b.summary.criticalCount) || 0)) + '</td>' +
+        '<td><small>' + escapeHtml(b.timestamp ? new Date(b.timestamp).toLocaleString('ar-EG') : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    detailsEl.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -4693,6 +5069,9 @@ var AdminApp = (function () {
     } else if (tabName === 'scale') {
       loadStoragePressure();
       loadExternalizationReadiness();
+      loadPhase60Decision();
+      loadMigrationRehearsal();
+      loadBenchmarkHistory();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -5767,6 +6146,19 @@ var AdminApp = (function () {
     renderStoragePressureSummary: renderStoragePressureSummary,
     renderStoragePressureRecommendations: renderStoragePressureRecommendations,
     renderExternalizationCandidates: renderExternalizationCandidates,
+
+    // Phase 60 — Evidence-Based Decision + Migration Rehearsal + Benchmark History
+    loadPhase60Decision: loadPhase60Decision,
+    capturePhase60Decision: capturePhase60Decision,
+    loadPhase60DecisionSnapshots: loadPhase60DecisionSnapshots,
+    renderPhase60DecisionSummary: renderPhase60DecisionSummary,
+    renderCandidateDecisionRows: renderCandidateDecisionRows,
+    loadMigrationRehearsal: loadMigrationRehearsal,
+    runMigrationRehearsal: runMigrationRehearsal,
+    validateMigrationSnapshot: validateMigrationSnapshot,
+    renderMigrationRehearsalStatus: renderMigrationRehearsalStatus,
+    loadBenchmarkHistory: loadBenchmarkHistory,
+    renderBenchmarkHistory: renderBenchmarkHistory,
 
     // Phase 55 — Scale Hygiene
     loadScaleHygiene: loadScaleHygiene,

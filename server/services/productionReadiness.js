@@ -13,6 +13,7 @@ import { getWorkerStats } from './queueWorkers.js';
 import { getQueueStats } from './opsQueue.js';
 import { getAlertDeliveryStats } from './alertDeliveryHistory.js';
 import { getAuditIndexStats } from './auditLogIndex.js';
+import { getPhase60ReadinessChecks } from './phase60Readiness.js';
 
 function check(id, status, message, details = {}, recommendation = null) {
   const out = { id, status, message, details };
@@ -936,6 +937,20 @@ export async function runReadinessChecks(options = {}) {
   checks.push(await checkDangerousActionApprovals(isProd));
   checks.push(await checkWeeklyOpsReviewFreshness(isProd));
   checks.push(await checkCriticalIncidentPostmortems(isProd));
+
+  // Phase 60 — Evidence-based externalization decision + migration rehearsal readiness.
+  try {
+    const phase60Checks = await getPhase60ReadinessChecks();
+    for (const c of phase60Checks) checks.push(c);
+  } catch (err) {
+    checks.push(check(
+      'phase60_readiness',
+      'warn',
+      'Could not evaluate Phase 60 readiness checks',
+      { error: err.message },
+      'node scripts/capture-externalization-decision.js --json'
+    ));
+  }
 
   return checks;
 }

@@ -7,6 +7,7 @@
 //   node scripts/benchmark-file-paths.js --json
 //   node scripts/benchmark-file-paths.js --sample=100
 //   node scripts/benchmark-file-paths.js --include-heavy
+//   node scripts/benchmark-file-paths.js --json --persist
 //
 // Default is read-only and avoids destructive operations.
 // ═══════════════════════════════════════════════════════════════
@@ -18,6 +19,7 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const INCLUDE_HEAVY = process.argv.includes('--include-heavy');
+const PERSIST = process.argv.includes('--persist');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -206,14 +208,45 @@ async function main() {
     await getStoragePressure({ force: true, persist: false });
   }, Math.max(1, Math.min(SAMPLE, 3))));
 
+  const warningThresholdMs = 1000;
+  const criticalThresholdMs = 3000;
+  const warningRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= warningThresholdMs && (r.p95Ms || 0) < criticalThresholdMs);
+  const criticalRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= criticalThresholdMs);
+  const worst = results
+    .filter(r => !r.skipped && !r.error)
+    .sort((a, b) => (b.p95Ms || 0) - (a.p95Ms || 0))[0] || null;
+
   const output = {
+    id: 'bmk_' + Date.now().toString(36),
     ok: results.every(r => !r.error),
+    timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
+    version: '0.56.0',
     sample: SAMPLE,
     includeHeavy: INCLUDE_HEAVY,
+    persisted: false,
     dataPath: process.env.YAWMIA_DATA_PATH || './data',
+    summary: {
+      p95WorstPath: worst ? worst.label : null,
+      p95WorstMs: worst ? worst.p95Ms : 0,
+      warningCount: warningRows.length,
+      criticalCount: criticalRows.length,
+    },
     results,
   };
+
+  if (PERSIST) {
+    try {
+      const { persistBenchmarkResult } = await import('../server/services/benchmarkHistory.js');
+      const persisted = await persistBenchmarkResult(output, { source: 'benchmark-file-paths' });
+      output.persisted = !!(persisted && persisted.ok);
+      output.persistedId = persisted && persisted.benchmark ? persisted.benchmark.id : null;
+    } catch (err) {
+      output.persisted = false;
+      output.persistError = err.message;
+      output.ok = false;
+    }
+  }
 
   if (JSON_OUT) {
     console.log = originalConsole.log;
@@ -223,7 +256,8 @@ async function main() {
   } else {
     console.log('\n⏱ يوميّة File Path Benchmarks\n');
     console.log(`Sample: ${SAMPLE}`);
-    console.log(`Include heavy: ${INCLUDE_HEAVY ? 'yes' : 'no'}\n`);
+    console.log(`Include heavy: ${INCLUDE_HEAVY ? 'yes' : 'no'}`);
+    console.log(`Persist: ${PERSIST ? 'yes' : 'no'}\n`);
 
     for (const r of results) {
       if (r.skipped) {
@@ -234,6 +268,12 @@ async function main() {
         console.log(`  ${r.label}: avg=${r.avgMs}ms p50=${r.p50Ms}ms p95=${r.p95Ms}ms min=${r.minMs}ms max=${r.maxMs}ms`);
       }
     }
+
+    console.log('\nSummary:');
+    console.log(`  Worst p95: ${output.summary.p95WorstPath || '-'} (${output.summary.p95WorstMs || 0}ms)`);
+    console.log(`  Warnings: ${output.summary.warningCount}`);
+    console.log(`  Criticals: ${output.summary.criticalCount}`);
+    if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');
   }

@@ -102,6 +102,7 @@ export async function getScaleHygieneOverview() {
     postmortemBacklog,
     rbacMatrix,
     storagePressure,
+    phase60Evidence,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -129,6 +130,9 @@ export async function getScaleHygieneOverview() {
       .catch(err => ({ enabled: false, error: err.message })),
     import('./storagePressure.js')
       .then(m => m.getStoragePressure({ persist: false }))
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./phase60Readiness.js')
+      .then(m => m.getPhase60EvidenceSummary())
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -290,6 +294,31 @@ export async function getScaleHygieneOverview() {
     }
   }
 
+  // Phase 60 — Evidence collection recommended actions.
+  if (phase60Evidence && phase60Evidence.enabled !== false) {
+    if (phase60Evidence.decisionStatus === 'unknown') {
+      recommendedActions.push({
+        id: 'phase60_capture_decision',
+        label: 'حفظ قرار Phase 60',
+        severity: 'warning',
+        command: 'node scripts/capture-externalization-decision.js --persist',
+        adminRoute: '/api/admin/externalization/decision',
+        reason: 'لا يوجد قرار Phase 60 محفوظ يربط pressure والbenchmarks والتدريب.',
+      });
+    }
+
+    if (phase60Evidence.latestBenchmarkStatus === 'missing') {
+      recommendedActions.push({
+        id: 'phase60_benchmark_history',
+        label: 'تشغيل benchmark history',
+        severity: 'warning',
+        command: 'node scripts/benchmark-file-paths.js --json --persist',
+        adminRoute: '/api/admin/benchmarks/history',
+        reason: 'قرارات externalization تحتاج benchmark history وليس snapshot واحد.',
+      });
+    }
+  }
+
   if (storagePressure && storagePressure.status === 'critical') {
     recommendedActions.push({
       id: 'storage_pressure_critical_review',
@@ -432,6 +461,12 @@ export async function getScaleHygieneOverview() {
         exportEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.exportEnabled),
         anonymizeEnabled: !!(config.PRIVACY_REQUESTS && config.PRIVACY_REQUESTS.anonymizeEnabled),
       },
+    },
+    phase60Evidence: phase60Evidence || {
+      enabled: false,
+      decisionStatus: 'unknown',
+      latestBenchmarkStatus: 'missing',
+      recommendations: [],
     },
     recommendedActions: recommendedActions.slice(0, 12),
     warnings: warnings.slice(0, 100),

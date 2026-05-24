@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/predeploy-check.js — Deployment Gate (Phase 59)
+// scripts/predeploy-check.js — Deployment Gate (Phase 60)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   NODE_ENV=production node scripts/predeploy-check.js --strict
@@ -92,7 +92,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.55.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.55.0' }));
+  checks.push(mk('package_version', pkg.version === '0.56.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.56.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -107,7 +107,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.55.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.56.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -262,6 +262,108 @@ async function main() {
         `Create ${script}`
       ));
     }
+  }
+
+  // Phase 60 — Evidence-based externalization decision + migration rehearsal.
+  const phase60Docs = [
+    'PHASE60_EXTERNALIZATION_DECISION.md',
+    'PHASE60_MIGRATION_REHEARSAL.md',
+    'PHASE60_ROLLBACK_PLAN.md',
+    'PHASE60_REPOSITORY_BOUNDARIES.md',
+    'PHASE60_EVENT_BRIDGE_DESIGN.md',
+    'PHASE60_SSE_FANOUT_DESIGN.md',
+    'PHASE60_OBJECT_STORAGE_DECISION.md',
+    'PHASE60_EXTERNAL_QUEUE_DECISION.md',
+    'PHASE60_EXTERNAL_SEARCH_DECISION.md',
+  ];
+
+  for (const doc of phase60Docs) {
+    try {
+      await readFile(doc, 'utf-8');
+      checks.push(mk(`phase60_doc:${doc}`, 'pass', `${doc} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase60_doc:${doc}`,
+        STRICT ? 'fail' : 'warn',
+        `${doc} is missing`,
+        `Create ${doc}`
+      ));
+    }
+  }
+
+  const phase60Scripts = [
+    'scripts/validate-migration-snapshot.js',
+    'scripts/run-migration-rehearsal.js',
+    'scripts/capture-externalization-decision.js',
+    'scripts/list-benchmark-history.js',
+  ];
+
+  for (const script of phase60Scripts) {
+    try {
+      await readFile(script, 'utf-8');
+      checks.push(mk(`phase60_script:${script}`, 'pass', `${script} exists`));
+    } catch (_) {
+      checks.push(mk(
+        `phase60_script:${script}`,
+        STRICT ? 'fail' : 'warn',
+        `${script} is missing`,
+        `Create ${script}`
+      ));
+    }
+  }
+
+  try {
+    const decision = runScript('scripts/capture-externalization-decision.js', ['--json']);
+    if (decision.parsed) {
+      checks.push(mk(
+        'phase60_externalization_decision',
+        decision.parsed.implementationAllowed === false ? 'pass' : 'fail',
+        decision.parsed.implementationAllowed === false
+          ? `Phase 60 decision is advisory (${decision.parsed.status || 'unknown'})`
+          : 'Phase 60 decision unexpectedly allows implementation',
+        'node scripts/capture-externalization-decision.js --json',
+        {
+          status: decision.parsed.status,
+          implementationAllowed: decision.parsed.implementationAllowed,
+        }
+      ));
+    } else {
+      checks.push(mk(
+        'phase60_externalization_decision',
+        'warn',
+        'Could not parse Phase 60 externalization decision output',
+        'node scripts/capture-externalization-decision.js --json'
+      ));
+    }
+  } catch (_) {
+    checks.push(mk(
+      'phase60_externalization_decision',
+      'warn',
+      'Could not run Phase 60 decision script',
+      'node scripts/capture-externalization-decision.js --json'
+    ));
+  }
+
+  try {
+    const benchmarkHistory = runScript('scripts/list-benchmark-history.js', ['--json']);
+    if (benchmarkHistory.parsed) {
+      checks.push(mk(
+        'phase60_benchmark_history',
+        benchmarkHistory.parsed.total > 0 ? 'pass' : 'warn',
+        benchmarkHistory.parsed.total > 0
+          ? `${benchmarkHistory.parsed.total} benchmark artifact(s) available`
+          : 'No benchmark history artifacts exist yet',
+        'node scripts/benchmark-file-paths.js --json --persist',
+        { total: benchmarkHistory.parsed.total || 0 }
+      ));
+    }
+  } catch (_) {
+    checks.push(mk(
+      'phase60_benchmark_history',
+      'warn',
+      'Could not evaluate benchmark history',
+      'node scripts/list-benchmark-history.js --json'
+    ));
   }
 
   const summary = {

@@ -218,6 +218,80 @@
         </div>
       </div>
 
+      <!-- Phase 60 — Evidence-Based Externalization Decision -->
+      <div class="admin-section" id="phase60DecisionSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚦 قرار Phase 60 المبني على الدليل</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPhase60Decision()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          Phase 60 = قرار وتدريب، وليس نقل قاعدة بيانات افتراضي.
+          لا يوجد PostgreSQL أو external queue أو external search بدون أدلة متكررة وموافقة واضحة.
+        </p>
+
+        <div id="phase60DecisionRecommendations" class="recommended-actions"></div>
+
+        <div id="phase60DecisionSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePhase60Decision()">حفظ قرار جديد</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPhase60DecisionSnapshots()">سجل القرارات</button>
+        </div>
+
+        <div id="phase60DecisionDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 60 — Migration Rehearsal -->
+      <div class="admin-section" id="migrationRehearsalSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🧪 تدريب الهجرة والتحقق من Snapshot</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadMigrationRehearsal()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          التدريب آمن: لا يغيّر بيانات الإنتاج، ولا يتصل بأي DB خارجي.
+          أدخل مسار snapshot تم إنشاؤه سابقاً لتشغيل validation/rehearsal.
+        </p>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block-end:1rem;">
+          <input id="migrationSnapshotPathInput" class="form-input form-input--sm" placeholder="./migration-snapshots/test" style="min-width:260px;flex:1;">
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.validateMigrationSnapshot()">تحقق من Snapshot</button>
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.runMigrationRehearsal()">تشغيل التدريب</button>
+        </div>
+
+        <div id="migrationRehearsalStatus" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">لا يوجد تدريب معروض حالياً</p>
+        </div>
+
+        <div id="migrationRehearsalDetails"></div>
+      </div>
+
+      <!-- Phase 60 — Benchmark History -->
+      <div class="admin-section" id="benchmarkHistorySection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📊 سجل Benchmarks</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadBenchmarkHistory()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          سجل Benchmarks يساعدنا نعرف هل بطء المسارات الملفية متكرر أم حالة عابرة.
+          تحذير واحد لا يكفي لاتخاذ قرار externalization.
+        </p>
+
+        <div id="benchmarkHistorySummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="benchmarkHistoryDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 55 — Scale Hygiene -->
       <div class="admin-section" id="scaleHygieneSection">
         <div class="admin-section__header">

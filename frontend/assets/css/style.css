@@ -5229,6 +5229,109 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Phase 60 — Evidence-Based Externalization Decision + Migration Rehearsal ═══ */
+.phase60-decision-card,
+.migration-rehearsal-card,
+.benchmark-history-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.phase60-decision-card--no-action,
+.migration-rehearsal-card--passed,
+.benchmark-history-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.phase60-decision-card--monitor,
+.migration-rehearsal-card--warning,
+.benchmark-history-card--warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.phase60-decision-card--rehearsal {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.phase60-decision-card--pilot,
+.migration-rehearsal-card--failed,
+.benchmark-history-card--critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.phase60-decision-card__value,
+.migration-rehearsal-card__value,
+.benchmark-history-card__value {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.phase60-decision-card__label,
+.migration-rehearsal-card__label,
+.benchmark-history-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.35rem;
+}
+
+.phase60-status-pill,
+.benchmark-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.benchmark-status-badge--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.benchmark-status-badge--warning {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.benchmark-status-badge--critical {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 600px) {
+  #phase60DecisionSection .btn,
+  #migrationRehearsalSection .btn,
+  #benchmarkHistorySection .btn {
+    min-height: 44px;
+  }
+
+  .phase60-decision-card,
+  .migration-rehearsal-card,
+  .benchmark-history-card {
+    padding: 0.9rem;
+  }
+}
+
 /* ═══ Phase 56 — Admin Dashboard IA + Marketplace Intelligence ═══ */
 .admin-tabs {
   display: flex;
