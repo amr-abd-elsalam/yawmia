@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.56.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-24T02:08:11.761Z
-> Files in this part: 82
+> Auto-generated: 2026-05-24T03:23:55.537Z
+> Files in this part: 83
 
 ## Files
 1. `frontend/404.html`
@@ -52,39 +52,40 @@
 47. `scripts/export-incident-timeline.js`
 48. `scripts/export-migration-snapshot.js`
 49. `scripts/export-user-data.js`
-50. `scripts/generate-vapid-keys.js`
-51. `scripts/list-benchmark-history.js`
-52. `scripts/measure-storage-pressure.js`
-53. `scripts/migrate.js`
-54. `scripts/ops-weekly-review.js`
-55. `scripts/postdeploy-smoke.js`
-56. `scripts/predeploy-check.js`
-57. `scripts/queue-drain.js`
-58. `scripts/queue-retry-dlq.js`
-59. `scripts/rebuild-audit-index.js`
-60. `scripts/rebuild-counters.js`
-61. `scripts/rebuild-predictive-archive-index.js`
-62. `scripts/rebuild-search-relevance.js`
-63. `scripts/rebuild-workroom-search.js`
-64. `scripts/repair-indexes.js`
-65. `scripts/repair-queue.js`
-66. `scripts/rollup-product-intelligence.js`
-67. `scripts/rollup-trust-snapshots.js`
-68. `scripts/run-backup-restore-drill.js`
-69. `scripts/run-migration-rehearsal.js`
-70. `scripts/run-trust-calibration.js`
-71. `scripts/scheduler-cadence-report.js`
-72. `scripts/validate-migration-snapshot.js`
-73. `scripts/verify-admin-rbac.js`
-74. `scripts/verify-audit-index.js`
-75. `scripts/verify-data-json.js`
-76. `scripts/verify-file-health.js`
-77. `scripts/verify-marketplace-intelligence.js`
-78. `scripts/verify-privacy-governance.js`
-79. `scripts/verify-production-readiness.js`
-80. `scripts/verify-queue.js`
-81. `scripts/verify-scale-thresholds.js`
-82. `scripts/verify-workroom-indexes.js`
+50. `scripts/find-null-json-files.js`
+51. `scripts/generate-vapid-keys.js`
+52. `scripts/list-benchmark-history.js`
+53. `scripts/measure-storage-pressure.js`
+54. `scripts/migrate.js`
+55. `scripts/ops-weekly-review.js`
+56. `scripts/postdeploy-smoke.js`
+57. `scripts/predeploy-check.js`
+58. `scripts/queue-drain.js`
+59. `scripts/queue-retry-dlq.js`
+60. `scripts/rebuild-audit-index.js`
+61. `scripts/rebuild-counters.js`
+62. `scripts/rebuild-predictive-archive-index.js`
+63. `scripts/rebuild-search-relevance.js`
+64. `scripts/rebuild-workroom-search.js`
+65. `scripts/repair-indexes.js`
+66. `scripts/repair-queue.js`
+67. `scripts/rollup-product-intelligence.js`
+68. `scripts/rollup-trust-snapshots.js`
+69. `scripts/run-backup-restore-drill.js`
+70. `scripts/run-migration-rehearsal.js`
+71. `scripts/run-trust-calibration.js`
+72. `scripts/scheduler-cadence-report.js`
+73. `scripts/validate-migration-snapshot.js`
+74. `scripts/verify-admin-rbac.js`
+75. `scripts/verify-audit-index.js`
+76. `scripts/verify-data-json.js`
+77. `scripts/verify-file-health.js`
+78. `scripts/verify-marketplace-intelligence.js`
+79. `scripts/verify-privacy-governance.js`
+80. `scripts/verify-production-readiness.js`
+81. `scripts/verify-queue.js`
+82. `scripts/verify-scale-thresholds.js`
+83. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -23855,6 +23856,7 @@ async function main() {
 
   const warningThresholdMs = 1000;
   const criticalThresholdMs = 3000;
+  const errorRows = results.filter(r => !!r.error);
   const warningRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= warningThresholdMs && (r.p95Ms || 0) < criticalThresholdMs);
   const criticalRows = results.filter(r => !r.skipped && !r.error && (r.p95Ms || 0) >= criticalThresholdMs);
   const worst = results
@@ -23863,7 +23865,7 @@ async function main() {
 
   const output = {
     id: 'bmk_' + Date.now().toString(36),
-    ok: results.every(r => !r.error),
+    ok: errorRows.length === 0,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
     version: '0.56.0',
@@ -23876,6 +23878,8 @@ async function main() {
       p95WorstMs: worst ? worst.p95Ms : 0,
       warningCount: warningRows.length,
       criticalCount: criticalRows.length,
+      errorCount: errorRows.length,
+      errorPaths: errorRows.map(r => r.label),
     },
     results,
   };
@@ -23918,6 +23922,7 @@ async function main() {
     console.log(`  Worst p95: ${output.summary.p95WorstPath || '-'} (${output.summary.p95WorstMs || 0}ms)`);
     console.log(`  Warnings: ${output.summary.warningCount}`);
     console.log(`  Criticals: ${output.summary.criticalCount}`);
+    console.log(`  Errors: ${output.summary.errorCount}`);
     if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');
@@ -25159,6 +25164,149 @@ main().catch(err => {
   if (err.stack) console.error(err.stack);
   process.exit(1);
 });
+```
+
+---
+
+## `scripts/find-null-json-files.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/find-null-json-files.js — Detect JSON files containing NUL bytes
+// ═══════════════════════════════════════════════════════════════
+// Read-only diagnostic.
+// Useful when JSON.parse fails with "Unexpected token '\\u0000'".
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+const MAX_FILES = Number.parseInt(getArg('max-files', '300000'), 10) || 300000;
+const DATA_PATH = process.env.YAWMIA_DATA_PATH || './data';
+
+function getArg(name, fallback = '') {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  return found ? found.slice(prefix.length) : fallback;
+}
+
+function isHelp() {
+  return process.argv.includes('--help') || process.argv.includes('-h');
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/find-null-json-files.js
+  node scripts/find-null-json-files.js --json
+  node scripts/find-null-json-files.js --strict
+  node scripts/find-null-json-files.js --max-files=100000
+
+Read-only:
+  Scans JSON files under YAWMIA_DATA_PATH or ./data.
+  Reports files containing NUL bytes.
+`);
+}
+
+async function walk(dir, out, state) {
+  if (state.scanned >= MAX_FILES) return;
+
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (_) {
+    return;
+  }
+
+  for (const entry of entries) {
+    if (state.scanned >= MAX_FILES) return;
+
+    const full = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      await walk(full, out, state);
+      continue;
+    }
+
+    if (!entry.isFile()) continue;
+    if (!entry.name.endsWith('.json')) continue;
+    if (entry.name.endsWith('.tmp')) continue;
+
+    state.scanned++;
+
+    try {
+      const buf = await readFile(full);
+      const nulIndex = buf.indexOf(0);
+      if (nulIndex !== -1) {
+        const st = await stat(full).catch(() => ({ size: buf.length }));
+        out.push({
+          path: relative(process.cwd(), full),
+          sizeBytes: st.size,
+          nulIndex,
+        });
+      }
+    } catch (err) {
+      state.readErrors.push({
+        path: relative(process.cwd(), full),
+        error: err.message,
+      });
+    }
+
+    if (state.scanned % 500 === 0) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  }
+}
+
+if (isHelp()) {
+  printHelp();
+  process.exit(0);
+}
+
+const findings = [];
+const state = { scanned: 0, readErrors: [] };
+
+await walk(DATA_PATH, findings, state);
+
+const result = {
+  ok: findings.length === 0,
+  dataPath: DATA_PATH,
+  scannedFiles: state.scanned,
+  maxFiles: MAX_FILES,
+  nulFileCount: findings.length,
+  findings,
+  readErrors: state.readErrors.slice(0, 50),
+  generatedAt: new Date().toISOString(),
+};
+
+if (JSON_OUT) {
+  console.log(JSON.stringify(result, null, 2));
+} else {
+  console.log('\n🔎 NUL JSON file scan\n');
+  console.log(`Data path: ${DATA_PATH}`);
+  console.log(`Scanned: ${state.scanned}`);
+  console.log(`Files with NUL bytes: ${findings.length}`);
+
+  if (findings.length > 0) {
+    console.log('\nFindings:');
+    for (const f of findings.slice(0, 50)) {
+      console.log(`- ${f.path} size=${f.sizeBytes} nulIndex=${f.nulIndex}`);
+    }
+  }
+
+  console.log('');
+}
+
+if (!result.ok && STRICT) process.exit(1);
+process.exit(0);
 ```
 
 ---

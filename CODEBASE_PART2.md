@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.56.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-24T02:08:11.722Z
+> Auto-generated: 2026-05-24T03:23:55.495Z
 > Files in this part: 128
 
 ## Files
@@ -9345,9 +9345,8 @@ function sanitizeValue(value) {
   if (value === undefined) return undefined;
 
   if (typeof value === 'string') {
-    if (/token|secret|password|apikey|api_key|authorization|vapid/i.test(value)) {
-      return '[redacted]';
-    }
+    // Do not redact generic error strings like "Unexpected token".
+    // Key-based redaction below handles actual secret fields.
     return value.slice(0, 2000);
   }
 
@@ -9401,10 +9400,19 @@ export function evaluateBenchmarkThresholds(result, options = {}) {
     }
   }
 
+  const errorRows = rows.filter(r => !!r.error);
+
   return {
-    status: criticals.length > 0 ? 'critical' : (warnings.length > 0 ? 'warning' : 'ok'),
+    status: errorRows.length > 0 || criticals.length > 0
+      ? 'critical'
+      : (warnings.length > 0 ? 'warning' : 'ok'),
     warningCount: warnings.length,
     criticalCount: criticals.length,
+    errorCount: errorRows.length,
+    errorRows: errorRows.map(r => ({
+      path: r.path || r.name || r.operation || r.label || 'unknown',
+      error: String(r.error || '').slice(0, 1000),
+    })),
     warnings,
     criticals,
   };
@@ -9428,6 +9436,8 @@ export async function persistBenchmarkResult(result, options = {}) {
       ...(sanitizeValue(result?.summary || {})),
       warningCount: evaluation.warningCount,
       criticalCount: evaluation.criticalCount,
+      errorCount: evaluation.errorCount,
+      errorRows: sanitizeValue(evaluation.errorRows || []),
     },
     results: sanitizeValue(result?.results || []),
     warnings: evaluation.warnings,
@@ -15380,6 +15390,29 @@ export function buildPhase60RecommendedActions(report) {
     });
   }
 
+  const benchmarkEvidence = report.evidence?.benchmarks || {};
+  if ((benchmarkEvidence.latestErrorCount || 0) > 0) {
+    actions.push({
+      id: 'diagnose_benchmark_errors',
+      label: 'تشخيص أخطاء Benchmark',
+      severity: 'critical',
+      command: 'node scripts/verify-data-json.js --strict && node scripts/find-null-json-files.js --json',
+      adminRoute: '/api/admin/production/readiness',
+      reason: 'آخر Benchmark احتوى على أخطاء قراءة/JSON. أصلح سلامة الملفات قبل أي قرار externalization.',
+    });
+  }
+
+  if ((benchmarkEvidence.latestCriticalCount || 0) > 0) {
+    actions.push({
+      id: 'review_critical_benchmark_paths',
+      label: 'مراجعة مسارات Benchmark الحرجة',
+      severity: 'warning',
+      command: 'node scripts/benchmark-file-paths.js --json --persist',
+      adminRoute: '/api/admin/benchmarks/history',
+      reason: 'آخر Benchmark يحتوي p95 critical. هذا يطلب قياسًا متكررًا وتحليل السبب قبل أي rehearsal.',
+    });
+  }
+
   const needsRehearsal = (report.candidates || []).some(c => c.status === 'rehearsal_required');
   if (needsRehearsal) {
     actions.push({
@@ -15450,10 +15483,20 @@ export async function getExternalizationDecisionReport(options = {}) {
 
   const pressureEvidence = evaluateRepeatedPressureEvidence(pressureSnapshots, options);
   const benchmarkEvidence = evaluateBenchmarkEvidence(benchmarkSnapshots, options);
+  const latestBenchmark = benchmarkSnapshots && benchmarkSnapshots[0] ? benchmarkSnapshots[0] : null;
+  const latestBenchmarkStatus = latestBenchmark ? latestBenchmark.status : 'missing';
+  const latestBenchmarkErrorCount = latestBenchmark?.summary?.errorCount || 0;
+  const latestBenchmarkCriticalCount = latestBenchmark?.summary?.criticalCount || 0;
 
   const evidence = {
     pressure: pressureEvidence,
-    benchmarks: benchmarkEvidence,
+    benchmarks: {
+      ...benchmarkEvidence,
+      latestStatus: latestBenchmarkStatus,
+      latestErrorCount: latestBenchmarkErrorCount,
+      latestCriticalCount: latestBenchmarkCriticalCount,
+      latestId: latestBenchmark ? latestBenchmark.id : null,
+    },
     readiness: readiness ? {
       enabled: !!readiness.enabled,
       pressureSnapshot: readiness.pressureSnapshot || null,
@@ -15467,6 +15510,12 @@ export async function getExternalizationDecisionReport(options = {}) {
   else if (candidates.some(c => c.status === 'rehearsal_required')) status = 'rehearsal_required';
   else if (candidates.some(c => c.status === 'mitigate_file_based')) status = 'mitigate_file_based';
   else if (candidates.some(c => c.status === 'monitor')) status = 'monitor';
+
+  // Phase 60 guardrail:
+  // benchmark errors/criticals should ask for diagnosis or mitigation, not migration.
+  if (status === 'no_action' && (latestBenchmarkErrorCount > 0 || latestBenchmarkCriticalCount > 0)) {
+    status = 'monitor';
+  }
 
   const report = {
     enabled: true,
