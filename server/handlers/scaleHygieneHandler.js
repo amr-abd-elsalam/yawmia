@@ -89,7 +89,12 @@ async function enqueueOrRun(req, res, {
 export async function handleScaleHygieneOverview(req, res) {
   try {
     const { getScaleHygieneOverview } = await import('../services/scaleHygiene.js');
-    const overview = await getScaleHygieneOverview();
+
+    // Phase 61.1:
+    // Admin HTTP overview must be fast and artifact/summary based.
+    // Heavy scans remain script/queue/manual.
+    const overview = await getScaleHygieneOverview({ lightweight: true });
+
     return sendJSON(res, 200, { ok: true, overview });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب نظافة التوسع', code: 'SCALE_HYGIENE_ERROR' });
