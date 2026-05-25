@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.56.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-24T03:23:55.495Z
-> Files in this part: 128
+# يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
+> Auto-generated: 2026-05-25T10:43:12.165Z
+> Files in this part: 132
 
 ## Files
 1. `server/services/abuseFlagReview.js`
@@ -78,59 +78,63 @@
 73. `server/services/paymentDisputeAnalytics.js`
 74. `server/services/payments.js`
 75. `server/services/phase60Readiness.js`
-76. `server/services/postmortemRecords.js`
-77. `server/services/predictiveAbuse.js`
-78. `server/services/predictiveArchiveIndex.js`
-79. `server/services/predictiveSignalRetention.js`
-80. `server/services/presenceService.js`
-81. `server/services/privacyRequests.js`
-82. `server/services/processLock.js`
-83. `server/services/productionReadiness.js`
-84. `server/services/profileCompleteness.js`
-85. `server/services/profileTasks.js`
-86. `server/services/queryIndex.js`
-87. `server/services/queueCompaction.js`
-88. `server/services/queueHealthVerify.js`
-89. `server/services/queueStorageIndex.js`
-90. `server/services/queueWorkers.js`
-91. `server/services/ratings.js`
-92. `server/services/reports.js`
-93. `server/services/resourceLock.js`
-94. `server/services/sanitizer.js`
-95. `server/services/scaleHygiene.js`
-96. `server/services/scaleThresholds.js`
-97. `server/services/scheduledAbuseDetection.js`
-98. `server/services/schedulerRegistry.js`
-99. `server/services/schedulerRunHistory.js`
-100. `server/services/searchAnalytics.js`
-101. `server/services/searchIndex.js`
-102. `server/services/searchRelevance.js`
-103. `server/services/sessions.js`
-104. `server/services/snoozeReminders.js`
-105. `server/services/sseManager.js`
-106. `server/services/storagePressure.js`
-107. `server/services/trust.js`
-108. `server/services/trustAnalytics.js`
-109. `server/services/trustCalibration.js`
-110. `server/services/trustScoreV2.js`
-111. `server/services/trustSnapshotRollups.js`
-112. `server/services/userAnonymization.js`
-113. `server/services/userDataExport.js`
-114. `server/services/users.js`
-115. `server/services/validators.js`
-116. `server/services/verification.js`
-117. `server/services/webpush.js`
-118. `server/services/workerDiscovery.js`
-119. `server/services/workroom.js`
-120. `server/services/workroomAdoptionMetrics.js`
-121. `server/services/workroomAttachments.js`
-122. `server/services/workroomChecklist.js`
-123. `server/services/workroomHygiene.js`
-124. `server/services/workroomIndexHealth.js`
-125. `server/services/workroomPins.js`
-126. `server/services/workroomReceipts.js`
-127. `server/services/workroomSearch.js`
-128. `server/services/workroomTemplateMetrics.js`
+76. `server/services/phase61EvidenceCadence.js`
+77. `server/services/pilotDecisionGate.js`
+78. `server/services/postmortemRecords.js`
+79. `server/services/predictiveAbuse.js`
+80. `server/services/predictiveArchiveIndex.js`
+81. `server/services/predictiveSignalRetention.js`
+82. `server/services/presenceService.js`
+83. `server/services/privacyRequests.js`
+84. `server/services/processLock.js`
+85. `server/services/productionReadiness.js`
+86. `server/services/profileCompleteness.js`
+87. `server/services/profileTasks.js`
+88. `server/services/queryIndex.js`
+89. `server/services/queueCompaction.js`
+90. `server/services/queueHealthVerify.js`
+91. `server/services/queueStorageIndex.js`
+92. `server/services/queueWorkers.js`
+93. `server/services/ratings.js`
+94. `server/services/reports.js`
+95. `server/services/repositoryContractReport.js`
+96. `server/services/resourceLock.js`
+97. `server/services/rollbackRehearsal.js`
+98. `server/services/sanitizer.js`
+99. `server/services/scaleHygiene.js`
+100. `server/services/scaleThresholds.js`
+101. `server/services/scheduledAbuseDetection.js`
+102. `server/services/schedulerRegistry.js`
+103. `server/services/schedulerRunHistory.js`
+104. `server/services/searchAnalytics.js`
+105. `server/services/searchIndex.js`
+106. `server/services/searchRelevance.js`
+107. `server/services/sessions.js`
+108. `server/services/snoozeReminders.js`
+109. `server/services/sseManager.js`
+110. `server/services/storagePressure.js`
+111. `server/services/trust.js`
+112. `server/services/trustAnalytics.js`
+113. `server/services/trustCalibration.js`
+114. `server/services/trustScoreV2.js`
+115. `server/services/trustSnapshotRollups.js`
+116. `server/services/userAnonymization.js`
+117. `server/services/userDataExport.js`
+118. `server/services/users.js`
+119. `server/services/validators.js`
+120. `server/services/verification.js`
+121. `server/services/webpush.js`
+122. `server/services/workerDiscovery.js`
+123. `server/services/workroom.js`
+124. `server/services/workroomAdoptionMetrics.js`
+125. `server/services/workroomAttachments.js`
+126. `server/services/workroomChecklist.js`
+127. `server/services/workroomHygiene.js`
+128. `server/services/workroomIndexHealth.js`
+129. `server/services/workroomPins.js`
+130. `server/services/workroomReceipts.js`
+131. `server/services/workroomSearch.js`
+132. `server/services/workroomTemplateMetrics.js`
 
 ---
 
@@ -22987,6 +22991,31 @@ const builtInMigrations = [
       logger.info('Migration v20: Phase 60 evidence + rehearsal directories registered (no heavy scan, no externalization)');
     },
   },
+  {
+    version: 21,
+    name: 'Phase 61: Evidence Cadence, Rollback Rehearsal, and Pilot Decision Gate',
+    up: async () => {
+      // Phase 61 registers additive advisory structures:
+      //   - metrics/phase61-evidence
+      //   - migration-snapshots/rehearsals/rollback
+      //   - metrics/pilot-decisions
+      //   - metrics/repository-contracts
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - validate snapshots
+      //   - run migration rehearsals
+      //   - run rollback rehearsals
+      //   - externalize any data
+      //   - connect to external DB/search/queue
+      //   - enable runtime repository switching
+      //
+      // Phase 61 operationalizes evidence cadence and pilot gating only.
+      logger.info('Migration v21: Phase 61 evidence cadence + rollback rehearsal + pilot gate directories registered (no heavy scan, no externalization)');
+    },
+  },
 ];
 
 /**
@@ -27862,6 +27891,997 @@ export async function getPhase60EvidenceSummary() {
 
 ---
 
+## `server/services/phase61EvidenceCadence.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/phase61EvidenceCadence.js — Phase 61 Evidence Cadence
+// ═══════════════════════════════════════════════════════════════
+// Reads persisted evidence artifacts only.
+// No heavy scans.
+// No external connections.
+// No source data mutation.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+function isEnabled() {
+  return !!(config.PHASE61_EVIDENCE_CADENCE && config.PHASE61_EVIDENCE_CADENCE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'p61ev_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function snapshotPath(id) {
+  return getRecordPath('phase61_evidence', id);
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function ageDays(iso) {
+  const ms = parseMs(iso);
+  if (!ms) return null;
+  return Math.round(((Date.now() - ms) / 86400000) * 10) / 10;
+}
+
+async function latestFromCollection(collection, predicate = null) {
+  try {
+    const rows = await listJSON(getCollectionPath(collection));
+    const filtered = rows.filter(r => {
+      if (!r || typeof r !== 'object') return false;
+      if (predicate && !predicate(r)) return false;
+      return !!(r.timestamp || r.generatedAt || r.createdAt || r.completedAt || r.startedAt);
+    });
+
+    filtered.sort((a, b) => {
+      const aTs = parseMs(a.timestamp || a.generatedAt || a.completedAt || a.startedAt || a.createdAt);
+      const bTs = parseMs(b.timestamp || b.generatedAt || b.completedAt || b.startedAt || b.createdAt);
+      return bTs - aTs;
+    });
+
+    return filtered[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function compactArtifact(row, kind) {
+  if (!row) return null;
+  const ts = row.timestamp || row.generatedAt || row.completedAt || row.startedAt || row.createdAt || null;
+  return {
+    kind,
+    id: row.id || null,
+    status: row.status || (row.ok === true ? 'passed' : row.ok === false ? 'failed' : 'unknown'),
+    timestamp: ts,
+    ageDays: ageDays(ts),
+    ok: row.ok !== undefined ? !!row.ok : undefined,
+    warningCount: Array.isArray(row.warnings) ? row.warnings.length : (row.summary?.warningCount || 0),
+    criticalCount: Array.isArray(row.criticals) ? row.criticals.length : (row.summary?.criticalCount || 0),
+    errorCount: Array.isArray(row.errors) ? row.errors.length : (row.summary?.errorCount || 0),
+  };
+}
+
+function expectedFreshDaysFor(kind) {
+  const c = config.PHASE61_EVIDENCE_CADENCE || {};
+  if (kind === 'storagePressure') return c.storagePressureCadenceDays || 7;
+  if (kind === 'benchmark') return c.benchmarkCadenceDays || 7;
+  if (kind === 'scaleThresholds') return c.scaleThresholdCadenceDays || 7;
+  if (kind === 'externalizationDecision') return c.externalizationDecisionCadenceDays || 7;
+  if (kind === 'migrationRehearsal') return c.migrationRehearsalCadenceDays || 30;
+  if (kind === 'rollbackRehearsal') return c.rollbackRehearsalCadenceDays || 30;
+  if (kind === 'weeklyOpsReview') return 7;
+  if (kind === 'restoreDrill') return config.PHASE61_PILOT_GATE?.restoreDrillMaxAgeDays || 7;
+  return 7;
+}
+
+/**
+ * Evaluate evidence freshness without performing scans.
+ */
+export function evaluateEvidenceFreshness(evidence, options = {}) {
+  const cfg = config.PHASE61_EVIDENCE_CADENCE || {};
+  const warnDays = Number(options.warningDays || cfg.staleEvidenceWarningDays || 14);
+  const criticalDays = Number(options.criticalDays || cfg.staleEvidenceCriticalDays || 30);
+
+  const warnings = [];
+  const blockers = [];
+  const latest = evidence || {};
+
+  for (const [kind, artifact] of Object.entries(latest)) {
+    if (!artifact) {
+      warnings.push({
+        code: `${kind}_missing`,
+        level: kind === 'rollbackRehearsal' ? 'warning' : 'warning',
+        message: `${kind} evidence is missing`,
+        recommendation: recommendationForKind(kind),
+      });
+      continue;
+    }
+
+    const aDays = artifact.ageDays;
+    if (aDays === null) {
+      warnings.push({
+        code: `${kind}_timestamp_missing`,
+        level: 'warning',
+        message: `${kind} timestamp is missing`,
+      });
+      continue;
+    }
+
+    const freshDays = expectedFreshDaysFor(kind);
+
+    if (aDays > criticalDays) {
+      blockers.push({
+        code: `${kind}_critical_stale`,
+        level: 'critical',
+        message: `${kind} evidence is critically stale (${aDays} days old)`,
+        recommendation: recommendationForKind(kind),
+      });
+    } else if (aDays > warnDays || aDays > freshDays * 2) {
+      warnings.push({
+        code: `${kind}_stale`,
+        level: 'warning',
+        message: `${kind} evidence is stale (${aDays} days old)`,
+        recommendation: recommendationForKind(kind),
+      });
+    }
+
+    if (artifact.status === 'failed' || artifact.status === 'critical') {
+      blockers.push({
+        code: `${kind}_failed_or_critical`,
+        level: 'critical',
+        message: `${kind} latest artifact is ${artifact.status}`,
+        recommendation: recommendationForKind(kind),
+      });
+    }
+  }
+
+  let status = 'fresh';
+  if (Object.values(latest).every(v => !v)) status = 'missing';
+  else if (blockers.length > 0) status = 'critical';
+  else if (warnings.length > 0) status = 'stale';
+
+  return { status, warnings, blockers };
+}
+
+function recommendationForKind(kind) {
+  const map = {
+    storagePressure: 'node scripts/measure-storage-pressure.js --json --persist',
+    benchmark: 'node scripts/benchmark-file-paths.js --json --persist',
+    scaleThresholds: 'node scripts/verify-scale-thresholds.js --json',
+    externalizationDecision: 'node scripts/capture-externalization-decision.js --persist',
+    migrationRehearsal: 'node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --dry-run --json',
+    rollbackRehearsal: 'node scripts/run-rollback-rehearsal.js --dry-run --json',
+    weeklyOpsReview: 'node scripts/ops-weekly-review.js --persist',
+    restoreDrill: 'node scripts/run-backup-restore-drill.js',
+  };
+  return map[kind] || null;
+}
+
+export function buildEvidenceCadenceRecommendations(status) {
+  const recommendations = [];
+
+  for (const w of status.warnings || []) {
+    recommendations.push({
+      id: w.code,
+      label: labelFromCode(w.code),
+      severity: w.level || 'warning',
+      command: w.recommendation || null,
+      adminRoute: '/api/admin/phase61/evidence',
+      reason: w.message,
+    });
+  }
+
+  for (const b of status.blockers || []) {
+    recommendations.push({
+      id: b.code,
+      label: labelFromCode(b.code),
+      severity: 'critical',
+      command: b.recommendation || null,
+      adminRoute: '/api/admin/phase61/evidence',
+      reason: b.message,
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      id: 'phase61_evidence_cadence_ok',
+      label: 'الأدلة محدثة',
+      severity: 'info',
+      command: null,
+      adminRoute: '/api/admin/phase61/evidence',
+      reason: 'Evidence cadence artifacts are fresh enough for monitoring.',
+    });
+  }
+
+  return recommendations;
+}
+
+function labelFromCode(code) {
+  if (!code) return 'راجع Evidence Cadence';
+  if (code.includes('storagePressure')) return 'شغّل قياس ضغط التخزين';
+  if (code.includes('benchmark')) return 'شغّل Benchmark محفوظ';
+  if (code.includes('scaleThresholds')) return 'تحقق من حدود التوسع';
+  if (code.includes('externalizationDecision')) return 'احفظ قرار externalization';
+  if (code.includes('migrationRehearsal')) return 'شغّل تدريب الهجرة';
+  if (code.includes('rollbackRehearsal')) return 'شغّل تدريب الرجوع';
+  if (code.includes('weeklyOpsReview')) return 'سجّل مراجعة التشغيل الأسبوعية';
+  if (code.includes('restoreDrill')) return 'شغّل Restore Drill';
+  return 'راجع Evidence Cadence';
+}
+
+export async function getEvidenceCadenceStatus(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      phase: 61,
+      status: 'disabled',
+      latest: {},
+      warnings: [],
+      blockers: [],
+      recommendations: [],
+    };
+  }
+
+  const [
+    storagePressure,
+    scaleThresholds,
+    benchmark,
+    externalizationDecision,
+    migrationRehearsal,
+    rollbackRehearsal,
+    weeklyOpsReview,
+    restoreDrill,
+  ] = await Promise.all([
+    latestFromCollection('storage_pressure'),
+    latestFromCollection('scale_thresholds'),
+    latestFromCollection('benchmark_history'),
+    latestFromCollection('externalization_decisions'),
+    latestFromCollection('migration_rehearsals'),
+    latestFromCollection('rollback_rehearsals'),
+    latestFromCollection('ops_reviews', r => r.type === 'weekly_ops_review'),
+    latestFromCollection('backup_restore_drills'),
+  ]);
+
+  const latest = {
+    storagePressure: compactArtifact(storagePressure, 'storagePressure'),
+    scaleThresholds: compactArtifact(scaleThresholds, 'scaleThresholds'),
+    benchmark: compactArtifact(benchmark, 'benchmark'),
+    externalizationDecision: compactArtifact(externalizationDecision, 'externalizationDecision'),
+    migrationRehearsal: compactArtifact(migrationRehearsal, 'migrationRehearsal'),
+    rollbackRehearsal: compactArtifact(rollbackRehearsal, 'rollbackRehearsal'),
+    weeklyOpsReview: compactArtifact(weeklyOpsReview, 'weeklyOpsReview'),
+    restoreDrill: compactArtifact(restoreDrill, 'restoreDrill'),
+  };
+
+  const freshness = evaluateEvidenceFreshness(latest, options);
+  const report = {
+    enabled: true,
+    phase: 61,
+    advisoryOnly: true,
+    status: freshness.status,
+    generatedAt: nowIso(),
+    latest,
+    warnings: freshness.warnings,
+    blockers: freshness.blockers,
+    recommendations: [],
+  };
+
+  report.recommendations = buildEvidenceCadenceRecommendations(report);
+  return report;
+}
+
+export async function captureEvidenceCadenceSnapshot(options = {}) {
+  const report = await getEvidenceCadenceStatus(options);
+  if (!isEnabled()) return { ok: false, disabled: true, report };
+
+  const id = options.id || generateId();
+  const record = {
+    id,
+    kind: 'phase61_evidence_cadence',
+    version: '0.57.0',
+    ...report,
+    createdAt: nowIso(),
+  };
+
+  await atomicWrite(snapshotPath(id), record);
+  return { ok: true, evidence: record };
+}
+
+export async function listEvidenceCadenceSnapshots(options = {}) {
+  if (!isEnabled()) return { snapshots: [], total: 0, limit: 20, offset: 0 };
+
+  const rows = await listJSON(getCollectionPath('phase61_evidence')).catch(() => []);
+  let snapshots = rows.filter(r => r && r.id && r.id.startsWith('p61ev_'));
+
+  snapshots.sort((a, b) => {
+    return parseMs(b.createdAt || b.generatedAt) - parseMs(a.createdAt || a.generatedAt);
+  });
+
+  const total = snapshots.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    snapshots: snapshots.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function cleanupOldEvidenceCadenceSnapshots() {
+  if (!isEnabled()) return 0;
+
+  const retentionDays = 90;
+  const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const result = await listEvidenceCadenceSnapshots({ limit: 100000, offset: 0 });
+
+  let cleaned = 0;
+  for (const row of result.snapshots) {
+    const ts = parseMs(row.createdAt || row.generatedAt);
+    if (ts > 0 && ts < cutoffMs) {
+      await deleteJSON(snapshotPath(row.id)).catch(() => {});
+      cleaned++;
+    }
+  }
+
+  return cleaned;
+}
+
+export const _testHelpers = {
+  ageDays,
+  compactArtifact,
+  expectedFreshDaysFor,
+  recommendationForKind,
+  snapshotPath,
+};
+```
+
+---
+
+## `server/services/pilotDecisionGate.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/pilotDecisionGate.js — Phase 61 Pilot Decision Gate
+// ═══════════════════════════════════════════════════════════════
+// Advisory only. Blocks implementation by default.
+// No external implementation.
+// No connection strings.
+// No runtime repository switch.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+function isEnabled() {
+  return !!(config.PHASE61_PILOT_GATE && config.PHASE61_PILOT_GATE.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'pgate_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function gatePath(id) {
+  return getRecordPath('pilot_decisions', id);
+}
+
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function blocker(code, message, recommendation = null) {
+  const out = { code, message };
+  if (recommendation) out.recommendation = recommendation;
+  return out;
+}
+
+function requirement(id, label, passed, details = {}) {
+  return { id, label, passed: !!passed, details };
+}
+
+function candidateStatusFromDecision(decision, candidate) {
+  const rows = Array.isArray(decision?.candidates) ? decision.candidates : [];
+  const row = rows.find(c => c.candidate === candidate);
+  return row ? row.status : null;
+}
+
+function candidateReasonsFromDecision(decision, candidate) {
+  const rows = Array.isArray(decision?.candidates) ? decision.candidates : [];
+  const row = rows.find(c => c.candidate === candidate);
+  return row && Array.isArray(row.reasons) ? row.reasons : [];
+}
+
+function chooseCandidate(decision, requestedCandidate) {
+  if (requestedCandidate) return requestedCandidate;
+
+  const rows = Array.isArray(decision?.candidates) ? decision.candidates : [];
+  const priority = rows.filter(c => ['pilot_candidate', 'rehearsal_required'].includes(c.status));
+
+  if (priority.length === 1) return priority[0].candidate;
+  return null;
+}
+
+async function getLatestExternalizationDecision() {
+  try {
+    const { getExternalizationDecisionReport } = await import('./externalizationDecision.js');
+    return await getExternalizationDecisionReport({ allowPilotCandidate: false });
+  } catch (err) {
+    return {
+      enabled: false,
+      status: 'unknown',
+      error: err.message,
+      candidates: [],
+    };
+  }
+}
+
+async function getLatestMigrationRehearsal() {
+  try {
+    const rows = await listJSON(getCollectionPath('migration_rehearsals'));
+    const rehearsals = rows.filter(r => r && (r.id || r.generatedAt || r.createdAt));
+    rehearsals.sort((a, b) => parseMs(b.generatedAt || b.createdAt) - parseMs(a.generatedAt || a.createdAt));
+    return rehearsals[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getLatestRollbackRehearsal() {
+  try {
+    const { getLatestRollbackRehearsal } = await import('./rollbackRehearsal.js');
+    return await getLatestRollbackRehearsal();
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getRestoreDrillFreshness() {
+  try {
+    const { getLatestRestoreDrillFreshness } = await import('./backupRestoreDrill.js');
+    return await getLatestRestoreDrillFreshness({
+      thresholdDays: config.PHASE61_PILOT_GATE?.restoreDrillMaxAgeDays || 7,
+    });
+  } catch (err) {
+    return {
+      enabled: true,
+      latest: null,
+      fresh: false,
+      passed: false,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+}
+
+async function getAdminApproval(candidate, approvalId) {
+  try {
+    const { getApproval, listApprovals } = await import('./adminApprovals.js');
+
+    if (approvalId) return await getApproval(approvalId);
+
+    const result = await listApprovals({
+      status: 'approved',
+      action: config.PHASE61_PILOT_GATE?.approvalAction || 'externalization_pilot',
+      targetId: candidate || undefined,
+      limit: 50,
+      offset: 0,
+    });
+
+    const approvals = result.approvals || [];
+    return approvals[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getPrivacyReview(candidate) {
+  try {
+    const { listReviewRecords } = await import('./opsReviewRecords.js');
+
+    const result = await listReviewRecords({
+      type: config.PHASE61_PILOT_GATE?.privacyReviewType || 'privacy_review',
+      status: 'completed',
+      limit: 100,
+      offset: 0,
+    });
+
+    const reviews = result.reviews || [];
+
+    if (!candidate) return reviews[0] || null;
+
+    return reviews.find(r => {
+      const refs = r.refs || {};
+      const haystack = JSON.stringify({
+        title: r.title || '',
+        summary: r.summary || '',
+        refs,
+      });
+      return refs.candidate === candidate || haystack.includes(candidate);
+    }) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function hasCriticalOpenIncidents() {
+  try {
+    const { listIncidents } = await import('./incidentTimeline.js');
+    const result = await listIncidents({ status: 'open', limit: 100, offset: 0 });
+    const incidents = result.incidents || [];
+    return incidents.some(i => i.severity === 'critical' || i.severity === 'high');
+  } catch (_) {
+    // Fail closed for pilot gate.
+    return true;
+  }
+}
+
+async function hasOverdueCriticalPostmortemActions() {
+  try {
+    const { listPostmortems } = await import('./postmortemRecords.js');
+    const result = await listPostmortems({ limit: 100, offset: 0 });
+    const rows = result.postmortems || [];
+    const now = Date.now();
+
+    for (const pm of rows) {
+      if (pm.severity !== 'critical' && pm.severity !== 'high') continue;
+      const items = Array.isArray(pm.actionItems) ? pm.actionItems : [];
+      for (const item of items) {
+        if (item.status === 'done' || item.status === 'cancelled') continue;
+        if (item.dueDate && new Date(item.dueDate).getTime() < now) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (_) {
+    // Fail closed for pilot gate.
+    return true;
+  }
+}
+
+/**
+ * Pure-ish evaluator. Does not read disk.
+ */
+export function evaluatePilotBlockers(inputs = {}, options = {}) {
+  const cfg = config.PHASE61_PILOT_GATE || {};
+  const blockers = [];
+  const requirements = [];
+
+  const candidate = inputs.candidate || null;
+  const decision = inputs.externalizationDecision || null;
+  const migrationRehearsal = inputs.migrationRehearsal || null;
+  const rollbackRehearsal = inputs.rollbackRehearsal || null;
+  const restoreDrill = inputs.restoreDrill || null;
+  const approval = inputs.approval || null;
+  const privacyReview = inputs.privacyReview || null;
+
+  const candidateCount = Array.isArray(inputs.selectedCandidates)
+    ? inputs.selectedCandidates.length
+    : (candidate ? 1 : 0);
+
+  requirements.push(requirement(
+    'bounded_candidate_selected',
+    'تم تحديد candidate واحد محدود',
+    !!candidate,
+    { candidate }
+  ));
+
+  if (!candidate) {
+    blockers.push(blocker(
+      'CANDIDATE_REQUIRED',
+      'لا يوجد candidate محدود ومحدد للـ Pilot.',
+      'حدد candidate واحد فقط مثل ops_queue أو audit/search.'
+    ));
+  }
+
+  const oneCandidateMax = candidateCount <= (cfg.maxPilotCandidatesAtOnce || 1);
+  requirements.push(requirement(
+    'one_candidate_max',
+    'Candidate واحد فقط',
+    oneCandidateMax,
+    { candidateCount, max: cfg.maxPilotCandidatesAtOnce || 1 }
+  ));
+
+  if (!oneCandidateMax) {
+    blockers.push(blocker(
+      'TOO_MANY_CANDIDATES',
+      'لا يمكن تشغيل أكثر من Pilot candidate واحد في نفس الوقت.'
+    ));
+  }
+
+  const cStatus = candidate ? candidateStatusFromDecision(decision, candidate) : null;
+  const cReasons = candidate ? candidateReasonsFromDecision(decision, candidate) : [];
+
+  const repeatedEvidenceOk = !!(
+    candidate &&
+    decision &&
+    ['rehearsal_required', 'pilot_candidate'].includes(cStatus) &&
+    cReasons.some(r => /repeated|critical|benchmark/i.test(String(r)))
+  );
+
+  requirements.push(requirement(
+    'repeated_evidence',
+    'دليل متكرر وليس warning واحد',
+    !cfg.requireRepeatedEvidence || repeatedEvidenceOk,
+    { decisionStatus: decision?.status || null, candidateStatus: cStatus, reasons: cReasons }
+  ));
+
+  if (cfg.requireRepeatedEvidence && !repeatedEvidenceOk) {
+    blockers.push(blocker(
+      'REPEATED_EVIDENCE_REQUIRED',
+      'Pilot يحتاج evidence متكرر. تحذير واحد لا يكفي.',
+      'node scripts/capture-phase61-evidence.js --persist'
+    ));
+  }
+
+  const migrationOk = !!(
+    migrationRehearsal &&
+    (migrationRehearsal.status === 'passed' || migrationRehearsal.ok === true) &&
+    migrationRehearsal.sourceDataMutated === false &&
+    migrationRehearsal.externalDbConnected === false
+  );
+
+  requirements.push(requirement(
+    'migration_rehearsal_passed',
+    'Migration rehearsal passed وآمن',
+    !cfg.requireMigrationRehearsalPassed || migrationOk,
+    {
+      status: migrationRehearsal?.status || null,
+      sourceDataMutated: migrationRehearsal?.sourceDataMutated,
+      externalDbConnected: migrationRehearsal?.externalDbConnected,
+    }
+  ));
+
+  if (cfg.requireMigrationRehearsalPassed && !migrationOk) {
+    blockers.push(blocker(
+      'MIGRATION_REHEARSAL_REQUIRED',
+      'Migration rehearsal لازم ينجح قبل أي Pilot.',
+      'node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --dry-run --json'
+    ));
+  }
+
+  const rollbackOk = !!(
+    rollbackRehearsal &&
+    (rollbackRehearsal.status === 'passed' || rollbackRehearsal.ok === true) &&
+    rollbackRehearsal.sourceDataMutated === false &&
+    rollbackRehearsal.externalDbConnected === false
+  );
+
+  requirements.push(requirement(
+    'rollback_rehearsal_passed',
+    'Rollback rehearsal passed',
+    !cfg.requireRollbackRehearsalPassed || rollbackOk,
+    {
+      status: rollbackRehearsal?.status || null,
+      sourceDataMutated: rollbackRehearsal?.sourceDataMutated,
+      externalDbConnected: rollbackRehearsal?.externalDbConnected,
+    }
+  ));
+
+  if (cfg.requireRollbackRehearsalPassed && !rollbackOk) {
+    blockers.push(blocker(
+      'ROLLBACK_REHEARSAL_REQUIRED',
+      'تدريب الرجوع لازم ينجح قبل أي Pilot.',
+      'node scripts/run-rollback-rehearsal.js --dry-run --json'
+    ));
+  }
+
+  const restoreOk = !!(restoreDrill && restoreDrill.fresh && restoreDrill.passed);
+
+  requirements.push(requirement(
+    'fresh_restore_drill',
+    'Restore drill fresh وناجح',
+    !cfg.requireFreshRestoreDrill || restoreOk,
+    restoreDrill || {}
+  ));
+
+  if (cfg.requireFreshRestoreDrill && !restoreOk) {
+    blockers.push(blocker(
+      'RESTORE_DRILL_REQUIRED',
+      'Restore drill حديث وناجح مطلوب قبل Pilot.',
+      'node scripts/run-backup-restore-drill.js'
+    ));
+  }
+
+  const approvalOk = !!(approval && approval.status === 'approved');
+
+  requirements.push(requirement(
+    'admin_approval',
+    'Admin approval معتمد',
+    !cfg.requireAdminApproval || approvalOk,
+    { approvalId: approval?.id || null, status: approval?.status || null }
+  ));
+
+  if (cfg.requireAdminApproval && !approvalOk) {
+    blockers.push(blocker(
+      'ADMIN_APPROVAL_REQUIRED',
+      'Admin approval مطلوب قبل Pilot.',
+      'POST /api/admin/approvals'
+    ));
+  }
+
+  const privacyOk = !!(privacyReview && privacyReview.status === 'completed');
+
+  requirements.push(requirement(
+    'privacy_review',
+    'Privacy review مكتمل',
+    !cfg.requirePrivacyReview || privacyOk,
+    { reviewId: privacyReview?.id || null, status: privacyReview?.status || null }
+  ));
+
+  if (cfg.requirePrivacyReview && !privacyOk) {
+    blockers.push(blocker(
+      'PRIVACY_REVIEW_REQUIRED',
+      'Privacy review مكتمل مطلوب قبل Pilot.',
+      'node scripts/ops-weekly-review.js --persist'
+    ));
+  }
+
+  requirements.push(requirement(
+    'no_critical_open_incidents',
+    'لا توجد critical/high open incidents',
+    !cfg.requireNoCriticalOpenIncidents || inputs.hasCriticalOpenIncidents === false,
+    { hasCriticalOpenIncidents: !!inputs.hasCriticalOpenIncidents }
+  ));
+
+  if (cfg.requireNoCriticalOpenIncidents && inputs.hasCriticalOpenIncidents) {
+    blockers.push(blocker(
+      'CRITICAL_OPEN_INCIDENTS',
+      'يوجد critical/high incident مفتوح. Pilot ممنوع حتى الحل.'
+    ));
+  }
+
+  requirements.push(requirement(
+    'no_overdue_critical_postmortem_actions',
+    'لا توجد action items حرجة متأخرة',
+    !cfg.requireNoOverdueCriticalPostmortemActions || inputs.hasOverdueCriticalPostmortemActions === false,
+    { hasOverdueCriticalPostmortemActions: !!inputs.hasOverdueCriticalPostmortemActions }
+  ));
+
+  if (cfg.requireNoOverdueCriticalPostmortemActions && inputs.hasOverdueCriticalPostmortemActions) {
+    blockers.push(blocker(
+      'OVERDUE_CRITICAL_POSTMORTEM_ACTIONS',
+      'يوجد postmortem action items حرجة متأخرة.'
+    ));
+  }
+
+  const pilotAllowed = blockers.length === 0;
+
+  return {
+    pilotAllowed,
+    implementationAllowed: false,
+    blockers,
+    requirements,
+  };
+}
+
+export function buildPilotGateRecommendations(gate) {
+  const recommendations = [];
+
+  for (const b of gate.blockers || []) {
+    recommendations.push({
+      id: b.code,
+      label: labelForBlocker(b.code),
+      severity: 'critical',
+      command: b.recommendation || null,
+      adminRoute: '/api/admin/phase61/pilot-gate',
+      reason: b.message,
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      id: 'pilot_gate_monitor',
+      label: 'Pilot gate لا يزال advisory',
+      severity: 'info',
+      command: null,
+      adminRoute: '/api/admin/phase61/pilot-gate',
+      reason: 'حتى عند إزالة blockers، implementationAllowed يبقى false بدون طلب صريح.',
+    });
+  }
+
+  return recommendations;
+}
+
+function labelForBlocker(code) {
+  const map = {
+    CANDIDATE_REQUIRED: 'حدد Pilot candidate واحد',
+    TOO_MANY_CANDIDATES: 'قلل pilot candidates إلى واحد',
+    REPEATED_EVIDENCE_REQUIRED: 'اجمع evidence متكرر',
+    MIGRATION_REHEARSAL_REQUIRED: 'شغّل Migration Rehearsal',
+    ROLLBACK_REHEARSAL_REQUIRED: 'شغّل Rollback Rehearsal',
+    RESTORE_DRILL_REQUIRED: 'شغّل Restore Drill',
+    ADMIN_APPROVAL_REQUIRED: 'أنشئ/اعتمد Admin Approval',
+    PRIVACY_REVIEW_REQUIRED: 'أكمل Privacy Review',
+    CRITICAL_OPEN_INCIDENTS: 'حل الحوادث الحرجة المفتوحة',
+    OVERDUE_CRITICAL_POSTMORTEM_ACTIONS: 'أغلق action items المتأخرة',
+  };
+  return map[code] || 'راجع blocker';
+}
+
+export async function getPilotDecisionGate(options = {}) {
+  if (!isEnabled()) {
+    return {
+      enabled: false,
+      phase: 61,
+      implementationAllowed: false,
+      pilotAllowed: false,
+      candidate: null,
+      blockers: [],
+      requirements: [],
+      evidence: {},
+      recommendations: [],
+    };
+  }
+
+  const decision = await getLatestExternalizationDecision();
+  const candidate = chooseCandidate(decision, options.candidate || null);
+  const selectedCandidates = candidate ? [candidate] : [];
+
+  const [
+    migrationRehearsal,
+    rollbackRehearsal,
+    restoreDrill,
+    approval,
+    privacyReview,
+    criticalOpen,
+    overduePostmortem,
+  ] = await Promise.all([
+    getLatestMigrationRehearsal(),
+    getLatestRollbackRehearsal(),
+    getRestoreDrillFreshness(),
+    getAdminApproval(candidate, options.approvalId || null),
+    getPrivacyReview(candidate),
+    hasCriticalOpenIncidents(),
+    hasOverdueCriticalPostmortemActions(),
+  ]);
+
+  const inputs = {
+    candidate,
+    selectedCandidates,
+    externalizationDecision: decision,
+    migrationRehearsal,
+    rollbackRehearsal,
+    restoreDrill,
+    approval,
+    privacyReview,
+    hasCriticalOpenIncidents: criticalOpen,
+    hasOverdueCriticalPostmortemActions: overduePostmortem,
+  };
+
+  const evaluation = evaluatePilotBlockers(inputs, options);
+
+  const gate = {
+    enabled: true,
+    phase: 61,
+    advisoryOnly: true,
+    implementationAllowed: false,
+    pilotAllowed: evaluation.pilotAllowed,
+    status: evaluation.pilotAllowed ? 'approval_required' : 'blocked',
+    candidate,
+    generatedAt: nowIso(),
+    blockers: evaluation.blockers,
+    requirements: evaluation.requirements,
+    evidence: {
+      externalizationDecision: decision ? {
+        status: decision.status || null,
+        generatedAt: decision.generatedAt || null,
+      } : null,
+      migrationRehearsal: migrationRehearsal ? {
+        id: migrationRehearsal.id || null,
+        status: migrationRehearsal.status || null,
+        generatedAt: migrationRehearsal.generatedAt || migrationRehearsal.createdAt || null,
+      } : null,
+      rollbackRehearsal: rollbackRehearsal ? {
+        id: rollbackRehearsal.id,
+        status: rollbackRehearsal.status,
+        generatedAt: rollbackRehearsal.generatedAt || rollbackRehearsal.createdAt,
+      } : null,
+      restoreDrill,
+      approval: approval ? {
+        id: approval.id,
+        status: approval.status,
+        action: approval.action,
+        targetId: approval.targetId,
+        expiresAt: approval.expiresAt,
+      } : null,
+      privacyReview: privacyReview ? {
+        id: privacyReview.id,
+        status: privacyReview.status,
+        type: privacyReview.type,
+        completedAt: privacyReview.completedAt || null,
+      } : null,
+    },
+    recommendations: [],
+    whyNotPilotYet: evaluation.blockers.map(b => b.message),
+  };
+
+  gate.recommendations = buildPilotGateRecommendations(gate);
+  return gate;
+}
+
+export async function capturePilotDecisionSnapshot(options = {}) {
+  const gate = await getPilotDecisionGate(options);
+
+  if (!isEnabled()) return { ok: false, disabled: true, gate };
+
+  const id = options.id || generateId();
+  const record = {
+    id,
+    kind: 'pilot_decision_gate',
+    version: '0.57.0',
+    ...gate,
+    createdAt: nowIso(),
+  };
+
+  await atomicWrite(gatePath(id), record);
+  return { ok: true, gate: record };
+}
+
+export async function listPilotDecisionSnapshots(options = {}) {
+  if (!isEnabled()) return { gates: [], total: 0, limit: 20, offset: 0 };
+
+  const rows = await listJSON(getCollectionPath('pilot_decisions')).catch(() => []);
+  let gates = rows.filter(r => r && r.id && r.id.startsWith('pgate_'));
+
+  gates.sort((a, b) => parseMs(b.createdAt || b.generatedAt) - parseMs(a.createdAt || a.generatedAt));
+
+  const total = gates.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    gates: gates.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export const _testHelpers = {
+  generateId,
+  gatePath,
+  chooseCandidate,
+  candidateStatusFromDecision,
+  candidateReasonsFromDecision,
+};
+```
+
+---
+
 ## `server/services/postmortemRecords.js`
 
 ```javascript
@@ -31407,6 +32427,223 @@ async function checkStoragePressureReadiness(isProd) {
   }
 }
 
+async function checkPhase61Docs(isProd) {
+  const docs = [
+    { id: 'phase61_evidence_cadence_doc_exists', path: './PHASE61_EVIDENCE_CADENCE.md', label: 'PHASE61_EVIDENCE_CADENCE.md' },
+    { id: 'phase61_deep_migration_rehearsal_doc_exists', path: './PHASE61_DEEP_MIGRATION_REHEARSAL.md', label: 'PHASE61_DEEP_MIGRATION_REHEARSAL.md' },
+    { id: 'phase61_rollback_rehearsal_doc_exists', path: './PHASE61_ROLLBACK_REHEARSAL_REPORT.md', label: 'PHASE61_ROLLBACK_REHEARSAL_REPORT.md' },
+    { id: 'phase61_pilot_decision_doc_exists', path: './PHASE61_PILOT_CANDIDATE_DECISION.md', label: 'PHASE61_PILOT_CANDIDATE_DECISION.md' },
+    { id: 'phase61_repository_contracts_doc_exists', path: './PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md', label: 'PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md' },
+    { id: 'phase61_event_bridge_plan_doc_exists', path: './PHASE61_EVENT_BRIDGE_PILOT_PLAN.md', label: 'PHASE61_EVENT_BRIDGE_PILOT_PLAN.md' },
+    { id: 'phase61_sse_fanout_plan_doc_exists', path: './PHASE61_SSE_FANOUT_PILOT_PLAN.md', label: 'PHASE61_SSE_FANOUT_PILOT_PLAN.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : (isProd ? 'warn' : 'warn'),
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkPhase61EvidenceCadence(isProd) {
+  try {
+    const { getEvidenceCadenceStatus } = await import('./phase61EvidenceCadence.js');
+    const status = await getEvidenceCadenceStatus();
+
+    if (!status.enabled) {
+      return check(
+        'phase61_evidence_cadence_available',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 evidence cadence is disabled',
+        status
+      );
+    }
+
+    if (status.status === 'critical') {
+      return check(
+        'phase61_evidence_cadence_available',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 evidence cadence has critical stale/missing blockers',
+        {
+          status: status.status,
+          warningCount: status.warnings.length,
+          blockerCount: status.blockers.length,
+        },
+        'node scripts/capture-phase61-evidence.js --persist'
+      );
+    }
+
+    if (status.status === 'missing' || status.status === 'stale') {
+      return check(
+        'phase61_evidence_cadence_available',
+        'warn',
+        `Phase 61 evidence cadence is ${status.status}`,
+        {
+          status: status.status,
+          warningCount: status.warnings.length,
+          blockerCount: status.blockers.length,
+        },
+        'node scripts/capture-phase61-evidence.js --persist'
+      );
+    }
+
+    return check('phase61_evidence_cadence_available', 'pass', 'Phase 61 evidence cadence is fresh', {
+      status: status.status,
+    });
+  } catch (err) {
+    return check(
+      'phase61_evidence_cadence_available',
+      'warn',
+      'Could not evaluate Phase 61 evidence cadence',
+      { error: err.message },
+      'node scripts/capture-phase61-evidence.js --json'
+    );
+  }
+}
+
+async function checkPhase61PilotGate(isProd) {
+  try {
+    const { getPilotDecisionGate } = await import('./pilotDecisionGate.js');
+    const gate = await getPilotDecisionGate();
+
+    if (!gate.enabled) {
+      return check(
+        'phase61_pilot_gate_blocks_externalization',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 pilot gate is disabled',
+        gate
+      );
+    }
+
+    if (gate.implementationAllowed) {
+      return check(
+        'phase61_pilot_gate_blocks_externalization',
+        'fail',
+        'Phase 61 pilot gate unexpectedly allows implementation',
+        gate
+      );
+    }
+
+    return check(
+      'phase61_pilot_gate_blocks_externalization',
+      'pass',
+      gate.pilotAllowed
+        ? 'Pilot gate has no blockers but implementation remains disabled by default'
+        : 'Pilot gate blocks premature externalization',
+      {
+        pilotAllowed: gate.pilotAllowed,
+        implementationAllowed: gate.implementationAllowed,
+        blockerCount: gate.blockers.length,
+        candidate: gate.candidate || null,
+      }
+    );
+  } catch (err) {
+    return check(
+      'phase61_pilot_gate_blocks_externalization',
+      'warn',
+      'Could not evaluate Phase 61 pilot gate',
+      { error: err.message },
+      'node scripts/evaluate-pilot-gate.js --json'
+    );
+  }
+}
+
+async function checkRepositoryContracts(isProd) {
+  try {
+    const { getRepositoryContractReadiness } = await import('./repositoryContractReport.js');
+    const report = await getRepositoryContractReadiness();
+
+    if (report.status === 'critical') {
+      return check(
+        'repository_contract_docs_exist',
+        isProd ? 'warn' : 'warn',
+        'Repository contract readiness has blockers',
+        {
+          blockerCount: report.blockers.length,
+          warningCount: report.warnings.length,
+          runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+        },
+        'node scripts/verify-repository-contracts.js --json'
+      );
+    }
+
+    if (report.status === 'warning') {
+      return check(
+        'repository_contract_docs_exist',
+        'warn',
+        'Repository contract readiness has warnings',
+        {
+          warningCount: report.warnings.length,
+          runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+        },
+        'node scripts/verify-repository-contracts.js --json'
+      );
+    }
+
+    return check('repository_contract_docs_exist', 'pass', 'Repository contracts are documented and runtime switch is disabled', {
+      contractCount: report.matrix.length,
+      runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+    });
+  } catch (err) {
+    return check(
+      'repository_contract_docs_exist',
+      'warn',
+      'Could not evaluate repository contracts',
+      { error: err.message },
+      'node scripts/verify-repository-contracts.js --json'
+    );
+  }
+}
+
+async function checkRollbackRehearsalReadiness(isProd) {
+  try {
+    const { getLatestRollbackRehearsal } = await import('./rollbackRehearsal.js');
+    const latest = await getLatestRollbackRehearsal();
+
+    if (!latest) {
+      return check(
+        'latest_rollback_rehearsal_warning_if_missing',
+        'warn',
+        'No rollback rehearsal report exists yet',
+        {},
+        'node scripts/run-rollback-rehearsal.js --dry-run --json'
+      );
+    }
+
+    if (latest.status === 'failed') {
+      return check(
+        'latest_rollback_rehearsal_warning_if_missing',
+        isProd ? 'warn' : 'warn',
+        'Latest rollback rehearsal failed',
+        { id: latest.id, status: latest.status },
+        'node scripts/run-rollback-rehearsal.js --dry-run --json'
+      );
+    }
+
+    return check('latest_rollback_rehearsal_warning_if_missing', latest.status === 'passed' ? 'pass' : 'warn', 'Latest rollback rehearsal exists', {
+      id: latest.id,
+      status: latest.status,
+      generatedAt: latest.generatedAt,
+    });
+  } catch (err) {
+    return check(
+      'latest_rollback_rehearsal_warning_if_missing',
+      'warn',
+      'Could not evaluate rollback rehearsal readiness',
+      { error: err.message },
+      'node scripts/run-rollback-rehearsal.js --dry-run --json'
+    );
+  }
+}
+
 async function checkPhase59Docs(isProd) {
   const docs = [
     { id: 'scale_limits_doc_exists', path: './SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
@@ -32108,6 +33345,13 @@ export async function runReadinessChecks(options = {}) {
       'node scripts/capture-externalization-decision.js --json'
     ));
   }
+
+  // Phase 61 — Evidence cadence + rollback rehearsal + pilot gate readiness.
+  checks.push(...await checkPhase61Docs(isProd));
+  checks.push(await checkPhase61EvidenceCadence(isProd));
+  checks.push(await checkRollbackRehearsalReadiness(isProd));
+  checks.push(await checkPhase61PilotGate(isProd));
+  checks.push(await checkRepositoryContracts(isProd));
 
   return checks;
 }
@@ -36347,6 +37591,220 @@ async function checkAutoban(targetId) {
 
 ---
 
+## `server/services/repositoryContractReport.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/repositoryContractReport.js — Phase 61 Repository Contracts
+// ═══════════════════════════════════════════════════════════════
+// Static/read-only contract readiness.
+// Docs/tests only.
+// No runtime switch.
+// No external adapter.
+// ═══════════════════════════════════════════════════════════════
+
+import { access, constants } from 'node:fs/promises';
+import config from '../../config.js';
+
+function isEnabled() {
+  return !!(config.REPOSITORY_CONTRACTS && config.REPOSITORY_CONTRACTS.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+async function fileExists(path) {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+export function getRepositoryContractMatrix() {
+  const runtimeSwitchEnabled = !!(config.REPOSITORY_CONTRACTS && config.REPOSITORY_CONTRACTS.runtimeSwitchEnabled);
+
+  return {
+    enabled: isEnabled(),
+    phase: 61,
+    docsOnly: config.REPOSITORY_CONTRACTS?.docsOnly !== false,
+    runtimeSwitchEnabled,
+    fileBackedSourceOfTruth: true,
+    externalAdapterImplemented: false,
+    candidates: [
+      {
+        name: 'UserRepository',
+        collections: ['users', 'sessions'],
+        requiredOperations: ['findById', 'findByPhone', 'create', 'update', 'softDelete', 'anonymize', 'exportUserData'],
+        guarantees: ['phone index consistency', 'no raw session token export', 'anonymization idempotent'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'JobRepository',
+        collections: ['jobs'],
+        requiredOperations: ['create', 'findById', 'list', 'updateStatus', 'renew', 'duplicate'],
+        guarantees: ['monthly shard read compatibility', 'query index repairability', 'lifecycle status preservation'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'ApplicationRepository',
+        collections: ['applications'],
+        requiredOperations: ['apply', 'accept', 'reject', 'withdraw', 'listByJob', 'listByWorker'],
+        guarantees: ['worker/job set indexes', 'accepted-equivalent semantics', 'no over-acceptance'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'PaymentRepository',
+        collections: ['payments'],
+        requiredOperations: ['createPayment', 'confirmPayment', 'completePayment', 'disputePayment', 'listByJob'],
+        guarantees: ['financial audit preservation', 'no blind deletion', 'dispute history retention'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'WorkroomRepository',
+        collections: ['messages', 'workrooms', 'workroom_receipts', 'workroom_pins', 'workroom_checklists'],
+        requiredOperations: ['listWorkrooms', 'sendMessage', 'markRead', 'search', 'pin', 'checklist'],
+        guarantees: ['attachments by imageRef only', 'receipt compaction possible', 'search sidecars rebuildable'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'QueueRepository',
+        collections: ['ops_queue'],
+        requiredOperations: ['enqueue', 'claim', 'complete', 'fail', 'retry', 'cancel', 'deadLetter'],
+        guarantees: ['idempotency keys', 'lease semantics', 'retry/backoff/DLQ', 'segmented storage compatibility'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'AuditRepository',
+        collections: ['audit', 'audit_indexes'],
+        requiredOperations: ['logAction', 'search', 'export', 'retention', 'index', 'compactTokens'],
+        guarantees: ['append-only records', 'indexed search fallback correctness', 'retention emits deletion events'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'ImageObjectStore',
+        collections: ['images'],
+        requiredOperations: ['storeImage', 'getImage', 'deleteImage', 'imageExists'],
+        guarantees: ['content addressed', 'metadata sidecar', 'delete by imageRef', 'no raw base64 in messages'],
+        pilotDefaultAllowed: false,
+      },
+      {
+        name: 'SearchRepository',
+        collections: ['search indexes', 'audit token indexes', 'workroom search indexes'],
+        requiredOperations: ['index', 'search', 'rebuild', 'verify', 'fallback'],
+        guarantees: ['Arabic normalization preserved', 'explainability preserved', 'fallback path exists'],
+        pilotDefaultAllowed: false,
+      },
+    ],
+  };
+}
+
+export function buildRepositoryContractRecommendations(report) {
+  const recommendations = [];
+
+  if (!report.docs.phase61RepositoryContracts) {
+    recommendations.push({
+      id: 'repository_contract_doc_missing',
+      label: 'أضف وثيقة عقود Repository',
+      severity: 'warning',
+      command: null,
+      adminRoute: '/api/admin/repository-contracts',
+      reason: 'PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md is missing.',
+    });
+  }
+
+  if (report.runtimeSwitchEnabled) {
+    recommendations.push({
+      id: 'repository_runtime_switch_disable',
+      label: 'أوقف runtime repository switch',
+      severity: 'critical',
+      command: null,
+      adminRoute: '/api/admin/repository-contracts',
+      reason: 'Runtime repository switch must remain disabled in Phase 61.',
+    });
+  }
+
+  if (report.externalAdapterImplemented) {
+    recommendations.push({
+      id: 'repository_external_adapter_not_allowed',
+      label: 'راجع external adapter غير مسموح',
+      severity: 'critical',
+      command: null,
+      adminRoute: '/api/admin/repository-contracts',
+      reason: 'No external adapter should be implemented by default in Phase 61.',
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      id: 'repository_contracts_ok',
+      label: 'عقود Repository جاهزة كتوثيق',
+      severity: 'info',
+      command: 'node scripts/verify-repository-contracts.js --json',
+      adminRoute: '/api/admin/repository-contracts',
+      reason: 'Contracts are documented and runtime switch is disabled.',
+    });
+  }
+
+  return recommendations;
+}
+
+export async function getRepositoryContractReadiness(options = {}) {
+  const matrix = getRepositoryContractMatrix();
+
+  const docs = {
+    phase60RepositoryBoundaries: await fileExists('./PHASE60_REPOSITORY_BOUNDARIES.md'),
+    phase61RepositoryContracts: await fileExists('./PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md'),
+    phase61EventBridgePlan: await fileExists('./PHASE61_EVENT_BRIDGE_PILOT_PLAN.md'),
+    phase61SseFanoutPlan: await fileExists('./PHASE61_SSE_FANOUT_PILOT_PLAN.md'),
+  };
+
+  const report = {
+    enabled: isEnabled(),
+    phase: 61,
+    generatedAt: nowIso(),
+    docsOnly: matrix.docsOnly,
+    runtimeSwitchEnabled: matrix.runtimeSwitchEnabled,
+    fileBackedSourceOfTruth: true,
+    externalAdapterImplemented: false,
+    docs,
+    matrix: matrix.candidates,
+    status: 'ok',
+    warnings: [],
+    blockers: [],
+    recommendations: [],
+  };
+
+  if (matrix.runtimeSwitchEnabled) {
+    report.blockers.push({
+      code: 'RUNTIME_SWITCH_ENABLED',
+      message: 'Runtime repository switch is not allowed in Phase 61.',
+    });
+  }
+
+  if (!docs.phase61RepositoryContracts) {
+    report.warnings.push({
+      code: 'PHASE61_REPOSITORY_CONTRACTS_DOC_MISSING',
+      message: 'PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md is missing.',
+    });
+  }
+
+  if (report.blockers.length > 0) report.status = 'critical';
+  else if (report.warnings.length > 0) report.status = 'warning';
+
+  report.recommendations = buildRepositoryContractRecommendations(report);
+  return report;
+}
+
+export const _testHelpers = {
+  isEnabled,
+};
+```
+
+---
+
 ## `server/services/resourceLock.js`
 
 ```javascript
@@ -36415,6 +37873,354 @@ export function getLockCount() {
 export function clearLocks() {
   locks.clear();
 }
+```
+
+---
+
+## `server/services/rollbackRehearsal.js`
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+// server/services/rollbackRehearsal.js — Phase 61 Rollback Rehearsal
+// ═══════════════════════════════════════════════════════════════
+// Non-destructive rollback readiness report.
+// Does not restore production.
+// Does not mutate source data.
+// Does not connect to external DB/search/queue.
+// ═══════════════════════════════════════════════════════════════
+
+import crypto from 'node:crypto';
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import config from '../../config.js';
+import {
+  atomicWrite,
+  readJSON,
+  deleteJSON,
+  getRecordPath,
+  getCollectionPath,
+  listJSON,
+} from './database.js';
+
+function isEnabled() {
+  return !!(config.PHASE61_ROLLBACK_REHEARSAL && config.PHASE61_ROLLBACK_REHEARSAL.enabled);
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function generateId() {
+  return 'rbr_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex');
+}
+
+function rehearsalPath(id) {
+  return getRecordPath('rollback_rehearsals', id);
+}
+
+async function pathExists(path) {
+  if (!path) return false;
+  try {
+    await stat(path);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function findLatestBackupPath() {
+  const targetDir = config.BACKUP?.targetDir || './backups';
+
+  try {
+    const entries = await readdir(targetDir, { withFileTypes: true });
+    const dirs = entries
+      .filter(e => e.isDirectory() && e.name.startsWith('yawmia-backup-'))
+      .map(e => e.name)
+      .sort()
+      .reverse();
+
+    if (dirs.length === 0) return null;
+    return join(targetDir, dirs[0]);
+  } catch (_) {
+    return null;
+  }
+}
+
+async function findLatestMigrationSnapshotPath() {
+  const base = config.EXTERNALIZATION_READINESS?.migrationSnapshotBasePath || './migration-snapshots';
+
+  try {
+    const entries = await readdir(base, { withFileTypes: true });
+    const dirs = entries
+      .filter(e => e.isDirectory() && !e.name.includes('rehearsal'))
+      .map(e => e.name)
+      .sort()
+      .reverse();
+
+    if (dirs.length === 0) return null;
+    return join(base, dirs[0]);
+  } catch (_) {
+    return null;
+  }
+}
+
+function defaultIndexRepairPlan() {
+  return [
+    { command: 'node scripts/repair-indexes.js', required: true },
+    { command: 'node scripts/rebuild-audit-index.js', required: true },
+    { command: 'node scripts/rebuild-workroom-search.js', required: true },
+    { command: 'node scripts/rebuild-predictive-archive-index.js', required: false },
+  ];
+}
+
+function defaultQueueVerifyPlan() {
+  return [
+    { command: 'node scripts/verify-queue.js --strict', required: true },
+    { command: 'node scripts/repair-queue.js', required: true },
+    { command: 'node scripts/queue-retry-dlq.js --dry-run', required: false },
+  ];
+}
+
+function defaultSmokePlan() {
+  return [
+    { command: 'node scripts/postdeploy-smoke.js --json', required: true },
+    { command: 'node scripts/verify-production-readiness.js --json', required: true },
+    { command: 'node scripts/verify-data-json.js --strict', required: true },
+  ];
+}
+
+function defaultIncidentPlan() {
+  return [
+    'Open incident if rollback causes user-visible impact.',
+    'Assign incident runbookKey.',
+    'Resolve only after smoke and readiness pass.',
+    'Create postmortem for critical incidents.',
+    'Track action items until closed.',
+  ];
+}
+
+export function evaluateRollbackReadiness(inputs = {}, options = {}) {
+  const cfg = config.PHASE61_ROLLBACK_REHEARSAL || {};
+  const blockers = [];
+  const warnings = [];
+
+  const backupReference = inputs.backupReference || null;
+  const restoreDrill = inputs.restoreDrill || null;
+  const snapshotReference = inputs.snapshotReference || null;
+
+  if (cfg.requireBackupReference !== false && !backupReference) {
+    blockers.push({
+      code: 'BACKUP_REFERENCE_MISSING',
+      message: 'Rollback rehearsal requires a backup reference.',
+      recommendation: 'node scripts/backup.js',
+    });
+  }
+
+  if (cfg.requireRestoreDrillReference !== false) {
+    if (!restoreDrill || !restoreDrill.latest) {
+      blockers.push({
+        code: 'RESTORE_DRILL_MISSING',
+        message: 'No restore drill reference exists.',
+        recommendation: 'node scripts/run-backup-restore-drill.js',
+      });
+    } else if (!restoreDrill.passed) {
+      blockers.push({
+        code: 'RESTORE_DRILL_FAILED',
+        message: 'Latest restore drill did not pass.',
+        recommendation: 'node scripts/run-backup-restore-drill.js',
+      });
+    } else if (!restoreDrill.fresh) {
+      blockers.push({
+        code: 'RESTORE_DRILL_STALE',
+        message: `Latest restore drill is stale (${restoreDrill.ageDays} days old).`,
+        recommendation: 'node scripts/run-backup-restore-drill.js',
+      });
+    }
+  }
+
+  if (!snapshotReference) {
+    warnings.push({
+      code: 'SNAPSHOT_REFERENCE_MISSING',
+      message: 'No migration snapshot reference was provided.',
+      recommendation: 'node scripts/export-migration-snapshot.js --dry-run',
+    });
+  }
+
+  if (!Array.isArray(inputs.indexRepairPlan) || inputs.indexRepairPlan.length === 0) {
+    blockers.push({
+      code: 'INDEX_REPAIR_PLAN_MISSING',
+      message: 'Index repair plan is missing.',
+    });
+  }
+
+  if (!Array.isArray(inputs.queueVerifyPlan) || inputs.queueVerifyPlan.length === 0) {
+    blockers.push({
+      code: 'QUEUE_VERIFY_PLAN_MISSING',
+      message: 'Queue verification plan is missing.',
+    });
+  }
+
+  if (!Array.isArray(inputs.smokePlan) || inputs.smokePlan.length === 0) {
+    blockers.push({
+      code: 'SMOKE_PLAN_MISSING',
+      message: 'Postdeploy smoke plan is missing.',
+    });
+  }
+
+  const status = blockers.length > 0
+    ? 'failed'
+    : warnings.length > 0
+      ? 'warning'
+      : 'passed';
+
+  return {
+    ok: blockers.length === 0,
+    status,
+    blockers,
+    warnings,
+  };
+}
+
+export async function runRollbackRehearsal(options = {}) {
+  if (!isEnabled()) {
+    return { ok: false, disabled: true, code: 'ROLLBACK_REHEARSAL_DISABLED' };
+  }
+
+  const started = Date.now();
+
+  const backupReference = options.backupReference || await findLatestBackupPath();
+  const backupExists = await pathExists(backupReference);
+
+  let restoreDrillFreshness = null;
+  try {
+    const { getLatestRestoreDrillFreshness } = await import('./backupRestoreDrill.js');
+    restoreDrillFreshness = await getLatestRestoreDrillFreshness({
+      thresholdDays: config.PHASE61_PILOT_GATE?.restoreDrillMaxAgeDays || 7,
+    });
+  } catch (err) {
+    restoreDrillFreshness = {
+      enabled: true,
+      latest: null,
+      fresh: false,
+      passed: false,
+      status: 'unknown',
+      error: err.message,
+    };
+  }
+
+  const snapshotReference = options.snapshotReference || await findLatestMigrationSnapshotPath();
+
+  const inputs = {
+    backupReference: backupExists ? backupReference : null,
+    restoreDrill: restoreDrillFreshness,
+    snapshotReference,
+    indexRepairPlan: defaultIndexRepairPlan(),
+    queueVerifyPlan: defaultQueueVerifyPlan(),
+    smokePlan: defaultSmokePlan(),
+  };
+
+  const readiness = evaluateRollbackReadiness(inputs, options);
+
+  const report = {
+    id: options.id || generateId(),
+    kind: 'rollback_rehearsal',
+    version: '0.57.0',
+    phase: 61,
+    ok: readiness.ok,
+    status: readiness.status,
+    dryRun: !!options.dryRun,
+    confirm: !!options.confirm,
+    sourceDataMutated: false,
+    externalDbConnected: false,
+    externalSearchConnected: false,
+    externalQueueConnected: false,
+    backupReference: inputs.backupReference,
+    backupExists,
+    restoreDrillReference: restoreDrillFreshness && restoreDrillFreshness.latest ? {
+      id: restoreDrillFreshness.latest.id,
+      status: restoreDrillFreshness.latest.status,
+      completedAt: restoreDrillFreshness.latest.completedAt || null,
+      ageDays: restoreDrillFreshness.ageDays,
+      fresh: restoreDrillFreshness.fresh,
+      passed: restoreDrillFreshness.passed,
+    } : null,
+    snapshotReference,
+    indexRepairPlan: inputs.indexRepairPlan,
+    queueVerifyPlan: inputs.queueVerifyPlan,
+    smokePlan: inputs.smokePlan,
+    incidentPlan: defaultIncidentPlan(),
+    blockers: readiness.blockers,
+    warnings: readiness.warnings,
+    generatedAt: nowIso(),
+    durationMs: Date.now() - started,
+    createdAt: nowIso(),
+  };
+
+  if (options.persist || options.confirm) {
+    await atomicWrite(rehearsalPath(report.id), report);
+  }
+
+  return { ok: report.ok, rehearsal: report };
+}
+
+export async function getRollbackRehearsal(id) {
+  if (!id || typeof id !== 'string') return null;
+  return await readJSON(rehearsalPath(id));
+}
+
+export async function listRollbackRehearsals(options = {}) {
+  if (!isEnabled()) return { rehearsals: [], total: 0, limit: 20, offset: 0 };
+
+  const rows = await listJSON(getCollectionPath('rollback_rehearsals')).catch(() => []);
+  let rehearsals = rows.filter(r => r && r.id && r.id.startsWith('rbr_'));
+
+  if (options.status) rehearsals = rehearsals.filter(r => r.status === options.status);
+
+  rehearsals.sort((a, b) => new Date(b.createdAt || b.generatedAt) - new Date(a.createdAt || a.generatedAt));
+
+  const total = rehearsals.length;
+  const limit = Math.min(100, Math.max(1, parseInt(options.limit) || 20));
+  const offset = Math.max(0, parseInt(options.offset) || 0);
+
+  return {
+    rehearsals: rehearsals.slice(offset, offset + limit),
+    total,
+    limit,
+    offset,
+  };
+}
+
+export async function getLatestRollbackRehearsal(options = {}) {
+  const result = await listRollbackRehearsals({ ...options, limit: 1, offset: 0 });
+  return result.rehearsals && result.rehearsals[0] ? result.rehearsals[0] : null;
+}
+
+export async function cleanupOldRollbackRehearsals() {
+  if (!isEnabled()) return 0;
+
+  const retention = config.PHASE61_ROLLBACK_REHEARSAL?.retentionCount || 10;
+  const result = await listRollbackRehearsals({ limit: 1000, offset: 0 });
+
+  const toDelete = (result.rehearsals || []).slice(retention);
+  let cleaned = 0;
+
+  for (const row of toDelete) {
+    await deleteJSON(rehearsalPath(row.id)).catch(() => {});
+    cleaned++;
+  }
+
+  return cleaned;
+}
+
+export const _testHelpers = {
+  generateId,
+  rehearsalPath,
+  findLatestBackupPath,
+  findLatestMigrationSnapshotPath,
+  defaultIndexRepairPlan,
+  defaultQueueVerifyPlan,
+  defaultSmokePlan,
+};
 ```
 
 ---
@@ -36578,6 +38384,10 @@ export async function getScaleHygieneOverview() {
     rbacMatrix,
     storagePressure,
     phase60Evidence,
+    phase61Evidence,
+    phase61PilotGate,
+    phase61Rollback,
+    repositoryContracts,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -36608,6 +38418,18 @@ export async function getScaleHygieneOverview() {
       .catch(err => ({ enabled: false, error: err.message })),
     import('./phase60Readiness.js')
       .then(m => m.getPhase60EvidenceSummary())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./phase61EvidenceCadence.js')
+      .then(m => m.getEvidenceCadenceStatus())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./pilotDecisionGate.js')
+      .then(m => m.getPilotDecisionGate())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./rollbackRehearsal.js')
+      .then(m => m.getLatestRollbackRehearsal())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./repositoryContractReport.js')
+      .then(m => m.getRepositoryContractReadiness())
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -36794,6 +38616,77 @@ export async function getScaleHygieneOverview() {
     }
   }
 
+  // Phase 61 — Evidence cadence / pilot gate / rollback / repository contract recommendations.
+  if (phase61Evidence && phase61Evidence.enabled !== false) {
+    for (const b of phase61Evidence.blockers || []) {
+      warnings.push({
+        source: 'phase61_evidence',
+        level: 'critical',
+        message: b.message || b.code || 'Phase 61 evidence blocker',
+        details: b,
+      });
+    }
+
+    for (const w of phase61Evidence.warnings || []) {
+      warnings.push({
+        source: 'phase61_evidence',
+        level: w.level || 'warning',
+        message: w.message || w.code || 'Phase 61 evidence warning',
+        details: w,
+      });
+    }
+
+    for (const action of phase61Evidence.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (phase61PilotGate && phase61PilotGate.enabled !== false) {
+    if (phase61PilotGate.implementationAllowed) {
+      warnings.push({
+        source: 'phase61_pilot_gate',
+        level: 'critical',
+        message: 'Pilot gate unexpectedly allows implementation',
+        details: phase61PilotGate,
+      });
+    }
+
+    if (!phase61PilotGate.pilotAllowed) {
+      recommendedActions.push({
+        id: 'phase61_pilot_gate_review',
+        label: 'راجع بوابة Pilot',
+        severity: 'warning',
+        command: 'node scripts/evaluate-pilot-gate.js --json',
+        adminRoute: '/api/admin/phase61/pilot-gate',
+        reason: 'Pilot غير مسموح حالياً. راجع blockers قبل أي externalization.',
+      });
+    }
+
+    for (const action of phase61PilotGate.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (!phase61Rollback || phase61Rollback.enabled === false || phase61Rollback.status === 'failed' || !phase61Rollback.status) {
+    recommendedActions.push({
+      id: 'phase61_rollback_rehearsal',
+      label: 'شغّل تدريب الرجوع',
+      severity: phase61Rollback && phase61Rollback.status === 'failed' ? 'critical' : 'warning',
+      command: 'node scripts/run-rollback-rehearsal.js --dry-run --json',
+      adminRoute: '/api/admin/rollback-rehearsal',
+      reason: 'Rollback rehearsal مطلوب قبل أي Pilot مستقبلي.',
+    });
+  }
+
+  if (repositoryContracts && repositoryContracts.enabled !== false) {
+    for (const action of repositoryContracts.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
   if (storagePressure && storagePressure.status === 'critical') {
     recommendedActions.push({
       id: 'storage_pressure_critical_review',
@@ -36943,7 +38836,18 @@ export async function getScaleHygieneOverview() {
       latestBenchmarkStatus: 'missing',
       recommendations: [],
     },
-    recommendedActions: recommendedActions.slice(0, 12),
+    phase61: {
+      evidenceCadence: phase61Evidence || { enabled: false, status: 'unknown' },
+      pilotGate: phase61PilotGate || { enabled: false, pilotAllowed: false, implementationAllowed: false },
+      rollbackRehearsal: phase61Rollback || null,
+      repositoryContracts: repositoryContracts || { enabled: false, status: 'unknown' },
+      recommendations: [
+        ...(phase61Evidence?.recommendations || []),
+        ...(phase61PilotGate?.recommendations || []),
+        ...(repositoryContracts?.recommendations || []),
+      ],
+    },
+    recommendedActions: recommendedActions.slice(0, 16),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
   };

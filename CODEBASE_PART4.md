@@ -1,6 +1,6 @@
-# يوميّة (Yawmia) v0.56.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-24T03:23:55.537Z
-> Files in this part: 83
+# يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
+> Auto-generated: 2026-05-25T10:43:12.213Z
+> Files in this part: 87
 
 ## Files
 1. `frontend/404.html`
@@ -44,48 +44,52 @@
 39. `scripts/benchmark.js`
 40. `scripts/bundle-for-review.js`
 41. `scripts/capture-externalization-decision.js`
-42. `scripts/cleanup-attachments.js`
-43. `scripts/compact-counters.js`
-44. `scripts/compact-predictive-signals.js`
-45. `scripts/compact-queue.js`
-46. `scripts/compact-workrooms.js`
-47. `scripts/export-incident-timeline.js`
-48. `scripts/export-migration-snapshot.js`
-49. `scripts/export-user-data.js`
-50. `scripts/find-null-json-files.js`
-51. `scripts/generate-vapid-keys.js`
-52. `scripts/list-benchmark-history.js`
-53. `scripts/measure-storage-pressure.js`
-54. `scripts/migrate.js`
-55. `scripts/ops-weekly-review.js`
-56. `scripts/postdeploy-smoke.js`
-57. `scripts/predeploy-check.js`
-58. `scripts/queue-drain.js`
-59. `scripts/queue-retry-dlq.js`
-60. `scripts/rebuild-audit-index.js`
-61. `scripts/rebuild-counters.js`
-62. `scripts/rebuild-predictive-archive-index.js`
-63. `scripts/rebuild-search-relevance.js`
-64. `scripts/rebuild-workroom-search.js`
-65. `scripts/repair-indexes.js`
-66. `scripts/repair-queue.js`
-67. `scripts/rollup-product-intelligence.js`
-68. `scripts/rollup-trust-snapshots.js`
-69. `scripts/run-backup-restore-drill.js`
-70. `scripts/run-migration-rehearsal.js`
-71. `scripts/run-trust-calibration.js`
-72. `scripts/scheduler-cadence-report.js`
-73. `scripts/validate-migration-snapshot.js`
-74. `scripts/verify-admin-rbac.js`
-75. `scripts/verify-audit-index.js`
-76. `scripts/verify-data-json.js`
-77. `scripts/verify-file-health.js`
-78. `scripts/verify-marketplace-intelligence.js`
-79. `scripts/verify-privacy-governance.js`
-80. `scripts/verify-production-readiness.js`
-81. `scripts/verify-queue.js`
-82. `scripts/verify-scale-thresholds.js`
-83. `scripts/verify-workroom-indexes.js`
+42. `scripts/capture-phase61-evidence.js`
+43. `scripts/cleanup-attachments.js`
+44. `scripts/compact-counters.js`
+45. `scripts/compact-predictive-signals.js`
+46. `scripts/compact-queue.js`
+47. `scripts/compact-workrooms.js`
+48. `scripts/evaluate-pilot-gate.js`
+49. `scripts/export-incident-timeline.js`
+50. `scripts/export-migration-snapshot.js`
+51. `scripts/export-user-data.js`
+52. `scripts/find-null-json-files.js`
+53. `scripts/generate-vapid-keys.js`
+54. `scripts/list-benchmark-history.js`
+55. `scripts/measure-storage-pressure.js`
+56. `scripts/migrate.js`
+57. `scripts/ops-weekly-review.js`
+58. `scripts/postdeploy-smoke.js`
+59. `scripts/predeploy-check.js`
+60. `scripts/queue-drain.js`
+61. `scripts/queue-retry-dlq.js`
+62. `scripts/rebuild-audit-index.js`
+63. `scripts/rebuild-counters.js`
+64. `scripts/rebuild-predictive-archive-index.js`
+65. `scripts/rebuild-search-relevance.js`
+66. `scripts/rebuild-workroom-search.js`
+67. `scripts/repair-indexes.js`
+68. `scripts/repair-queue.js`
+69. `scripts/rollup-product-intelligence.js`
+70. `scripts/rollup-trust-snapshots.js`
+71. `scripts/run-backup-restore-drill.js`
+72. `scripts/run-migration-rehearsal.js`
+73. `scripts/run-rollback-rehearsal.js`
+74. `scripts/run-trust-calibration.js`
+75. `scripts/scheduler-cadence-report.js`
+76. `scripts/validate-migration-snapshot.js`
+77. `scripts/verify-admin-rbac.js`
+78. `scripts/verify-audit-index.js`
+79. `scripts/verify-data-json.js`
+80. `scripts/verify-file-health.js`
+81. `scripts/verify-marketplace-intelligence.js`
+82. `scripts/verify-privacy-governance.js`
+83. `scripts/verify-production-readiness.js`
+84. `scripts/verify-queue.js`
+85. `scripts/verify-repository-contracts.js`
+86. `scripts/verify-scale-thresholds.js`
+87. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -417,6 +421,114 @@
         </div>
 
         <div id="benchmarkHistoryDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Evidence Cadence -->
+      <div class="admin-section" id="phase61EvidenceSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📊 تشغيل الأدلة — Phase 61</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPhase61Evidence()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          Phase 61 = تشغيل الأدلة والتدريب وبوابة قرار، وليس نقل قاعدة بيانات افتراضي.
+          تحذير واحد لا يكفي. لازم evidence history قبل أي Pilot.
+        </p>
+
+        <div id="phase61EvidenceRecommendations" class="recommended-actions"></div>
+
+        <div id="phase61EvidenceSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePhase61Evidence()">حفظ لقطة Evidence</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPhase61EvidenceSnapshots()">سجل الأدلة</button>
+        </div>
+
+        <div id="phase61EvidenceDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Pilot Gate -->
+      <div class="admin-section" id="pilotGateSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚦 بوابة Pilot</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPilotGate()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          بوابة Pilot تمنع أي externalization مبكر. لا يوجد نقل تلقائي.
+          Pilot لا يُسمح إلا بعد repeated evidence + migration rehearsal + rollback rehearsal + approval + privacy review.
+        </p>
+
+        <div id="pilotGateRecommendations" class="recommended-actions"></div>
+
+        <div id="pilotGateSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <input id="pilotGateCandidateInput" class="form-input form-input--sm" placeholder="candidate اختياري: ops_queue" style="min-width:220px;flex:1;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePilotGate()">حفظ Gate Snapshot</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPilotGate()">إعادة التقييم</button>
+        </div>
+
+        <h3 style="font-size:1rem;margin-block:1rem 0.75rem;">لماذا Pilot غير مسموح؟</h3>
+        <div id="pilotGateBlockers">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Rollback Rehearsal -->
+      <div class="admin-section" id="rollbackRehearsalSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>↩ تدريب الرجوع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRollbackRehearsal()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          تدريب الرجوع يثبت أن المنصة قادرة ترجع للمسار الملفي بأمان.
+          لا يغيّر بيانات الإنتاج ولا يتصل بأي DB خارجي.
+        </p>
+
+        <div id="rollbackRehearsalSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <input id="rollbackSnapshotInput" class="form-input form-input--sm" placeholder="./migration-snapshots/phase61-test" style="min-width:260px;flex:1;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.runRollbackRehearsal()">تشغيل تدريب الرجوع</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadRollbackRehearsal()">عرض آخر تقرير</button>
+        </div>
+
+        <div id="rollbackRehearsalDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Repository Contracts -->
+      <div class="admin-section" id="repositoryContractsSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📦 عقود Repository</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRepositoryContracts()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          عقود Repository توثيق واختبارات استعداد فقط. لا يوجد runtime switch ولا external adapter في Phase 61.
+          file-backed JSON يظل source of truth.
+        </p>
+
+        <div id="repositoryContractsRecommendations" class="recommended-actions"></div>
+
+        <div id="repositoryContractsSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="repositoryContractsDetails">
           <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
         </div>
       </div>
@@ -6726,6 +6838,135 @@ textarea:focus:not(:focus-visible) {
     font-size: 0.68rem;
   }
 }
+
+/* ═══ Phase 61 — Evidence Cadence + Pilot Gate + Rollback + Repository Contracts ═══ */
+.phase61-evidence-card,
+.pilot-gate-card,
+.rollback-rehearsal-card,
+.repository-contract-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.phase61-evidence-card__value,
+.pilot-gate-card__value,
+.rollback-rehearsal-card__value,
+.repository-contract-card__value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--color-primary);
+}
+
+.phase61-evidence-card__label,
+.pilot-gate-card__label,
+.rollback-rehearsal-card__label,
+.repository-contract-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.35rem;
+}
+
+.phase61-evidence-card--fresh,
+.rollback-rehearsal-card--passed,
+.pilot-gate-card--ready,
+.repository-contract-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.phase61-evidence-card--fresh .phase61-evidence-card__value,
+.rollback-rehearsal-card--passed .rollback-rehearsal-card__value,
+.pilot-gate-card--ready .pilot-gate-card__value,
+.repository-contract-card--ok .repository-contract-card__value {
+  color: var(--color-success);
+}
+
+.phase61-evidence-card--stale,
+.rollback-rehearsal-card--warning,
+.pilot-gate-card--warning,
+.repository-contract-card--warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.phase61-evidence-card--stale .phase61-evidence-card__value,
+.rollback-rehearsal-card--warning .rollback-rehearsal-card__value,
+.pilot-gate-card--warning .pilot-gate-card__value,
+.repository-contract-card--warning .repository-contract-card__value {
+  color: var(--color-warning);
+}
+
+.phase61-evidence-card--missing,
+.phase61-evidence-card--critical,
+.rollback-rehearsal-card--failed,
+.pilot-gate-card--blocked,
+.repository-contract-card--critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.phase61-evidence-card--missing .phase61-evidence-card__value,
+.phase61-evidence-card--critical .phase61-evidence-card__value,
+.rollback-rehearsal-card--failed .rollback-rehearsal-card__value,
+.pilot-gate-card--blocked .pilot-gate-card__value,
+.repository-contract-card--critical .repository-contract-card__value {
+  color: var(--color-error);
+}
+
+.repository-contract-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.repository-contract-status-badge--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.repository-contract-status-badge--warning {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.repository-contract-status-badge--missing {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 600px) {
+  #phase61EvidenceSection .btn,
+  #pilotGateSection .btn,
+  #rollbackRehearsalSection .btn,
+  #repositoryContractsSection .btn {
+    min-height: 44px;
+  }
+
+  .phase61-evidence-card,
+  .pilot-gate-card,
+  .rollback-rehearsal-card,
+  .repository-contract-card {
+    padding: 0.9rem;
+  }
+}
 ```
 
 ---
@@ -7518,6 +7759,10 @@ var AdminApp = (function () {
         loadMigrationRehearsal(),
         loadBenchmarkHistory(),
         loadMultiInstanceBoundary(),
+        loadPhase61Evidence(),
+        loadPilotGate(),
+        loadRollbackRehearsal(),
+        loadRepositoryContracts(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
       ]).catch(function () {});
@@ -11936,6 +12181,432 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 61 — Evidence Cadence + Pilot Gate + Rollback + Repository Contracts
+  // ═══════════════════════════════════════════════════════════════
+
+  function phase61StatusClass(status) {
+    if (status === 'fresh' || status === 'passed' || status === 'ok') return 'phase61-evidence-card--fresh';
+    if (status === 'critical' || status === 'failed') return 'phase61-evidence-card--critical';
+    if (status === 'missing') return 'phase61-evidence-card--missing';
+    return 'phase61-evidence-card--stale';
+  }
+
+  function phase61StatusLabel(status) {
+    var labels = {
+      fresh: 'محدثة',
+      stale: 'قديمة',
+      missing: 'ناقصة',
+      critical: 'حرجة',
+      passed: 'ناجح',
+      warning: 'تحذير',
+      failed: 'فشل',
+      ok: 'مستقر',
+      blocked: 'ممنوع',
+      approval_required: 'يحتاج موافقة',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  async function loadPhase61Evidence() {
+    var summaryEl = document.getElementById('phase61EvidenceSummary');
+    var detailsEl = document.getElementById('phase61EvidenceDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/phase61/evidence');
+      var evidence = data.evidence || {};
+
+      renderPhase61EvidenceSummary(evidence);
+      renderPhase61EvidenceDetails(evidence);
+      renderRecommendedActions('phase61EvidenceRecommendations', evidence.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تشغيل الأدلة</p>';
+    }
+  }
+
+  async function capturePhase61Evidence() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/phase61/evidence/capture', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم حفظ لقطة Evidence Cadence');
+        renderPhase61EvidenceSummary(data.evidence || {});
+        renderPhase61EvidenceDetails(data.evidence || {});
+        renderRecommendedActions('phase61EvidenceRecommendations', (data.evidence && data.evidence.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ Evidence Cadence');
+    }
+  }
+
+  async function loadPhase61EvidenceSnapshots() {
+    var detailsEl = document.getElementById('phase61EvidenceDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/phase61/evidence/snapshots?limit=20');
+      var rows = data.snapshots || [];
+
+      if (rows.length === 0) {
+        detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد سجل Evidence Cadence بعد</p>';
+        return;
+      }
+
+      var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">سجل Evidence Cadence</h3>';
+      html += '<table class="admin-table"><thead><tr><th>ID</th><th>Status</th><th>Warnings</th><th>Blockers</th><th>Created</th></tr></thead><tbody>';
+
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(r.id || '-') + '</small></td>' +
+          '<td>' + escapeHtml(phase61StatusLabel(r.status)) + '</td>' +
+          '<td>' + escapeHtml(String((r.warnings || []).length)) + '</td>' +
+          '<td>' + escapeHtml(String((r.blockers || []).length)) + '</td>' +
+          '<td><small>' + escapeHtml(r.createdAt ? new Date(r.createdAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل الأدلة</p>';
+    }
+  }
+
+  function renderPhase61EvidenceSummary(evidence) {
+    var el = document.getElementById('phase61EvidenceSummary');
+    if (!el) return;
+
+    var latest = evidence.latest || {};
+    var cards = [
+      { value: phase61StatusLabel(evidence.status), label: 'حالة الأدلة', status: evidence.status },
+      { value: latest.storagePressure ? phase61StatusLabel(latest.storagePressure.status) : 'ناقصة', label: 'Storage Pressure', status: latest.storagePressure ? latest.storagePressure.status : 'missing' },
+      { value: latest.benchmark ? phase61StatusLabel(latest.benchmark.status) : 'ناقصة', label: 'Benchmark', status: latest.benchmark ? latest.benchmark.status : 'missing' },
+      { value: latest.externalizationDecision ? phase61StatusLabel(latest.externalizationDecision.status) : 'ناقصة', label: 'Decision Snapshot', status: latest.externalizationDecision ? latest.externalizationDecision.status : 'missing' },
+      { value: latest.rollbackRehearsal ? phase61StatusLabel(latest.rollbackRehearsal.status) : 'ناقصة', label: 'Rollback Rehearsal', status: latest.rollbackRehearsal ? latest.rollbackRehearsal.status : 'missing' },
+      { value: (evidence.blockers || []).length, label: 'Blockers', status: (evidence.blockers || []).length > 0 ? 'critical' : 'fresh' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'phase61-evidence-card ' + phase61StatusClass(c.status);
+      card.innerHTML =
+        '<div class="phase61-evidence-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="phase61-evidence-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderPhase61EvidenceDetails(evidence) {
+    var el = document.getElementById('phase61EvidenceDetails');
+    if (!el) return;
+
+    var latest = evidence.latest || {};
+    var rows = Object.keys(latest).map(function (k) {
+      return { key: k, value: latest[k] };
+    });
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Evidence Timeline</h3>';
+    html += '<table class="admin-table"><thead><tr><th>Evidence</th><th>Status</th><th>Age</th><th>ID</th></tr></thead><tbody>';
+
+    rows.forEach(function (row) {
+      var v = row.value;
+      html += '<tr>' +
+        '<td>' + escapeHtml(row.key) + '</td>' +
+        '<td>' + escapeHtml(v ? phase61StatusLabel(v.status) : 'ناقصة') + '</td>' +
+        '<td>' + escapeHtml(v && v.ageDays != null ? String(v.ageDays) + ' يوم' : '-') + '</td>' +
+        '<td><small>' + escapeHtml(v && v.id ? v.id : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    var blockers = evidence.blockers || [];
+    if (blockers.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Blockers</h3><div class="scale-hygiene-warning-list">';
+      blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high"><strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' + escapeHtml(b.message || '') + '</div>';
+      });
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function loadPilotGate() {
+    var summaryEl = document.getElementById('pilotGateSummary');
+    var blockersEl = document.getElementById('pilotGateBlockers');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (blockersEl) blockersEl.innerHTML = '';
+
+    try {
+      var candidateEl = document.getElementById('pilotGateCandidateInput');
+      var candidate = candidateEl ? candidateEl.value.trim() : '';
+
+      var url = '/api/admin/phase61/pilot-gate';
+      if (candidate) url += '?candidate=' + encodeURIComponent(candidate);
+
+      var data = await api(url);
+      var gate = data.gate || {};
+
+      renderPilotGateSummary(gate);
+      renderPilotGateBlockers(gate);
+      renderRecommendedActions('pilotGateRecommendations', gate.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل بوابة Pilot</p>';
+    }
+  }
+
+  async function capturePilotGate() {
+    try {
+      var candidateEl = document.getElementById('pilotGateCandidateInput');
+      var candidate = candidateEl ? candidateEl.value.trim() : '';
+
+      var data = await apiWrite('POST', '/api/admin/phase61/pilot-gate/capture', {
+        candidate: candidate || undefined
+      });
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم حفظ Pilot Gate snapshot');
+        renderPilotGateSummary(data.gate || {});
+        renderPilotGateBlockers(data.gate || {});
+        renderRecommendedActions('pilotGateRecommendations', (data.gate && data.gate.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ Pilot Gate');
+    }
+  }
+
+  function renderPilotGateSummary(gate) {
+    var el = document.getElementById('pilotGateSummary');
+    if (!el) return;
+
+    var cards = [
+      { value: gate.candidate || '-', label: 'Candidate' },
+      { value: gate.pilotAllowed ? 'نعم' : 'لا', label: 'Pilot مسموح؟' },
+      { value: gate.implementationAllowed ? 'نعم' : 'لا', label: 'تنفيذ خارجي؟' },
+      { value: (gate.blockers || []).length, label: 'Blockers' },
+      { value: (gate.requirements || []).filter(function (r) { return r.passed; }).length + '/' + (gate.requirements || []).length, label: 'Checklist' },
+      { value: phase61StatusLabel(gate.status || 'blocked'), label: 'Status' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      var cls = gate.pilotAllowed ? 'pilot-gate-card--ready' : 'pilot-gate-card--blocked';
+      if (c.label === 'تنفيذ خارجي?' && gate.implementationAllowed === false) cls = 'pilot-gate-card--warning';
+      card.className = 'pilot-gate-card ' + cls;
+      card.innerHTML =
+        '<div class="pilot-gate-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="pilot-gate-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderPilotGateBlockers(gate) {
+    var el = document.getElementById('pilotGateBlockers');
+    if (!el) return;
+
+    var blockers = gate.blockers || [];
+    var requirements = gate.requirements || [];
+
+    var html = '';
+
+    if (blockers.length === 0) {
+      html += '<div class="recommended-action-card recommended-action-card--info">' +
+        '<strong>ℹ️ لا توجد blockers في التقييم الحالي</strong>' +
+        '<p>لكن implementationAllowed يظل false في Phase 61 بدون طلب صريح ومرحلة تنفيذ منفصلة.</p>' +
+      '</div>';
+    } else {
+      html += '<div class="scale-hygiene-warning-list">';
+      blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' +
+          '<strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' +
+          escapeHtml(b.message || '') +
+          (b.recommendation ? '<br><small>' + escapeHtml(b.recommendation) + '</small>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (requirements.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Candidate Gate Checklist</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Requirement</th><th>Status</th></tr></thead><tbody>';
+      requirements.forEach(function (r) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(r.label || r.id) + '</td>' +
+          '<td>' + (r.passed ? '<span class="repository-contract-status-badge repository-contract-status-badge--ok">✓</span>' : '<span class="repository-contract-status-badge repository-contract-status-badge--missing">✗</span>') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function loadRollbackRehearsal() {
+    var summaryEl = document.getElementById('rollbackRehearsalSummary');
+    var detailsEl = document.getElementById('rollbackRehearsalDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/rollback-rehearsal?limit=10');
+      var latest = data.latest || null;
+      renderRollbackRehearsalStatus(latest, data.rehearsals || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تدريب الرجوع</p>';
+    }
+  }
+
+  async function runRollbackRehearsal() {
+    try {
+      var snapshotEl = document.getElementById('rollbackSnapshotInput');
+      var snapshotReference = snapshotEl ? snapshotEl.value.trim() : '';
+
+      var data = await apiWrite('POST', '/api/admin/rollback-rehearsal/run', {
+        dryRun: true,
+        persist: true,
+        snapshotReference: snapshotReference || undefined
+      });
+
+      if (typeof YawmiaToast !== 'undefined') {
+        if (data.ok) YawmiaToast.success('تم تشغيل تدريب الرجوع');
+        else YawmiaToast.warning('تدريب الرجوع خرج بتحذيرات/Blockers');
+      }
+
+      renderRollbackRehearsalStatus(data.rehearsal, [data.rehearsal]);
+      loadPilotGate();
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل تدريب الرجوع');
+    }
+  }
+
+  function renderRollbackRehearsalStatus(latest, rows) {
+    var summaryEl = document.getElementById('rollbackRehearsalSummary');
+    var detailsEl = document.getElementById('rollbackRehearsalDetails');
+    if (!summaryEl) return;
+
+    var status = latest ? latest.status : 'missing';
+    var cards = [
+      { value: latest ? phase61StatusLabel(latest.status) : 'ناقصة', label: 'آخر تدريب' },
+      { value: latest ? (latest.sourceDataMutated ? 'نعم' : 'لا') : '-', label: 'غيّر المصدر؟' },
+      { value: latest ? (latest.externalDbConnected ? 'نعم' : 'لا') : '-', label: 'اتصل DB خارجي؟' },
+      { value: latest ? ((latest.blockers || []).length) : '-', label: 'Blockers' },
+      { value: latest ? ((latest.warnings || []).length) : '-', label: 'Warnings' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'rollback-rehearsal-card rollback-rehearsal-card--' + (status === 'passed' ? 'passed' : status === 'failed' ? 'failed' : 'warning');
+      card.innerHTML =
+        '<div class="rollback-rehearsal-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="rollback-rehearsal-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (!detailsEl) return;
+
+    if (!latest) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد Rollback Rehearsal بعد. شغّل تدريب الرجوع قبل أي Pilot.</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Rollback Plan</h3>';
+    html += '<table class="admin-table"><thead><tr><th>Plan</th><th>Commands</th></tr></thead><tbody>';
+    html += '<tr><td>Index Repair</td><td><small>' + escapeHtml((latest.indexRepairPlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '<tr><td>Queue Verify</td><td><small>' + escapeHtml((latest.queueVerifyPlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '<tr><td>Smoke</td><td><small>' + escapeHtml((latest.smokePlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '</tbody></table>';
+
+    if ((latest.blockers || []).length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Blockers</h3><div class="scale-hygiene-warning-list">';
+      latest.blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high"><strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' + escapeHtml(b.message || '') + '</div>';
+      });
+      html += '</div>';
+    }
+
+    detailsEl.innerHTML = html;
+  }
+
+  async function loadRepositoryContracts() {
+    var summaryEl = document.getElementById('repositoryContractsSummary');
+    var detailsEl = document.getElementById('repositoryContractsDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/repository-contracts');
+      var report = data.repositoryContracts || {};
+
+      renderRepositoryContracts(report);
+      renderRecommendedActions('repositoryContractsRecommendations', report.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل عقود Repository</p>';
+    }
+  }
+
+  function renderRepositoryContracts(report) {
+    var summaryEl = document.getElementById('repositoryContractsSummary');
+    var detailsEl = document.getElementById('repositoryContractsDetails');
+
+    if (summaryEl) {
+      var cards = [
+        { value: report.fileBackedSourceOfTruth ? 'نعم' : 'لا', label: 'File-backed Source' },
+        { value: report.runtimeSwitchEnabled ? 'نعم' : 'لا', label: 'Runtime Switch' },
+        { value: report.externalAdapterImplemented ? 'نعم' : 'لا', label: 'External Adapter' },
+        { value: (report.matrix || []).length, label: 'Contracts' },
+        { value: (report.blockers || []).length, label: 'Blockers' },
+        { value: phase61StatusLabel(report.status || 'ok'), label: 'Status' },
+      ];
+
+      summaryEl.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        var cls = c.value === 'نعم' && (c.label === 'Runtime Switch' || c.label === 'External Adapter')
+          ? 'repository-contract-card--critical'
+          : 'repository-contract-card--ok';
+        card.className = 'repository-contract-card ' + cls;
+        card.innerHTML =
+          '<div class="repository-contract-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="repository-contract-card__label">' + escapeHtml(c.label) + '</div>';
+        summaryEl.appendChild(card);
+      });
+    }
+
+    if (!detailsEl) return;
+
+    var rows = report.matrix || [];
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Repository Contract Matrix</h3>';
+
+    if (rows.length === 0) {
+      html += '<p style="color:var(--color-text-muted);text-align:center;">لا توجد عقود مسجلة</p>';
+    } else {
+      html += '<table class="admin-table"><thead><tr><th>Repository</th><th>Collections</th><th>Guarantees</th></tr></thead><tbody>';
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><strong>' + escapeHtml(r.name || '-') + '</strong></td>' +
+          '<td><small>' + escapeHtml((r.collections || []).join(', ')) + '</small></td>' +
+          '<td><small>' + escapeHtml((r.guarantees || []).slice(0, 3).join(' · ')) + '</small></td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:1rem;">' +
+      'لا يوجد runtime switch ولا external adapter في Phase 61. هذه العقود للاستعداد والاختبار فقط.' +
+    '</p>';
+
+    detailsEl.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -12402,6 +13073,10 @@ var AdminApp = (function () {
       loadPhase60Decision();
       loadMigrationRehearsal();
       loadBenchmarkHistory();
+      loadPhase61Evidence();
+      loadPilotGate();
+      loadRollbackRehearsal();
+      loadRepositoryContracts();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -13491,6 +14166,20 @@ var AdminApp = (function () {
     renderBenchmarkHistory: renderBenchmarkHistory,
 
     // Phase 55 — Scale Hygiene
+    loadPhase61Evidence: loadPhase61Evidence,
+    capturePhase61Evidence: capturePhase61Evidence,
+    loadPhase61EvidenceSnapshots: loadPhase61EvidenceSnapshots,
+    renderPhase61EvidenceSummary: renderPhase61EvidenceSummary,
+    renderPhase61EvidenceDetails: renderPhase61EvidenceDetails,
+    loadPilotGate: loadPilotGate,
+    capturePilotGate: capturePilotGate,
+    renderPilotGateSummary: renderPilotGateSummary,
+    renderPilotGateBlockers: renderPilotGateBlockers,
+    loadRollbackRehearsal: loadRollbackRehearsal,
+    runRollbackRehearsal: runRollbackRehearsal,
+    renderRollbackRehearsalStatus: renderRollbackRehearsalStatus,
+    loadRepositoryContracts: loadRepositoryContracts,
+    renderRepositoryContracts: renderRepositoryContracts,
     loadScaleHygiene: loadScaleHygiene,
     verifyQueue: verifyQueue,
     compactQueue: compactQueue,
@@ -23023,7 +23712,7 @@ Sitemap: https://yowmia.com/sitemap.xml
 // Strategy: Cache-first for static assets, Network-first for API
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'yawmia-v0.56.0';
+const CACHE_NAME = 'yawmia-v0.57.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -23868,7 +24557,7 @@ async function main() {
     ok: errorRows.length === 0,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
-    version: '0.56.0',
+    version: '0.57.0',
     sample: SAMPLE,
     includeHeavy: INCLUDE_HEAVY,
     persisted: false,
@@ -24287,6 +24976,102 @@ try {
 
 ---
 
+## `scripts/capture-phase61-evidence.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/capture-phase61-evidence.js — Phase 61 Evidence Cadence
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--persist') args.persist = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/capture-phase61-evidence.js
+  node scripts/capture-phase61-evidence.js --json
+  node scripts/capture-phase61-evidence.js --persist
+  node scripts/capture-phase61-evidence.js --json --persist
+
+Reads latest persisted evidence only.
+Does not run benchmarks.
+Does not run storage pressure scans.
+Does not mutate source data.
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  const originalConsole = { log: console.log, warn: console.warn, error: console.error };
+  if (args.json) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const service = await import('../server/services/phase61EvidenceCadence.js');
+
+  const result = args.persist
+    ? await service.captureEvidenceCadenceSnapshot()
+    : { ok: true, evidence: await service.getEvidenceCadenceStatus() };
+
+  if (args.json) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const evidence = result.evidence || result.report || {};
+    console.log('\n📊 Phase 61 Evidence Cadence\n');
+    console.log(`Status: ${evidence.status || 'unknown'}`);
+    console.log(`Warnings: ${(evidence.warnings || []).length}`);
+    console.log(`Blockers: ${(evidence.blockers || []).length}`);
+    if (result.evidence && result.evidence.id) console.log(`Snapshot: ${result.evidence.id}`);
+    console.log('\nRecommendations:');
+    for (const r of evidence.recommendations || []) {
+      console.log(`- ${r.label}${r.command ? ` → ${r.command}` : ''}`);
+    }
+    console.log('');
+  }
+
+  process.exit(result.ok ? 0 : 1);
+} catch (err) {
+  const out = {
+    ok: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
+```
+
+---
+
 ## `scripts/cleanup-attachments.js`
 
 ```javascript
@@ -24600,6 +25385,104 @@ main().catch(err => {
   if (err.stack) console.error(err.stack);
   process.exit(1);
 });
+```
+
+---
+
+## `scripts/evaluate-pilot-gate.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/evaluate-pilot-gate.js — Phase 61 Pilot Gate
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--persist') args.persist = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg.startsWith('--candidate=')) args.candidate = arg.slice('--candidate='.length);
+    else if (arg.startsWith('--approval=')) args.approvalId = arg.slice('--approval='.length);
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/evaluate-pilot-gate.js
+  node scripts/evaluate-pilot-gate.js --json
+  node scripts/evaluate-pilot-gate.js --candidate=ops_queue --json
+  node scripts/evaluate-pilot-gate.js --candidate=ops_queue --approval=apr_x --persist --json
+
+Default:
+  pilotAllowed=false unless all blockers are cleared.
+  implementationAllowed=false always in Phase 61 unless explicitly changed in a future approved phase.
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  const originalConsole = { log: console.log, warn: console.warn, error: console.error };
+  if (args.json) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const service = await import('../server/services/pilotDecisionGate.js');
+
+  const result = args.persist
+    ? await service.capturePilotDecisionSnapshot({ candidate: args.candidate, approvalId: args.approvalId })
+    : { ok: true, gate: await service.getPilotDecisionGate({ candidate: args.candidate, approvalId: args.approvalId }) };
+
+  if (args.json) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const gate = result.gate || {};
+    console.log('\n🚦 Phase 61 Pilot Gate\n');
+    console.log(`Candidate: ${gate.candidate || '-'}`);
+    console.log(`Pilot allowed: ${gate.pilotAllowed ? 'yes' : 'no'}`);
+    console.log(`Implementation allowed: ${gate.implementationAllowed ? 'yes' : 'no'}`);
+    console.log(`Blockers: ${(gate.blockers || []).length}`);
+    for (const b of gate.blockers || []) {
+      console.log(`- ${b.code}: ${b.message}`);
+    }
+    console.log('');
+  }
+
+  process.exit(result.gate && result.gate.pilotAllowed ? 0 : 1);
+} catch (err) {
+  const out = {
+    ok: false,
+    error: err.message,
+    pilotAllowed: false,
+    implementationAllowed: false,
+    generatedAt: new Date().toISOString(),
+  };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
 ```
 
 ---
@@ -26100,6 +26983,79 @@ async function main() {
       message: c.message,
       recommendation: c.recommendation || null,
       details: c.details || {},
+    });
+  }
+
+  // Phase 61 — lightweight evidence/pilot/repository checks.
+  try {
+    const { getEvidenceCadenceStatus } = await import('../server/services/phase61EvidenceCadence.js');
+    const evidence = await getEvidenceCadenceStatus();
+    checks.push({
+      id: 'phase61_evidence_cadence',
+      status: evidence.status === 'fresh' ? 'pass' : 'warn',
+      message: evidence.status === 'fresh'
+        ? 'Phase 61 evidence cadence is fresh'
+        : `Phase 61 evidence cadence is ${evidence.status}`,
+      details: {
+        warningCount: evidence.warnings?.length || 0,
+        blockerCount: evidence.blockers?.length || 0,
+      },
+      recommendation: 'node scripts/capture-phase61-evidence.js --persist',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_evidence_cadence',
+      status: 'warn',
+      message: 'Could not evaluate Phase 61 evidence cadence',
+      details: { error: err.message },
+    });
+  }
+
+  try {
+    const { getPilotDecisionGate } = await import('../server/services/pilotDecisionGate.js');
+    const gate = await getPilotDecisionGate();
+    checks.push({
+      id: 'phase61_pilot_gate',
+      status: gate.implementationAllowed ? 'fail' : 'pass',
+      message: gate.implementationAllowed
+        ? 'Pilot gate unexpectedly allows implementation'
+        : 'Pilot gate blocks external implementation by default',
+      details: {
+        pilotAllowed: !!gate.pilotAllowed,
+        implementationAllowed: !!gate.implementationAllowed,
+        blockerCount: gate.blockers?.length || 0,
+      },
+      recommendation: 'node scripts/evaluate-pilot-gate.js --json',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_pilot_gate',
+      status: 'warn',
+      message: 'Could not evaluate pilot gate',
+      details: { error: err.message },
+    });
+  }
+
+  try {
+    const { getRepositoryContractReadiness } = await import('../server/services/repositoryContractReport.js');
+    const contracts = await getRepositoryContractReadiness();
+    checks.push({
+      id: 'phase61_repository_contracts',
+      status: contracts.status === 'critical' ? 'fail' : (contracts.status === 'warning' ? 'warn' : 'pass'),
+      message: 'Repository contract readiness checked',
+      details: {
+        status: contracts.status,
+        runtimeSwitchEnabled: !!contracts.runtimeSwitchEnabled,
+        externalAdapterImplemented: !!contracts.externalAdapterImplemented,
+      },
+      recommendation: 'node scripts/verify-repository-contracts.js --json',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_repository_contracts',
+      status: 'warn',
+      message: 'Could not evaluate repository contracts',
+      details: { error: err.message },
     });
   }
 
@@ -27643,7 +28599,7 @@ try {
       ? (validation.warnings.length > 0 ? 'warning' : 'passed')
       : 'failed',
     phase: 60,
-    version: '0.56.0',
+    version: '0.57.0',
     rehearsalType: 'snapshot_validation_only',
     dryRun: !!args.dryRun,
     confirm: !!args.confirm,
@@ -27693,6 +28649,114 @@ try {
     error: err.message,
     sourceDataMutated: false,
     externalDbConnected: false,
+  };
+  if (args.json) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
+```
+
+---
+
+## `scripts/run-rollback-rehearsal.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/run-rollback-rehearsal.js — Phase 61 Rollback Rehearsal
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+function parseArgs(argv) {
+  const args = {};
+  for (const arg of argv) {
+    if (arg === '--json') args.json = true;
+    else if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--persist') args.persist = true;
+    else if (arg === '--confirm') args.confirm = true;
+    else if (arg === '--strict') args.strict = true;
+    else if (arg === '--help' || arg === '-h') args.help = true;
+    else if (arg.startsWith('--backup=')) args.backupReference = arg.slice('--backup='.length);
+    else if (arg.startsWith('--snapshot=')) args.snapshotReference = arg.slice('--snapshot='.length);
+  }
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/run-rollback-rehearsal.js --dry-run --json
+  node scripts/run-rollback-rehearsal.js --persist --confirm
+  node scripts/run-rollback-rehearsal.js --backup=./backups/yawmia-backup-... --snapshot=./migration-snapshots/test --json
+
+Non-destructive:
+  - does not restore production
+  - does not mutate source data
+  - does not connect to external DB/search/queue
+`);
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+if (args.help) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  const originalConsole = { log: console.log, warn: console.warn, error: console.error };
+  if (args.json) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { runRollbackRehearsal } = await import('../server/services/rollbackRehearsal.js');
+
+  const result = await runRollbackRehearsal({
+    dryRun: !!args.dryRun,
+    persist: !!args.persist || !!args.confirm,
+    confirm: !!args.confirm,
+    backupReference: args.backupReference || undefined,
+    snapshotReference: args.snapshotReference || undefined,
+  });
+
+  if (args.json) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const r = result.rehearsal || {};
+    console.log('\n↩ Phase 61 Rollback Rehearsal\n');
+    console.log(`Status: ${r.status || 'unknown'}`);
+    console.log(`Source mutated: ${r.sourceDataMutated ? 'yes' : 'no'}`);
+    console.log(`External DB connected: ${r.externalDbConnected ? 'yes' : 'no'}`);
+    console.log(`Backup: ${r.backupReference || '-'}`);
+    console.log(`Restore drill: ${r.restoreDrillReference ? r.restoreDrillReference.id : '-'}`);
+    console.log(`Blockers: ${(r.blockers || []).length}`);
+    console.log(`Warnings: ${(r.warnings || []).length}`);
+    if (r.id && (args.persist || args.confirm)) console.log(`Report: ${r.id}`);
+    console.log('');
+  }
+
+  const ok = result.ok || (!args.strict && result.rehearsal && result.rehearsal.status === 'warning');
+  process.exit(ok ? 0 : 1);
+} catch (err) {
+  const out = {
+    ok: false,
+    status: 'failed',
+    error: err.message,
+    sourceDataMutated: false,
+    externalDbConnected: false,
+    generatedAt: new Date().toISOString(),
   };
   if (args.json) console.log(JSON.stringify(out, null, 2));
   else console.error(err);
@@ -29345,6 +30409,95 @@ main().catch(err => {
   }
   process.exit(1);
 });
+```
+
+---
+
+## `scripts/verify-repository-contracts.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/verify-repository-contracts.js — Phase 61 Repository Contracts
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const STRICT = process.argv.includes('--strict');
+
+function printHelp() {
+  console.log(`
+Usage:
+  node scripts/verify-repository-contracts.js
+  node scripts/verify-repository-contracts.js --json
+  node scripts/verify-repository-contracts.js --json --strict
+
+Verifies:
+  - repository contract matrix exists
+  - runtime switch disabled
+  - file-backed source of truth preserved
+  - no external adapter by default
+  - docs exist
+`);
+}
+
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  printHelp();
+  process.exit(0);
+}
+
+try {
+  const originalConsole = { log: console.log, warn: console.warn, error: console.error };
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const { getRepositoryContractReadiness } = await import('../server/services/repositoryContractReport.js');
+  const report = await getRepositoryContractReadiness();
+
+  const ok = report.blockers.length === 0 && (!STRICT || report.warnings.length === 0);
+
+  const output = {
+    ok,
+    status: ok ? (report.warnings.length > 0 ? 'warning' : 'passed') : 'failed',
+    report,
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log('\n📦 Repository Contract Readiness\n');
+    console.log(`Status: ${output.status}`);
+    console.log(`Runtime switch: ${report.runtimeSwitchEnabled ? 'enabled' : 'disabled'}`);
+    console.log(`File-backed source of truth: ${report.fileBackedSourceOfTruth ? 'yes' : 'no'}`);
+    console.log(`External adapter implemented: ${report.externalAdapterImplemented ? 'yes' : 'no'}`);
+    console.log(`Contracts: ${(report.matrix || []).length}`);
+    console.log(`Warnings: ${report.warnings.length}`);
+    console.log(`Blockers: ${report.blockers.length}`);
+    console.log('');
+  }
+
+  process.exit(ok ? 0 : 1);
+} catch (err) {
+  const out = {
+    ok: false,
+    status: 'failed',
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+  if (JSON_OUT) console.log(JSON.stringify(out, null, 2));
+  else console.error(err);
+  process.exit(1);
+}
 ```
 
 ---

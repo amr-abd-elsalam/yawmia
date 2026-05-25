@@ -1,5 +1,5 @@
-# يوميّة (Yawmia) v0.56.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-24T03:23:55.490Z
+# يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
+> Auto-generated: 2026-05-25T10:43:12.160Z
 > Files in this part: 6
 
 ## Files
@@ -407,6 +407,12 @@ const config = {
       benchmark_history: 'metrics/benchmarks',
       migration_rehearsals: 'migration-snapshots/rehearsals',
       externalization_decisions: 'metrics/externalization-decisions',
+
+      // Phase 61 — Evidence Cadence + Rollback Rehearsal + Pilot Gate
+      phase61_evidence: 'metrics/phase61-evidence',
+      rollback_rehearsals: 'migration-snapshots/rehearsals/rollback',
+      pilot_decisions: 'metrics/pilot-decisions',
+      repository_contract_reports: 'metrics/repository-contracts',
     },
     indexFiles: {
       phoneIndex: 'users/phone-index.json',
@@ -595,7 +601,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   PWA: {
     enabled: true,
-    cacheName: 'yawmia-v0.56.0',
+    cacheName: 'yawmia-v0.57.0',
     swPath: '/sw.js',
     manifestPath: '/manifest.json',
     themeColor: '#2563eb',
@@ -1454,6 +1460,11 @@ const config = {
       ops_rollup_capture: { enabled: true },
       backup_restore_drill: { enabled: true },
 
+      // Phase 61 — Evidence cadence / rollback rehearsal / pilot gate
+      phase61_evidence_capture: { enabled: true },
+      phase61_pilot_gate_capture: { enabled: true },
+      phase61_rollback_rehearsal: { enabled: false },
+
       // Phase 56 — Marketplace/Product Intelligence schedulers
       marketplace_intelligence_daily: { enabled: true },
       search_analytics_rollup: { enabled: true },
@@ -1921,6 +1932,10 @@ const config = {
       'predictive_precision_review',
       'payment_dispute_review',
       'slo_breach_review',
+      'privacy_review',
+      'externalization_pilot_review',
+      'rollback_rehearsal_review',
+      'phase61_evidence_review',
     ],
     retentionDays: 365,
   },
@@ -1954,6 +1969,7 @@ const config = {
       'payment_complete',
       'audit_export',
       'privacy_anonymize',
+      'externalization_pilot',
     ],
     retentionDays: 365,
   },
@@ -2168,6 +2184,84 @@ const config = {
     p95CriticalMs: 3000,
   },
 
+  // ═══════════════════════════════════════════════════════════════
+  // 118. إيقاع أدلة Phase 61 (PHASE61_EVIDENCE_CADENCE)
+  // ═══════════════════════════════════════════════════════════════
+  PHASE61_EVIDENCE_CADENCE: {
+    enabled: true,
+    advisoryOnly: true,
+    storagePressureCadenceDays: 7,
+    benchmarkCadenceDays: 7,
+    scaleThresholdCadenceDays: 7,
+    externalizationDecisionCadenceDays: 7,
+    migrationRehearsalCadenceDays: 30,
+    rollbackRehearsalCadenceDays: 30,
+    requireWeeklyOpsReviewLink: true,
+    staleEvidenceWarningDays: 14,
+    staleEvidenceCriticalDays: 30,
+    basePath: 'metrics/phase61-evidence',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 119. بوابة مرشح Pilot (PHASE61_PILOT_GATE)
+  // ═══════════════════════════════════════════════════════════════
+  PHASE61_PILOT_GATE: {
+    enabled: true,
+    advisoryOnly: true,
+    requireRepeatedEvidence: true,
+    requireMigrationRehearsalPassed: true,
+    requireRollbackRehearsalPassed: true,
+    requireFreshRestoreDrill: true,
+    restoreDrillMaxAgeDays: 7,
+    requireAdminApproval: true,
+    approvalAction: 'externalization_pilot',
+    requirePrivacyReview: true,
+    privacyReviewType: 'privacy_review',
+    requireNoCriticalOpenIncidents: true,
+    requireNoOverdueCriticalPostmortemActions: true,
+    maxPilotCandidatesAtOnce: 1,
+    implementationAllowedByDefault: false,
+    basePath: 'metrics/pilot-decisions',
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 120. تدريب الرجوع (PHASE61_ROLLBACK_REHEARSAL)
+  // ═══════════════════════════════════════════════════════════════
+  PHASE61_ROLLBACK_REHEARSAL: {
+    enabled: true,
+    basePath: 'migration-snapshots/rehearsals/rollback',
+    persistReports: true,
+    requireBackupReference: true,
+    requireRestoreDrillReference: true,
+    verifyIndexesPlan: true,
+    verifyQueuePlan: true,
+    verifySmokePlan: true,
+    retentionCount: 10,
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 121. عقود Repository Adapters (REPOSITORY_CONTRACTS)
+  // ═══════════════════════════════════════════════════════════════
+  REPOSITORY_CONTRACTS: {
+    enabled: true,
+    docsOnly: true,
+    runtimeSwitchEnabled: false,
+    contractTestsEnabled: true,
+    basePath: 'metrics/repository-contracts',
+    candidates: [
+      'users',
+      'jobs',
+      'applications',
+      'payments',
+      'messages',
+      'workrooms',
+      'ops_queue',
+      'audit',
+      'search',
+      'images',
+    ],
+  },
+
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2216,7 +2310,7 @@ export default deepFreeze(config);
 ```json
 {
   "name": "yawmia",
-  "version": "0.56.0",
+  "version": "0.57.0",
   "description": "يوميّة — منصة توظيف العمالة اليومية في مصر",
   "type": "module",
   "main": "server.js",
@@ -3146,6 +3240,17 @@ import {
   handleBenchmarkHistory,
 } from './handlers/externalizationDecisionHandler.js';
 import {
+  handleGetPhase61Evidence,
+  handleCapturePhase61Evidence,
+  handleListPhase61EvidenceSnapshots,
+  handleGetPilotDecisionGate,
+  handleCapturePilotDecisionGate,
+  handleRunRollbackRehearsal,
+  handleListRollbackRehearsals,
+  handleGetRollbackRehearsal,
+  handleRepositoryContracts,
+} from './handlers/phase61Handler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -3248,7 +3353,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.56.0',
+        version: '0.57.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -3529,7 +3634,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.56.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.57.0' });
     },
   },
 
@@ -3852,6 +3957,20 @@ const routes = [
   { method: 'POST', path: '/api/admin/migration-snapshots/validate', middlewares: [requireCapability('admin.ops.review')], handler: handleValidateMigrationSnapshot },
   { method: 'POST', path: '/api/admin/migration-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunMigrationRehearsal },
   { method: 'GET', path: '/api/admin/benchmarks/history', middlewares: [requireCapability('admin.scale.read')], handler: handleBenchmarkHistory },
+
+  // ── Phase 61 — Evidence Cadence + Rollback Rehearsal + Pilot Gate ──
+  { method: 'GET', path: '/api/admin/phase61/evidence', middlewares: [requireCapability('admin.scale.read')], handler: handleGetPhase61Evidence },
+  { method: 'POST', path: '/api/admin/phase61/evidence/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCapturePhase61Evidence },
+  { method: 'GET', path: '/api/admin/phase61/evidence/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListPhase61EvidenceSnapshots },
+
+  { method: 'GET', path: '/api/admin/phase61/pilot-gate', middlewares: [requireCapability('admin.scale.read')], handler: handleGetPilotDecisionGate },
+  { method: 'POST', path: '/api/admin/phase61/pilot-gate/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCapturePilotDecisionGate },
+
+  { method: 'POST', path: '/api/admin/rollback-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunRollbackRehearsal },
+  { method: 'GET', path: '/api/admin/rollback-rehearsal', middlewares: [requireCapability('admin.scale.read')], handler: handleListRollbackRehearsals },
+  { method: 'GET', path: '/api/admin/rollback-rehearsal/:id', middlewares: [requireCapability('admin.scale.read')], handler: handleGetRollbackRehearsal },
+
+  { method: 'GET', path: '/api/admin/repository-contracts', middlewares: [requireCapability('admin.scale.read')], handler: handleRepositoryContracts },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },
