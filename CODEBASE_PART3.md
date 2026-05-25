@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-25T18:37:27.642Z
+> Auto-generated: 2026-05-25T19:27:27.927Z
 > Files in this part: 45
 
 ## Files
@@ -7692,7 +7692,12 @@ async function enqueueOrRun(req, res, {
 export async function handleScaleHygieneOverview(req, res) {
   try {
     const { getScaleHygieneOverview } = await import('../services/scaleHygiene.js');
-    const overview = await getScaleHygieneOverview();
+
+    // Phase 61.1:
+    // Admin HTTP overview must be fast and artifact/summary based.
+    // Heavy scans remain script/queue/manual.
+    const overview = await getScaleHygieneOverview({ lightweight: true });
+
     return sendJSON(res, 200, { ok: true, overview });
   } catch (err) {
     return sendJSON(res, 500, { error: 'خطأ في جلب نظافة التوسع', code: 'SCALE_HYGIENE_ERROR' });

@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-25T18:37:27.594Z
+> Auto-generated: 2026-05-25T19:27:27.891Z
 > Files in this part: 132
 
 ## Files
@@ -38573,6 +38573,306 @@ export async function getScaleHygieneOverview(options = {}) {
   }
 
   const warnings = [];
+
+  // Phase 61.1:
+  // Lightweight mode is used by HTTP readiness/smoke/admin overview.
+  // It must not trigger heavy filesystem scans. It reads cheap summaries/latest artifacts only.
+  if (options.lightweight) {
+    const [
+      queueStats,
+      marketplaceFreshness,
+      restoreDrillFreshness,
+      schedulerCadence,
+      weeklyOpsReviewFreshness,
+      storagePressure,
+      phase61Evidence,
+      phase61PilotGate,
+      phase61Rollback,
+      repositoryContracts,
+    ] = await Promise.all([
+      import('./opsQueue.js')
+        .then(m => m.getQueueStats())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./marketplaceIntelligenceRollups.js')
+        .then(m => m.getMarketplaceRollupFreshness())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./backupRestoreDrill.js')
+        .then(m => m.getLatestRestoreDrillFreshness())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./schedulerRegistry.js')
+        .then(m => m.getSchedulerCadenceReport({ lightweight: true }))
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./opsReviewRecords.js')
+        .then(m => m.getReviewFreshness('weekly_ops_review', config.OPS_REVIEW_RECORDS?.weeklyReviewMaxAgeDays || 7))
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./storagePressure.js')
+        .then(m => m.getLatestStoragePressureSnapshot().catch(() => null))
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./phase61EvidenceCadence.js')
+        .then(m => m.getEvidenceCadenceStatus())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./pilotDecisionGate.js')
+        .then(m => m.getPilotDecisionGate())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./rollbackRehearsal.js')
+        .then(m => m.getLatestRollbackRehearsal())
+        .catch(err => ({ enabled: false, error: err.message })),
+
+      import('./repositoryContractReport.js')
+        .then(m => m.getRepositoryContractReadiness())
+        .catch(err => ({ enabled: false, error: err.message })),
+    ]);
+
+    if (queueStats.summary && queueStats.summary.stale) {
+      warnings.push({
+        source: 'queue',
+        level: queueStats.summary.mismatchSuspected ? 'critical' : 'warning',
+        message: queueStats.summary.mismatchSuspected
+          ? 'Queue summary appears inflated/unreliable'
+          : 'Queue summary is stale',
+        details: queueStats.summary,
+      });
+    }
+
+    if ((queueStats.byStatus?.['dead-letter'] || 0) > 0) {
+      warnings.push({
+        source: 'queue',
+        level: 'warning',
+        message: 'Queue has dead-letter jobs',
+        details: { deadLetter: queueStats.byStatus['dead-letter'] },
+      });
+    }
+
+    if (marketplaceFreshness && marketplaceFreshness.enabled && marketplaceFreshness.stale) {
+      warnings.push({
+        source: 'marketplace_rollup',
+        level: config.DEPLOYMENT_DISCIPLINE?.requireMarketplaceRollupFreshInProduction ? 'critical' : 'warning',
+        message: marketplaceFreshness.latestGeneratedAt
+          ? 'Marketplace intelligence rollup is stale'
+          : 'Marketplace intelligence rollup is missing',
+        details: marketplaceFreshness,
+      });
+    }
+
+    if (restoreDrillFreshness && restoreDrillFreshness.enabled) {
+      if (!restoreDrillFreshness.latest) {
+        warnings.push({
+          source: 'restore_drill',
+          level: 'warning',
+          message: 'No backup restore drill has been recorded',
+          details: restoreDrillFreshness,
+        });
+      } else if (!restoreDrillFreshness.passed) {
+        warnings.push({
+          source: 'restore_drill',
+          level: 'critical',
+          message: 'Latest backup restore drill failed',
+          details: restoreDrillFreshness,
+        });
+      } else if (!restoreDrillFreshness.fresh) {
+        warnings.push({
+          source: 'restore_drill',
+          level: 'warning',
+          message: 'Latest backup restore drill is stale',
+          details: restoreDrillFreshness,
+        });
+      }
+    }
+
+    if (schedulerCadence && schedulerCadence.staleCount > 0) {
+      warnings.push({
+        source: 'scheduler',
+        level: 'warning',
+        message: `${schedulerCadence.staleCount} scheduler job(s) are stale or failed`,
+        details: {
+          staleCount: schedulerCadence.staleCount,
+          failedCount: schedulerCadence.failedCount || 0,
+        },
+      });
+    }
+
+    if (weeklyOpsReviewFreshness && weeklyOpsReviewFreshness.fresh === false) {
+      warnings.push({
+        source: 'governance',
+        level: 'warning',
+        message: weeklyOpsReviewFreshness.status === 'missing'
+          ? 'Weekly ops review record is missing'
+          : 'Weekly ops review record is stale',
+        details: weeklyOpsReviewFreshness,
+      });
+    }
+
+    if (storagePressure && storagePressure.enabled !== false) {
+      if (storagePressure.status === 'critical') {
+        warnings.push({
+          source: 'storage_pressure',
+          level: 'critical',
+          message: 'Latest storage pressure artifact is critical',
+          details: {
+            id: storagePressure.id || null,
+            timestamp: storagePressure.timestamp || null,
+            warningCount: Array.isArray(storagePressure.warnings) ? storagePressure.warnings.length : 0,
+            criticalCount: Array.isArray(storagePressure.criticals) ? storagePressure.criticals.length : 0,
+          },
+        });
+      } else if (storagePressure.status === 'warning') {
+        warnings.push({
+          source: 'storage_pressure',
+          level: 'warning',
+          message: 'Latest storage pressure artifact has warnings',
+          details: {
+            id: storagePressure.id || null,
+            timestamp: storagePressure.timestamp || null,
+          },
+        });
+      }
+    } else {
+      warnings.push({
+        source: 'storage_pressure',
+        level: 'warning',
+        message: 'No latest storage pressure artifact available',
+        details: {},
+      });
+    }
+
+    if (phase61Evidence && phase61Evidence.enabled !== false) {
+      for (const b of phase61Evidence.blockers || []) {
+        warnings.push({
+          source: 'phase61_evidence',
+          level: 'critical',
+          message: b.message || b.code || 'Phase 61 evidence blocker',
+          details: b,
+        });
+      }
+
+      for (const w of phase61Evidence.warnings || []) {
+        warnings.push({
+          source: 'phase61_evidence',
+          level: w.level || 'warning',
+          message: w.message || w.code || 'Phase 61 evidence warning',
+          details: w,
+        });
+      }
+    }
+
+    if (phase61PilotGate && phase61PilotGate.implementationAllowed) {
+      warnings.push({
+        source: 'phase61_pilot_gate',
+        level: 'critical',
+        message: 'Pilot gate unexpectedly allows implementation',
+        details: phase61PilotGate,
+      });
+    }
+
+    const recommendedActions = [];
+
+    if (queueStats.summary && queueStats.summary.stale) {
+      recommendedActions.push({
+        id: 'queue_summary_repair',
+        label: 'إصلاح ملخص الطابور',
+        severity: queueStats.summary.mismatchSuspected ? 'critical' : 'warning',
+        command: 'node scripts/repair-queue.js --dry-run --json',
+        adminRoute: '/api/admin/queue/repair',
+        reason: queueStats.summary.mismatchSuspected
+          ? 'Queue summary appears inflated/unreliable.'
+          : 'Queue summary is stale.',
+      });
+    }
+
+    if (storagePressure && storagePressure.status === 'critical') {
+      recommendedActions.push({
+        id: 'storage_pressure_recapture_after_queue_repair',
+        label: 'أعد قياس ضغط التخزين بعد إصلاح Queue',
+        severity: 'critical',
+        command: 'node scripts/measure-storage-pressure.js --json --persist',
+        adminRoute: '/api/admin/storage-pressure',
+        reason: 'Latest storage pressure artifact is critical and may include stale queue summary evidence.',
+      });
+    }
+
+    if (phase61Evidence && phase61Evidence.recommendations) {
+      for (const action of phase61Evidence.recommendations.slice(0, 6)) {
+        const normalized = normalizeAction(action);
+        if (normalized) recommendedActions.push(normalized);
+      }
+    }
+
+    if (!phase61Rollback || phase61Rollback.status === 'failed' || !phase61Rollback.status) {
+      recommendedActions.push({
+        id: 'phase61_rollback_rehearsal',
+        label: 'شغّل تدريب الرجوع',
+        severity: phase61Rollback && phase61Rollback.status === 'failed' ? 'critical' : 'warning',
+        command: 'node scripts/run-rollback-rehearsal.js --dry-run --json',
+        adminRoute: '/api/admin/rollback-rehearsal',
+        reason: 'Rollback rehearsal مطلوب قبل أي Pilot مستقبلي.',
+      });
+    }
+
+    if (repositoryContracts && repositoryContracts.recommendations) {
+      for (const action of repositoryContracts.recommendations.slice(0, 4)) {
+        const normalized = normalizeAction(action);
+        if (normalized) recommendedActions.push(normalized);
+      }
+    }
+
+    warnings.sort((a, b) => severityRank(b.level) - severityRank(a.level));
+    recommendedActions.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+
+    const status = warnings.some(w => severityRank(w.level) >= 4)
+      ? 'critical'
+      : warnings.length > 0
+        ? 'warnings'
+        : 'healthy';
+
+    return {
+      enabled: true,
+      lightweight: true,
+      status,
+      generatedAt: nowIso(),
+      queue: {
+        stats: queueStats,
+        archives: { skipped: true, reason: 'lightweight_mode' },
+      },
+      audit: { enabled: true, skipped: true, reason: 'lightweight_mode' },
+      workrooms: { enabled: true, skipped: true, reason: 'lightweight_mode' },
+      trust: { enabled: true, skipped: true, reason: 'lightweight_mode' },
+      predictiveArchive: { enabled: true, skipped: true, reason: 'lightweight_mode' },
+      schedulerHistory: { enabled: true, skipped: true, reason: 'lightweight_mode' },
+      storagePressure: storagePressure || {
+        enabled: true,
+        status: 'missing',
+      },
+      marketplace: {
+        freshness: marketplaceFreshness,
+      },
+      restoreDrill: {
+        freshness: restoreDrillFreshness,
+      },
+      schedulerCadence,
+      governance: {
+        reviews: {
+          weeklyOpsReview: weeklyOpsReviewFreshness || null,
+        },
+      },
+      phase61: {
+        evidenceCadence: phase61Evidence || { enabled: false, status: 'unknown' },
+        pilotGate: phase61PilotGate || { enabled: false, pilotAllowed: false, implementationAllowed: false },
+        rollbackRehearsal: phase61Rollback || null,
+        repositoryContracts: repositoryContracts || { enabled: false, status: 'unknown' },
+      },
+      recommendedActions: recommendedActions.slice(0, 12),
+      warnings: warnings.slice(0, 50),
+      warningCount: warnings.length,
+    };
+  }
 
   const [
     queueStats,
