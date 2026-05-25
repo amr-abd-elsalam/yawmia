@@ -93,7 +93,45 @@ export async function handleScaleHygieneOverview(req, res) {
     // Phase 61.1:
     // Admin HTTP overview must be fast and artifact/summary based.
     // Heavy scans remain script/queue/manual.
-    const overview = await getScaleHygieneOverview({ lightweight: true });
+    //
+    // Phase 61.1 hardening:
+    // Smoke/readiness paths must never hang behind a slow artifact reader,
+    // stale lock, or accidental expensive dependency. If lightweight overview
+    // does not finish quickly, return a degraded advisory response instead of
+    // timing out the deploy smoke test.
+    const timeoutMs = Math.min(4000, Math.max(500, parseInt(req.query.timeoutMs) || 3500));
+
+    const overview = await Promise.race([
+      getScaleHygieneOverview({ lightweight: true }),
+      new Promise(resolve => setTimeout(() => resolve({
+        enabled: true,
+        generatedAt: new Date().toISOString(),
+        status: 'warning',
+        degraded: true,
+        timeoutMs,
+        warnings: [
+          {
+            source: 'scale_hygiene',
+            level: 'warning',
+            message: 'Scale hygiene lightweight overview timed out and returned degraded smoke-safe response',
+            details: {
+              timeoutMs,
+              recommendation: 'Run node scripts/measure-storage-pressure.js --json --persist and inspect server logs.',
+            },
+          },
+        ],
+        recommendedActions: [
+          {
+            id: 'scale_hygiene_overview_timeout',
+            label: 'راجع Scale Hygiene HTTP overview',
+            severity: 'warning',
+            command: 'node scripts/measure-storage-pressure.js --json --persist',
+            adminRoute: '/api/admin/scale-hygiene/overview',
+            reason: 'Lightweight scale hygiene overview exceeded the smoke-safe timeout.',
+          },
+        ],
+      }), timeoutMs)),
+    ]);
 
     return sendJSON(res, 200, { ok: true, overview });
   } catch (err) {
