@@ -48,7 +48,7 @@ function ageDays(iso) {
 
 async function latestFromCollection(collection, predicate = null) {
   try {
-    const rows = await listJSON(getCollectionPath(collection));
+    const rows = await listJSON(getCollectionPath(collection), { tolerateCorrupt: true });
     const filtered = rows.filter(r => {
       if (!r || typeof r !== 'object') return false;
       if (predicate && !predicate(r)) return false;
@@ -70,13 +70,33 @@ async function latestFromCollection(collection, predicate = null) {
 function compactArtifact(row, kind) {
   if (!row) return null;
   const ts = row.timestamp || row.generatedAt || row.completedAt || row.startedAt || row.createdAt || null;
+
+  const evidenceUsable = row.evidenceUsable !== undefined
+    ? !!row.evidenceUsable
+    : (row.summary && row.summary.evidenceUsable !== undefined ? !!row.summary.evidenceUsable : undefined);
+
+  const corruptionSuspected = row.corruptionSuspected !== undefined
+    ? !!row.corruptionSuspected
+    : !!(row.summary && row.summary.corruptionSuspected);
+
+  let status = row.status || (row.ok === true ? 'passed' : row.ok === false ? 'failed' : 'unknown');
+
+  // Phase 61.1:
+  // A benchmark with corruption/errors must not be treated as valid pilot/externalization evidence.
+  if (kind === 'benchmark' && evidenceUsable === false) {
+    status = 'failed';
+  }
+
   return {
     kind,
     id: row.id || null,
-    status: row.status || (row.ok === true ? 'passed' : row.ok === false ? 'failed' : 'unknown'),
+    status,
     timestamp: ts,
     ageDays: ageDays(ts),
     ok: row.ok !== undefined ? !!row.ok : undefined,
+    evidenceUsable,
+    corruptionSuspected,
+    evidenceNotes: Array.isArray(row.evidenceNotes) ? row.evidenceNotes.slice(0, 5) : [],
     warningCount: Array.isArray(row.warnings) ? row.warnings.length : (row.summary?.warningCount || 0),
     criticalCount: Array.isArray(row.criticals) ? row.criticals.length : (row.summary?.criticalCount || 0),
     errorCount: Array.isArray(row.errors) ? row.errors.length : (row.summary?.errorCount || 0),
@@ -155,6 +175,17 @@ export function evaluateEvidenceFreshness(evidence, options = {}) {
         recommendation: recommendationForKind(kind),
       });
     }
+
+    if (kind === 'benchmark' && artifact.evidenceUsable === false) {
+      blockers.push({
+        code: 'benchmark_not_usable_as_evidence',
+        level: 'critical',
+        message: artifact.corruptionSuspected
+          ? 'Latest benchmark is not usable as evidence because JSON corruption is suspected'
+          : 'Latest benchmark is not usable as externalization evidence',
+        recommendation: 'node scripts/verify-data-json.js --strict && node scripts/benchmark-file-paths.js --json --persist',
+      });
+    }
   }
 
   let status = 'fresh';
@@ -221,6 +252,7 @@ export function buildEvidenceCadenceRecommendations(status) {
 function labelFromCode(code) {
   if (!code) return 'راجع Evidence Cadence';
   if (code.includes('storagePressure')) return 'شغّل قياس ضغط التخزين';
+  if (code.includes('benchmark_not_usable')) return 'أصلح سلامة البيانات ثم أعد Benchmark';
   if (code.includes('benchmark')) return 'شغّل Benchmark محفوظ';
   if (code.includes('scaleThresholds')) return 'تحقق من حدود التوسع';
   if (code.includes('externalizationDecision')) return 'احفظ قرار externalization';

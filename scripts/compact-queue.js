@@ -20,9 +20,12 @@ function getArg(name, fallback = '') {
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const JSON_OUT = process.argv.includes('--json');
   const status = getArg('status', '');
 
-  console.log(`\n🧹 يوميّة Queue Compaction${dryRun ? ' (DRY RUN)' : ''}\n`);
+  if (!JSON_OUT) {
+    console.log(`\n🧹 يوميّة Queue Compaction${dryRun ? ' (DRY RUN)' : ''}\n`);
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -34,12 +37,18 @@ async function main() {
     status: status || undefined,
   });
 
+  if (JSON_OUT) {
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(result.ok === false ? 1 : 0);
+  }
+
   if (result.skipped) {
     console.log(`⚠️ Skipped: ${result.reason}`);
     process.exit(0);
   }
 
   console.log('✅ Queue compaction complete');
+  console.log(`   dryRun: ${dryRun ? 'yes' : 'no'}`);
   console.log(`   archived: ${result.archive?.archived || 0}`);
   console.log(`   archive scanned: ${result.archive?.scanned || 0}`);
   console.log(`   idempotency cleaned: ${result.idempotency?.cleaned || 0}`);
@@ -48,7 +57,16 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Queue compaction failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      dryRun,
+      error: err.message,
+      stack: err.stack,
+    }, null, 2));
+  } else {
+    console.error('\n❌ Queue compaction failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });

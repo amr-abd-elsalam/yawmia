@@ -21,6 +21,8 @@ function getArg(name, fallback = '') {
 
 const BASE = (getArg('base', '') || `http://localhost:${process.env.PORT || 3002}`).replace(/\/+$/, '');
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const JSON_OUT = process.argv.includes('--json');
+const DEFAULT_TIMEOUT_MS = Number.parseInt(getArg('timeout-ms', '5000'), 10) || 5000;
 
 async function check(name, path, options = {}) {
   const url = BASE + path;
@@ -28,7 +30,7 @@ async function check(name, path, options = {}) {
 
   try {
     const headers = options.admin && ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {};
-    const res = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(options.timeoutMs || 10000) });
+    const res = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(options.timeoutMs || DEFAULT_TIMEOUT_MS) });
     const durationMs = Date.now() - started;
 
     const ok = options.allowStatuses
@@ -55,8 +57,10 @@ async function check(name, path, options = {}) {
 }
 
 async function main() {
-  console.log(`\n🚬 يوميّة Post-Deploy Smoke\n`);
-  console.log(`Base: ${BASE}\n`);
+  if (!JSON_OUT) {
+    console.log(`\n🚬 يوميّة Post-Deploy Smoke\n`);
+    console.log(`Base: ${BASE}\n`);
+  }
 
   const checks = [
     ['health', '/api/health'],
@@ -80,23 +84,51 @@ async function main() {
     const result = await check(name, path, options || {});
     results.push(result);
 
-    const icon = result.ok ? '✅' : '❌';
-    console.log(`${icon} ${name}: ${result.status} (${result.durationMs}ms) ${result.error || ''}`);
+    if (!JSON_OUT) {
+      const icon = result.ok ? '✅' : '❌';
+      console.log(`${icon} ${name}: ${result.status} (${result.durationMs}ms) ${result.error || ''}`);
+    }
   }
 
   const failed = results.filter(r => !r.ok);
 
-  console.log('');
-  if (failed.length > 0) {
-    console.log(`❌ Smoke failed: ${failed.length} check(s) failed`);
-    process.exit(1);
+  const output = {
+    ok: failed.length === 0,
+    base: BASE,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    results,
+    failed,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log('');
+    if (failed.length > 0) {
+      console.log(`❌ Smoke failed: ${failed.length} check(s) failed`);
+      process.exit(1);
+    }
+
+    console.log('✅ Post-deploy smoke passed\n');
   }
 
-  console.log('✅ Post-deploy smoke passed\n');
+  if (failed.length > 0) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Smoke script failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      base: BASE,
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+      error: err.message,
+      stack: err.stack,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Smoke script failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });

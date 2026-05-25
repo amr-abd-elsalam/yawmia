@@ -550,14 +550,14 @@ async function listSegmentStatus(status, options = {}) {
 
     for (const month of months) {
       const dir = join(root, month);
-      const rows = await listJSON(dir).catch(() => []);
+      const rows = await listJSON(dir, { tolerateCorrupt: true }).catch(() => []);
       for (const row of rows) results.push(row);
     }
 
     return results;
   }
 
-  return await listJSON(root).catch(() => []);
+  return await listJSON(root, { tolerateCorrupt: true }).catch(() => []);
 }
 
 /**
@@ -575,7 +575,7 @@ export async function listQueueRecords(options = {}) {
 
     // Legacy fallback for active mixed layout when requested status is not DLQ.
     if (cfg().legacyReadFallback !== false && status !== DEAD_LETTER_STATUS) {
-      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacyRows = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       rows.push(...legacyRows.filter(j => j && normalizeStatus(j.status) === status));
     }
   } else {
@@ -589,7 +589,7 @@ export async function listQueueRecords(options = {}) {
     }
 
     if (cfg().legacyReadFallback !== false) {
-      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacyRows = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       rows.push(...legacyRows);
     }
   }
@@ -639,7 +639,7 @@ export async function rebuildQueueSummary() {
 
     // Legacy flat records.
     if (cfg().legacyReadFallback !== false) {
-      const legacy = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacy = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       for (const job of legacy) {
         if (!job || !job.id || !job.id.startsWith('q_')) continue;
         if (summary.locations[job.id]) continue;
@@ -659,7 +659,7 @@ export async function rebuildQueueSummary() {
         };
       }
 
-      const legacyDlq = await listJSON(getCollectionPath('ops_queue_dead_letter')).catch(() => []);
+      const legacyDlq = await listJSON(getCollectionPath('ops_queue_dead_letter'), { tolerateCorrupt: true }).catch(() => []);
       for (const job of legacyDlq) {
         if (!job || !job.id || !job.id.startsWith('q_')) continue;
         if (summary.locations[job.id]) continue;

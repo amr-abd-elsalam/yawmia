@@ -76,6 +76,14 @@ async function main() {
       console.log('');
     }
 
+    if (result.details && result.details.summaryMismatches && result.details.summaryMismatches.length > 0) {
+      console.log('Summary mismatches:');
+      for (const m of result.details.summaryMismatches) {
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount}`);
+      }
+      console.log('');
+    }
+
     if (result.recommendedActions && result.recommendedActions.length > 0) {
       console.log('Recommended actions:');
       for (const a of result.recommendedActions.slice(0, 10)) {

@@ -153,47 +153,16 @@ var AdminApp = (function () {
       initAdminTabs();
       // Phase 48 — Connect to admin SSE channel
       connectAdminSse();
-      // Load remaining data in parallel
+      // Phase 61.1:
+      // Keep initial admin login lightweight.
+      // Heavy scale/evidence/rehearsal/marketplace/governance panels are loaded lazily by tabs.
       Promise.all([
         loadHealth(),
-        loadUsers(),
-        loadJobs(),
-        loadFinancials(),
-        loadReports(),
-        loadVerifications(),
         loadAnalytics(),
+        loadFinancials(),
         loadMonitoring(),
         loadProductionReadiness(),
-        loadInstanceOps(),
-        loadSchedulers(),
-        loadOpsSlo(),
-        loadRestoreDrills(),
-        loadIncidents(),
-        loadMaintenanceMode(),
-        loadDirectOffersDashboard(),
-        loadAbuseSignals(),
-        loadPredictiveAbuseDashboard(),
-        loadPredictivePrecision(),
-        loadDecisionQuality(),
-        loadOpsQueueStats(),
-        loadAlertDeliveries(),
-        loadAuditIndexStatus(),
-        loadExports(),
-        loadCounterHygiene(),
-        loadTrustDashboard(),
-        loadTrustCalibrationDashboard(),
-        loadStoragePressure(),
-        loadExternalizationReadiness(),
-        loadPhase60Decision(),
-        loadMigrationRehearsal(),
-        loadBenchmarkHistory(),
-        loadMultiInstanceBoundary(),
-        loadPhase61Evidence(),
-        loadPilotGate(),
-        loadRollbackRehearsal(),
-        loadRepositoryContracts(),
-        loadScaleHygiene(),
-        loadGovernanceDashboard(),
+        loadDeploymentGate(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');

@@ -75,7 +75,7 @@ async function collectPostmortemBacklog() {
 /**
  * Get unified scale hygiene overview.
  */
-export async function getScaleHygieneOverview() {
+export async function getScaleHygieneOverview(options = {}) {
   if (!isEnabled()) {
     return {
       enabled: false,
@@ -111,7 +111,9 @@ export async function getScaleHygieneOverview() {
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
     import('./auditLogIndex.js').then(m => m.getAuditIndexHygieneStats()).catch(err => ({ enabled: false, error: err.message })),
-    import('./workroomHygiene.js').then(m => m.getWorkroomHygieneOverview({ limit: 200 })).catch(err => ({ enabled: false, error: err.message })),
+    import('./workroomHygiene.js')
+      .then(m => m.getWorkroomHygieneOverview({ limit: options.lightweight ? 50 : 200 }))
+      .catch(err => ({ enabled: false, error: err.message })),
     import('./trustSnapshotRollups.js').then(m => m.getTrustRetentionStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./predictiveArchiveIndex.js').then(m => m.getPredictiveArchiveIndexStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./schedulerRunHistory.js').then(m => m.getSchedulerHistoryStats()).catch(err => ({ enabled: false, error: err.message })),
@@ -133,7 +135,34 @@ export async function getScaleHygieneOverview() {
       .then(m => m.getRbacMatrix())
       .catch(err => ({ enabled: false, error: err.message })),
     import('./storagePressure.js')
-      .then(m => m.getStoragePressure({ persist: false }))
+      .then(async (m) => {
+        if (options.lightweight) {
+          const latest = await m.getLatestStoragePressureSnapshot().catch(() => null);
+          if (!latest) {
+            return {
+              enabled: true,
+              status: 'missing',
+              warnings: [{
+                level: 'warning',
+                code: 'STORAGE_PRESSURE_SNAPSHOT_MISSING',
+                message: 'No persisted storage pressure snapshot exists. Run the script instead of scanning from HTTP.',
+              }],
+              criticals: [],
+              recommendations: [{
+                id: 'capture_storage_pressure',
+                label: 'قياس ضغط التخزين',
+                severity: 'warning',
+                command: 'node scripts/measure-storage-pressure.js --json --persist',
+                adminRoute: '/api/admin/storage-pressure/capture',
+                reason: 'Scale hygiene lightweight mode uses persisted artifacts only.',
+              }],
+            };
+          }
+          return latest;
+        }
+
+        return m.getStoragePressure({ persist: false });
+      })
       .catch(err => ({ enabled: false, error: err.message })),
     import('./phase60Readiness.js')
       .then(m => m.getPhase60EvidenceSummary())

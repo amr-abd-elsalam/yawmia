@@ -126,7 +126,12 @@ async function checkCriticalIndexes() {
 async function checkScaleHygiene() {
   try {
     const { getScaleHygieneOverview } = await import('./scaleHygiene.js');
-    const overview = await getScaleHygieneOverview();
+
+    // Phase 61.1:
+    // Production readiness must be a fast gate.
+    // It must not trigger live storage pressure scans, benchmarks, snapshot exports,
+    // migration rehearsals, or any heavy filesystem aggregation.
+    const overview = await getScaleHygieneOverview({ lightweight: true });
 
     if (!overview.enabled) {
       return check('scale_hygiene', 'warn', 'Scale hygiene overview is disabled');
@@ -135,16 +140,20 @@ async function checkScaleHygiene() {
     if (overview.status === 'critical') {
       return check('scale_hygiene', 'fail', 'Scale hygiene has critical warnings', {
         warningCount: overview.warningCount || 0,
+        lightweight: true,
       });
     }
 
     if (overview.status === 'warnings') {
       return check('scale_hygiene', 'warn', 'Scale hygiene has warnings', {
         warningCount: overview.warningCount || 0,
+        lightweight: true,
       });
     }
 
-    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy');
+    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy', {
+      lightweight: true,
+    });
   } catch (err) {
     return check('scale_hygiene', 'warn', 'Could not evaluate scale hygiene', { error: err.message });
   }

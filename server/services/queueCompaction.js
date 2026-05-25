@@ -328,7 +328,7 @@ export async function captureSlowJobDiagnostics(options = {}) {
     }))
     .sort((a, b) => b.ageMs - a.ageMs);
 
-  if (slowJobs.length > 0) {
+  if (slowJobs.length > 0 && !options.dryRun) {
     const filePath = join(BASE_PATH, 'metrics/scale-hygiene/queue-slow-jobs.json');
     await atomicWrite(filePath, {
       generatedAt: nowIso(),

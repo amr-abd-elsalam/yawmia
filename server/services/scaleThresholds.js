@@ -324,6 +324,12 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
   };
 
   const byStatus = queueStats.byStatus || queueStats.statusCounts || {};
+  const summary = queueStats.summary || {};
+  const summaryUnreliable = !!(
+    summary.stale ||
+    summary.mismatchSuspected ||
+    summary.staleReason === 'status_total_exceeds_location_count'
+  );
 
   const checks = [
     {
@@ -356,8 +362,21 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
   ];
 
   for (const check of checks) {
-    const status = evaluateThreshold(check.value, check.warning, check.critical);
-    result.evaluations[check.key] = { ...check, status };
+    const rawStatus = evaluateThreshold(check.value, check.warning, check.critical);
+
+    // Phase 61.1:
+    // If queue summary/location index is unreliable, do not turn inflated
+    // pending/running/dead-letter numbers into hard scale pressure evidence.
+    // Report the summary problem separately and ask for verify/repair first.
+    const status = summaryUnreliable ? 'ok' : rawStatus;
+
+    result.evaluations[check.key] = {
+      ...check,
+      status,
+      rawStatus,
+      ignoredDueToUnreliableSummary: summaryUnreliable,
+    };
+
     result.status = worseStatus(result.status, status);
 
     if (status !== 'ok') {
@@ -373,7 +392,18 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
     }
   }
 
-  const summary = queueStats.summary || {};
+  if (summaryUnreliable) {
+    result.status = worseStatus(result.status, 'warning');
+    pushIssue(result, 'warning', {
+      code: 'QUEUE_SUMMARY_UNRELIABLE',
+      scope: 'ops_queue_summary',
+      metric: 'summaryReliability',
+      value: summary.staleReason || 'unreliable',
+      threshold: 'verified_summary',
+      message: 'Queue summary/location index is unreliable; active queue counts are ignored for scale pressure until repaired.',
+      recommendation: 'شغّل verify-queue ثم repair-queue --dry-run. لا تعتبر inflated queue stats دليل external queue.',
+    });
+  }
   if (summary.lastUpdatedAt) {
     const ageMs = Date.now() - new Date(summary.lastUpdatedAt).getTime();
     const ageMinutes = Math.round(ageMs / 60000);
@@ -742,11 +772,15 @@ export async function verifyScaleThresholds(options = {}) {
 
   if (!snapshot) {
     const storagePressure = await import('./storagePressure.js').catch(() => null);
-    if (storagePressure && storagePressure.getStoragePressure) {
-      snapshot = await storagePressure.getStoragePressure({
-        deep: !!options.deep,
-        persist: options.persist !== false,
-      }).catch(() => null);
+    if (storagePressure) {
+      if (options.latestOnly && storagePressure.getLatestStoragePressureSnapshot) {
+        snapshot = await storagePressure.getLatestStoragePressureSnapshot().catch(() => null);
+      } else if (storagePressure.getStoragePressure) {
+        snapshot = await storagePressure.getStoragePressure({
+          deep: !!options.deep,
+          persist: options.persist !== false,
+        }).catch(() => null);
+      }
     }
   }
 

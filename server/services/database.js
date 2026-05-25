@@ -312,20 +312,55 @@ export async function deleteJSON(filePath) {
 
 /**
  * List all JSON files in a directory (shard-aware)
- * For sharded collections: also walks shard subdirectories
+ * For sharded collections: also walks shard subdirectories.
+ *
+ * Default behavior remains STRICT: one corrupt JSON file throws.
+ *
+ * Phase 61.1:
+ * - options.tolerateCorrupt=true lets bulk/admin/public scan paths skip corrupt files
+ *   without crashing the whole operation.
+ * - options.onCorrupt receives { filePath, fileName, error, shard? }.
+ *
  * @param {string} dirPath
- * @param {{ prefix?: string }} [options] — optional prefix filter for filenames
+ * @param {{ prefix?: string, tolerateCorrupt?: boolean, onCorrupt?: Function }} [options]
  */
 export async function listJSON(dirPath, options = {}) {
+  const tolerateCorrupt = !!options.tolerateCorrupt;
+  const onCorrupt = typeof options.onCorrupt === 'function' ? options.onCorrupt : null;
+
+  async function readOne(filePath, fileName, shard = null) {
+    try {
+      return await readJSON(filePath);
+    } catch (err) {
+      if (!tolerateCorrupt) throw err;
+
+      if (onCorrupt) {
+        try {
+          onCorrupt({
+            filePath,
+            fileName,
+            shard,
+            error: err && err.message ? err.message : String(err),
+          });
+        } catch (_) {
+          // onCorrupt must never break tolerant scans.
+        }
+      }
+
+      return null;
+    }
+  }
+
   try {
     const files = await readdir(dirPath);
     let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
     if (options.prefix) {
       jsonFiles = jsonFiles.filter(f => f.startsWith(options.prefix));
     }
+
     const results = [];
     for (const file of jsonFiles) {
-      const data = await readJSON(join(dirPath, file));
+      const data = await readOne(join(dirPath, file), file, null);
       if (data) results.push(data);
     }
 
@@ -340,10 +375,14 @@ export async function listJSON(dirPath, options = {}) {
           shardJsonFiles = shardJsonFiles.filter(f => f.startsWith(options.prefix));
         }
         for (const file of shardJsonFiles) {
-          const data = await readJSON(join(shardPath, file));
+          const data = await readOne(join(shardPath, file), file, shard);
           if (data) results.push(data);
         }
-      } catch {
+      } catch (err) {
+        if (!tolerateCorrupt) {
+          // Preserve prior behavior for directory-level failures in strict mode.
+          // Historically shard dir failures were skipped; keep that behavior.
+        }
         // Skip inaccessible shard dir
       }
     }
@@ -353,6 +392,30 @@ export async function listJSON(dirPath, options = {}) {
     if (err.code === 'ENOENT') return [];
     throw err;
   }
+}
+
+/**
+ * Phase 61.1: corruption-tolerant list helper.
+ *
+ * Returns items + warnings without throwing on corrupt JSON files.
+ * Direct reads should still use readJSON()/safeReadJSON() depending on semantics.
+ *
+ * @param {string} dirPath
+ * @param {{ prefix?: string }} [options]
+ * @returns {Promise<{ items: object[], warnings: object[] }>}
+ */
+export async function safeListJSON(dirPath, options = {}) {
+  const warnings = [];
+  const items = await listJSON(dirPath, {
+    ...options,
+    tolerateCorrupt: true,
+    onCorrupt: (warning) => warnings.push({
+      type: 'corrupt_json_skipped',
+      ...warning,
+    }),
+  });
+
+  return { items, warnings };
 }
 
 /**

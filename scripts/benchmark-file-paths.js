@@ -87,7 +87,10 @@ async function bench(label, fn, iterations = SAMPLE) {
 async function getFirstRecord(collection, prefix) {
   try {
     const { getCollectionPath, listJSON } = await import('../server/services/database.js');
-    const rows = await listJSON(getCollectionPath(collection), prefix ? { prefix } : {});
+    const rows = await listJSON(getCollectionPath(collection), {
+      ...(prefix ? { prefix } : {}),
+      tolerateCorrupt: true,
+    });
     return rows.find(r => r && r.id) || null;
   } catch (_) {
     return null;
@@ -203,10 +206,25 @@ async function main() {
     await listApprovals({ limit: 20 });
   }));
 
-  results.push(await bench('storage pressure shallow scan', async () => {
-    const { getStoragePressure } = await import('../server/services/storagePressure.js');
-    await getStoragePressure({ force: true, persist: false });
-  }, Math.max(1, Math.min(SAMPLE, 3))));
+  if (INCLUDE_HEAVY) {
+    results.push(await bench('storage pressure shallow scan', async () => {
+      const { getStoragePressure } = await import('../server/services/storagePressure.js');
+      await getStoragePressure({ force: true, persist: false });
+    }, Math.max(1, Math.min(SAMPLE, 3))));
+  } else {
+    results.push({
+      label: 'storage pressure shallow scan',
+      skipped: true,
+      skipReason: 'heavy scan skipped by default; use --include-heavy',
+      error: null,
+      count: 0,
+      avgMs: 0,
+      minMs: 0,
+      maxMs: 0,
+      p50Ms: 0,
+      p95Ms: 0,
+    });
+  }
 
   const warningThresholdMs = 1000;
   const criticalThresholdMs = 3000;
@@ -217,9 +235,29 @@ async function main() {
     .filter(r => !r.skipped && !r.error)
     .sort((a, b) => (b.p95Ms || 0) - (a.p95Ms || 0))[0] || null;
 
+  const corruptionSuspected = errorRows.some(r =>
+    /json|unexpected token|\\u0000|nul|null byte|parse/i.test(String(r.error || ''))
+  );
+
+  const evidenceUsable = errorRows.length === 0 && !corruptionSuspected;
+
+  const evidenceNotes = [];
+  if (!evidenceUsable) {
+    evidenceNotes.push('Benchmark contains errors; do not use as externalization evidence until data integrity is repaired.');
+  }
+  if (corruptionSuspected) {
+    evidenceNotes.push('JSON corruption is suspected from benchmark errors.');
+  }
+  if (!INCLUDE_HEAVY) {
+    evidenceNotes.push('Heavy storage pressure scan skipped by default. Use --include-heavy for manual/off-peak measurement.');
+  }
+
   const output = {
     id: 'bmk_' + Date.now().toString(36),
     ok: errorRows.length === 0,
+    evidenceUsable,
+    corruptionSuspected,
+    evidenceNotes,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
     version: '0.57.0',
@@ -234,6 +272,8 @@ async function main() {
       criticalCount: criticalRows.length,
       errorCount: errorRows.length,
       errorPaths: errorRows.map(r => r.label),
+      evidenceUsable,
+      corruptionSuspected,
     },
     results,
   };
@@ -248,6 +288,8 @@ async function main() {
       output.persisted = false;
       output.persistError = err.message;
       output.ok = false;
+      output.evidenceUsable = false;
+      output.evidenceNotes.push('Benchmark persistence failed; artifact should not be used as evidence.');
     }
   }
 
@@ -277,6 +319,11 @@ async function main() {
     console.log(`  Warnings: ${output.summary.warningCount}`);
     console.log(`  Criticals: ${output.summary.criticalCount}`);
     console.log(`  Errors: ${output.summary.errorCount}`);
+    console.log(`  Evidence usable: ${output.evidenceUsable ? 'yes' : 'no'}`);
+    if (output.evidenceNotes.length > 0) {
+      console.log('  Evidence notes:');
+      for (const note of output.evidenceNotes) console.log(`    - ${note}`);
+    }
     if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');

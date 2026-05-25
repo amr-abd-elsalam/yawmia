@@ -19,10 +19,31 @@ const STRICT = process.argv.includes('--strict');
 const MAX_FILES = Number.parseInt(getArg('max-files', '300000'), 10) || 300000;
 const DATA_PATH = process.env.YAWMIA_DATA_PATH || './data';
 
+let config = null;
+try {
+  config = (await import('../config.js')).default;
+} catch (_) {
+  config = null;
+}
+
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
   const found = process.argv.find(a => a.startsWith(prefix));
   return found ? found.slice(prefix.length) : fallback;
+}
+
+function inferCollection(filePath) {
+  if (!config || !config.DATABASE || !config.DATABASE.dirs) return null;
+  const rel = relative(DATA_PATH, filePath).replace(/\\/g, '/');
+
+  for (const [collection, dir] of Object.entries(config.DATABASE.dirs)) {
+    const normalizedDir = String(dir).replace(/\\/g, '/');
+    if (rel === normalizedDir || rel.startsWith(normalizedDir + '/')) {
+      return collection;
+    }
+  }
+
+  return null;
 }
 
 function isHelp() {
@@ -74,10 +95,17 @@ async function walk(dir, out, state) {
       const nulIndex = buf.indexOf(0);
       if (nulIndex !== -1) {
         const st = await stat(full).catch(() => ({ size: buf.length }));
+        let nulCount = 0;
+        for (const b of buf) {
+          if (b === 0) nulCount++;
+        }
+
         out.push({
           path: relative(process.cwd(), full),
+          collection: inferCollection(full),
           sizeBytes: st.size,
           nulIndex,
+          nulCount,
         });
       }
     } catch (err) {
@@ -125,7 +153,7 @@ if (JSON_OUT) {
   if (findings.length > 0) {
     console.log('\nFindings:');
     for (const f of findings.slice(0, 50)) {
-      console.log(`- ${f.path} size=${f.sizeBytes} nulIndex=${f.nulIndex}`);
+      console.log(`- ${f.path} collection=${f.collection || '-'} size=${f.sizeBytes} nulIndex=${f.nulIndex} nulCount=${f.nulCount}`);
     }
   }
 

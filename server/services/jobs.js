@@ -135,8 +135,13 @@ export async function list(filters = {}) {
         });
         const results = [];
         for (const id of matchedIds) {
-          const job = await readJSON(getRecordPath('jobs', id));
-          if (job) results.push(job);
+          try {
+            const job = await readJSON(getRecordPath('jobs', id));
+            if (job) results.push(job);
+          } catch (_) {
+            // Phase 61.1: corrupt candidate job must not break public listing.
+            // Data integrity scripts/admin readiness will report the corrupt file.
+          }
         }
         jobs = results;
         usedQueryIndex = true;
@@ -146,7 +151,7 @@ export async function list(filters = {}) {
 
   if (!usedQueryIndex) {
     const jobsDir = getCollectionPath('jobs');
-    const allJobs = await listJSON(jobsDir);
+    const allJobs = await listJSON(jobsDir, { tolerateCorrupt: true });
     // Filter out index.json (not a job record)
     jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
   }
@@ -449,7 +454,7 @@ export async function incrementAccepted(jobId) {
  */
 export async function listAll() {
   const jobsDir = getCollectionPath('jobs');
-  const allJobs = await listJSON(jobsDir);
+  const allJobs = await listJSON(jobsDir, { tolerateCorrupt: true });
   return allJobs.filter(item => item.id && item.id.startsWith('job_'));
 }
 
@@ -576,7 +581,15 @@ export async function enforceExpiredJobs() {
   const BATCH_SIZE = 100;
 
   for (let i = 0; i < jsonFiles.length; i++) {
-    const job = await readJSON(jsonFiles[i].filePath);
+    let job = null;
+    try {
+      job = await readJSON(jsonFiles[i].filePath);
+    } catch (_) {
+      // Phase 61.1: corrupt job file must not stop expiry enforcement.
+      // verify-data-json/find-null-json-files are responsible for reporting details.
+      job = null;
+    }
+
     if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);

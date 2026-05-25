@@ -8,8 +8,10 @@
 //   node scripts/verify-scale-thresholds.js --strict
 //   node scripts/verify-scale-thresholds.js --fail-on-warning
 //   node scripts/verify-scale-thresholds.js --deep
+//   node scripts/verify-scale-thresholds.js --latest-only
 //
 // Default scan is shallow. Deep scan requires --deep.
+// Phase 61.1: --latest-only reads persisted artifacts only and never scans.
 // Exits 1 on critical in --strict mode, or on warning with --fail-on-warning.
 // ═══════════════════════════════════════════════════════════════
 
@@ -22,6 +24,7 @@ const JSON_OUT = process.argv.includes('--json');
 const STRICT = process.argv.includes('--strict');
 const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
 const DEEP = process.argv.includes('--deep');
+const LATEST_ONLY = process.argv.includes('--latest-only');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -48,20 +51,29 @@ async function main() {
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { getStoragePressure } = await import('../server/services/storagePressure.js');
+  const storagePressure = await import('../server/services/storagePressure.js');
   const { verifyScaleThresholds } = await import('../server/services/scaleThresholds.js');
 
-  const pressureSnapshot = await getStoragePressure({
-    force: true,
-    persist: false,
-    deep: DEEP,
-    collection: collection || undefined,
-  });
+  let pressureSnapshot = null;
+
+  if (LATEST_ONLY) {
+    pressureSnapshot = storagePressure.getLatestStoragePressureSnapshot
+      ? await storagePressure.getLatestStoragePressureSnapshot().catch(() => null)
+      : null;
+  } else {
+    pressureSnapshot = await storagePressure.getStoragePressure({
+      force: true,
+      persist: false,
+      deep: DEEP,
+      collection: collection || undefined,
+    });
+  }
 
   const verification = await verifyScaleThresholds({
     pressureSnapshot,
     persist: false,
     deep: DEEP,
+    latestOnly: LATEST_ONLY,
   });
 
   const warningCount = Array.isArray(verification.warnings) ? verification.warnings.length : 0;
@@ -73,28 +85,29 @@ async function main() {
     strict: STRICT,
     failOnWarning: FAIL_ON_WARNING,
     deep: DEEP,
+    latestOnly: LATEST_ONLY,
     collection: collection || null,
     generatedAt: new Date().toISOString(),
     summary: {
       warnings: warningCount,
       criticals: criticalCount,
       recommendations: Array.isArray(verification.recommendations) ? verification.recommendations.length : 0,
-      scannedFiles: pressureSnapshot.scannedFiles || 0,
-      scanMode: pressureSnapshot.mode || 'shallow',
-      scanDurationMs: pressureSnapshot.durationMs || 0,
+      scannedFiles: pressureSnapshot ? (pressureSnapshot.scannedFiles || 0) : 0,
+      scanMode: LATEST_ONLY ? 'latest-only' : (pressureSnapshot ? (pressureSnapshot.mode || 'shallow') : 'unavailable'),
+      scanDurationMs: LATEST_ONLY ? 0 : (pressureSnapshot ? (pressureSnapshot.durationMs || 0) : 0),
     },
     warnings: verification.warnings || [],
     criticals: verification.criticals || [],
     recommendations: verification.recommendations || [],
-    snapshot: {
+    snapshot: pressureSnapshot ? {
       id: pressureSnapshot.id || null,
       timestamp: pressureSnapshot.timestamp || null,
       status: pressureSnapshot.status || null,
-      mode: pressureSnapshot.mode || 'shallow',
+      mode: LATEST_ONLY ? 'latest-only' : (pressureSnapshot.mode || 'shallow'),
       truncated: !!pressureSnapshot.truncated,
       scannedFiles: pressureSnapshot.scannedFiles || 0,
-      durationMs: pressureSnapshot.durationMs || 0,
-    },
+      durationMs: LATEST_ONLY ? 0 : (pressureSnapshot.durationMs || 0),
+    } : null,
   };
 
   if (JSON_OUT) {
@@ -108,6 +121,7 @@ async function main() {
     console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
     console.log(`Fail on warning: ${FAIL_ON_WARNING ? 'yes' : 'no'}`);
     console.log(`Scan mode: ${result.summary.scanMode}`);
+    console.log(`Latest only: ${LATEST_ONLY ? 'yes' : 'no'}`);
     console.log(`Scanned files: ${result.summary.scannedFiles}`);
     console.log(`Warnings: ${warningCount}`);
     console.log(`Criticals: ${criticalCount}\n`);

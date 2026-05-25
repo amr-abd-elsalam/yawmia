@@ -685,6 +685,17 @@ export async function getQueueStats() {
         cancelled: summary.byStatus?.cancelled || 0,
       };
 
+      const locationCount = Object.keys(summary.locations || {}).length;
+      const statusTotal =
+        byStatus.pending +
+        byStatus.running +
+        byStatus.completed +
+        byStatus.failed +
+        byStatus.cancelled +
+        byStatus['dead-letter'];
+
+      const mismatchSuspected = locationCount > 0 && statusTotal > locationCount * 2;
+
       return {
         enabled: true,
         byStatus,
@@ -699,9 +710,12 @@ export async function getQueueStats() {
         summary: {
           lastRebuiltAt: summary.lastRebuiltAt || null,
           lastUpdatedAt: summary.lastUpdatedAt || null,
-          stale: !!summary.stale,
+          stale: !!summary.stale || mismatchSuspected,
+          staleReason: mismatchSuspected ? 'status_total_exceeds_location_count' : (summary.staleReason || null),
+          mismatchSuspected,
+          statusTotal,
           legacyRecords: summary.legacyRecords || 0,
-          locationCount: Object.keys(summary.locations || {}).length,
+          locationCount,
         },
         workerEnabled: !!config.OPS_QUEUE.workerEnabled,
         workerConcurrency: config.OPS_QUEUE.workerConcurrency,

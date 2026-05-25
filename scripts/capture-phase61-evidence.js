@@ -69,6 +69,12 @@ try {
     console.log(`Warnings: ${(evidence.warnings || []).length}`);
     console.log(`Blockers: ${(evidence.blockers || []).length}`);
     if (result.evidence && result.evidence.id) console.log(`Snapshot: ${result.evidence.id}`);
+
+    const benchmark = evidence.latest && evidence.latest.benchmark;
+    if (benchmark && benchmark.evidenceUsable === false) {
+      console.log('Benchmark evidence usable: no');
+      if (benchmark.corruptionSuspected) console.log('Benchmark note: JSON corruption suspected');
+    }
     console.log('\nRecommendations:');
     for (const r of evidence.recommendations || []) {
       console.log(`- ${r.label}${r.command ? ` → ${r.command}` : ''}`);

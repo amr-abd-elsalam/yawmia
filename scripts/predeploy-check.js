@@ -92,7 +92,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.56.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.56.0' }));
+  checks.push(mk('package_version', pkg.version === '0.57.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.57.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -107,7 +107,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.56.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.57.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -272,7 +272,11 @@ async function main() {
   }
 
   // Phase 59 — Scale thresholds / storage pressure verification.
-  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  // Phase 61.1:
+  // Predeploy must remain fast and must not trigger live storage pressure scans.
+  // Use latest persisted artifact only. Missing/stale evidence is reported as warning/fail
+  // by readiness/evidence checks, not remediated during predeploy.
+  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', '--latest-only', ...(STRICT ? ['--strict'] : [])]);
   if (scaleThresholds.parsed) {
     checks.push(mk(
       'scale_thresholds',
@@ -477,7 +481,16 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Predeploy check failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      stack: err.stack,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Predeploy check failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });

@@ -88,6 +88,7 @@ async function scan() {
     scanned: 0,
     invalid: 0,
     zeroByte: 0,
+    nullByte: 0,
     unreadable: 0,
     unreadableDirs: 0,
     maxFilesReached: files.length >= MAX_FILES,
@@ -123,7 +124,27 @@ async function scan() {
         continue;
       }
 
-      const raw = await readFile(item.filePath, 'utf-8');
+      const rawBuffer = await readFile(item.filePath);
+      const firstNullByteIndex = rawBuffer.indexOf(0);
+      if (firstNullByteIndex !== -1) {
+        let nullByteCount = 0;
+        for (const b of rawBuffer) {
+          if (b === 0) nullByteCount++;
+        }
+
+        result.nullByte++;
+        result.issues.push({
+          type: 'null_byte_json',
+          filePath: item.filePath,
+          sizeBytes: st.size,
+          nullByteCount,
+          firstNullByteIndex,
+          severity: 'critical',
+        });
+        continue;
+      }
+
+      const raw = rawBuffer.toString('utf-8');
       JSON.parse(raw);
     } catch (err) {
       if (err.name === 'SyntaxError') {
@@ -152,7 +173,7 @@ async function scan() {
 
   result.critical = result.issues.filter(i => i.severity === 'critical').length;
   result.warning = result.issues.filter(i => i.severity === 'warning').length;
-  result.ok = result.critical === 0 && result.invalid === 0 && result.zeroByte === 0;
+  result.ok = result.critical === 0 && result.invalid === 0 && result.zeroByte === 0 && result.nullByte === 0;
 
   return result;
 }
@@ -165,6 +186,7 @@ function printHuman(result) {
   console.log(`Scanned: ${result.scanned}`);
   console.log(`Invalid: ${result.invalid}`);
   console.log(`Zero-byte: ${result.zeroByte}`);
+  console.log(`Null-byte: ${result.nullByte}`);
   console.log(`Unreadable: ${result.unreadable}`);
   console.log(`Unreadable dirs: ${result.unreadableDirs}`);
   console.log(`Critical: ${result.critical}`);

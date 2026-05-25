@@ -288,16 +288,89 @@ export async function verifyQueueHealth(options = {}) {
  * - rebuild summary/location index
  * - reports stale running jobs, but does not mutate them here
  * - idempotency cleanup is handled by queueCompaction
+ *
+ * Phase 61.1:
+ * - dryRun=true performs verification and returns deterministic repair plan only.
+ * - no summary write occurs in dry-run.
  */
 export async function repairQueueStorage(options = {}) {
   const started = Date.now();
+  const dryRun = !!options.dryRun;
 
   const before = await verifyQueueHealth({ fullScan: true }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
     errors: [err.message],
+    details: {},
   }));
+
+  const repairPlan = {
+    dryRun,
+    actions: [],
+    risks: [],
+  };
+
+  const beforeDetails = before.details || {};
+
+  if (Array.isArray(beforeDetails.summaryMismatches) && beforeDetails.summaryMismatches.length > 0) {
+    repairPlan.actions.push({
+      type: 'rebuild_queue_summary',
+      reason: 'summary counts differ from scanned queue files',
+      mismatches: beforeDetails.summaryMismatches,
+    });
+  }
+
+  if (Array.isArray(beforeDetails.statusDirMismatches) && beforeDetails.statusDirMismatches.length > 0) {
+    repairPlan.actions.push({
+      type: 'report_status_dir_mismatches',
+      reason: 'records are stored under a status dir that differs from record.status',
+      count: beforeDetails.statusDirMismatches.length,
+    });
+    repairPlan.risks.push('status-dir mismatches are reported only; no blind move is performed by repairQueueStorage');
+  }
+
+  if (Array.isArray(beforeDetails.staleRunningJobs) && beforeDetails.staleRunningJobs.length > 0) {
+    repairPlan.actions.push({
+      type: 'report_stale_running_jobs',
+      reason: 'running jobs have expired leases or stale updatedAt',
+      count: beforeDetails.staleRunningJobs.length,
+    });
+    repairPlan.risks.push('stale running jobs are not mutated here; use queue drain/recovery workflow after review');
+  }
+
+  if ((beforeDetails.legacyRecords || 0) > 0) {
+    repairPlan.actions.push({
+      type: 'preserve_legacy_records_in_summary',
+      reason: 'legacy flat queue records are still readable and must remain represented',
+      count: beforeDetails.legacyRecords,
+    });
+  }
+
+  if (repairPlan.actions.length === 0) {
+    repairPlan.actions.push({
+      type: 'no_summary_repair_needed',
+      reason: 'verification did not find summary mismatch requiring rebuild',
+    });
+  }
+
+  if (dryRun) {
+    return {
+      ok: before.ok,
+      dryRun: true,
+      mutationPerformed: false,
+      before: {
+        status: before.status,
+        warnings: before.warnings || [],
+        errors: before.errors || [],
+      },
+      after: null,
+      summary: null,
+      repairPlan,
+      durationMs: Date.now() - started,
+      checkedAt: nowIso(),
+    };
+  }
 
   const summaryResult = await rebuildQueueSummaryIndex(options);
 
@@ -310,6 +383,8 @@ export async function repairQueueStorage(options = {}) {
 
   const result = {
     ok: after.ok,
+    dryRun: false,
+    mutationPerformed: true,
     before: {
       status: before.status,
       warnings: before.warnings || [],
@@ -321,6 +396,7 @@ export async function repairQueueStorage(options = {}) {
       errors: after.errors || [],
     },
     summary: summaryResult.summary,
+    repairPlan,
     durationMs: Date.now() - started,
     repairedAt: nowIso(),
   };
