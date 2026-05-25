@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-25T19:27:27.937Z
+> Auto-generated: 2026-05-25T19:45:13.686Z
 > Files in this part: 87
 
 ## Files
@@ -27170,7 +27170,19 @@ async function main() {
       jsonHealth.parsed
     ));
   } else {
-    checks.push(mk('json_health', 'warn', 'Could not parse JSON health script output', 'node scripts/verify-data-json.js --strict'));
+    checks.push(mk(
+      'json_health',
+      'warn',
+      'Could not parse JSON health script output',
+      'node scripts/verify-data-json.js --strict --json',
+      {
+        status: jsonHealth.status,
+        timedOut: !!jsonHealth.timedOut,
+        error: jsonHealth.error,
+        stdoutTail: String(jsonHealth.stdout || '').slice(-500),
+        stderrTail: String(jsonHealth.stderr || '').slice(-500),
+      }
+    ));
   }
 
   // File health
@@ -27184,7 +27196,19 @@ async function main() {
       fileHealth.parsed
     ));
   } else {
-    checks.push(mk('file_health', 'warn', 'Could not parse file health script output', 'node scripts/verify-file-health.js --strict'));
+    checks.push(mk(
+      'file_health',
+      'warn',
+      'Could not parse file health script output',
+      'node scripts/verify-file-health.js --strict --json',
+      {
+        status: fileHealth.status,
+        timedOut: !!fileHealth.timedOut,
+        error: fileHealth.error,
+        stdoutTail: String(fileHealth.stdout || '').slice(-500),
+        stderrTail: String(fileHealth.stderr || '').slice(-500),
+      }
+    ));
   }
 
   // Scheduler cadence
@@ -27242,7 +27266,7 @@ async function main() {
       scaleThresholds.parsed.status === 'critical'
         ? 'Scale thresholds have critical findings'
         : 'Scale thresholds verification completed',
-      'node scripts/verify-scale-thresholds.js --strict',
+      'node scripts/verify-scale-thresholds.js --strict --latest-only --persist',
       scaleThresholds.parsed
     ));
   } else {
@@ -27250,7 +27274,7 @@ async function main() {
       'scale_thresholds',
       'warn',
       'Could not parse scale threshold verification output',
-      'node scripts/verify-scale-thresholds.js --json'
+      'node scripts/verify-scale-thresholds.js --json --latest-only --persist'
     ));
   }
 
@@ -30709,6 +30733,7 @@ try {
 //   node scripts/verify-scale-thresholds.js --fail-on-warning
 //   node scripts/verify-scale-thresholds.js --deep
 //   node scripts/verify-scale-thresholds.js --latest-only
+//   node scripts/verify-scale-thresholds.js --latest-only --persist
 //
 // Default scan is shallow. Deep scan requires --deep.
 // Phase 61.1: --latest-only reads persisted artifacts only and never scans.
@@ -30725,6 +30750,7 @@ const STRICT = process.argv.includes('--strict');
 const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
 const DEEP = process.argv.includes('--deep');
 const LATEST_ONLY = process.argv.includes('--latest-only');
+const PERSIST = process.argv.includes('--persist');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -30748,7 +30774,7 @@ async function main() {
 
   const collection = getArg('collection', '');
 
-  const { initDatabase } = await import('../server/services/database.js');
+  const { initDatabase, atomicWrite, getRecordPath } = await import('../server/services/database.js');
   await initDatabase();
 
   const storagePressure = await import('../server/services/storagePressure.js');
@@ -30808,7 +30834,45 @@ async function main() {
       scannedFiles: pressureSnapshot.scannedFiles || 0,
       durationMs: LATEST_ONLY ? 0 : (pressureSnapshot.durationMs || 0),
     } : null,
+    persistRequested: PERSIST,
+    persisted: false,
+    persistedId: null,
   };
+
+  if (PERSIST) {
+    try {
+      const id = `sth_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 10)}`;
+      const artifact = {
+        id,
+        kind: 'scale_thresholds',
+        version: '0.57.0',
+        status: result.status,
+        ok: result.ok,
+        strict: result.strict,
+        failOnWarning: result.failOnWarning,
+        deep: result.deep,
+        latestOnly: result.latestOnly,
+        collection: result.collection,
+        timestamp: result.generatedAt,
+        generatedAt: result.generatedAt,
+        summary: result.summary,
+        warnings: result.warnings,
+        criticals: result.criticals,
+        recommendations: result.recommendations,
+        snapshot: result.snapshot,
+        createdAt: new Date().toISOString(),
+      };
+
+      await atomicWrite(getRecordPath('scale_thresholds', id), artifact);
+      result.persisted = true;
+      result.persistedId = id;
+    } catch (err) {
+      result.ok = false;
+      result.status = 'critical';
+      result.persisted = false;
+      result.persistError = err.message;
+    }
+  }
 
   if (JSON_OUT) {
     console.log = originalConsole.log;

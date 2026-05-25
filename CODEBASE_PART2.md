@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-25T19:27:27.891Z
+> Auto-generated: 2026-05-25T19:45:13.640Z
 > Files in this part: 132
 
 ## Files
@@ -28186,7 +28186,7 @@ function recommendationForKind(kind) {
   const map = {
     storagePressure: 'node scripts/measure-storage-pressure.js --json --persist',
     benchmark: 'node scripts/benchmark-file-paths.js --json --persist',
-    scaleThresholds: 'node scripts/verify-scale-thresholds.js --json',
+    scaleThresholds: 'node scripts/verify-scale-thresholds.js --json --latest-only --persist',
     externalizationDecision: 'node scripts/capture-externalization-decision.js --persist',
     migrationRehearsal: 'node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --dry-run --json',
     rollbackRehearsal: 'node scripts/run-rollback-rehearsal.js --dry-run --json',
