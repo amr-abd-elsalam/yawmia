@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-25T10:43:12.165Z
+> Auto-generated: 2026-05-25T18:37:27.594Z
 > Files in this part: 132
 
 ## Files
@@ -10974,20 +10974,55 @@ export async function deleteJSON(filePath) {
 
 /**
  * List all JSON files in a directory (shard-aware)
- * For sharded collections: also walks shard subdirectories
+ * For sharded collections: also walks shard subdirectories.
+ *
+ * Default behavior remains STRICT: one corrupt JSON file throws.
+ *
+ * Phase 61.1:
+ * - options.tolerateCorrupt=true lets bulk/admin/public scan paths skip corrupt files
+ *   without crashing the whole operation.
+ * - options.onCorrupt receives { filePath, fileName, error, shard? }.
+ *
  * @param {string} dirPath
- * @param {{ prefix?: string }} [options] — optional prefix filter for filenames
+ * @param {{ prefix?: string, tolerateCorrupt?: boolean, onCorrupt?: Function }} [options]
  */
 export async function listJSON(dirPath, options = {}) {
+  const tolerateCorrupt = !!options.tolerateCorrupt;
+  const onCorrupt = typeof options.onCorrupt === 'function' ? options.onCorrupt : null;
+
+  async function readOne(filePath, fileName, shard = null) {
+    try {
+      return await readJSON(filePath);
+    } catch (err) {
+      if (!tolerateCorrupt) throw err;
+
+      if (onCorrupt) {
+        try {
+          onCorrupt({
+            filePath,
+            fileName,
+            shard,
+            error: err && err.message ? err.message : String(err),
+          });
+        } catch (_) {
+          // onCorrupt must never break tolerant scans.
+        }
+      }
+
+      return null;
+    }
+  }
+
   try {
     const files = await readdir(dirPath);
     let jsonFiles = files.filter(f => f.endsWith('.json') && !f.endsWith('.tmp'));
     if (options.prefix) {
       jsonFiles = jsonFiles.filter(f => f.startsWith(options.prefix));
     }
+
     const results = [];
     for (const file of jsonFiles) {
-      const data = await readJSON(join(dirPath, file));
+      const data = await readOne(join(dirPath, file), file, null);
       if (data) results.push(data);
     }
 
@@ -11002,10 +11037,14 @@ export async function listJSON(dirPath, options = {}) {
           shardJsonFiles = shardJsonFiles.filter(f => f.startsWith(options.prefix));
         }
         for (const file of shardJsonFiles) {
-          const data = await readJSON(join(shardPath, file));
+          const data = await readOne(join(shardPath, file), file, shard);
           if (data) results.push(data);
         }
-      } catch {
+      } catch (err) {
+        if (!tolerateCorrupt) {
+          // Preserve prior behavior for directory-level failures in strict mode.
+          // Historically shard dir failures were skipped; keep that behavior.
+        }
         // Skip inaccessible shard dir
       }
     }
@@ -11015,6 +11054,30 @@ export async function listJSON(dirPath, options = {}) {
     if (err.code === 'ENOENT') return [];
     throw err;
   }
+}
+
+/**
+ * Phase 61.1: corruption-tolerant list helper.
+ *
+ * Returns items + warnings without throwing on corrupt JSON files.
+ * Direct reads should still use readJSON()/safeReadJSON() depending on semantics.
+ *
+ * @param {string} dirPath
+ * @param {{ prefix?: string }} [options]
+ * @returns {Promise<{ items: object[], warnings: object[] }>}
+ */
+export async function safeListJSON(dirPath, options = {}) {
+  const warnings = [];
+  const items = await listJSON(dirPath, {
+    ...options,
+    tolerateCorrupt: true,
+    onCorrupt: (warning) => warnings.push({
+      type: 'corrupt_json_skipped',
+      ...warning,
+    }),
+  });
+
+  return { items, warnings };
 }
 
 /**
@@ -18872,8 +18935,13 @@ export async function list(filters = {}) {
         });
         const results = [];
         for (const id of matchedIds) {
-          const job = await readJSON(getRecordPath('jobs', id));
-          if (job) results.push(job);
+          try {
+            const job = await readJSON(getRecordPath('jobs', id));
+            if (job) results.push(job);
+          } catch (_) {
+            // Phase 61.1: corrupt candidate job must not break public listing.
+            // Data integrity scripts/admin readiness will report the corrupt file.
+          }
         }
         jobs = results;
         usedQueryIndex = true;
@@ -18883,7 +18951,7 @@ export async function list(filters = {}) {
 
   if (!usedQueryIndex) {
     const jobsDir = getCollectionPath('jobs');
-    const allJobs = await listJSON(jobsDir);
+    const allJobs = await listJSON(jobsDir, { tolerateCorrupt: true });
     // Filter out index.json (not a job record)
     jobs = allJobs.filter(item => item.id && item.id.startsWith('job_'));
   }
@@ -19186,7 +19254,7 @@ export async function incrementAccepted(jobId) {
  */
 export async function listAll() {
   const jobsDir = getCollectionPath('jobs');
-  const allJobs = await listJSON(jobsDir);
+  const allJobs = await listJSON(jobsDir, { tolerateCorrupt: true });
   return allJobs.filter(item => item.id && item.id.startsWith('job_'));
 }
 
@@ -19313,7 +19381,15 @@ export async function enforceExpiredJobs() {
   const BATCH_SIZE = 100;
 
   for (let i = 0; i < jsonFiles.length; i++) {
-    const job = await readJSON(jsonFiles[i].filePath);
+    let job = null;
+    try {
+      job = await readJSON(jsonFiles[i].filePath);
+    } catch (_) {
+      // Phase 61.1: corrupt job file must not stop expiry enforcement.
+      // verify-data-json/find-null-json-files are responsible for reporting details.
+      job = null;
+    }
+
     if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
       const jobPath = getRecordPath('jobs', job.id);
@@ -26606,6 +26682,17 @@ export async function getQueueStats() {
         cancelled: summary.byStatus?.cancelled || 0,
       };
 
+      const locationCount = Object.keys(summary.locations || {}).length;
+      const statusTotal =
+        byStatus.pending +
+        byStatus.running +
+        byStatus.completed +
+        byStatus.failed +
+        byStatus.cancelled +
+        byStatus['dead-letter'];
+
+      const mismatchSuspected = locationCount > 0 && statusTotal > locationCount * 2;
+
       return {
         enabled: true,
         byStatus,
@@ -26620,9 +26707,12 @@ export async function getQueueStats() {
         summary: {
           lastRebuiltAt: summary.lastRebuiltAt || null,
           lastUpdatedAt: summary.lastUpdatedAt || null,
-          stale: !!summary.stale,
+          stale: !!summary.stale || mismatchSuspected,
+          staleReason: mismatchSuspected ? 'status_total_exceeds_location_count' : (summary.staleReason || null),
+          mismatchSuspected,
+          statusTotal,
           legacyRecords: summary.legacyRecords || 0,
-          locationCount: Object.keys(summary.locations || {}).length,
+          locationCount,
         },
         workerEnabled: !!config.OPS_QUEUE.workerEnabled,
         workerConcurrency: config.OPS_QUEUE.workerConcurrency,
@@ -27944,7 +28034,7 @@ function ageDays(iso) {
 
 async function latestFromCollection(collection, predicate = null) {
   try {
-    const rows = await listJSON(getCollectionPath(collection));
+    const rows = await listJSON(getCollectionPath(collection), { tolerateCorrupt: true });
     const filtered = rows.filter(r => {
       if (!r || typeof r !== 'object') return false;
       if (predicate && !predicate(r)) return false;
@@ -27966,13 +28056,33 @@ async function latestFromCollection(collection, predicate = null) {
 function compactArtifact(row, kind) {
   if (!row) return null;
   const ts = row.timestamp || row.generatedAt || row.completedAt || row.startedAt || row.createdAt || null;
+
+  const evidenceUsable = row.evidenceUsable !== undefined
+    ? !!row.evidenceUsable
+    : (row.summary && row.summary.evidenceUsable !== undefined ? !!row.summary.evidenceUsable : undefined);
+
+  const corruptionSuspected = row.corruptionSuspected !== undefined
+    ? !!row.corruptionSuspected
+    : !!(row.summary && row.summary.corruptionSuspected);
+
+  let status = row.status || (row.ok === true ? 'passed' : row.ok === false ? 'failed' : 'unknown');
+
+  // Phase 61.1:
+  // A benchmark with corruption/errors must not be treated as valid pilot/externalization evidence.
+  if (kind === 'benchmark' && evidenceUsable === false) {
+    status = 'failed';
+  }
+
   return {
     kind,
     id: row.id || null,
-    status: row.status || (row.ok === true ? 'passed' : row.ok === false ? 'failed' : 'unknown'),
+    status,
     timestamp: ts,
     ageDays: ageDays(ts),
     ok: row.ok !== undefined ? !!row.ok : undefined,
+    evidenceUsable,
+    corruptionSuspected,
+    evidenceNotes: Array.isArray(row.evidenceNotes) ? row.evidenceNotes.slice(0, 5) : [],
     warningCount: Array.isArray(row.warnings) ? row.warnings.length : (row.summary?.warningCount || 0),
     criticalCount: Array.isArray(row.criticals) ? row.criticals.length : (row.summary?.criticalCount || 0),
     errorCount: Array.isArray(row.errors) ? row.errors.length : (row.summary?.errorCount || 0),
@@ -28051,6 +28161,17 @@ export function evaluateEvidenceFreshness(evidence, options = {}) {
         recommendation: recommendationForKind(kind),
       });
     }
+
+    if (kind === 'benchmark' && artifact.evidenceUsable === false) {
+      blockers.push({
+        code: 'benchmark_not_usable_as_evidence',
+        level: 'critical',
+        message: artifact.corruptionSuspected
+          ? 'Latest benchmark is not usable as evidence because JSON corruption is suspected'
+          : 'Latest benchmark is not usable as externalization evidence',
+        recommendation: 'node scripts/verify-data-json.js --strict && node scripts/benchmark-file-paths.js --json --persist',
+      });
+    }
   }
 
   let status = 'fresh';
@@ -28117,6 +28238,7 @@ export function buildEvidenceCadenceRecommendations(status) {
 function labelFromCode(code) {
   if (!code) return 'راجع Evidence Cadence';
   if (code.includes('storagePressure')) return 'شغّل قياس ضغط التخزين';
+  if (code.includes('benchmark_not_usable')) return 'أصلح سلامة البيانات ثم أعد Benchmark';
   if (code.includes('benchmark')) return 'شغّل Benchmark محفوظ';
   if (code.includes('scaleThresholds')) return 'تحقق من حدود التوسع';
   if (code.includes('externalizationDecision')) return 'احفظ قرار externalization';
@@ -32303,7 +32425,12 @@ async function checkCriticalIndexes() {
 async function checkScaleHygiene() {
   try {
     const { getScaleHygieneOverview } = await import('./scaleHygiene.js');
-    const overview = await getScaleHygieneOverview();
+
+    // Phase 61.1:
+    // Production readiness must be a fast gate.
+    // It must not trigger live storage pressure scans, benchmarks, snapshot exports,
+    // migration rehearsals, or any heavy filesystem aggregation.
+    const overview = await getScaleHygieneOverview({ lightweight: true });
 
     if (!overview.enabled) {
       return check('scale_hygiene', 'warn', 'Scale hygiene overview is disabled');
@@ -32312,16 +32439,20 @@ async function checkScaleHygiene() {
     if (overview.status === 'critical') {
       return check('scale_hygiene', 'fail', 'Scale hygiene has critical warnings', {
         warningCount: overview.warningCount || 0,
+        lightweight: true,
       });
     }
 
     if (overview.status === 'warnings') {
       return check('scale_hygiene', 'warn', 'Scale hygiene has warnings', {
         warningCount: overview.warningCount || 0,
+        lightweight: true,
       });
     }
 
-    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy');
+    return check('scale_hygiene', 'pass', 'Scale hygiene checks are healthy', {
+      lightweight: true,
+    });
   } catch (err) {
     return check('scale_hygiene', 'warn', 'Could not evaluate scale hygiene', { error: err.message });
   }
@@ -34577,7 +34708,7 @@ export async function captureSlowJobDiagnostics(options = {}) {
     }))
     .sort((a, b) => b.ageMs - a.ageMs);
 
-  if (slowJobs.length > 0) {
+  if (slowJobs.length > 0 && !options.dryRun) {
     const filePath = join(BASE_PATH, 'metrics/scale-hygiene/queue-slow-jobs.json');
     await atomicWrite(filePath, {
       generatedAt: nowIso(),
@@ -35018,16 +35149,89 @@ export async function verifyQueueHealth(options = {}) {
  * - rebuild summary/location index
  * - reports stale running jobs, but does not mutate them here
  * - idempotency cleanup is handled by queueCompaction
+ *
+ * Phase 61.1:
+ * - dryRun=true performs verification and returns deterministic repair plan only.
+ * - no summary write occurs in dry-run.
  */
 export async function repairQueueStorage(options = {}) {
   const started = Date.now();
+  const dryRun = !!options.dryRun;
 
   const before = await verifyQueueHealth({ fullScan: true }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
     errors: [err.message],
+    details: {},
   }));
+
+  const repairPlan = {
+    dryRun,
+    actions: [],
+    risks: [],
+  };
+
+  const beforeDetails = before.details || {};
+
+  if (Array.isArray(beforeDetails.summaryMismatches) && beforeDetails.summaryMismatches.length > 0) {
+    repairPlan.actions.push({
+      type: 'rebuild_queue_summary',
+      reason: 'summary counts differ from scanned queue files',
+      mismatches: beforeDetails.summaryMismatches,
+    });
+  }
+
+  if (Array.isArray(beforeDetails.statusDirMismatches) && beforeDetails.statusDirMismatches.length > 0) {
+    repairPlan.actions.push({
+      type: 'report_status_dir_mismatches',
+      reason: 'records are stored under a status dir that differs from record.status',
+      count: beforeDetails.statusDirMismatches.length,
+    });
+    repairPlan.risks.push('status-dir mismatches are reported only; no blind move is performed by repairQueueStorage');
+  }
+
+  if (Array.isArray(beforeDetails.staleRunningJobs) && beforeDetails.staleRunningJobs.length > 0) {
+    repairPlan.actions.push({
+      type: 'report_stale_running_jobs',
+      reason: 'running jobs have expired leases or stale updatedAt',
+      count: beforeDetails.staleRunningJobs.length,
+    });
+    repairPlan.risks.push('stale running jobs are not mutated here; use queue drain/recovery workflow after review');
+  }
+
+  if ((beforeDetails.legacyRecords || 0) > 0) {
+    repairPlan.actions.push({
+      type: 'preserve_legacy_records_in_summary',
+      reason: 'legacy flat queue records are still readable and must remain represented',
+      count: beforeDetails.legacyRecords,
+    });
+  }
+
+  if (repairPlan.actions.length === 0) {
+    repairPlan.actions.push({
+      type: 'no_summary_repair_needed',
+      reason: 'verification did not find summary mismatch requiring rebuild',
+    });
+  }
+
+  if (dryRun) {
+    return {
+      ok: before.ok,
+      dryRun: true,
+      mutationPerformed: false,
+      before: {
+        status: before.status,
+        warnings: before.warnings || [],
+        errors: before.errors || [],
+      },
+      after: null,
+      summary: null,
+      repairPlan,
+      durationMs: Date.now() - started,
+      checkedAt: nowIso(),
+    };
+  }
 
   const summaryResult = await rebuildQueueSummaryIndex(options);
 
@@ -35040,6 +35244,8 @@ export async function repairQueueStorage(options = {}) {
 
   const result = {
     ok: after.ok,
+    dryRun: false,
+    mutationPerformed: true,
     before: {
       status: before.status,
       warnings: before.warnings || [],
@@ -35051,6 +35257,7 @@ export async function repairQueueStorage(options = {}) {
       errors: after.errors || [],
     },
     summary: summaryResult.summary,
+    repairPlan,
     durationMs: Date.now() - started,
     repairedAt: nowIso(),
   };
@@ -35795,14 +36002,14 @@ async function listSegmentStatus(status, options = {}) {
 
     for (const month of months) {
       const dir = join(root, month);
-      const rows = await listJSON(dir).catch(() => []);
+      const rows = await listJSON(dir, { tolerateCorrupt: true }).catch(() => []);
       for (const row of rows) results.push(row);
     }
 
     return results;
   }
 
-  return await listJSON(root).catch(() => []);
+  return await listJSON(root, { tolerateCorrupt: true }).catch(() => []);
 }
 
 /**
@@ -35820,7 +36027,7 @@ export async function listQueueRecords(options = {}) {
 
     // Legacy fallback for active mixed layout when requested status is not DLQ.
     if (cfg().legacyReadFallback !== false && status !== DEAD_LETTER_STATUS) {
-      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacyRows = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       rows.push(...legacyRows.filter(j => j && normalizeStatus(j.status) === status));
     }
   } else {
@@ -35834,7 +36041,7 @@ export async function listQueueRecords(options = {}) {
     }
 
     if (cfg().legacyReadFallback !== false) {
-      const legacyRows = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacyRows = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       rows.push(...legacyRows);
     }
   }
@@ -35884,7 +36091,7 @@ export async function rebuildQueueSummary() {
 
     // Legacy flat records.
     if (cfg().legacyReadFallback !== false) {
-      const legacy = await listJSON(getCollectionPath('ops_queue')).catch(() => []);
+      const legacy = await listJSON(getCollectionPath('ops_queue'), { tolerateCorrupt: true }).catch(() => []);
       for (const job of legacy) {
         if (!job || !job.id || !job.id.startsWith('q_')) continue;
         if (summary.locations[job.id]) continue;
@@ -35904,7 +36111,7 @@ export async function rebuildQueueSummary() {
         };
       }
 
-      const legacyDlq = await listJSON(getCollectionPath('ops_queue_dead_letter')).catch(() => []);
+      const legacyDlq = await listJSON(getCollectionPath('ops_queue_dead_letter'), { tolerateCorrupt: true }).catch(() => []);
       for (const job of legacyDlq) {
         if (!job || !job.id || !job.id.startsWith('q_')) continue;
         if (summary.locations[job.id]) continue;
@@ -38356,7 +38563,7 @@ async function collectPostmortemBacklog() {
 /**
  * Get unified scale hygiene overview.
  */
-export async function getScaleHygieneOverview() {
+export async function getScaleHygieneOverview(options = {}) {
   if (!isEnabled()) {
     return {
       enabled: false,
@@ -38392,7 +38599,9 @@ export async function getScaleHygieneOverview() {
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
     import('./auditLogIndex.js').then(m => m.getAuditIndexHygieneStats()).catch(err => ({ enabled: false, error: err.message })),
-    import('./workroomHygiene.js').then(m => m.getWorkroomHygieneOverview({ limit: 200 })).catch(err => ({ enabled: false, error: err.message })),
+    import('./workroomHygiene.js')
+      .then(m => m.getWorkroomHygieneOverview({ limit: options.lightweight ? 50 : 200 }))
+      .catch(err => ({ enabled: false, error: err.message })),
     import('./trustSnapshotRollups.js').then(m => m.getTrustRetentionStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./predictiveArchiveIndex.js').then(m => m.getPredictiveArchiveIndexStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./schedulerRunHistory.js').then(m => m.getSchedulerHistoryStats()).catch(err => ({ enabled: false, error: err.message })),
@@ -38414,7 +38623,34 @@ export async function getScaleHygieneOverview() {
       .then(m => m.getRbacMatrix())
       .catch(err => ({ enabled: false, error: err.message })),
     import('./storagePressure.js')
-      .then(m => m.getStoragePressure({ persist: false }))
+      .then(async (m) => {
+        if (options.lightweight) {
+          const latest = await m.getLatestStoragePressureSnapshot().catch(() => null);
+          if (!latest) {
+            return {
+              enabled: true,
+              status: 'missing',
+              warnings: [{
+                level: 'warning',
+                code: 'STORAGE_PRESSURE_SNAPSHOT_MISSING',
+                message: 'No persisted storage pressure snapshot exists. Run the script instead of scanning from HTTP.',
+              }],
+              criticals: [],
+              recommendations: [{
+                id: 'capture_storage_pressure',
+                label: 'قياس ضغط التخزين',
+                severity: 'warning',
+                command: 'node scripts/measure-storage-pressure.js --json --persist',
+                adminRoute: '/api/admin/storage-pressure/capture',
+                reason: 'Scale hygiene lightweight mode uses persisted artifacts only.',
+              }],
+            };
+          }
+          return latest;
+        }
+
+        return m.getStoragePressure({ persist: false });
+      })
       .catch(err => ({ enabled: false, error: err.message })),
     import('./phase60Readiness.js')
       .then(m => m.getPhase60EvidenceSummary())
@@ -39185,6 +39421,12 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
   };
 
   const byStatus = queueStats.byStatus || queueStats.statusCounts || {};
+  const summary = queueStats.summary || {};
+  const summaryUnreliable = !!(
+    summary.stale ||
+    summary.mismatchSuspected ||
+    summary.staleReason === 'status_total_exceeds_location_count'
+  );
 
   const checks = [
     {
@@ -39217,8 +39459,21 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
   ];
 
   for (const check of checks) {
-    const status = evaluateThreshold(check.value, check.warning, check.critical);
-    result.evaluations[check.key] = { ...check, status };
+    const rawStatus = evaluateThreshold(check.value, check.warning, check.critical);
+
+    // Phase 61.1:
+    // If queue summary/location index is unreliable, do not turn inflated
+    // pending/running/dead-letter numbers into hard scale pressure evidence.
+    // Report the summary problem separately and ask for verify/repair first.
+    const status = summaryUnreliable ? 'ok' : rawStatus;
+
+    result.evaluations[check.key] = {
+      ...check,
+      status,
+      rawStatus,
+      ignoredDueToUnreliableSummary: summaryUnreliable,
+    };
+
     result.status = worseStatus(result.status, status);
 
     if (status !== 'ok') {
@@ -39234,7 +39489,18 @@ export function evaluateQueuePressure(queueStats = {}, queueThresholds = thresho
     }
   }
 
-  const summary = queueStats.summary || {};
+  if (summaryUnreliable) {
+    result.status = worseStatus(result.status, 'warning');
+    pushIssue(result, 'warning', {
+      code: 'QUEUE_SUMMARY_UNRELIABLE',
+      scope: 'ops_queue_summary',
+      metric: 'summaryReliability',
+      value: summary.staleReason || 'unreliable',
+      threshold: 'verified_summary',
+      message: 'Queue summary/location index is unreliable; active queue counts are ignored for scale pressure until repaired.',
+      recommendation: 'شغّل verify-queue ثم repair-queue --dry-run. لا تعتبر inflated queue stats دليل external queue.',
+    });
+  }
   if (summary.lastUpdatedAt) {
     const ageMs = Date.now() - new Date(summary.lastUpdatedAt).getTime();
     const ageMinutes = Math.round(ageMs / 60000);
@@ -39603,11 +39869,15 @@ export async function verifyScaleThresholds(options = {}) {
 
   if (!snapshot) {
     const storagePressure = await import('./storagePressure.js').catch(() => null);
-    if (storagePressure && storagePressure.getStoragePressure) {
-      snapshot = await storagePressure.getStoragePressure({
-        deep: !!options.deep,
-        persist: options.persist !== false,
-      }).catch(() => null);
+    if (storagePressure) {
+      if (options.latestOnly && storagePressure.getLatestStoragePressureSnapshot) {
+        snapshot = await storagePressure.getLatestStoragePressureSnapshot().catch(() => null);
+      } else if (storagePressure.getStoragePressure) {
+        snapshot = await storagePressure.getStoragePressure({
+          deep: !!options.deep,
+          persist: options.persist !== false,
+        }).catch(() => null);
+      }
     }
   }
 

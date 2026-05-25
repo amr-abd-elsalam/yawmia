@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-25T10:43:12.213Z
+> Auto-generated: 2026-05-25T18:37:27.656Z
 > Files in this part: 87
 
 ## Files
@@ -7724,47 +7724,16 @@ var AdminApp = (function () {
       initAdminTabs();
       // Phase 48 — Connect to admin SSE channel
       connectAdminSse();
-      // Load remaining data in parallel
+      // Phase 61.1:
+      // Keep initial admin login lightweight.
+      // Heavy scale/evidence/rehearsal/marketplace/governance panels are loaded lazily by tabs.
       Promise.all([
         loadHealth(),
-        loadUsers(),
-        loadJobs(),
-        loadFinancials(),
-        loadReports(),
-        loadVerifications(),
         loadAnalytics(),
+        loadFinancials(),
         loadMonitoring(),
         loadProductionReadiness(),
-        loadInstanceOps(),
-        loadSchedulers(),
-        loadOpsSlo(),
-        loadRestoreDrills(),
-        loadIncidents(),
-        loadMaintenanceMode(),
-        loadDirectOffersDashboard(),
-        loadAbuseSignals(),
-        loadPredictiveAbuseDashboard(),
-        loadPredictivePrecision(),
-        loadDecisionQuality(),
-        loadOpsQueueStats(),
-        loadAlertDeliveries(),
-        loadAuditIndexStatus(),
-        loadExports(),
-        loadCounterHygiene(),
-        loadTrustDashboard(),
-        loadTrustCalibrationDashboard(),
-        loadStoragePressure(),
-        loadExternalizationReadiness(),
-        loadPhase60Decision(),
-        loadMigrationRehearsal(),
-        loadBenchmarkHistory(),
-        loadMultiInstanceBoundary(),
-        loadPhase61Evidence(),
-        loadPilotGate(),
-        loadRollbackRehearsal(),
-        loadRepositoryContracts(),
-        loadScaleHygiene(),
-        loadGovernanceDashboard(),
+        loadDeploymentGate(),
       ]).catch(function () {});
     } catch (err) {
       showError('توكن غير صحيح أو خطأ في الاتصال');
@@ -24422,7 +24391,10 @@ async function bench(label, fn, iterations = SAMPLE) {
 async function getFirstRecord(collection, prefix) {
   try {
     const { getCollectionPath, listJSON } = await import('../server/services/database.js');
-    const rows = await listJSON(getCollectionPath(collection), prefix ? { prefix } : {});
+    const rows = await listJSON(getCollectionPath(collection), {
+      ...(prefix ? { prefix } : {}),
+      tolerateCorrupt: true,
+    });
     return rows.find(r => r && r.id) || null;
   } catch (_) {
     return null;
@@ -24538,10 +24510,25 @@ async function main() {
     await listApprovals({ limit: 20 });
   }));
 
-  results.push(await bench('storage pressure shallow scan', async () => {
-    const { getStoragePressure } = await import('../server/services/storagePressure.js');
-    await getStoragePressure({ force: true, persist: false });
-  }, Math.max(1, Math.min(SAMPLE, 3))));
+  if (INCLUDE_HEAVY) {
+    results.push(await bench('storage pressure shallow scan', async () => {
+      const { getStoragePressure } = await import('../server/services/storagePressure.js');
+      await getStoragePressure({ force: true, persist: false });
+    }, Math.max(1, Math.min(SAMPLE, 3))));
+  } else {
+    results.push({
+      label: 'storage pressure shallow scan',
+      skipped: true,
+      skipReason: 'heavy scan skipped by default; use --include-heavy',
+      error: null,
+      count: 0,
+      avgMs: 0,
+      minMs: 0,
+      maxMs: 0,
+      p50Ms: 0,
+      p95Ms: 0,
+    });
+  }
 
   const warningThresholdMs = 1000;
   const criticalThresholdMs = 3000;
@@ -24552,9 +24539,29 @@ async function main() {
     .filter(r => !r.skipped && !r.error)
     .sort((a, b) => (b.p95Ms || 0) - (a.p95Ms || 0))[0] || null;
 
+  const corruptionSuspected = errorRows.some(r =>
+    /json|unexpected token|\\u0000|nul|null byte|parse/i.test(String(r.error || ''))
+  );
+
+  const evidenceUsable = errorRows.length === 0 && !corruptionSuspected;
+
+  const evidenceNotes = [];
+  if (!evidenceUsable) {
+    evidenceNotes.push('Benchmark contains errors; do not use as externalization evidence until data integrity is repaired.');
+  }
+  if (corruptionSuspected) {
+    evidenceNotes.push('JSON corruption is suspected from benchmark errors.');
+  }
+  if (!INCLUDE_HEAVY) {
+    evidenceNotes.push('Heavy storage pressure scan skipped by default. Use --include-heavy for manual/off-peak measurement.');
+  }
+
   const output = {
     id: 'bmk_' + Date.now().toString(36),
     ok: errorRows.length === 0,
+    evidenceUsable,
+    corruptionSuspected,
+    evidenceNotes,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
     version: '0.57.0',
@@ -24569,6 +24576,8 @@ async function main() {
       criticalCount: criticalRows.length,
       errorCount: errorRows.length,
       errorPaths: errorRows.map(r => r.label),
+      evidenceUsable,
+      corruptionSuspected,
     },
     results,
   };
@@ -24583,6 +24592,8 @@ async function main() {
       output.persisted = false;
       output.persistError = err.message;
       output.ok = false;
+      output.evidenceUsable = false;
+      output.evidenceNotes.push('Benchmark persistence failed; artifact should not be used as evidence.');
     }
   }
 
@@ -24612,6 +24623,11 @@ async function main() {
     console.log(`  Warnings: ${output.summary.warningCount}`);
     console.log(`  Criticals: ${output.summary.criticalCount}`);
     console.log(`  Errors: ${output.summary.errorCount}`);
+    console.log(`  Evidence usable: ${output.evidenceUsable ? 'yes' : 'no'}`);
+    if (output.evidenceNotes.length > 0) {
+      console.log('  Evidence notes:');
+      for (const note of output.evidenceNotes) console.log(`    - ${note}`);
+    }
     if (PERSIST) console.log(`  Persisted: ${output.persisted ? output.persistedId : 'no'}`);
 
     console.log('\n✅ Benchmark complete\n');
@@ -25050,6 +25066,12 @@ try {
     console.log(`Warnings: ${(evidence.warnings || []).length}`);
     console.log(`Blockers: ${(evidence.blockers || []).length}`);
     if (result.evidence && result.evidence.id) console.log(`Snapshot: ${result.evidence.id}`);
+
+    const benchmark = evidence.latest && evidence.latest.benchmark;
+    if (benchmark && benchmark.evidenceUsable === false) {
+      console.log('Benchmark evidence usable: no');
+      if (benchmark.corruptionSuspected) console.log('Benchmark note: JSON corruption suspected');
+    }
     console.log('\nRecommendations:');
     for (const r of evidence.recommendations || []) {
       console.log(`- ${r.label}${r.command ? ` → ${r.command}` : ''}`);
@@ -25285,9 +25307,12 @@ function getArg(name, fallback = '') {
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const JSON_OUT = process.argv.includes('--json');
   const status = getArg('status', '');
 
-  console.log(`\n🧹 يوميّة Queue Compaction${dryRun ? ' (DRY RUN)' : ''}\n`);
+  if (!JSON_OUT) {
+    console.log(`\n🧹 يوميّة Queue Compaction${dryRun ? ' (DRY RUN)' : ''}\n`);
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -25299,12 +25324,18 @@ async function main() {
     status: status || undefined,
   });
 
+  if (JSON_OUT) {
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(result.ok === false ? 1 : 0);
+  }
+
   if (result.skipped) {
     console.log(`⚠️ Skipped: ${result.reason}`);
     process.exit(0);
   }
 
   console.log('✅ Queue compaction complete');
+  console.log(`   dryRun: ${dryRun ? 'yes' : 'no'}`);
   console.log(`   archived: ${result.archive?.archived || 0}`);
   console.log(`   archive scanned: ${result.archive?.scanned || 0}`);
   console.log(`   idempotency cleaned: ${result.idempotency?.cleaned || 0}`);
@@ -25313,8 +25344,17 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Queue compaction failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      dryRun,
+      error: err.message,
+      stack: err.stack,
+    }, null, 2));
+  } else {
+    console.error('\n❌ Queue compaction failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```
@@ -26075,10 +26115,31 @@ const STRICT = process.argv.includes('--strict');
 const MAX_FILES = Number.parseInt(getArg('max-files', '300000'), 10) || 300000;
 const DATA_PATH = process.env.YAWMIA_DATA_PATH || './data';
 
+let config = null;
+try {
+  config = (await import('../config.js')).default;
+} catch (_) {
+  config = null;
+}
+
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
   const found = process.argv.find(a => a.startsWith(prefix));
   return found ? found.slice(prefix.length) : fallback;
+}
+
+function inferCollection(filePath) {
+  if (!config || !config.DATABASE || !config.DATABASE.dirs) return null;
+  const rel = relative(DATA_PATH, filePath).replace(/\\/g, '/');
+
+  for (const [collection, dir] of Object.entries(config.DATABASE.dirs)) {
+    const normalizedDir = String(dir).replace(/\\/g, '/');
+    if (rel === normalizedDir || rel.startsWith(normalizedDir + '/')) {
+      return collection;
+    }
+  }
+
+  return null;
 }
 
 function isHelp() {
@@ -26130,10 +26191,17 @@ async function walk(dir, out, state) {
       const nulIndex = buf.indexOf(0);
       if (nulIndex !== -1) {
         const st = await stat(full).catch(() => ({ size: buf.length }));
+        let nulCount = 0;
+        for (const b of buf) {
+          if (b === 0) nulCount++;
+        }
+
         out.push({
           path: relative(process.cwd(), full),
+          collection: inferCollection(full),
           sizeBytes: st.size,
           nulIndex,
+          nulCount,
         });
       }
     } catch (err) {
@@ -26181,7 +26249,7 @@ if (JSON_OUT) {
   if (findings.length > 0) {
     console.log('\nFindings:');
     for (const f of findings.slice(0, 50)) {
-      console.log(`- ${f.path} size=${f.sizeBytes} nulIndex=${f.nulIndex}`);
+      console.log(`- ${f.path} collection=${f.collection || '-'} size=${f.sizeBytes} nulIndex=${f.nulIndex} nulCount=${f.nulCount}`);
     }
   }
 
@@ -26768,6 +26836,8 @@ function getArg(name, fallback = '') {
 
 const BASE = (getArg('base', '') || `http://localhost:${process.env.PORT || 3002}`).replace(/\/+$/, '');
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const JSON_OUT = process.argv.includes('--json');
+const DEFAULT_TIMEOUT_MS = Number.parseInt(getArg('timeout-ms', '5000'), 10) || 5000;
 
 async function check(name, path, options = {}) {
   const url = BASE + path;
@@ -26775,7 +26845,7 @@ async function check(name, path, options = {}) {
 
   try {
     const headers = options.admin && ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {};
-    const res = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(options.timeoutMs || 10000) });
+    const res = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(options.timeoutMs || DEFAULT_TIMEOUT_MS) });
     const durationMs = Date.now() - started;
 
     const ok = options.allowStatuses
@@ -26802,8 +26872,10 @@ async function check(name, path, options = {}) {
 }
 
 async function main() {
-  console.log(`\n🚬 يوميّة Post-Deploy Smoke\n`);
-  console.log(`Base: ${BASE}\n`);
+  if (!JSON_OUT) {
+    console.log(`\n🚬 يوميّة Post-Deploy Smoke\n`);
+    console.log(`Base: ${BASE}\n`);
+  }
 
   const checks = [
     ['health', '/api/health'],
@@ -26827,24 +26899,52 @@ async function main() {
     const result = await check(name, path, options || {});
     results.push(result);
 
-    const icon = result.ok ? '✅' : '❌';
-    console.log(`${icon} ${name}: ${result.status} (${result.durationMs}ms) ${result.error || ''}`);
+    if (!JSON_OUT) {
+      const icon = result.ok ? '✅' : '❌';
+      console.log(`${icon} ${name}: ${result.status} (${result.durationMs}ms) ${result.error || ''}`);
+    }
   }
 
   const failed = results.filter(r => !r.ok);
 
-  console.log('');
-  if (failed.length > 0) {
-    console.log(`❌ Smoke failed: ${failed.length} check(s) failed`);
-    process.exit(1);
+  const output = {
+    ok: failed.length === 0,
+    base: BASE,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    results,
+    failed,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log('');
+    if (failed.length > 0) {
+      console.log(`❌ Smoke failed: ${failed.length} check(s) failed`);
+      process.exit(1);
+    }
+
+    console.log('✅ Post-deploy smoke passed\n');
   }
 
-  console.log('✅ Post-deploy smoke passed\n');
+  if (failed.length > 0) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Smoke script failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (JSON_OUT) {
+    console.log(JSON.stringify({
+      ok: false,
+      base: BASE,
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+      error: err.message,
+      stack: err.stack,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Smoke script failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```
@@ -26948,7 +27048,7 @@ async function main() {
 
   // package/version/deps
   const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
-  checks.push(mk('package_version', pkg.version === '0.56.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.56.0' }));
+  checks.push(mk('package_version', pkg.version === '0.57.0' ? 'pass' : 'fail', `package version is ${pkg.version}`, null, { expected: '0.57.0' }));
 
   const deps = Object.keys(pkg.dependencies || {});
   const allowedDeps = new Set(['dotenv']);
@@ -26963,7 +27063,7 @@ async function main() {
 
   // PWA cache consistency
   const swRaw = await readFile('frontend/sw.js', 'utf-8').catch(() => '');
-  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.56.0';
+  const cacheOk = swRaw.includes(`CACHE_NAME = '${config.PWA.cacheName}'`) && config.PWA.cacheName === 'yawmia-v0.57.0';
   checks.push(mk(
     'pwa_cache',
     cacheOk ? 'pass' : 'fail',
@@ -27128,7 +27228,11 @@ async function main() {
   }
 
   // Phase 59 — Scale thresholds / storage pressure verification.
-  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
+  // Phase 61.1:
+  // Predeploy must remain fast and must not trigger live storage pressure scans.
+  // Use latest persisted artifact only. Missing/stale evidence is reported as warning/fail
+  // by readiness/evidence checks, not remediated during predeploy.
+  const scaleThresholds = runScript('scripts/verify-scale-thresholds.js', ['--json', '--latest-only', ...(STRICT ? ['--strict'] : [])]);
   if (scaleThresholds.parsed) {
     checks.push(mk(
       'scale_thresholds',
@@ -27333,8 +27437,17 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Predeploy check failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      ok: false,
+      error: err.message,
+      stack: err.stack,
+      generatedAt: new Date().toISOString(),
+    }, null, 2));
+  } else {
+    console.error('\n❌ Predeploy check failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
   process.exit(1);
 });
 ```
@@ -28249,11 +28362,15 @@ repair().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/repair-queue.js — Queue Repair CLI (Phase 55)
+// scripts/repair-queue.js — Queue Repair CLI (Phase 55 + Phase 61.1)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/repair-queue.js
-// Rebuilds queue summary/location index and verifies result.
+//   node scripts/repair-queue.js --dry-run --json
+//   node scripts/repair-queue.js --confirm --json
+//
+// Phase 61.1:
+//   Default is dry-run unless --confirm is explicitly passed.
+//   Repair mutates queue summary/location index only when confirmed.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -28261,18 +28378,16 @@ try {
   dotenv.config();
 } catch (_) {}
 
-async function main() {
-  console.log('\n🔧 يوميّة Queue Repair\n');
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
-  const { initDatabase } = await import('../server/services/database.js');
-  await initDatabase();
+function printHuman(result) {
+  console.log(`\n🔧 يوميّة Queue Repair${result.dryRun ? ' (DRY RUN)' : ' (CONFIRMED)'}\n`);
 
-  const { repairQueueStorage } = await import('../server/services/queueHealthVerify.js');
-
-  const result = await repairQueueStorage();
-
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
   console.log(`Before: ${result.before?.status || 'unknown'}`);
-  console.log(`After:  ${result.after?.status || 'unknown'}`);
+  console.log(`After:  ${result.after?.status || (result.dryRun ? 'not-run' : 'unknown')}`);
   console.log(`Duration: ${result.durationMs || 0}ms`);
 
   if (result.summary) {
@@ -28280,20 +28395,68 @@ async function main() {
     console.log(`Legacy records: ${result.summary.legacyRecords || 0}`);
   }
 
-  if (!result.ok) {
-    console.log('\n❌ Queue repair completed with remaining errors');
-    for (const e of result.after?.errors || []) {
-      console.log(`  - ${e}`);
+  if (result.repairPlan && Array.isArray(result.repairPlan.actions)) {
+    console.log('\nRepair plan:');
+    for (const action of result.repairPlan.actions) {
+      console.log(`  - ${action.type}: ${action.reason || ''}`);
     }
-    process.exit(1);
   }
 
-  console.log('\n✅ Queue repair complete\n');
+  if (result.repairPlan && Array.isArray(result.repairPlan.risks) && result.repairPlan.risks.length > 0) {
+    console.log('\nRisks / notes:');
+    for (const risk of result.repairPlan.risks) {
+      console.log(`  ⚠️ ${risk}`);
+    }
+  }
+
+  if (!result.ok) {
+    console.log('\n❌ Queue repair verification has remaining errors');
+    for (const e of result.after?.errors || result.before?.errors || []) {
+      console.log(`  - ${e}`);
+    }
+    return;
+  }
+
+  console.log(result.dryRun
+    ? '\n✅ Queue repair dry-run complete. Re-run with --confirm to mutate summary.\n'
+    : '\n✅ Queue repair complete\n'
+  );
+}
+
+async function main() {
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const { repairQueueStorage } = await import('../server/services/queueHealthVerify.js');
+
+  const result = await repairQueueStorage({
+    dryRun: DRY_RUN,
+  });
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    printHuman(result);
+  }
+
+  if (!result.ok) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Queue repair failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    error: err.message,
+    stack: err.stack,
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(failure, null, 2));
+  } else {
+    console.error('\n❌ Queue repair failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -29415,6 +29578,7 @@ async function scan() {
     scanned: 0,
     invalid: 0,
     zeroByte: 0,
+    nullByte: 0,
     unreadable: 0,
     unreadableDirs: 0,
     maxFilesReached: files.length >= MAX_FILES,
@@ -29450,7 +29614,27 @@ async function scan() {
         continue;
       }
 
-      const raw = await readFile(item.filePath, 'utf-8');
+      const rawBuffer = await readFile(item.filePath);
+      const firstNullByteIndex = rawBuffer.indexOf(0);
+      if (firstNullByteIndex !== -1) {
+        let nullByteCount = 0;
+        for (const b of rawBuffer) {
+          if (b === 0) nullByteCount++;
+        }
+
+        result.nullByte++;
+        result.issues.push({
+          type: 'null_byte_json',
+          filePath: item.filePath,
+          sizeBytes: st.size,
+          nullByteCount,
+          firstNullByteIndex,
+          severity: 'critical',
+        });
+        continue;
+      }
+
+      const raw = rawBuffer.toString('utf-8');
       JSON.parse(raw);
     } catch (err) {
       if (err.name === 'SyntaxError') {
@@ -29479,7 +29663,7 @@ async function scan() {
 
   result.critical = result.issues.filter(i => i.severity === 'critical').length;
   result.warning = result.issues.filter(i => i.severity === 'warning').length;
-  result.ok = result.critical === 0 && result.invalid === 0 && result.zeroByte === 0;
+  result.ok = result.critical === 0 && result.invalid === 0 && result.zeroByte === 0 && result.nullByte === 0;
 
   return result;
 }
@@ -29492,6 +29676,7 @@ function printHuman(result) {
   console.log(`Scanned: ${result.scanned}`);
   console.log(`Invalid: ${result.invalid}`);
   console.log(`Zero-byte: ${result.zeroByte}`);
+  console.log(`Null-byte: ${result.nullByte}`);
   console.log(`Unreadable: ${result.unreadable}`);
   console.log(`Unreadable dirs: ${result.unreadableDirs}`);
   console.log(`Critical: ${result.critical}`);
@@ -30377,6 +30562,14 @@ async function main() {
       console.log('');
     }
 
+    if (result.details && result.details.summaryMismatches && result.details.summaryMismatches.length > 0) {
+      console.log('Summary mismatches:');
+      for (const m of result.details.summaryMismatches) {
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount}`);
+      }
+      console.log('');
+    }
+
     if (result.recommendedActions && result.recommendedActions.length > 0) {
       console.log('Recommended actions:');
       for (const a of result.recommendedActions.slice(0, 10)) {
@@ -30515,8 +30708,10 @@ try {
 //   node scripts/verify-scale-thresholds.js --strict
 //   node scripts/verify-scale-thresholds.js --fail-on-warning
 //   node scripts/verify-scale-thresholds.js --deep
+//   node scripts/verify-scale-thresholds.js --latest-only
 //
 // Default scan is shallow. Deep scan requires --deep.
+// Phase 61.1: --latest-only reads persisted artifacts only and never scans.
 // Exits 1 on critical in --strict mode, or on warning with --fail-on-warning.
 // ═══════════════════════════════════════════════════════════════
 
@@ -30529,6 +30724,7 @@ const JSON_OUT = process.argv.includes('--json');
 const STRICT = process.argv.includes('--strict');
 const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
 const DEEP = process.argv.includes('--deep');
+const LATEST_ONLY = process.argv.includes('--latest-only');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -30555,20 +30751,29 @@ async function main() {
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { getStoragePressure } = await import('../server/services/storagePressure.js');
+  const storagePressure = await import('../server/services/storagePressure.js');
   const { verifyScaleThresholds } = await import('../server/services/scaleThresholds.js');
 
-  const pressureSnapshot = await getStoragePressure({
-    force: true,
-    persist: false,
-    deep: DEEP,
-    collection: collection || undefined,
-  });
+  let pressureSnapshot = null;
+
+  if (LATEST_ONLY) {
+    pressureSnapshot = storagePressure.getLatestStoragePressureSnapshot
+      ? await storagePressure.getLatestStoragePressureSnapshot().catch(() => null)
+      : null;
+  } else {
+    pressureSnapshot = await storagePressure.getStoragePressure({
+      force: true,
+      persist: false,
+      deep: DEEP,
+      collection: collection || undefined,
+    });
+  }
 
   const verification = await verifyScaleThresholds({
     pressureSnapshot,
     persist: false,
     deep: DEEP,
+    latestOnly: LATEST_ONLY,
   });
 
   const warningCount = Array.isArray(verification.warnings) ? verification.warnings.length : 0;
@@ -30580,28 +30785,29 @@ async function main() {
     strict: STRICT,
     failOnWarning: FAIL_ON_WARNING,
     deep: DEEP,
+    latestOnly: LATEST_ONLY,
     collection: collection || null,
     generatedAt: new Date().toISOString(),
     summary: {
       warnings: warningCount,
       criticals: criticalCount,
       recommendations: Array.isArray(verification.recommendations) ? verification.recommendations.length : 0,
-      scannedFiles: pressureSnapshot.scannedFiles || 0,
-      scanMode: pressureSnapshot.mode || 'shallow',
-      scanDurationMs: pressureSnapshot.durationMs || 0,
+      scannedFiles: pressureSnapshot ? (pressureSnapshot.scannedFiles || 0) : 0,
+      scanMode: LATEST_ONLY ? 'latest-only' : (pressureSnapshot ? (pressureSnapshot.mode || 'shallow') : 'unavailable'),
+      scanDurationMs: LATEST_ONLY ? 0 : (pressureSnapshot ? (pressureSnapshot.durationMs || 0) : 0),
     },
     warnings: verification.warnings || [],
     criticals: verification.criticals || [],
     recommendations: verification.recommendations || [],
-    snapshot: {
+    snapshot: pressureSnapshot ? {
       id: pressureSnapshot.id || null,
       timestamp: pressureSnapshot.timestamp || null,
       status: pressureSnapshot.status || null,
-      mode: pressureSnapshot.mode || 'shallow',
+      mode: LATEST_ONLY ? 'latest-only' : (pressureSnapshot.mode || 'shallow'),
       truncated: !!pressureSnapshot.truncated,
       scannedFiles: pressureSnapshot.scannedFiles || 0,
-      durationMs: pressureSnapshot.durationMs || 0,
-    },
+      durationMs: LATEST_ONLY ? 0 : (pressureSnapshot.durationMs || 0),
+    } : null,
   };
 
   if (JSON_OUT) {
@@ -30615,6 +30821,7 @@ async function main() {
     console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
     console.log(`Fail on warning: ${FAIL_ON_WARNING ? 'yes' : 'no'}`);
     console.log(`Scan mode: ${result.summary.scanMode}`);
+    console.log(`Latest only: ${LATEST_ONLY ? 'yes' : 'no'}`);
     console.log(`Scanned files: ${result.summary.scannedFiles}`);
     console.log(`Warnings: ${warningCount}`);
     console.log(`Criticals: ${criticalCount}\n`);
