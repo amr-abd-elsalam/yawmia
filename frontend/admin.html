@@ -292,6 +292,114 @@
         </div>
       </div>
 
+      <!-- Phase 61 — Evidence Cadence -->
+      <div class="admin-section" id="phase61EvidenceSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📊 تشغيل الأدلة — Phase 61</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPhase61Evidence()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          Phase 61 = تشغيل الأدلة والتدريب وبوابة قرار، وليس نقل قاعدة بيانات افتراضي.
+          تحذير واحد لا يكفي. لازم evidence history قبل أي Pilot.
+        </p>
+
+        <div id="phase61EvidenceRecommendations" class="recommended-actions"></div>
+
+        <div id="phase61EvidenceSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePhase61Evidence()">حفظ لقطة Evidence</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPhase61EvidenceSnapshots()">سجل الأدلة</button>
+        </div>
+
+        <div id="phase61EvidenceDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Pilot Gate -->
+      <div class="admin-section" id="pilotGateSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>🚦 بوابة Pilot</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadPilotGate()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          بوابة Pilot تمنع أي externalization مبكر. لا يوجد نقل تلقائي.
+          Pilot لا يُسمح إلا بعد repeated evidence + migration rehearsal + rollback rehearsal + approval + privacy review.
+        </p>
+
+        <div id="pilotGateRecommendations" class="recommended-actions"></div>
+
+        <div id="pilotGateSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <input id="pilotGateCandidateInput" class="form-input form-input--sm" placeholder="candidate اختياري: ops_queue" style="min-width:220px;flex:1;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.capturePilotGate()">حفظ Gate Snapshot</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadPilotGate()">إعادة التقييم</button>
+        </div>
+
+        <h3 style="font-size:1rem;margin-block:1rem 0.75rem;">لماذا Pilot غير مسموح؟</h3>
+        <div id="pilotGateBlockers">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Rollback Rehearsal -->
+      <div class="admin-section" id="rollbackRehearsalSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>↩ تدريب الرجوع</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRollbackRehearsal()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          تدريب الرجوع يثبت أن المنصة قادرة ترجع للمسار الملفي بأمان.
+          لا يغيّر بيانات الإنتاج ولا يتصل بأي DB خارجي.
+        </p>
+
+        <div id="rollbackRehearsalSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-block:1rem;">
+          <input id="rollbackSnapshotInput" class="form-input form-input--sm" placeholder="./migration-snapshots/phase61-test" style="min-width:260px;flex:1;">
+          <button class="btn btn--primary btn--sm" onclick="AdminApp.runRollbackRehearsal()">تشغيل تدريب الرجوع</button>
+          <button class="btn btn--ghost btn--sm" onclick="AdminApp.loadRollbackRehearsal()">عرض آخر تقرير</button>
+        </div>
+
+        <div id="rollbackRehearsalDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
+      <!-- Phase 61 — Repository Contracts -->
+      <div class="admin-section" id="repositoryContractsSection" data-admin-tab-panel="scale">
+        <div class="admin-section__header">
+          <h2>📦 عقود Repository</h2>
+          <button class="refresh-btn" onclick="AdminApp.loadRepositoryContracts()">تحديث</button>
+        </div>
+
+        <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;margin-block-end:1rem;">
+          عقود Repository توثيق واختبارات استعداد فقط. لا يوجد runtime switch ولا external adapter في Phase 61.
+          file-backed JSON يظل source of truth.
+        </p>
+
+        <div id="repositoryContractsRecommendations" class="recommended-actions"></div>
+
+        <div id="repositoryContractsSummary" class="analytics-grid">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+
+        <div id="repositoryContractsDetails">
+          <p style="color: var(--color-text-muted); text-align: center;">جاري التحميل...</p>
+        </div>
+      </div>
+
       <!-- Phase 55 — Scale Hygiene -->
       <div class="admin-section" id="scaleHygieneSection">
         <div class="admin-section__header">

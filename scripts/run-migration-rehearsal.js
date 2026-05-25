@@ -92,7 +92,7 @@ try {
       ? (validation.warnings.length > 0 ? 'warning' : 'passed')
       : 'failed',
     phase: 60,
-    version: '0.56.0',
+    version: '0.57.0',
     rehearsalType: 'snapshot_validation_only',
     dryRun: !!args.dryRun,
     confirm: !!args.confirm,

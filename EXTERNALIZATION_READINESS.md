@@ -398,3 +398,31 @@ Do not treat file locks as distributed consensus.
 Do not skip migration snapshots.
 Do not ignore privacy constraints.
 ```
+
+## Phase 61 — Pilot Gate
+
+Externalization readiness remains advisory.
+
+Before any pilot:
+
+```bash
+node scripts/capture-phase61-evidence.js --persist
+node scripts/run-rollback-rehearsal.js --dry-run --json
+node scripts/evaluate-pilot-gate.js --json
+```
+
+Pilot requires:
+
+```text
+repeated evidence
+migration rehearsal passed
+rollback rehearsal passed
+restore drill fresh
+admin approval
+privacy review
+no critical incidents
+no overdue critical postmortem actions
+one bounded candidate
+```
+
+Phase 61 does not implement PostgreSQL, external queue, external search, or object storage by default.

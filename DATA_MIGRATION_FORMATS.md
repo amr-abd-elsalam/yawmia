@@ -378,3 +378,33 @@ Does not run dual-write.
 Does not delete source data.
 Does not bypass privacy rules.
 ```
+
+## Phase 61 — Deep Rehearsal and Rollback Report
+
+Migration snapshot validation remains required:
+
+```bash
+node scripts/validate-migration-snapshot.js --snapshot=./migration-snapshots/test --strict --json
+```
+
+Phase 61 adds rollback rehearsal:
+
+```bash
+node scripts/run-rollback-rehearsal.js --dry-run --json
+```
+
+Required report fields:
+
+```json
+{
+  "sourceDataMutated": false,
+  "externalDbConnected": false,
+  "backupReference": null,
+  "restoreDrillReference": null,
+  "indexRepairPlan": [],
+  "queueVerifyPlan": [],
+  "smokePlan": []
+}
+```
+
+No snapshot validation/rehearsal may include raw tokens, secrets, identity images, or raw base64 payloads.

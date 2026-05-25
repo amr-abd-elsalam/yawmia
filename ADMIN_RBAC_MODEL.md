@@ -239,3 +239,27 @@ Do not bypass audit logs.
 Do not allow read_only_admin to run storage pressure capture or threshold verification.
 Do not use scale warnings as automatic approval for database migration.
 Do not grant super_admin for routine storage pressure review.
+
+## Phase 61 — Externalization Pilot Approval
+
+Dangerous action:
+
+```text
+externalization_pilot
+```
+
+Pilot gate requires an approved admin approval record before any bounded external pilot.
+
+Approval does not execute the pilot.  
+Approval only removes one blocker from the gate.
+
+The gate must still verify:
+
+```text
+repeated evidence
+migration rehearsal
+rollback rehearsal
+restore drill freshness
+privacy review
+incident/postmortem status
+```

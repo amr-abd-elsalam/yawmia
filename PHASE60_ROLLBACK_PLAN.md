@@ -134,3 +134,18 @@ Do not skip queue verification.
 Do not run multiple writers during rollback.
 Do not rely on external system as only source of truth until cutover is approved.
 ```
+
+## Phase 61 Update
+
+Rollback plan becomes a reportable rehearsal:
+
+```bash
+node scripts/run-rollback-rehearsal.js --dry-run --json
+node scripts/run-rollback-rehearsal.js --persist --confirm
+```
+
+The rehearsal does not mutate source data.  
+The rehearsal does not restore production.  
+The rehearsal does not connect external systems.
+
+It produces a file-backed report used by the Pilot Gate.

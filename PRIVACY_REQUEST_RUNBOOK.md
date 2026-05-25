@@ -139,3 +139,17 @@ If privacy export leaks sensitive data:
 4. Create postmortem if severity is critical.
 For high severity, create postmortem if user privacy impact is confirmed.
 5. Rotate any leaked secrets.
+
+## Phase 61 — Privacy Constraints for Pilot
+
+Before any external pilot:
+
+```text
+privacy export must still work
+privacy anonymization preview must still work
+privacy anonymization must be idempotent
+sessions must not be exported as raw tokens
+identity image references must remain controlled
+```
+
+No external pilot may bypass privacy request workflows.

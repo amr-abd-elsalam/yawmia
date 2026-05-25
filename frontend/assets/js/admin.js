@@ -188,6 +188,10 @@ var AdminApp = (function () {
         loadMigrationRehearsal(),
         loadBenchmarkHistory(),
         loadMultiInstanceBoundary(),
+        loadPhase61Evidence(),
+        loadPilotGate(),
+        loadRollbackRehearsal(),
+        loadRepositoryContracts(),
         loadScaleHygiene(),
         loadGovernanceDashboard(),
       ]).catch(function () {});
@@ -4606,6 +4610,432 @@ var AdminApp = (function () {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Phase 61 — Evidence Cadence + Pilot Gate + Rollback + Repository Contracts
+  // ═══════════════════════════════════════════════════════════════
+
+  function phase61StatusClass(status) {
+    if (status === 'fresh' || status === 'passed' || status === 'ok') return 'phase61-evidence-card--fresh';
+    if (status === 'critical' || status === 'failed') return 'phase61-evidence-card--critical';
+    if (status === 'missing') return 'phase61-evidence-card--missing';
+    return 'phase61-evidence-card--stale';
+  }
+
+  function phase61StatusLabel(status) {
+    var labels = {
+      fresh: 'محدثة',
+      stale: 'قديمة',
+      missing: 'ناقصة',
+      critical: 'حرجة',
+      passed: 'ناجح',
+      warning: 'تحذير',
+      failed: 'فشل',
+      ok: 'مستقر',
+      blocked: 'ممنوع',
+      approval_required: 'يحتاج موافقة',
+    };
+    return labels[status] || status || 'غير معروف';
+  }
+
+  async function loadPhase61Evidence() {
+    var summaryEl = document.getElementById('phase61EvidenceSummary');
+    var detailsEl = document.getElementById('phase61EvidenceDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/phase61/evidence');
+      var evidence = data.evidence || {};
+
+      renderPhase61EvidenceSummary(evidence);
+      renderPhase61EvidenceDetails(evidence);
+      renderRecommendedActions('phase61EvidenceRecommendations', evidence.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تشغيل الأدلة</p>';
+    }
+  }
+
+  async function capturePhase61Evidence() {
+    try {
+      var data = await apiWrite('POST', '/api/admin/phase61/evidence/capture', {});
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم حفظ لقطة Evidence Cadence');
+        renderPhase61EvidenceSummary(data.evidence || {});
+        renderPhase61EvidenceDetails(data.evidence || {});
+        renderRecommendedActions('phase61EvidenceRecommendations', (data.evidence && data.evidence.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ Evidence Cadence');
+    }
+  }
+
+  async function loadPhase61EvidenceSnapshots() {
+    var detailsEl = document.getElementById('phase61EvidenceDetails');
+    if (!detailsEl) return;
+
+    try {
+      var data = await api('/api/admin/phase61/evidence/snapshots?limit=20');
+      var rows = data.snapshots || [];
+
+      if (rows.length === 0) {
+        detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد سجل Evidence Cadence بعد</p>';
+        return;
+      }
+
+      var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">سجل Evidence Cadence</h3>';
+      html += '<table class="admin-table"><thead><tr><th>ID</th><th>Status</th><th>Warnings</th><th>Blockers</th><th>Created</th></tr></thead><tbody>';
+
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><small>' + escapeHtml(r.id || '-') + '</small></td>' +
+          '<td>' + escapeHtml(phase61StatusLabel(r.status)) + '</td>' +
+          '<td>' + escapeHtml(String((r.warnings || []).length)) + '</td>' +
+          '<td>' + escapeHtml(String((r.blockers || []).length)) + '</td>' +
+          '<td><small>' + escapeHtml(r.createdAt ? new Date(r.createdAt).toLocaleString('ar-EG') : '-') + '</small></td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table>';
+      detailsEl.innerHTML = html;
+    } catch (err) {
+      detailsEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل سجل الأدلة</p>';
+    }
+  }
+
+  function renderPhase61EvidenceSummary(evidence) {
+    var el = document.getElementById('phase61EvidenceSummary');
+    if (!el) return;
+
+    var latest = evidence.latest || {};
+    var cards = [
+      { value: phase61StatusLabel(evidence.status), label: 'حالة الأدلة', status: evidence.status },
+      { value: latest.storagePressure ? phase61StatusLabel(latest.storagePressure.status) : 'ناقصة', label: 'Storage Pressure', status: latest.storagePressure ? latest.storagePressure.status : 'missing' },
+      { value: latest.benchmark ? phase61StatusLabel(latest.benchmark.status) : 'ناقصة', label: 'Benchmark', status: latest.benchmark ? latest.benchmark.status : 'missing' },
+      { value: latest.externalizationDecision ? phase61StatusLabel(latest.externalizationDecision.status) : 'ناقصة', label: 'Decision Snapshot', status: latest.externalizationDecision ? latest.externalizationDecision.status : 'missing' },
+      { value: latest.rollbackRehearsal ? phase61StatusLabel(latest.rollbackRehearsal.status) : 'ناقصة', label: 'Rollback Rehearsal', status: latest.rollbackRehearsal ? latest.rollbackRehearsal.status : 'missing' },
+      { value: (evidence.blockers || []).length, label: 'Blockers', status: (evidence.blockers || []).length > 0 ? 'critical' : 'fresh' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'phase61-evidence-card ' + phase61StatusClass(c.status);
+      card.innerHTML =
+        '<div class="phase61-evidence-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="phase61-evidence-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderPhase61EvidenceDetails(evidence) {
+    var el = document.getElementById('phase61EvidenceDetails');
+    if (!el) return;
+
+    var latest = evidence.latest || {};
+    var rows = Object.keys(latest).map(function (k) {
+      return { key: k, value: latest[k] };
+    });
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Evidence Timeline</h3>';
+    html += '<table class="admin-table"><thead><tr><th>Evidence</th><th>Status</th><th>Age</th><th>ID</th></tr></thead><tbody>';
+
+    rows.forEach(function (row) {
+      var v = row.value;
+      html += '<tr>' +
+        '<td>' + escapeHtml(row.key) + '</td>' +
+        '<td>' + escapeHtml(v ? phase61StatusLabel(v.status) : 'ناقصة') + '</td>' +
+        '<td>' + escapeHtml(v && v.ageDays != null ? String(v.ageDays) + ' يوم' : '-') + '</td>' +
+        '<td><small>' + escapeHtml(v && v.id ? v.id : '-') + '</small></td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+
+    var blockers = evidence.blockers || [];
+    if (blockers.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Blockers</h3><div class="scale-hygiene-warning-list">';
+      blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high"><strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' + escapeHtml(b.message || '') + '</div>';
+      });
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function loadPilotGate() {
+    var summaryEl = document.getElementById('pilotGateSummary');
+    var blockersEl = document.getElementById('pilotGateBlockers');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (blockersEl) blockersEl.innerHTML = '';
+
+    try {
+      var candidateEl = document.getElementById('pilotGateCandidateInput');
+      var candidate = candidateEl ? candidateEl.value.trim() : '';
+
+      var url = '/api/admin/phase61/pilot-gate';
+      if (candidate) url += '?candidate=' + encodeURIComponent(candidate);
+
+      var data = await api(url);
+      var gate = data.gate || {};
+
+      renderPilotGateSummary(gate);
+      renderPilotGateBlockers(gate);
+      renderRecommendedActions('pilotGateRecommendations', gate.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل بوابة Pilot</p>';
+    }
+  }
+
+  async function capturePilotGate() {
+    try {
+      var candidateEl = document.getElementById('pilotGateCandidateInput');
+      var candidate = candidateEl ? candidateEl.value.trim() : '';
+
+      var data = await apiWrite('POST', '/api/admin/phase61/pilot-gate/capture', {
+        candidate: candidate || undefined
+      });
+
+      if (data && data.ok) {
+        if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم حفظ Pilot Gate snapshot');
+        renderPilotGateSummary(data.gate || {});
+        renderPilotGateBlockers(data.gate || {});
+        renderRecommendedActions('pilotGateRecommendations', (data.gate && data.gate.recommendations) || []);
+      }
+    } catch (err) {
+      showError(err.message || 'خطأ في حفظ Pilot Gate');
+    }
+  }
+
+  function renderPilotGateSummary(gate) {
+    var el = document.getElementById('pilotGateSummary');
+    if (!el) return;
+
+    var cards = [
+      { value: gate.candidate || '-', label: 'Candidate' },
+      { value: gate.pilotAllowed ? 'نعم' : 'لا', label: 'Pilot مسموح؟' },
+      { value: gate.implementationAllowed ? 'نعم' : 'لا', label: 'تنفيذ خارجي؟' },
+      { value: (gate.blockers || []).length, label: 'Blockers' },
+      { value: (gate.requirements || []).filter(function (r) { return r.passed; }).length + '/' + (gate.requirements || []).length, label: 'Checklist' },
+      { value: phase61StatusLabel(gate.status || 'blocked'), label: 'Status' },
+    ];
+
+    el.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      var cls = gate.pilotAllowed ? 'pilot-gate-card--ready' : 'pilot-gate-card--blocked';
+      if (c.label === 'تنفيذ خارجي?' && gate.implementationAllowed === false) cls = 'pilot-gate-card--warning';
+      card.className = 'pilot-gate-card ' + cls;
+      card.innerHTML =
+        '<div class="pilot-gate-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="pilot-gate-card__label">' + escapeHtml(c.label) + '</div>';
+      el.appendChild(card);
+    });
+  }
+
+  function renderPilotGateBlockers(gate) {
+    var el = document.getElementById('pilotGateBlockers');
+    if (!el) return;
+
+    var blockers = gate.blockers || [];
+    var requirements = gate.requirements || [];
+
+    var html = '';
+
+    if (blockers.length === 0) {
+      html += '<div class="recommended-action-card recommended-action-card--info">' +
+        '<strong>ℹ️ لا توجد blockers في التقييم الحالي</strong>' +
+        '<p>لكن implementationAllowed يظل false في Phase 61 بدون طلب صريح ومرحلة تنفيذ منفصلة.</p>' +
+      '</div>';
+    } else {
+      html += '<div class="scale-hygiene-warning-list">';
+      blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high">' +
+          '<strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' +
+          escapeHtml(b.message || '') +
+          (b.recommendation ? '<br><small>' + escapeHtml(b.recommendation) + '</small>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (requirements.length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Candidate Gate Checklist</h3>';
+      html += '<table class="admin-table"><thead><tr><th>Requirement</th><th>Status</th></tr></thead><tbody>';
+      requirements.forEach(function (r) {
+        html += '<tr>' +
+          '<td>' + escapeHtml(r.label || r.id) + '</td>' +
+          '<td>' + (r.passed ? '<span class="repository-contract-status-badge repository-contract-status-badge--ok">✓</span>' : '<span class="repository-contract-status-badge repository-contract-status-badge--missing">✗</span>') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  async function loadRollbackRehearsal() {
+    var summaryEl = document.getElementById('rollbackRehearsalSummary');
+    var detailsEl = document.getElementById('rollbackRehearsalDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/rollback-rehearsal?limit=10');
+      var latest = data.latest || null;
+      renderRollbackRehearsalStatus(latest, data.rehearsals || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل تدريب الرجوع</p>';
+    }
+  }
+
+  async function runRollbackRehearsal() {
+    try {
+      var snapshotEl = document.getElementById('rollbackSnapshotInput');
+      var snapshotReference = snapshotEl ? snapshotEl.value.trim() : '';
+
+      var data = await apiWrite('POST', '/api/admin/rollback-rehearsal/run', {
+        dryRun: true,
+        persist: true,
+        snapshotReference: snapshotReference || undefined
+      });
+
+      if (typeof YawmiaToast !== 'undefined') {
+        if (data.ok) YawmiaToast.success('تم تشغيل تدريب الرجوع');
+        else YawmiaToast.warning('تدريب الرجوع خرج بتحذيرات/Blockers');
+      }
+
+      renderRollbackRehearsalStatus(data.rehearsal, [data.rehearsal]);
+      loadPilotGate();
+    } catch (err) {
+      showError(err.message || 'خطأ في تشغيل تدريب الرجوع');
+    }
+  }
+
+  function renderRollbackRehearsalStatus(latest, rows) {
+    var summaryEl = document.getElementById('rollbackRehearsalSummary');
+    var detailsEl = document.getElementById('rollbackRehearsalDetails');
+    if (!summaryEl) return;
+
+    var status = latest ? latest.status : 'missing';
+    var cards = [
+      { value: latest ? phase61StatusLabel(latest.status) : 'ناقصة', label: 'آخر تدريب' },
+      { value: latest ? (latest.sourceDataMutated ? 'نعم' : 'لا') : '-', label: 'غيّر المصدر؟' },
+      { value: latest ? (latest.externalDbConnected ? 'نعم' : 'لا') : '-', label: 'اتصل DB خارجي؟' },
+      { value: latest ? ((latest.blockers || []).length) : '-', label: 'Blockers' },
+      { value: latest ? ((latest.warnings || []).length) : '-', label: 'Warnings' },
+    ];
+
+    summaryEl.innerHTML = '';
+    cards.forEach(function (c) {
+      var card = document.createElement('div');
+      card.className = 'rollback-rehearsal-card rollback-rehearsal-card--' + (status === 'passed' ? 'passed' : status === 'failed' ? 'failed' : 'warning');
+      card.innerHTML =
+        '<div class="rollback-rehearsal-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+        '<div class="rollback-rehearsal-card__label">' + escapeHtml(c.label) + '</div>';
+      summaryEl.appendChild(card);
+    });
+
+    if (!detailsEl) return;
+
+    if (!latest) {
+      detailsEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا يوجد Rollback Rehearsal بعد. شغّل تدريب الرجوع قبل أي Pilot.</p>';
+      return;
+    }
+
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Rollback Plan</h3>';
+    html += '<table class="admin-table"><thead><tr><th>Plan</th><th>Commands</th></tr></thead><tbody>';
+    html += '<tr><td>Index Repair</td><td><small>' + escapeHtml((latest.indexRepairPlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '<tr><td>Queue Verify</td><td><small>' + escapeHtml((latest.queueVerifyPlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '<tr><td>Smoke</td><td><small>' + escapeHtml((latest.smokePlan || []).map(function (x) { return x.command; }).join(' · ')) + '</small></td></tr>';
+    html += '</tbody></table>';
+
+    if ((latest.blockers || []).length > 0) {
+      html += '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Blockers</h3><div class="scale-hygiene-warning-list">';
+      latest.blockers.forEach(function (b) {
+        html += '<div class="scale-hygiene-warning scale-hygiene-warning--high"><strong>' + escapeHtml(b.code || 'BLOCKER') + '</strong>: ' + escapeHtml(b.message || '') + '</div>';
+      });
+      html += '</div>';
+    }
+
+    detailsEl.innerHTML = html;
+  }
+
+  async function loadRepositoryContracts() {
+    var summaryEl = document.getElementById('repositoryContractsSummary');
+    var detailsEl = document.getElementById('repositoryContractsDetails');
+
+    if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">جاري التحميل...</p>';
+    if (detailsEl) detailsEl.innerHTML = '';
+
+    try {
+      var data = await api('/api/admin/repository-contracts');
+      var report = data.repositoryContracts || {};
+
+      renderRepositoryContracts(report);
+      renderRecommendedActions('repositoryContractsRecommendations', report.recommendations || []);
+    } catch (err) {
+      if (summaryEl) summaryEl.innerHTML = '<p style="color:var(--color-error);text-align:center;">خطأ في تحميل عقود Repository</p>';
+    }
+  }
+
+  function renderRepositoryContracts(report) {
+    var summaryEl = document.getElementById('repositoryContractsSummary');
+    var detailsEl = document.getElementById('repositoryContractsDetails');
+
+    if (summaryEl) {
+      var cards = [
+        { value: report.fileBackedSourceOfTruth ? 'نعم' : 'لا', label: 'File-backed Source' },
+        { value: report.runtimeSwitchEnabled ? 'نعم' : 'لا', label: 'Runtime Switch' },
+        { value: report.externalAdapterImplemented ? 'نعم' : 'لا', label: 'External Adapter' },
+        { value: (report.matrix || []).length, label: 'Contracts' },
+        { value: (report.blockers || []).length, label: 'Blockers' },
+        { value: phase61StatusLabel(report.status || 'ok'), label: 'Status' },
+      ];
+
+      summaryEl.innerHTML = '';
+      cards.forEach(function (c) {
+        var card = document.createElement('div');
+        var cls = c.value === 'نعم' && (c.label === 'Runtime Switch' || c.label === 'External Adapter')
+          ? 'repository-contract-card--critical'
+          : 'repository-contract-card--ok';
+        card.className = 'repository-contract-card ' + cls;
+        card.innerHTML =
+          '<div class="repository-contract-card__value">' + escapeHtml(String(c.value)) + '</div>' +
+          '<div class="repository-contract-card__label">' + escapeHtml(c.label) + '</div>';
+        summaryEl.appendChild(card);
+      });
+    }
+
+    if (!detailsEl) return;
+
+    var rows = report.matrix || [];
+    var html = '<h3 style="font-size:1rem;margin-block:1rem 0.75rem;">Repository Contract Matrix</h3>';
+
+    if (rows.length === 0) {
+      html += '<p style="color:var(--color-text-muted);text-align:center;">لا توجد عقود مسجلة</p>';
+    } else {
+      html += '<table class="admin-table"><thead><tr><th>Repository</th><th>Collections</th><th>Guarantees</th></tr></thead><tbody>';
+      rows.forEach(function (r) {
+        html += '<tr>' +
+          '<td><strong>' + escapeHtml(r.name || '-') + '</strong></td>' +
+          '<td><small>' + escapeHtml((r.collections || []).join(', ')) + '</small></td>' +
+          '<td><small>' + escapeHtml((r.guarantees || []).slice(0, 3).join(' · ')) + '</small></td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    html += '<p style="color:var(--color-text-muted);font-size:0.82rem;margin-block-start:1rem;">' +
+      'لا يوجد runtime switch ولا external adapter في Phase 61. هذه العقود للاستعداد والاختبار فقط.' +
+    '</p>';
+
+    detailsEl.innerHTML = html;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Phase 55 — Scale Hygiene UI
   // ═══════════════════════════════════════════════════════════════
 
@@ -5072,6 +5502,10 @@ var AdminApp = (function () {
       loadPhase60Decision();
       loadMigrationRehearsal();
       loadBenchmarkHistory();
+      loadPhase61Evidence();
+      loadPilotGate();
+      loadRollbackRehearsal();
+      loadRepositoryContracts();
       loadScaleHygiene();
       loadOpsQueueStats();
       loadAlertDeliveries();
@@ -6161,6 +6595,20 @@ var AdminApp = (function () {
     renderBenchmarkHistory: renderBenchmarkHistory,
 
     // Phase 55 — Scale Hygiene
+    loadPhase61Evidence: loadPhase61Evidence,
+    capturePhase61Evidence: capturePhase61Evidence,
+    loadPhase61EvidenceSnapshots: loadPhase61EvidenceSnapshots,
+    renderPhase61EvidenceSummary: renderPhase61EvidenceSummary,
+    renderPhase61EvidenceDetails: renderPhase61EvidenceDetails,
+    loadPilotGate: loadPilotGate,
+    capturePilotGate: capturePilotGate,
+    renderPilotGateSummary: renderPilotGateSummary,
+    renderPilotGateBlockers: renderPilotGateBlockers,
+    loadRollbackRehearsal: loadRollbackRehearsal,
+    runRollbackRehearsal: runRollbackRehearsal,
+    renderRollbackRehearsalStatus: renderRollbackRehearsalStatus,
+    loadRepositoryContracts: loadRepositoryContracts,
+    renderRepositoryContracts: renderRepositoryContracts,
     loadScaleHygiene: loadScaleHygiene,
     verifyQueue: verifyQueue,
     compactQueue: compactQueue,

@@ -130,6 +130,79 @@ async function main() {
     });
   }
 
+  // Phase 61 — lightweight evidence/pilot/repository checks.
+  try {
+    const { getEvidenceCadenceStatus } = await import('../server/services/phase61EvidenceCadence.js');
+    const evidence = await getEvidenceCadenceStatus();
+    checks.push({
+      id: 'phase61_evidence_cadence',
+      status: evidence.status === 'fresh' ? 'pass' : 'warn',
+      message: evidence.status === 'fresh'
+        ? 'Phase 61 evidence cadence is fresh'
+        : `Phase 61 evidence cadence is ${evidence.status}`,
+      details: {
+        warningCount: evidence.warnings?.length || 0,
+        blockerCount: evidence.blockers?.length || 0,
+      },
+      recommendation: 'node scripts/capture-phase61-evidence.js --persist',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_evidence_cadence',
+      status: 'warn',
+      message: 'Could not evaluate Phase 61 evidence cadence',
+      details: { error: err.message },
+    });
+  }
+
+  try {
+    const { getPilotDecisionGate } = await import('../server/services/pilotDecisionGate.js');
+    const gate = await getPilotDecisionGate();
+    checks.push({
+      id: 'phase61_pilot_gate',
+      status: gate.implementationAllowed ? 'fail' : 'pass',
+      message: gate.implementationAllowed
+        ? 'Pilot gate unexpectedly allows implementation'
+        : 'Pilot gate blocks external implementation by default',
+      details: {
+        pilotAllowed: !!gate.pilotAllowed,
+        implementationAllowed: !!gate.implementationAllowed,
+        blockerCount: gate.blockers?.length || 0,
+      },
+      recommendation: 'node scripts/evaluate-pilot-gate.js --json',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_pilot_gate',
+      status: 'warn',
+      message: 'Could not evaluate pilot gate',
+      details: { error: err.message },
+    });
+  }
+
+  try {
+    const { getRepositoryContractReadiness } = await import('../server/services/repositoryContractReport.js');
+    const contracts = await getRepositoryContractReadiness();
+    checks.push({
+      id: 'phase61_repository_contracts',
+      status: contracts.status === 'critical' ? 'fail' : (contracts.status === 'warning' ? 'warn' : 'pass'),
+      message: 'Repository contract readiness checked',
+      details: {
+        status: contracts.status,
+        runtimeSwitchEnabled: !!contracts.runtimeSwitchEnabled,
+        externalAdapterImplemented: !!contracts.externalAdapterImplemented,
+      },
+      recommendation: 'node scripts/verify-repository-contracts.js --json',
+    });
+  } catch (err) {
+    checks.push({
+      id: 'phase61_repository_contracts',
+      status: 'warn',
+      message: 'Could not evaluate repository contracts',
+      details: { error: err.message },
+    });
+  }
+
   // JSON health
   const jsonHealth = runScript('scripts/verify-data-json.js', ['--json', ...(STRICT ? ['--strict'] : [])]);
   if (jsonHealth.parsed) {

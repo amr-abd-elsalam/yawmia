@@ -5623,3 +5623,132 @@ textarea:focus:not(:focus-visible) {
     font-size: 0.68rem;
   }
 }
+
+/* ═══ Phase 61 — Evidence Cadence + Pilot Gate + Rollback + Repository Contracts ═══ */
+.phase61-evidence-card,
+.pilot-gate-card,
+.rollback-rehearsal-card,
+.repository-contract-card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.phase61-evidence-card__value,
+.pilot-gate-card__value,
+.rollback-rehearsal-card__value,
+.repository-contract-card__value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--color-primary);
+}
+
+.phase61-evidence-card__label,
+.pilot-gate-card__label,
+.rollback-rehearsal-card__label,
+.repository-contract-card__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin-block-start: 0.35rem;
+}
+
+.phase61-evidence-card--fresh,
+.rollback-rehearsal-card--passed,
+.pilot-gate-card--ready,
+.repository-contract-card--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.phase61-evidence-card--fresh .phase61-evidence-card__value,
+.rollback-rehearsal-card--passed .rollback-rehearsal-card__value,
+.pilot-gate-card--ready .pilot-gate-card__value,
+.repository-contract-card--ok .repository-contract-card__value {
+  color: var(--color-success);
+}
+
+.phase61-evidence-card--stale,
+.rollback-rehearsal-card--warning,
+.pilot-gate-card--warning,
+.repository-contract-card--warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.phase61-evidence-card--stale .phase61-evidence-card__value,
+.rollback-rehearsal-card--warning .rollback-rehearsal-card__value,
+.pilot-gate-card--warning .pilot-gate-card__value,
+.repository-contract-card--warning .repository-contract-card__value {
+  color: var(--color-warning);
+}
+
+.phase61-evidence-card--missing,
+.phase61-evidence-card--critical,
+.rollback-rehearsal-card--failed,
+.pilot-gate-card--blocked,
+.repository-contract-card--critical {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.phase61-evidence-card--missing .phase61-evidence-card__value,
+.phase61-evidence-card--critical .phase61-evidence-card__value,
+.rollback-rehearsal-card--failed .rollback-rehearsal-card__value,
+.pilot-gate-card--blocked .pilot-gate-card__value,
+.repository-contract-card--critical .repository-contract-card__value {
+  color: var(--color-error);
+}
+
+.repository-contract-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.repository-contract-status-badge--ok {
+  color: var(--color-success);
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.repository-contract-status-badge--warning {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.repository-contract-status-badge--missing {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 600px) {
+  #phase61EvidenceSection .btn,
+  #pilotGateSection .btn,
+  #rollbackRehearsalSection .btn,
+  #repositoryContractsSection .btn {
+    min-height: 44px;
+  }
+
+  .phase61-evidence-card,
+  .pilot-gate-card,
+  .rollback-rehearsal-card,
+  .repository-contract-card {
+    padding: 0.9rem;
+  }
+}

@@ -228,3 +228,20 @@ Review:
 - expired exports
 - anonymization queue jobs
 - failed privacy jobs
+
+## Phase 61 — Privacy Review Before Pilot
+
+Any future externalization pilot requires a completed privacy review.
+
+Privacy review must confirm:
+
+```text
+user data export semantics preserved
+user anonymization remains idempotent
+raw session tokens are not exported
+identity images remain protected
+financial/audit records are not blindly deleted
+rollback preserves privacy state
+```
+
+Pilot gate blocks if privacy review is missing.

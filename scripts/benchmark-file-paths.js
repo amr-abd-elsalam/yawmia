@@ -222,7 +222,7 @@ async function main() {
     ok: errorRows.length === 0,
     timestamp: new Date().toISOString(),
     generatedAt: new Date().toISOString(),
-    version: '0.56.0',
+    version: '0.57.0',
     sample: SAMPLE,
     includeHeavy: INCLUDE_HEAVY,
     persisted: false,

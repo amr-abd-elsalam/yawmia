@@ -160,3 +160,25 @@ report persisted
 rollback plan exists
 weekly ops review updated
 ```
+
+## Phase 61 Update
+
+Phase 61 deepens rehearsal reports but keeps them non-destructive.
+
+Additional Phase 61 checks:
+
+```text
+rollback plan checked
+restore drill linked
+index repair plan included
+queue verify plan included
+postdeploy smoke plan included
+```
+
+Run:
+
+```bash
+node scripts/run-rollback-rehearsal.js --dry-run --json
+```
+
+No external DB connection is introduced.

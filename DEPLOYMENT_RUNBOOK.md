@@ -460,3 +460,44 @@ MULTI_INSTANCE_BOUNDARY.md
 4. `payments`
 5. `messages/workrooms`
 6. `ops_queue`
+
+---
+
+## Phase 61 — Evidence Cadence Deployment Gate
+
+قبل أي deploy مهم:
+
+```bash
+node scripts/capture-phase61-evidence.js --json
+node scripts/evaluate-pilot-gate.js --json
+node scripts/verify-repository-contracts.js --json
+```
+
+قواعد:
+
+```text
+Missing evidence = warning, not migration.
+Pilot gate must keep implementationAllowed=false by default.
+No PostgreSQL/external DB/search/queue is deployed by Phase 61.
+Do not run multiple writers.
+Do not enable runtime repository switch.
+```
+
+لو كان deploy قبل Pilot مستقبلي:
+
+```bash
+node scripts/run-rollback-rehearsal.js --dry-run --json
+node scripts/run-backup-restore-drill.js
+node scripts/postdeploy-smoke.js --json
+```
+
+Pilot ممنوع إذا:
+
+```text
+rollback rehearsal missing/failed
+restore drill stale/failed
+admin approval missing
+privacy review missing
+critical incident open
+critical postmortem action overdue
+```

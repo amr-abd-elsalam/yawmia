@@ -520,6 +520,31 @@ const builtInMigrations = [
       logger.info('Migration v20: Phase 60 evidence + rehearsal directories registered (no heavy scan, no externalization)');
     },
   },
+  {
+    version: 21,
+    name: 'Phase 61: Evidence Cadence, Rollback Rehearsal, and Pilot Decision Gate',
+    up: async () => {
+      // Phase 61 registers additive advisory structures:
+      //   - metrics/phase61-evidence
+      //   - migration-snapshots/rehearsals/rollback
+      //   - metrics/pilot-decisions
+      //   - metrics/repository-contracts
+      //
+      // This migration intentionally does NOT:
+      //   - run storage pressure scans
+      //   - run benchmarks
+      //   - export migration snapshots
+      //   - validate snapshots
+      //   - run migration rehearsals
+      //   - run rollback rehearsals
+      //   - externalize any data
+      //   - connect to external DB/search/queue
+      //   - enable runtime repository switching
+      //
+      // Phase 61 operationalizes evidence cadence and pilot gating only.
+      logger.info('Migration v21: Phase 61 evidence cadence + rollback rehearsal + pilot gate directories registered (no heavy scan, no externalization)');
+    },
+  },
 ];
 
 /**

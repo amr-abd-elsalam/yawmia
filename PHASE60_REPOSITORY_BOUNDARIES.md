@@ -153,3 +153,23 @@ No external queue adapter.
 No external search adapter.
 No object storage adapter.
 ```
+
+## Phase 61 Update
+
+Repository boundaries become contract readiness checks.
+
+Run:
+
+```bash
+node scripts/verify-repository-contracts.js --json
+```
+
+Phase 61 does not add runtime repository switching.
+
+Default:
+
+```text
+runtimeSwitchEnabled=false
+externalAdapterImplemented=false
+fileBackedSourceOfTruth=true
+```

@@ -140,6 +140,17 @@ import {
   handleBenchmarkHistory,
 } from './handlers/externalizationDecisionHandler.js';
 import {
+  handleGetPhase61Evidence,
+  handleCapturePhase61Evidence,
+  handleListPhase61EvidenceSnapshots,
+  handleGetPilotDecisionGate,
+  handleCapturePilotDecisionGate,
+  handleRunRollbackRehearsal,
+  handleListRollbackRehearsals,
+  handleGetRollbackRehearsal,
+  handleRepositoryContracts,
+} from './handlers/phase61Handler.js';
+import {
   handleMarketplaceIntelligenceDashboard,
   handleSearchAnalytics,
   handleZeroResultSearches,
@@ -242,7 +253,7 @@ const routes = [
       const response = {
         status: 'ok',
         brand: config.BRAND.name,
-        version: '0.56.0',
+        version: '0.57.0',
         environment: config.ENV ? config.ENV.current : 'development',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -523,7 +534,7 @@ const routes = [
         auth: r.middlewares.some(m => m === requireAuth) ? 'required' : 'none',
         admin: r.middlewares.some(m => m === requireAdmin) ? true : false,
       }));
-      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.56.0' });
+      sendJSON(res, 200, { ok: true, routes: docs, total: docs.length, version: '0.57.0' });
     },
   },
 
@@ -846,6 +857,20 @@ const routes = [
   { method: 'POST', path: '/api/admin/migration-snapshots/validate', middlewares: [requireCapability('admin.ops.review')], handler: handleValidateMigrationSnapshot },
   { method: 'POST', path: '/api/admin/migration-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunMigrationRehearsal },
   { method: 'GET', path: '/api/admin/benchmarks/history', middlewares: [requireCapability('admin.scale.read')], handler: handleBenchmarkHistory },
+
+  // ── Phase 61 — Evidence Cadence + Rollback Rehearsal + Pilot Gate ──
+  { method: 'GET', path: '/api/admin/phase61/evidence', middlewares: [requireCapability('admin.scale.read')], handler: handleGetPhase61Evidence },
+  { method: 'POST', path: '/api/admin/phase61/evidence/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCapturePhase61Evidence },
+  { method: 'GET', path: '/api/admin/phase61/evidence/snapshots', middlewares: [requireCapability('admin.scale.read')], handler: handleListPhase61EvidenceSnapshots },
+
+  { method: 'GET', path: '/api/admin/phase61/pilot-gate', middlewares: [requireCapability('admin.scale.read')], handler: handleGetPilotDecisionGate },
+  { method: 'POST', path: '/api/admin/phase61/pilot-gate/capture', middlewares: [requireCapability('admin.ops.review')], handler: handleCapturePilotDecisionGate },
+
+  { method: 'POST', path: '/api/admin/rollback-rehearsal/run', middlewares: [requireCapability('admin.ops.review')], handler: handleRunRollbackRehearsal },
+  { method: 'GET', path: '/api/admin/rollback-rehearsal', middlewares: [requireCapability('admin.scale.read')], handler: handleListRollbackRehearsals },
+  { method: 'GET', path: '/api/admin/rollback-rehearsal/:id', middlewares: [requireCapability('admin.scale.read')], handler: handleGetRollbackRehearsal },
+
+  { method: 'GET', path: '/api/admin/repository-contracts', middlewares: [requireCapability('admin.scale.read')], handler: handleRepositoryContracts },
 
   { method: 'GET', path: '/api/admin/queue/health', middlewares: [requireAdmin], handler: handleQueueHealth },
   { method: 'POST', path: '/api/admin/queue/verify', middlewares: [requireAdmin], handler: handleQueueVerify },

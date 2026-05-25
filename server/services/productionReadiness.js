@@ -250,6 +250,223 @@ async function checkStoragePressureReadiness(isProd) {
   }
 }
 
+async function checkPhase61Docs(isProd) {
+  const docs = [
+    { id: 'phase61_evidence_cadence_doc_exists', path: './PHASE61_EVIDENCE_CADENCE.md', label: 'PHASE61_EVIDENCE_CADENCE.md' },
+    { id: 'phase61_deep_migration_rehearsal_doc_exists', path: './PHASE61_DEEP_MIGRATION_REHEARSAL.md', label: 'PHASE61_DEEP_MIGRATION_REHEARSAL.md' },
+    { id: 'phase61_rollback_rehearsal_doc_exists', path: './PHASE61_ROLLBACK_REHEARSAL_REPORT.md', label: 'PHASE61_ROLLBACK_REHEARSAL_REPORT.md' },
+    { id: 'phase61_pilot_decision_doc_exists', path: './PHASE61_PILOT_CANDIDATE_DECISION.md', label: 'PHASE61_PILOT_CANDIDATE_DECISION.md' },
+    { id: 'phase61_repository_contracts_doc_exists', path: './PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md', label: 'PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md' },
+    { id: 'phase61_event_bridge_plan_doc_exists', path: './PHASE61_EVENT_BRIDGE_PILOT_PLAN.md', label: 'PHASE61_EVENT_BRIDGE_PILOT_PLAN.md' },
+    { id: 'phase61_sse_fanout_plan_doc_exists', path: './PHASE61_SSE_FANOUT_PILOT_PLAN.md', label: 'PHASE61_SSE_FANOUT_PILOT_PLAN.md' },
+  ];
+
+  const checks = [];
+  for (const d of docs) {
+    const ok = await fileExists(d.path);
+    checks.push(check(
+      d.id,
+      ok ? 'pass' : (isProd ? 'warn' : 'warn'),
+      ok ? `${d.label} exists` : `${d.label} is missing`,
+      { path: d.path },
+      ok ? null : `Create ${d.label}`
+    ));
+  }
+
+  return checks;
+}
+
+async function checkPhase61EvidenceCadence(isProd) {
+  try {
+    const { getEvidenceCadenceStatus } = await import('./phase61EvidenceCadence.js');
+    const status = await getEvidenceCadenceStatus();
+
+    if (!status.enabled) {
+      return check(
+        'phase61_evidence_cadence_available',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 evidence cadence is disabled',
+        status
+      );
+    }
+
+    if (status.status === 'critical') {
+      return check(
+        'phase61_evidence_cadence_available',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 evidence cadence has critical stale/missing blockers',
+        {
+          status: status.status,
+          warningCount: status.warnings.length,
+          blockerCount: status.blockers.length,
+        },
+        'node scripts/capture-phase61-evidence.js --persist'
+      );
+    }
+
+    if (status.status === 'missing' || status.status === 'stale') {
+      return check(
+        'phase61_evidence_cadence_available',
+        'warn',
+        `Phase 61 evidence cadence is ${status.status}`,
+        {
+          status: status.status,
+          warningCount: status.warnings.length,
+          blockerCount: status.blockers.length,
+        },
+        'node scripts/capture-phase61-evidence.js --persist'
+      );
+    }
+
+    return check('phase61_evidence_cadence_available', 'pass', 'Phase 61 evidence cadence is fresh', {
+      status: status.status,
+    });
+  } catch (err) {
+    return check(
+      'phase61_evidence_cadence_available',
+      'warn',
+      'Could not evaluate Phase 61 evidence cadence',
+      { error: err.message },
+      'node scripts/capture-phase61-evidence.js --json'
+    );
+  }
+}
+
+async function checkPhase61PilotGate(isProd) {
+  try {
+    const { getPilotDecisionGate } = await import('./pilotDecisionGate.js');
+    const gate = await getPilotDecisionGate();
+
+    if (!gate.enabled) {
+      return check(
+        'phase61_pilot_gate_blocks_externalization',
+        isProd ? 'warn' : 'warn',
+        'Phase 61 pilot gate is disabled',
+        gate
+      );
+    }
+
+    if (gate.implementationAllowed) {
+      return check(
+        'phase61_pilot_gate_blocks_externalization',
+        'fail',
+        'Phase 61 pilot gate unexpectedly allows implementation',
+        gate
+      );
+    }
+
+    return check(
+      'phase61_pilot_gate_blocks_externalization',
+      'pass',
+      gate.pilotAllowed
+        ? 'Pilot gate has no blockers but implementation remains disabled by default'
+        : 'Pilot gate blocks premature externalization',
+      {
+        pilotAllowed: gate.pilotAllowed,
+        implementationAllowed: gate.implementationAllowed,
+        blockerCount: gate.blockers.length,
+        candidate: gate.candidate || null,
+      }
+    );
+  } catch (err) {
+    return check(
+      'phase61_pilot_gate_blocks_externalization',
+      'warn',
+      'Could not evaluate Phase 61 pilot gate',
+      { error: err.message },
+      'node scripts/evaluate-pilot-gate.js --json'
+    );
+  }
+}
+
+async function checkRepositoryContracts(isProd) {
+  try {
+    const { getRepositoryContractReadiness } = await import('./repositoryContractReport.js');
+    const report = await getRepositoryContractReadiness();
+
+    if (report.status === 'critical') {
+      return check(
+        'repository_contract_docs_exist',
+        isProd ? 'warn' : 'warn',
+        'Repository contract readiness has blockers',
+        {
+          blockerCount: report.blockers.length,
+          warningCount: report.warnings.length,
+          runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+        },
+        'node scripts/verify-repository-contracts.js --json'
+      );
+    }
+
+    if (report.status === 'warning') {
+      return check(
+        'repository_contract_docs_exist',
+        'warn',
+        'Repository contract readiness has warnings',
+        {
+          warningCount: report.warnings.length,
+          runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+        },
+        'node scripts/verify-repository-contracts.js --json'
+      );
+    }
+
+    return check('repository_contract_docs_exist', 'pass', 'Repository contracts are documented and runtime switch is disabled', {
+      contractCount: report.matrix.length,
+      runtimeSwitchEnabled: report.runtimeSwitchEnabled,
+    });
+  } catch (err) {
+    return check(
+      'repository_contract_docs_exist',
+      'warn',
+      'Could not evaluate repository contracts',
+      { error: err.message },
+      'node scripts/verify-repository-contracts.js --json'
+    );
+  }
+}
+
+async function checkRollbackRehearsalReadiness(isProd) {
+  try {
+    const { getLatestRollbackRehearsal } = await import('./rollbackRehearsal.js');
+    const latest = await getLatestRollbackRehearsal();
+
+    if (!latest) {
+      return check(
+        'latest_rollback_rehearsal_warning_if_missing',
+        'warn',
+        'No rollback rehearsal report exists yet',
+        {},
+        'node scripts/run-rollback-rehearsal.js --dry-run --json'
+      );
+    }
+
+    if (latest.status === 'failed') {
+      return check(
+        'latest_rollback_rehearsal_warning_if_missing',
+        isProd ? 'warn' : 'warn',
+        'Latest rollback rehearsal failed',
+        { id: latest.id, status: latest.status },
+        'node scripts/run-rollback-rehearsal.js --dry-run --json'
+      );
+    }
+
+    return check('latest_rollback_rehearsal_warning_if_missing', latest.status === 'passed' ? 'pass' : 'warn', 'Latest rollback rehearsal exists', {
+      id: latest.id,
+      status: latest.status,
+      generatedAt: latest.generatedAt,
+    });
+  } catch (err) {
+    return check(
+      'latest_rollback_rehearsal_warning_if_missing',
+      'warn',
+      'Could not evaluate rollback rehearsal readiness',
+      { error: err.message },
+      'node scripts/run-rollback-rehearsal.js --dry-run --json'
+    );
+  }
+}
+
 async function checkPhase59Docs(isProd) {
   const docs = [
     { id: 'scale_limits_doc_exists', path: './SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
@@ -951,6 +1168,13 @@ export async function runReadinessChecks(options = {}) {
       'node scripts/capture-externalization-decision.js --json'
     ));
   }
+
+  // Phase 61 — Evidence cadence + rollback rehearsal + pilot gate readiness.
+  checks.push(...await checkPhase61Docs(isProd));
+  checks.push(await checkPhase61EvidenceCadence(isProd));
+  checks.push(await checkRollbackRehearsalReadiness(isProd));
+  checks.push(await checkPhase61PilotGate(isProd));
+  checks.push(await checkRepositoryContracts(isProd));
 
   return checks;
 }

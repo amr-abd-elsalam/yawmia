@@ -434,3 +434,32 @@ Escalate immediately if:
 - repeated alert delivery DLQ
 - repeated pressure after compaction/repair
 
+---
+
+## Phase 61 — Weekly Evidence Operating Loop
+
+مرة أسبوعيًا:
+
+```bash
+node scripts/measure-storage-pressure.js --json --persist
+node scripts/benchmark-file-paths.js --json --persist
+node scripts/verify-scale-thresholds.js --json
+node scripts/capture-externalization-decision.js --persist
+node scripts/capture-phase61-evidence.js --persist
+node scripts/evaluate-pilot-gate.js --json
+node scripts/ops-weekly-review.js --persist
+```
+
+قاعدة التشغيل:
+
+```text
+تحذير واحد لا يكفي.
+Benchmark واحد ليس trend.
+Repeated warnings = mitigate file-based first.
+Repeated criticals بعد mitigation = rehearsal_required.
+Pilot requires rollback rehearsal.
+```
+
+لا تشغل deep scans في startup.  
+لا تشغل benchmark داخل readiness.  
+لا تبدأ externalization بدون approval وrollback rehearsal.

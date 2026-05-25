@@ -404,4 +404,30 @@ external search implementation
 distributed locking implementation
 multi-writer production
 ```
----
+
+## Phase 61 — Evidence Before Pilot
+
+Scale thresholds في Phase 61 لا تعني migration تلقائي.
+
+Decision rules:
+
+```text
+one warning → monitor
+repeated warnings → mitigate_file_based
+repeated criticals → rehearsal_required
+pilot_candidate → requires rollback rehearsal + approval + privacy review
+```
+
+Candidate matrix:
+
+| Candidate | Mitigation first |
+|---|---|
+| ops_queue | verify/repair/compact/DLQ review |
+| audit/search | rebuild/verify/token compaction |
+| images | cleanup/dedupe/retention/restore drill impact |
+| messages/workrooms | compact sidecars/receipts/verify indexes |
+| jobs/applications | query index repair/search rebuild |
+| users | phone-index repair/privacy review |
+| payments | audit/financial rollback plan |
+
+No external DB/search/queue implementation in Phase 61 by default.

@@ -416,3 +416,26 @@ node scripts/ops-weekly-review.js --persist
 # Future migration snapshot
 node scripts/export-migration-snapshot.js --dry-run
 ```
+
+## Phase 61 — Storage Pressure Cadence
+
+Storage pressure must be captured weekly:
+
+```bash
+node scripts/measure-storage-pressure.js --json --persist
+node scripts/capture-phase61-evidence.js --persist
+```
+
+Use shallow by default.  
+Use deep scan only off-peak and intentionally.
+
+Storage pressure warnings should trigger:
+
+```text
+verify thresholds
+compact/repair
+benchmark
+ops review
+```
+
+Storage pressure alone must not trigger PostgreSQL/externalization.

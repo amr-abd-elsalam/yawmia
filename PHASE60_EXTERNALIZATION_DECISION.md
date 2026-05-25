@@ -186,3 +186,29 @@ Do not add external dependencies without approval.
 Do not externalize search if Arabic explainability will be lost.
 Do not externalize payments without financial rollback/audit plan.
 ```
+
+## Phase 61 Update
+
+Phase 61 operationalizes this decision framework through:
+
+```text
+evidence cadence
+rollback rehearsal
+pilot decision gate
+repository adapter contracts
+admin visibility
+```
+
+Phase 61 still does not implement external storage by default.
+
+A Phase 61 pilot remains blocked unless:
+
+```text
+repeated evidence exists
+migration rehearsal passed
+rollback rehearsal passed
+restore drill fresh
+admin approval exists
+privacy review passed
+one bounded candidate selected
+```

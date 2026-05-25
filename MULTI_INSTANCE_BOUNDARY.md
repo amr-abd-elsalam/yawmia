@@ -324,3 +324,25 @@ Read replicas:
 
 If you cannot guarantee single writer, do not deploy Phase 59 in production until Phase 60+ externalization is implemented.
 ```
+
+## Phase 61 — EventBridge and SSE Fanout Remain Pilot-Gated
+
+Multi-instance production remains unsafe without:
+
+```text
+external database or equivalent transactional store
+external queue
+EventBus bridge
+SSE fanout
+distributed scheduler/leader election
+rollback plan
+```
+
+Phase 61 only adds planning docs:
+
+```text
+PHASE61_EVENT_BRIDGE_PILOT_PLAN.md
+PHASE61_SSE_FANOUT_PILOT_PLAN.md
+```
+
+No EventBus bridge or SSE fanout implementation is enabled by default.

@@ -103,6 +103,10 @@ export async function getScaleHygieneOverview() {
     rbacMatrix,
     storagePressure,
     phase60Evidence,
+    phase61Evidence,
+    phase61PilotGate,
+    phase61Rollback,
+    repositoryContracts,
   ] = await Promise.all([
     import('./opsQueue.js').then(m => m.getQueueStats()).catch(err => ({ enabled: false, error: err.message })),
     import('./queueCompaction.js').then(m => m.getQueueArchiveStats()).catch(err => ({ error: err.message })),
@@ -133,6 +137,18 @@ export async function getScaleHygieneOverview() {
       .catch(err => ({ enabled: false, error: err.message })),
     import('./phase60Readiness.js')
       .then(m => m.getPhase60EvidenceSummary())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./phase61EvidenceCadence.js')
+      .then(m => m.getEvidenceCadenceStatus())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./pilotDecisionGate.js')
+      .then(m => m.getPilotDecisionGate())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./rollbackRehearsal.js')
+      .then(m => m.getLatestRollbackRehearsal())
+      .catch(err => ({ enabled: false, error: err.message })),
+    import('./repositoryContractReport.js')
+      .then(m => m.getRepositoryContractReadiness())
       .catch(err => ({ enabled: false, error: err.message })),
   ]);
 
@@ -319,6 +335,77 @@ export async function getScaleHygieneOverview() {
     }
   }
 
+  // Phase 61 — Evidence cadence / pilot gate / rollback / repository contract recommendations.
+  if (phase61Evidence && phase61Evidence.enabled !== false) {
+    for (const b of phase61Evidence.blockers || []) {
+      warnings.push({
+        source: 'phase61_evidence',
+        level: 'critical',
+        message: b.message || b.code || 'Phase 61 evidence blocker',
+        details: b,
+      });
+    }
+
+    for (const w of phase61Evidence.warnings || []) {
+      warnings.push({
+        source: 'phase61_evidence',
+        level: w.level || 'warning',
+        message: w.message || w.code || 'Phase 61 evidence warning',
+        details: w,
+      });
+    }
+
+    for (const action of phase61Evidence.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (phase61PilotGate && phase61PilotGate.enabled !== false) {
+    if (phase61PilotGate.implementationAllowed) {
+      warnings.push({
+        source: 'phase61_pilot_gate',
+        level: 'critical',
+        message: 'Pilot gate unexpectedly allows implementation',
+        details: phase61PilotGate,
+      });
+    }
+
+    if (!phase61PilotGate.pilotAllowed) {
+      recommendedActions.push({
+        id: 'phase61_pilot_gate_review',
+        label: 'راجع بوابة Pilot',
+        severity: 'warning',
+        command: 'node scripts/evaluate-pilot-gate.js --json',
+        adminRoute: '/api/admin/phase61/pilot-gate',
+        reason: 'Pilot غير مسموح حالياً. راجع blockers قبل أي externalization.',
+      });
+    }
+
+    for (const action of phase61PilotGate.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
+  if (!phase61Rollback || phase61Rollback.enabled === false || phase61Rollback.status === 'failed' || !phase61Rollback.status) {
+    recommendedActions.push({
+      id: 'phase61_rollback_rehearsal',
+      label: 'شغّل تدريب الرجوع',
+      severity: phase61Rollback && phase61Rollback.status === 'failed' ? 'critical' : 'warning',
+      command: 'node scripts/run-rollback-rehearsal.js --dry-run --json',
+      adminRoute: '/api/admin/rollback-rehearsal',
+      reason: 'Rollback rehearsal مطلوب قبل أي Pilot مستقبلي.',
+    });
+  }
+
+  if (repositoryContracts && repositoryContracts.enabled !== false) {
+    for (const action of repositoryContracts.recommendations || []) {
+      const normalized = normalizeAction(action);
+      if (normalized) recommendedActions.push(normalized);
+    }
+  }
+
   if (storagePressure && storagePressure.status === 'critical') {
     recommendedActions.push({
       id: 'storage_pressure_critical_review',
@@ -468,7 +555,18 @@ export async function getScaleHygieneOverview() {
       latestBenchmarkStatus: 'missing',
       recommendations: [],
     },
-    recommendedActions: recommendedActions.slice(0, 12),
+    phase61: {
+      evidenceCadence: phase61Evidence || { enabled: false, status: 'unknown' },
+      pilotGate: phase61PilotGate || { enabled: false, pilotAllowed: false, implementationAllowed: false },
+      rollbackRehearsal: phase61Rollback || null,
+      repositoryContracts: repositoryContracts || { enabled: false, status: 'unknown' },
+      recommendations: [
+        ...(phase61Evidence?.recommendations || []),
+        ...(phase61PilotGate?.recommendations || []),
+        ...(repositoryContracts?.recommendations || []),
+      ],
+    },
+    recommendedActions: recommendedActions.slice(0, 16),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
   };
