@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-25T20:02:01.333Z
+> Auto-generated: 2026-05-25T21:46:42.179Z
 > Files in this part: 87
 
 ## Files
@@ -27487,13 +27487,21 @@ main().catch(err => {
 // ═══════════════════════════════════════════════════════════════
 // Usage:
 //   node scripts/queue-drain.js [--max-cycles=20] [--delay-ms=500]
+//   node scripts/queue-drain.js --dry-run --json
 // Processes due queue jobs without starting the HTTP server.
+//
+// Phase 61.1:
+//   --dry-run is strictly non-mutating.
+//   --json emits machine-readable JSON only.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const DRY_RUN = process.argv.includes('--dry-run');
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback) {
   const prefix = `--${name}=`;
@@ -27509,20 +27517,75 @@ async function sleep(ms) {
 }
 
 async function main() {
+  const started = Date.now();
   const maxCycles = getArg('max-cycles', 20);
   const delayMs = getArg('delay-ms', 500);
 
-  console.log('\n🧵 يوميّة Ops Queue Drain\n');
-  console.log(`   maxCycles: ${maxCycles}`);
-  console.log(`   delayMs: ${delayMs}`);
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const workers = await import('../server/services/queueWorkers.js');
   const queue = await import('../server/services/opsQueue.js');
 
+  if (DRY_RUN) {
+    const stats = await queue.getQueueStats();
+    const result = {
+      ok: true,
+      dryRun: true,
+      mutationPerformed: false,
+      maxCycles,
+      delayMs,
+      totalClaimed: 0,
+      byStatus: stats.byStatus || {},
+      byType: stats.byType || {},
+      totalActiveRecords: stats.totalActiveRecords || 0,
+      summary: stats.summary || null,
+      warnings: [
+        'dry-run does not claim, recover, retry, complete, fail, or mutate queue jobs',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log('\n🧵 يوميّة Ops Queue Drain — Dry Run\n');
+      console.log('   mutationPerformed: false');
+      console.log(`   pending: ${result.byStatus.pending || 0}`);
+      console.log(`   running: ${result.byStatus.running || 0}`);
+      console.log(`   completed: ${result.byStatus.completed || 0}`);
+      console.log(`   failed: ${result.byStatus.failed || 0}`);
+      console.log(`   dead-letter: ${result.byStatus['dead-letter'] || 0}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🧵 يوميّة Ops Queue Drain\n');
+    console.log(`   maxCycles: ${maxCycles}`);
+    console.log(`   delayMs: ${delayMs}`);
+  }
+
+  const workers = await import('../server/services/queueWorkers.js');
+
   let totalClaimed = 0;
+  const cycles = [];
 
   for (let i = 0; i < maxCycles; i++) {
     const result = await workers.processDueJobs();
@@ -27532,7 +27595,16 @@ async function main() {
     const pending = stats.byStatus?.pending || 0;
     const running = stats.byStatus?.running || 0;
 
-    console.log(`   cycle ${i + 1}: claimed=${result.claimed || 0}, pending=${pending}, running=${running}`);
+    cycles.push({
+      cycle: i + 1,
+      claimed: result.claimed || 0,
+      pending,
+      running,
+    });
+
+    if (!JSON_OUT) {
+      console.log(`   cycle ${i + 1}: claimed=${result.claimed || 0}, pending=${pending}, running=${running}`);
+    }
 
     if (pending === 0 && running === 0) break;
     await sleep(delayMs);
@@ -27542,18 +27614,54 @@ async function main() {
 
   const finalStats = await queue.getQueueStats();
 
-  console.log('\n✅ Queue drain complete');
-  console.log(`   totalClaimed: ${totalClaimed}`);
-  console.log(`   pending: ${finalStats.byStatus?.pending || 0}`);
-  console.log(`   running: ${finalStats.byStatus?.running || 0}`);
-  console.log(`   completed: ${finalStats.byStatus?.completed || 0}`);
-  console.log(`   failed: ${finalStats.byStatus?.failed || 0}`);
-  console.log(`   dead-letter: ${finalStats.byStatus?.['dead-letter'] || 0}\n`);
+  const output = {
+    ok: true,
+    dryRun: false,
+    mutationPerformed: totalClaimed > 0,
+    maxCycles,
+    delayMs,
+    cycles,
+    totalClaimed,
+    byStatus: finalStats.byStatus || {},
+    byType: finalStats.byType || {},
+    totalActiveRecords: finalStats.totalActiveRecords || 0,
+    summary: finalStats.summary || null,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log('\n✅ Queue drain complete');
+    console.log(`   totalClaimed: ${totalClaimed}`);
+    console.log(`   pending: ${finalStats.byStatus?.pending || 0}`);
+    console.log(`   running: ${finalStats.byStatus?.running || 0}`);
+    console.log(`   completed: ${finalStats.byStatus?.completed || 0}`);
+    console.log(`   failed: ${finalStats.byStatus?.failed || 0}`);
+    console.log(`   dead-letter: ${finalStats.byStatus?.['dead-letter'] || 0}\n`);
+  }
 }
 
 main().catch(err => {
-  console.error('\n❌ Queue drain failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    mutationPerformed: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    console.error('\n❌ Queue drain failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
