@@ -200,7 +200,7 @@ function recommendationForKind(kind) {
   const map = {
     storagePressure: 'node scripts/measure-storage-pressure.js --json --persist',
     benchmark: 'node scripts/benchmark-file-paths.js --json --persist',
-    scaleThresholds: 'node scripts/verify-scale-thresholds.js --json',
+    scaleThresholds: 'node scripts/verify-scale-thresholds.js --json --latest-only --persist',
     externalizationDecision: 'node scripts/capture-externalization-decision.js --persist',
     migrationRehearsal: 'node scripts/run-migration-rehearsal.js --snapshot=./migration-snapshots/test --dry-run --json',
     rollbackRehearsal: 'node scripts/run-rollback-rehearsal.js --dry-run --json',

@@ -214,7 +214,19 @@ async function main() {
       jsonHealth.parsed
     ));
   } else {
-    checks.push(mk('json_health', 'warn', 'Could not parse JSON health script output', 'node scripts/verify-data-json.js --strict'));
+    checks.push(mk(
+      'json_health',
+      'warn',
+      'Could not parse JSON health script output',
+      'node scripts/verify-data-json.js --strict --json',
+      {
+        status: jsonHealth.status,
+        timedOut: !!jsonHealth.timedOut,
+        error: jsonHealth.error,
+        stdoutTail: String(jsonHealth.stdout || '').slice(-500),
+        stderrTail: String(jsonHealth.stderr || '').slice(-500),
+      }
+    ));
   }
 
   // File health
@@ -228,7 +240,19 @@ async function main() {
       fileHealth.parsed
     ));
   } else {
-    checks.push(mk('file_health', 'warn', 'Could not parse file health script output', 'node scripts/verify-file-health.js --strict'));
+    checks.push(mk(
+      'file_health',
+      'warn',
+      'Could not parse file health script output',
+      'node scripts/verify-file-health.js --strict --json',
+      {
+        status: fileHealth.status,
+        timedOut: !!fileHealth.timedOut,
+        error: fileHealth.error,
+        stdoutTail: String(fileHealth.stdout || '').slice(-500),
+        stderrTail: String(fileHealth.stderr || '').slice(-500),
+      }
+    ));
   }
 
   // Scheduler cadence
@@ -286,7 +310,7 @@ async function main() {
       scaleThresholds.parsed.status === 'critical'
         ? 'Scale thresholds have critical findings'
         : 'Scale thresholds verification completed',
-      'node scripts/verify-scale-thresholds.js --strict',
+      'node scripts/verify-scale-thresholds.js --strict --latest-only --persist',
       scaleThresholds.parsed
     ));
   } else {
@@ -294,7 +318,7 @@ async function main() {
       'scale_thresholds',
       'warn',
       'Could not parse scale threshold verification output',
-      'node scripts/verify-scale-thresholds.js --json'
+      'node scripts/verify-scale-thresholds.js --json --latest-only --persist'
     ));
   }
 

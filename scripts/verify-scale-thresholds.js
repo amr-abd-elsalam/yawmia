@@ -9,6 +9,7 @@
 //   node scripts/verify-scale-thresholds.js --fail-on-warning
 //   node scripts/verify-scale-thresholds.js --deep
 //   node scripts/verify-scale-thresholds.js --latest-only
+//   node scripts/verify-scale-thresholds.js --latest-only --persist
 //
 // Default scan is shallow. Deep scan requires --deep.
 // Phase 61.1: --latest-only reads persisted artifacts only and never scans.
@@ -25,6 +26,7 @@ const STRICT = process.argv.includes('--strict');
 const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
 const DEEP = process.argv.includes('--deep');
 const LATEST_ONLY = process.argv.includes('--latest-only');
+const PERSIST = process.argv.includes('--persist');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -48,7 +50,7 @@ async function main() {
 
   const collection = getArg('collection', '');
 
-  const { initDatabase } = await import('../server/services/database.js');
+  const { initDatabase, atomicWrite, getRecordPath } = await import('../server/services/database.js');
   await initDatabase();
 
   const storagePressure = await import('../server/services/storagePressure.js');
@@ -108,7 +110,45 @@ async function main() {
       scannedFiles: pressureSnapshot.scannedFiles || 0,
       durationMs: LATEST_ONLY ? 0 : (pressureSnapshot.durationMs || 0),
     } : null,
+    persistRequested: PERSIST,
+    persisted: false,
+    persistedId: null,
   };
+
+  if (PERSIST) {
+    try {
+      const id = `sth_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 10)}`;
+      const artifact = {
+        id,
+        kind: 'scale_thresholds',
+        version: '0.57.0',
+        status: result.status,
+        ok: result.ok,
+        strict: result.strict,
+        failOnWarning: result.failOnWarning,
+        deep: result.deep,
+        latestOnly: result.latestOnly,
+        collection: result.collection,
+        timestamp: result.generatedAt,
+        generatedAt: result.generatedAt,
+        summary: result.summary,
+        warnings: result.warnings,
+        criticals: result.criticals,
+        recommendations: result.recommendations,
+        snapshot: result.snapshot,
+        createdAt: new Date().toISOString(),
+      };
+
+      await atomicWrite(getRecordPath('scale_thresholds', id), artifact);
+      result.persisted = true;
+      result.persistedId = id;
+    } catch (err) {
+      result.ok = false;
+      result.status = 'critical';
+      result.persisted = false;
+      result.persistError = err.message;
+    }
+  }
 
   if (JSON_OUT) {
     console.log = originalConsole.log;
