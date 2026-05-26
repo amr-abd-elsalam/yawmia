@@ -9,6 +9,8 @@
 //   node scripts/measure-storage-pressure.js --collection=jobs
 //
 // Default scan is shallow and persists a snapshot.
+// --persist is accepted explicitly for runbook compatibility.
+// --no-persist disables persistence.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -18,7 +20,8 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const DEEP = process.argv.includes('--deep');
-const NO_PERSIST = process.argv.includes('--no-persist');
+const PERSIST = process.argv.includes('--persist');
+const NO_PERSIST = process.argv.includes('--no-persist') ? true : false;
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
