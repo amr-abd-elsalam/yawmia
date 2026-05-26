@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-26T23:22:57.505Z
+> Auto-generated: 2026-05-26T23:55:52.327Z
 > Files in this part: 88
 
 ## Files
@@ -26394,6 +26394,8 @@ try {
 //   node scripts/measure-storage-pressure.js --collection=jobs
 //
 // Default scan is shallow and persists a snapshot.
+// --persist is accepted explicitly for runbook compatibility.
+// --no-persist disables persistence.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -26403,7 +26405,8 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const DEEP = process.argv.includes('--deep');
-const NO_PERSIST = process.argv.includes('--no-persist');
+const PERSIST = process.argv.includes('--persist');
+const NO_PERSIST = process.argv.includes('--no-persist') ? true : false;
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -31133,9 +31136,12 @@ try {
 //   node scripts/verify-scale-thresholds.js --deep
 //   node scripts/verify-scale-thresholds.js --latest-only
 //   node scripts/verify-scale-thresholds.js --latest-only --persist
+//   node scripts/verify-scale-thresholds.js --scan
 //
-// Default scan is shallow. Deep scan requires --deep.
-// Phase 61.1: --latest-only reads persisted artifacts only and never scans.
+// Phase 61.1:
+// Default is latest-only and never scans.
+// Use --scan explicitly for a fresh shallow scan.
+// Deep scan still requires --scan --deep.
 // Exits 1 on critical in --strict mode, or on warning with --fail-on-warning.
 // ═══════════════════════════════════════════════════════════════
 
@@ -31148,7 +31154,8 @@ const JSON_OUT = process.argv.includes('--json');
 const STRICT = process.argv.includes('--strict');
 const FAIL_ON_WARNING = process.argv.includes('--fail-on-warning');
 const DEEP = process.argv.includes('--deep');
-const LATEST_ONLY = process.argv.includes('--latest-only');
+const SCAN = process.argv.includes('--scan');
+const LATEST_ONLY = process.argv.includes('--latest-only') || !SCAN;
 const PERSIST = process.argv.includes('--persist');
 
 function getArg(name, fallback = '') {
@@ -31198,6 +31205,7 @@ async function main() {
     pressureSnapshot,
     persist: false,
     deep: DEEP,
+    scan: SCAN,
     latestOnly: LATEST_ONLY,
   });
 
@@ -31210,6 +31218,7 @@ async function main() {
     strict: STRICT,
     failOnWarning: FAIL_ON_WARNING,
     deep: DEEP,
+    scan: SCAN,
     latestOnly: LATEST_ONLY,
     collection: collection || null,
     generatedAt: new Date().toISOString(),
@@ -31250,6 +31259,7 @@ async function main() {
         strict: result.strict,
         failOnWarning: result.failOnWarning,
         deep: result.deep,
+        scan: result.scan,
         latestOnly: result.latestOnly,
         collection: result.collection,
         timestamp: result.generatedAt,
@@ -31284,6 +31294,7 @@ async function main() {
     console.log(`Strict: ${STRICT ? 'yes' : 'no'}`);
     console.log(`Fail on warning: ${FAIL_ON_WARNING ? 'yes' : 'no'}`);
     console.log(`Scan mode: ${result.summary.scanMode}`);
+    console.log(`Explicit scan: ${SCAN ? 'yes' : 'no'}`);
     console.log(`Latest only: ${LATEST_ONLY ? 'yes' : 'no'}`);
     console.log(`Scanned files: ${result.summary.scannedFiles}`);
     console.log(`Warnings: ${warningCount}`);

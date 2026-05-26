@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-26T23:22:57.451Z
+> Auto-generated: 2026-05-26T23:55:52.279Z
 > Files in this part: 132
 
 ## Files
@@ -34957,6 +34957,7 @@ import {
   readQueueSummary,
   rebuildQueueSummary,
   markQueueSummaryStale,
+  countQueueActualFilesByStatus,
   _testHelpers as storageHelpers,
 } from './queueStorageIndex.js';
 import { isLeaseExpired } from './opsQueue.js';
@@ -35056,6 +35057,8 @@ export async function verifyQueueHealth(options = {}) {
     orphanIdempotency: [],
     expiredIdempotency: [],
     summaryMismatches: [],
+    actualFilesByStatus: null,
+    actualFileMismatches: [],
     legacyRecords: 0,
   };
 
@@ -35183,9 +35186,50 @@ export async function verifyQueueHealth(options = {}) {
       }
     }
 
+    // Phase 61.1: compare summary against raw segmented file counts too.
+    // This catches inflated summary/location indexes even when list readers dedupe records.
+    const actualFiles = await countQueueActualFilesByStatus({
+      includeLegacy: true,
+      maxMonths: 120,
+    }).catch(() => null);
+
+    details.actualFilesByStatus = actualFiles;
+
+    if (actualFiles && actualFiles.byStatus) {
+      for (const status of ['pending', 'running', 'completed', 'failed', 'cancelled', 'dead-letter']) {
+        const summaryCount = summary.byStatus?.[status] || 0;
+        const actualCount = actualFiles.byStatus[status] || 0;
+        const delta = Math.abs(summaryCount - actualCount);
+
+        if (delta > 0) {
+          details.actualFileMismatches.push({
+            status,
+            summaryCount,
+            actualFileCount: actualCount,
+            delta,
+          });
+        }
+      }
+
+      const pendingDelta = Math.abs((summary.byStatus?.pending || 0) - (actualFiles.byStatus.pending || 0));
+      const runningDelta = Math.abs((summary.byStatus?.running || 0) - (actualFiles.byStatus.running || 0));
+
+      if (
+        pendingDelta > Math.max(100, (actualFiles.byStatus.pending || 0) * 2) ||
+        runningDelta > Math.max(50, (actualFiles.byStatus.running || 0) * 2)
+      ) {
+        warnings.push('queue summary appears inflated compared to actual segmented files');
+        await markQueueSummaryStale('verify_actual_file_count_mismatch').catch(() => {});
+      }
+    }
+
     if (details.summaryMismatches.length > 0) {
       warnings.push(`summary mismatches: ${details.summaryMismatches.length}`);
       await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+    }
+
+    if (details.actualFileMismatches.length > 0) {
+      warnings.push(`actual file mismatches: ${details.actualFileMismatches.length}`);
     }
   } catch (err) {
     warnings.push(`summary verification failed: ${err.message}`);
@@ -35205,6 +35249,8 @@ export async function verifyQueueHealth(options = {}) {
       orphanIdempotency: details.orphanIdempotency.slice(0, 50),
       expiredIdempotency: details.expiredIdempotency.slice(0, 50),
       summaryMismatches: details.summaryMismatches,
+      actualFilesByStatus: details.actualFilesByStatus,
+      actualFileMismatches: details.actualFileMismatches,
     },
     durationMs: Date.now() - started,
     checkedAt: nowIso(),
@@ -35256,6 +35302,15 @@ export async function repairQueueStorage(options = {}) {
       reason: 'summary counts differ from scanned queue files',
       mismatches: beforeDetails.summaryMismatches,
     });
+  }
+
+  if (Array.isArray(beforeDetails.actualFileMismatches) && beforeDetails.actualFileMismatches.length > 0) {
+    repairPlan.actions.push({
+      type: 'rebuild_queue_summary_from_actual_files',
+      reason: 'summary/location index differs from actual segmented queue files',
+      mismatches: beforeDetails.actualFileMismatches,
+    });
+    repairPlan.risks.push('actual segmented files are treated as source of truth; summary/location index is repairable acceleration only');
   }
 
   if (Array.isArray(beforeDetails.statusDirMismatches) && beforeDetails.statusDirMismatches.length > 0) {
