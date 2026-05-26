@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-25T21:46:42.140Z
+> Auto-generated: 2026-05-26T23:22:57.451Z
 > Files in this part: 132
 
 ## Files
@@ -20868,9 +20868,51 @@ export async function getMarketplaceIntelligenceDashboard(options = {}) {
     latest = rows.rollups && rows.rollups[0] ? rows.rollups[0] : null;
   }
 
-  // If no rollup exists yet, capture lightweight current-day rollup synchronously.
-  // This is acceptable for admin dashboard and small datasets; heavy scheduled usage
-  // should use queue jobs.
+  // Phase 61.1:
+  // HTTP dashboard/readiness/smoke paths must stay lightweight.
+  // Missing rollups return degraded advisory output by default when noCapture=true.
+  // Heavy rollup generation remains queue/script/manual.
+  if (!latest && options.noCapture === true) {
+    const dashboard = {
+      enabled: true,
+      degraded: true,
+      artifactMissing: true,
+      generatedAt: nowIso(),
+      latestRollup: null,
+      summary: {
+        searches: 0,
+        zeroResults: 0,
+        zeroResultRate: 0,
+        profileTaskClicks: 0,
+        notificationClicks: 0,
+        workroomMessages: 0,
+        paymentDisputes: 0,
+        directOfferAcceptRate: 0,
+        predictivePrecisionRate: 0,
+        warningCount: 1,
+      },
+      warnings: [{
+        source: 'marketplace_rollup',
+        level: 'warning',
+        message: 'Marketplace intelligence rollup is missing. Run rollup manually or via queue.',
+        metric: 'marketplaceRollupMissing',
+        value: 1,
+      }],
+      recommendedActions: [{
+        id: 'marketplace_rollup_run',
+        label: 'تحديث ملخص ذكاء السوق',
+        severity: 'warning',
+        command: 'node scripts/rollup-product-intelligence.js',
+        adminRoute: '/api/admin/marketplace-intelligence/rollup/run',
+        reason: 'HTTP dashboard uses persisted artifacts only in smoke-safe mode.',
+      }],
+    };
+
+    cacheSet(key, dashboard);
+    return dashboard;
+  }
+
+  // If no rollup exists yet and capture is explicitly allowed, capture current day.
   if (!latest) {
     latest = await captureMarketplaceIntelligenceRollup({
       day: options.day || dayKey(),
@@ -26031,6 +26073,7 @@ import {
   listQueueRecords,
   readQueueSummary,
   rebuildQueueSummary,
+  countQueueActualFilesByStatus,
 } from './queueStorageIndex.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
@@ -26691,11 +26734,30 @@ export async function getQueueStats() {
         byStatus.cancelled +
         byStatus['dead-letter'];
 
-      const mismatchSuspected = locationCount > 0 && statusTotal > locationCount * 2;
+      const actualFiles = await countQueueActualFilesByStatus({
+        includeLegacy: true,
+        maxMonths: 120,
+      }).catch(() => null);
+
+      const actualByStatus = actualFiles && actualFiles.byStatus ? actualFiles.byStatus : null;
+
+      const pendingMismatch = actualByStatus
+        ? Math.abs((byStatus.pending || 0) - (actualByStatus.pending || 0))
+        : 0;
+
+      const runningMismatch = actualByStatus
+        ? Math.abs((byStatus.running || 0) - (actualByStatus.running || 0))
+        : 0;
+
+      const mismatchSuspected =
+        (locationCount > 0 && statusTotal > locationCount * 2) ||
+        pendingMismatch > Math.max(100, (actualByStatus?.pending || 0) * 2) ||
+        runningMismatch > Math.max(50, (actualByStatus?.running || 0) * 2);
 
       return {
         enabled: true,
         byStatus,
+        actualFilesByStatus: actualByStatus,
         byType: summary.byType || {},
         totalActiveRecords:
           byStatus.pending +
@@ -26708,11 +26770,25 @@ export async function getQueueStats() {
           lastRebuiltAt: summary.lastRebuiltAt || null,
           lastUpdatedAt: summary.lastUpdatedAt || null,
           stale: !!summary.stale || mismatchSuspected,
-          staleReason: mismatchSuspected ? 'status_total_exceeds_location_count' : (summary.staleReason || null),
+          staleReason: mismatchSuspected ? 'summary_actual_file_count_mismatch' : (summary.staleReason || null),
           mismatchSuspected,
+          mismatch: actualByStatus ? {
+            pending: {
+              summary: byStatus.pending || 0,
+              actualFiles: actualByStatus.pending || 0,
+              delta: pendingMismatch,
+            },
+            running: {
+              summary: byStatus.running || 0,
+              actualFiles: actualByStatus.running || 0,
+              delta: runningMismatch,
+            },
+          } : null,
           statusTotal,
           legacyRecords: summary.legacyRecords || 0,
           locationCount,
+          repairRecommended: !!mismatchSuspected,
+          repairCommand: mismatchSuspected ? 'node scripts/repair-queue.js --dry-run --json' : null,
         },
         workerEnabled: !!config.OPS_QUEUE.workerEnabled,
         workerConcurrency: config.OPS_QUEUE.workerConcurrency,
@@ -36010,6 +36086,88 @@ async function listSegmentStatus(status, options = {}) {
   }
 
   return await listJSON(root, { tolerateCorrupt: true }).catch(() => []);
+}
+
+async function countJsonFilesInStatusDir(status, options = {}) {
+  const root = getCollectionPath(dirKeyForStatus(status));
+  const maxMonths = options.maxMonths || 120;
+  let count = 0;
+
+  if (!isEnabled()) {
+    const files = await readdir(root).catch(() => []);
+    return files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+  }
+
+  if (cfg().monthlySharding) {
+    const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+    const months = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name)
+      .sort()
+      .reverse()
+      .slice(0, maxMonths);
+
+    for (const month of months) {
+      const files = await readdir(join(root, month)).catch(() => []);
+      count += files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+    }
+
+    return count;
+  }
+
+  const files = await readdir(root).catch(() => []);
+  return files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+}
+
+/**
+ * Phase 61.1: Count actual queue JSON files by status.
+ * This is the filesystem truth source for pressure diagnosis.
+ * Summary/location index is acceleration only and may be stale/inflated.
+ *
+ * @param {{ includeLegacy?: boolean, maxMonths?: number }} options
+ */
+export async function countQueueActualFilesByStatus(options = {}) {
+  const statuses = ['pending', 'running', 'completed', 'failed', 'cancelled', DEAD_LETTER_STATUS];
+
+  const byStatus = {
+    pending: 0,
+    running: 0,
+    completed: 0,
+    failed: 0,
+    cancelled: 0,
+    'dead-letter': 0,
+  };
+
+  for (const status of statuses) {
+    byStatus[status] = await countJsonFilesInStatusDir(status, options);
+  }
+
+  let legacyActive = 0;
+  let legacyDeadLetter = 0;
+
+  if (options.includeLegacy !== false && cfg().legacyReadFallback !== false) {
+    const legacyFiles = await readdir(getCollectionPath('ops_queue')).catch(() => []);
+    legacyActive = legacyFiles.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+
+    const legacyDlqFiles = await readdir(getCollectionPath('ops_queue_dead_letter')).catch(() => []);
+    legacyDeadLetter = legacyDlqFiles.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+  }
+
+  return {
+    byStatus,
+    legacyActive,
+    legacyDeadLetter,
+    total:
+      byStatus.pending +
+      byStatus.running +
+      byStatus.completed +
+      byStatus.failed +
+      byStatus.cancelled +
+      byStatus['dead-letter'] +
+      legacyActive +
+      legacyDeadLetter,
+    generatedAt: nowIso(),
+  };
 }
 
 /**

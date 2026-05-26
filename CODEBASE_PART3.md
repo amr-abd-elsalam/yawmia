@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-25T21:46:42.170Z
+> Auto-generated: 2026-05-26T23:22:57.493Z
 > Files in this part: 45
 
 ## Files
@@ -5056,7 +5056,7 @@ export async function handleMarketplaceIntelligenceDashboard(req, res) {
       await import('../services/marketplaceIntelligenceRollups.js');
 
     const [dashboard, rollups] = await Promise.all([
-      getMarketplaceIntelligenceDashboard(queryOptions(req)),
+      getMarketplaceIntelligenceDashboard({ ...queryOptions(req), noCapture: true }),
       listMarketplaceIntelligenceRollups({ limit: 7 }),
     ]);
 
