@@ -34,6 +34,7 @@ import {
   listQueueRecords,
   readQueueSummary,
   rebuildQueueSummary,
+  countQueueActualFilesByStatus,
 } from './queueStorageIndex.js';
 import { withLock } from './resourceLock.js';
 import { logger } from './logger.js';
@@ -694,11 +695,30 @@ export async function getQueueStats() {
         byStatus.cancelled +
         byStatus['dead-letter'];
 
-      const mismatchSuspected = locationCount > 0 && statusTotal > locationCount * 2;
+      const actualFiles = await countQueueActualFilesByStatus({
+        includeLegacy: true,
+        maxMonths: 120,
+      }).catch(() => null);
+
+      const actualByStatus = actualFiles && actualFiles.byStatus ? actualFiles.byStatus : null;
+
+      const pendingMismatch = actualByStatus
+        ? Math.abs((byStatus.pending || 0) - (actualByStatus.pending || 0))
+        : 0;
+
+      const runningMismatch = actualByStatus
+        ? Math.abs((byStatus.running || 0) - (actualByStatus.running || 0))
+        : 0;
+
+      const mismatchSuspected =
+        (locationCount > 0 && statusTotal > locationCount * 2) ||
+        pendingMismatch > Math.max(100, (actualByStatus?.pending || 0) * 2) ||
+        runningMismatch > Math.max(50, (actualByStatus?.running || 0) * 2);
 
       return {
         enabled: true,
         byStatus,
+        actualFilesByStatus: actualByStatus,
         byType: summary.byType || {},
         totalActiveRecords:
           byStatus.pending +
@@ -711,11 +731,25 @@ export async function getQueueStats() {
           lastRebuiltAt: summary.lastRebuiltAt || null,
           lastUpdatedAt: summary.lastUpdatedAt || null,
           stale: !!summary.stale || mismatchSuspected,
-          staleReason: mismatchSuspected ? 'status_total_exceeds_location_count' : (summary.staleReason || null),
+          staleReason: mismatchSuspected ? 'summary_actual_file_count_mismatch' : (summary.staleReason || null),
           mismatchSuspected,
+          mismatch: actualByStatus ? {
+            pending: {
+              summary: byStatus.pending || 0,
+              actualFiles: actualByStatus.pending || 0,
+              delta: pendingMismatch,
+            },
+            running: {
+              summary: byStatus.running || 0,
+              actualFiles: actualByStatus.running || 0,
+              delta: runningMismatch,
+            },
+          } : null,
           statusTotal,
           legacyRecords: summary.legacyRecords || 0,
           locationCount,
+          repairRecommended: !!mismatchSuspected,
+          repairCommand: mismatchSuspected ? 'node scripts/repair-queue.js --dry-run --json' : null,
         },
         workerEnabled: !!config.OPS_QUEUE.workerEnabled,
         workerConcurrency: config.OPS_QUEUE.workerConcurrency,

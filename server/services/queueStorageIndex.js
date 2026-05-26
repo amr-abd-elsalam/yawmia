@@ -560,6 +560,88 @@ async function listSegmentStatus(status, options = {}) {
   return await listJSON(root, { tolerateCorrupt: true }).catch(() => []);
 }
 
+async function countJsonFilesInStatusDir(status, options = {}) {
+  const root = getCollectionPath(dirKeyForStatus(status));
+  const maxMonths = options.maxMonths || 120;
+  let count = 0;
+
+  if (!isEnabled()) {
+    const files = await readdir(root).catch(() => []);
+    return files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+  }
+
+  if (cfg().monthlySharding) {
+    const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+    const months = entries
+      .filter(e => e.isDirectory() && /^\d{4}-\d{2}$/.test(e.name))
+      .map(e => e.name)
+      .sort()
+      .reverse()
+      .slice(0, maxMonths);
+
+    for (const month of months) {
+      const files = await readdir(join(root, month)).catch(() => []);
+      count += files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+    }
+
+    return count;
+  }
+
+  const files = await readdir(root).catch(() => []);
+  return files.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+}
+
+/**
+ * Phase 61.1: Count actual queue JSON files by status.
+ * This is the filesystem truth source for pressure diagnosis.
+ * Summary/location index is acceleration only and may be stale/inflated.
+ *
+ * @param {{ includeLegacy?: boolean, maxMonths?: number }} options
+ */
+export async function countQueueActualFilesByStatus(options = {}) {
+  const statuses = ['pending', 'running', 'completed', 'failed', 'cancelled', DEAD_LETTER_STATUS];
+
+  const byStatus = {
+    pending: 0,
+    running: 0,
+    completed: 0,
+    failed: 0,
+    cancelled: 0,
+    'dead-letter': 0,
+  };
+
+  for (const status of statuses) {
+    byStatus[status] = await countJsonFilesInStatusDir(status, options);
+  }
+
+  let legacyActive = 0;
+  let legacyDeadLetter = 0;
+
+  if (options.includeLegacy !== false && cfg().legacyReadFallback !== false) {
+    const legacyFiles = await readdir(getCollectionPath('ops_queue')).catch(() => []);
+    legacyActive = legacyFiles.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+
+    const legacyDlqFiles = await readdir(getCollectionPath('ops_queue_dead_letter')).catch(() => []);
+    legacyDeadLetter = legacyDlqFiles.filter(f => f.startsWith('q_') && f.endsWith('.json') && !f.endsWith('.tmp')).length;
+  }
+
+  return {
+    byStatus,
+    legacyActive,
+    legacyDeadLetter,
+    total:
+      byStatus.pending +
+      byStatus.running +
+      byStatus.completed +
+      byStatus.failed +
+      byStatus.cancelled +
+      byStatus['dead-letter'] +
+      legacyActive +
+      legacyDeadLetter,
+    generatedAt: nowIso(),
+  };
+}
+
 /**
  * List queue records.
  *

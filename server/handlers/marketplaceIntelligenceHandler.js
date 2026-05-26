@@ -45,7 +45,7 @@ export async function handleMarketplaceIntelligenceDashboard(req, res) {
       await import('../services/marketplaceIntelligenceRollups.js');
 
     const [dashboard, rollups] = await Promise.all([
-      getMarketplaceIntelligenceDashboard(queryOptions(req)),
+      getMarketplaceIntelligenceDashboard({ ...queryOptions(req), noCapture: true }),
       listMarketplaceIntelligenceRollups({ limit: 7 }),
     ]);
 

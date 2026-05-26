@@ -327,9 +327,51 @@ export async function getMarketplaceIntelligenceDashboard(options = {}) {
     latest = rows.rollups && rows.rollups[0] ? rows.rollups[0] : null;
   }
 
-  // If no rollup exists yet, capture lightweight current-day rollup synchronously.
-  // This is acceptable for admin dashboard and small datasets; heavy scheduled usage
-  // should use queue jobs.
+  // Phase 61.1:
+  // HTTP dashboard/readiness/smoke paths must stay lightweight.
+  // Missing rollups return degraded advisory output by default when noCapture=true.
+  // Heavy rollup generation remains queue/script/manual.
+  if (!latest && options.noCapture === true) {
+    const dashboard = {
+      enabled: true,
+      degraded: true,
+      artifactMissing: true,
+      generatedAt: nowIso(),
+      latestRollup: null,
+      summary: {
+        searches: 0,
+        zeroResults: 0,
+        zeroResultRate: 0,
+        profileTaskClicks: 0,
+        notificationClicks: 0,
+        workroomMessages: 0,
+        paymentDisputes: 0,
+        directOfferAcceptRate: 0,
+        predictivePrecisionRate: 0,
+        warningCount: 1,
+      },
+      warnings: [{
+        source: 'marketplace_rollup',
+        level: 'warning',
+        message: 'Marketplace intelligence rollup is missing. Run rollup manually or via queue.',
+        metric: 'marketplaceRollupMissing',
+        value: 1,
+      }],
+      recommendedActions: [{
+        id: 'marketplace_rollup_run',
+        label: 'تحديث ملخص ذكاء السوق',
+        severity: 'warning',
+        command: 'node scripts/rollup-product-intelligence.js',
+        adminRoute: '/api/admin/marketplace-intelligence/rollup/run',
+        reason: 'HTTP dashboard uses persisted artifacts only in smoke-safe mode.',
+      }],
+    };
+
+    cacheSet(key, dashboard);
+    return dashboard;
+  }
+
+  // If no rollup exists yet and capture is explicitly allowed, capture current day.
   if (!latest) {
     latest = await captureMarketplaceIntelligenceRollup({
       day: options.day || dayKey(),
