@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-27T10:18:31.975Z
+> Auto-generated: 2026-05-27T15:26:37.273Z
 > Files in this part: 132
 
 ## Files
@@ -17169,7 +17169,7 @@ export function getIncidentRunbookKey(eventType, data = {}) {
 export function getIncidentTaxonomy() {
   return {
     enabled: !!(config.INCIDENT_TAXONOMY && config.INCIDENT_TAXONOMY.enabled),
-    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './INCIDENT_RUNBOOKS.md',
+    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './docs/incidents/INCIDENT_RUNBOOKS.md',
     defaultSeverity: config.INCIDENT_TAXONOMY?.defaultSeverity || 'medium',
     categories: config.INCIDENT_TAXONOMY?.categories || [],
     runbooks: [

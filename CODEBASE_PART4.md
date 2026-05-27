@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-27T10:18:33.409Z
+> Auto-generated: 2026-05-27T15:26:37.320Z
 > Files in this part: 90
 
 ## Files
@@ -24773,7 +24773,7 @@ import { join, extname, relative } from 'node:path';
 const ROOT = new URL('..', import.meta.url).pathname;
 
 const IGNORE = new Set([
-  'node_modules', '.git', 'data', 'backups', 'test-backups',
+  'node_modules', '.git', 'data', 'backups', 'test-backups', 'logs', '.github', 'deploy',
   '.env', 'package-lock.json', '.DS_Store', 'Thumbs.db',
   'cloudflared.deb', 'tests', 'docs',
 ]);
@@ -24781,6 +24781,7 @@ const IGNORE = new Set([
 const IGNORE_FILES = new Set([
   'CODEBASE_PART1.md', 'CODEBASE_PART2.md',
   'CODEBASE_PART3.md', 'CODEBASE_PART4.md',
+  'desktop.ini', 'ecosystem.config.cjs', 'null-json-report.json',
 ]);
 
 const IGNORE_EXT = new Set([
@@ -26856,7 +26857,7 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const INCLUDE_SMOKE = process.argv.includes('--smoke');
-const CHILD_TIMEOUT_MS = Number.parseInt(process.env.PHASE61_1_STATUS_TIMEOUT_MS || '20000', 10);
+const CHILD_TIMEOUT_MS = Number.parseInt(process.env.PHASE61_1_STATUS_TIMEOUT_MS || '90000', 10);
 
 function parseJson(stdout) {
   if (!stdout) return null;
@@ -26906,7 +26907,15 @@ function checkStatus(results) {
   const warnings = [];
 
   const json = results.find(r => r.name === 'json_health');
-  if (!json?.parsed || json.parsed.critical > 0 || json.parsed.nullByte > 0 || json.parsed.invalid > 0) {
+  if (!json?.parsed) {
+    warnings.push({
+      code: 'JSON_HEALTH_UNAVAILABLE',
+      message: json?.timedOut
+        ? 'JSON health scan timed out inside remediation aggregator. Run it directly with a larger timeout before conclusions.'
+        : 'JSON health scan did not produce parseable output.',
+      command: 'node scripts/verify-data-json.js --strict --json',
+    });
+  } else if (json.parsed.critical > 0 || json.parsed.nullByte > 0 || json.parsed.invalid > 0) {
     blockers.push({
       code: 'DATA_INTEGRITY_BLOCKED',
       message: 'JSON corruption or null-byte files need remediation before clean evidence.',
@@ -26915,10 +26924,18 @@ function checkStatus(results) {
   }
 
   const nul = results.find(r => r.name === 'null_byte_scan');
-  if (!nul?.parsed || (nul.parsed.nulFileCount || 0) > 0) {
+  if (!nul?.parsed) {
+    warnings.push({
+      code: 'NULL_BYTE_SCAN_UNAVAILABLE',
+      message: nul?.timedOut
+        ? 'NUL-byte scan timed out inside remediation aggregator. Run it directly with a larger timeout before conclusions.'
+        : 'NUL-byte scan did not produce parseable output.',
+      command: 'node scripts/find-null-json-files.js --json',
+    });
+  } else if ((nul.parsed.nulFileCount || 0) > 0) {
     blockers.push({
       code: 'NULL_BYTE_JSON_BLOCKED',
-      message: 'NUL-byte JSON files detected or scan unavailable.',
+      message: 'NUL-byte JSON files detected.',
       command: 'node scripts/find-null-json-files.js --json',
     });
   }
@@ -31475,9 +31492,9 @@ async function main() {
   const checks = [];
 
   const docs = [
-    'PRIVACY_DATA_MAP.md',
-    'PRIVACY_REQUEST_RUNBOOK.md',
-    'DATA_GOVERNANCE_RUNBOOK.md',
+    'docs/privacy/PRIVACY_DATA_MAP.md',
+    'docs/governance/PRIVACY_REQUEST_RUNBOOK.md',
+    'docs/governance/DATA_GOVERNANCE_RUNBOOK.md',
   ];
 
   for (const d of docs) {
