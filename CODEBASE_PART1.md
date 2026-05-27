@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-27T07:47:07.270Z
+> Auto-generated: 2026-05-27T09:48:41.719Z
 > Files in this part: 6
 
 ## Files
@@ -1803,7 +1803,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   INCIDENT_TAXONOMY: {
     enabled: true,
-    runbookBasePath: './INCIDENT_RUNBOOKS.md',
+    runbookBasePath: './docs/incidents/INCIDENT_RUNBOOKS.md',
     defaultSeverity: 'medium',
     categories: [
       'queue',
