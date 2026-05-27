@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-27T15:26:37.320Z
+> Auto-generated: 2026-05-27T15:46:50.897Z
 > Files in this part: 90
 
 ## Files
@@ -29533,7 +29533,12 @@ async function performDeletion(plan) {
     }
 
     try {
-      await rm(target.path, { recursive: true, force: true });
+      await rm(target.path, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 250,
+      });
       deleted.push({
         ...target,
         deleted: true,
