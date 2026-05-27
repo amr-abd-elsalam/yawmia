@@ -123,7 +123,7 @@ async function checkCriticalIndexes() {
   return check('critical_indexes', 'pass', 'Critical indexes exist and parse correctly');
 }
 
-async function checkScaleHygiene() {
+async function checkScaleHygiene(isProd = false) {
   try {
     const { getScaleHygieneOverview } = await import('./scaleHygiene.js');
 
@@ -138,10 +138,17 @@ async function checkScaleHygiene() {
     }
 
     if (overview.status === 'critical') {
-      return check('scale_hygiene', 'fail', 'Scale hygiene has critical warnings', {
-        warningCount: overview.warningCount || 0,
-        lightweight: true,
-      });
+      return check(
+        'scale_hygiene',
+        isProd && config.DEPLOYMENT_DISCIPLINE?.requireNoCriticalScaleWarningsInProduction ? 'fail' : 'warn',
+        'Scale hygiene has critical warnings',
+        {
+          warningCount: overview.warningCount || 0,
+          lightweight: true,
+          artifactBased: true,
+        },
+        'node scripts/verify-scale-thresholds.js --json --latest-only'
+      );
     }
 
     if (overview.status === 'warnings') {
@@ -1134,7 +1141,7 @@ export async function runReadinessChecks(options = {}) {
   checks.push(check('instance_mode', 'pass', 'Instance mode evaluated', getInstanceInfo()));
 
   // Phase 55 — Scale hygiene + domain consistency.
-  checks.push(await checkScaleHygiene());
+  checks.push(await checkScaleHygiene(isProd));
 
   // Phase 59 — File-based scale limits + storage pressure readiness.
   checks.push(await checkScaleThresholdsConfigured(isProd));
@@ -1193,7 +1200,7 @@ export const _testHelpers = {
   runReadinessChecks,
 };
 
-export async function getProductionReadiness() {
+export async function getProductionReadiness(options = {}) {
   try {
     if (!config.PRODUCTION_READINESS || !config.PRODUCTION_READINESS.enabled) {
       return {
@@ -1205,12 +1212,38 @@ export async function getProductionReadiness() {
       };
     }
 
-    const checks = await runReadinessChecks();
+    // Phase 61.1:
+    // Readiness is a smoke/deploy gate, not a heavy scanner.
+    // If any internal checker is slow, return a degraded warning response
+    // instead of timing out the HTTP smoke path.
+    const timeoutMs = Math.min(
+      4500,
+      Math.max(500, Number(options.timeoutMs || process.env.READINESS_TIMEOUT_MS || 3500))
+    );
+
+    const checks = await Promise.race([
+      runReadinessChecks(options),
+      new Promise(resolve => setTimeout(() => resolve([
+        check(
+          'readiness_timeout_guard',
+          'warn',
+          'Production readiness exceeded smoke-safe timeout and returned degraded response',
+          {
+            timeoutMs,
+            heavyScansDisabledInReadiness: true,
+          },
+          'Run scripts/predeploy-check.js --json and node scripts/verify-data-json.js --strict outside HTTP smoke path'
+        ),
+      ]), timeoutMs)),
+    ]);
+
     const classification = classifyReadiness(checks);
 
     return {
       ok: classification.ok,
       status: classification.status,
+      degraded: checks.some(c => c.id === 'readiness_timeout_guard'),
+      timeoutMs,
       environment: config.ENV?.current || process.env.NODE_ENV || 'development',
       generatedAt: new Date().toISOString(),
       checks,

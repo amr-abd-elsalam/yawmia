@@ -23,6 +23,7 @@ const BASE = (getArg('base', '') || `http://localhost:${process.env.PORT || 3002
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 const JSON_OUT = process.argv.includes('--json');
 const DEFAULT_TIMEOUT_MS = Number.parseInt(getArg('timeout-ms', '5000'), 10) || 5000;
+const ADMIN_TIMEOUT_MS = Number.parseInt(getArg('admin-timeout-ms', '3500'), 10) || 3500;
 
 async function check(name, path, options = {}) {
   const url = BASE + path;
@@ -72,10 +73,10 @@ async function main() {
   ];
 
   if (ADMIN_TOKEN) {
-    checks.push(['admin readiness', '/api/admin/production/readiness', { admin: true }]);
-    checks.push(['admin ops slo', '/api/admin/ops/slo', { admin: true }]);
-    checks.push(['admin scale hygiene', '/api/admin/scale-hygiene/overview', { admin: true }]);
-    checks.push(['admin marketplace intelligence', '/api/admin/marketplace-intelligence/dashboard', { admin: true }]);
+    checks.push(['admin readiness', '/api/admin/production/readiness', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin ops slo', '/api/admin/ops/slo', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin scale hygiene', '/api/admin/scale-hygiene/overview', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin marketplace intelligence', '/api/admin/marketplace-intelligence/dashboard', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
   }
 
   const results = [];
@@ -96,6 +97,7 @@ async function main() {
     ok: failed.length === 0,
     base: BASE,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    adminTimeoutMs: ADMIN_TIMEOUT_MS,
     results,
     failed,
     generatedAt: new Date().toISOString(),
@@ -122,6 +124,7 @@ main().catch(err => {
       ok: false,
       base: BASE,
       timeoutMs: DEFAULT_TIMEOUT_MS,
+      adminTimeoutMs: ADMIN_TIMEOUT_MS,
       error: err.message,
       stack: err.stack,
       generatedAt: new Date().toISOString(),

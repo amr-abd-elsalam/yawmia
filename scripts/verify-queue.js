@@ -84,6 +84,24 @@ async function main() {
       console.log('');
     }
 
+    if (result.details && result.details.actualFileMismatches && result.details.actualFileMismatches.length > 0) {
+      console.log('Actual file mismatches:');
+      for (const m of result.details.actualFileMismatches) {
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} actualFiles=${m.actualFileCount} delta=${m.delta}`);
+      }
+      console.log('');
+    }
+
+    if (result.details && result.details.actualFilesByStatus) {
+      console.log('Actual segmented files:');
+      const actual = result.details.actualFilesByStatus.byStatus || {};
+      console.log(`  pending=${actual.pending || 0}, running=${actual.running || 0}, completed=${actual.completed || 0}, failed=${actual.failed || 0}, cancelled=${actual.cancelled || 0}, dead-letter=${actual['dead-letter'] || 0}`);
+      if (result.details.actualFilesByStatus.legacyActive || result.details.actualFilesByStatus.legacyDeadLetter) {
+        console.log(`  legacyActive=${result.details.actualFilesByStatus.legacyActive || 0}, legacyDeadLetter=${result.details.actualFilesByStatus.legacyDeadLetter || 0}`);
+      }
+      console.log('');
+    }
+
     if (result.recommendedActions && result.recommendedActions.length > 0) {
       console.log('Recommended actions:');
       for (const a of result.recommendedActions.slice(0, 10)) {
