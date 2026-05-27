@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-27T00:44:29.849Z
-> Files in this part: 88
+> Auto-generated: 2026-05-27T01:18:54.887Z
+> Files in this part: 89
 
 ## Files
 1. `frontend/404.html`
@@ -60,37 +60,38 @@
 55. `scripts/measure-storage-pressure.js`
 56. `scripts/migrate.js`
 57. `scripts/ops-weekly-review.js`
-58. `scripts/postdeploy-smoke.js`
-59. `scripts/predeploy-check.js`
-60. `scripts/quarantine-corrupt-json.js`
-61. `scripts/queue-drain.js`
-62. `scripts/queue-retry-dlq.js`
-63. `scripts/rebuild-audit-index.js`
-64. `scripts/rebuild-counters.js`
-65. `scripts/rebuild-predictive-archive-index.js`
-66. `scripts/rebuild-search-relevance.js`
-67. `scripts/rebuild-workroom-search.js`
-68. `scripts/repair-indexes.js`
-69. `scripts/repair-queue.js`
-70. `scripts/rollup-product-intelligence.js`
-71. `scripts/rollup-trust-snapshots.js`
-72. `scripts/run-backup-restore-drill.js`
-73. `scripts/run-migration-rehearsal.js`
-74. `scripts/run-rollback-rehearsal.js`
-75. `scripts/run-trust-calibration.js`
-76. `scripts/scheduler-cadence-report.js`
-77. `scripts/validate-migration-snapshot.js`
-78. `scripts/verify-admin-rbac.js`
-79. `scripts/verify-audit-index.js`
-80. `scripts/verify-data-json.js`
-81. `scripts/verify-file-health.js`
-82. `scripts/verify-marketplace-intelligence.js`
-83. `scripts/verify-privacy-governance.js`
-84. `scripts/verify-production-readiness.js`
-85. `scripts/verify-queue.js`
-86. `scripts/verify-repository-contracts.js`
-87. `scripts/verify-scale-thresholds.js`
-88. `scripts/verify-workroom-indexes.js`
+58. `scripts/phase61-1-remediation-status.js`
+59. `scripts/postdeploy-smoke.js`
+60. `scripts/predeploy-check.js`
+61. `scripts/quarantine-corrupt-json.js`
+62. `scripts/queue-drain.js`
+63. `scripts/queue-retry-dlq.js`
+64. `scripts/rebuild-audit-index.js`
+65. `scripts/rebuild-counters.js`
+66. `scripts/rebuild-predictive-archive-index.js`
+67. `scripts/rebuild-search-relevance.js`
+68. `scripts/rebuild-workroom-search.js`
+69. `scripts/repair-indexes.js`
+70. `scripts/repair-queue.js`
+71. `scripts/rollup-product-intelligence.js`
+72. `scripts/rollup-trust-snapshots.js`
+73. `scripts/run-backup-restore-drill.js`
+74. `scripts/run-migration-rehearsal.js`
+75. `scripts/run-rollback-rehearsal.js`
+76. `scripts/run-trust-calibration.js`
+77. `scripts/scheduler-cadence-report.js`
+78. `scripts/validate-migration-snapshot.js`
+79. `scripts/verify-admin-rbac.js`
+80. `scripts/verify-audit-index.js`
+81. `scripts/verify-data-json.js`
+82. `scripts/verify-file-health.js`
+83. `scripts/verify-marketplace-intelligence.js`
+84. `scripts/verify-privacy-governance.js`
+85. `scripts/verify-production-readiness.js`
+86. `scripts/verify-queue.js`
+87. `scripts/verify-repository-contracts.js`
+88. `scripts/verify-scale-thresholds.js`
+89. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -26236,6 +26237,11 @@ const result = {
   nulFileCount: findings.length,
   findings,
   readErrors: state.readErrors.slice(0, 50),
+  remediation: {
+    quarantineDryRun: 'node scripts/quarantine-corrupt-json.js --dry-run --json',
+    quarantineConfirmAfterBackup: 'node scripts/backup.js && node scripts/quarantine-corrupt-json.js --confirm --json',
+    verifyAfterQuarantine: 'node scripts/verify-data-json.js --strict --json',
+  },
   generatedAt: new Date().toISOString(),
 };
 
@@ -26808,6 +26814,357 @@ async function main() {
 main().catch(err => {
   console.error('\n❌ Weekly review failed:', err.message);
   if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/phase61-1-remediation-status.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/phase61-1-remediation-status.js
+// Phase 61.1 — Read-only remediation status aggregator
+// ═══════════════════════════════════════════════════════════════
+// Runs safe diagnostics only:
+// - verify-data-json
+// - find-null-json-files
+// - verify-queue
+// - repair-queue dry-run
+// - verify-scale-thresholds latest-only
+// - postdeploy-smoke optional if --smoke
+// - pilot gate
+//
+// No mutation.
+// No external DB.
+// No external queue.
+// No external search.
+// ═══════════════════════════════════════════════════════════════
+
+import { spawnSync } from 'node:child_process';
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const INCLUDE_SMOKE = process.argv.includes('--smoke');
+const CHILD_TIMEOUT_MS = Number.parseInt(process.env.PHASE61_1_STATUS_TIMEOUT_MS || '20000', 10);
+
+function parseJson(stdout) {
+  if (!stdout) return null;
+
+  try {
+    return JSON.parse(stdout);
+  } catch (_) {}
+
+  const first = stdout.indexOf('{');
+  const last = stdout.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    try {
+      return JSON.parse(stdout.slice(first, last + 1));
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+function run(name, script, args = []) {
+  const started = Date.now();
+  const proc = spawnSync(process.execPath, [script, ...args], {
+    env: process.env,
+    encoding: 'utf-8',
+    timeout: CHILD_TIMEOUT_MS,
+  });
+
+  const parsed = parseJson(proc.stdout);
+
+  return {
+    name,
+    script,
+    args,
+    ok: proc.status === 0,
+    status: proc.status,
+    durationMs: Date.now() - started,
+    timedOut: proc.error?.code === 'ETIMEDOUT',
+    error: proc.error?.message || null,
+    parsed,
+    stdoutTail: parsed ? undefined : String(proc.stdout || '').slice(-1000),
+    stderrTail: String(proc.stderr || '').slice(-1000),
+  };
+}
+
+function checkStatus(results) {
+  const blockers = [];
+  const warnings = [];
+
+  const json = results.find(r => r.name === 'json_health');
+  if (!json?.parsed || json.parsed.critical > 0 || json.parsed.nullByte > 0 || json.parsed.invalid > 0) {
+    blockers.push({
+      code: 'DATA_INTEGRITY_BLOCKED',
+      message: 'JSON corruption or null-byte files need remediation before clean evidence.',
+      command: 'node scripts/verify-data-json.js --strict --json && node scripts/quarantine-corrupt-json.js --dry-run --json',
+    });
+  }
+
+  const nul = results.find(r => r.name === 'null_byte_scan');
+  if (!nul?.parsed || (nul.parsed.nulFileCount || 0) > 0) {
+    blockers.push({
+      code: 'NULL_BYTE_JSON_BLOCKED',
+      message: 'NUL-byte JSON files detected or scan unavailable.',
+      command: 'node scripts/find-null-json-files.js --json',
+    });
+  }
+
+  const queue = results.find(r => r.name === 'queue_verify');
+  const qParsed = queue?.parsed;
+  const actualMismatches = qParsed?.details?.actualFileMismatches || [];
+  const summaryMismatches = qParsed?.details?.summaryMismatches || [];
+
+  if (!qParsed || actualMismatches.length > 0 || summaryMismatches.length > 0) {
+    blockers.push({
+      code: 'QUEUE_SUMMARY_MISMATCH',
+      message: 'Queue summary/location index does not match actual queue files.',
+      command: 'node scripts/repair-queue.js --dry-run --json',
+    });
+  }
+
+  const repair = results.find(r => r.name === 'queue_repair_dry_run');
+  if (!repair?.parsed) {
+    warnings.push({
+      code: 'QUEUE_REPAIR_DRY_RUN_UNAVAILABLE',
+      message: 'Queue repair dry-run did not produce parseable output.',
+      command: 'node scripts/repair-queue.js --dry-run --json',
+    });
+  }
+
+  const scale = results.find(r => r.name === 'scale_thresholds_latest');
+  if (!scale?.parsed) {
+    warnings.push({
+      code: 'SCALE_THRESHOLDS_UNAVAILABLE',
+      message: 'Scale threshold latest-only evaluation unavailable.',
+      command: 'node scripts/verify-scale-thresholds.js --json --latest-only',
+    });
+  } else if (scale.parsed.status === 'critical') {
+    warnings.push({
+      code: 'SCALE_THRESHOLDS_CRITICAL_ARTIFACT',
+      message: 'Latest scale threshold artifact is critical; recapture after data/queue repair.',
+      command: 'node scripts/measure-storage-pressure.js --json --persist && node scripts/verify-scale-thresholds.js --latest-only --persist --json',
+    });
+  }
+
+  const gate = results.find(r => r.name === 'pilot_gate');
+  if (gate?.parsed?.gate?.implementationAllowed === true || gate?.parsed?.implementationAllowed === true) {
+    blockers.push({
+      code: 'PILOT_GATE_UNEXPECTEDLY_OPEN',
+      message: 'Pilot gate unexpectedly allows implementation.',
+      command: 'node scripts/evaluate-pilot-gate.js --json',
+    });
+  }
+
+  const smoke = results.find(r => r.name === 'postdeploy_smoke');
+  if (INCLUDE_SMOKE && (!smoke?.parsed || smoke.parsed.ok !== true)) {
+    warnings.push({
+      code: 'SMOKE_FAILED',
+      message: 'Postdeploy smoke did not pass.',
+      command: 'node scripts/postdeploy-smoke.js --json --admin-timeout-ms=3500',
+    });
+  }
+
+  let status = 'healthy';
+  if (blockers.length > 0) status = 'blocked';
+  else if (warnings.length > 0) status = 'warnings';
+
+  return { status, blockers, warnings };
+}
+
+async function main() {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  const checks = [
+    run('json_health', 'scripts/verify-data-json.js', ['--json']),
+    run('null_byte_scan', 'scripts/find-null-json-files.js', ['--json']),
+    run('queue_verify', 'scripts/verify-queue.js', ['--json']),
+    run('queue_repair_dry_run', 'scripts/repair-queue.js', ['--dry-run', '--json']),
+    run('scale_thresholds_latest', 'scripts/verify-scale-thresholds.js', ['--json', '--latest-only']),
+    run('pilot_gate', 'scripts/evaluate-pilot-gate.js', ['--json']),
+  ];
+
+  if (INCLUDE_SMOKE) {
+    checks.push(run('postdeploy_smoke', 'scripts/postdeploy-smoke.js', ['--json', '--admin-timeout-ms=3500']));
+  }
+
+  const status = checkStatus(checks);
+
+  const result = {
+    ok: status.blockers.length === 0,
+    status: status.status,
+    generatedAt: new Date().toISOString(),
+    noExternalization: true,
+    noPilot: true,
+    blockers: status.blockers,
+    warnings: status.warnings,
+    checks: checks.map(c => ({
+      name: c.name,
+      ok: c.ok,
+      status: c.status,
+      durationMs: c.durationMs,
+      timedOut: c.timedOut,
+      error: c.error,
+      parsed: c.parsed ? summarizeParsed(c.name, c.parsed) : null,
+      stdoutTail: c.stdoutTail,
+      stderrTail: c.stderrTail,
+    })),
+    recommendedSequence: [
+      'node scripts/verify-data-json.js --strict --json',
+      'node scripts/find-null-json-files.js --json',
+      'node scripts/quarantine-corrupt-json.js --dry-run --json',
+      'node scripts/verify-queue.js --json',
+      'node scripts/repair-queue.js --dry-run --json',
+      'node scripts/backup.js',
+      'node scripts/quarantine-corrupt-json.js --confirm --json',
+      'node scripts/repair-queue.js --confirm --json',
+      'node scripts/verify-queue.js --strict --json',
+      'node scripts/measure-storage-pressure.js --json --persist',
+      'node scripts/verify-scale-thresholds.js --latest-only --persist --json',
+      'node scripts/benchmark-file-paths.js --json --persist',
+      'node scripts/capture-phase61-evidence.js --persist --json',
+      'node scripts/evaluate-pilot-gate.js --json'
+    ],
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('\n🧭 Phase 61.1 Remediation Status\n');
+  console.log(`Status: ${result.status}`);
+  console.log(`Blockers: ${result.blockers.length}`);
+  console.log(`Warnings: ${result.warnings.length}\n`);
+
+  for (const b of result.blockers) {
+    console.log(`❌ ${b.code}: ${b.message}`);
+    console.log(`   ${b.command}`);
+  }
+
+  for (const w of result.warnings) {
+    console.log(`⚠️ ${w.code}: ${w.message}`);
+    console.log(`   ${w.command}`);
+  }
+
+  if (result.blockers.length === 0 && result.warnings.length === 0) {
+    console.log('✅ No current Phase 61.1 blockers detected by safe diagnostics.');
+  }
+
+  console.log('\nNo PostgreSQL. No external queue. No external search. No Pilot.\n');
+
+  if (!result.ok) process.exit(1);
+}
+
+function summarizeParsed(name, parsed) {
+  if (name === 'json_health') {
+    return {
+      ok: parsed.ok,
+      scanned: parsed.scanned,
+      critical: parsed.critical,
+      invalid: parsed.invalid,
+      nullByte: parsed.nullByte,
+      zeroByte: parsed.zeroByte,
+    };
+  }
+
+  if (name === 'null_byte_scan') {
+    return {
+      ok: parsed.ok,
+      scannedFiles: parsed.scannedFiles,
+      nulFileCount: parsed.nulFileCount,
+    };
+  }
+
+  if (name === 'queue_verify') {
+    return {
+      ok: parsed.ok,
+      status: parsed.status,
+      warnings: parsed.warnings?.length || 0,
+      errors: parsed.errors?.length || 0,
+      summaryMismatches: parsed.details?.summaryMismatches?.length || 0,
+      actualFileMismatches: parsed.details?.actualFileMismatches?.length || 0,
+      actualFilesByStatus: parsed.details?.actualFilesByStatus?.byStatus || null,
+    };
+  }
+
+  if (name === 'queue_repair_dry_run') {
+    return {
+      ok: parsed.ok,
+      dryRun: parsed.dryRun,
+      mutationPerformed: parsed.mutationPerformed,
+      actions: parsed.repairPlan?.actions?.length || 0,
+    };
+  }
+
+  if (name === 'scale_thresholds_latest') {
+    return {
+      ok: parsed.ok,
+      status: parsed.status,
+      latestOnly: parsed.latestOnly,
+      warnings: parsed.summary?.warnings || 0,
+      criticals: parsed.summary?.criticals || 0,
+    };
+  }
+
+  if (name === 'pilot_gate') {
+    return {
+      ok: parsed.ok,
+      pilotAllowed: parsed.gate?.pilotAllowed ?? parsed.pilotAllowed,
+      implementationAllowed: parsed.gate?.implementationAllowed ?? parsed.implementationAllowed,
+      blockerCount: parsed.gate?.blockers?.length || parsed.blockers?.length || 0,
+    };
+  }
+
+  if (name === 'postdeploy_smoke') {
+    return {
+      ok: parsed.ok,
+      failed: parsed.failed?.length || 0,
+      timeoutMs: parsed.timeoutMs,
+      adminTimeoutMs: parsed.adminTimeoutMs,
+    };
+  }
+
+  return parsed;
+}
+
+main().catch(err => {
+  const failure = {
+    ok: false,
+    status: 'failed',
+    error: err.message,
+    stack: err.stack,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Phase 61.1 status failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -30012,6 +30369,13 @@ async function scan() {
     unreadableDirs: 0,
     maxFilesReached: files.length >= MAX_FILES,
     issues: [],
+    remediation: {
+      inspectNullBytes: 'node scripts/find-null-json-files.js --json',
+      quarantineDryRun: 'node scripts/quarantine-corrupt-json.js --dry-run --json',
+      quarantineConfirmAfterBackup: 'node scripts/backup.js && node scripts/quarantine-corrupt-json.js --confirm --json',
+      repairIndexesAfterRecovery: 'node scripts/repair-indexes.js',
+      rebuildSearchAfterRecovery: 'node scripts/rebuild-search-relevance.js',
+    },
     generatedAt: new Date().toISOString(),
   };
 

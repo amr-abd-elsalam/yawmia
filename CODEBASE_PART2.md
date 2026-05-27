@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-27T00:44:29.803Z
+> Auto-generated: 2026-05-27T01:18:54.828Z
 > Files in this part: 132
 
 ## Files
@@ -33099,7 +33099,7 @@ async function checkQueueOperationalHealth(isProd) {
         isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
         'Queue summary is stale',
         { summary },
-        'node scripts/repair-queue.js'
+        'node scripts/repair-queue.js --dry-run --json'
       );
     }
 
@@ -33119,7 +33119,7 @@ async function checkQueueOperationalHealth(isProd) {
         'warn',
         'Queue has operational warnings',
         { deadLetter, failed, pending },
-        'node scripts/verify-queue.js'
+        'node scripts/verify-queue.js --json'
       );
     }
 
@@ -33170,7 +33170,7 @@ async function checkQueueNoStaleRunningGate(isProd) {
     isProd ? 'warn' : 'warn',
     'Stale running queue jobs require script-based verification',
     { scriptAvailable: true },
-    'node scripts/verify-queue.js --strict'
+    'node scripts/verify-queue.js --strict --json'
   );
 }
 
@@ -33180,7 +33180,7 @@ async function checkJsonHealthGate(isProd) {
     'warn',
     'JSON corruption scan is script-based and should be run before deploy',
     { scriptAvailable: true },
-    'node scripts/verify-data-json.js --strict'
+    'node scripts/verify-data-json.js --strict --json'
   );
 }
 
@@ -35467,7 +35467,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
           id: 'queue_summary_repair',
           label: 'إصلاح ملخص الطابور',
           severity: 'warning',
-          command: 'node scripts/repair-queue.js',
+          command: 'node scripts/verify-queue.js --json',
           adminRoute: '/api/admin/queue/repair',
           reason: 'Queue summary is stale.',
         });
@@ -35489,7 +35489,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
           id: 'queue_pending_backlog',
           label: 'تفريغ Backlog الطابور',
           severity: pending >= 5000 ? 'critical' : 'warning',
-          command: 'node scripts/queue-drain.js',
+          command: 'node scripts/queue-drain.js --dry-run --json',
           adminRoute: '/api/admin/ops-queue/jobs?status=pending',
           reason: `${pending} pending job(s) are waiting.`,
         });
@@ -35592,7 +35592,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
       id: 'queue_idempotency_cleanup',
       label: 'تنظيف مفاتيح idempotency المنتهية',
       severity: 'info',
-      command: 'node scripts/compact-queue.js',
+      command: 'node scripts/compact-queue.js --dry-run --json',
       adminRoute: '/api/admin/queue/compact',
       reason: `${details.expiredIdempotency.length} expired idempotency record(s).`,
     });
@@ -38428,17 +38428,17 @@ function defaultIndexRepairPlan() {
 
 function defaultQueueVerifyPlan() {
   return [
-    { command: 'node scripts/verify-queue.js --strict', required: true },
-    { command: 'node scripts/repair-queue.js', required: true },
+    { command: 'node scripts/verify-queue.js --strict --json', required: true },
+    { command: 'node scripts/repair-queue.js --dry-run --json', required: true },
     { command: 'node scripts/queue-retry-dlq.js --dry-run', required: false },
   ];
 }
 
 function defaultSmokePlan() {
   return [
-    { command: 'node scripts/postdeploy-smoke.js --json', required: true },
+    { command: 'node scripts/postdeploy-smoke.js --json --admin-timeout-ms=3500', required: true },
     { command: 'node scripts/verify-production-readiness.js --json', required: true },
-    { command: 'node scripts/verify-data-json.js --strict', required: true },
+    { command: 'node scripts/verify-data-json.js --strict --json', required: true },
   ];
 }
 
