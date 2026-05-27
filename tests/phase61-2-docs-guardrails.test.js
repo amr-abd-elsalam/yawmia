@@ -16,7 +16,7 @@ async function readRootFile(fileName) {
 }
 
 test('Phase 61.2 evidence cadence doc exists and preserves no-externalization posture', async () => {
-  const text = await readRootFile('PHASE61_2_EVIDENCE_CADENCE.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_EVIDENCE_CADENCE.md');
 
   assert.match(text, /Evidence Cadence → Remediation Ownership → Rehearsal Discipline → Pilot Gate Confidence/);
   assert.match(text, /Stay file-backed/);
@@ -28,7 +28,7 @@ test('Phase 61.2 evidence cadence doc exists and preserves no-externalization po
 });
 
 test('Phase 61.2 deep migration rehearsal doc is explicitly non-mutating', async () => {
-  const text = await readRootFile('PHASE61_2_DEEP_MIGRATION_REHEARSAL.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_DEEP_MIGRATION_REHEARSAL.md');
 
   assert.match(text, /sourceDataMutated=false/);
   assert.match(text, /externalDbConnected=false/);

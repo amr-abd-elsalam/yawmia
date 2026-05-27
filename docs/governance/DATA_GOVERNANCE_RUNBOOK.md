@@ -178,13 +178,13 @@ Do not use snapshots to bypass anonymization/privacy rules.
 Snapshot format is documented in:
 
 ```text
-DATA_MIGRATION_FORMATS.md
+../operations/DATA_MIGRATION_FORMATS.md
 ```
 
 Externalization readiness is documented in:
 
 ```text
-EXTERNALIZATION_READINESS.md
+../operations/EXTERNALIZATION_READINESS.md
 ```
 
 ## 11. Retention policy

@@ -1,6 +1,6 @@
 # يوميّة — Deployment Runbook
 > Phase 59 — File-Based Scale Limits + Externalization Readiness  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يشرح طريقة نشر يوميّة في production مع الحفاظ على قاعدة أساسية:
 
@@ -230,8 +230,8 @@ frontend/sw.js CACHE_NAME
 في Phase 59:
 
 ```text
-0.55.0
-yawmia-v0.55.0```
+0.57.0
+yawmia-v0.57.0```
 
 ---
 
@@ -408,10 +408,10 @@ node scripts/verify-scale-thresholds.js --strict
 ثم اتبع:
 
 ```text
-STORAGE_PRESSURE_RUNBOOK.md
-SCALE_LIMITS.md
-EXTERNALIZATION_READINESS.md
-MULTI_INSTANCE_BOUNDARY.md
+../operations/STORAGE_PRESSURE_RUNBOOK.md
+../operations/SCALE_LIMITS.md
+../operations/EXTERNALIZATION_READINESS.md
+../operations/MULTI_INSTANCE_BOUNDARY.md
 ```
 
 ## 17. What NOT to do
@@ -447,9 +447,9 @@ node scripts/export-migration-snapshot.js --dry-run
 ثم اقرأ:
 
 ```text
-EXTERNALIZATION_READINESS.md
-DATA_MIGRATION_FORMATS.md
-MULTI_INSTANCE_BOUNDARY.md
+../operations/EXTERNALIZATION_READINESS.md
+../operations/DATA_MIGRATION_FORMATS.md
+../operations/MULTI_INSTANCE_BOUNDARY.md
 ```
 
 عند Phase 60+، أول candidates للـ external DB:

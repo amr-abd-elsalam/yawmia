@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 test('DEPLOYMENT_RUNBOOK documents single-writer production discipline', async () => {
-  const md = await readFile(new URL('../DEPLOYMENT_RUNBOOK.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/deployment/DEPLOYMENT_RUNBOOK.md', import.meta.url), 'utf-8');
 
   assert.match(md, /Do not run PM2 cluster mode/);
   assert.match(md, /Do not run multiple writer instances/);
@@ -13,7 +13,7 @@ test('DEPLOYMENT_RUNBOOK documents single-writer production discipline', async (
 });
 
 test('OPERATIONS_RUNBOOK contains daily weekly monthly workflows and commands', async () => {
-  const md = await readFile(new URL('../OPERATIONS_RUNBOOK.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/operations/OPERATIONS_RUNBOOK.md', import.meta.url), 'utf-8');
 
   assert.match(md, /Daily checks/);
   assert.match(md, /Weekly checks/);
@@ -24,7 +24,7 @@ test('OPERATIONS_RUNBOOK contains daily weekly monthly workflows and commands', 
 });
 
 test('INCIDENT_RUNBOOKS contains Phase 57 incident taxonomy', async () => {
-  const md = await readFile(new URL('../INCIDENT_RUNBOOKS.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/incidents/INCIDENT_RUNBOOKS.md', import.meta.url), 'utf-8');
 
   const keys = [
     'QUEUE_DLQ_SPIKE',

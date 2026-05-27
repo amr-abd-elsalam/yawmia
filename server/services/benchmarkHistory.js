@@ -119,7 +119,7 @@ export async function persistBenchmarkResult(result, options = {}) {
   const record = {
     id,
     kind: 'benchmark_history',
-    version: '0.56.0',
+    version: '0.57.0',
     timestamp,
     source: options.source || result?.source || 'benchmark-file-paths',
     status: evaluation.status,

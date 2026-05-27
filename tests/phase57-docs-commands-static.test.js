@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 test('deployment runbook references predeploy and postdeploy scripts', async () => {
-  const md = await readFile(new URL('../DEPLOYMENT_RUNBOOK.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/deployment/DEPLOYMENT_RUNBOOK.md', import.meta.url), 'utf-8');
 
   assert.match(md, /node scripts\/predeploy-check\.js --strict/);
   assert.match(md, /node scripts\/postdeploy-smoke\.js/);
@@ -12,7 +12,7 @@ test('deployment runbook references predeploy and postdeploy scripts', async () 
 });
 
 test('operations runbook references weekly review and scheduler cadence', async () => {
-  const md = await readFile(new URL('../OPERATIONS_RUNBOOK.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/operations/OPERATIONS_RUNBOOK.md', import.meta.url), 'utf-8');
 
   assert.match(md, /node scripts\/ops-weekly-review\.js/);
   assert.match(md, /node scripts\/scheduler-cadence-report\.js/);

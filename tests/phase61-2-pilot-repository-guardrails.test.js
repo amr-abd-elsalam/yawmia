@@ -18,7 +18,7 @@ async function readRootFile(fileName) {
 }
 
 test('Phase 61.2 pilot decision doc keeps pilot blocked by default', async () => {
-  const text = await readRootFile('PHASE61_2_PILOT_CANDIDATE_DECISION.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_PILOT_CANDIDATE_DECISION.md');
 
   assert.match(text, /pilotAllowed=false/);
   assert.match(text, /implementationAllowed=false/);
@@ -30,7 +30,7 @@ test('Phase 61.2 pilot decision doc keeps pilot blocked by default', async () =>
 });
 
 test('Phase 61.2 repository contracts doc keeps docs-only posture', async () => {
-  const text = await readRootFile('PHASE61_2_REPOSITORY_ADAPTER_CONTRACTS.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_REPOSITORY_ADAPTER_CONTRACTS.md');
 
   assert.match(text, /docsOnly=true/);
   assert.match(text, /runtimeSwitchEnabled=false/);
@@ -51,8 +51,8 @@ test('Config still declares repository contracts as docs-only and runtime switch
 });
 
 test('Event bridge and SSE fanout docs are planning-only', async () => {
-  const eventBridge = await readRootFile('PHASE61_2_EVENT_BRIDGE_PILOT_PLAN.md');
-  const sseFanout = await readRootFile('PHASE61_2_SSE_FANOUT_PILOT_PLAN.md');
+  const eventBridge = await readRootFile('docs/phases/phase61-2/PHASE61_2_EVENT_BRIDGE_PILOT_PLAN.md');
+  const sseFanout = await readRootFile('docs/phases/phase61-2/PHASE61_2_SSE_FANOUT_PILOT_PLAN.md');
 
   assert.match(eventBridge, /Implementation: not justified now/);
   assert.match(eventBridge, /Do not implement/);

@@ -1,7 +1,7 @@
 # يوميّة — Phase 60 Migration Rehearsal
 
 > تدريب آمن للهجرة بدون تنفيذ external database  
-> Version: v0.56.0
+> Version: v0.57.0
 
 ---
 

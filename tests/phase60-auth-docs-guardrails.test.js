@@ -37,7 +37,7 @@ async function listFilesRecursive(dir) {
 }
 
 test('Auth provider strategy doc exists and keeps current file-backed OTP ownership', async () => {
-  const text = await readRootFile('PHASE60_AUTH_PROVIDER_STRATEGY.md');
+  const text = await readRootFile('docs/phases/phase60/PHASE60_AUTH_PROVIDER_STRATEGY.md');
 
   assert.match(text, /Current provider: file-backed OTP/);
   assert.match(text, /auth\.js generates OTP/);
@@ -49,7 +49,7 @@ test('Auth provider strategy doc exists and keeps current file-backed OTP owners
 });
 
 test('Auth security review doc preserves OTP hashing, expiry, attempts, and sessions', async () => {
-  const text = await readRootFile('PHASE60_AUTH_SECURITY_REVIEW.md');
+  const text = await readRootFile('docs/phases/phase60/PHASE60_AUTH_SECURITY_REVIEW.md');
 
   assert.match(text, /hashed at rest/);
   assert.match(text, /deleted after successful verification/);
@@ -61,7 +61,7 @@ test('Auth security review doc preserves OTP hashing, expiry, attempts, and sess
 });
 
 test('Egypt sender id runbook forbids unofficial WhatsApp production auth', async () => {
-  const text = await readRootFile('PHASE60_EGYPT_SENDER_ID_RUNBOOK.md');
+  const text = await readRootFile('docs/phases/phase60/PHASE60_EGYPT_SENDER_ID_RUNBOOK.md');
 
   assert.match(text, /Infobip SMS adapter remains unchanged/);
   assert.match(text, /Meta WhatsApp Cloud API template adapter remains unchanged/);

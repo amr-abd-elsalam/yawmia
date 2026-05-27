@@ -29,7 +29,7 @@ test('postdeploy-smoke succeeds against a minimal compatible server', async () =
 
     if (url.pathname === '/api/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', version: '0.53.0' }));
+      res.end(JSON.stringify({ status: 'ok', version: '0.57.0' }));
       return;
     }
 
@@ -41,7 +41,7 @@ test('postdeploy-smoke succeeds against a minimal compatible server', async () =
 
     if (url.pathname === '/api/docs') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, version: '0.53.0' }));
+      res.end(JSON.stringify({ ok: true, version: '0.57.0' }));
       return;
     }
 

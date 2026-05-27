@@ -468,7 +468,7 @@ export async function captureExternalizationDecisionSnapshot(options = {}) {
   const record = {
     id,
     kind: 'externalization_decision',
-    version: '0.56.0',
+    version: '0.57.0',
     ...report,
     createdAt: nowIso(),
   };

@@ -15,7 +15,7 @@ test('read-only replica guard still blocks write methods', async () => {
 });
 
 test('multi-instance boundary docs warn against PM2 cluster and multiple writers', async () => {
-  const raw = await readFile('MULTI_INSTANCE_BOUNDARY.md', 'utf-8');
+  const raw = await readFile('docs/operations/MULTI_INSTANCE_BOUNDARY.md', 'utf-8');
 
   assert.ok(raw.includes('Do not run PM2 cluster mode.'));
   assert.ok(raw.includes('Do not run multiple writers'));

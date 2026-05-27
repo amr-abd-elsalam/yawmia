@@ -1,6 +1,6 @@
 # يوميّة — Multi-Instance Boundary
 > Phase 59 — Current Safe Boundary  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يوضح ما هو آمن وغير آمن في تشغيل يوميّة بأكثر من instance.
 

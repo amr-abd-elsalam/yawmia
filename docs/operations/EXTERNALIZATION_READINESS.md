@@ -1,6 +1,6 @@
 # يوميّة — Externalization Readiness
 > Phase 59 — Advisory Only  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يجهّز يوميّة لقرارات Phase 60+ بدون تنفيذ أي external database أو external queue أو external search في Phase 59.
 

@@ -1,7 +1,7 @@
 # يوميّة — Phase 60 Externalization Decision Framework
 
 > Phase 60 = Evidence-Based Decision + Rehearsal  
-> Version: v0.56.0  
+> Version: v0.57.0  
 > Advisory by default. No automatic migration.
 
 ---

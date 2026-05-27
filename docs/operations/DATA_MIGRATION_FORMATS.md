@@ -1,6 +1,6 @@
 # يوميّة — Data Migration Formats
 > Phase 59 — Migration Snapshot Format for Phase 60+  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يحدد صيغة future migration snapshots.  
 Phase 59 لا تستورد البيانات إلى أي external database.  
@@ -55,7 +55,7 @@ Example:
   "createdAt": "2026-05-23T04:30:00.000Z",
   "source": {
     "app": "yawmia",
-    "version": "0.55.0",
+    "version": "0.57.0",
     "dataPath": "./data"
   },
   "options": {

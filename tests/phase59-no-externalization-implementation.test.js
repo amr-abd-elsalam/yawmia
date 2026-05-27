@@ -60,7 +60,7 @@ test('Phase 59 service code does not implement external connection strings', asy
 });
 
 test('Externalization docs explicitly say Phase 59 is advisory-only', async () => {
-  const raw = await readFile('EXTERNALIZATION_READINESS.md', 'utf-8');
+  const raw = await readFile('docs/operations/EXTERNALIZATION_READINESS.md', 'utf-8');
 
   assert.ok(raw.includes('Phase 59 لا تنفذ'));
   assert.ok(raw.includes('Externalization is not Phase 59 implementation'));

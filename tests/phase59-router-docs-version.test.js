@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-test('router docs version is 0.55.0 and old docs version is absent', async () => {
+test('router docs version is 0.57.0 and old docs version is absent', async () => {
   const raw = await readFile('server/router.js', 'utf-8');
 
-  assert.ok(raw.includes("version: '0.55.0'"));
+  assert.ok(raw.includes("version: '0.57.0'"));
   assert.ok(!raw.includes("version: '0.54.0'"));
 });
 

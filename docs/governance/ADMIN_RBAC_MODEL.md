@@ -1,6 +1,6 @@
 # يوميّة — Admin RBAC Model
 > Phase 59 — Governance, Privacy, RBAC, Scale Visibility  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يشرح نموذج صلاحيات الأدمن في يوميّة بعد Phase 58.
 

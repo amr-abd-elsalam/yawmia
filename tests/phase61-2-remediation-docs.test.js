@@ -16,7 +16,7 @@ async function readRootFile(fileName) {
 }
 
 test('Phase 61.2 remediation runbook requires dry-run before mutation', async () => {
-  const text = await readRootFile('PHASE61_2_REMEDIATION_OPERATIONS.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_REMEDIATION_OPERATIONS.md');
 
   assert.match(text, /dry-run-first/);
   assert.match(text, /node scripts\/repair-queue\.js --dry-run --json/);
@@ -28,7 +28,7 @@ test('Phase 61.2 remediation runbook requires dry-run before mutation', async ()
 });
 
 test('Phase 61.2 remediation runbook forbids unsafe conclusions', async () => {
-  const text = await readRootFile('PHASE61_2_REMEDIATION_OPERATIONS.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_REMEDIATION_OPERATIONS.md');
 
   assert.match(text, /Do not delete corrupt JSON blindly/);
   assert.match(text, /Do not retry all DLQ blindly/);
@@ -38,7 +38,7 @@ test('Phase 61.2 remediation runbook forbids unsafe conclusions', async () => {
 });
 
 test('Phase 61.2 rollback rehearsal doc blocks pilot without rollback evidence', async () => {
-  const text = await readRootFile('PHASE61_2_ROLLBACK_REHEARSAL_REPORT.md');
+  const text = await readRootFile('docs/phases/phase61-2/PHASE61_2_ROLLBACK_REHEARSAL_REPORT.md');
 
   assert.match(text, /Default mode: dry-run/);
   assert.match(text, /Production restore: forbidden/);

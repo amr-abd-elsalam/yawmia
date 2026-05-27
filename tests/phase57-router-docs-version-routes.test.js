@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 test('router docs route includes Phase 57 version string', async () => {
   const router = await readFile(new URL('../server/router.js', import.meta.url), 'utf-8');
-  assert.match(router, /version: '0\.53\.0'/);
+  assert.match(router, /version: '0\.57\.0'/);
 });
 
 test('router registers Phase 57 operational routes', async () => {

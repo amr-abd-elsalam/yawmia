@@ -323,11 +323,11 @@ async function main() {
   }
 
   const phase59Docs = [
-    'SCALE_LIMITS.md',
-    'EXTERNALIZATION_READINESS.md',
-    'MULTI_INSTANCE_BOUNDARY.md',
-    'DATA_MIGRATION_FORMATS.md',
-    'STORAGE_PRESSURE_RUNBOOK.md',
+    'docs/operations/SCALE_LIMITS.md',
+    'docs/operations/EXTERNALIZATION_READINESS.md',
+    'docs/operations/MULTI_INSTANCE_BOUNDARY.md',
+    'docs/operations/DATA_MIGRATION_FORMATS.md',
+    'docs/operations/STORAGE_PRESSURE_RUNBOOK.md',
   ];
 
   for (const doc of phase59Docs) {

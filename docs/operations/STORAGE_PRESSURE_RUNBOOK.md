@@ -1,6 +1,6 @@
 # يوميّة — Storage Pressure Runbook
 > Phase 59 — Operational Runbook  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يشرح ماذا تفعل عند ظهور warning أو critical في Storage Pressure أو Scale Thresholds.
 
@@ -231,7 +231,7 @@ Admin:
 Runbook:
 
 ```text
-../incidents/../incidents/INCIDENT_RUNBOOKS.md
+../incidents/INCIDENT_RUNBOOKS.md
 ```
 
 Possible runbook keys:

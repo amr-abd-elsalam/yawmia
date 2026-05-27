@@ -51,7 +51,7 @@ test('router applies capability checks to dangerous routes', async () => {
   }
 });
 
-test('router docs version is 0.54.0', async () => {
+test('router docs version is 0.57.0', async () => {
   const router = await readFile('server/router.js', 'utf-8');
-  assert.match(router, /version:\s*'0\.54\.0'/);
+  assert.match(router, /version:\s*'0\.57\.0'/);
 });

@@ -1,6 +1,6 @@
 # يوميّة — Scale Limits
 > Phase 59 — File-Based Scale Limits + Externalization Readiness  
-> Version target: v0.55.0
+> Version target: v0.57.0
 
 هذا الملف يحدد حدود التشغيل الآمنة للبنية الحالية المعتمدة على ملفات JSON.
 

@@ -31,7 +31,7 @@ test('admin SSE subscribes to Phase 58 governance events', async () => {
 });
 
 test('deployment runbook mentions Phase 58 governance checks', async () => {
-  const raw = await readFile('DEPLOYMENT_RUNBOOK.md', 'utf-8');
+  const raw = await readFile('docs/deployment/DEPLOYMENT_RUNBOOK.md', 'utf-8');
 
   assert.match(raw, /verify-admin-rbac\.js --strict/);
   assert.match(raw, /verify-privacy-governance\.js --strict/);

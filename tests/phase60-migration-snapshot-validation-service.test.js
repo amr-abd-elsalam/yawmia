@@ -32,7 +32,7 @@ test('valid NDJSON snapshot passes basic validation', async () => {
     formatVersion: 1,
     phase: 60,
     createdAt: new Date().toISOString(),
-    source: { app: 'yawmia', version: '0.56.0' },
+    source: { app: 'yawmia', version: '0.57.0' },
     collections: {
       users: { file: 'users.ndjson', count: 2, sha256: await sha256(users) },
       jobs: { file: 'jobs.ndjson', count: 1, sha256: await sha256(jobs) },
@@ -60,7 +60,7 @@ test('forbidden key detection fails validation', async () => {
     formatVersion: 1,
     phase: 60,
     createdAt: new Date().toISOString(),
-    source: { app: 'yawmia', version: '0.56.0' },
+    source: { app: 'yawmia', version: '0.57.0' },
     collections: {
       users: { file: 'users.ndjson', count: 1, sha256: await sha256(users) },
     },
