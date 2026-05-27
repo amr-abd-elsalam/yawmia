@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-27T19:24:28.430Z
+> Auto-generated: 2026-05-27T20:06:23.558Z
 > Files in this part: 90
 
 ## Files
@@ -27708,15 +27708,15 @@ async function main() {
 
   // Phase 60 — Evidence-based externalization decision + migration rehearsal.
   const phase60Docs = [
-    'PHASE60_EXTERNALIZATION_DECISION.md',
-    'PHASE60_MIGRATION_REHEARSAL.md',
-    'PHASE60_ROLLBACK_PLAN.md',
-    'PHASE60_REPOSITORY_BOUNDARIES.md',
-    'PHASE60_EVENT_BRIDGE_DESIGN.md',
-    'PHASE60_SSE_FANOUT_DESIGN.md',
-    'PHASE60_OBJECT_STORAGE_DECISION.md',
-    'PHASE60_EXTERNAL_QUEUE_DECISION.md',
-    'PHASE60_EXTERNAL_SEARCH_DECISION.md',
+    'docs/phases/phase60/PHASE60_EXTERNALIZATION_DECISION.md',
+    'docs/phases/phase60/PHASE60_MIGRATION_REHEARSAL.md',
+    'docs/phases/phase60/PHASE60_ROLLBACK_PLAN.md',
+    'docs/phases/phase60/PHASE60_REPOSITORY_BOUNDARIES.md',
+    'docs/phases/phase60/PHASE60_EVENT_BRIDGE_DESIGN.md',
+    'docs/phases/phase60/PHASE60_SSE_FANOUT_DESIGN.md',
+    'docs/phases/phase60/PHASE60_OBJECT_STORAGE_DECISION.md',
+    'docs/phases/phase60/PHASE60_EXTERNAL_QUEUE_DECISION.md',
+    'docs/phases/phase60/PHASE60_EXTERNAL_SEARCH_DECISION.md',
   ];
 
   for (const doc of phase60Docs) {
