@@ -258,7 +258,12 @@ async function performDeletion(plan) {
     }
 
     try {
-      await rm(target.path, { recursive: true, force: true });
+      await rm(target.path, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 250,
+      });
       deleted.push({
         ...target,
         deleted: true,
