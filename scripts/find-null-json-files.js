@@ -139,6 +139,11 @@ const result = {
   nulFileCount: findings.length,
   findings,
   readErrors: state.readErrors.slice(0, 50),
+  remediation: {
+    quarantineDryRun: 'node scripts/quarantine-corrupt-json.js --dry-run --json',
+    quarantineConfirmAfterBackup: 'node scripts/backup.js && node scripts/quarantine-corrupt-json.js --confirm --json',
+    verifyAfterQuarantine: 'node scripts/verify-data-json.js --strict --json',
+  },
   generatedAt: new Date().toISOString(),
 };
 

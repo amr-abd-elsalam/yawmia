@@ -497,7 +497,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
           id: 'queue_summary_repair',
           label: 'إصلاح ملخص الطابور',
           severity: 'warning',
-          command: 'node scripts/repair-queue.js',
+          command: 'node scripts/verify-queue.js --json',
           adminRoute: '/api/admin/queue/repair',
           reason: 'Queue summary is stale.',
         });
@@ -519,7 +519,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
           id: 'queue_pending_backlog',
           label: 'تفريغ Backlog الطابور',
           severity: pending >= 5000 ? 'critical' : 'warning',
-          command: 'node scripts/queue-drain.js',
+          command: 'node scripts/queue-drain.js --dry-run --json',
           adminRoute: '/api/admin/ops-queue/jobs?status=pending',
           reason: `${pending} pending job(s) are waiting.`,
         });
@@ -622,7 +622,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
       id: 'queue_idempotency_cleanup',
       label: 'تنظيف مفاتيح idempotency المنتهية',
       severity: 'info',
-      command: 'node scripts/compact-queue.js',
+      command: 'node scripts/compact-queue.js --dry-run --json',
       adminRoute: '/api/admin/queue/compact',
       reason: `${details.expiredIdempotency.length} expired idempotency record(s).`,
     });

@@ -93,17 +93,17 @@ function defaultIndexRepairPlan() {
 
 function defaultQueueVerifyPlan() {
   return [
-    { command: 'node scripts/verify-queue.js --strict', required: true },
-    { command: 'node scripts/repair-queue.js', required: true },
+    { command: 'node scripts/verify-queue.js --strict --json', required: true },
+    { command: 'node scripts/repair-queue.js --dry-run --json', required: true },
     { command: 'node scripts/queue-retry-dlq.js --dry-run', required: false },
   ];
 }
 
 function defaultSmokePlan() {
   return [
-    { command: 'node scripts/postdeploy-smoke.js --json', required: true },
+    { command: 'node scripts/postdeploy-smoke.js --json --admin-timeout-ms=3500', required: true },
     { command: 'node scripts/verify-production-readiness.js --json', required: true },
-    { command: 'node scripts/verify-data-json.js --strict', required: true },
+    { command: 'node scripts/verify-data-json.js --strict --json', required: true },
   ];
 }
 

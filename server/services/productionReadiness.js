@@ -724,7 +724,7 @@ async function checkQueueOperationalHealth(isProd) {
         isProd && config.DEPLOYMENT_DISCIPLINE?.requireQueueHealthyInProduction ? 'fail' : 'warn',
         'Queue summary is stale',
         { summary },
-        'node scripts/repair-queue.js'
+        'node scripts/repair-queue.js --dry-run --json'
       );
     }
 
@@ -744,7 +744,7 @@ async function checkQueueOperationalHealth(isProd) {
         'warn',
         'Queue has operational warnings',
         { deadLetter, failed, pending },
-        'node scripts/verify-queue.js'
+        'node scripts/verify-queue.js --json'
       );
     }
 
@@ -795,7 +795,7 @@ async function checkQueueNoStaleRunningGate(isProd) {
     isProd ? 'warn' : 'warn',
     'Stale running queue jobs require script-based verification',
     { scriptAvailable: true },
-    'node scripts/verify-queue.js --strict'
+    'node scripts/verify-queue.js --strict --json'
   );
 }
 
@@ -805,7 +805,7 @@ async function checkJsonHealthGate(isProd) {
     'warn',
     'JSON corruption scan is script-based and should be run before deploy',
     { scriptAvailable: true },
-    'node scripts/verify-data-json.js --strict'
+    'node scripts/verify-data-json.js --strict --json'
   );
 }
 

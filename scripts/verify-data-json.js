@@ -93,6 +93,13 @@ async function scan() {
     unreadableDirs: 0,
     maxFilesReached: files.length >= MAX_FILES,
     issues: [],
+    remediation: {
+      inspectNullBytes: 'node scripts/find-null-json-files.js --json',
+      quarantineDryRun: 'node scripts/quarantine-corrupt-json.js --dry-run --json',
+      quarantineConfirmAfterBackup: 'node scripts/backup.js && node scripts/quarantine-corrupt-json.js --confirm --json',
+      repairIndexesAfterRecovery: 'node scripts/repair-indexes.js',
+      rebuildSearchAfterRecovery: 'node scripts/rebuild-search-relevance.js',
+    },
     generatedAt: new Date().toISOString(),
   };
 
