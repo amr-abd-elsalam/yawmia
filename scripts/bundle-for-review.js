@@ -12,7 +12,7 @@ import { join, extname, relative } from 'node:path';
 const ROOT = new URL('..', import.meta.url).pathname;
 
 const IGNORE = new Set([
-  'node_modules', '.git', 'data', 'backups', 'test-backups',
+  'node_modules', '.git', 'data', 'backups', 'test-backups', 'logs', '.github', 'deploy',
   '.env', 'package-lock.json', '.DS_Store', 'Thumbs.db',
   'cloudflared.deb', 'tests', 'docs',
 ]);
@@ -20,6 +20,7 @@ const IGNORE = new Set([
 const IGNORE_FILES = new Set([
   'CODEBASE_PART1.md', 'CODEBASE_PART2.md',
   'CODEBASE_PART3.md', 'CODEBASE_PART4.md',
+  'desktop.ini', 'ecosystem.config.cjs', 'null-json-report.json',
 ]);
 
 const IGNORE_EXT = new Set([

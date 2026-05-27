@@ -6,8 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const DOC_PATHS = {
+  'PHASE61_2_EVIDENCE_CADENCE.md': 'docs/phases/phase61-2/PHASE61_2_EVIDENCE_CADENCE.md',
+  'PHASE61_2_DEEP_MIGRATION_REHEARSAL.md': 'docs/phases/phase61-2/PHASE61_2_DEEP_MIGRATION_REHEARSAL.md',
+};
+
 async function readRootFile(fileName) {
-  return await readFile(join(ROOT, fileName), 'utf-8');
+  return await readFile(join(ROOT, DOC_PATHS[fileName] || fileName), 'utf-8');
 }
 
 test('Phase 61.2 evidence cadence doc exists and preserves no-externalization posture', async () => {

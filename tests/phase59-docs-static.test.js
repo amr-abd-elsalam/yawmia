@@ -46,7 +46,7 @@ test('Phase 59 required docs exist and contain key guardrails', async () => {
 
 test('Runbooks were updated with Phase 59 references', async () => {
   const deploy = await readFile('DEPLOYMENT_RUNBOOK.md', 'utf-8');
-  const ops = await readFile('OPERATIONS_RUNBOOK.md', 'utf-8');
+  const ops = await readFile('docs/operations/OPERATIONS_RUNBOOK.md', 'utf-8');
   const gov = await readFile('DATA_GOVERNANCE_RUNBOOK.md', 'utf-8');
   const privacy = await readFile('PRIVACY_REQUEST_RUNBOOK.md', 'utf-8');
   const rbac = await readFile('ADMIN_RBAC_MODEL.md', 'utf-8');

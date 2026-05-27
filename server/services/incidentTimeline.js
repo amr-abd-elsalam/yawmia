@@ -171,7 +171,7 @@ export function getIncidentRunbookKey(eventType, data = {}) {
 export function getIncidentTaxonomy() {
   return {
     enabled: !!(config.INCIDENT_TAXONOMY && config.INCIDENT_TAXONOMY.enabled),
-    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './INCIDENT_RUNBOOKS.md',
+    runbookBasePath: config.INCIDENT_TAXONOMY?.runbookBasePath || './docs/incidents/INCIDENT_RUNBOOKS.md',
     defaultSeverity: config.INCIDENT_TAXONOMY?.defaultSeverity || 'medium',
     categories: config.INCIDENT_TAXONOMY?.categories || [],
     runbooks: [

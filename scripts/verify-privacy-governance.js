@@ -53,9 +53,9 @@ async function main() {
   const checks = [];
 
   const docs = [
-    'PRIVACY_DATA_MAP.md',
-    'PRIVACY_REQUEST_RUNBOOK.md',
-    'DATA_GOVERNANCE_RUNBOOK.md',
+    'docs/privacy/PRIVACY_DATA_MAP.md',
+    'docs/governance/PRIVACY_REQUEST_RUNBOOK.md',
+    'docs/governance/DATA_GOVERNANCE_RUNBOOK.md',
   ];
 
   for (const d of docs) {

@@ -334,7 +334,7 @@ node scripts/verify-scale-thresholds.js --strict
    - counters → `compact-counters`, `rebuild-counters`
 5. لو هناك user impact أو production risk:
    - افتح incident
-   - اتبع `INCIDENT_RUNBOOKS.md`
+   - اتبع `../incidents/INCIDENT_RUNBOOKS.md`
 6. لو incident critical:
    - أنشئ Postmortem
 7. بعد الاستقرار:

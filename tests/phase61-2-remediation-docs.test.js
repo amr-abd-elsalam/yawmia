@@ -6,8 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const DOC_PATHS = {
+  'PHASE61_2_REMEDIATION_OPERATIONS.md': 'docs/phases/phase61-2/PHASE61_2_REMEDIATION_OPERATIONS.md',
+  'PHASE61_2_ROLLBACK_REHEARSAL_REPORT.md': 'docs/phases/phase61-2/PHASE61_2_ROLLBACK_REHEARSAL_REPORT.md',
+};
+
 async function readRootFile(fileName) {
-  return await readFile(join(ROOT, fileName), 'utf-8');
+  return await readFile(join(ROOT, DOC_PATHS[fileName] || fileName), 'utf-8');
 }
 
 test('Phase 61.2 remediation runbook requires dry-run before mutation', async () => {

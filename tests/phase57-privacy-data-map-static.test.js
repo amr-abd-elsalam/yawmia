@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 test('PRIVACY_DATA_MAP documents core collections and PII posture', async () => {
-  const md = await readFile(new URL('../PRIVACY_DATA_MAP.md', import.meta.url), 'utf-8');
+  const md = await readFile(new URL('../docs/privacy/PRIVACY_DATA_MAP.md', import.meta.url), 'utf-8');
 
   const collections = [
     'users',

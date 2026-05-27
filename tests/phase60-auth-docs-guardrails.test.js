@@ -6,8 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const DOC_PATHS = {
+  'PHASE60_AUTH_PROVIDER_STRATEGY.md': 'docs/phases/phase60/PHASE60_AUTH_PROVIDER_STRATEGY.md',
+  'PHASE60_AUTH_SECURITY_REVIEW.md': 'docs/phases/phase60/PHASE60_AUTH_SECURITY_REVIEW.md',
+  'PHASE60_EGYPT_SENDER_ID_RUNBOOK.md': 'docs/phases/phase60/PHASE60_EGYPT_SENDER_ID_RUNBOOK.md',
+};
+
 async function readRootFile(fileName) {
-  return await readFile(join(ROOT, fileName), 'utf-8');
+  return await readFile(join(ROOT, DOC_PATHS[fileName] || fileName), 'utf-8');
 }
 
 async function listFilesRecursive(dir) {

@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const docs = [
-  './PHASE61_EVIDENCE_CADENCE.md',
-  './PHASE61_DEEP_MIGRATION_REHEARSAL.md',
-  './PHASE61_ROLLBACK_REHEARSAL_REPORT.md',
-  './PHASE61_PILOT_CANDIDATE_DECISION.md',
-  './PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md',
-  './PHASE61_EVENT_BRIDGE_PILOT_PLAN.md',
-  './PHASE61_SSE_FANOUT_PILOT_PLAN.md',
+  './docs/phases/phase61/PHASE61_EVIDENCE_CADENCE.md',
+  './docs/phases/phase61/PHASE61_DEEP_MIGRATION_REHEARSAL.md',
+  './docs/phases/phase61/PHASE61_ROLLBACK_REHEARSAL_REPORT.md',
+  './docs/phases/phase61/PHASE61_PILOT_CANDIDATE_DECISION.md',
+  './docs/phases/phase61/PHASE61_REPOSITORY_ADAPTER_CONTRACTS.md',
+  './docs/phases/phase61/PHASE61_EVENT_BRIDGE_PILOT_PLAN.md',
+  './docs/phases/phase61/PHASE61_SSE_FANOUT_PILOT_PLAN.md',
 ];
 
 test('Phase 61 docs exist and contain guardrails', async () => {
@@ -23,7 +23,7 @@ test('Phase 61 docs exist and contain guardrails', async () => {
 });
 
 test('Evidence cadence doc includes required rules', async () => {
-  const raw = await readFile('./PHASE61_EVIDENCE_CADENCE.md', 'utf-8');
+  const raw = await readFile('./docs/phases/phase61/PHASE61_EVIDENCE_CADENCE.md', 'utf-8');
 
   assert.match(raw, /No evidence history = no externalization decision/);
   assert.match(raw, /A single benchmark artifact is not a trend/);

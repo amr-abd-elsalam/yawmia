@@ -6,8 +6,15 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const DOC_PATHS = {
+  'PHASE61_2_PILOT_CANDIDATE_DECISION.md': 'docs/phases/phase61-2/PHASE61_2_PILOT_CANDIDATE_DECISION.md',
+  'PHASE61_2_REPOSITORY_ADAPTER_CONTRACTS.md': 'docs/phases/phase61-2/PHASE61_2_REPOSITORY_ADAPTER_CONTRACTS.md',
+  'PHASE61_2_EVENT_BRIDGE_PILOT_PLAN.md': 'docs/phases/phase61-2/PHASE61_2_EVENT_BRIDGE_PILOT_PLAN.md',
+  'PHASE61_2_SSE_FANOUT_PILOT_PLAN.md': 'docs/phases/phase61-2/PHASE61_2_SSE_FANOUT_PILOT_PLAN.md',
+};
+
 async function readRootFile(fileName) {
-  return await readFile(join(ROOT, fileName), 'utf-8');
+  return await readFile(join(ROOT, DOC_PATHS[fileName] || fileName), 'utf-8');
 }
 
 test('Phase 61.2 pilot decision doc keeps pilot blocked by default', async () => {

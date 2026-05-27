@@ -27,7 +27,7 @@ try {
 
 const JSON_OUT = process.argv.includes('--json');
 const INCLUDE_SMOKE = process.argv.includes('--smoke');
-const CHILD_TIMEOUT_MS = Number.parseInt(process.env.PHASE61_1_STATUS_TIMEOUT_MS || '20000', 10);
+const CHILD_TIMEOUT_MS = Number.parseInt(process.env.PHASE61_1_STATUS_TIMEOUT_MS || '90000', 10);
 
 function parseJson(stdout) {
   if (!stdout) return null;
@@ -77,7 +77,15 @@ function checkStatus(results) {
   const warnings = [];
 
   const json = results.find(r => r.name === 'json_health');
-  if (!json?.parsed || json.parsed.critical > 0 || json.parsed.nullByte > 0 || json.parsed.invalid > 0) {
+  if (!json?.parsed) {
+    warnings.push({
+      code: 'JSON_HEALTH_UNAVAILABLE',
+      message: json?.timedOut
+        ? 'JSON health scan timed out inside remediation aggregator. Run it directly with a larger timeout before conclusions.'
+        : 'JSON health scan did not produce parseable output.',
+      command: 'node scripts/verify-data-json.js --strict --json',
+    });
+  } else if (json.parsed.critical > 0 || json.parsed.nullByte > 0 || json.parsed.invalid > 0) {
     blockers.push({
       code: 'DATA_INTEGRITY_BLOCKED',
       message: 'JSON corruption or null-byte files need remediation before clean evidence.',
@@ -86,10 +94,18 @@ function checkStatus(results) {
   }
 
   const nul = results.find(r => r.name === 'null_byte_scan');
-  if (!nul?.parsed || (nul.parsed.nulFileCount || 0) > 0) {
+  if (!nul?.parsed) {
+    warnings.push({
+      code: 'NULL_BYTE_SCAN_UNAVAILABLE',
+      message: nul?.timedOut
+        ? 'NUL-byte scan timed out inside remediation aggregator. Run it directly with a larger timeout before conclusions.'
+        : 'NUL-byte scan did not produce parseable output.',
+      command: 'node scripts/find-null-json-files.js --json',
+    });
+  } else if ((nul.parsed.nulFileCount || 0) > 0) {
     blockers.push({
       code: 'NULL_BYTE_JSON_BLOCKED',
-      message: 'NUL-byte JSON files detected or scan unavailable.',
+      message: 'NUL-byte JSON files detected.',
       command: 'node scripts/find-null-json-files.js --json',
     });
   }

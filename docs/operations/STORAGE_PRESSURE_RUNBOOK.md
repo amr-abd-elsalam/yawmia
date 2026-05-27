@@ -231,7 +231,7 @@ Admin:
 Runbook:
 
 ```text
-INCIDENT_RUNBOOKS.md
+../incidents/../incidents/INCIDENT_RUNBOOKS.md
 ```
 
 Possible runbook keys:

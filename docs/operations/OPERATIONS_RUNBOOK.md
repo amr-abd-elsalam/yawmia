@@ -160,7 +160,7 @@ Admin:
 ```
 
 لو incident مفتوح:
-- افتح `INCIDENT_RUNBOOKS.md`
+- افتح `../incidents/INCIDENT_RUNBOOKS.md`
 - اتبع runbookKey
 - بعد الحل، اعمل resolve من admin UI
 
