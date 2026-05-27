@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-26T23:55:52.327Z
+> Auto-generated: 2026-05-27T00:44:29.849Z
 > Files in this part: 88
 
 ## Files
@@ -26842,6 +26842,7 @@ const BASE = (getArg('base', '') || `http://localhost:${process.env.PORT || 3002
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 const JSON_OUT = process.argv.includes('--json');
 const DEFAULT_TIMEOUT_MS = Number.parseInt(getArg('timeout-ms', '5000'), 10) || 5000;
+const ADMIN_TIMEOUT_MS = Number.parseInt(getArg('admin-timeout-ms', '3500'), 10) || 3500;
 
 async function check(name, path, options = {}) {
   const url = BASE + path;
@@ -26891,10 +26892,10 @@ async function main() {
   ];
 
   if (ADMIN_TOKEN) {
-    checks.push(['admin readiness', '/api/admin/production/readiness', { admin: true }]);
-    checks.push(['admin ops slo', '/api/admin/ops/slo', { admin: true }]);
-    checks.push(['admin scale hygiene', '/api/admin/scale-hygiene/overview', { admin: true }]);
-    checks.push(['admin marketplace intelligence', '/api/admin/marketplace-intelligence/dashboard', { admin: true }]);
+    checks.push(['admin readiness', '/api/admin/production/readiness', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin ops slo', '/api/admin/ops/slo', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin scale hygiene', '/api/admin/scale-hygiene/overview', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
+    checks.push(['admin marketplace intelligence', '/api/admin/marketplace-intelligence/dashboard', { admin: true, timeoutMs: ADMIN_TIMEOUT_MS }]);
   }
 
   const results = [];
@@ -26915,6 +26916,7 @@ async function main() {
     ok: failed.length === 0,
     base: BASE,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    adminTimeoutMs: ADMIN_TIMEOUT_MS,
     results,
     failed,
     generatedAt: new Date().toISOString(),
@@ -26941,6 +26943,7 @@ main().catch(err => {
       ok: false,
       base: BASE,
       timeoutMs: DEFAULT_TIMEOUT_MS,
+      adminTimeoutMs: ADMIN_TIMEOUT_MS,
       error: err.message,
       stack: err.stack,
       generatedAt: new Date().toISOString(),
@@ -30992,6 +30995,24 @@ async function main() {
       console.log('Summary mismatches:');
       for (const m of result.details.summaryMismatches) {
         console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount}`);
+      }
+      console.log('');
+    }
+
+    if (result.details && result.details.actualFileMismatches && result.details.actualFileMismatches.length > 0) {
+      console.log('Actual file mismatches:');
+      for (const m of result.details.actualFileMismatches) {
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} actualFiles=${m.actualFileCount} delta=${m.delta}`);
+      }
+      console.log('');
+    }
+
+    if (result.details && result.details.actualFilesByStatus) {
+      console.log('Actual segmented files:');
+      const actual = result.details.actualFilesByStatus.byStatus || {};
+      console.log(`  pending=${actual.pending || 0}, running=${actual.running || 0}, completed=${actual.completed || 0}, failed=${actual.failed || 0}, cancelled=${actual.cancelled || 0}, dead-letter=${actual['dead-letter'] || 0}`);
+      if (result.details.actualFilesByStatus.legacyActive || result.details.actualFilesByStatus.legacyDeadLetter) {
+        console.log(`  legacyActive=${result.details.actualFilesByStatus.legacyActive || 0}, legacyDeadLetter=${result.details.actualFilesByStatus.legacyDeadLetter || 0}`);
       }
       console.log('');
     }
