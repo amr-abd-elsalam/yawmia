@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-27T15:46:50.897Z
+> Auto-generated: 2026-05-27T19:24:28.430Z
 > Files in this part: 90
 
 ## Files
@@ -27664,11 +27664,11 @@ async function main() {
   }
 
   const phase59Docs = [
-    'SCALE_LIMITS.md',
-    'EXTERNALIZATION_READINESS.md',
-    'MULTI_INSTANCE_BOUNDARY.md',
-    'DATA_MIGRATION_FORMATS.md',
-    'STORAGE_PRESSURE_RUNBOOK.md',
+    'docs/operations/SCALE_LIMITS.md',
+    'docs/operations/EXTERNALIZATION_READINESS.md',
+    'docs/operations/MULTI_INSTANCE_BOUNDARY.md',
+    'docs/operations/DATA_MIGRATION_FORMATS.md',
+    'docs/operations/STORAGE_PRESSURE_RUNBOOK.md',
   ];
 
   for (const doc of phase59Docs) {

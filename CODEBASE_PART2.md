@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-27T15:46:50.852Z
+> Auto-generated: 2026-05-27T19:24:28.387Z
 > Files in this part: 132
 
 ## Files
@@ -9432,7 +9432,7 @@ export async function persistBenchmarkResult(result, options = {}) {
   const record = {
     id,
     kind: 'benchmark_history',
-    version: '0.56.0',
+    version: '0.57.0',
     timestamp,
     source: options.source || result?.source || 'benchmark-file-paths',
     status: evaluation.status,
@@ -15618,7 +15618,7 @@ export async function captureExternalizationDecisionSnapshot(options = {}) {
   const record = {
     id,
     kind: 'externalization_decision',
-    version: '0.56.0',
+    version: '0.57.0',
     ...report,
     createdAt: nowIso(),
   };
@@ -32643,7 +32643,7 @@ async function checkStoragePressureReadiness(isProd) {
 
 async function checkPhase61Docs(isProd) {
   const docs = [
-    { id: 'phase61_evidence_cadence_doc_exists', path: './PHASE61_EVIDENCE_CADENCE.md', label: 'PHASE61_EVIDENCE_CADENCE.md' },
+    { id: 'phase61_evidence_cadence_doc_exists', path: './docs/phases/phase61/PHASE61_EVIDENCE_CADENCE.md', label: 'PHASE61_EVIDENCE_CADENCE.md' },
     { id: 'phase61_deep_migration_rehearsal_doc_exists', path: './PHASE61_DEEP_MIGRATION_REHEARSAL.md', label: 'PHASE61_DEEP_MIGRATION_REHEARSAL.md' },
     { id: 'phase61_rollback_rehearsal_doc_exists', path: './PHASE61_ROLLBACK_REHEARSAL_REPORT.md', label: 'PHASE61_ROLLBACK_REHEARSAL_REPORT.md' },
     { id: 'phase61_pilot_decision_doc_exists', path: './PHASE61_PILOT_CANDIDATE_DECISION.md', label: 'PHASE61_PILOT_CANDIDATE_DECISION.md' },
@@ -32860,11 +32860,11 @@ async function checkRollbackRehearsalReadiness(isProd) {
 
 async function checkPhase59Docs(isProd) {
   const docs = [
-    { id: 'scale_limits_doc_exists', path: './SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
-    { id: 'externalization_readiness_doc_exists', path: './EXTERNALIZATION_READINESS.md', label: 'EXTERNALIZATION_READINESS.md' },
-    { id: 'multi_instance_boundary_doc_exists', path: './MULTI_INSTANCE_BOUNDARY.md', label: 'MULTI_INSTANCE_BOUNDARY.md' },
-    { id: 'data_migration_formats_doc_exists', path: './DATA_MIGRATION_FORMATS.md', label: 'DATA_MIGRATION_FORMATS.md' },
-    { id: 'storage_pressure_runbook_exists', path: './STORAGE_PRESSURE_RUNBOOK.md', label: 'STORAGE_PRESSURE_RUNBOOK.md' },
+    { id: 'scale_limits_doc_exists', path: './docs/operations/SCALE_LIMITS.md', label: 'SCALE_LIMITS.md' },
+    { id: 'externalization_readiness_doc_exists', path: './docs/operations/EXTERNALIZATION_READINESS.md', label: 'EXTERNALIZATION_READINESS.md' },
+    { id: 'multi_instance_boundary_doc_exists', path: './docs/operations/MULTI_INSTANCE_BOUNDARY.md', label: 'MULTI_INSTANCE_BOUNDARY.md' },
+    { id: 'data_migration_formats_doc_exists', path: './docs/operations/DATA_MIGRATION_FORMATS.md', label: 'DATA_MIGRATION_FORMATS.md' },
+    { id: 'storage_pressure_runbook_exists', path: './docs/operations/STORAGE_PRESSURE_RUNBOOK.md', label: 'STORAGE_PRESSURE_RUNBOOK.md' },
   ];
 
   const checks = [];
