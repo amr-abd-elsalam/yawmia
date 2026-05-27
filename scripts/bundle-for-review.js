@@ -14,7 +14,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const IGNORE = new Set([
   'node_modules', '.git', 'data', 'backups', 'test-backups',
   '.env', 'package-lock.json', '.DS_Store', 'Thumbs.db',
-  'cloudflared.deb', 'tests',
+  'cloudflared.deb', 'tests', 'docs',
 ]);
 
 const IGNORE_FILES = new Set([

@@ -1722,7 +1722,7 @@ const config = {
   // ═══════════════════════════════════════════════════════════════
   INCIDENT_TAXONOMY: {
     enabled: true,
-    runbookBasePath: './INCIDENT_RUNBOOKS.md',
+    runbookBasePath: './docs/incidents/INCIDENT_RUNBOOKS.md',
     defaultSeverity: 'medium',
     categories: [
       'queue',
