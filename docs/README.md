@@ -1,0 +1,268 @@
+# Yawmia Documentation Index
+
+> Project: يوميّة — Yawmia  
+> Version posture: v0.57.0  
+> Architecture posture: file-backed JSON source of truth  
+> Phase posture: Phase 61.3 cleanup and organization  
+> Externalization posture: advisory-only  
+> Pilot posture: blocked by default
+
+---
+
+## Purpose
+
+This directory organizes Yawmia operational, architecture, governance, design, and phase documentation.
+
+Phase 61.3 keeps generated review bundles in the repository root:
+
+```text
+CODEBASE_PART1.md
+CODEBASE_PART2.md
+CODEBASE_PART3.md
+CODEBASE_PART4.md
+```
+
+They remain at root intentionally for review workflows.
+
+---
+
+## Design
+
+```text
+docs/design/DESIGN_RESEARCH.md
+```
+
+Design principles:
+
+```text
+Arabic-first
+RTL
+mobile-first
+low-literacy UX
+dark rounded high-contrast UI
+large touch targets
+progressive disclosure
+action-first admin dashboards
+```
+
+---
+
+## Phase 60
+
+```text
+docs/phases/phase60/
+```
+
+Phase 60 documents are advisory and rehearsal-oriented.
+
+They do not implement:
+
+```text
+PostgreSQL
+external queue
+external search
+object storage migration
+runtime repository switching
+dual-write
+cutover
+Firebase
+Cequens
+VictoryLink
+dynamic OTP routing
+```
+
+Auth docs remain docs-first.
+
+---
+
+## Phase 61
+
+```text
+docs/phases/phase61/
+```
+
+Phase 61 documents define:
+
+```text
+evidence cadence
+pilot gate
+rollback rehearsal
+repository contract readiness
+EventBus/SSE planning
+```
+
+Default posture:
+
+```text
+pilotAllowed=false
+implementationAllowed=false
+runtimeSwitchEnabled=false
+docsOnly=true
+```
+
+---
+
+## Phase 61.2
+
+```text
+docs/phases/phase61-2/
+```
+
+Phase 61.2 operationalizes:
+
+```text
+evidence cadence
+remediation ownership
+deep migration rehearsal planning
+rollback rehearsal discipline
+pilot candidate decision discipline
+repository adapter contracts
+EventBus bridge planning
+SSE fanout planning
+auth strategy documentation
+```
+
+No runtime externalization is enabled.
+
+---
+
+## Operations
+
+```text
+docs/operations/
+docs/deployment/
+docs/incidents/
+```
+
+Operational docs cover:
+
+```text
+deployment
+production readiness
+incident runbooks
+postmortems
+storage pressure
+scale limits
+multi-instance boundary
+externalization readiness
+migration data formats
+```
+
+Important principle:
+
+```text
+Heavy scans must remain script/queue/manual operations.
+HTTP readiness and dashboards should be lightweight and artifact-based.
+```
+
+---
+
+## Governance and Privacy
+
+```text
+docs/governance/
+docs/privacy/
+```
+
+Governance docs cover:
+
+```text
+admin RBAC
+dangerous action approval
+privacy requests
+privacy data map
+data governance
+```
+
+Privacy requirements:
+
+```text
+no token leakage
+no raw OTP storage
+no raw search query storage by default
+privacy export/anonymization workflows preserved
+```
+
+---
+
+## Review Bundles
+
+Review bundles remain at repository root by design:
+
+```text
+CODEBASE_PART1.md
+CODEBASE_PART2.md
+CODEBASE_PART3.md
+CODEBASE_PART4.md
+```
+
+Generate them with:
+
+```bash
+node scripts/bundle-for-review.js
+```
+
+---
+
+## Phase 61.3 Cleanup Rules
+
+Phase 61.3 may:
+
+```text
+organize docs under docs/
+update references
+stabilize tests
+add safe reset workflow
+recapture evidence
+```
+
+Phase 61.3 must not:
+
+```text
+delete data without separate approval
+externalize data
+add PostgreSQL
+add external queue
+add external search
+add Firebase/Cequens/VictoryLink
+add new dependencies
+change OTP runtime architecture
+enable pilot
+```
+
+---
+
+## Safe Data Reset
+
+Development data reset is dry-run-first:
+
+```bash
+node scripts/reset-dev-data.js --dry-run --json
+```
+
+Mutation requires explicit confirm:
+
+```bash
+node scripts/reset-dev-data.js --confirm --json
+```
+
+Backups and logs are opt-in:
+
+```bash
+node scripts/reset-dev-data.js --confirm --include-backups --include-logs --json
+```
+
+Production reset is blocked by default.
+
+---
+
+## Current Strategic Decision
+
+```text
+Stay file-backed.
+Continue evidence cadence.
+Continue remediation ownership.
+Do not start Phase 62.
+Do not externalize.
+Do not implement auth provider runtime.
+```

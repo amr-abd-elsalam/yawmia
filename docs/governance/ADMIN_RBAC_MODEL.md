@@ -1,6 +1,6 @@
 # يوميّة — Admin RBAC Model
-> Phase 58 — Governance, Privacy, RBAC, and Operational Maturity  
-> Version target: v0.54.0
+> Phase 59 — Governance, Privacy, RBAC, Scale Visibility  
+> Version target: v0.55.0
 
 هذا الملف يشرح نموذج صلاحيات الأدمن في يوميّة بعد Phase 58.
 
@@ -117,6 +117,37 @@ admin.privacy.anonymize
 | `POST /api/admin/trust/calibration/report` | `admin.trust.calibration` |
 | `GET /api/admin/audit-log/export` | `admin.audit.export` |
 | `POST /api/admin/privacy/requests/:id/anonymize` | `admin.privacy.anonymize` |
+| `GET /api/admin/storage-pressure` | `admin.scale.read` |
+| `GET /api/admin/scale-thresholds` | `admin.scale.read` |
+| `GET /api/admin/externalization/readiness` | `admin.scale.read` |
+| `POST /api/admin/storage-pressure/capture` | `admin.ops.review` |
+| `POST /api/admin/scale-thresholds/verify` | `admin.ops.review` |
+
+---
+
+## Phase 59 scale visibility
+
+Phase 59 adds advisory storage pressure and externalization readiness dashboards.
+
+Rules:
+
+```text
+admin.scale.read can view storage pressure and externalization readiness.
+admin.ops.review can capture storage pressure snapshots and verify thresholds.
+read_only_admin may have admin.scale.read for visibility only.
+No Phase 59 route implements PostgreSQL, external search, or external queue.
+```
+
+Scale visibility must not expose:
+
+```text
+raw file contents
+session tokens
+ADMIN_TOKEN
+webhook secrets
+raw identity images
+raw PII previews
+```
 
 ---
 
@@ -205,3 +236,30 @@ Do not allow finance admins to review predictive abuse signals.
 Do not allow read_only_admin to POST dangerous routes.
 Do not store secrets in approval payloads.
 Do not bypass audit logs.
+Do not allow read_only_admin to run storage pressure capture or threshold verification.
+Do not use scale warnings as automatic approval for database migration.
+Do not grant super_admin for routine storage pressure review.
+
+## Phase 61 — Externalization Pilot Approval
+
+Dangerous action:
+
+```text
+externalization_pilot
+```
+
+Pilot gate requires an approved admin approval record before any bounded external pilot.
+
+Approval does not execute the pilot.  
+Approval only removes one blocker from the gate.
+
+The gate must still verify:
+
+```text
+repeated evidence
+migration rehearsal
+rollback rehearsal
+restore drill freshness
+privacy review
+incident/postmortem status
+```
