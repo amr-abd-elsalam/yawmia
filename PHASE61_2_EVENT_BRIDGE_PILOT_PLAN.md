@@ -84,6 +84,8 @@ rollback plan
 
 ## 6. Non-goals Now
 
+Do not implement EventBus bridge infrastructure in Phase 61.2.
+
 Phase 61.2 does not implement:
 
 ```text
