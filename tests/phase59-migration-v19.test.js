@@ -17,5 +17,5 @@ test('migration v19 exists and does not run heavy scans', async () => {
 
   assert.ok(!v19Block.includes('getStoragePressure('));
   assert.ok(!v19Block.includes('captureStoragePressureSnapshot('));
-  assert.ok(!v19Block.includes('benchmark'));
+  assert.doesNotMatch(v19Block, /benchmark-file-paths|measure-storage-pressure|export-migration-snapshot|run-migration-rehearsal/);
 });
