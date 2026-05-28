@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-28T00:39:08.435Z
+> Auto-generated: 2026-05-28T00:47:02.261Z
 > Files in this part: 90
 
 ## Files
@@ -27339,6 +27339,7 @@ main().catch(err => {
 ## `scripts/predeploy-check.js`
 
 ```javascript
+// Deployment Gate (Phase 59) — scale, storage pressure, and externalization readiness checks remain advisory.
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
 // scripts/predeploy-check.js — Deployment Gate (Phase 60)
