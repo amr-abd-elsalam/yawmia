@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-27T20:06:23.497Z
+> Auto-generated: 2026-05-28T00:11:39.198Z
 > Files in this part: 132
 
 ## Files
@@ -39629,7 +39629,7 @@ export async function getScaleHygieneOverview(options = {}) {
         ...(repositoryContracts?.recommendations || []),
       ],
     },
-    recommendedActions: recommendedActions.slice(0, 16),
+    recommendedActions: recommendedActions.slice(0, 24),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
   };
