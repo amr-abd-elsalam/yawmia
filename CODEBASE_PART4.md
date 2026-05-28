@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-28T01:05:54.490Z
+> Auto-generated: 2026-05-28T01:16:40.048Z
 > Files in this part: 90
 
 ## Files
@@ -26893,7 +26893,7 @@ function run(name, script, args = []) {
     args,
     ok: proc.status === 0,
     status: proc.status,
-    durationMs: Date.now() - started,
+    durationMs: Math.max(0, Date.now() - started),
     timedOut: proc.error?.code === 'ETIMEDOUT',
     error: proc.error?.message || null,
     parsed,
