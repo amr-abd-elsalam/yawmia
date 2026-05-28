@@ -13,10 +13,10 @@ async function exists(path) {
 
 test('Phase 58 governance docs exist', async () => {
   const docs = [
-    'ADMIN_RBAC_MODEL.md',
-    'DATA_GOVERNANCE_RUNBOOK.md',
-    'PRIVACY_REQUEST_RUNBOOK.md',
-    'POSTMORTEM_TEMPLATE.md',
+    'docs/governance/ADMIN_RBAC_MODEL.md',
+    'docs/governance/DATA_GOVERNANCE_RUNBOOK.md',
+    'docs/governance/PRIVACY_REQUEST_RUNBOOK.md',
+    'docs/incidents/POSTMORTEM_TEMPLATE.md',
   ];
 
   for (const doc of docs) {
@@ -25,7 +25,7 @@ test('Phase 58 governance docs exist', async () => {
 });
 
 test('ADMIN_RBAC_MODEL documents what not to do', async () => {
-  const raw = await readFile('ADMIN_RBAC_MODEL.md', 'utf-8');
+  const raw = await readFile('docs/governance/ADMIN_RBAC_MODEL.md', 'utf-8');
 
   assert.match(raw, /Do not share ADMIN_TOKEN broadly/);
   assert.match(raw, /Do not use super_admin for daily support/);
@@ -35,7 +35,7 @@ test('ADMIN_RBAC_MODEL documents what not to do', async () => {
 });
 
 test('PRIVACY_REQUEST_RUNBOOK documents export and anonymization workflows', async () => {
-  const raw = await readFile('PRIVACY_REQUEST_RUNBOOK.md', 'utf-8');
+  const raw = await readFile('docs/governance/PRIVACY_REQUEST_RUNBOOK.md', 'utf-8');
 
   assert.match(raw, /User data export workflow/);
   assert.match(raw, /User anonymization workflow/);
@@ -44,7 +44,7 @@ test('PRIVACY_REQUEST_RUNBOOK documents export and anonymization workflows', asy
 });
 
 test('POSTMORTEM_TEMPLATE contains required fields', async () => {
-  const raw = await readFile('POSTMORTEM_TEMPLATE.md', 'utf-8');
+  const raw = await readFile('docs/incidents/POSTMORTEM_TEMPLATE.md', 'utf-8');
 
   const fields = [
     'Incident ID',
