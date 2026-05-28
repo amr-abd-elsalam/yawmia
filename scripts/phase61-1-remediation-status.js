@@ -63,7 +63,7 @@ function run(name, script, args = []) {
     args,
     ok: proc.status === 0,
     status: proc.status,
-    durationMs: Date.now() - started,
+    durationMs: Math.max(0, Date.now() - started),
     timedOut: proc.error?.code === 'ETIMEDOUT',
     error: proc.error?.message || null,
     parsed,
