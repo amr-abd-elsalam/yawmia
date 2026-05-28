@@ -2441,6 +2441,32 @@ textarea:focus:not(:focus-visible) {
   margin-top: 0.15rem;
 }
 
+.message-bubble--pending {
+  opacity: 0.78;
+}
+
+.message-bubble--failed {
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.message-send-status {
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.message-send-status--pending {
+  color: var(--color-text-muted);
+}
+
+.message-send-status--sent {
+  color: var(--color-success);
+}
+
+.message-send-status--failed {
+  color: var(--color-error);
+}
+
 .message-send-form {
   display: flex;
   gap: 0.5rem;
