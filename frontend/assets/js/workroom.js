@@ -992,6 +992,34 @@ var YawmiaWorkroom = (function () {
     } catch (_) {}
   });
 
+  window.addEventListener('yawmia:workroom-message', function (e) {
+    try {
+      if (!e.detail) return;
+
+      var incoming = e.detail;
+      var isCurrentWorkroom = currentJobId && incoming.jobId === currentJobId;
+
+      if (listMountEl) {
+        loadWorkrooms({ silent: true });
+      }
+
+      if (isCurrentWorkroom && activeTab === 'messages') {
+        loadMessages();
+
+        if (typeof Yawmia !== 'undefined' && document.visibilityState === 'visible') {
+          Yawmia.api('POST', '/api/workrooms/' + currentJobId + '/messages/read-all').catch(function () {});
+          if (Yawmia.refreshMessageUnreadBadge) Yawmia.refreshMessageUnreadBadge();
+        }
+
+        return;
+      }
+
+      if (!isCurrentWorkroom && typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('💬 رسالة جديدة — افتح المحادثة');
+      }
+    } catch (_) {}
+  });
+
   function destroy() {
     if (refreshTimer) {
       clearInterval(refreshTimer);

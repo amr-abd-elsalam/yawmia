@@ -260,6 +260,29 @@ var Yawmia = (function () {
     window.location.href = target;
   }
 
+  async function refreshMessageUnreadBadge() {
+    if (!state.token) return;
+
+    try {
+      var res = await api('GET', '/api/messages/unread-count');
+      var count = res && res.data && typeof res.data.unread === 'number' ? res.data.unread : 0;
+      var badge = document.getElementById('bottomWorkroomBadge');
+
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : String(count);
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      window.dispatchEvent(new CustomEvent('yawmia:messages-unread-refreshed', { detail: { unread: count } }));
+    } catch (_) {
+      // Non-fatal — badge refresh must never break UX.
+    }
+  }
+
   // ── PWA: Service Worker Registration ──────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -309,6 +332,7 @@ var Yawmia = (function () {
         try {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:sse-init', { detail: data }));
+          refreshMessageUnreadBadge();
         } catch (_) { /* ignore */ }
       });
 
@@ -316,6 +340,14 @@ var Yawmia = (function () {
         try {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:notification', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.addEventListener('workroom_message', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:workroom-message', { detail: data }));
+          refreshMessageUnreadBadge();
         } catch (_) { /* ignore */ }
       });
 
@@ -516,6 +548,7 @@ var Yawmia = (function () {
     roleLabel: roleLabel,
     safeNavigate: safeNavigate,
     recordNotificationActionClick: recordNotificationActionClick,
+    refreshMessageUnreadBadge: refreshMessageUnreadBadge,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
