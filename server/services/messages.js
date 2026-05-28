@@ -201,7 +201,12 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     senderRole,
     recipientId,
     jobTitle: job.title,
+    text: sanitized,
     preview: sanitized.substring(0, 100),
+    source: message.source,
+    templateKey: message.templateKey,
+    attachments: message.attachments || [],
+    createdAt: message.createdAt,
   });
 
   // Phase 53 — Workroom message search indexing (fire-and-forget).
@@ -311,9 +316,14 @@ export async function broadcastMessage(jobId, employerId, text) {
     messageId: id,
     jobId,
     senderId: employerId,
+    senderRole: 'employer',
     workerIds,
     jobTitle: job.title,
+    text: sanitized,
     preview: sanitized.substring(0, 100),
+    source: 'job_messages',
+    attachments: [],
+    createdAt: message.createdAt,
   });
 
   return { ok: true, message };
