@@ -1,3 +1,4 @@
+// Deployment Gate (Phase 59) — scale, storage pressure, and externalization readiness checks remain advisory.
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
 // scripts/predeploy-check.js — Deployment Gate (Phase 60)
