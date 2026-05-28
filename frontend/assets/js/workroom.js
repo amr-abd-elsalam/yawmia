@@ -51,6 +51,138 @@ var YawmiaWorkroom = (function () {
     return (typeof Yawmia !== 'undefined') ? Yawmia.getUser() : null;
   }
 
+  function getMessageListEl() {
+    return document.getElementById('workroomMessageList');
+  }
+
+  function isNearBottom(el) {
+    if (!el) return true;
+    return (el.scrollHeight - el.scrollTop - el.clientHeight) < 80;
+  }
+
+  function clearMessageListEmptyState(el) {
+    if (!el) return;
+    var empty = el.querySelector('.empty-state');
+    if (empty) empty.remove();
+  }
+
+  function messageBubbleExists(messageId) {
+    if (!messageId) return false;
+    var listEl = getMessageListEl();
+    if (!listEl) return false;
+    return !!listEl.querySelector('[data-message-id="' + String(messageId).replace(/"/g, '') + '"]');
+  }
+
+  function appendWorkroomMessageBubble(msg, options) {
+    var opts = options || {};
+    var user = getUser();
+    var listEl = getMessageListEl();
+    if (!listEl || !msg) return false;
+
+    var messageId = msg.id || msg.messageId || null;
+    if (messageId && messageBubbleExists(messageId)) return false;
+
+    var shouldStick = isNearBottom(listEl);
+    clearMessageListEmptyState(listEl);
+
+    var isMine = user && msg.senderId === user.id;
+    var bubble = document.createElement('div');
+    bubble.className = 'message-bubble' + (isMine ? ' message-bubble--mine' : ' message-bubble--other');
+
+    if (messageId) bubble.setAttribute('data-message-id', messageId);
+    if (opts.tempId) bubble.setAttribute('data-temp-id', opts.tempId);
+    if (opts.pending) bubble.classList.add('message-bubble--pending');
+    if (opts.failed) bubble.classList.add('message-bubble--failed');
+
+    var sourceLabel = msg.source === 'workroom'
+      ? '<span style="color:var(--color-primary);font-size:0.65rem;">workroom</span>'
+      : '';
+
+    var statusHtml = '';
+    if (opts.pending) {
+      statusHtml = ' · <span class="message-send-status message-send-status--pending">جاري الإرسال...</span>';
+    } else if (opts.failed) {
+      statusHtml = ' · <span class="message-send-status message-send-status--failed">تعذّر إرسال الرسالة</span>';
+    } else if (isMine) {
+      statusHtml = ' · <span class="message-send-status message-send-status--sent">تم الإرسال</span>';
+    }
+
+    bubble.innerHTML =
+      '<div class="message-bubble__sender">' + escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') + ' ' + sourceLabel + '</div>' +
+      '<div class="message-bubble__text">' + escapeHtml(msg.text || '') + '</div>' +
+      renderAttachments(msg.attachments || []) +
+      '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt || new Date().toISOString())) + renderReceiptHint(msg, isMine) + statusHtml + '</div>' +
+      renderPinButton(msg);
+
+    listEl.appendChild(bubble);
+
+    if (shouldStick || opts.forceScroll) {
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    wirePinButtons();
+    return true;
+  }
+
+  function appendOptimisticMessage(text) {
+    var user = getUser();
+    var tempId = 'tmp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+
+    appendWorkroomMessageBubble({
+      id: null,
+      senderId: user ? user.id : null,
+      senderRole: currentWorkroom ? currentWorkroom.userRoleInWorkroom : null,
+      text: text,
+      source: 'workroom',
+      attachments: [],
+      createdAt: new Date().toISOString(),
+    }, {
+      tempId: tempId,
+      pending: true,
+      forceScroll: true,
+    });
+
+    return tempId;
+  }
+
+  function resolveOptimisticMessage(tempId, message) {
+    if (!tempId || !message) return;
+
+    var listEl = getMessageListEl();
+    if (!listEl) return;
+
+    var bubble = listEl.querySelector('[data-temp-id="' + tempId + '"]');
+    if (!bubble) return;
+
+    bubble.classList.remove('message-bubble--pending', 'message-bubble--failed');
+    if (message.id) bubble.setAttribute('data-message-id', message.id);
+
+    var status = bubble.querySelector('.message-send-status');
+    if (status) {
+      status.className = 'message-send-status message-send-status--sent';
+      status.textContent = 'تم الإرسال';
+    }
+  }
+
+  function failOptimisticMessage(tempId) {
+    if (!tempId) return;
+
+    var listEl = getMessageListEl();
+    if (!listEl) return;
+
+    var bubble = listEl.querySelector('[data-temp-id="' + tempId + '"]');
+    if (!bubble) return;
+
+    bubble.classList.remove('message-bubble--pending');
+    bubble.classList.add('message-bubble--failed');
+
+    var status = bubble.querySelector('.message-send-status');
+    if (status) {
+      status.className = 'message-send-status message-send-status--failed';
+      status.textContent = 'تعذّر إرسال الرسالة';
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Workroom List
   // ═══════════════════════════════════════════════════════════════
@@ -423,7 +555,6 @@ var YawmiaWorkroom = (function () {
   }
 
   function renderMessages(items) {
-    var user = getUser();
     var listEl = document.getElementById('workroomMessageList');
     if (!listEl) return;
 
@@ -431,22 +562,7 @@ var YawmiaWorkroom = (function () {
 
     var ordered = items.slice().reverse();
     ordered.forEach(function (msg) {
-      var isMine = user && msg.senderId === user.id;
-      var bubble = document.createElement('div');
-      bubble.className = 'message-bubble' + (isMine ? ' message-bubble--mine' : ' message-bubble--other');
-
-      var sourceLabel = msg.source === 'workroom'
-        ? '<span style="color:var(--color-primary);font-size:0.65rem;">workroom</span>'
-        : '';
-
-      bubble.innerHTML =
-        '<div class="message-bubble__sender">' + escapeHtml(msg.senderRole === 'employer' ? 'صاحب العمل' : 'عامل') + ' ' + sourceLabel + '</div>' +
-        '<div class="message-bubble__text">' + escapeHtml(msg.text || '') + '</div>' +
-        renderAttachments(msg.attachments || []) +
-        '<div class="message-bubble__time">' + escapeHtml(formatDateTime(msg.createdAt)) + renderReceiptHint(msg, isMine) + '</div>' +
-        renderPinButton(msg);
-
-      listEl.appendChild(bubble);
+      appendWorkroomMessageBubble(msg, { forceScroll: false });
     });
 
     listEl.scrollTop = listEl.scrollHeight;
@@ -487,11 +603,11 @@ var YawmiaWorkroom = (function () {
       var text = input.value.trim();
       if (!text) return;
 
-      await sendMessage(text, null, btn, function () {
+      await sendMessage(text, null, btn, function (message, meta) {
         input.value = '';
         var fileInput = document.getElementById('workroomAttachmentInput');
         if (fileInput) fileInput.value = '';
-        loadMessages();
+        if (!meta || !meta.optimistic) loadMessages();
       }, true);
     }
 
@@ -570,6 +686,12 @@ var YawmiaWorkroom = (function () {
       errorEl.className = 'message';
     }
 
+    var optimisticId = null;
+    var canOptimisticSend = activeTab === 'messages' && !templateKey && !includeAttachment;
+    if (canOptimisticSend) {
+      optimisticId = appendOptimisticMessage(text);
+    }
+
     if (btn) Yawmia.setLoading(btn, true);
 
     try {
@@ -584,13 +706,20 @@ var YawmiaWorkroom = (function () {
       var res = await Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages', body);
 
       if (res.data && res.data.ok) {
-        if (typeof onSuccess === 'function') onSuccess(res.data.message);
+        if (optimisticId) {
+          resolveOptimisticMessage(optimisticId, res.data.message);
+        }
+        if (typeof onSuccess === 'function') {
+          onSuccess(res.data.message, { optimistic: !!optimisticId });
+        }
       } else {
         var msg = (res.data && res.data.error) || 'خطأ في إرسال الرسالة';
+        if (optimisticId) failOptimisticMessage(optimisticId);
         if (errorEl) Yawmia.showMessage('workroomMessageError', msg, 'error');
         else if (typeof YawmiaToast !== 'undefined') YawmiaToast.error(msg);
       }
     } catch (_) {
+      if (optimisticId) failOptimisticMessage(optimisticId);
       if (errorEl) Yawmia.showMessage('workroomMessageError', 'خطأ في الاتصال', 'error');
       else if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('خطأ في الاتصال');
     } finally {
@@ -1004,7 +1133,11 @@ var YawmiaWorkroom = (function () {
       }
 
       if (isCurrentWorkroom && activeTab === 'messages') {
-        loadMessages();
+        var appended = appendWorkroomMessageBubble(incoming, { forceScroll: true });
+        if (!appended) {
+          // If the message was already present, keep UI stable and avoid duplicate bubbles.
+          return;
+        }
 
         if (typeof Yawmia !== 'undefined' && document.visibilityState === 'visible') {
           Yawmia.api('POST', '/api/workrooms/' + currentJobId + '/messages/read-all').catch(function () {});
