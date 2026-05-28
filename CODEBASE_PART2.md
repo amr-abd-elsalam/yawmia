@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-28T12:05:21.792Z
+> Auto-generated: 2026-05-28T16:38:06.034Z
 > Files in this part: 132
 
 ## Files
@@ -21676,7 +21676,12 @@ export async function sendMessage(jobId, senderId, { recipientId, text, source, 
     senderRole,
     recipientId,
     jobTitle: job.title,
+    text: sanitized,
     preview: sanitized.substring(0, 100),
+    source: message.source,
+    templateKey: message.templateKey,
+    attachments: message.attachments || [],
+    createdAt: message.createdAt,
   });
 
   // Phase 53 — Workroom message search indexing (fire-and-forget).
@@ -21786,9 +21791,14 @@ export async function broadcastMessage(jobId, employerId, text) {
     messageId: id,
     jobId,
     senderId: employerId,
+    senderRole: 'employer',
     workerIds,
     jobTitle: job.title,
+    text: sanitized,
     preview: sanitized.substring(0, 100),
+    source: 'job_messages',
+    attachments: [],
+    createdAt: message.createdAt,
   });
 
   return { ok: true, message };
@@ -24911,6 +24921,70 @@ const dedupCleanupTimer = setInterval(() => {
 }, 10 * 60 * 1000);
 if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
 
+function notificationDedupContextId(type, meta) {
+  if (!meta || typeof meta !== 'object') return '';
+
+  // Phase 61.4A: multiple messages in the same job within 5 minutes must not
+  // suppress each other. Dedup message notifications by messageId first.
+  if (type === 'new_message') {
+    return meta.messageId || meta.jobId || '';
+  }
+
+  return meta.jobId || meta.applicationId || meta.paymentId || meta.reportId || '';
+}
+
+function buildWorkroomMessageActionUrl(jobId) {
+  if (!jobId || typeof jobId !== 'string') return '/dashboard.html';
+  if (jobId.length > 100 || jobId.includes('..') || !/^[a-zA-Z0-9_-]+$/.test(jobId)) {
+    return '/dashboard.html';
+  }
+  return `/job.html?id=${encodeURIComponent(jobId)}#workroom-messages`;
+}
+
+function safeRealtimeMessagePayload(data = {}) {
+  const attachments = Array.isArray(data.attachments)
+    ? data.attachments
+        .filter(a => a && typeof a === 'object')
+        .slice(0, 3)
+        .map(a => ({
+          type: a.type || 'image',
+          imageRef: a.imageRef || null,
+          caption: a.caption || null,
+          clientName: a.clientName || null,
+        }))
+    : [];
+
+  return {
+    messageId: data.messageId || null,
+    jobId: data.jobId || null,
+    senderId: data.senderId || null,
+    senderRole: data.senderRole || null,
+    text: typeof data.text === 'string' ? data.text.slice(0, 500) : (data.preview || ''),
+    preview: typeof data.preview === 'string' ? data.preview.slice(0, 120) : '',
+    source: data.source || 'job_messages',
+    templateKey: data.templateKey || null,
+    attachments,
+    createdAt: data.createdAt || new Date().toISOString(),
+  };
+}
+
+function sendRealtimeWorkroomMessage(userId, data) {
+  if (!userId || !data || !data.messageId) return;
+
+  try {
+    import('./sseManager.js').then(({ sendToUser }) => {
+      sendToUser(
+        userId,
+        'workroom_message',
+        safeRealtimeMessagePayload(data),
+        data.messageId
+      );
+    }).catch(() => {});
+  } catch (_) {
+    // fire-and-forget
+  }
+}
+
 /**
  * Create a notification.
  *
@@ -24933,7 +25007,7 @@ if (dedupCleanupTimer.unref) dedupCleanupTimer.unref();
  */
 export async function createNotification(userId, type, message, meta = {}, options = {}) {
   // Dedup check: skip if same userId+type+context within window
-  const contextId = (meta && (meta.jobId || meta.applicationId || meta.paymentId || meta.reportId)) || '';
+  const contextId = notificationDedupContextId(type, meta);
   const dedupKey = `${userId}:${type}:${contextId}`;
   const lastSent = recentNotifications.get(dedupKey);
   if (lastSent && (Date.now() - lastSent) < DEDUP_WINDOW_MS) {
@@ -25572,12 +25646,19 @@ export function setupNotificationListeners() {
   eventBus.on('message:created', (data) => {
     if (data.recipientId) {
       const msgText = `رسالة جديدة في الفرصة: ${data.jobTitle || 'فرصة عمل'}`;
+      const actionUrl = buildWorkroomMessageActionUrl(data.jobId);
+
       createNotification(
         data.recipientId,
         'new_message',
         msgText,
-        { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId }
+        { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId },
+        { actionOverride: { type: 'workroom_messages', url: actionUrl, entityType: 'job', entityId: data.jobId || null } }
       ).catch(() => {});
+
+      // Phase 61.4A — direct realtime Workroom message event.
+      // This lets an already-open chat refresh/append without waiting for drawer interaction.
+      sendRealtimeWorkroomMessage(data.recipientId, data);
 
       // Web Push (fire-and-forget)
       import('./webpush.js').then(({ sendPush }) => {
@@ -25585,7 +25666,7 @@ export function setupNotificationListeners() {
           title: 'يوميّة — رسالة جديدة',
           body: data.preview || msgText,
           icon: '/assets/img/icon-192.png',
-          url: '/dashboard.html',
+          url: actionUrl,
         }).catch(() => {});
       }).catch(() => {});
     }
@@ -25595,13 +25676,19 @@ export function setupNotificationListeners() {
   eventBus.on('message:broadcast', (data) => {
     if (data.workerIds && data.workerIds.length > 0) {
       const msgText = `رسالة جديدة من صاحب العمل في الفرصة: ${data.jobTitle || 'فرصة عمل'}`;
+      const actionUrl = buildWorkroomMessageActionUrl(data.jobId);
+
       for (const workerId of data.workerIds) {
         createNotification(
           workerId,
           'new_message',
           msgText,
-          { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId }
+          { jobId: data.jobId, messageId: data.messageId, senderId: data.senderId },
+          { actionOverride: { type: 'workroom_messages', url: actionUrl, entityType: 'job', entityId: data.jobId || null } }
         ).catch(() => {});
+
+        // Phase 61.4A — direct realtime Workroom message event for broadcast recipients.
+        sendRealtimeWorkroomMessage(workerId, data);
       }
 
       // Web Push to all workers (fire-and-forget)
@@ -25610,7 +25697,7 @@ export function setupNotificationListeners() {
           title: 'يوميّة — رسالة جديدة',
           body: data.preview || msgText,
           icon: '/assets/img/icon-192.png',
-          url: '/dashboard.html',
+          url: actionUrl,
         }).catch(() => {});
       }).catch(() => {});
     }

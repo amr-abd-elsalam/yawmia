@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-28T12:05:21.840Z
+> Auto-generated: 2026-05-28T16:38:06.081Z
 > Files in this part: 90
 
 ## Files
@@ -14456,6 +14456,29 @@ var Yawmia = (function () {
     window.location.href = target;
   }
 
+  async function refreshMessageUnreadBadge() {
+    if (!state.token) return;
+
+    try {
+      var res = await api('GET', '/api/messages/unread-count');
+      var count = res && res.data && typeof res.data.unread === 'number' ? res.data.unread : 0;
+      var badge = document.getElementById('bottomWorkroomBadge');
+
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : String(count);
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      window.dispatchEvent(new CustomEvent('yawmia:messages-unread-refreshed', { detail: { unread: count } }));
+    } catch (_) {
+      // Non-fatal — badge refresh must never break UX.
+    }
+  }
+
   // ── PWA: Service Worker Registration ──────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -14505,6 +14528,7 @@ var Yawmia = (function () {
         try {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:sse-init', { detail: data }));
+          refreshMessageUnreadBadge();
         } catch (_) { /* ignore */ }
       });
 
@@ -14512,6 +14536,14 @@ var Yawmia = (function () {
         try {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:notification', { detail: data }));
+        } catch (_) { /* ignore */ }
+      });
+
+      sseConnection.addEventListener('workroom_message', function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          window.dispatchEvent(new CustomEvent('yawmia:workroom-message', { detail: data }));
+          refreshMessageUnreadBadge();
         } catch (_) { /* ignore */ }
       });
 
@@ -14712,6 +14744,7 @@ var Yawmia = (function () {
     roleLabel: roleLabel,
     safeNavigate: safeNavigate,
     recordNotificationActionClick: recordNotificationActionClick,
+    refreshMessageUnreadBadge: refreshMessageUnreadBadge,
     connectSSE: connectSSE,
     disconnectSSE: disconnectSSE,
     subscribeToPush: subscribeToPush,
@@ -22668,6 +22701,34 @@ var YawmiaWorkroom = (function () {
     } catch (_) {}
   });
 
+  window.addEventListener('yawmia:workroom-message', function (e) {
+    try {
+      if (!e.detail) return;
+
+      var incoming = e.detail;
+      var isCurrentWorkroom = currentJobId && incoming.jobId === currentJobId;
+
+      if (listMountEl) {
+        loadWorkrooms({ silent: true });
+      }
+
+      if (isCurrentWorkroom && activeTab === 'messages') {
+        loadMessages();
+
+        if (typeof Yawmia !== 'undefined' && document.visibilityState === 'visible') {
+          Yawmia.api('POST', '/api/workrooms/' + currentJobId + '/messages/read-all').catch(function () {});
+          if (Yawmia.refreshMessageUnreadBadge) Yawmia.refreshMessageUnreadBadge();
+        }
+
+        return;
+      }
+
+      if (!isCurrentWorkroom && typeof YawmiaToast !== 'undefined') {
+        YawmiaToast.info('💬 رسالة جديدة — افتح المحادثة');
+      }
+    } catch (_) {}
+  });
+
   function destroy() {
     if (refreshTimer) {
       clearInterval(refreshTimer);
@@ -22935,6 +22996,11 @@ var YawmiaWorkroom = (function () {
       <a href="/dashboard.html#jobsSection" class="bottom-nav__item">
         <span data-icon="search" data-icon-size="20"></span>
         <span class="bottom-nav__label">بحث</span>
+      </a>
+      <a href="/dashboard.html#workroomListMount" class="bottom-nav__item" id="bottomNavWorkrooms" aria-label="المحادثات">
+        <span aria-hidden="true">💬</span>
+        <span class="bottom-nav__label">المحادثات</span>
+        <span class="bottom-nav__badge hidden" id="bottomWorkroomBadge">0</span>
       </a>
       <button class="bottom-nav__item" id="bottomNavNotif" aria-label="الإشعارات">
         <span data-icon="bell" data-icon-size="20"></span>
