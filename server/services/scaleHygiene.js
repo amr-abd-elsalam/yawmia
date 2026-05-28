@@ -895,7 +895,7 @@ export async function getScaleHygieneOverview(options = {}) {
         ...(repositoryContracts?.recommendations || []),
       ],
     },
-    recommendedActions: recommendedActions.slice(0, 16),
+    recommendedActions: recommendedActions.slice(0, 24),
     warnings: warnings.slice(0, 100),
     warningCount: warnings.length,
   };
