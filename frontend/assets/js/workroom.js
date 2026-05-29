@@ -181,6 +181,29 @@ var YawmiaWorkroom = (function () {
       status.className = 'message-send-status message-send-status--failed';
       status.textContent = 'تعذّر إرسال الرسالة';
     }
+
+    if (!bubble.querySelector('.message-retry-btn')) {
+      var textEl = bubble.querySelector('.message-bubble__text');
+      var originalText = textEl ? textEl.textContent : '';
+
+      var retryBtn = document.createElement('button');
+      retryBtn.type = 'button';
+      retryBtn.className = 'message-retry-btn';
+      retryBtn.textContent = 'أعد المحاولة';
+      retryBtn.setAttribute('aria-label', 'أعد محاولة إرسال الرسالة');
+
+      retryBtn.addEventListener('click', function () {
+        if (!originalText || !currentWorkroom) return;
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        sendMessage(originalText, null, retryBtn, function () {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('تم إرسال الرسالة');
+          }
+        }, false);
+      });
+
+      bubble.appendChild(retryBtn);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -237,7 +260,8 @@ var YawmiaWorkroom = (function () {
 
   function renderListSkeleton() {
     return '<section class="card workroom-list-section">' +
-      '<h2 class="card__title">💬 مساحات العمل</h2>' +
+      '<h2 class="card__title">💬 المحادثات</h2>' +
+      '<p class="card__desc">جاري تحميل آخر محادثات فرصك...</p>' +
       '<div class="skeleton-card" style="margin-block-start:0.75rem;"></div>' +
       '</section>';
   }
@@ -245,8 +269,8 @@ var YawmiaWorkroom = (function () {
   function renderWorkroomList(workrooms) {
     var user = getUser();
     var title = user && user.role === 'employer'
-      ? '💬 مساحات العمل النشطة'
-      : '💬 شغلي الحالي';
+      ? '💬 المحادثات النشطة'
+      : '💬 المحادثات';
 
     var html = '<section class="card workroom-list-section">' +
       '<div class="section-header">' +
@@ -284,24 +308,41 @@ var YawmiaWorkroom = (function () {
   function renderWorkroomListCard(w) {
     var unread = w.unreadMessages || 0;
     var unreadHtml = unread > 0
-      ? '<span class="notification-bell__badge" style="position:static;display:inline-flex;">' + unread + '</span>'
+      ? '<span class="workroom-card__unread-badge" aria-label="' + unread + ' رسائل غير مقروءة">' + (unread > 99 ? '99+' : unread) + '</span>'
       : '';
 
-    var lastMsg = w.lastMessageAt
-      ? '<span>آخر رسالة: ' + escapeHtml(timeAgo(w.lastMessageAt)) + '</span>'
-      : '<span>لا توجد رسائل بعد</span>';
+    var preview =
+      w.lastMessagePreview ||
+      w.lastMessageText ||
+      (w.lastMessage && (w.lastMessage.preview || w.lastMessage.text)) ||
+      '';
 
-    return '<article class="workroom-card" data-job-id="' + escapeHtml(w.jobId) + '" tabindex="0" role="button" aria-label="فتح مساحة عمل ' + escapeHtml(w.title) + '">' +
+    if (preview && preview.length > 90) {
+      preview = preview.slice(0, 90) + '…';
+    }
+
+    var previewHtml = preview
+      ? '<span class="workroom-card__preview-label">آخر رسالة:</span> <span class="workroom-card__preview">' + escapeHtml(preview) + '</span>'
+      : '<span class="workroom-card__preview workroom-card__preview--empty">لا توجد رسائل بعد</span>';
+
+    var timeHtml = w.lastMessageAt
+      ? '<span class="workroom-card__time">' + escapeHtml(timeAgo(w.lastMessageAt)) + '</span>'
+      : '';
+
+    return '<article class="workroom-card" data-job-id="' + escapeHtml(w.jobId) + '" tabindex="0" role="button" aria-label="فتح محادثة ' + escapeHtml(w.title) + '">' +
       '<div class="workroom-card__main">' +
-        '<div class="workroom-card__title">' + escapeHtml(w.title || 'فرصة') + ' ' + unreadHtml + '</div>' +
-        '<div class="workroom-card__meta">' +
-          '<span>' + escapeHtml(statusLabel(w.status)) + '</span>' +
-          '<span> • </span>' +
-          lastMsg +
+        '<div class="workroom-card__title-row">' +
+          '<div class="workroom-card__title">' + escapeHtml(w.title || 'فرصة') + '</div>' +
+          unreadHtml +
         '</div>' +
+        '<div class="workroom-card__meta">' +
+          '<span class="workroom-card__status">' + escapeHtml(statusLabel(w.status)) + '</span>' +
+          (timeHtml ? '<span> • </span>' + timeHtml : '') +
+        '</div>' +
+        '<div class="workroom-card__preview-row">' + previewHtml + '</div>' +
       '</div>' +
       '<div class="workroom-card__actions">' +
-        '<a class="btn btn--primary btn--sm" href="/job.html?id=' + encodeURIComponent(w.jobId) + '#workroom">فتح</a>' +
+        '<a class="btn btn--primary btn--sm" href="/job.html?id=' + encodeURIComponent(w.jobId) + '#workroom-messages">افتح المحادثة</a>' +
       '</div>' +
     '</article>';
   }
@@ -546,8 +587,18 @@ var YawmiaWorkroom = (function () {
         renderMessages(res.data.items);
       }
 
-      // Mark read in background.
-      Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages/read-all').catch(function () {});
+      // Mark read in background, then refresh global unread badge.
+      Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages/read-all')
+        .then(function () {
+          currentWorkroom.unreadMessages = 0;
+          if (Yawmia.refreshMessageUnreadBadge) {
+            Yawmia.refreshMessageUnreadBadge();
+          }
+          if (listMountEl) {
+            loadWorkrooms({ silent: true });
+          }
+        })
+        .catch(function () {});
     } catch (_) {
       var el = document.getElementById('workroomMessageList');
       if (el) el.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل</p>';

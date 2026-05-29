@@ -5778,3 +5778,107 @@ textarea:focus:not(:focus-visible) {
     padding: 0.9rem;
   }
 }
+
+/* ═══ Phase 61.4 — Workroom Inbox Polish + Messaging Reliability ═══ */
+.workroom-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.25rem;
+}
+
+.workroom-card__unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.workroom-card__status {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__time {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__preview-row {
+  margin-block-start: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.workroom-card__preview-label {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.workroom-card__preview {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__preview--empty {
+  opacity: 0.75;
+}
+
+.message-retry-btn {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: 0.45rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-error);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.message-retry-btn:hover,
+.message-retry-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 600px) {
+  .workroom-card {
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .workroom-card__actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .workroom-card__preview-row {
+    font-size: 0.8rem;
+  }
+
+  .message-bubble {
+    max-width: 92%;
+  }
+
+  .message-retry-btn {
+    min-height: 36px;
+    padding-inline: 0.85rem;
+  }
+}
