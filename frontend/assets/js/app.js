@@ -348,6 +348,23 @@ var Yawmia = (function () {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:workroom-message', { detail: data }));
           refreshMessageUnreadBadge();
+
+          var isOwnMessage = state.user && data.senderId === state.user.id;
+          var isSameWorkroomPage = false;
+
+          try {
+            var params = new URLSearchParams(window.location.search);
+            isSameWorkroomPage =
+              window.location.pathname === '/job.html' &&
+              params.get('id') === data.jobId &&
+              (window.location.hash === '#workroom-messages' || window.location.hash === '#workroom');
+          } catch (_) {
+            isSameWorkroomPage = false;
+          }
+
+          if (!isOwnMessage && !isSameWorkroomPage && typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.info('💬 رسالة جديدة — افتح المحادثة');
+          }
         } catch (_) { /* ignore */ }
       });
 
