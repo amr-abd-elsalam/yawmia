@@ -554,10 +554,91 @@
     else { Yawmia.hide('paginationControls'); }
   }
 
+  // ── Phase 61.4B — Address-first Job Location UX ───────────
+  function injectJobLocationFields() {
+    var govEl = Yawmia.$id('jobGovernorate');
+    if (!govEl) return;
+
+    var formCard = govEl.closest('.card');
+    if (!formCard) return;
+
+    if (formCard.querySelector('#jobAddress')) return;
+
+    var govGroup = govEl.closest('.form-group');
+    if (!govGroup) return;
+
+    var locationGroup = document.createElement('div');
+    locationGroup.className = 'job-location-fields';
+    locationGroup.innerHTML =
+      '<div class="form-group">' +
+        '<label class="form-label" for="jobArea">المنطقة أو المركز</label>' +
+        '<input type="text" id="jobArea" class="form-input" maxlength="80" placeholder="مثال: فيصل، شبرا، مركز أبو كبير">' +
+        '<small class="form-hint">اكتب المنطقة اللي العامل يعرفها بسهولة.</small>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="jobAddress">عنوان مكان العمل</label>' +
+        '<input type="text" id="jobAddress" class="form-input" maxlength="250" placeholder="اكتب العنوان كما تقوله للعامل في الهاتف">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="jobLandmark">علامة مميزة</label>' +
+        '<input type="text" id="jobLandmark" class="form-input" maxlength="120" placeholder="مثال: بجوار محطة المترو، أمام صيدلية...">' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="jobLocationNotes">ملاحظات تساعد العامل يوصل بسهولة</label>' +
+        '<textarea id="jobLocationNotes" class="form-input form-textarea" rows="2" maxlength="300" placeholder="مثال: اسأل على عمارة الحاج محمود، المدخل من الشارع الجانبي..."></textarea>' +
+      '</div>' +
+      '<input type="hidden" id="jobLat">' +
+      '<input type="hidden" id="jobLng">' +
+      '<button type="button" class="btn-detect-location" id="btnJobDetectLocation">📍 استخدم موقعي الحالي</button>' +
+      '<small class="form-hint">خط العرض والطول يتم حفظهم تلقائيًا عند استخدام موقعي — لا تحتاج لكتابتها.</small>';
+
+    govGroup.insertAdjacentElement('afterend', locationGroup);
+
+    var detectBtn = Yawmia.$id('btnJobDetectLocation');
+    if (detectBtn) {
+      detectBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+          if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('المتصفح لا يدعم تحديد الموقع');
+          return;
+        }
+
+        detectBtn.textContent = '⏳ جاري تحديد الموقع...';
+        detectBtn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            var latEl = Yawmia.$id('jobLat');
+            var lngEl = Yawmia.$id('jobLng');
+
+            if (latEl) latEl.value = pos.coords.latitude.toFixed(6);
+            if (lngEl) lngEl.value = pos.coords.longitude.toFixed(6);
+
+            detectBtn.textContent = '📍 تم حفظ الموقع ✓';
+            detectBtn.disabled = false;
+
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.success('تم حفظ موقع مكان العمل');
+            }
+          },
+          function () {
+            detectBtn.textContent = '📍 استخدم موقعي الحالي';
+            detectBtn.disabled = false;
+
+            if (typeof YawmiaToast !== 'undefined') {
+              YawmiaToast.error('تعذّر تحديد الموقع — يمكنك كتابة العنوان يدويًا');
+            }
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+    }
+  }
+
   // ── Create Job Form ───────────────────────────────────────
   function setupCreateJob() {
     Yawmia.populateCategories('jobCategory');
     Yawmia.populateGovernorates('jobGovernorate');
+    injectJobLocationFields();
 
     (async function checkFirstJob() {
       try { var mineRes = await Yawmia.api('GET', '/api/jobs/mine?limit=1'); if (mineRes.data.ok && mineRes.data.total === 0) { var formSection = Yawmia.$id('createJobSection'); if (formSection) { formSection.classList.add('first-job-highlight'); formSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); } } } catch (_) {}
@@ -586,11 +667,52 @@
       btnCreateJob.addEventListener('click', async function () {
         Yawmia.clearMessage('createJobError');
         var urgencyEl = document.querySelector('input[name="jobUrgency"]:checked'); var urgency = urgencyEl ? urgencyEl.value : 'normal';
-        var body = { title: (Yawmia.$id('jobTitle') || {}).value || '', category: (Yawmia.$id('jobCategory') || {}).value || '', governorate: (Yawmia.$id('jobGovernorate') || {}).value || '', workersNeeded: parseInt((Yawmia.$id('jobWorkers') || {}).value) || 0, dailyWage: parseInt((Yawmia.$id('jobWage') || {}).value) || 0, startDate: (Yawmia.$id('jobStartDate') || {}).value || '', durationDays: parseInt((Yawmia.$id('jobDuration') || {}).value) || 0, description: (Yawmia.$id('jobDescription') || {}).value || '', urgency: urgency };
+        var body = {
+          title: (Yawmia.$id('jobTitle') || {}).value || '',
+          category: (Yawmia.$id('jobCategory') || {}).value || '',
+          governorate: (Yawmia.$id('jobGovernorate') || {}).value || '',
+          area: (Yawmia.$id('jobArea') || {}).value || '',
+          address: (Yawmia.$id('jobAddress') || {}).value || '',
+          landmark: (Yawmia.$id('jobLandmark') || {}).value || '',
+          locationNotes: (Yawmia.$id('jobLocationNotes') || {}).value || '',
+          workersNeeded: parseInt((Yawmia.$id('jobWorkers') || {}).value) || 0,
+          dailyWage: parseInt((Yawmia.$id('jobWage') || {}).value) || 0,
+          startDate: (Yawmia.$id('jobStartDate') || {}).value || '',
+          durationDays: parseInt((Yawmia.$id('jobDuration') || {}).value) || 0,
+          description: (Yawmia.$id('jobDescription') || {}).value || '',
+          urgency: urgency
+        };
+
+        var jobLatVal = (Yawmia.$id('jobLat') || {}).value || '';
+        var jobLngVal = (Yawmia.$id('jobLng') || {}).value || '';
+        if (jobLatVal) body.lat = parseFloat(jobLatVal);
+        if (jobLngVal) body.lng = parseFloat(jobLngVal);
+
+        if (!body.address && !body.area && !body.landmark) {
+          return Yawmia.showMessage('createJobError', 'اكتب عنوان مكان العمل أو المنطقة أو علامة مميزة', 'error');
+        }
         Yawmia.setLoading(btnCreateJob, true);
         try {
           var res = await Yawmia.api('POST', '/api/jobs', body);
-          if (res.data.ok) { Yawmia.showMessage('createJobError', 'تم نشر الفرصة بنجاح!', 'success'); Yawmia.$id('jobTitle').value = ''; Yawmia.$id('jobCategory').value = ''; Yawmia.$id('jobGovernorate').value = ''; Yawmia.$id('jobWorkers').value = ''; Yawmia.$id('jobWage').value = ''; Yawmia.$id('jobStartDate').value = ''; Yawmia.$id('jobDuration').value = ''; Yawmia.$id('jobDescription').value = ''; Yawmia.hide('costPreview'); loadJobs(); }
+          if (res.data.ok) {
+            Yawmia.showMessage('createJobError', 'تم نشر الفرصة بنجاح!', 'success');
+            Yawmia.$id('jobTitle').value = '';
+            Yawmia.$id('jobCategory').value = '';
+            Yawmia.$id('jobGovernorate').value = '';
+            if (Yawmia.$id('jobArea')) Yawmia.$id('jobArea').value = '';
+            if (Yawmia.$id('jobAddress')) Yawmia.$id('jobAddress').value = '';
+            if (Yawmia.$id('jobLandmark')) Yawmia.$id('jobLandmark').value = '';
+            if (Yawmia.$id('jobLocationNotes')) Yawmia.$id('jobLocationNotes').value = '';
+            if (Yawmia.$id('jobLat')) Yawmia.$id('jobLat').value = '';
+            if (Yawmia.$id('jobLng')) Yawmia.$id('jobLng').value = '';
+            Yawmia.$id('jobWorkers').value = '';
+            Yawmia.$id('jobWage').value = '';
+            Yawmia.$id('jobStartDate').value = '';
+            Yawmia.$id('jobDuration').value = '';
+            Yawmia.$id('jobDescription').value = '';
+            Yawmia.hide('costPreview');
+            loadJobs();
+          }
           else { Yawmia.showMessage('createJobError', res.data.error || 'خطأ في نشر الفرصة', 'error'); }
         } catch (err) { Yawmia.showMessage('createJobError', 'خطأ في الاتصال بالسيرفر', 'error'); }
         finally { Yawmia.setLoading(btnCreateJob, false); }

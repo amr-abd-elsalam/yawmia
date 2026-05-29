@@ -112,6 +112,9 @@
       }
     }
 
+    // Phase 61.4B — Address-first location details + directions
+    renderJobLocation(job);
+
     // WhatsApp share button
     var shareBtn = Yawmia.$id('btnShareWhatsApp');
     if (shareBtn) {
@@ -455,6 +458,139 @@
       }
     } catch (_) {
       // Payment may not exist — no error shown
+    }
+  }
+
+  // ── Phase 61.4B — Location / Address / Directions UX ──────
+  function composeJobAddress(job) {
+    if (!job) return '';
+
+    var parts = [];
+    if (job.address) parts.push(job.address);
+    if (job.area) parts.push(job.area);
+    if (job.landmark) parts.push('علامة مميزة: ' + job.landmark);
+    if (job.governorate) parts.push(job.governorate);
+
+    if (parts.length === 0 && job.location) parts.push(job.location);
+
+    return parts.filter(Boolean).join(' — ');
+  }
+
+  function buildDirectionsUrl(job) {
+    if (!job) return '';
+
+    if (typeof job.lat === 'number' && typeof job.lng === 'number') {
+      return 'https://www.google.com/maps/dir/?api=1&destination=' +
+        encodeURIComponent(String(job.lat) + ',' + String(job.lng));
+    }
+
+    var address = composeJobAddress(job);
+    if (address) {
+      return 'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(address + ' مصر');
+    }
+
+    return '';
+  }
+
+  function copyTextToClipboard(text) {
+    if (!text) return Promise.reject(new Error('EMPTY_TEXT'));
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    return new Promise(function (resolve, reject) {
+      try {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'readonly');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function renderJobLocation(job) {
+    var jobContent = Yawmia.$id('jobContent');
+    if (!jobContent || !job) return;
+
+    if (Yawmia.$id('jobLocationDirectionsSection')) return;
+
+    var address = composeJobAddress(job);
+    var directionsUrl = buildDirectionsUrl(job);
+
+    if (!address && !directionsUrl && !job.locationNotes) return;
+
+    var section = document.createElement('section');
+    section.className = 'job-detail__location card';
+    section.id = 'jobLocationDirectionsSection';
+
+    var html =
+      '<h2 class="job-detail__section-title">📍 مكان العمل</h2>' +
+      '<div class="job-location-box">';
+
+    if (job.area) {
+      html += '<div class="job-location-row"><strong>المنطقة أو المركز:</strong> ' + escapeHtml(job.area) + '</div>';
+    }
+
+    if (job.address || job.location) {
+      html += '<div class="job-location-row"><strong>العنوان:</strong> ' + escapeHtml(job.address || job.location) + '</div>';
+    }
+
+    if (job.landmark) {
+      html += '<div class="job-location-row"><strong>علامة مميزة:</strong> ' + escapeHtml(job.landmark) + '</div>';
+    }
+
+    if (job.locationNotes) {
+      html += '<div class="job-location-notes"><strong>ملاحظات الوصول:</strong><br>' + escapeHtml(job.locationNotes) + '</div>';
+    }
+
+    if (!address && !job.locationNotes) {
+      html += '<div class="job-location-row job-location-row--muted">العنوان غير مكتمل — تواصل مع صاحب العمل قبل التحرك.</div>';
+    }
+
+    html += '</div>';
+
+    html += '<div class="job-location-actions">';
+
+    if (directionsUrl) {
+      html += '<a class="btn btn--primary btn--sm" href="' + escapeHtml(directionsUrl) + '" target="_blank" rel="noopener">🧭 افتح الاتجاهات</a>';
+    }
+
+    if (address) {
+      html += '<button type="button" class="btn btn--ghost btn--sm" id="btnCopyJobAddress">📋 انسخ العنوان</button>';
+    }
+
+    html += '</div>';
+
+    section.innerHTML = html;
+
+    var actionsEl = Yawmia.$id('jobActions');
+    if (actionsEl && actionsEl.parentNode) {
+      actionsEl.parentNode.insertBefore(section, actionsEl);
+    } else {
+      jobContent.appendChild(section);
+    }
+
+    var copyBtn = Yawmia.$id('btnCopyJobAddress');
+    if (copyBtn && address) {
+      copyBtn.addEventListener('click', function () {
+        copyTextToClipboard(address)
+          .then(function () {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.success('تم نسخ العنوان');
+          })
+          .catch(function () {
+            if (typeof YawmiaToast !== 'undefined') YawmiaToast.error('تعذّر نسخ العنوان');
+          });
+      });
     }
   }
 
