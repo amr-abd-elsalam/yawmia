@@ -5882,3 +5882,75 @@ textarea:focus:not(:focus-visible) {
     padding-inline: 0.85rem;
   }
 }
+
+/* ═══ Phase 61.4B — Location / Address / Directions UX ═══ */
+.job-location-fields {
+  padding: 1rem;
+  margin-block: 1rem;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: var(--radius-md);
+}
+
+.job-detail__location {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(37, 99, 235, 0.06) 100%);
+}
+
+.job-location-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+}
+
+.job-location-row {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.job-location-row strong,
+.job-location-notes strong {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.job-location-row--muted {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+}
+
+.job-location-notes {
+  color: var(--color-text);
+  line-height: 1.8;
+  padding: 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.job-location-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .job-location-fields {
+    padding: 0.85rem;
+  }
+
+  .job-location-actions {
+    flex-direction: column;
+  }
+
+  .job-location-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
