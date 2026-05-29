@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-28T21:47:58.921Z
+> Auto-generated: 2026-05-29T05:44:16.047Z
 > Files in this part: 90
 
 ## Files
@@ -6994,6 +6994,110 @@ textarea:focus:not(:focus-visible) {
   .rollback-rehearsal-card,
   .repository-contract-card {
     padding: 0.9rem;
+  }
+}
+
+/* ═══ Phase 61.4 — Workroom Inbox Polish + Messaging Reliability ═══ */
+.workroom-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.25rem;
+}
+
+.workroom-card__unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.workroom-card__status {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__time {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__preview-row {
+  margin-block-start: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.workroom-card__preview-label {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.workroom-card__preview {
+  color: var(--color-text-muted);
+}
+
+.workroom-card__preview--empty {
+  opacity: 0.75;
+}
+
+.message-retry-btn {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: 0.45rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-error);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.message-retry-btn:hover,
+.message-retry-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 600px) {
+  .workroom-card {
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .workroom-card__actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .workroom-card__preview-row {
+    font-size: 0.8rem;
+  }
+
+  .message-bubble {
+    max-width: 92%;
+  }
+
+  .message-retry-btn {
+    min-height: 36px;
+    padding-inline: 0.85rem;
   }
 }
 ```
@@ -14570,6 +14674,23 @@ var Yawmia = (function () {
           var data = JSON.parse(e.data);
           window.dispatchEvent(new CustomEvent('yawmia:workroom-message', { detail: data }));
           refreshMessageUnreadBadge();
+
+          var isOwnMessage = state.user && data.senderId === state.user.id;
+          var isSameWorkroomPage = false;
+
+          try {
+            var params = new URLSearchParams(window.location.search);
+            isSameWorkroomPage =
+              window.location.pathname === '/job.html' &&
+              params.get('id') === data.jobId &&
+              (window.location.hash === '#workroom-messages' || window.location.hash === '#workroom');
+          } catch (_) {
+            isSameWorkroomPage = false;
+          }
+
+          if (!isOwnMessage && !isSameWorkroomPage && typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.info('💬 رسالة جديدة — افتح المحادثة');
+          }
         } catch (_) { /* ignore */ }
       });
 
@@ -21916,6 +22037,29 @@ var YawmiaWorkroom = (function () {
       status.className = 'message-send-status message-send-status--failed';
       status.textContent = 'تعذّر إرسال الرسالة';
     }
+
+    if (!bubble.querySelector('.message-retry-btn')) {
+      var textEl = bubble.querySelector('.message-bubble__text');
+      var originalText = textEl ? textEl.textContent : '';
+
+      var retryBtn = document.createElement('button');
+      retryBtn.type = 'button';
+      retryBtn.className = 'message-retry-btn';
+      retryBtn.textContent = 'أعد المحاولة';
+      retryBtn.setAttribute('aria-label', 'أعد محاولة إرسال الرسالة');
+
+      retryBtn.addEventListener('click', function () {
+        if (!originalText || !currentWorkroom) return;
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        sendMessage(originalText, null, retryBtn, function () {
+          if (typeof YawmiaToast !== 'undefined') {
+            YawmiaToast.success('تم إرسال الرسالة');
+          }
+        }, false);
+      });
+
+      bubble.appendChild(retryBtn);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -21972,7 +22116,8 @@ var YawmiaWorkroom = (function () {
 
   function renderListSkeleton() {
     return '<section class="card workroom-list-section">' +
-      '<h2 class="card__title">💬 مساحات العمل</h2>' +
+      '<h2 class="card__title">💬 المحادثات</h2>' +
+      '<p class="card__desc">جاري تحميل آخر محادثات فرصك...</p>' +
       '<div class="skeleton-card" style="margin-block-start:0.75rem;"></div>' +
       '</section>';
   }
@@ -21980,8 +22125,8 @@ var YawmiaWorkroom = (function () {
   function renderWorkroomList(workrooms) {
     var user = getUser();
     var title = user && user.role === 'employer'
-      ? '💬 مساحات العمل النشطة'
-      : '💬 شغلي الحالي';
+      ? '💬 المحادثات النشطة'
+      : '💬 المحادثات';
 
     var html = '<section class="card workroom-list-section">' +
       '<div class="section-header">' +
@@ -22019,24 +22164,41 @@ var YawmiaWorkroom = (function () {
   function renderWorkroomListCard(w) {
     var unread = w.unreadMessages || 0;
     var unreadHtml = unread > 0
-      ? '<span class="notification-bell__badge" style="position:static;display:inline-flex;">' + unread + '</span>'
+      ? '<span class="workroom-card__unread-badge" aria-label="' + unread + ' رسائل غير مقروءة">' + (unread > 99 ? '99+' : unread) + '</span>'
       : '';
 
-    var lastMsg = w.lastMessageAt
-      ? '<span>آخر رسالة: ' + escapeHtml(timeAgo(w.lastMessageAt)) + '</span>'
-      : '<span>لا توجد رسائل بعد</span>';
+    var preview =
+      w.lastMessagePreview ||
+      w.lastMessageText ||
+      (w.lastMessage && (w.lastMessage.preview || w.lastMessage.text)) ||
+      '';
 
-    return '<article class="workroom-card" data-job-id="' + escapeHtml(w.jobId) + '" tabindex="0" role="button" aria-label="فتح مساحة عمل ' + escapeHtml(w.title) + '">' +
+    if (preview && preview.length > 90) {
+      preview = preview.slice(0, 90) + '…';
+    }
+
+    var previewHtml = preview
+      ? '<span class="workroom-card__preview-label">آخر رسالة:</span> <span class="workroom-card__preview">' + escapeHtml(preview) + '</span>'
+      : '<span class="workroom-card__preview workroom-card__preview--empty">لا توجد رسائل بعد</span>';
+
+    var timeHtml = w.lastMessageAt
+      ? '<span class="workroom-card__time">' + escapeHtml(timeAgo(w.lastMessageAt)) + '</span>'
+      : '';
+
+    return '<article class="workroom-card" data-job-id="' + escapeHtml(w.jobId) + '" tabindex="0" role="button" aria-label="فتح محادثة ' + escapeHtml(w.title) + '">' +
       '<div class="workroom-card__main">' +
-        '<div class="workroom-card__title">' + escapeHtml(w.title || 'فرصة') + ' ' + unreadHtml + '</div>' +
-        '<div class="workroom-card__meta">' +
-          '<span>' + escapeHtml(statusLabel(w.status)) + '</span>' +
-          '<span> • </span>' +
-          lastMsg +
+        '<div class="workroom-card__title-row">' +
+          '<div class="workroom-card__title">' + escapeHtml(w.title || 'فرصة') + '</div>' +
+          unreadHtml +
         '</div>' +
+        '<div class="workroom-card__meta">' +
+          '<span class="workroom-card__status">' + escapeHtml(statusLabel(w.status)) + '</span>' +
+          (timeHtml ? '<span> • </span>' + timeHtml : '') +
+        '</div>' +
+        '<div class="workroom-card__preview-row">' + previewHtml + '</div>' +
       '</div>' +
       '<div class="workroom-card__actions">' +
-        '<a class="btn btn--primary btn--sm" href="/job.html?id=' + encodeURIComponent(w.jobId) + '#workroom">فتح</a>' +
+        '<a class="btn btn--primary btn--sm" href="/job.html?id=' + encodeURIComponent(w.jobId) + '#workroom-messages">افتح المحادثة</a>' +
       '</div>' +
     '</article>';
   }
@@ -22281,8 +22443,18 @@ var YawmiaWorkroom = (function () {
         renderMessages(res.data.items);
       }
 
-      // Mark read in background.
-      Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages/read-all').catch(function () {});
+      // Mark read in background, then refresh global unread badge.
+      Yawmia.api('POST', '/api/workrooms/' + currentWorkroom.jobId + '/messages/read-all')
+        .then(function () {
+          currentWorkroom.unreadMessages = 0;
+          if (Yawmia.refreshMessageUnreadBadge) {
+            Yawmia.refreshMessageUnreadBadge();
+          }
+          if (listMountEl) {
+            loadWorkrooms({ silent: true });
+          }
+        })
+        .catch(function () {});
     } catch (_) {
       var el = document.getElementById('workroomMessageList');
       if (el) el.innerHTML = '<p class="empty-state">خطأ في تحميل الرسائل</p>';
