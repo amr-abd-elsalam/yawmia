@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 3: Middleware (7) + Handlers (11)
-> Auto-generated: 2026-05-29T05:44:16.036Z
+> Auto-generated: 2026-05-29T08:17:39.604Z
 > Files in this part: 45
 
 ## Files
@@ -4487,7 +4487,7 @@ export async function handleCreateJob(req, res) {
   }
 
   try {
-    const sanitized = sanitizeFields(body, ['title', 'description']);
+    const sanitized = sanitizeFields(body, ['title', 'description', 'location', 'area', 'address', 'landmark', 'locationNotes']);
 
     // Content filter check
     if (config.CONTENT_FILTER && config.CONTENT_FILTER.enabled && config.CONTENT_FILTER.checkJobDescription) {
@@ -4505,6 +4505,41 @@ export async function handleCreateJob(req, res) {
       } catch (_) {
         // Content filter failure is non-blocking — allow creation
       }
+    }
+
+    // Phase 61.4B — Address-first location UX fields
+    const locationTextLimits = {
+      location: 200,
+      area: 80,
+      address: 250,
+      landmark: 120,
+      locationNotes: 300,
+    };
+
+    for (const [field, maxLen] of Object.entries(locationTextLimits)) {
+      if (sanitized[field] !== undefined && sanitized[field] !== null) {
+        if (typeof sanitized[field] !== 'string') {
+          return sendJSON(res, 400, { error: 'بيانات الموقع غير صالحة', code: 'INVALID_LOCATION_FIELD', field });
+        }
+        sanitized[field] = sanitized[field].trim();
+        if (sanitized[field].length > maxLen) {
+          return sendJSON(res, 400, {
+            error: `حقل الموقع "${field}" لا يتجاوز ${maxLen} حرف`,
+            code: 'LOCATION_FIELD_TOO_LONG',
+            field,
+          });
+        }
+        if (sanitized[field].length === 0) {
+          sanitized[field] = null;
+        }
+      }
+    }
+
+    // Backward-compatible summary: keep location useful for old clients.
+    if (!sanitized.location && (sanitized.address || sanitized.area || sanitized.landmark)) {
+      sanitized.location = [sanitized.address, sanitized.area, sanitized.landmark]
+        .filter(Boolean)
+        .join(' — ');
     }
 
     // Validate lat/lng if provided

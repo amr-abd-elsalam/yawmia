@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-29T05:44:15.996Z
+> Auto-generated: 2026-05-29T08:17:39.563Z
 > Files in this part: 132
 
 ## Files
@@ -18858,6 +18858,10 @@ export async function create(employerId, fields) {
     category: fields.category,
     governorate: fields.governorate,
     location: fields.location || null,
+    area: fields.area || null,
+    address: fields.address || null,
+    landmark: fields.landmark || null,
+    locationNotes: fields.locationNotes || null,
     lat: (typeof fields.lat === 'number') ? fields.lat : null,
     lng: (typeof fields.lng === 'number') ? fields.lng : null,
     workersNeeded: fields.workersNeeded,
