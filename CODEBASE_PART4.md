@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-30T09:49:40.199Z
-> Files in this part: 90
+> Auto-generated: 2026-05-30T10:29:24.007Z
+> Files in this part: 91
 
 ## Files
 1. `frontend/404.html`
@@ -71,28 +71,29 @@
 66. `scripts/rebuild-predictive-archive-index.js`
 67. `scripts/rebuild-search-relevance.js`
 68. `scripts/rebuild-workroom-search.js`
-69. `scripts/repair-indexes.js`
-70. `scripts/repair-queue.js`
-71. `scripts/reset-dev-data.js`
-72. `scripts/rollup-product-intelligence.js`
-73. `scripts/rollup-trust-snapshots.js`
-74. `scripts/run-backup-restore-drill.js`
-75. `scripts/run-migration-rehearsal.js`
-76. `scripts/run-rollback-rehearsal.js`
-77. `scripts/run-trust-calibration.js`
-78. `scripts/scheduler-cadence-report.js`
-79. `scripts/validate-migration-snapshot.js`
-80. `scripts/verify-admin-rbac.js`
-81. `scripts/verify-audit-index.js`
-82. `scripts/verify-data-json.js`
-83. `scripts/verify-file-health.js`
-84. `scripts/verify-marketplace-intelligence.js`
-85. `scripts/verify-privacy-governance.js`
-86. `scripts/verify-production-readiness.js`
-87. `scripts/verify-queue.js`
-88. `scripts/verify-repository-contracts.js`
-89. `scripts/verify-scale-thresholds.js`
-90. `scripts/verify-workroom-indexes.js`
+69. `scripts/recover-stale-running-jobs.js`
+70. `scripts/repair-indexes.js`
+71. `scripts/repair-queue.js`
+72. `scripts/reset-dev-data.js`
+73. `scripts/rollup-product-intelligence.js`
+74. `scripts/rollup-trust-snapshots.js`
+75. `scripts/run-backup-restore-drill.js`
+76. `scripts/run-migration-rehearsal.js`
+77. `scripts/run-rollback-rehearsal.js`
+78. `scripts/run-trust-calibration.js`
+79. `scripts/scheduler-cadence-report.js`
+80. `scripts/validate-migration-snapshot.js`
+81. `scripts/verify-admin-rbac.js`
+82. `scripts/verify-audit-index.js`
+83. `scripts/verify-data-json.js`
+84. `scripts/verify-file-health.js`
+85. `scripts/verify-marketplace-intelligence.js`
+86. `scripts/verify-privacy-governance.js`
+87. `scripts/verify-production-readiness.js`
+88. `scripts/verify-queue.js`
+89. `scripts/verify-repository-contracts.js`
+90. `scripts/verify-scale-thresholds.js`
+91. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -27779,18 +27780,34 @@ async function main() {
     recommendedSequence: [
       'node scripts/verify-data-json.js --strict --json',
       'node scripts/find-null-json-files.js --json',
-      'node scripts/quarantine-corrupt-json.js --dry-run --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/backup.js',
-      'node scripts/quarantine-corrupt-json.js --confirm --json',
-      'node scripts/repair-queue.js --confirm --json',
-      'node scripts/verify-queue.js --strict --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/phase61-1-remediation-status.js --json'
+    ],
+    safeDiagnostics: [
+      'node scripts/verify-data-json.js --strict --json',
+      'node scripts/find-null-json-files.js --json',
+      'node scripts/verify-queue.js --json',
+      'node scripts/repair-queue.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json'
+    ],
+    evidenceAfterQueueReview: [
       'node scripts/measure-storage-pressure.js --json --persist',
       'node scripts/verify-scale-thresholds.js --latest-only --persist --json',
       'node scripts/benchmark-file-paths.js --json --persist',
       'node scripts/capture-phase61-evidence.js --persist --json',
       'node scripts/evaluate-pilot-gate.js --json'
+    ],
+    confirmOnlyAfterApproval: [
+      'node scripts/repair-queue.js --confirm --json',
+      'node scripts/compact-queue.js --confirm --json'
+    ],
+    forbiddenWithoutNewApproval: [
+      'node scripts/queue-drain.js --confirm --json',
+      'node scripts/reset-dev-data.js --confirm --reinit --json',
+      'node scripts/quarantine-corrupt-json.js --confirm --json',
+      'node scripts/recover-stale-running-jobs.js --confirm --json'
     ],
   };
 
@@ -29502,6 +29519,235 @@ async function main() {
 main().catch(err => {
   console.error('\n❌ Workroom search rebuild failed:', err.message);
   if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/recover-stale-running-jobs.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/recover-stale-running-jobs.js
+// Phase 61.4 — Stale Running Queue Jobs Dry-Run Auditor
+// ═══════════════════════════════════════════════════════════════
+// Purpose:
+//   Inspect stale running queue jobs safely without processing due jobs.
+//
+// Safety:
+//   - Default is dry-run.
+//   - --confirm is intentionally NOT implemented in this phase.
+//   - Does not call queueWorkers.processDueJobs().
+//   - Does not claim pending jobs.
+//   - Does not mutate queue records.
+//   - Does not write summary/location indexes.
+//   - Does not delete/archive/complete/fail/retry jobs.
+//
+// Usage:
+//   node scripts/recover-stale-running-jobs.js --json
+//   node scripts/recover-stale-running-jobs.js --dry-run --json
+//
+// If --confirm is passed:
+//   exits with CONFIRM_NOT_IMPLEMENTED and mutationPerformed:false.
+// ═══════════════════════════════════════════════════════════════
+
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+
+function getArg(name, fallback) {
+  const prefix = `--${name}=`;
+  const found = process.argv.find(a => a.startsWith(prefix));
+  if (!found) return fallback;
+  const value = found.slice(prefix.length);
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function relativePath(filePath, basePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  if (filePath.startsWith(basePath + '/')) return filePath.slice(basePath.length + 1);
+  return filePath;
+}
+
+function proposedActionFor(job, maxAttemptsFallback) {
+  const attempts = Number(job.attempts || 0);
+  const maxAttempts = Number(job.maxAttempts || maxAttemptsFallback || 5);
+
+  if (attempts >= maxAttempts) {
+    return {
+      action: 'move_to_dead_letter_after_review',
+      reason: 'attempts reached maxAttempts; do not retry blindly',
+    };
+  }
+
+  return {
+    action: 'move_back_to_pending_after_review',
+    reason: 'lease is stale; eligible for explicit recovery workflow after review',
+  };
+}
+
+async function main() {
+  const started = Date.now();
+  const maxMonths = getArg('max-months', 120);
+
+  if (CONFIRM) {
+    const output = {
+      ok: false,
+      dryRun: false,
+      mutationPerformed: false,
+      code: 'CONFIRM_NOT_IMPLEMENTED',
+      error: 'Stale running recovery confirm is intentionally not implemented in Phase 61.4. Use dry-run output for review only.',
+      warnings: [
+        'no queue mutation performed',
+        'do not use queue-drain as stale-running recovery',
+        'design confirm workflow only after dry-run review and explicit approval',
+      ],
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      printJson(output);
+    } else {
+      console.error('\n❌ CONFIRM_NOT_IMPLEMENTED');
+      console.error('   Stale running recovery confirm is intentionally not implemented.');
+      console.error('   Use --dry-run --json and review the plan first.\n');
+    }
+
+    process.exit(2);
+  }
+
+  const { default: config } = await import('../config.js');
+  const { initDatabase } = await import('../server/services/database.js');
+  const {
+    listQueueRecords,
+    getQueuePathByStatus,
+  } = await import('../server/services/queueStorageIndex.js');
+  const {
+    isLeaseExpired,
+  } = await import('../server/services/opsQueue.js');
+
+  await initDatabase();
+
+  const basePath = process.env.YAWMIA_DATA_PATH || config.DATABASE.basePath;
+  const maxAttemptsFallback = config.OPS_QUEUE?.maxAttempts || 5;
+
+  const runningJobs = await listQueueRecords({
+    status: 'running',
+    maxMonths,
+  });
+
+  const staleJobs = [];
+
+  for (const job of runningJobs) {
+    if (!job || !job.id || job.status !== 'running') continue;
+    if (!isLeaseExpired(job)) continue;
+
+    let filePath = null;
+    try {
+      filePath = getQueuePathByStatus(job.status, job.id, job.createdAt || job.updatedAt);
+    } catch (_) {
+      filePath = null;
+    }
+
+    const proposal = proposedActionFor(job, maxAttemptsFallback);
+
+    staleJobs.push({
+      jobId: job.id,
+      type: job.type || null,
+      status: job.status,
+      attempts: Number(job.attempts || 0),
+      maxAttempts: Number(job.maxAttempts || maxAttemptsFallback),
+      lockedBy: job.lockedBy || null,
+      leaseUntil: job.leaseUntil || null,
+      updatedAt: job.updatedAt || null,
+      nextRunAt: job.nextRunAt || null,
+      createdAt: job.createdAt || null,
+      path: relativePath(filePath, basePath),
+      proposedAction: proposal.action,
+      proposedReason: proposal.reason,
+    });
+  }
+
+  staleJobs.sort((a, b) =>
+    String(a.updatedAt || '').localeCompare(String(b.updatedAt || '')) ||
+    String(a.jobId).localeCompare(String(b.jobId))
+  );
+
+  const output = {
+    ok: true,
+    dryRun: true,
+    mutationPerformed: false,
+    confirmImplemented: false,
+    scannedRunning: runningJobs.filter(j => j && j.id).length,
+    staleRunningCount: staleJobs.length,
+    staleRunningJobs: staleJobs,
+    summary: {
+      moveBackToPendingCandidates: staleJobs.filter(j => j.proposedAction === 'move_back_to_pending_after_review').length,
+      deadLetterCandidates: staleJobs.filter(j => j.proposedAction === 'move_to_dead_letter_after_review').length,
+    },
+    warnings: [
+      'dry-run only: no queue records were mutated',
+      'this script does not call queueWorkers.processDueJobs()',
+      'this script does not claim pending jobs',
+      'queue-drain must not be used as stale-running recovery',
+      'stop active /mnt/j/yawmia server before any future recovery confirm workflow',
+      'run repair-queue --dry-run after any future recovery mutation',
+    ],
+    recommendedNextSteps: [
+      'review staleRunningJobs list',
+      'confirm no active /mnt/j/yawmia server or queue worker is running',
+      'document recovery decision in an ops review',
+      'only then implement/approve a confirm workflow if needed',
+    ],
+    durationMs: Date.now() - started,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(output);
+    return;
+  }
+
+  console.log('\n🧯 يوميّة Stale Running Queue Recovery — Dry Run\n');
+  console.log('   mutationPerformed: false');
+  console.log('   confirmImplemented: false');
+  console.log('   processDueJobs called: no');
+  console.log(`   scannedRunning: ${output.scannedRunning}`);
+  console.log(`   staleRunningCount: ${output.staleRunningCount}`);
+  console.log(`   moveBackToPendingCandidates: ${output.summary.moveBackToPendingCandidates}`);
+  console.log(`   deadLetterCandidates: ${output.summary.deadLetterCandidates}`);
+  console.log('\n⚠️  Do not use queue-drain as stale-running recovery.\n');
+}
+
+main().catch(err => {
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    mutationPerformed: false,
+    error: err.message,
+    stack: err.stack,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(failure);
+  } else {
+    console.error('\n❌ Stale running recovery dry-run failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
