@@ -273,6 +273,38 @@ Do not use queue-drain for stale-running recovery.
 QUEUE_SUMMARY_MISMATCH remains the active blocker.
 ```
 
+## Latest Follow-Up Observation
+
+A later dry-run showed:
+
+```text
+scannedRunning: 40
+staleRunningCount: 14
+moveBackToPendingCandidates: 14
+deadLetterCandidates: 0
+```
+
+This differs from the earlier observation where all 40 running jobs were classified as stale.
+
+Interpretation:
+
+```text
+The stale-running recovery auditor is non-mutating.
+The difference must be treated as evidence requiring review, not as approval to recover.
+The system still has 40 running records, but only 14 matched stale criteria in this follow-up dry-run.
+QUEUE_SUMMARY_MISMATCH remains active.
+No recovery confirm is approved.
+```
+
+Required next step:
+
+```text
+compare verify-queue staleRunningJobs output with recover-stale-running-jobs dry-run output
+review why full queue verification and recovery auditor classify stale running jobs differently
+do not use queue-drain as recovery
+do not run confirm
+```
+
 ## Final Conclusion
 
 The stale running dry-run gives enough evidence to design a future selective recovery workflow, but not enough to run recovery now.
