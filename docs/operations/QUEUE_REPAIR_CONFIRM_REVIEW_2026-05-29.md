@@ -59,7 +59,7 @@ When `QUEUE_SUMMARY_MISMATCH` is active, the source of truth hierarchy is:
 3. queue summary/location index as rebuildable acceleration metadata only
 ```
 
-Do not treat `metrics/queue/summary.json` as source of truth while stale.
+Do not treat metrics/queue/summary.json as source of truth while stale.
 
 ## Safety Rule
 
