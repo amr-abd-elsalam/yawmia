@@ -222,18 +222,34 @@ async function main() {
     recommendedSequence: [
       'node scripts/verify-data-json.js --strict --json',
       'node scripts/find-null-json-files.js --json',
-      'node scripts/quarantine-corrupt-json.js --dry-run --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/backup.js',
-      'node scripts/quarantine-corrupt-json.js --confirm --json',
-      'node scripts/repair-queue.js --confirm --json',
-      'node scripts/verify-queue.js --strict --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/phase61-1-remediation-status.js --json'
+    ],
+    safeDiagnostics: [
+      'node scripts/verify-data-json.js --strict --json',
+      'node scripts/find-null-json-files.js --json',
+      'node scripts/verify-queue.js --json',
+      'node scripts/repair-queue.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json'
+    ],
+    evidenceAfterQueueReview: [
       'node scripts/measure-storage-pressure.js --json --persist',
       'node scripts/verify-scale-thresholds.js --latest-only --persist --json',
       'node scripts/benchmark-file-paths.js --json --persist',
       'node scripts/capture-phase61-evidence.js --persist --json',
       'node scripts/evaluate-pilot-gate.js --json'
+    ],
+    confirmOnlyAfterApproval: [
+      'node scripts/repair-queue.js --confirm --json',
+      'node scripts/compact-queue.js --confirm --json'
+    ],
+    forbiddenWithoutNewApproval: [
+      'node scripts/queue-drain.js --confirm --json',
+      'node scripts/reset-dev-data.js --confirm --reinit --json',
+      'node scripts/quarantine-corrupt-json.js --confirm --json',
+      'node scripts/recover-stale-running-jobs.js --confirm --json'
     ],
   };
 
