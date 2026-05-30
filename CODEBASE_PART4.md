@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-30T07:09:06.276Z
+> Auto-generated: 2026-05-30T09:39:58.746Z
 > Files in this part: 90
 
 ## Files
@@ -28886,14 +28886,19 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/queue-drain.js — Ops Queue Drain Utility (Phase 52)
+// scripts/queue-drain.js — Ops Queue Due-Job Processing Loop (Phase 52/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/queue-drain.js [--max-cycles=20] [--delay-ms=500]
 //   node scripts/queue-drain.js --dry-run --json
-// Processes due queue jobs without starting the HTTP server.
+//   node scripts/queue-drain.js --confirm --json [--max-cycles=20] [--delay-ms=500]
 //
-// Phase 61.1:
+// Important:
+//   This command is NOT stale-running recovery only.
+//   In confirmed mode it imports queueWorkers and calls processDueJobs().
+//   That means it can claim and process due pending queue jobs.
+//   Do not run --confirm while a /mnt/j/yawmia server or queue worker is active.
+//
+// Phase 61.4:
 //   --dry-run is strictly non-mutating.
 //   --json emits machine-readable JSON only.
 // ═══════════════════════════════════════════════════════════════
@@ -28903,7 +28908,8 @@ try {
   dotenv.config();
 } catch (_) {}
 
-const DRY_RUN = process.argv.includes('--dry-run');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback) {
@@ -28956,6 +28962,9 @@ async function main() {
       summary: stats.summary || null,
       warnings: [
         'dry-run does not claim, recover, retry, complete, fail, or mutate queue jobs',
+        'confirmed mode calls queueWorkers.processDueJobs() and can claim/process due pending jobs',
+        'queue-drain is not stale-running recovery only',
+        'do not run --confirm while a /mnt/j/yawmia server or queue worker is active',
       ],
       durationMs: Date.now() - started,
       completedAt: new Date().toISOString(),
@@ -28967,8 +28976,10 @@ async function main() {
       console.error = originalConsole.error;
       console.log(JSON.stringify(result, null, 2));
     } else {
-      console.log('\n🧵 يوميّة Ops Queue Drain — Dry Run\n');
+      console.log('\n🧵 يوميّة Ops Queue Due-Job Processing Loop — Dry Run\n');
       console.log('   mutationPerformed: false');
+      console.log('   warning: confirmed mode calls processDueJobs() and can claim/process due jobs');
+      console.log('   warning: queue-drain is not stale-running recovery only');
       console.log(`   pending: ${result.byStatus.pending || 0}`);
       console.log(`   running: ${result.byStatus.running || 0}`);
       console.log(`   completed: ${result.byStatus.completed || 0}`);
@@ -28980,7 +28991,11 @@ async function main() {
   }
 
   if (!JSON_OUT) {
-    console.log('\n🧵 يوميّة Ops Queue Drain\n');
+    console.log('\n🧵 يوميّة Ops Queue Due-Job Processing Loop — CONFIRMED\n');
+    console.log('   ⚠️ This will call queueWorkers.processDueJobs().');
+    console.log('   ⚠️ It can claim and process due pending queue jobs.');
+    console.log('   ⚠️ It is not stale-running recovery only.');
+    console.log('   ⚠️ Do not run while a /mnt/j/yawmia server or queue worker is active.');
     console.log(`   maxCycles: ${maxCycles}`);
     console.log(`   delayMs: ${delayMs}`);
   }
@@ -29029,6 +29044,12 @@ async function main() {
     byType: finalStats.byType || {},
     totalActiveRecords: finalStats.totalActiveRecords || 0,
     summary: finalStats.summary || null,
+    warnings: [
+      'confirmed mode called queueWorkers.processDueJobs()',
+      'this command can claim/process due pending jobs',
+      'queue-drain is not stale-running recovery only',
+      'do not run --confirm while a /mnt/j/yawmia server or queue worker is active',
+    ],
     durationMs: Date.now() - started,
     completedAt: new Date().toISOString(),
   };
@@ -29039,7 +29060,8 @@ async function main() {
     console.error = originalConsole.error;
     console.log(JSON.stringify(output, null, 2));
   } else {
-    console.log('\n✅ Queue drain complete');
+    console.log('\n✅ Queue due-job processing loop complete');
+    console.log('   note: this command called processDueJobs() and may have processed due jobs');
     console.log(`   totalClaimed: ${totalClaimed}`);
     console.log(`   pending: ${finalStats.byStatus?.pending || 0}`);
     console.log(`   running: ${finalStats.byStatus?.running || 0}`);

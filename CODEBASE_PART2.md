@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-30T07:09:06.227Z
+> Auto-generated: 2026-05-30T09:39:58.687Z
 > Files in this part: 132
 
 ## Files
@@ -35554,14 +35554,14 @@ export async function getQueueOperationalRecommendations(options = {}) {
       const failed = byStatus.failed || 0;
 
       if (summary && summary.stale) {
-        actions.push({
-          id: 'queue_summary_repair',
-          label: 'إصلاح ملخص الطابور',
-          severity: 'warning',
-          command: 'node scripts/verify-queue.js --json',
-          adminRoute: '/api/admin/queue/repair',
-          reason: 'Queue summary is stale.',
-        });
+      actions.push({
+        id: 'queue_summary_repair',
+        label: 'مراجعة ملخص الطابور قبل أي إصلاح',
+        severity: 'warning',
+        command: 'node scripts/repair-queue.js --dry-run --json',
+        adminRoute: '/api/admin/queue/repair',
+        reason: 'Queue summary is stale. Dry-run review is required before any confirm mutation.',
+      });
       }
 
       if (deadLetter > 0) {
@@ -35615,22 +35615,22 @@ export async function getQueueOperationalRecommendations(options = {}) {
   if (details.summaryMismatches && details.summaryMismatches.length > 0) {
     actions.push({
       id: 'queue_summary_repair',
-      label: 'إصلاح ملخص الطابور',
+      label: 'مراجعة ملخص الطابور قبل أي إصلاح',
       severity: 'warning',
-      command: 'node scripts/repair-queue.js',
+      command: 'node scripts/repair-queue.js --dry-run --json',
       adminRoute: '/api/admin/queue/repair',
-      reason: 'Queue summary does not match scanned queue records.',
+      reason: 'Queue summary does not match scanned queue records. Dry-run review is required before any confirm mutation.',
     });
   }
 
   if (details.staleRunningJobs && details.staleRunningJobs.length > 0) {
     actions.push({
       id: 'queue_stale_running_recover',
-      label: 'استعادة وظائف Running قديمة',
+      label: 'مراجعة وظائف Running قديمة قبل الاسترداد',
       severity: 'critical',
-      command: 'node scripts/queue-drain.js',
+      command: 'node scripts/verify-queue.js --json',
       adminRoute: '/api/admin/ops-queue/jobs?status=running',
-      reason: `${details.staleRunningJobs.length} running job(s) appear stale.`,
+      reason: `${details.staleRunningJobs.length} running job(s) appear stale. Do not use queue-drain as stale recovery; design/review a dry-run-first stale-running recovery workflow.`,
     });
   }
 
@@ -35656,11 +35656,11 @@ export async function getQueueOperationalRecommendations(options = {}) {
     if (pending >= 500) {
       actions.push({
         id: 'queue_pending_backlog',
-        label: 'تفريغ Backlog الطابور',
+        label: 'مراجعة Backlog الطابور قبل المعالجة',
         severity: pending >= 5000 ? 'critical' : 'warning',
-        command: 'node scripts/queue-drain.js',
+        command: 'node scripts/queue-drain.js --dry-run --json',
         adminRoute: '/api/admin/ops-queue/jobs?status=pending',
-        reason: `${pending} pending job(s) are waiting.`,
+        reason: `${pending} pending job(s) are waiting. queue-drain --confirm processes due jobs via processDueJobs(), so dry-run review and explicit approval are required first.`,
       });
     }
 
