@@ -36,8 +36,9 @@ test('stale running recovery dry-run script exists and is explicitly dry-run onl
 test('stale running recovery script does not process due jobs or claim pending jobs', async () => {
   const script = await read(SCRIPT_PATH);
 
-  assert.doesNotMatch(script, /processDueJobs\s*\(/);
-  assert.doesNotMatch(script, /queueWorkers/);
+  // Guard executable behavior, not safety copy/comments.
+  assert.doesNotMatch(script, /await\s+\w+\.processDueJobs\s*\(/);
+  assert.doesNotMatch(script, /import\(['"].*queueWorkers\.js['"]\)/);
   assert.doesNotMatch(script, /claimNextJobs\s*\(/);
 
   assertIncludes(script, 'this script does not call queueWorkers.processDueJobs()');

@@ -42,7 +42,7 @@ queue-drain --confirm totalClaimed: 40
 
 ## Important Finding
 
-`queue-drain --confirm` is not stale-running recovery only.
+queue-drain --confirm is not stale-running recovery only.
 
 It calls:
 
@@ -62,7 +62,7 @@ run processOneJob()
 complete/fail/retry/dead-letter jobs
 ```
 
-Therefore, do not use `queue-drain --confirm` to recover stale running jobs.
+Therefore, do not use queue-drain --confirm to recover stale running jobs.
 
 ## Safe Dry-Run Command
 
