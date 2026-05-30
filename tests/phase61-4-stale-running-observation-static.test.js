@@ -103,6 +103,18 @@ test('stale running observation forbids confirm/reset/quarantine/externalization
   }
 });
 
+test('stale running observation records follow-up dry-run variance without approving recovery', async () => {
+  const doc = await read(DOC_PATH);
+
+  assertIncludes(doc, 'Latest Follow-Up Observation');
+  assertIncludes(doc, 'scannedRunning: 40');
+  assertIncludes(doc, 'staleRunningCount: 14');
+  assertIncludes(doc, 'moveBackToPendingCandidates: 14');
+  assertIncludes(doc, 'The difference must be treated as evidence requiring review, not as approval to recover');
+  assertIncludes(doc, 'No recovery confirm is approved');
+  assertIncludes(doc, 'review why full queue verification and recovery auditor classify stale running jobs differently');
+});
+
 test('package still has no new production dependencies except dotenv', async () => {
   const pkg = JSON.parse(await read(PACKAGE_PATH));
 
