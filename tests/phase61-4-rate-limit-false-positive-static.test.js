@@ -24,9 +24,18 @@ async function read(path) {
 test('RATE_LIMIT remains enabled in config', async () => {
   const source = await read(CONFIG_PATH);
 
-  assert.match(source, /RATE_LIMIT:\s*\{/);
-  assert.match(source, /enabled:\s*true/);
-  assert.doesNotMatch(source, /RATE_LIMIT:\s*\{[\s\S]*?enabled:\s*false/);
+  const marker = 'RATE_LIMIT: {';
+  const start = source.indexOf(marker);
+  assert.ok(start >= 0, 'RATE_LIMIT block must exist');
+
+  const nextSection = source.indexOf('// ═══════════════════════════════════════════════════════════\n  // 18. الملفات الثابتة', start);
+  assert.ok(nextSection > start, 'RATE_LIMIT block must be bounded before STATIC section');
+
+  const rateLimitBlock = source.slice(start, nextSection);
+
+  assert.match(rateLimitBlock, /RATE_LIMIT:\s*\{/);
+  assert.match(rateLimitBlock, /enabled:\s*true/);
+  assert.doesNotMatch(rateLimitBlock, /enabled:\s*false/);
 });
 
 test('rateLimit middleware has endpoint classification helpers', async () => {
