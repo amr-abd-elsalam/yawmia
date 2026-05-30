@@ -115,6 +115,21 @@ test('stale running observation records follow-up dry-run variance without appro
   assertIncludes(doc, 'review why full queue verification and recovery auditor classify stale running jobs differently');
 });
 
+test('stale running observation requires classification explainability before confirm', async () => {
+  const doc = await read(DOC_PATH);
+
+  assertIncludes(doc, 'Classification Explainability Update');
+  assertIncludes(doc, 'staleReasons');
+  assertIncludes(doc, 'leaseExpired');
+  assertIncludes(doc, 'updatedAtStale');
+  assertIncludes(doc, 'leaseAgeMs');
+  assertIncludes(doc, 'updatedAgeMs');
+  assertIncludes(doc, 'staleRunningMs');
+  assertIncludes(doc, 'nonStaleRunningJobs');
+  assertIncludes(doc, 'nonStaleRunningCount');
+  assertIncludes(doc, 'classification must be explained before any confirm workflow');
+});
+
 test('package still has no new production dependencies except dotenv', async () => {
   const pkg = JSON.parse(await read(PACKAGE_PATH));
 

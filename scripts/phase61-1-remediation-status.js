@@ -350,6 +350,7 @@ function summarizeParsed(name, parsed) {
       confirmImplemented: parsed.confirmImplemented,
       scannedRunning: parsed.scannedRunning || 0,
       staleRunningCount: parsed.staleRunningCount || 0,
+      nonStaleRunningCount: parsed.nonStaleRunningCount || 0,
       moveBackToPendingCandidates: parsed.summary?.moveBackToPendingCandidates || 0,
       deadLetterCandidates: parsed.summary?.deadLetterCandidates || 0,
     };

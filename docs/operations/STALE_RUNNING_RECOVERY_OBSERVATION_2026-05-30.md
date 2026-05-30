@@ -305,6 +305,46 @@ do not use queue-drain as recovery
 do not run confirm
 ```
 
+## Classification Explainability Update
+
+The dry-run auditor should expose why each running job is or is not stale:
+
+```text
+stale
+staleReasons
+leaseExpired
+updatedAtStale
+leaseAgeMs
+updatedAgeMs
+staleRunningMs
+```
+
+It should also report:
+
+```text
+nonStaleRunningJobs
+nonStaleRunningCount
+```
+
+This is necessary because a later snapshot showed:
+
+```text
+scannedRunning: 40
+staleRunningCount: 14
+nonStaleRunningCount: 26
+```
+
+The variance does not approve recovery.
+
+It means:
+
+```text
+classification must be explained before any confirm workflow
+verify-queue and stale recovery auditor outputs must be compared
+future recovery must be selective
+queue-drain must remain forbidden as stale recovery
+```
+
 ## Final Conclusion
 
 The stale running dry-run gives enough evidence to design a future selective recovery workflow, but not enough to run recovery now.
