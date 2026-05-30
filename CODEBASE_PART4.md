@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-30T20:58:01.427Z
+> Auto-generated: 2026-05-30T21:19:18.907Z
 > Files in this part: 91
 
 ## Files
@@ -27908,6 +27908,7 @@ function summarizeParsed(name, parsed) {
       confirmImplemented: parsed.confirmImplemented,
       scannedRunning: parsed.scannedRunning || 0,
       staleRunningCount: parsed.staleRunningCount || 0,
+      nonStaleRunningCount: parsed.nonStaleRunningCount || 0,
       moveBackToPendingCandidates: parsed.summary?.moveBackToPendingCandidates || 0,
       deadLetterCandidates: parsed.summary?.deadLetterCandidates || 0,
     };
@@ -29610,6 +29611,37 @@ function relativePath(filePath, basePath) {
   return filePath;
 }
 
+function parseMs(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function classifyRunningJob(job, config) {
+  const at = Date.now();
+  const staleRunningMs = config.OPS_QUEUE?.staleRunningMs || (10 * 60 * 1000);
+
+  const leaseUntilMs = parseMs(job.leaseUntil);
+  const updatedAtMs = parseMs(job.updatedAt);
+
+  const leaseExpired = leaseUntilMs > 0 && leaseUntilMs < at;
+  const updatedAtStale = updatedAtMs > 0 && (at - updatedAtMs) > staleRunningMs;
+
+  const staleReasons = [];
+  if (leaseExpired) staleReasons.push('leaseUntil_expired');
+  if (updatedAtStale) staleReasons.push('updatedAt_exceeds_staleRunningMs');
+
+  return {
+    stale: staleReasons.length > 0,
+    staleReasons,
+    leaseExpired,
+    updatedAtStale,
+    leaseAgeMs: leaseUntilMs > 0 ? Math.max(0, at - leaseUntilMs) : null,
+    updatedAgeMs: updatedAtMs > 0 ? Math.max(0, at - updatedAtMs) : null,
+    staleRunningMs,
+  };
+}
+
 function proposedActionFor(job, maxAttemptsFallback) {
   const attempts = Number(job.attempts || 0);
   const maxAttempts = Number(job.maxAttempts || maxAttemptsFallback || 5);
@@ -29663,9 +29695,8 @@ async function main() {
     listQueueRecords,
     getQueuePathByStatus,
   } = await import('../server/services/queueStorageIndex.js');
-  const {
-    isLeaseExpired,
-  } = await import('../server/services/opsQueue.js');
+  // Intentionally do not import queueWorkers or call processDueJobs().
+  // Local classification mirrors lease/update staleness while exposing reasons.
 
   await initDatabase();
 
@@ -29678,10 +29709,10 @@ async function main() {
   });
 
   const staleJobs = [];
+  const nonStaleRunningJobs = [];
 
   for (const job of runningJobs) {
     if (!job || !job.id || job.status !== 'running') continue;
-    if (!isLeaseExpired(job)) continue;
 
     let filePath = null;
     try {
@@ -29690,9 +29721,10 @@ async function main() {
       filePath = null;
     }
 
+    const classification = classifyRunningJob(job, config);
     const proposal = proposedActionFor(job, maxAttemptsFallback);
 
-    staleJobs.push({
+    const row = {
       jobId: job.id,
       type: job.type || null,
       status: job.status,
@@ -29704,12 +29736,30 @@ async function main() {
       nextRunAt: job.nextRunAt || null,
       createdAt: job.createdAt || null,
       path: relativePath(filePath, basePath),
-      proposedAction: proposal.action,
-      proposedReason: proposal.reason,
-    });
+      stale: classification.stale,
+      staleReasons: classification.staleReasons,
+      leaseExpired: classification.leaseExpired,
+      updatedAtStale: classification.updatedAtStale,
+      leaseAgeMs: classification.leaseAgeMs,
+      updatedAgeMs: classification.updatedAgeMs,
+      staleRunningMs: classification.staleRunningMs,
+      proposedAction: classification.stale ? proposal.action : 'no_action_in_dry_run',
+      proposedReason: classification.stale ? proposal.reason : 'running job did not match stale criteria in this dry-run',
+    };
+
+    if (classification.stale) {
+      staleJobs.push(row);
+    } else {
+      nonStaleRunningJobs.push(row);
+    }
   }
 
   staleJobs.sort((a, b) =>
+    String(a.updatedAt || '').localeCompare(String(b.updatedAt || '')) ||
+    String(a.jobId).localeCompare(String(b.jobId))
+  );
+
+  nonStaleRunningJobs.sort((a, b) =>
     String(a.updatedAt || '').localeCompare(String(b.updatedAt || '')) ||
     String(a.jobId).localeCompare(String(b.jobId))
   );
@@ -29721,10 +29771,13 @@ async function main() {
     confirmImplemented: false,
     scannedRunning: runningJobs.filter(j => j && j.id).length,
     staleRunningCount: staleJobs.length,
+    nonStaleRunningCount: nonStaleRunningJobs.length,
     staleRunningJobs: staleJobs,
+    nonStaleRunningJobs,
     summary: {
       moveBackToPendingCandidates: staleJobs.filter(j => j.proposedAction === 'move_back_to_pending_after_review').length,
       deadLetterCandidates: staleJobs.filter(j => j.proposedAction === 'move_to_dead_letter_after_review').length,
+      nonStaleRunningCount: nonStaleRunningJobs.length,
     },
     warnings: [
       'dry-run only: no queue records were mutated',
@@ -29733,6 +29786,9 @@ async function main() {
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',
       'run repair-queue --dry-run after any future recovery mutation',
+      ...(nonStaleRunningJobs.length > 0
+        ? ['not all running jobs matched stale criteria in this dry-run; review nonStaleRunningJobs before designing recovery']
+        : []),
     ],
     recommendedNextSteps: [
       'review staleRunningJobs list',
@@ -29755,6 +29811,7 @@ async function main() {
   console.log('   processDueJobs called: no');
   console.log(`   scannedRunning: ${output.scannedRunning}`);
   console.log(`   staleRunningCount: ${output.staleRunningCount}`);
+  console.log(`   nonStaleRunningCount: ${output.nonStaleRunningCount}`);
   console.log(`   moveBackToPendingCandidates: ${output.summary.moveBackToPendingCandidates}`);
   console.log(`   deadLetterCandidates: ${output.summary.deadLetterCandidates}`);
   console.log('\n⚠️  Do not use queue-drain as stale-running recovery.\n');
