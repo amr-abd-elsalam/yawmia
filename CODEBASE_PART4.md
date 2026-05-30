@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-30T19:10:56.113Z
+> Auto-generated: 2026-05-30T20:58:01.427Z
 > Files in this part: 91
 
 ## Files
@@ -27690,6 +27690,21 @@ function checkStatus(results) {
     });
   }
 
+  const staleRecovery = results.find(r => r.name === 'stale_running_recovery_dry_run');
+  if (!staleRecovery?.parsed) {
+    warnings.push({
+      code: 'STALE_RUNNING_RECOVERY_DRY_RUN_UNAVAILABLE',
+      message: 'Stale running recovery dry-run did not produce parseable output.',
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+    });
+  } else if ((staleRecovery.parsed.staleRunningCount || 0) > 0) {
+    warnings.push({
+      code: 'STALE_RUNNING_JOBS_REQUIRE_REVIEW',
+      message: `${staleRecovery.parsed.staleRunningCount} stale running job(s) require dry-run review before any recovery workflow.`,
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+    });
+  }
+
   const scale = results.find(r => r.name === 'scale_thresholds_latest');
   if (!scale?.parsed) {
     warnings.push({
@@ -27748,6 +27763,7 @@ async function main() {
     run('null_byte_scan', 'scripts/find-null-json-files.js', ['--json']),
     run('queue_verify', 'scripts/verify-queue.js', ['--json']),
     run('queue_repair_dry_run', 'scripts/repair-queue.js', ['--dry-run', '--json']),
+    run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json']),
     run('scale_thresholds_latest', 'scripts/verify-scale-thresholds.js', ['--json', '--latest-only']),
     run('pilot_gate', 'scripts/evaluate-pilot-gate.js', ['--json']),
   ];
@@ -27881,6 +27897,19 @@ function summarizeParsed(name, parsed) {
       dryRun: parsed.dryRun,
       mutationPerformed: parsed.mutationPerformed,
       actions: parsed.repairPlan?.actions?.length || 0,
+    };
+  }
+
+  if (name === 'stale_running_recovery_dry_run') {
+    return {
+      ok: parsed.ok,
+      dryRun: parsed.dryRun,
+      mutationPerformed: parsed.mutationPerformed,
+      confirmImplemented: parsed.confirmImplemented,
+      scannedRunning: parsed.scannedRunning || 0,
+      staleRunningCount: parsed.staleRunningCount || 0,
+      moveBackToPendingCandidates: parsed.summary?.moveBackToPendingCandidates || 0,
+      deadLetterCandidates: parsed.summary?.deadLetterCandidates || 0,
     };
   }
 
