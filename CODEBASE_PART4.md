@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-31T11:44:34.320Z
+> Auto-generated: 2026-05-31T17:42:14.076Z
 > Files in this part: 91
 
 ## Files
@@ -27832,14 +27832,15 @@ async function main() {
       'node scripts/evaluate-pilot-gate.js --json'
     ],
     confirmOnlyAfterApproval: [
-      'node scripts/repair-queue.js --confirm --json',
+      'node scripts/repair-queue.js --confirm --json --approval-id=<approved-id>',
       'node scripts/compact-queue.js --confirm --json'
     ],
     forbiddenWithoutNewApproval: [
       'node scripts/queue-drain.js --confirm --json',
       'node scripts/reset-dev-data.js --confirm --reinit --json',
       'node scripts/quarantine-corrupt-json.js --confirm --json',
-      'node scripts/recover-stale-running-jobs.js --confirm --json'
+      'node scripts/recover-stale-running-jobs.js --confirm --json',
+      'node scripts/repair-queue.js --confirm --json'
     ],
   };
 
@@ -30126,6 +30127,41 @@ function proposedActionFor(job, maxAttemptsFallback) {
   };
 }
 
+function summarizeBy(rows, field) {
+  const result = {};
+  for (const row of rows || []) {
+    const key = row && row[field] ? String(row[field]) : 'unknown';
+    result[key] = (result[key] || 0) + 1;
+  }
+  return result;
+}
+
+function summarizeAttempts(rows) {
+  const buckets = {
+    '0': 0,
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4_plus': 0,
+    maxed: 0,
+  };
+
+  for (const row of rows || []) {
+    const attempts = Number(row.attempts || 0);
+    const maxAttempts = Number(row.maxAttempts || 5);
+
+    if (attempts >= maxAttempts) {
+      buckets.maxed++;
+    } else if (attempts >= 4) {
+      buckets['4_plus']++;
+    } else {
+      buckets[String(attempts)] = (buckets[String(attempts)] || 0) + 1;
+    }
+  }
+
+  return buckets;
+}
+
 function compactOutput(output) {
   if (!output || typeof output !== 'object') return output;
 
@@ -30142,6 +30178,10 @@ function compactOutput(output) {
     confirmPreflightAllowed: output.confirmPreflightAllowed,
     confirmPreflightBlockers: output.confirmPreflightBlockers || [],
     summary: output.summary || {},
+    staleRunningByType: output.summary?.staleRunningByType || {},
+    nonStaleRunningByType: output.summary?.nonStaleRunningByType || {},
+    staleRunningAttempts: output.summary?.staleRunningAttempts || {},
+    predictiveScanSummary: output.summary?.predictiveScanSummary || {},
     runningJobsByLockOwner: (output.runningJobsByLockOwner || []).map(o => ({
       lockedBy: o.lockedBy,
       pid: o.pid,
@@ -30303,6 +30343,28 @@ async function main() {
   const ownerSummary = summarizeLockOwners(staleJobs, nonStaleRunningJobs);
   const runningJobsByLockOwner = ownerSummary.owners;
 
+  const staleRunningByType = summarizeBy(staleJobs, 'type');
+  const nonStaleRunningByType = summarizeBy(nonStaleRunningJobs, 'type');
+  const staleRunningAttempts = summarizeAttempts(staleJobs);
+
+  const predictiveScanSummary = {
+    staleRunning: staleJobs.filter(j => j.type === 'predictive_scan').length,
+    nonStaleRunning: nonStaleRunningJobs.filter(j => j.type === 'predictive_scan').length,
+    moveBackToPendingCandidates: staleJobs.filter(j => j.type === 'predictive_scan' && j.proposedAction === 'move_back_to_pending_after_review').length,
+    deadLetterCandidates: staleJobs.filter(j => j.type === 'predictive_scan' && j.proposedAction === 'move_to_dead_letter_after_review').length,
+    lockOwners: runningJobsByLockOwner
+      .filter(o => staleJobs.some(j => j.type === 'predictive_scan' && j.lockedBy === o.lockedBy))
+      .map(o => ({
+        lockedBy: o.lockedBy,
+        pid: o.pid,
+        stale: o.stale,
+        nonStale: o.nonStale,
+        processExists: !!(o.processInfo && o.processInfo.exists),
+        activeYawmiaServerLikely: !!o.activeYawmiaServerLikely,
+        pm2ManagedLikely: !!o.pm2ManagedLikely,
+      })),
+  };
+
   const activeWorkerLikely = nonStaleRunningJobs.length > 0 ||
     runningJobsByLockOwner.some(o => o.activeYawmiaServerLikely);
 
@@ -30360,6 +30422,10 @@ async function main() {
       activeWorkerLikely,
       pm2ManagedLikely,
       lockOwnerCount: runningJobsByLockOwner.length,
+      staleRunningByType,
+      nonStaleRunningByType,
+      staleRunningAttempts,
+      predictiveScanSummary,
     },
     warnings: [
       'dry-run only: no queue records were mutated',
@@ -30370,6 +30436,9 @@ async function main() {
       'if PM2 manages Yawmia, stop it with pm2 stop <confirmed-app>, not direct PID kill',
       'run quiet dry-run snapshots after PM2 stop to confirm leases stop refreshing',
       'run repair-queue --dry-run after any future recovery mutation',
+      ...(predictiveScanSummary.staleRunning > 0
+        ? ['predictive_scan stale running jobs detected; do not move them back to pending blindly before flood review']
+        : []),
       ...(nonStaleRunningJobs.length > 0
         ? ['not all running jobs matched stale criteria in this dry-run; treat nonStaleRunningCount as active worker evidence until proven otherwise']
         : []),
@@ -30379,6 +30448,7 @@ async function main() {
     ],
     recommendedNextSteps: [
       'review staleRunningJobs list',
+      'review staleRunningByType and predictiveScanSummary before any recovery decision',
       'confirm no active /mnt/j/yawmia server or queue worker is running',
       'document recovery decision in an ops review',
       'only then implement/approve a confirm workflow if needed',
@@ -30849,6 +30919,9 @@ repair().catch(err => {
 //   Repair mutates queue summary/location index only when confirmed.
 // ═══════════════════════════════════════════════════════════════
 
+import { readFileSync, readlinkSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
@@ -30857,6 +30930,293 @@ try {
 const JSON_OUT = process.argv.includes('--json');
 const CONFIRM = process.argv.includes('--confirm');
 const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const APPROVAL_ID_ARG = (process.argv.find(a => a.startsWith('--approval-id=')) || '').slice('--approval-id='.length);
+const APPROVAL_ID = APPROVAL_ID_ARG || process.env.QUEUE_REPAIR_APPROVAL_ID || '';
+
+function parseJson(stdout) {
+  if (!stdout) return null;
+
+  try {
+    return JSON.parse(stdout);
+  } catch (_) {}
+
+  const first = stdout.indexOf('{');
+  const last = stdout.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    try {
+      return JSON.parse(stdout.slice(first, last + 1));
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+function readProcessInfo(pid) {
+  let cwd = null;
+  let cmdline = null;
+
+  try {
+    cwd = readlinkSync(`/proc/${pid}/cwd`);
+  } catch (_) {
+    cwd = null;
+  }
+
+  try {
+    cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf-8')
+      .replace(/\0/g, ' ')
+      .trim();
+  } catch (_) {
+    cmdline = null;
+  }
+
+  const cwdMatchesYawmia = !!(
+    cwd &&
+    (
+      cwd === '/mnt/j/yawmia' ||
+      cwd === process.cwd() ||
+      cwd.endsWith('/yawmia')
+    )
+  );
+
+  const cmdlineMatchesYawmiaServer = !!(
+    cmdline &&
+    cmdline.includes('server.js') &&
+    (
+      cmdline.includes('/mnt/j/yawmia') ||
+      cwdMatchesYawmia
+    )
+  );
+
+  return {
+    pid,
+    exists: !!(cwd || cmdline),
+    cwd,
+    cmdline,
+    cwdMatchesYawmia,
+    cmdlineMatchesYawmiaServer,
+    yawmiaServerLikely: !!(cwdMatchesYawmia && cmdlineMatchesYawmiaServer),
+  };
+}
+
+function discoverYawmiaServerProcesses() {
+  const result = spawnSync('pgrep', ['-af', 'node|server.js|queue|scheduler|yawmia'], {
+    encoding: 'utf-8',
+    timeout: 5000,
+  });
+
+  if (result.error || result.status > 1) {
+    return {
+      available: false,
+      error: result.error?.message || result.stderr || 'pgrep failed',
+      processes: [],
+    };
+  }
+
+  const rows = String(result.stdout || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const processes = [];
+
+  for (const row of rows) {
+    const pid = Number(row.split(/\s+/)[0]);
+    if (!Number.isFinite(pid)) continue;
+    if (pid === process.pid) continue;
+
+    const info = readProcessInfo(pid);
+    if (info.yawmiaServerLikely) {
+      processes.push(info);
+    }
+  }
+
+  return {
+    available: true,
+    error: null,
+    processes,
+  };
+}
+
+function discoverPm2YawmiaApps() {
+  const result = spawnSync('pm2', ['jlist'], {
+    encoding: 'utf-8',
+    timeout: 5000,
+  });
+
+  if (result.error) {
+    return {
+      available: false,
+      error: result.error.message,
+      apps: [],
+    };
+  }
+
+  if (result.status !== 0) {
+    return {
+      available: false,
+      error: result.stderr || `pm2 jlist exited with ${result.status}`,
+      apps: [],
+    };
+  }
+
+  try {
+    const raw = JSON.parse(result.stdout || '[]');
+
+    const apps = raw
+      .map(app => ({
+        name: app.name || null,
+        pm_id: app.pm_id,
+        pid: app.pid || null,
+        status: app.pm2_env?.status || null,
+        restart_time: app.pm2_env?.restart_time || 0,
+        autorestart: app.pm2_env?.autorestart,
+        watch: app.pm2_env?.watch,
+        pm_cwd: app.pm2_env?.pm_cwd || null,
+        pm_exec_path: app.pm2_env?.pm_exec_path || null,
+      }))
+      .filter(app => {
+        const cwd = app.pm_cwd || '';
+        const execPath = app.pm_exec_path || '';
+        return (
+          cwd === '/mnt/j/yawmia' ||
+          cwd.endsWith('/yawmia') ||
+          execPath.includes('/mnt/j/yawmia/server.js') ||
+          (execPath.endsWith('/server.js') && cwd.endsWith('/yawmia'))
+        );
+      });
+
+    return {
+      available: true,
+      error: null,
+      apps,
+    };
+  } catch (err) {
+    return {
+      available: false,
+      error: `PM2 JSON parse failed: ${err.message}`,
+      apps: [],
+    };
+  }
+}
+
+function runStaleRunningPreflight() {
+  const proc = spawnSync(process.execPath, [
+    'scripts/recover-stale-running-jobs.js',
+    '--dry-run',
+    '--json',
+    '--summary-only',
+  ], {
+    env: process.env,
+    encoding: 'utf-8',
+    timeout: 30000,
+  });
+
+  const parsed = parseJson(proc.stdout);
+
+  return {
+    ok: proc.status === 0 && !!parsed && parsed.ok === true,
+    status: proc.status,
+    timedOut: proc.error?.code === 'ETIMEDOUT',
+    error: proc.error?.message || null,
+    parsed,
+    stderrTail: String(proc.stderr || '').slice(-1000),
+  };
+}
+
+function buildConfirmPreflight() {
+  const blockers = [];
+
+  const processDiscovery = discoverYawmiaServerProcesses();
+  const pm2Discovery = discoverPm2YawmiaApps();
+  const staleRunningPreflight = runStaleRunningPreflight();
+
+  const activeProcesses = processDiscovery.processes || [];
+  const onlinePm2Apps = (pm2Discovery.apps || []).filter(app =>
+    ['online', 'launching', 'stopping'].includes(app.status)
+  );
+
+  if (!APPROVAL_ID || !APPROVAL_ID.startsWith('apr_')) {
+    blockers.push({
+      code: 'QUEUE_REPAIR_APPROVAL_REQUIRED',
+      message: 'repair-queue --confirm requires --approval-id=apr_... or QUEUE_REPAIR_APPROVAL_ID=apr_...',
+    });
+  }
+
+  if (activeProcesses.length > 0) {
+    blockers.push({
+      code: 'ACTIVE_YAWMIA_SERVER_PROCESS',
+      message: 'Active /mnt/j/yawmia server.js process detected',
+      processes: activeProcesses,
+    });
+  }
+
+  if (onlinePm2Apps.length > 0) {
+    blockers.push({
+      code: 'PM2_MANAGED_YAWMIA_ACTIVE',
+      message: 'PM2-managed Yawmia app appears online; stop it through PM2 before repair confirm',
+      apps: onlinePm2Apps,
+    });
+  }
+
+  if (!staleRunningPreflight.ok) {
+    blockers.push({
+      code: 'STALE_RUNNING_PREFLIGHT_UNAVAILABLE',
+      message: 'Could not obtain stale-running dry-run proof before repair confirm',
+      status: staleRunningPreflight.status,
+      error: staleRunningPreflight.error,
+      stderrTail: staleRunningPreflight.stderrTail,
+    });
+  } else {
+    const parsed = staleRunningPreflight.parsed || {};
+
+    if ((parsed.nonStaleRunningCount || 0) > 0) {
+      blockers.push({
+        code: 'NON_STALE_RUNNING_JOBS_PRESENT',
+        message: 'Non-stale running jobs detected. Treat as active worker/server evidence.',
+        nonStaleRunningCount: parsed.nonStaleRunningCount,
+      });
+    }
+
+    if (parsed.activeWorkerLikely) {
+      blockers.push({
+        code: 'ACTIVE_QUEUE_WORKER_LIKELY',
+        message: 'Stale-running dry-run indicates active queue worker/server likelihood.',
+      });
+    }
+
+    if (parsed.pm2ManagedLikely) {
+      blockers.push({
+        code: 'PM2_MANAGED_YAWMIA_ACTIVE_BY_STALE_PREFLIGHT',
+        message: 'Stale-running dry-run indicates PM2-managed Yawmia is active.',
+      });
+    }
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    blockers,
+    approvalId: APPROVAL_ID || null,
+    processDiscovery,
+    pm2Discovery,
+    staleRunningPreflight: staleRunningPreflight.parsed ? {
+      ok: staleRunningPreflight.ok,
+      staleRunningCount: staleRunningPreflight.parsed.staleRunningCount || 0,
+      nonStaleRunningCount: staleRunningPreflight.parsed.nonStaleRunningCount || 0,
+      activeWorkerLikely: !!staleRunningPreflight.parsed.activeWorkerLikely,
+      pm2ManagedLikely: !!staleRunningPreflight.parsed.pm2ManagedLikely,
+      lockOwnerCount: staleRunningPreflight.parsed.summary?.lockOwnerCount || 0,
+      runningJobsByLockOwner: staleRunningPreflight.parsed.runningJobsByLockOwner || [],
+    } : {
+      ok: false,
+      status: staleRunningPreflight.status,
+      timedOut: staleRunningPreflight.timedOut,
+      error: staleRunningPreflight.error,
+    },
+    requiredAction: blockers.length > 0
+      ? 'capture quiet PM2/process proof, stale-running dry-run proof, and provide explicit approval id'
+      : null,
+  };
+}
 
 function printHuman(result) {
   console.log(`\n🔧 يوميّة Queue Repair${result.dryRun ? ' (DRY RUN)' : ' (CONFIRMED)'}\n`);
@@ -30903,11 +31263,52 @@ async function main() {
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
+  const confirmPreflight = CONFIRM ? buildConfirmPreflight() : null;
+
+  if (CONFIRM && !confirmPreflight.allowed) {
+    const output = {
+      ok: false,
+      dryRun: false,
+      mutationPerformed: false,
+      code: 'CONFIRM_PREFLIGHT_BLOCKED',
+      error: 'repair-queue --confirm refused because approval/quiet-state preflight failed',
+      confirmPreflightAllowed: false,
+      confirmPreflight,
+      warnings: [
+        'repair-queue --confirm is intended to rebuild queue summary/location index only',
+        'repair-queue --confirm is not stale-running recovery',
+        'repair-queue --confirm must not run while Yawmia server/queue worker is active',
+        'repair-queue --confirm requires explicit approval id',
+        'run repair-queue --dry-run --json first and preserve evidence',
+      ],
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log(JSON.stringify(output, null, 2));
+    } else {
+      console.error('\n❌ repair-queue --confirm blocked by preflight\n');
+      for (const blocker of confirmPreflight.blockers) {
+        console.error(`  - ${blocker.code}: ${blocker.message}`);
+      }
+      console.error('\nRun dry-run diagnostics and provide explicit approval before confirm.\n');
+    }
+
+    process.exit(3);
+  }
+
   const { repairQueueStorage } = await import('../server/services/queueHealthVerify.js');
 
   const result = await repairQueueStorage({
     dryRun: DRY_RUN,
   });
+
+  if (confirmPreflight) {
+    result.confirmPreflightAllowed = confirmPreflight.allowed;
+    result.confirmPreflight = confirmPreflight;
+    result.approvalId = APPROVAL_ID || null;
+    result.approvalRequired = true;
+  }
 
   if (JSON_OUT) {
     console.log(JSON.stringify(result, null, 2));
