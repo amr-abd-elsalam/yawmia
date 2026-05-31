@@ -163,6 +163,21 @@ function checkStatus(results) {
     });
   }
 
+  const predictiveInspect = results.find(r => r.name === 'predictive_scan_queue_inspect');
+  if (!predictiveInspect?.parsed) {
+    warnings.push({
+      code: 'PREDICTIVE_SCAN_INSPECTION_UNAVAILABLE',
+      message: 'Predictive scan queue inspection did not produce parseable output.',
+      command: 'node scripts/inspect-predictive-scan-queue.js --json',
+    });
+  } else if ((predictiveInspect.parsed.staleRunningCount || 0) > 0) {
+    warnings.push({
+      code: 'PREDICTIVE_SCAN_STALE_RUNNING_REVIEW',
+      message: `${predictiveInspect.parsed.staleRunningCount} predictive_scan running job(s) are stale. Do not requeue blindly before flood review.`,
+      command: 'node scripts/inspect-predictive-scan-queue.js --json',
+    });
+  }
+
   const scale = results.find(r => r.name === 'scale_thresholds_latest');
   if (!scale?.parsed) {
     warnings.push({
@@ -222,6 +237,7 @@ async function main() {
     run('queue_verify', 'scripts/verify-queue.js', ['--json']),
     run('queue_repair_dry_run', 'scripts/repair-queue.js', ['--dry-run', '--json']),
     run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json']),
+    run('predictive_scan_queue_inspect', 'scripts/inspect-predictive-scan-queue.js', ['--json']),
     run('scale_thresholds_latest', 'scripts/verify-scale-thresholds.js', ['--json', '--latest-only']),
     run('pilot_gate', 'scripts/evaluate-pilot-gate.js', ['--json']),
   ];
@@ -257,6 +273,7 @@ async function main() {
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
       'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/inspect-predictive-scan-queue.js --json',
       'node scripts/phase61-1-remediation-status.js --json'
     ],
     safeDiagnostics: [
@@ -264,7 +281,8 @@ async function main() {
       'node scripts/find-null-json-files.js --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/recover-stale-running-jobs.js --dry-run --json'
+      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/inspect-predictive-scan-queue.js --json'
     ],
     evidenceAfterQueueReview: [
       'node scripts/measure-storage-pressure.js --json --persist',
@@ -393,6 +411,21 @@ function summarizeParsed(name, parsed) {
         : [],
       moveBackToPendingCandidates: parsed.summary?.moveBackToPendingCandidates || 0,
       deadLetterCandidates: parsed.summary?.deadLetterCandidates || 0,
+    };
+  }
+
+  if (name === 'predictive_scan_queue_inspect') {
+    return {
+      ok: parsed.ok,
+      readOnly: parsed.readOnly,
+      mutationPerformed: parsed.mutationPerformed,
+      totalPredictiveScanJobs: parsed.totalPredictiveScanJobs || 0,
+      byStatus: parsed.byStatus || {},
+      staleRunningCount: parsed.staleRunningCount || 0,
+      nonStaleRunningCount: parsed.nonStaleRunningCount || 0,
+      dualSchedulingRisk: !!parsed.dualSchedulingRisk,
+      expiredPredictiveScanIdempotencyKeys: parsed.idempotency?.expiredPredictiveScanKeys || 0,
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings.length : 0,
     };
   }
 
