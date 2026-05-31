@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-05-31T18:50:00.183Z
+> Auto-generated: 2026-05-31T22:43:11.210Z
 > Files in this part: 132
 
 ## Files
@@ -35452,7 +35452,7 @@ export async function repairQueueStorage(options = {}) {
       reason: 'running jobs have expired leases or stale updatedAt',
       count: beforeDetails.staleRunningJobs.length,
     });
-    repairPlan.risks.push('stale running jobs are not mutated here; use queue drain/recovery workflow after review');
+    repairPlan.risks.push('stale running jobs are not mutated here; use a dedicated stale-running recovery decision after review; do not use queue-drain as stale recovery');
   }
 
   if ((beforeDetails.legacyRecords || 0) > 0) {
@@ -35660,7 +35660,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
         severity: pending >= 5000 ? 'critical' : 'warning',
         command: 'node scripts/queue-drain.js --dry-run --json',
         adminRoute: '/api/admin/ops-queue/jobs?status=pending',
-        reason: `${pending} pending job(s) are waiting. queue-drain --confirm processes due jobs via processDueJobs(), so dry-run review and explicit approval are required first.`,
+        reason: `${pending} pending job(s) are waiting. queue-drain --confirm executes the queue processing loop and can claim due jobs, so dry-run review and explicit approval are required first.`,
       });
     }
 

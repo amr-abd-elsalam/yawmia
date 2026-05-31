@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-05-31T18:50:00.172Z
+> Auto-generated: 2026-05-31T22:43:11.171Z
 > Files in this part: 6
 
 ## Files
@@ -2830,7 +2830,20 @@ if (config.TRUST_ANALYTICS && config.TRUST_ANALYTICS.scheduledDetectionEnabled) 
 }
 
 // ── Phase 51 — Scheduled Predictive Abuse Intelligence Scanner ──
-if (config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.enabled && config.PREDICTIVE_ABUSE.scheduledScanEnabled) {
+const legacyPredictiveScanSchedulerEnabled = !!(
+  config.PREDICTIVE_ABUSE &&
+  config.PREDICTIVE_ABUSE.enabled &&
+  config.PREDICTIVE_ABUSE.scheduledScanEnabled &&
+  !(
+    config.SCHEDULER_REGISTRY &&
+    config.SCHEDULER_REGISTRY.enabled &&
+    config.SCHEDULER_REGISTRY.jobs &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan.enabled !== false
+  )
+);
+
+if (legacyPredictiveScanSchedulerEnabled) {
   const predictiveScanTimer = setInterval(async () => {
     try {
       if (config.OPS_QUEUE && config.OPS_QUEUE.enabled) {

@@ -203,6 +203,21 @@ async function main() {
     };
   }
 
+  const schedulerPredictiveScanEnabled = !!(
+    config.SCHEDULER_REGISTRY &&
+    config.SCHEDULER_REGISTRY.enabled &&
+    config.SCHEDULER_REGISTRY.jobs &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan.enabled !== false
+  );
+
+  const legacyPredictiveScanTimerEffectivelyEnabled = !!(
+    config.PREDICTIVE_ABUSE &&
+    config.PREDICTIVE_ABUSE.enabled &&
+    config.PREDICTIVE_ABUSE.scheduledScanEnabled &&
+    !schedulerPredictiveScanEnabled
+  );
+
   const configState = {
     opsQueueEnabled: !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled),
     opsQueueWorkerEnabled: !!(config.OPS_QUEUE && config.OPS_QUEUE.workerEnabled),
@@ -210,11 +225,12 @@ async function main() {
     predictiveAbuseScheduledScanEnabled: !!(config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.scheduledScanEnabled),
     predictiveAbuseScanIntervalMs: config.PREDICTIVE_ABUSE?.scanIntervalMs || null,
     schedulerRegistryEnabled: !!(config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled),
-    schedulerPredictiveScanEnabled: config.SCHEDULER_REGISTRY?.jobs?.predictive_scan?.enabled !== false,
+    schedulerPredictiveScanEnabled,
+    legacyPredictiveScanTimerEffectivelyEnabled,
   };
 
   const dualSchedulingRisk = !!(
-    configState.predictiveAbuseScheduledScanEnabled &&
+    configState.legacyPredictiveScanTimerEffectivelyEnabled &&
     configState.schedulerRegistryEnabled &&
     configState.schedulerPredictiveScanEnabled
   );

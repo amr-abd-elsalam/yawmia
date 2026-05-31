@@ -9,7 +9,7 @@
 // Safety:
 //   - Default is dry-run.
 //   - --confirm is intentionally NOT implemented in this phase.
-//   - Does not call queueWorkers.processDueJobs().
+//   - Does not execute queue processing loops.
 //   - Does not claim pending jobs.
 //   - Does not mutate queue records.
 //   - Does not write summary/location indexes.
@@ -599,7 +599,7 @@ async function main() {
     },
     warnings: [
       'dry-run only: no queue records were mutated',
-      'this script does not call queueWorkers.processDueJobs()',
+      'this script does not execute queue processing loops',
       'this script does not claim pending jobs',
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',

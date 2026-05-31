@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-31T18:50:00.236Z
+> Auto-generated: 2026-05-31T22:43:12.936Z
 > Files in this part: 92
 
 ## Files
@@ -27253,6 +27253,21 @@ async function main() {
     };
   }
 
+  const schedulerPredictiveScanEnabled = !!(
+    config.SCHEDULER_REGISTRY &&
+    config.SCHEDULER_REGISTRY.enabled &&
+    config.SCHEDULER_REGISTRY.jobs &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan &&
+    config.SCHEDULER_REGISTRY.jobs.predictive_scan.enabled !== false
+  );
+
+  const legacyPredictiveScanTimerEffectivelyEnabled = !!(
+    config.PREDICTIVE_ABUSE &&
+    config.PREDICTIVE_ABUSE.enabled &&
+    config.PREDICTIVE_ABUSE.scheduledScanEnabled &&
+    !schedulerPredictiveScanEnabled
+  );
+
   const configState = {
     opsQueueEnabled: !!(config.OPS_QUEUE && config.OPS_QUEUE.enabled),
     opsQueueWorkerEnabled: !!(config.OPS_QUEUE && config.OPS_QUEUE.workerEnabled),
@@ -27260,11 +27275,12 @@ async function main() {
     predictiveAbuseScheduledScanEnabled: !!(config.PREDICTIVE_ABUSE && config.PREDICTIVE_ABUSE.scheduledScanEnabled),
     predictiveAbuseScanIntervalMs: config.PREDICTIVE_ABUSE?.scanIntervalMs || null,
     schedulerRegistryEnabled: !!(config.SCHEDULER_REGISTRY && config.SCHEDULER_REGISTRY.enabled),
-    schedulerPredictiveScanEnabled: config.SCHEDULER_REGISTRY?.jobs?.predictive_scan?.enabled !== false,
+    schedulerPredictiveScanEnabled,
+    legacyPredictiveScanTimerEffectivelyEnabled,
   };
 
   const dualSchedulingRisk = !!(
-    configState.predictiveAbuseScheduledScanEnabled &&
+    configState.legacyPredictiveScanTimerEffectivelyEnabled &&
     configState.schedulerRegistryEnabled &&
     configState.schedulerPredictiveScanEnabled
   );
@@ -28124,7 +28140,7 @@ async function main() {
     run('null_byte_scan', 'scripts/find-null-json-files.js', ['--json']),
     run('queue_verify', 'scripts/verify-queue.js', ['--json']),
     run('queue_repair_dry_run', 'scripts/repair-queue.js', ['--dry-run', '--json']),
-    run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json']),
+    run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json', '--summary-only']),
     run('predictive_scan_queue_inspect', 'scripts/inspect-predictive-scan-queue.js', ['--json']),
     run('scale_thresholds_latest', 'scripts/verify-scale-thresholds.js', ['--json', '--latest-only']),
     run('pilot_gate', 'scripts/evaluate-pilot-gate.js', ['--json']),
@@ -28160,7 +28176,7 @@ async function main() {
       'node scripts/find-null-json-files.js --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
       'node scripts/inspect-predictive-scan-queue.js --json',
       'node scripts/phase61-1-remediation-status.js --json'
     ],
@@ -28169,7 +28185,7 @@ async function main() {
       'node scripts/find-null-json-files.js --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
       'node scripts/inspect-predictive-scan-queue.js --json'
     ],
     evidenceAfterQueueReview: [
@@ -30202,7 +30218,7 @@ main().catch(err => {
 // Safety:
 //   - Default is dry-run.
 //   - --confirm is intentionally NOT implemented in this phase.
-//   - Does not call queueWorkers.processDueJobs().
+//   - Does not execute queue processing loops.
 //   - Does not claim pending jobs.
 //   - Does not mutate queue records.
 //   - Does not write summary/location indexes.
@@ -30792,7 +30808,7 @@ async function main() {
     },
     warnings: [
       'dry-run only: no queue records were mutated',
-      'this script does not call queueWorkers.processDueJobs()',
+      'this script does not execute queue processing loops',
       'this script does not claim pending jobs',
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',

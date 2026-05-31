@@ -391,7 +391,7 @@ export async function repairQueueStorage(options = {}) {
       reason: 'running jobs have expired leases or stale updatedAt',
       count: beforeDetails.staleRunningJobs.length,
     });
-    repairPlan.risks.push('stale running jobs are not mutated here; use queue drain/recovery workflow after review');
+    repairPlan.risks.push('stale running jobs are not mutated here; use a dedicated stale-running recovery decision after review; do not use queue-drain as stale recovery');
   }
 
   if ((beforeDetails.legacyRecords || 0) > 0) {
@@ -599,7 +599,7 @@ export async function getQueueOperationalRecommendations(options = {}) {
         severity: pending >= 5000 ? 'critical' : 'warning',
         command: 'node scripts/queue-drain.js --dry-run --json',
         adminRoute: '/api/admin/ops-queue/jobs?status=pending',
-        reason: `${pending} pending job(s) are waiting. queue-drain --confirm processes due jobs via processDueJobs(), so dry-run review and explicit approval are required first.`,
+        reason: `${pending} pending job(s) are waiting. queue-drain --confirm executes the queue processing loop and can claim due jobs, so dry-run review and explicit approval are required first.`,
       });
     }
 

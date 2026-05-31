@@ -236,7 +236,7 @@ async function main() {
     run('null_byte_scan', 'scripts/find-null-json-files.js', ['--json']),
     run('queue_verify', 'scripts/verify-queue.js', ['--json']),
     run('queue_repair_dry_run', 'scripts/repair-queue.js', ['--dry-run', '--json']),
-    run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json']),
+    run('stale_running_recovery_dry_run', 'scripts/recover-stale-running-jobs.js', ['--dry-run', '--json', '--summary-only']),
     run('predictive_scan_queue_inspect', 'scripts/inspect-predictive-scan-queue.js', ['--json']),
     run('scale_thresholds_latest', 'scripts/verify-scale-thresholds.js', ['--json', '--latest-only']),
     run('pilot_gate', 'scripts/evaluate-pilot-gate.js', ['--json']),
@@ -272,7 +272,7 @@ async function main() {
       'node scripts/find-null-json-files.js --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
       'node scripts/inspect-predictive-scan-queue.js --json',
       'node scripts/phase61-1-remediation-status.js --json'
     ],
@@ -281,7 +281,7 @@ async function main() {
       'node scripts/find-null-json-files.js --json',
       'node scripts/verify-queue.js --json',
       'node scripts/repair-queue.js --dry-run --json',
-      'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
       'node scripts/inspect-predictive-scan-queue.js --json'
     ],
     evidenceAfterQueueReview: [
