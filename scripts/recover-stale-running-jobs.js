@@ -297,6 +297,41 @@ function proposedActionFor(job, maxAttemptsFallback) {
   };
 }
 
+function summarizeBy(rows, field) {
+  const result = {};
+  for (const row of rows || []) {
+    const key = row && row[field] ? String(row[field]) : 'unknown';
+    result[key] = (result[key] || 0) + 1;
+  }
+  return result;
+}
+
+function summarizeAttempts(rows) {
+  const buckets = {
+    '0': 0,
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4_plus': 0,
+    maxed: 0,
+  };
+
+  for (const row of rows || []) {
+    const attempts = Number(row.attempts || 0);
+    const maxAttempts = Number(row.maxAttempts || 5);
+
+    if (attempts >= maxAttempts) {
+      buckets.maxed++;
+    } else if (attempts >= 4) {
+      buckets['4_plus']++;
+    } else {
+      buckets[String(attempts)] = (buckets[String(attempts)] || 0) + 1;
+    }
+  }
+
+  return buckets;
+}
+
 function compactOutput(output) {
   if (!output || typeof output !== 'object') return output;
 
@@ -313,6 +348,10 @@ function compactOutput(output) {
     confirmPreflightAllowed: output.confirmPreflightAllowed,
     confirmPreflightBlockers: output.confirmPreflightBlockers || [],
     summary: output.summary || {},
+    staleRunningByType: output.summary?.staleRunningByType || {},
+    nonStaleRunningByType: output.summary?.nonStaleRunningByType || {},
+    staleRunningAttempts: output.summary?.staleRunningAttempts || {},
+    predictiveScanSummary: output.summary?.predictiveScanSummary || {},
     runningJobsByLockOwner: (output.runningJobsByLockOwner || []).map(o => ({
       lockedBy: o.lockedBy,
       pid: o.pid,
@@ -474,6 +513,28 @@ async function main() {
   const ownerSummary = summarizeLockOwners(staleJobs, nonStaleRunningJobs);
   const runningJobsByLockOwner = ownerSummary.owners;
 
+  const staleRunningByType = summarizeBy(staleJobs, 'type');
+  const nonStaleRunningByType = summarizeBy(nonStaleRunningJobs, 'type');
+  const staleRunningAttempts = summarizeAttempts(staleJobs);
+
+  const predictiveScanSummary = {
+    staleRunning: staleJobs.filter(j => j.type === 'predictive_scan').length,
+    nonStaleRunning: nonStaleRunningJobs.filter(j => j.type === 'predictive_scan').length,
+    moveBackToPendingCandidates: staleJobs.filter(j => j.type === 'predictive_scan' && j.proposedAction === 'move_back_to_pending_after_review').length,
+    deadLetterCandidates: staleJobs.filter(j => j.type === 'predictive_scan' && j.proposedAction === 'move_to_dead_letter_after_review').length,
+    lockOwners: runningJobsByLockOwner
+      .filter(o => staleJobs.some(j => j.type === 'predictive_scan' && j.lockedBy === o.lockedBy))
+      .map(o => ({
+        lockedBy: o.lockedBy,
+        pid: o.pid,
+        stale: o.stale,
+        nonStale: o.nonStale,
+        processExists: !!(o.processInfo && o.processInfo.exists),
+        activeYawmiaServerLikely: !!o.activeYawmiaServerLikely,
+        pm2ManagedLikely: !!o.pm2ManagedLikely,
+      })),
+  };
+
   const activeWorkerLikely = nonStaleRunningJobs.length > 0 ||
     runningJobsByLockOwner.some(o => o.activeYawmiaServerLikely);
 
@@ -531,6 +592,10 @@ async function main() {
       activeWorkerLikely,
       pm2ManagedLikely,
       lockOwnerCount: runningJobsByLockOwner.length,
+      staleRunningByType,
+      nonStaleRunningByType,
+      staleRunningAttempts,
+      predictiveScanSummary,
     },
     warnings: [
       'dry-run only: no queue records were mutated',
@@ -541,6 +606,9 @@ async function main() {
       'if PM2 manages Yawmia, stop it with pm2 stop <confirmed-app>, not direct PID kill',
       'run quiet dry-run snapshots after PM2 stop to confirm leases stop refreshing',
       'run repair-queue --dry-run after any future recovery mutation',
+      ...(predictiveScanSummary.staleRunning > 0
+        ? ['predictive_scan stale running jobs detected; do not move them back to pending blindly before flood review']
+        : []),
       ...(nonStaleRunningJobs.length > 0
         ? ['not all running jobs matched stale criteria in this dry-run; treat nonStaleRunningCount as active worker evidence until proven otherwise']
         : []),
@@ -550,6 +618,7 @@ async function main() {
     ],
     recommendedNextSteps: [
       'review staleRunningJobs list',
+      'review staleRunningByType and predictiveScanSummary before any recovery decision',
       'confirm no active /mnt/j/yawmia server or queue worker is running',
       'document recovery decision in an ops review',
       'only then implement/approve a confirm workflow if needed',
