@@ -137,13 +137,13 @@ function checkStatus(results) {
     warnings.push({
       code: 'STALE_RUNNING_RECOVERY_DRY_RUN_UNAVAILABLE',
       message: 'Stale running recovery dry-run did not produce parseable output.',
-      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
     });
   } else if ((staleRecovery.parsed.staleRunningCount || 0) > 0) {
     warnings.push({
       code: 'STALE_RUNNING_JOBS_REQUIRE_REVIEW',
       message: `${staleRecovery.parsed.staleRunningCount} stale running job(s) require dry-run review before any recovery workflow.`,
-      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
     });
   }
 
@@ -151,7 +151,7 @@ function checkStatus(results) {
     blockers.push({
       code: 'ACTIVE_QUEUE_WORKER_LIKELY',
       message: `${staleRecovery.parsed.nonStaleRunningCount} non-stale running job(s) detected. Treat as active worker/server evidence until quiet snapshots prove leases stopped refreshing.`,
-      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json --summary-only',
     });
   }
 

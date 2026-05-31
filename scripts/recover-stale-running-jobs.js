@@ -32,6 +32,7 @@ try {
 } catch (_) {}
 
 const JSON_OUT = process.argv.includes('--json');
+const SUMMARY_ONLY = process.argv.includes('--summary-only') || process.argv.includes('--compact');
 const CONFIRM = process.argv.includes('--confirm');
 const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
@@ -174,24 +175,34 @@ function readPm2Jlist() {
   }
 }
 
+function isYawmiaPm2App(app) {
+  if (!app || typeof app !== 'object') return false;
+
+  const cwd = app.pm_cwd || '';
+  const execPath = app.pm_exec_path || '';
+
+  return !!(
+    cwd === '/mnt/j/yawmia' ||
+    cwd.endsWith('/yawmia') ||
+    execPath === '/mnt/j/yawmia/server.js' ||
+    (execPath.endsWith('/server.js') && cwd.endsWith('/yawmia'))
+  );
+}
+
+function listYawmiaPm2Apps(pm2) {
+  if (!pm2 || !Array.isArray(pm2.apps)) return [];
+  return pm2.apps.filter(isYawmiaPm2App);
+}
+
 function correlatePm2AppForPid(pid, pm2) {
   if (!pid || !pm2 || !Array.isArray(pm2.apps)) return null;
 
-  const direct = pm2.apps.find(app => Number(app.pid) === Number(pid));
-  if (direct) return direct;
-
-  return pm2.apps.find(app => {
-    const cwd = app.pm_cwd || '';
-    const execPath = app.pm_exec_path || '';
-    return (
-      (cwd === '/mnt/j/yawmia' || cwd.endsWith('/yawmia')) &&
-      execPath.includes('server.js')
-    );
-  }) || null;
+  return pm2.apps.find(app => Number(app.pid) === Number(pid)) || null;
 }
 
 function summarizeLockOwners(staleJobs, nonStaleRunningJobs) {
   const pm2 = readPm2Jlist();
+  const yawmiaPm2Apps = listYawmiaPm2Apps(pm2);
   const owners = new Map();
 
   function ensure(owner) {
@@ -232,7 +243,10 @@ function summarizeLockOwners(staleJobs, nonStaleRunningJobs) {
   }
 
   return {
-    pm2,
+    pm2: {
+      ...pm2,
+      yawmiaApps: yawmiaPm2Apps,
+    },
     owners: Array.from(owners.values()).sort((a, b) =>
       b.nonStale - a.nonStale ||
       b.stale - a.stale ||
@@ -280,6 +294,75 @@ function proposedActionFor(job, maxAttemptsFallback) {
   return {
     action: 'move_back_to_pending_after_review',
     reason: 'lease is stale; eligible for explicit recovery workflow after review',
+  };
+}
+
+function compactOutput(output) {
+  if (!output || typeof output !== 'object') return output;
+
+  return {
+    ok: output.ok,
+    dryRun: output.dryRun,
+    mutationPerformed: output.mutationPerformed,
+    confirmImplemented: output.confirmImplemented,
+    scannedRunning: output.scannedRunning,
+    staleRunningCount: output.staleRunningCount,
+    nonStaleRunningCount: output.nonStaleRunningCount,
+    activeWorkerLikely: output.activeWorkerLikely,
+    pm2ManagedLikely: output.pm2ManagedLikely,
+    confirmPreflightAllowed: output.confirmPreflightAllowed,
+    confirmPreflightBlockers: output.confirmPreflightBlockers || [],
+    summary: output.summary || {},
+    runningJobsByLockOwner: (output.runningJobsByLockOwner || []).map(o => ({
+      lockedBy: o.lockedBy,
+      pid: o.pid,
+      total: o.total,
+      stale: o.stale,
+      nonStale: o.nonStale,
+      processExists: !!(o.processInfo && o.processInfo.exists),
+      cwd: o.processInfo ? o.processInfo.cwd : null,
+      cmdline: o.processInfo ? o.processInfo.cmdline : null,
+      activeYawmiaServerLikely: !!o.activeYawmiaServerLikely,
+      pm2ManagedLikely: !!o.pm2ManagedLikely,
+      pm2App: o.pm2App ? {
+        name: o.pm2App.name,
+        pm_id: o.pm2App.pm_id,
+        pid: o.pm2App.pid,
+        status: o.pm2App.status,
+        pm_cwd: o.pm2App.pm_cwd,
+        pm_exec_path: o.pm2App.pm_exec_path,
+      } : null,
+    })),
+    pm2Correlation: output.pm2Correlation ? {
+      available: output.pm2Correlation.available,
+      error: output.pm2Correlation.error,
+      yawmiaApps: output.pm2Correlation.yawmiaApps || [],
+      matchedApps: output.pm2Correlation.matchedApps || [],
+    } : null,
+    staleSample: (output.staleRunningJobs || []).slice(0, 5).map(j => ({
+      jobId: j.jobId,
+      type: j.type,
+      lockedBy: j.lockedBy,
+      leaseUntil: j.leaseUntil,
+      updatedAt: j.updatedAt,
+      staleReasons: j.staleReasons,
+      proposedAction: j.proposedAction,
+      path: j.path,
+    })),
+    nonStaleSample: (output.nonStaleRunningJobs || []).slice(0, 5).map(j => ({
+      jobId: j.jobId,
+      type: j.type,
+      lockedBy: j.lockedBy,
+      leaseUntil: j.leaseUntil,
+      updatedAt: j.updatedAt,
+      staleReasons: j.staleReasons,
+      proposedAction: j.proposedAction,
+      path: j.path,
+    })),
+    warnings: output.warnings || [],
+    recommendedNextSteps: output.recommendedNextSteps || [],
+    durationMs: output.durationMs,
+    generatedAt: output.generatedAt,
   };
 }
 
@@ -415,6 +498,7 @@ async function main() {
     pm2Correlation: {
       available: ownerSummary.pm2.available,
       error: ownerSummary.pm2.error,
+      yawmiaApps: ownerSummary.pm2.yawmiaApps || [],
       matchedApps: runningJobsByLockOwner
         .filter(o => o.pm2App)
         .map(o => ({
@@ -475,7 +559,7 @@ async function main() {
   };
 
   if (JSON_OUT) {
-    printJson(output);
+    printJson(SUMMARY_ONLY ? compactOutput(output) : output);
     return;
   }
 
