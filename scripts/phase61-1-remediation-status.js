@@ -147,6 +147,22 @@ function checkStatus(results) {
     });
   }
 
+  if (staleRecovery?.parsed && (staleRecovery.parsed.nonStaleRunningCount || 0) > 0) {
+    blockers.push({
+      code: 'ACTIVE_QUEUE_WORKER_LIKELY',
+      message: `${staleRecovery.parsed.nonStaleRunningCount} non-stale running job(s) detected. Treat as active worker/server evidence until quiet snapshots prove leases stopped refreshing.`,
+      command: 'node scripts/recover-stale-running-jobs.js --dry-run --json',
+    });
+  }
+
+  if (staleRecovery?.parsed?.pm2ManagedLikely) {
+    blockers.push({
+      code: 'PM2_MANAGED_YAWMIA_ACTIVE',
+      message: 'PM2-managed Yawmia appears active. Stop the confirmed PM2 app before any queue mutation.',
+      command: 'pm2 jlist && pm2 describe <confirmed-yawmia-app> && pm2 stop <confirmed-yawmia-app>',
+    });
+  }
+
   const scale = results.find(r => r.name === 'scale_thresholds_latest');
   if (!scale?.parsed) {
     warnings.push({
@@ -351,6 +367,29 @@ function summarizeParsed(name, parsed) {
       scannedRunning: parsed.scannedRunning || 0,
       staleRunningCount: parsed.staleRunningCount || 0,
       nonStaleRunningCount: parsed.nonStaleRunningCount || 0,
+      activeWorkerLikely: !!parsed.activeWorkerLikely,
+      pm2ManagedLikely: !!parsed.pm2ManagedLikely,
+      confirmPreflightAllowed: parsed.confirmPreflightAllowed === true,
+      lockOwnerCount: parsed.summary?.lockOwnerCount || 0,
+      runningJobsByLockOwner: Array.isArray(parsed.runningJobsByLockOwner)
+        ? parsed.runningJobsByLockOwner.map(o => ({
+            lockedBy: o.lockedBy,
+            pid: o.pid,
+            total: o.total,
+            stale: o.stale,
+            nonStale: o.nonStale,
+            activeYawmiaServerLikely: !!o.activeYawmiaServerLikely,
+            pm2ManagedLikely: !!o.pm2ManagedLikely,
+            pm2App: o.pm2App ? {
+              name: o.pm2App.name,
+              pm_id: o.pm2App.pm_id,
+              pid: o.pm2App.pid,
+              status: o.pm2App.status,
+              pm_cwd: o.pm2App.pm_cwd,
+              pm_exec_path: o.pm2App.pm_exec_path,
+            } : null,
+          }))
+        : [],
       moveBackToPendingCandidates: parsed.summary?.moveBackToPendingCandidates || 0,
       deadLetterCandidates: parsed.summary?.deadLetterCandidates || 0,
     };
