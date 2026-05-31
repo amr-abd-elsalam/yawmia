@@ -274,14 +274,15 @@ async function main() {
       'node scripts/evaluate-pilot-gate.js --json'
     ],
     confirmOnlyAfterApproval: [
-      'node scripts/repair-queue.js --confirm --json',
+      'node scripts/repair-queue.js --confirm --json --approval-id=<approved-id>',
       'node scripts/compact-queue.js --confirm --json'
     ],
     forbiddenWithoutNewApproval: [
       'node scripts/queue-drain.js --confirm --json',
       'node scripts/reset-dev-data.js --confirm --reinit --json',
       'node scripts/quarantine-corrupt-json.js --confirm --json',
-      'node scripts/recover-stale-running-jobs.js --confirm --json'
+      'node scripts/recover-stale-running-jobs.js --confirm --json',
+      'node scripts/repair-queue.js --confirm --json'
     ],
   };
 
