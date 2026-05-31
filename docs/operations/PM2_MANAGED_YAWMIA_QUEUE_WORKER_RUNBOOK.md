@@ -205,6 +205,7 @@ Expected proof:
 - no new queue_worker_<PID> appears
 - leaseUntil stops moving forward
 - updatedAt stops moving forward
+- leases stop refreshing
 - nonStaleRunningCount drops or becomes stale
 ```
 
