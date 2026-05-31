@@ -23,6 +23,9 @@
 //   exits with CONFIRM_NOT_IMPLEMENTED and mutationPerformed:false.
 // ═══════════════════════════════════════════════════════════════
 
+import { readFileSync, readlinkSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
@@ -55,6 +58,187 @@ function parseMs(iso) {
   if (!iso) return 0;
   const ms = new Date(iso).getTime();
   return Number.isFinite(ms) ? ms : 0;
+}
+
+function extractPidFromWorkerId(workerId) {
+  if (!workerId || typeof workerId !== 'string') return null;
+  const match = workerId.match(/^queue_worker_(\d+)_/);
+  if (!match) return null;
+  const pid = Number(match[1]);
+  return Number.isFinite(pid) ? pid : null;
+}
+
+function readProcessInfo(pid) {
+  if (!pid) return {
+    pid: null,
+    exists: false,
+    cwd: null,
+    cmdline: null,
+    cwdMatchesProject: false,
+    cmdlineMatchesYawmiaServer: false,
+    yawmiaServerLikely: false,
+  };
+
+  let cwd = null;
+  let cmdline = null;
+
+  try {
+    cwd = readlinkSync(`/proc/${pid}/cwd`);
+  } catch (_) {
+    cwd = null;
+  }
+
+  try {
+    cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf-8')
+      .replace(/\0/g, ' ')
+      .trim();
+  } catch (_) {
+    cmdline = null;
+  }
+
+  const projectCwd = process.cwd();
+  const cwdMatchesProject = !!(
+    cwd &&
+    (
+      cwd === projectCwd ||
+      cwd === '/mnt/j/yawmia' ||
+      cwd.endsWith('/yawmia')
+    )
+  );
+
+  const cmdlineMatchesYawmiaServer = !!(
+    cmdline &&
+    cmdline.includes('server.js') &&
+    (
+      cmdline.includes('/mnt/j/yawmia') ||
+      cwdMatchesProject
+    )
+  );
+
+  return {
+    pid,
+    exists: !!(cwd || cmdline),
+    cwd,
+    cmdline,
+    cwdMatchesProject,
+    cmdlineMatchesYawmiaServer,
+    yawmiaServerLikely: !!(cwdMatchesProject && cmdlineMatchesYawmiaServer),
+  };
+}
+
+function readPm2Jlist() {
+  const result = spawnSync('pm2', ['jlist'], {
+    encoding: 'utf-8',
+    timeout: 5000,
+  });
+
+  if (result.error) {
+    return {
+      available: false,
+      error: result.error.message,
+      apps: [],
+    };
+  }
+
+  if (result.status !== 0) {
+    return {
+      available: false,
+      error: result.stderr || `pm2 jlist exited with ${result.status}`,
+      apps: [],
+    };
+  }
+
+  try {
+    const raw = JSON.parse(result.stdout || '[]');
+    const apps = raw.map(app => ({
+      name: app.name || null,
+      pm_id: app.pm_id,
+      pid: app.pid || null,
+      status: app.pm2_env?.status || null,
+      restart_time: app.pm2_env?.restart_time || 0,
+      autorestart: app.pm2_env?.autorestart,
+      watch: app.pm2_env?.watch,
+      pm_cwd: app.pm2_env?.pm_cwd || null,
+      pm_exec_path: app.pm2_env?.pm_exec_path || null,
+      script: app.pm2_env?.pm_exec_path || app.pm2_env?.pm_exec_interpreter || null,
+      node_version: app.pm2_env?.node_version || null,
+    }));
+
+    return { available: true, error: null, apps };
+  } catch (err) {
+    return {
+      available: false,
+      error: `PM2 JSON parse failed: ${err.message}`,
+      apps: [],
+    };
+  }
+}
+
+function correlatePm2AppForPid(pid, pm2) {
+  if (!pid || !pm2 || !Array.isArray(pm2.apps)) return null;
+
+  const direct = pm2.apps.find(app => Number(app.pid) === Number(pid));
+  if (direct) return direct;
+
+  return pm2.apps.find(app => {
+    const cwd = app.pm_cwd || '';
+    const execPath = app.pm_exec_path || '';
+    return (
+      (cwd === '/mnt/j/yawmia' || cwd.endsWith('/yawmia')) &&
+      execPath.includes('server.js')
+    );
+  }) || null;
+}
+
+function summarizeLockOwners(staleJobs, nonStaleRunningJobs) {
+  const pm2 = readPm2Jlist();
+  const owners = new Map();
+
+  function ensure(owner) {
+    const key = owner || 'unknown';
+    if (!owners.has(key)) {
+      const pid = extractPidFromWorkerId(key);
+      const processInfo = readProcessInfo(pid);
+      const pm2App = correlatePm2AppForPid(pid, pm2);
+
+      owners.set(key, {
+        lockedBy: key,
+        pid,
+        total: 0,
+        stale: 0,
+        nonStale: 0,
+        processInfo,
+        pm2App,
+        activeYawmiaServerLikely: !!processInfo.yawmiaServerLikely,
+        pm2ManagedLikely: !!(
+          pm2App &&
+          ['online', 'launching', 'stopping'].includes(pm2App.status)
+        ),
+      });
+    }
+    return owners.get(key);
+  }
+
+  for (const job of staleJobs) {
+    const row = ensure(job.lockedBy);
+    row.total++;
+    row.stale++;
+  }
+
+  for (const job of nonStaleRunningJobs) {
+    const row = ensure(job.lockedBy);
+    row.total++;
+    row.nonStale++;
+  }
+
+  return {
+    pm2,
+    owners: Array.from(owners.values()).sort((a, b) =>
+      b.nonStale - a.nonStale ||
+      b.stale - a.stale ||
+      String(a.lockedBy).localeCompare(String(b.lockedBy))
+    ),
+  };
 }
 
 function classifyRunningJob(job, config) {
@@ -204,6 +388,14 @@ async function main() {
     String(a.jobId).localeCompare(String(b.jobId))
   );
 
+  const ownerSummary = summarizeLockOwners(staleJobs, nonStaleRunningJobs);
+  const runningJobsByLockOwner = ownerSummary.owners;
+
+  const activeWorkerLikely = nonStaleRunningJobs.length > 0 ||
+    runningJobsByLockOwner.some(o => o.activeYawmiaServerLikely);
+
+  const pm2ManagedLikely = runningJobsByLockOwner.some(o => o.pm2ManagedLikely);
+
   const output = {
     ok: true,
     dryRun: true,
@@ -214,10 +406,47 @@ async function main() {
     nonStaleRunningCount: nonStaleRunningJobs.length,
     staleRunningJobs: staleJobs,
     nonStaleRunningJobs,
+    runningJobsByLockOwner,
+    processCorrelation: runningJobsByLockOwner.map(o => ({
+      lockedBy: o.lockedBy,
+      pid: o.pid,
+      processInfo: o.processInfo,
+    })),
+    pm2Correlation: {
+      available: ownerSummary.pm2.available,
+      error: ownerSummary.pm2.error,
+      matchedApps: runningJobsByLockOwner
+        .filter(o => o.pm2App)
+        .map(o => ({
+          lockedBy: o.lockedBy,
+          pid: o.pid,
+          pm2App: o.pm2App,
+        })),
+    },
+    activeWorkerLikely,
+    pm2ManagedLikely,
+    confirmPreflightAllowed: false,
+    confirmPreflightBlockers: [
+      ...(activeWorkerLikely ? [{
+        code: 'ACTIVE_QUEUE_WORKER_LIKELY',
+        message: 'nonStaleRunningJobs or process correlation indicate an active queue worker/server',
+      }] : []),
+      ...(pm2ManagedLikely ? [{
+        code: 'PM2_MANAGED_YAWMIA_ACTIVE',
+        message: 'PM2 appears to manage an online Yawmia server/queue worker',
+      }] : []),
+      {
+        code: 'CONFIRM_NOT_IMPLEMENTED',
+        message: 'stale running recovery confirm is intentionally not implemented in Phase 61.4',
+      },
+    ],
     summary: {
       moveBackToPendingCandidates: staleJobs.filter(j => j.proposedAction === 'move_back_to_pending_after_review').length,
       deadLetterCandidates: staleJobs.filter(j => j.proposedAction === 'move_to_dead_letter_after_review').length,
       nonStaleRunningCount: nonStaleRunningJobs.length,
+      activeWorkerLikely,
+      pm2ManagedLikely,
+      lockOwnerCount: runningJobsByLockOwner.length,
     },
     warnings: [
       'dry-run only: no queue records were mutated',
@@ -225,9 +454,14 @@ async function main() {
       'this script does not claim pending jobs',
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',
+      'if PM2 manages Yawmia, stop it with pm2 stop <confirmed-app>, not direct PID kill',
+      'run quiet dry-run snapshots after PM2 stop to confirm leases stop refreshing',
       'run repair-queue --dry-run after any future recovery mutation',
       ...(nonStaleRunningJobs.length > 0
-        ? ['not all running jobs matched stale criteria in this dry-run; review nonStaleRunningJobs before designing recovery']
+        ? ['not all running jobs matched stale criteria in this dry-run; treat nonStaleRunningCount as active worker evidence until proven otherwise']
+        : []),
+      ...(pm2ManagedLikely
+        ? ['PM2-managed Yawmia appears active; no queue mutation is safe until PM2 app is stopped and quiet snapshots are captured']
         : []),
     ],
     recommendedNextSteps: [
