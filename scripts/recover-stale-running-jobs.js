@@ -599,7 +599,7 @@ async function main() {
     },
     warnings: [
       'dry-run only: no queue records were mutated',
-      'this script does not execute queue processing loops',
+      'this script does not call queueWorkers.processDueJobs()',
       'this script does not claim pending jobs',
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',
