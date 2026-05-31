@@ -8,9 +8,9 @@
 //
 // Safety:
 //   - Read-only.
-//   - Does not import queueWorkers.
-//   - Does not call processDueJobs().
-//   - Does not claim/retry/cancel/complete/fail/recover jobs.
+//   - Does not import worker runtime modules.
+//   - Does not execute queue processing loops.
+//   - Does not claim, retry, cancel, complete, fail, recover, move, or write jobs.
 //   - Does not mutate queue records.
 //   - Does not rebuild queue summary.
 //   - Does not compact queue.

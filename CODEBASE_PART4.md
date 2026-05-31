@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-31T18:02:55.253Z
+> Auto-generated: 2026-05-31T18:47:25.781Z
 > Files in this part: 92
 
 ## Files
@@ -27058,9 +27058,9 @@ console.log('⚠️  If you regenerate keys, all existing push subscriptions wil
 //
 // Safety:
 //   - Read-only.
-//   - Does not import queueWorkers.
-//   - Does not call processDueJobs().
-//   - Does not claim/retry/cancel/complete/fail/recover jobs.
+//   - Does not import worker runtime modules.
+//   - Does not execute queue processing loops.
+//   - Does not claim, retry, cancel, complete, fail, recover, move, or write jobs.
 //   - Does not mutate queue records.
 //   - Does not rebuild queue summary.
 //   - Does not compact queue.
