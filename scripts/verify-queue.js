@@ -102,6 +102,15 @@ async function main() {
       console.log('');
     }
 
+    if (result.details && result.details.duplicateQueueRecordCount > 0) {
+      console.log('Duplicate physical queue records:');
+      console.log(`  duplicate job IDs: ${result.details.duplicateQueueRecordCount}`);
+      for (const d of (result.details.duplicateQueueRecords || []).slice(0, 10)) {
+        console.log(`  ⚠️ ${d.jobId}: ${d.copyCount} copies [${(d.statuses || []).join(', ')}]`);
+      }
+      console.log('');
+    }
+
     if (result.recommendedActions && result.recommendedActions.length > 0) {
       console.log('Recommended actions:');
       for (const a of result.recommendedActions.slice(0, 10)) {

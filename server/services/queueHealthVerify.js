@@ -120,11 +120,19 @@ export async function verifyQueueHealth(options = {}) {
     staleRunningJobs: [],
     orphanIdempotency: [],
     expiredIdempotency: [],
+    orphanIdempotencyCount: 0,
+    expiredIdempotencyCount: 0,
     summaryMismatches: [],
     actualFilesByStatus: null,
     actualFileMismatches: [],
+    duplicateQueueRecords: [],
+    duplicateQueueRecordCount: 0,
+    summaryLocationCount: 0,
+    summaryStatusTotal: 0,
     legacyRecords: 0,
   };
+
+  const queueRecordLocations = new Map();
 
   // 1. Parse queue files + status-dir consistency.
   const files = await listAllQueueFiles();
@@ -145,10 +153,26 @@ export async function verifyQueueHealth(options = {}) {
     details.parsedRecords++;
 
     const expected = expectedStatusFromPath(file.filePath);
+    const relativeFilePath = file.filePath.replace(BASE_PATH + '/', '');
+
+    const existingLocations = queueRecordLocations.get(record.id) || [];
+    existingLocations.push({
+      path: relativeFilePath,
+      expectedStatus: expected,
+      recordStatus: record.status || null,
+      type: record.type || null,
+      createdAt: record.createdAt || null,
+      updatedAt: record.updatedAt || null,
+      nextRunAt: record.nextRunAt || null,
+      lockedBy: record.lockedBy || null,
+      leaseUntil: record.leaseUntil || null,
+    });
+    queueRecordLocations.set(record.id, existingLocations);
+
     if (expected && expected !== record.status) {
       details.statusDirMismatches.push({
         jobId: record.id,
-        path: file.filePath.replace(BASE_PATH + '/', ''),
+        path: relativeFilePath,
         expectedStatus: expected,
         actualStatus: record.status,
       });
@@ -170,6 +194,24 @@ export async function verifyQueueHealth(options = {}) {
     if ((i + 1) % 100 === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }
+  }
+
+  for (const [jobId, locations] of queueRecordLocations.entries()) {
+    if (locations.length <= 1) continue;
+
+    const statuses = Array.from(new Set(locations.map(l => l.expectedStatus || l.recordStatus || 'unknown')));
+    details.duplicateQueueRecords.push({
+      jobId,
+      copyCount: locations.length,
+      statuses,
+      locations,
+    });
+  }
+
+  details.duplicateQueueRecordCount = details.duplicateQueueRecords.length;
+
+  if (details.duplicateQueueRecordCount > 0) {
+    warnings.push(`duplicate queue record files: ${details.duplicateQueueRecordCount}`);
   }
 
   if (details.statusDirMismatches.length > 0) {
@@ -212,12 +254,15 @@ export async function verifyQueueHealth(options = {}) {
       }
     }
 
-    if (details.orphanIdempotency.length > 0) {
-      warnings.push(`orphan idempotency records: ${details.orphanIdempotency.length}`);
+    details.orphanIdempotencyCount = details.orphanIdempotency.length;
+    details.expiredIdempotencyCount = details.expiredIdempotency.length;
+
+    if (details.orphanIdempotencyCount > 0) {
+      warnings.push(`orphan idempotency records: ${details.orphanIdempotencyCount}`);
     }
 
-    if (details.expiredIdempotency.length > 0) {
-      warnings.push(`expired idempotency records: ${details.expiredIdempotency.length}`);
+    if (details.expiredIdempotencyCount > 0) {
+      warnings.push(`expired idempotency records: ${details.expiredIdempotencyCount}`);
     }
   } catch (err) {
     warnings.push(`idempotency verification failed: ${err.message}`);
@@ -226,6 +271,10 @@ export async function verifyQueueHealth(options = {}) {
   // 3. Summary consistency.
   try {
     const summary = await readQueueSummary();
+
+    details.summaryLocationCount = Object.keys(summary.locations || {}).length;
+    details.summaryStatusTotal = Object.values(summary.byStatus || {})
+      .reduce((sum, value) => sum + (Number(value) || 0), 0);
 
     const scanRows = await listQueueRecords({ includeDeadLetter: true, maxMonths: 120 });
     const counts = {
@@ -320,11 +369,18 @@ export async function verifyQueueHealth(options = {}) {
       legacyRecords: details.legacyRecords,
       statusDirMismatches: details.statusDirMismatches.slice(0, 50),
       staleRunningJobs: details.staleRunningJobs.slice(0, 50),
+      staleRunningJobsCount: details.staleRunningJobs.length,
       orphanIdempotency: details.orphanIdempotency.slice(0, 50),
+      orphanIdempotencyCount: details.orphanIdempotencyCount,
       expiredIdempotency: details.expiredIdempotency.slice(0, 50),
+      expiredIdempotencyCount: details.expiredIdempotencyCount,
       summaryMismatches: details.summaryMismatches,
+      summaryLocationCount: details.summaryLocationCount,
+      summaryStatusTotal: details.summaryStatusTotal,
       actualFilesByStatus: details.actualFilesByStatus,
       actualFileMismatches: details.actualFileMismatches,
+      duplicateQueueRecords: details.duplicateQueueRecords.slice(0, 50),
+      duplicateQueueRecordCount: details.duplicateQueueRecordCount,
     },
     durationMs: Date.now() - started,
     checkedAt: nowIso(),
@@ -628,14 +684,18 @@ export async function getQueueOperationalRecommendations(options = {}) {
     // Stats enrichment failure should not break recommendations.
   }
 
-  if (details.expiredIdempotency && details.expiredIdempotency.length > 0) {
+  const expiredIdempotencyCount = details.expiredIdempotencyCount !== undefined
+    ? details.expiredIdempotencyCount
+    : ((details.expiredIdempotency && details.expiredIdempotency.length) || 0);
+
+  if (expiredIdempotencyCount > 0) {
     actions.push({
       id: 'queue_idempotency_cleanup',
       label: 'تنظيف مفاتيح idempotency المنتهية',
       severity: 'info',
       command: 'node scripts/compact-queue.js --dry-run --json',
       adminRoute: '/api/admin/queue/compact',
-      reason: `${details.expiredIdempotency.length} expired idempotency record(s).`,
+      reason: `${expiredIdempotencyCount} expired idempotency record(s).`,
     });
   }
 
