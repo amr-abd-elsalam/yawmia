@@ -268,9 +268,9 @@ export async function enqueueJob(params = {}) {
 /**
  * Read queue job from active queue or dead-letter dir.
  */
-export async function getJob(jobId) {
+export async function getJob(jobId, options = {}) {
   if (!jobId || typeof jobId !== 'string') return null;
-  return await readQueueRecord(jobId);
+  return await readQueueRecord(jobId, options);
 }
 
 /**

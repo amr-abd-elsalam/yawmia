@@ -332,8 +332,10 @@ export async function writeQueueRecord(job) {
  *   3. legacy dead-letter path
  *   4. segmented current/recent paths via bounded scan
  */
-export async function readQueueRecord(jobId) {
+export async function readQueueRecord(jobId, options = {}) {
   if (!jobId || typeof jobId !== 'string' || !isValidId(jobId)) return null;
+
+  const refreshSummary = options.refreshSummary !== false;
 
   // 1. Summary location.
   try {
@@ -391,7 +393,9 @@ export async function readQueueRecord(jobId) {
 
       const record = await readJSON(filePath).catch(() => null);
       if (record) {
-        await updateQueueSummary(record, null, record.status).catch(() => {});
+        if (refreshSummary) {
+          await updateQueueSummary(record, null, record.status).catch(() => {});
+        }
         return record;
       }
     }

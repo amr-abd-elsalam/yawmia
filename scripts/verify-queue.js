@@ -38,7 +38,7 @@ async function main() {
     getQueueOperationalRecommendations,
   } = await import('../server/services/queueHealthVerify.js');
 
-  const result = await verifyQueueHealth({ fullScan: true });
+  const result = await verifyQueueHealth({ fullScan: true, mutateIndexes: false });
   result.recommendedActions = await getQueueOperationalRecommendations({ health: result });
 
   const hasErrors = (result.errors || []).length > 0;

@@ -111,6 +111,7 @@ export async function rebuildQueueSummaryIndex(options = {}) {
  */
 export async function verifyQueueHealth(options = {}) {
   const started = Date.now();
+  const mutateIndexes = options.mutateIndexes === true;
   const warnings = [];
   const errors = [];
   const details = {
@@ -192,7 +193,9 @@ export async function verifyQueueHealth(options = {}) {
     for (const rec of idemRecords) {
       if (!rec || !rec.jobId) continue;
 
-      const job = await import('./opsQueue.js').then(q => q.getJob(rec.jobId)).catch(() => null);
+      const job = await import('./opsQueue.js')
+        .then(q => q.getJob(rec.jobId, { refreshSummary: mutateIndexes }))
+        .catch(() => null);
       if (!job && (!rec.expiresAt || new Date(rec.expiresAt).getTime() > now)) {
         details.orphanIdempotency.push({
           keyHash: rec.keyHash || null,
@@ -282,13 +285,17 @@ export async function verifyQueueHealth(options = {}) {
         runningDelta > Math.max(50, (actualFiles.byStatus.running || 0) * 2)
       ) {
         warnings.push('queue summary appears inflated compared to actual segmented files');
-        await markQueueSummaryStale('verify_actual_file_count_mismatch').catch(() => {});
+        if (mutateIndexes) {
+          await markQueueSummaryStale('verify_actual_file_count_mismatch').catch(() => {});
+        }
       }
     }
 
     if (details.summaryMismatches.length > 0) {
       warnings.push(`summary mismatches: ${details.summaryMismatches.length}`);
-      await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+      if (mutateIndexes) {
+        await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+      }
     }
 
     if (details.actualFileMismatches.length > 0) {
@@ -296,7 +303,9 @@ export async function verifyQueueHealth(options = {}) {
     }
   } catch (err) {
     warnings.push(`summary verification failed: ${err.message}`);
-    await markQueueSummaryStale('verify_summary_failed').catch(() => {});
+    if (mutateIndexes) {
+      await markQueueSummaryStale('verify_summary_failed').catch(() => {});
+    }
   }
 
   const result = {
@@ -304,6 +313,8 @@ export async function verifyQueueHealth(options = {}) {
     status: errors.length > 0 ? 'failed' : (warnings.length > 0 ? 'warnings' : 'healthy'),
     warnings,
     errors,
+    readOnly: !mutateIndexes,
+    mutatesIndexes: mutateIndexes,
     details: {
       parsedRecords: details.parsedRecords,
       legacyRecords: details.legacyRecords,
@@ -343,7 +354,7 @@ export async function repairQueueStorage(options = {}) {
   const started = Date.now();
   const dryRun = !!options.dryRun;
 
-  const before = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+  const before = await verifyQueueHealth({ fullScan: true, mutateIndexes: false }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
@@ -429,7 +440,7 @@ export async function repairQueueStorage(options = {}) {
 
   const summaryResult = await rebuildQueueSummaryIndex(options);
 
-  const after = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+  const after = await verifyQueueHealth({ fullScan: true, mutateIndexes: false }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
