@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-06-01T09:24:03.799Z
+> Auto-generated: 2026-06-01T11:23:53.190Z
 > Files in this part: 132
 
 ## Files
@@ -26398,9 +26398,9 @@ export async function enqueueJob(params = {}) {
 /**
  * Read queue job from active queue or dead-letter dir.
  */
-export async function getJob(jobId) {
+export async function getJob(jobId, options = {}) {
   if (!jobId || typeof jobId !== 'string') return null;
-  return await readQueueRecord(jobId);
+  return await readQueueRecord(jobId, options);
 }
 
 /**
@@ -35172,6 +35172,7 @@ export async function rebuildQueueSummaryIndex(options = {}) {
  */
 export async function verifyQueueHealth(options = {}) {
   const started = Date.now();
+  const mutateIndexes = options.mutateIndexes === true;
   const warnings = [];
   const errors = [];
   const details = {
@@ -35253,7 +35254,9 @@ export async function verifyQueueHealth(options = {}) {
     for (const rec of idemRecords) {
       if (!rec || !rec.jobId) continue;
 
-      const job = await import('./opsQueue.js').then(q => q.getJob(rec.jobId)).catch(() => null);
+      const job = await import('./opsQueue.js')
+        .then(q => q.getJob(rec.jobId, { refreshSummary: mutateIndexes }))
+        .catch(() => null);
       if (!job && (!rec.expiresAt || new Date(rec.expiresAt).getTime() > now)) {
         details.orphanIdempotency.push({
           keyHash: rec.keyHash || null,
@@ -35343,13 +35346,17 @@ export async function verifyQueueHealth(options = {}) {
         runningDelta > Math.max(50, (actualFiles.byStatus.running || 0) * 2)
       ) {
         warnings.push('queue summary appears inflated compared to actual segmented files');
-        await markQueueSummaryStale('verify_actual_file_count_mismatch').catch(() => {});
+        if (mutateIndexes) {
+          await markQueueSummaryStale('verify_actual_file_count_mismatch').catch(() => {});
+        }
       }
     }
 
     if (details.summaryMismatches.length > 0) {
       warnings.push(`summary mismatches: ${details.summaryMismatches.length}`);
-      await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+      if (mutateIndexes) {
+        await markQueueSummaryStale('verify_summary_mismatch').catch(() => {});
+      }
     }
 
     if (details.actualFileMismatches.length > 0) {
@@ -35357,7 +35364,9 @@ export async function verifyQueueHealth(options = {}) {
     }
   } catch (err) {
     warnings.push(`summary verification failed: ${err.message}`);
-    await markQueueSummaryStale('verify_summary_failed').catch(() => {});
+    if (mutateIndexes) {
+      await markQueueSummaryStale('verify_summary_failed').catch(() => {});
+    }
   }
 
   const result = {
@@ -35365,6 +35374,8 @@ export async function verifyQueueHealth(options = {}) {
     status: errors.length > 0 ? 'failed' : (warnings.length > 0 ? 'warnings' : 'healthy'),
     warnings,
     errors,
+    readOnly: !mutateIndexes,
+    mutatesIndexes: mutateIndexes,
     details: {
       parsedRecords: details.parsedRecords,
       legacyRecords: details.legacyRecords,
@@ -35404,7 +35415,7 @@ export async function repairQueueStorage(options = {}) {
   const started = Date.now();
   const dryRun = !!options.dryRun;
 
-  const before = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+  const before = await verifyQueueHealth({ fullScan: true, mutateIndexes: false }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
@@ -35490,7 +35501,7 @@ export async function repairQueueStorage(options = {}) {
 
   const summaryResult = await rebuildQueueSummaryIndex(options);
 
-  const after = await verifyQueueHealth({ fullScan: true }).catch(err => ({
+  const after = await verifyQueueHealth({ fullScan: true, mutateIndexes: false }).catch(err => ({
     ok: false,
     status: 'failed',
     warnings: [],
@@ -36039,8 +36050,10 @@ export async function writeQueueRecord(job) {
  *   3. legacy dead-letter path
  *   4. segmented current/recent paths via bounded scan
  */
-export async function readQueueRecord(jobId) {
+export async function readQueueRecord(jobId, options = {}) {
   if (!jobId || typeof jobId !== 'string' || !isValidId(jobId)) return null;
+
+  const refreshSummary = options.refreshSummary !== false;
 
   // 1. Summary location.
   try {
@@ -36098,7 +36111,9 @@ export async function readQueueRecord(jobId) {
 
       const record = await readJSON(filePath).catch(() => null);
       if (record) {
-        await updateQueueSummary(record, null, record.status).catch(() => {});
+        if (refreshSummary) {
+          await updateQueueSummary(record, null, record.status).catch(() => {});
+        }
         return record;
       }
     }

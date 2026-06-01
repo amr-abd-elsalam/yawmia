@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-01T09:24:03.856Z
+> Auto-generated: 2026-06-01T11:23:53.246Z
 > Files in this part: 92
 
 ## Files
@@ -34240,7 +34240,7 @@ async function main() {
     getQueueOperationalRecommendations,
   } = await import('../server/services/queueHealthVerify.js');
 
-  const result = await verifyQueueHealth({ fullScan: true });
+  const result = await verifyQueueHealth({ fullScan: true, mutateIndexes: false });
   result.recommendedActions = await getQueueOperationalRecommendations({ health: result });
 
   const hasErrors = (result.errors || []).length > 0;
