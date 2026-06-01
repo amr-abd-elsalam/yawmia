@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-05-31T22:44:36.636Z
+> Auto-generated: 2026-06-01T09:22:28.584Z
 > Files in this part: 92
 
 ## Files
@@ -30808,7 +30808,7 @@ async function main() {
     },
     warnings: [
       'dry-run only: no queue records were mutated',
-      'this script does not execute queue processing loops',
+      'this script does not call queueWorkers.processDueJobs()',
       'this script does not claim pending jobs',
       'queue-drain must not be used as stale-running recovery',
       'stop active /mnt/j/yawmia server before any future recovery confirm workflow',
