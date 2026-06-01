@@ -1,9 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-<<<<<<< HEAD
-> Auto-generated: 2026-06-01T11:54:58.559Z
-=======
-> Auto-generated: 2026-06-01T12:28:31.217Z
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
+> Auto-generated: 2026-06-01T12:57:28.879Z
 > Files in this part: 92
 
 ## Files

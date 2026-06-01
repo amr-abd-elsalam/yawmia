@@ -1,9 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-<<<<<<< HEAD
-> Auto-generated: 2026-06-01T11:54:58.508Z
-=======
-> Auto-generated: 2026-06-01T12:28:27.880Z
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
+> Auto-generated: 2026-06-01T12:57:28.830Z
 > Files in this part: 132
 
 ## Files
@@ -35342,9 +35338,6 @@ export async function verifyQueueHealth(options = {}) {
     details.summaryStatusTotal = Object.values(summary.byStatus || {})
       .reduce((sum, value) => sum + (Number(value) || 0), 0);
 
-<<<<<<< HEAD
-    const scanRows = await listQueueRecords({ includeDeadLetter: true, maxMonths: 120 });
-=======
     // Phase 61.6:
     // Summary is status-oriented, so compare it to status-specific scans.
     // Do NOT use one global includeDeadLetter scan here because listQueueRecords()
@@ -35352,7 +35345,6 @@ export async function verifyQueueHealth(options = {}) {
     // for the same jobId in pending/running/completed, a global scan collapses
     // them into one logical record and can report misleading per-status counts
     // such as pending=602 while actual pending files=642.
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
     const counts = {
       pending: 0,
       running: 0,
@@ -35464,10 +35456,7 @@ export async function verifyQueueHealth(options = {}) {
       expiredIdempotency: details.expiredIdempotency.slice(0, 50),
       expiredIdempotencyCount: details.expiredIdempotencyCount,
       summaryMismatches: details.summaryMismatches,
-<<<<<<< HEAD
-=======
       statusSpecificScanCounts: details.statusSpecificScanCounts,
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
       summaryLocationCount: details.summaryLocationCount,
       summaryStatusTotal: details.summaryStatusTotal,
       actualFilesByStatus: details.actualFilesByStatus,
@@ -35737,9 +35726,22 @@ export async function getQueueOperationalRecommendations(options = {}) {
     const { getQueueStats } = await import('./opsQueue.js');
     const stats = await getQueueStats();
     const byStatus = stats.byStatus || {};
-    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
-    const pending = byStatus.pending || 0;
-    const failed = byStatus.failed || 0;
+    const actualByStatus = details.actualFilesByStatus && details.actualFilesByStatus.byStatus
+      ? details.actualFilesByStatus.byStatus
+      : null;
+    const statusSpecificCounts = details.statusSpecificScanCounts || null;
+
+    const deadLetter = actualByStatus
+      ? (actualByStatus['dead-letter'] || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts['dead-letter'] || 0) : (byStatus['dead-letter'] || stats.deadLetter || 0));
+
+    const pending = actualByStatus
+      ? (actualByStatus.pending || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts.pending || 0) : (byStatus.pending || 0));
+
+    const failed = actualByStatus
+      ? (actualByStatus.failed || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts.failed || 0) : (byStatus.failed || 0));
 
     if (deadLetter > 0) {
       actions.push({

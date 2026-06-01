@@ -1,9 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
-<<<<<<< HEAD
-> Auto-generated: 2026-06-01T11:54:58.502Z
-=======
-> Auto-generated: 2026-06-01T12:28:27.666Z
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
+> Auto-generated: 2026-06-01T12:57:28.825Z
 > Files in this part: 6
 
 ## Files

@@ -1,9 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 3: Middleware (7) + Handlers (11)
-<<<<<<< HEAD
-> Auto-generated: 2026-06-01T11:54:58.546Z
-=======
-> Auto-generated: 2026-06-01T12:28:30.129Z
->>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
+> Auto-generated: 2026-06-01T12:57:28.868Z
 > Files in this part: 45
 
 ## Files
