@@ -123,6 +123,7 @@ export async function verifyQueueHealth(options = {}) {
     orphanIdempotencyCount: 0,
     expiredIdempotencyCount: 0,
     summaryMismatches: [],
+    statusSpecificScanCounts: null,
     actualFilesByStatus: null,
     actualFileMismatches: [],
     duplicateQueueRecords: [],
@@ -276,7 +277,13 @@ export async function verifyQueueHealth(options = {}) {
     details.summaryStatusTotal = Object.values(summary.byStatus || {})
       .reduce((sum, value) => sum + (Number(value) || 0), 0);
 
-    const scanRows = await listQueueRecords({ includeDeadLetter: true, maxMonths: 120 });
+    // Phase 61.6:
+    // Summary is status-oriented, so compare it to status-specific scans.
+    // Do NOT use one global includeDeadLetter scan here because listQueueRecords()
+    // dedupes by jobId across statuses. When duplicate physical records exist
+    // for the same jobId in pending/running/completed, a global scan collapses
+    // them into one logical record and can report misleading per-status counts
+    // such as pending=602 while actual pending files=642.
     const counts = {
       pending: 0,
       running: 0,
@@ -286,9 +293,21 @@ export async function verifyQueueHealth(options = {}) {
       'dead-letter': 0,
     };
 
-    for (const job of scanRows) {
-      if (counts[job.status] !== undefined) counts[job.status]++;
+    for (const status of Object.keys(counts)) {
+      const statusRows = await listQueueRecords({
+        status,
+        deadLetter: status === 'dead-letter',
+        maxMonths: 120,
+      }).catch(() => []);
+
+      counts[status] = statusRows.filter(job =>
+        job &&
+        job.id &&
+        job.status === status
+      ).length;
     }
+
+    details.statusSpecificScanCounts = counts;
 
     for (const [status, count] of Object.entries(counts)) {
       const summaryCount = summary.byStatus?.[status] || 0;
@@ -297,6 +316,7 @@ export async function verifyQueueHealth(options = {}) {
           status,
           summaryCount,
           scanCount: count,
+          scanMode: 'status_specific_logical_scan',
         });
       }
     }
@@ -375,6 +395,7 @@ export async function verifyQueueHealth(options = {}) {
       expiredIdempotency: details.expiredIdempotency.slice(0, 50),
       expiredIdempotencyCount: details.expiredIdempotencyCount,
       summaryMismatches: details.summaryMismatches,
+      statusSpecificScanCounts: details.statusSpecificScanCounts,
       summaryLocationCount: details.summaryLocationCount,
       summaryStatusTotal: details.summaryStatusTotal,
       actualFilesByStatus: details.actualFilesByStatus,
@@ -644,9 +665,22 @@ export async function getQueueOperationalRecommendations(options = {}) {
     const { getQueueStats } = await import('./opsQueue.js');
     const stats = await getQueueStats();
     const byStatus = stats.byStatus || {};
-    const deadLetter = byStatus['dead-letter'] || stats.deadLetter || 0;
-    const pending = byStatus.pending || 0;
-    const failed = byStatus.failed || 0;
+    const actualByStatus = details.actualFilesByStatus && details.actualFilesByStatus.byStatus
+      ? details.actualFilesByStatus.byStatus
+      : null;
+    const statusSpecificCounts = details.statusSpecificScanCounts || null;
+
+    const deadLetter = actualByStatus
+      ? (actualByStatus['dead-letter'] || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts['dead-letter'] || 0) : (byStatus['dead-letter'] || stats.deadLetter || 0));
+
+    const pending = actualByStatus
+      ? (actualByStatus.pending || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts.pending || 0) : (byStatus.pending || 0));
+
+    const failed = actualByStatus
+      ? (actualByStatus.failed || 0)
+      : (statusSpecificCounts ? (statusSpecificCounts.failed || 0) : (byStatus.failed || 0));
 
     if (deadLetter > 0) {
       actions.push({

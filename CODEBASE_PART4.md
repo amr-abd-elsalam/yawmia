@@ -1,5 +1,9 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
+<<<<<<< HEAD
 > Auto-generated: 2026-06-01T11:54:58.559Z
+=======
+> Auto-generated: 2026-06-01T12:28:31.217Z
+>>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
 > Files in this part: 92
 
 ## Files
@@ -34281,8 +34285,16 @@ async function main() {
     if (result.details && result.details.summaryMismatches && result.details.summaryMismatches.length > 0) {
       console.log('Summary mismatches:');
       for (const m of result.details.summaryMismatches) {
-        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount}`);
+        const mode = m.scanMode || 'scan';
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount} (${mode})`);
       }
+      console.log('');
+    }
+
+    if (result.details && result.details.statusSpecificScanCounts) {
+      const c = result.details.statusSpecificScanCounts;
+      console.log('Status-specific logical scan counts:');
+      console.log(`  pending=${c.pending || 0}, running=${c.running || 0}, completed=${c.completed || 0}, failed=${c.failed || 0}, cancelled=${c.cancelled || 0}, dead-letter=${c['dead-letter'] || 0}`);
       console.log('');
     }
 

@@ -1,5 +1,9 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
+<<<<<<< HEAD
 > Auto-generated: 2026-06-01T11:54:58.508Z
+=======
+> Auto-generated: 2026-06-01T12:28:27.880Z
+>>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
 > Files in this part: 132
 
 ## Files
@@ -35184,6 +35188,7 @@ export async function verifyQueueHealth(options = {}) {
     orphanIdempotencyCount: 0,
     expiredIdempotencyCount: 0,
     summaryMismatches: [],
+    statusSpecificScanCounts: null,
     actualFilesByStatus: null,
     actualFileMismatches: [],
     duplicateQueueRecords: [],
@@ -35337,7 +35342,17 @@ export async function verifyQueueHealth(options = {}) {
     details.summaryStatusTotal = Object.values(summary.byStatus || {})
       .reduce((sum, value) => sum + (Number(value) || 0), 0);
 
+<<<<<<< HEAD
     const scanRows = await listQueueRecords({ includeDeadLetter: true, maxMonths: 120 });
+=======
+    // Phase 61.6:
+    // Summary is status-oriented, so compare it to status-specific scans.
+    // Do NOT use one global includeDeadLetter scan here because listQueueRecords()
+    // dedupes by jobId across statuses. When duplicate physical records exist
+    // for the same jobId in pending/running/completed, a global scan collapses
+    // them into one logical record and can report misleading per-status counts
+    // such as pending=602 while actual pending files=642.
+>>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
     const counts = {
       pending: 0,
       running: 0,
@@ -35347,9 +35362,21 @@ export async function verifyQueueHealth(options = {}) {
       'dead-letter': 0,
     };
 
-    for (const job of scanRows) {
-      if (counts[job.status] !== undefined) counts[job.status]++;
+    for (const status of Object.keys(counts)) {
+      const statusRows = await listQueueRecords({
+        status,
+        deadLetter: status === 'dead-letter',
+        maxMonths: 120,
+      }).catch(() => []);
+
+      counts[status] = statusRows.filter(job =>
+        job &&
+        job.id &&
+        job.status === status
+      ).length;
     }
+
+    details.statusSpecificScanCounts = counts;
 
     for (const [status, count] of Object.entries(counts)) {
       const summaryCount = summary.byStatus?.[status] || 0;
@@ -35358,6 +35385,7 @@ export async function verifyQueueHealth(options = {}) {
           status,
           summaryCount,
           scanCount: count,
+          scanMode: 'status_specific_logical_scan',
         });
       }
     }
@@ -35436,6 +35464,10 @@ export async function verifyQueueHealth(options = {}) {
       expiredIdempotency: details.expiredIdempotency.slice(0, 50),
       expiredIdempotencyCount: details.expiredIdempotencyCount,
       summaryMismatches: details.summaryMismatches,
+<<<<<<< HEAD
+=======
+      statusSpecificScanCounts: details.statusSpecificScanCounts,
+>>>>>>> 03b51f4 (Phase 61.6: clarify queue summary scan counts and prevent summary inflation)
       summaryLocationCount: details.summaryLocationCount,
       summaryStatusTotal: details.summaryStatusTotal,
       actualFilesByStatus: details.actualFilesByStatus,
@@ -36011,12 +36043,22 @@ export async function updateQueueSummary(job, oldStatus, newStatus) {
 
   return withLock('queue-summary', async () => {
     const summary = await readQueueSummary();
-    const oldS = oldStatus ? normalizeStatus(oldStatus) : null;
+    let oldS = oldStatus ? normalizeStatus(oldStatus) : null;
     const newS = newStatus ? normalizeStatus(newStatus) : normalizeStatus(job.status);
 
     summary.byStatus = summary.byStatus || makeEmptySummary().byStatus;
     summary.byType = summary.byType || {};
     summary.locations = summary.locations || {};
+
+    // Phase 61.6:
+    // If caller does not know oldStatus but this job already exists in the
+    // summary location index, treat the existing location status as oldStatus.
+    // This makes summary refresh idempotent and prevents repeated
+    // updateQueueSummary(job, null, sameStatus) calls from inflating counts.
+    const existingLocation = summary.locations[job.id] || null;
+    if (!oldS && existingLocation && existingLocation.status) {
+      oldS = normalizeStatus(existingLocation.status);
+    }
 
     if (oldS && oldS !== newS) {
       increment(summary.byStatus, oldS, -1);

@@ -79,8 +79,16 @@ async function main() {
     if (result.details && result.details.summaryMismatches && result.details.summaryMismatches.length > 0) {
       console.log('Summary mismatches:');
       for (const m of result.details.summaryMismatches) {
-        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount}`);
+        const mode = m.scanMode || 'scan';
+        console.log(`  ⚠️ ${m.status}: summary=${m.summaryCount} scan=${m.scanCount} (${mode})`);
       }
+      console.log('');
+    }
+
+    if (result.details && result.details.statusSpecificScanCounts) {
+      const c = result.details.statusSpecificScanCounts;
+      console.log('Status-specific logical scan counts:');
+      console.log(`  pending=${c.pending || 0}, running=${c.running || 0}, completed=${c.completed || 0}, failed=${c.failed || 0}, cancelled=${c.cancelled || 0}, dead-letter=${c['dead-letter'] || 0}`);
       console.log('');
     }
 

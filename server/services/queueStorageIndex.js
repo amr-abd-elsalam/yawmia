@@ -233,12 +233,22 @@ export async function updateQueueSummary(job, oldStatus, newStatus) {
 
   return withLock('queue-summary', async () => {
     const summary = await readQueueSummary();
-    const oldS = oldStatus ? normalizeStatus(oldStatus) : null;
+    let oldS = oldStatus ? normalizeStatus(oldStatus) : null;
     const newS = newStatus ? normalizeStatus(newStatus) : normalizeStatus(job.status);
 
     summary.byStatus = summary.byStatus || makeEmptySummary().byStatus;
     summary.byType = summary.byType || {};
     summary.locations = summary.locations || {};
+
+    // Phase 61.6:
+    // If caller does not know oldStatus but this job already exists in the
+    // summary location index, treat the existing location status as oldStatus.
+    // This makes summary refresh idempotent and prevents repeated
+    // updateQueueSummary(job, null, sameStatus) calls from inflating counts.
+    const existingLocation = summary.locations[job.id] || null;
+    if (!oldS && existingLocation && existingLocation.status) {
+      oldS = normalizeStatus(existingLocation.status);
+    }
 
     if (oldS && oldS !== newS) {
       increment(summary.byStatus, oldS, -1);
