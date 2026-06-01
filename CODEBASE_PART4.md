@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-01T11:23:53.246Z
+> Auto-generated: 2026-06-01T11:54:58.559Z
 > Files in this part: 92
 
 ## Files
@@ -34300,6 +34300,15 @@ async function main() {
       console.log(`  pending=${actual.pending || 0}, running=${actual.running || 0}, completed=${actual.completed || 0}, failed=${actual.failed || 0}, cancelled=${actual.cancelled || 0}, dead-letter=${actual['dead-letter'] || 0}`);
       if (result.details.actualFilesByStatus.legacyActive || result.details.actualFilesByStatus.legacyDeadLetter) {
         console.log(`  legacyActive=${result.details.actualFilesByStatus.legacyActive || 0}, legacyDeadLetter=${result.details.actualFilesByStatus.legacyDeadLetter || 0}`);
+      }
+      console.log('');
+    }
+
+    if (result.details && result.details.duplicateQueueRecordCount > 0) {
+      console.log('Duplicate physical queue records:');
+      console.log(`  duplicate job IDs: ${result.details.duplicateQueueRecordCount}`);
+      for (const d of (result.details.duplicateQueueRecords || []).slice(0, 10)) {
+        console.log(`  ⚠️ ${d.jobId}: ${d.copyCount} copies [${(d.statuses || []).join(', ')}]`);
       }
       console.log('');
     }
