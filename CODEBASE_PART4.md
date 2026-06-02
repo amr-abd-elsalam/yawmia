@@ -1,6 +1,6 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-02T02:58:13.367Z
-> Files in this part: 92
+> Auto-generated: 2026-06-02T03:47:14.296Z
+> Files in this part: 94
 
 ## Files
 1. `frontend/404.html`
@@ -46,55 +46,57 @@
 41. `scripts/capture-externalization-decision.js`
 42. `scripts/capture-phase61-evidence.js`
 43. `scripts/cleanup-attachments.js`
-44. `scripts/compact-counters.js`
-45. `scripts/compact-predictive-signals.js`
-46. `scripts/compact-queue.js`
-47. `scripts/compact-workrooms.js`
-48. `scripts/evaluate-pilot-gate.js`
-49. `scripts/export-incident-timeline.js`
-50. `scripts/export-migration-snapshot.js`
-51. `scripts/export-user-data.js`
-52. `scripts/find-null-json-files.js`
-53. `scripts/generate-vapid-keys.js`
-54. `scripts/inspect-predictive-scan-queue.js`
-55. `scripts/list-benchmark-history.js`
-56. `scripts/measure-storage-pressure.js`
-57. `scripts/migrate.js`
-58. `scripts/ops-weekly-review.js`
-59. `scripts/phase61-1-remediation-status.js`
-60. `scripts/postdeploy-smoke.js`
-61. `scripts/predeploy-check.js`
-62. `scripts/quarantine-corrupt-json.js`
-63. `scripts/queue-drain.js`
-64. `scripts/queue-retry-dlq.js`
-65. `scripts/rebuild-audit-index.js`
-66. `scripts/rebuild-counters.js`
-67. `scripts/rebuild-predictive-archive-index.js`
-68. `scripts/rebuild-search-relevance.js`
-69. `scripts/rebuild-workroom-search.js`
-70. `scripts/recover-stale-running-jobs.js`
-71. `scripts/repair-indexes.js`
-72. `scripts/repair-queue.js`
-73. `scripts/reset-dev-data.js`
-74. `scripts/rollup-product-intelligence.js`
-75. `scripts/rollup-trust-snapshots.js`
-76. `scripts/run-backup-restore-drill.js`
-77. `scripts/run-migration-rehearsal.js`
-78. `scripts/run-rollback-rehearsal.js`
-79. `scripts/run-trust-calibration.js`
-80. `scripts/scheduler-cadence-report.js`
-81. `scripts/validate-migration-snapshot.js`
-82. `scripts/verify-admin-rbac.js`
-83. `scripts/verify-audit-index.js`
-84. `scripts/verify-data-json.js`
-85. `scripts/verify-file-health.js`
-86. `scripts/verify-marketplace-intelligence.js`
-87. `scripts/verify-privacy-governance.js`
-88. `scripts/verify-production-readiness.js`
-89. `scripts/verify-queue.js`
-90. `scripts/verify-repository-contracts.js`
-91. `scripts/verify-scale-thresholds.js`
-92. `scripts/verify-workroom-indexes.js`
+44. `scripts/cleanup-notification-flood.js`
+45. `scripts/compact-counters.js`
+46. `scripts/compact-predictive-signals.js`
+47. `scripts/compact-queue.js`
+48. `scripts/compact-workrooms.js`
+49. `scripts/evaluate-pilot-gate.js`
+50. `scripts/export-incident-timeline.js`
+51. `scripts/export-migration-snapshot.js`
+52. `scripts/export-user-data.js`
+53. `scripts/find-null-json-files.js`
+54. `scripts/generate-vapid-keys.js`
+55. `scripts/inspect-predictive-scan-queue.js`
+56. `scripts/list-benchmark-history.js`
+57. `scripts/measure-storage-pressure.js`
+58. `scripts/migrate.js`
+59. `scripts/ops-weekly-review.js`
+60. `scripts/phase61-1-remediation-status.js`
+61. `scripts/postdeploy-smoke.js`
+62. `scripts/predeploy-check.js`
+63. `scripts/quarantine-corrupt-json.js`
+64. `scripts/queue-drain.js`
+65. `scripts/queue-retry-dlq.js`
+66. `scripts/rebuild-audit-index.js`
+67. `scripts/rebuild-counters.js`
+68. `scripts/rebuild-predictive-archive-index.js`
+69. `scripts/rebuild-search-relevance.js`
+70. `scripts/rebuild-workroom-search.js`
+71. `scripts/recover-stale-running-jobs.js`
+72. `scripts/repair-indexes.js`
+73. `scripts/repair-queue.js`
+74. `scripts/report-duplicate-records.js`
+75. `scripts/reset-dev-data.js`
+76. `scripts/rollup-product-intelligence.js`
+77. `scripts/rollup-trust-snapshots.js`
+78. `scripts/run-backup-restore-drill.js`
+79. `scripts/run-migration-rehearsal.js`
+80. `scripts/run-rollback-rehearsal.js`
+81. `scripts/run-trust-calibration.js`
+82. `scripts/scheduler-cadence-report.js`
+83. `scripts/validate-migration-snapshot.js`
+84. `scripts/verify-admin-rbac.js`
+85. `scripts/verify-audit-index.js`
+86. `scripts/verify-data-json.js`
+87. `scripts/verify-file-health.js`
+88. `scripts/verify-marketplace-intelligence.js`
+89. `scripts/verify-privacy-governance.js`
+90. `scripts/verify-production-readiness.js`
+91. `scripts/verify-queue.js`
+92. `scripts/verify-repository-contracts.js`
+93. `scripts/verify-scale-thresholds.js`
+94. `scripts/verify-workroom-indexes.js`
 
 ---
 
@@ -25890,6 +25892,329 @@ main().catch(err => {
 
 ---
 
+## `scripts/cleanup-notification-flood.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/cleanup-notification-flood.js
+// Phase 61.6B — Safe Notification Flood Cleanup
+// ═══════════════════════════════════════════════════════════════
+// Default: DRY-RUN only.
+// With --confirm:
+//   - Moves duplicate notifications to data/ops/quarantine/notification-flood/YYYY-MM-DD/
+//   - Keeps one notification per group
+//   - Updates notifications/user-index.json
+//
+// No deletion.
+// No external dependencies.
+// ═══════════════════════════════════════════════════════════════
+
+import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join, dirname, relative } from 'node:path';
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
+const CONFIRM = process.argv.includes('--confirm');
+const TYPE = getArg('--type') || 'job_expiry_warning';
+const JOB_ID = getArg('--job-id') || null;
+const USER_ID = getArg('--user-id') || null;
+const KEEP = getArg('--keep') || 'latest'; // latest | earliest
+const LIMIT_GROUPS = Number(getArg('--limit-groups') || 100000);
+
+const NOTIFICATIONS_DIR = join(DATA_DIR, 'notifications');
+const USER_INDEX_PATH = join(DATA_DIR, 'notifications', 'user-index.json');
+const QUARANTINE_ROOT = join(
+  DATA_DIR,
+  'ops',
+  'quarantine',
+  'notification-flood',
+  new Date().toISOString().slice(0, 10)
+);
+
+function getArg(name) {
+  const idx = process.argv.indexOf(name);
+  if (idx === -1) return null;
+  return process.argv[idx + 1] || null;
+}
+
+async function readJSON(filePath, fallback = null) {
+  try {
+    const raw = await readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+async function writeJSONAtomic(filePath, data) {
+  await mkdir(dirname(filePath), { recursive: true });
+  const tmp = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+  await writeFile(tmp, JSON.stringify(data, null, 2), 'utf-8');
+  await rename(tmp, filePath);
+}
+
+async function walk(dir, out = []) {
+  let entries = [];
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+
+  for (const ent of entries) {
+    const p = join(dir, ent.name);
+    if (ent.isDirectory()) {
+      await walk(p, out);
+    } else if (
+      ent.isFile() &&
+      ent.name.startsWith('ntf_') &&
+      ent.name.endsWith('.json') &&
+      !ent.name.endsWith('.tmp')
+    ) {
+      out.push(p);
+    }
+  }
+
+  return out;
+}
+
+function notificationGroupKey(n) {
+  const jobId = n && n.meta && n.meta.jobId ? n.meta.jobId : 'NO_JOB';
+  return [
+    n.userId || 'NO_USER',
+    n.type || 'NO_TYPE',
+    jobId,
+    n.message || 'NO_MESSAGE',
+  ].join('\t');
+}
+
+function shouldInclude(n) {
+  if (!n || !n.id || !n.id.startsWith('ntf_')) return false;
+  if (TYPE && n.type !== TYPE) return false;
+  if (JOB_ID) {
+    const jobId = n.meta && n.meta.jobId ? n.meta.jobId : null;
+    if (jobId !== JOB_ID) return false;
+  }
+  if (USER_ID && n.userId !== USER_ID) return false;
+  return true;
+}
+
+function chooseKeep(rows) {
+  const sorted = rows.slice().sort((a, b) => {
+    const at = new Date(a.notification.createdAt || 0).getTime();
+    const bt = new Date(b.notification.createdAt || 0).getTime();
+    return at - bt;
+  });
+
+  if (KEEP === 'earliest') return sorted[0];
+  return sorted[sorted.length - 1];
+}
+
+function safeQuarantineName(row, index) {
+  const created = String(row.notification.createdAt || 'no-date')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .slice(0, 40);
+
+  return `${row.notification.id}.${created}.${index}.json`;
+}
+
+async function moveToQuarantine(row, index) {
+  const rel = relative(DATA_DIR, row.filePath).replace(/[\\/]/g, '__');
+  const targetDir = join(QUARANTINE_ROOT, row.notification.userId || 'NO_USER');
+  await mkdir(targetDir, { recursive: true });
+
+  let target = join(targetDir, safeQuarantineName(row, index));
+  if (existsSync(target)) {
+    target = join(targetDir, `${row.notification.id}.${Date.now()}.${Math.random().toString(36).slice(2)}.json`);
+  }
+
+  const sidecar = {
+    kind: 'notification_flood_quarantine_record',
+    originalPath: row.filePath,
+    originalRelativePath: rel,
+    notificationId: row.notification.id,
+    userId: row.notification.userId || null,
+    type: row.notification.type || null,
+    jobId: row.notification.meta && row.notification.meta.jobId ? row.notification.meta.jobId : null,
+    message: row.notification.message || null,
+    createdAt: row.notification.createdAt || null,
+    quarantinedAt: new Date().toISOString(),
+  };
+
+  await rename(row.filePath, target);
+  await writeJSONAtomic(`${target}.meta.json`, sidecar);
+
+  return target;
+}
+
+function removeIdsFromUserIndex(index, removedByUser) {
+  const next = index && typeof index === 'object' ? { ...index } : {};
+
+  for (const [userId, ids] of removedByUser.entries()) {
+    const current = Array.isArray(next[userId]) ? next[userId] : [];
+    const removeSet = new Set(ids);
+    next[userId] = current.filter(id => !removeSet.has(id));
+    if (next[userId].length === 0) delete next[userId];
+  }
+
+  return next;
+}
+
+async function main() {
+  console.log('🧹 Yawmia Notification Flood Cleanup');
+  console.log(`   Data: ${DATA_DIR}`);
+  console.log(`   Mode: ${CONFIRM ? 'CONFIRM' : 'DRY-RUN'}`);
+  console.log(`   Type: ${TYPE || 'all'}`);
+  console.log(`   Job ID: ${JOB_ID || 'all'}`);
+  console.log(`   User ID: ${USER_ID || 'all'}`);
+  console.log(`   Keep: ${KEEP}`);
+  console.log('');
+
+  const files = await walk(NOTIFICATIONS_DIR);
+  const groups = new Map();
+
+  let scanned = 0;
+  let matched = 0;
+  let parseErrors = 0;
+
+  for (const filePath of files) {
+    scanned++;
+    const notification = await readJSON(filePath);
+    if (!notification) {
+      parseErrors++;
+      continue;
+    }
+
+    if (!shouldInclude(notification)) continue;
+
+    matched++;
+    const key = notificationGroupKey(notification);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ filePath, notification });
+  }
+
+  const duplicateGroups = Array.from(groups.entries())
+    .filter(([, rows]) => rows.length > 1)
+    .slice(0, LIMIT_GROUPS);
+
+  const plan = [];
+  let duplicateFiles = 0;
+
+  for (const [key, rows] of duplicateGroups) {
+    const keep = chooseKeep(rows);
+    const toQuarantine = rows.filter(r => r !== keep);
+    duplicateFiles += toQuarantine.length;
+
+    const [userId, type, jobId, message] = key.split('\t');
+    plan.push({
+      userId,
+      type,
+      jobId,
+      message,
+      total: rows.length,
+      keepNotificationId: keep.notification.id,
+      keepCreatedAt: keep.notification.createdAt || null,
+      quarantineCount: toQuarantine.length,
+      firstCreatedAt: rows.map(r => r.notification.createdAt).filter(Boolean).sort()[0] || null,
+      lastCreatedAt: rows.map(r => r.notification.createdAt).filter(Boolean).sort().slice(-1)[0] || null,
+      toQuarantine,
+    });
+  }
+
+  console.log(JSON.stringify({
+    ok: true,
+    dryRun: !CONFIRM,
+    scannedNotificationFiles: scanned,
+    matchedNotificationFiles: matched,
+    parseErrors,
+    duplicateGroups: duplicateGroups.length,
+    duplicateFilesToQuarantine: duplicateFiles,
+    preview: plan.map(p => ({
+      userId: p.userId,
+      type: p.type,
+      jobId: p.jobId,
+      total: p.total,
+      keepNotificationId: p.keepNotificationId,
+      keepCreatedAt: p.keepCreatedAt,
+      quarantineCount: p.quarantineCount,
+      firstCreatedAt: p.firstCreatedAt,
+      lastCreatedAt: p.lastCreatedAt,
+      message: p.message,
+    })).slice(0, 30),
+  }, null, 2));
+
+  if (!CONFIRM) {
+    console.log('');
+    console.log('DRY RUN ONLY. No files changed.');
+    console.log('Run with --confirm after backup if the plan is correct.');
+    return;
+  }
+
+  if (duplicateFiles === 0) {
+    console.log('');
+    console.log('Nothing to quarantine.');
+    return;
+  }
+
+  const removedByUser = new Map();
+  const moved = [];
+
+  let moveIndex = 0;
+  for (const item of plan) {
+    for (const row of item.toQuarantine) {
+      moveIndex++;
+      const target = await moveToQuarantine(row, moveIndex);
+      moved.push({
+        notificationId: row.notification.id,
+        userId: row.notification.userId || null,
+        from: row.filePath,
+        to: target,
+      });
+
+      const userId = row.notification.userId || 'NO_USER';
+      if (!removedByUser.has(userId)) removedByUser.set(userId, []);
+      removedByUser.get(userId).push(row.notification.id);
+    }
+  }
+
+  const index = await readJSON(USER_INDEX_PATH, {});
+  const nextIndex = removeIdsFromUserIndex(index, removedByUser);
+  await writeJSONAtomic(USER_INDEX_PATH, nextIndex);
+
+  const reportPath = join(
+    QUARANTINE_ROOT,
+    `notification-flood-cleanup-report-${Date.now()}.json`
+  );
+
+  await writeJSONAtomic(reportPath, {
+    kind: 'notification_flood_cleanup_report',
+    type: TYPE,
+    jobId: JOB_ID,
+    userId: USER_ID,
+    keep: KEEP,
+    movedCount: moved.length,
+    moved,
+    generatedAt: new Date().toISOString(),
+  });
+
+  console.log('');
+  console.log(`DONE: quarantined ${moved.length} duplicate notification file(s).`);
+  console.log(`Report: ${reportPath}`);
+  console.log(`Quarantine: ${QUARANTINE_ROOT}`);
+}
+
+main().catch(err => {
+  console.error(JSON.stringify({
+    ok: false,
+    error: err && err.message ? err.message : String(err),
+  }, null, 2));
+  process.exit(1);
+});
+```
+
+---
+
 ## `scripts/compact-counters.js`
 
 ```javascript
@@ -31761,6 +32086,192 @@ main().catch(err => {
     if (err.stack) console.error(err.stack);
   }
 
+  process.exit(1);
+});
+```
+
+---
+
+## `scripts/report-duplicate-records.js`
+
+```javascript
+#!/usr/bin/env node
+// ═══════════════════════════════════════════════════════════════
+// scripts/report-duplicate-records.js
+// Phase 61.6B — Read-only duplicate physical record inspector
+// ═══════════════════════════════════════════════════════════════
+// Reports physical-vs-logical records for file-backed collections.
+// No mutation.
+// No external dependencies.
+// ═══════════════════════════════════════════════════════════════
+
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+
+const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
+const COLLECTION = getArg('--collection') || 'jobs';
+
+const COLLECTIONS = {
+  jobs: { dir: 'jobs', prefix: 'job_' },
+  applications: { dir: 'applications', prefix: 'app_' },
+  notifications: { dir: 'notifications', prefix: 'ntf_' },
+  messages: { dir: 'messages', prefix: 'msg_' },
+  attendance: { dir: 'attendance', prefix: 'att_' },
+  payments: { dir: 'payments', prefix: 'pay_' },
+  ratings: { dir: 'ratings', prefix: 'rtg_' },
+  availability_ads: { dir: 'availability_ads', prefix: 'aad_' },
+  direct_offers: { dir: 'direct_offers', prefix: 'dof_' },
+};
+
+function getArg(name) {
+  const idx = process.argv.indexOf(name);
+  if (idx === -1) return null;
+  return process.argv[idx + 1] || null;
+}
+
+async function readJSON(filePath) {
+  try {
+    const raw = await readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch (err) {
+    return { __readError: err.message };
+  }
+}
+
+async function walk(dir, prefix, out = []) {
+  let entries = [];
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+
+  for (const ent of entries) {
+    const p = join(dir, ent.name);
+    if (ent.isDirectory()) {
+      await walk(p, prefix, out);
+    } else if (
+      ent.isFile() &&
+      ent.name.startsWith(prefix) &&
+      ent.name.endsWith('.json') &&
+      !ent.name.endsWith('.tmp')
+    ) {
+      out.push(p);
+    }
+  }
+
+  return out;
+}
+
+function isShardPath(filePath) {
+  return /[\\/]\d{4}-\d{2}[\\/]/.test(filePath);
+}
+
+function freshnessMs(record = {}) {
+  const fields = [
+    record.updatedAt,
+    record.completedAt,
+    record.cancelledAt,
+    record.renewedAt,
+    record.startedAt,
+    record.expiredAt,
+    record.createdAt,
+    record.appliedAt,
+  ];
+
+  let max = 0;
+  for (const iso of fields) {
+    if (!iso) continue;
+    const ms = new Date(iso).getTime();
+    if (Number.isFinite(ms) && ms > max) max = ms;
+  }
+
+  return max;
+}
+
+async function main() {
+  const cfg = COLLECTIONS[COLLECTION];
+  if (!cfg) {
+    console.error(JSON.stringify({
+      ok: false,
+      error: `Unknown collection: ${COLLECTION}`,
+      supported: Object.keys(COLLECTIONS),
+    }, null, 2));
+    process.exit(1);
+  }
+
+  const root = join(DATA_DIR, cfg.dir);
+  const files = await walk(root, cfg.prefix);
+
+  const byId = new Map();
+  const corrupt = [];
+  let physicalCount = 0;
+
+  for (const filePath of files) {
+    physicalCount++;
+    const data = await readJSON(filePath);
+
+    if (!data || data.__readError || !data.id) {
+      corrupt.push({
+        path: relative(DATA_DIR, filePath),
+        error: data && data.__readError ? data.__readError : 'missing id',
+      });
+      continue;
+    }
+
+    if (!byId.has(data.id)) byId.set(data.id, []);
+    const st = await stat(filePath).catch(() => null);
+
+    byId.get(data.id).push({
+      path: relative(DATA_DIR, filePath),
+      status: data.status || null,
+      sourceType: data.sourceType || null,
+      createdAt: data.createdAt || null,
+      updatedAt: data.updatedAt || null,
+      expiresAt: data.expiresAt || null,
+      expiryWarningNotified: !!data.expiryWarningNotified,
+      shardPath: isShardPath(filePath),
+      freshnessMs: freshnessMs(data),
+      sizeBytes: st ? st.size : null,
+      mtime: st ? st.mtime.toISOString() : null,
+    });
+  }
+
+  const duplicates = [];
+  for (const [id, rows] of byId.entries()) {
+    if (rows.length > 1) {
+      const sorted = rows.slice().sort((a, b) => b.freshnessMs - a.freshnessMs);
+      duplicates.push({
+        id,
+        physicalCopies: rows.length,
+        recommendedCanonicalPath: sorted[0] ? sorted[0].path : null,
+        copies: rows,
+      });
+    }
+  }
+
+  duplicates.sort((a, b) => b.physicalCopies - a.physicalCopies || a.id.localeCompare(b.id));
+
+  console.log(JSON.stringify({
+    ok: corrupt.length === 0,
+    dataDir: DATA_DIR,
+    collection: COLLECTION,
+    physicalCount,
+    logicalUniqueCount: byId.size,
+    duplicateIdCount: duplicates.length,
+    duplicatePhysicalExtraCount: duplicates.reduce((sum, d) => sum + d.physicalCopies - 1, 0),
+    corruptCount: corrupt.length,
+    duplicates,
+    corrupt,
+    generatedAt: new Date().toISOString(),
+  }, null, 2));
+}
+
+main().catch(err => {
+  console.error(JSON.stringify({
+    ok: false,
+    error: err && err.message ? err.message : String(err),
+  }, null, 2));
   process.exit(1);
 });
 ```
