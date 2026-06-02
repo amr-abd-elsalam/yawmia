@@ -160,8 +160,8 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Artifact | Production | Risk | Decision |
 |---|---|---|---|---|
-| `scripts/rebuild-audit-index.js` | Audit search index | Approval Required | High | Keep + add dry-run/json |
-| `scripts/rebuild-counters.js` | Direct offer counter file | Approval Required | High | Keep + add dry-run/json |
+| `scripts/rebuild-audit-index.js` | Audit search index | Approval Required | High | Hardened: dry-run default + confirm + json |
+| `scripts/rebuild-counters.js` | Direct offer counter file | Approval Required | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-predictive-archive-index.js` | Predictive archive index | Manual With Caution | Medium/High | Keep |
 | `scripts/rebuild-search-relevance.js` | Search/query indexes | Approval Required | High | Keep |
 | `scripts/rebuild-workroom-search.js` | Workroom search indexes | Manual With Caution | Medium/High | Keep |
