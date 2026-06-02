@@ -409,11 +409,15 @@ async function enforceMaxNotifications(userId) {
   }
 }
 
+const NOTIFICATION_LISTENER_FLAG = '__yawmiaNotificationListenersRegistered';
+
 /**
  * Setup EventBus listeners for automatic notification creation
  */
 export function setupNotificationListeners() {
   if (!config.NOTIFICATIONS.enabled) return;
+  if (globalThis[NOTIFICATION_LISTENER_FLAG]) return;
+  globalThis[NOTIFICATION_LISTENER_FLAG] = true;
 
   // Worker gets notification when their application is accepted
   if (config.NOTIFICATIONS.workerNotifications.applicationAccepted) {

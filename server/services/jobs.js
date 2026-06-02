@@ -3,6 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import crypto from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import config from '../../config.js';
 import { atomicWrite, readJSON, safeReadJSON, getRecordPath, getWriteRecordPath, readIndex, writeIndex, listJSON, getCollectionPath, addToSetIndex, getFromSetIndex, walkCollectionFiles } from './database.js';
 import { eventBus } from './eventBus.js';
@@ -10,6 +12,126 @@ import { withLock } from './resourceLock.js';
 import { isAcceptedApplicationStatus, isPendingApplicationStatus } from './applicationStatus.js';
 
 const EMPLOYER_JOBS_INDEX = config.DATABASE.indexFiles.employerJobsIndex;
+
+function jobFreshnessMs(job = {}) {
+  const candidates = [
+    job.updatedAt,
+    job.completedAt,
+    job.cancelledAt,
+    job.renewedAt,
+    job.startedAt,
+    job.expiredAt,
+    job.createdAt,
+  ];
+
+  let max = 0;
+  for (const iso of candidates) {
+    if (!iso) continue;
+    const ms = new Date(iso).getTime();
+    if (Number.isFinite(ms) && ms > max) max = ms;
+  }
+  return max;
+}
+
+function isShardPath(filePath = '') {
+  return /[\\/]\d{4}-\d{2}[\\/]/.test(String(filePath));
+}
+
+function pickCanonicalJobEntry(current, candidate) {
+  if (!current) return candidate;
+  if (!candidate) return current;
+
+  const a = current.job || {};
+  const b = candidate.job || {};
+
+  const aFresh = jobFreshnessMs(a);
+  const bFresh = jobFreshnessMs(b);
+
+  if (bFresh > aFresh) return candidate;
+  if (aFresh > bFresh) return current;
+
+  // If freshness ties, prefer a copy that already carries lifecycle/idempotency flags.
+  if (!a.expiryWarningNotified && b.expiryWarningNotified) return candidate;
+  if (a.expiryWarningNotified && !b.expiryWarningNotified) return current;
+
+  // Prefer sharded copy over flat/root legacy copy when otherwise equal.
+  if (!isShardPath(current.filePath) && isShardPath(candidate.filePath)) return candidate;
+
+  return current;
+}
+
+async function readUniqueJobEntries() {
+  const jobsDir = getCollectionPath('jobs');
+  const files = await walkCollectionFiles(jobsDir, 'job_');
+  const byId = new Map();
+
+  for (const entry of files) {
+    try {
+      const job = await readJSON(entry.filePath);
+      if (!job || !job.id || !job.id.startsWith('job_')) continue;
+
+      const candidate = { job, filePath: entry.filePath, fileName: entry.fileName };
+      byId.set(job.id, pickCanonicalJobEntry(byId.get(job.id), candidate));
+    } catch (_) {
+      // Corrupt job files are handled by verification scripts; do not break runtime sweeps.
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+function dedupeJobsById(jobs = []) {
+  const byId = new Map();
+
+  for (const job of jobs) {
+    if (!job || !job.id || !job.id.startsWith('job_')) continue;
+    const current = byId.get(job.id);
+    const picked = pickCanonicalJobEntry(
+      current ? { job: current, filePath: current._sourcePath || '' } : null,
+      { job, filePath: job._sourcePath || '' }
+    );
+    byId.set(job.id, picked.job);
+  }
+
+  return Array.from(byId.values());
+}
+
+function expiryWarningMarkerId(job) {
+  const expiresKey = String(job.expiresAt || 'no_expiry')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .slice(0, 40);
+
+  return `jew_${job.id}_${expiresKey}`.slice(0, 100);
+}
+
+/**
+ * Cross-process durable idempotency marker for expiry warnings.
+ * Uses fs write with flag='wx' so only one process can create the marker.
+ * Returns true if this process created the marker; false if it already existed.
+ */
+async function tryCreateExpiryWarningMarker(job) {
+  const markerId = expiryWarningMarkerId(job);
+  const markerPath = getRecordPath('ops', markerId);
+
+  const marker = {
+    id: markerId,
+    kind: 'job_expiry_warning_idempotency',
+    jobId: job.id,
+    employerId: job.employerId || null,
+    expiresAt: job.expiresAt || null,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await mkdir(dirname(markerPath), { recursive: true });
+    await writeFile(markerPath, JSON.stringify(marker, null, 2), { encoding: config.DATABASE.encoding, flag: 'wx' });
+    return true;
+  } catch (err) {
+    if (err && err.code === 'EEXIST') return false;
+    // Fail closed for flood-control: if marker cannot be created, do not emit a warning.
+    return false;
+  }
+}
 
 /**
  * Calculate fees
@@ -459,7 +581,7 @@ export async function incrementAccepted(jobId) {
 export async function listAll() {
   const jobsDir = getCollectionPath('jobs');
   const allJobs = await listJSON(jobsDir, { tolerateCorrupt: true });
-  return allJobs.filter(item => item.id && item.id.startsWith('job_'));
+  return dedupeJobsById(allJobs.filter(item => item.id && item.id.startsWith('job_')));
 }
 
 /**
@@ -567,49 +689,44 @@ async function rejectPendingApplications(jobId, jobTitle) {
  * @returns {number} count of jobs that were expired
  */
 export async function enforceExpiredJobs() {
-  const jobsDir = getCollectionPath('jobs');
-  let allFiles;
+  let uniqueEntries;
   try {
-    allFiles = await walkCollectionFiles(jobsDir, 'job_');
+    uniqueEntries = await readUniqueJobEntries();
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
   }
 
-  // Compatibility: map to the format used below
-  const jsonFiles = allFiles;
   let count = 0;
   const now = new Date();
-  const expiredJobIds = [];
+  const expiredJobIds = new Set();
   const expiredJobTitles = {};
   const BATCH_SIZE = 100;
 
-  for (let i = 0; i < jsonFiles.length; i++) {
-    let job = null;
-    try {
-      job = await readJSON(jsonFiles[i].filePath);
-    } catch (_) {
-      // Phase 61.1: corrupt job file must not stop expiry enforcement.
-      // verify-data-json/find-null-json-files are responsible for reporting details.
-      job = null;
-    }
+  for (let i = 0; i < uniqueEntries.length; i++) {
+    const entry = uniqueEntries[i];
+    const job = entry.job;
 
     if (job && job.status === 'open' && job.expiresAt && new Date(job.expiresAt) < now) {
       job.status = 'expired';
-      const jobPath = getRecordPath('jobs', job.id);
-      await atomicWrite(jobPath, job);
-      expiredJobIds.push(job.id);
+      job.expiredAt = job.expiredAt || new Date().toISOString();
+
+      // Write to the exact canonical/scanned physical file, not getRecordPath().
+      await atomicWrite(entry.filePath, job);
+
+      expiredJobIds.add(job.id);
       expiredJobTitles[job.id] = job.title;
       count++;
     }
-    // Yield to event loop every BATCH_SIZE files
+
+    // Yield to event loop every BATCH_SIZE logical jobs
     if ((i + 1) % BATCH_SIZE === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }
   }
 
   // Batch update jobs index — single read + single write
-  if (expiredJobIds.length > 0) {
+  if (expiredJobIds.size > 0) {
     const jobsIndex = await readIndex('jobsIndex');
     for (const jobId of expiredJobIds) {
       if (jobsIndex[jobId]) {
@@ -618,7 +735,7 @@ export async function enforceExpiredJobs() {
     }
     await writeIndex('jobsIndex', jobsIndex);
 
-    // Auto-reject pending applications for each expired job (fire-and-forget)
+    // Auto-reject pending applications once per logical job.
     for (const jobId of expiredJobIds) {
       rejectPendingApplications(jobId, expiredJobTitles[jobId]).catch(() => {});
     }
@@ -867,10 +984,9 @@ export function renewJob(jobId, employerId) {
  * @returns {Promise<number>} count of warnings sent
  */
 export async function checkExpiryWarnings() {
-  const jobsDir = getCollectionPath('jobs');
-  let allJobFiles;
+  let uniqueEntries;
   try {
-    allJobFiles = await walkCollectionFiles(jobsDir, 'job_');
+    uniqueEntries = await readUniqueJobEntries();
   } catch (err) {
     if (err.code === 'ENOENT') return 0;
     throw err;
@@ -880,9 +996,9 @@ export async function checkExpiryWarnings() {
   const warningWindowMs = 24 * 60 * 60 * 1000; // 24 hours
   let count = 0;
 
-  for (const entry of allJobFiles) {
+  for (const entry of uniqueEntries) {
     try {
-      const job = await readJSON(entry.filePath);
+      const job = entry.job;
       if (!job) continue;
       if (job.status !== 'open') continue;
       if (job.expiryWarningNotified) continue;
@@ -893,10 +1009,20 @@ export async function checkExpiryWarnings() {
 
       // Only warn if expiry is within 24 hours AND not already expired
       if (timeUntilExpiry > 0 && timeUntilExpiry <= warningWindowMs) {
-        // Set flag to prevent duplicate warnings
+        // Cross-process durable flood-control.
+        const markerCreated = await tryCreateExpiryWarningMarker(job);
+
+        // If marker already exists, another run/process already emitted or claimed this warning.
+        if (!markerCreated) {
+          job.expiryWarningNotified = true;
+          await atomicWrite(entry.filePath, job).catch(() => {});
+          continue;
+        }
+
+        // Set flag on the same physical file that was selected as canonical/scanned.
         job.expiryWarningNotified = true;
-        const jobPath = getRecordPath('jobs', job.id);
-        await atomicWrite(jobPath, job);
+        job.expiryWarningNotifiedAt = new Date().toISOString();
+        await atomicWrite(entry.filePath, job);
 
         // Get pending applicant IDs
         let pendingWorkerIds = [];
@@ -908,7 +1034,7 @@ export async function checkExpiryWarnings() {
             .map(a => a.workerId);
         } catch (_) { /* non-fatal */ }
 
-        // Emit event for notification system
+        // Emit event for notification system once per logical job + expiry timestamp marker.
         eventBus.emit('job:expiry_warning', {
           jobId: job.id,
           employerId: job.employerId,

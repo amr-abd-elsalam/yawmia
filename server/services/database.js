@@ -265,7 +265,11 @@ export async function safeReadJSON(filePath) {
     const raw = await readFile(filePath, ENCODING);
     return JSON.parse(raw);
   } catch (err) {
-    if (err.code === 'ENOENT') return null;
+    if (err.code === 'ENOENT') {
+      const shardResult = await _shardFallbackRead(filePath);
+      if (shardResult) return shardResult;
+      return null;
+    }
     if (err instanceof SyntaxError) {
       // Corrupted JSON — attempt recovery from .tmp backup
       const tmpPath = filePath + '.tmp';
