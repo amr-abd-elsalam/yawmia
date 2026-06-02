@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-06-02T05:21:31.544Z
+> Auto-generated: 2026-06-02T17:14:25.025Z
 > Files in this part: 132
 
 ## Files
