@@ -89,10 +89,10 @@ These scripts are expected to remain long-term.
 |---|---|---:|---:|---|---|---|
 | `scripts/repair-indexes.js` | Rebuild secondary indexes from source records | Yes | Yes | Approval Required | High | Keep |
 | `scripts/repair-queue.js` | Repair queue summary/location index | Yes | Yes + approval id | Approval Required | High | Keep |
-| `scripts/quarantine-corrupt-json.js` | Move corrupt JSON into quarantine | Must be dry-run first | Yes | Emergency Only | High | Keep after safety review |
-| `scripts/recover-stale-running-jobs.js` | Recover stale running queue jobs | Must be dry-run first | Yes | Emergency Only | High/Critical | Keep after safety review |
-| `scripts/queue-retry-dlq.js` | Retry dead-letter queue jobs | Must be dry-run first | Yes | Emergency Only | High | Keep |
-| `scripts/queue-drain.js` | Drain queue | Must be dry-run first | Yes | Emergency Only | Critical | Keep only with strict controls |
+| `scripts/quarantine-corrupt-json.js` | Move corrupt JSON into quarantine | Yes — dry-run default | Yes | Emergency Only | High | Hardened: dry-run default + confirm + json; moves, never deletes |
+| `scripts/recover-stale-running-jobs.js` | Audit stale running queue jobs | Yes — dry-run auditor only | Confirm intentionally blocked | Emergency Read-Only | Low now / High future | Keep + document; no mutation implemented |
+| `scripts/queue-retry-dlq.js` | Retry dead-letter queue jobs | Yes — dry-run default | Yes | Emergency Only | High | Hardened: dry-run default + confirm + json |
+| `scripts/queue-drain.js` | Process due queue jobs | Yes — dry-run default | Yes + active-worker preflight | Emergency Only | Critical | Hardened: dry-run default + confirm + json + PM2/server preflight |
 
 ---
 
@@ -101,11 +101,11 @@ These scripts are expected to remain long-term.
 | Script | Incident Class | Production | Risk | Decision |
 |---|---|---|---|---|
 | `scripts/cleanup-notification-flood.js` | Notification flood quarantine | Emergency Only | High | Keep + document |
-| `scripts/quarantine-corrupt-json.js` | JSON corruption quarantine | Emergency Only | High | Keep + tests |
+| `scripts/quarantine-corrupt-json.js` | JSON corruption quarantine | Emergency Only | High | Hardened: dry-run default + confirm + json; moves, never deletes |
 | `scripts/find-null-json-files.js` | JSON corruption diagnosis | Safe Read-Only | Low | Keep |
 | `scripts/report-duplicate-records.js` | Duplicate physical record diagnosis | Safe Read-Only | Low | Keep |
 | `scripts/inspect-predictive-scan-queue.js` | predictive_scan flood diagnosis | Safe Read-Only | Low | Keep |
-| `scripts/recover-stale-running-jobs.js` | Queue stale running recovery | Emergency Only | High/Critical | Keep with approval |
+| `scripts/recover-stale-running-jobs.js` | Queue stale running dry-run audit | Emergency Read-Only | Low now / High future | Keep + document; confirm not implemented |
 | `scripts/export-incident-timeline.js` | Incident timeline export | Safe Read-Only | Low | Keep |
 
 ---
@@ -176,9 +176,9 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/verify-queue.js` | Verify queue health | Safe Read-Only | Low | Safe |
 | `scripts/repair-queue.js` | Repair queue summary/index | Approval Required | High | Dry-run first, approval id for confirm |
 | `scripts/compact-queue.js` | Archive/compact queue | Approval Required | High | Dry-run first |
-| `scripts/queue-retry-dlq.js` | Retry DLQ | Emergency Only | High | Dry-run first |
-| `scripts/queue-drain.js` | Drain queue | Emergency Only | Critical | Never without explicit approval |
-| `scripts/recover-stale-running-jobs.js` | Recover stale running | Emergency Only | High/Critical | Dry-run and quiet-state proof required |
+| `scripts/queue-retry-dlq.js` | Retry DLQ | Emergency Only | High | Hardened: dry-run default + confirm + json |
+| `scripts/queue-drain.js` | Process due queue jobs | Emergency Only | Critical | Hardened: dry-run default + confirm + json + active-worker preflight |
+| `scripts/recover-stale-running-jobs.js` | Audit stale running jobs | Emergency Read-Only | Low now / High future | Confirm intentionally not implemented; no queue mutation |
 | `scripts/inspect-predictive-scan-queue.js` | Read-only flood inspection | Safe Read-Only | Low | Safe |
 
 ---
@@ -224,15 +224,15 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/phase61-1-remediation-status.js` | Verify/Incident | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown | Direct review |
 | `scripts/postdeploy-smoke.js` | Smoke | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
 | `scripts/predeploy-check.js` | Deploy Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
-| `scripts/quarantine-corrupt-json.js` | Recovery | Unknown | Emergency Only | Yes | Moves quarantine | No | High | Direct review + tests |
-| `scripts/queue-drain.js` | Queue Ops / Destructive | Unknown | Emergency Only | Yes | Possible | Yes | Critical | Strict approval |
-| `scripts/queue-retry-dlq.js` | Queue Recovery | Unknown | Emergency Only | Yes | No | Yes | High | Direct review |
+| `scripts/quarantine-corrupt-json.js` | Recovery | Yes | Emergency Only | Yes with `--confirm` | Moves quarantine, never deletes | No | High | Hardened: dry-run default + confirm + json |
+| `scripts/queue-drain.js` | Queue Ops / Due Job Processing | Yes | Emergency Only | Yes with `--confirm` | No direct deletion | Yes | Critical | Hardened: dry-run default + confirm + json + active-worker preflight |
+| `scripts/queue-retry-dlq.js` | Queue Recovery | Yes | Emergency Only | Yes with `--confirm` | No | Yes | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-audit-index.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-counters.js` | Rebuild Counters | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-predictive-archive-index.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
 | `scripts/rebuild-search-relevance.js` | Rebuild Index | Unknown | Approval Required | Derived write | No | No | High | Direct review |
 | `scripts/rebuild-workroom-search.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
-| `scripts/recover-stale-running-jobs.js` | Queue Recovery | Unknown | Emergency Only | Yes | No | Yes | High/Critical | Direct review |
+| `scripts/recover-stale-running-jobs.js` | Queue Recovery / Auditor | Yes | Emergency Read-Only | No current mutation | No | Reads queue only | Low now / High future | Keep + document; confirm intentionally not implemented |
 | `scripts/repair-indexes.js` | Repair Index | Yes | Approval Required | Yes | No | No | High | Keep + json/tests |
 | `scripts/repair-queue.js` | Queue Repair | Yes | Approval Required | Yes | No | Yes | High | Keep + tests |
 | `scripts/report-duplicate-records.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
@@ -281,6 +281,8 @@ Must run dry-run first and preserve output:
 node scripts/repair-indexes.js --dry-run
 node scripts/repair-queue.js --dry-run --json
 node scripts/compact-queue.js --dry-run --json
+node scripts/queue-retry-dlq.js --dry-run --json
+node scripts/queue-drain.js --dry-run --json
 node scripts/export-migration-snapshot.js --dry-run --json
 ```
 
@@ -382,6 +384,7 @@ node scripts/quarantine-corrupt-json.js --confirm --json
 node scripts/repair-indexes.js --confirm
 node scripts/repair-queue.js --confirm --json
 node scripts/compact-queue.js --confirm --json
+node scripts/queue-retry-dlq.js --confirm --json
 node scripts/queue-drain.js --confirm --json
 node scripts/cleanup-notification-flood.js --confirm
 node scripts/anonymize-user-data.js --confirm
