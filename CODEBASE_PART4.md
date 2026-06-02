@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-02T17:14:25.071Z
+> Auto-generated: 2026-06-02T17:48:38.862Z
 > Files in this part: 94
 
 ## Files
@@ -25834,16 +25834,24 @@ try {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/cleanup-attachments.js — Workroom Attachment Cleanup CLI (Phase 55)
+// scripts/cleanup-attachments.js — Workroom Attachment Cleanup CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/cleanup-attachments.js [--dry-run] [--grace-hours=24]
+//   node scripts/cleanup-attachments.js --dry-run --json
+//   node scripts/cleanup-attachments.js --confirm --json
+//   node scripts/cleanup-attachments.js --dry-run --grace-hours=24 --json
+//
+// Default is DRY-RUN. Deleting orphan attachments requires --confirm.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -25852,40 +25860,87 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
-async function main() {
-  const dryRun = process.argv.includes('--dry-run');
-  const graceHoursRaw = getArg('grace-hours', '');
-  const graceHours = graceHoursRaw ? parseInt(graceHoursRaw) : undefined;
+function printHuman(result) {
+  console.log(`\n🧼 يوميّة Attachment Cleanup ${result.dryRun ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
+  console.log(`Grace hours: ${result.graceHours ?? '-'}`);
 
-  console.log(`\n🧼 يوميّة Attachment Cleanup${dryRun ? ' (DRY RUN)' : ''}\n`);
+  if (result.skipped) {
+    console.log(`Skipped: ${result.reason}`);
+  }
+
+  console.log(`Scanned: ${result.scanned || 0}`);
+  console.log(`Orphan candidates: ${result.orphanCandidates || 0}`);
+  console.log(`Deleted: ${result.deleted || 0}`);
+  console.log(`Skipped records: ${result.skippedCount || result.skipped || 0}`);
+  console.log(`Failed: ${result.failed || 0}`);
+
+  if (result.dryRun) {
+    console.log('\nNo files changed.');
+    console.log('To delete orphan attachment files after review:');
+    console.log('  node scripts/cleanup-attachments.js --confirm --json');
+  } else {
+    console.log('\n✅ Attachment cleanup complete');
+  }
+
+  console.log('');
+}
+
+async function main() {
+  const graceHoursRaw = getArg('grace-hours', '');
+  const graceHours = graceHoursRaw ? parseInt(graceHoursRaw, 10) : undefined;
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
   const { cleanupOrphanAttachments } = await import('../server/services/workroomHygiene.js');
 
-  const result = await cleanupOrphanAttachments({
-    dryRun,
+  const serviceResult = await cleanupOrphanAttachments({
+    dryRun: DRY_RUN,
     graceHours,
   });
 
-  if (result.skipped) {
-    console.log(`⚠️ Skipped: ${result.reason}`);
-    process.exit(0);
-  }
+  const result = {
+    ok: serviceResult.ok !== false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: !DRY_RUN && (serviceResult.deleted || 0) > 0,
+    script: 'scripts/cleanup-attachments.js',
+    scope: 'workroom_orphan_attachments',
+    ...serviceResult,
+    skippedCount: typeof serviceResult.skipped === 'number' ? serviceResult.skipped : 0,
+    warnings: [
+      ...(serviceResult.warnings || []),
+      ...(DRY_RUN ? ['Dry-run only. No attachment files were deleted.'] : []),
+    ],
+    confirmCommand: 'node scripts/cleanup-attachments.js --confirm --json',
+    generatedAt: new Date().toISOString(),
+  };
 
-  console.log('✅ Attachment cleanup complete');
-  console.log(`   scanned: ${result.scanned || 0}`);
-  console.log(`   orphan candidates: ${result.orphanCandidates || 0}`);
-  console.log(`   deleted: ${result.deleted || 0}`);
-  console.log(`   skipped: ${result.skipped || 0}`);
-  console.log(`   failed: ${result.failed || 0}`);
-  console.log(`   graceHours: ${result.graceHours || 0}\n`);
+  if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+  else printHuman(result);
+
+  if (!result.ok) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Attachment cleanup failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    script: 'scripts/cleanup-attachments.js',
+    error: err && err.message ? err.message : String(err),
+    stack: err && err.stack ? err.stack : null,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Attachment cleanup failed:', failure.error);
+    if (failure.stack) console.error(failure.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -26220,10 +26275,14 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/compact-counters.js — Counter Compaction CLI (Phase 50)
+// scripts/compact-counters.js — Counter Compaction CLI (Phase 50/61)
 // ═══════════════════════════════════════════════════════════════
-// Usage: node scripts/compact-counters.js
-// Safely compacts direct-offer counter file.
+// Usage:
+//   node scripts/compact-counters.js --dry-run --json
+//   node scripts/compact-counters.js --confirm --json
+//
+// Default is DRY-RUN. Mutation requires --confirm.
+// Compacts derived direct-offer counter file only; does not mutate source offers.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -26231,38 +26290,116 @@ try {
   dotenv.config();
 } catch (_) {}
 
-async function main() {
-  console.log('\n🧹 يوميّة Counter Compaction\n');
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
+function printHuman(result) {
+  console.log(`\n🧹 يوميّة Counter Compaction ${result.dryRun ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
+  console.log(`Counter file size: ${result.fileSizeMB} MB`);
+
+  if (result.dryRun) {
+    console.log('\nNo files changed.');
+    console.log('To compact derived counter file:');
+    console.log('  node scripts/compact-counters.js --confirm --json');
+  } else if (result.skipped) {
+    console.log(`\n⚠️ Skipped: ${result.reason}`);
+  } else {
+    console.log('\n✅ Compaction complete');
+    console.log(`Before: ${result.beforeSizeMB} MB`);
+    console.log(`After:  ${result.afterSizeMB} MB`);
+    console.log(`Removed platform buckets: ${result.removedPlatformBuckets || 0}`);
+    console.log(`Removed employer buckets: ${result.removedEmployerBuckets || 0}`);
+    console.log(`Removed worker buckets: ${result.removedWorkerBuckets || 0}`);
+    console.log(`Archived employers: ${result.archivedEmployers || 0}`);
+    console.log(`Archived workers: ${result.archivedWorkers || 0}`);
+    console.log(`Duration: ${result.durationMs || 0}ms`);
+  }
+
+  console.log('');
+}
+
+async function main() {
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { compactCounters } = await import('../server/services/counterCompaction.js');
+  const counters = await import('../server/services/directOfferCounters.js');
+  const sizeBytes = await counters.getFileSize();
+  const fileSizeMB = +(sizeBytes / 1048576).toFixed(2);
 
-  const result = await compactCounters();
+  if (DRY_RUN) {
+    const result = {
+      ok: true,
+      dryRun: true,
+      confirm: false,
+      mutationPerformed: false,
+      script: 'scripts/compact-counters.js',
+      scope: 'derived_direct_offer_counter_file',
+      fileSizeBytes: sizeBytes,
+      fileSizeMB,
+      plannedActions: [
+        'forceFlush pending direct-offer counter events',
+        'prune old hourly buckets',
+        'archive inactive employer/worker counter entities when configured',
+        'rewrite derived counter file atomically',
+      ],
+      warnings: [
+        'This mutates a derived runtime artifact, not source direct_offers records.',
+        'Run with --confirm only during low-traffic windows or via ops queue/admin UI.',
+      ],
+      confirmCommand: 'node scripts/compact-counters.js --confirm --json',
+      generatedAt: new Date().toISOString(),
+    };
 
-  if (result.skipped) {
-    console.log(`⚠️ Skipped: ${result.reason}`);
-    process.exit(0);
+    if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+    else printHuman(result);
+    return;
   }
 
-  const beforeMB = ((result.beforeSizeBytes || 0) / 1048576).toFixed(2);
-  const afterMB = ((result.afterSizeBytes || 0) / 1048576).toFixed(2);
+  const { compactCounters } = await import('../server/services/counterCompaction.js');
 
-  console.log('✅ Compaction complete');
-  console.log(`   Before: ${beforeMB} MB`);
-  console.log(`   After:  ${afterMB} MB`);
-  console.log(`   Removed platform buckets: ${result.removedPlatformBuckets || 0}`);
-  console.log(`   Removed employer buckets: ${result.removedEmployerBuckets || 0}`);
-  console.log(`   Removed worker buckets: ${result.removedWorkerBuckets || 0}`);
-  console.log(`   Archived employers: ${result.archivedEmployers || 0}`);
-  console.log(`   Archived workers: ${result.archivedWorkers || 0}`);
-  console.log(`   Duration: ${result.durationMs || 0}ms\n`);
+  const compactResult = await compactCounters();
+  const beforeSizeMB = +((compactResult.beforeSizeBytes || 0) / 1048576).toFixed(2);
+  const afterSizeMB = +((compactResult.afterSizeBytes || 0) / 1048576).toFixed(2);
+
+  const result = {
+    ok: compactResult.ok !== false,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    script: 'scripts/compact-counters.js',
+    scope: 'derived_direct_offer_counter_file',
+    fileSizeBytes: await counters.getFileSize(),
+    fileSizeMB: +((await counters.getFileSize()) / 1048576).toFixed(2),
+    beforeSizeMB,
+    afterSizeMB,
+    ...compactResult,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+  else printHuman(result);
 }
 
 main().catch(err => {
-  console.error('\n❌ Counter compaction failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    script: 'scripts/compact-counters.js',
+    error: err && err.message ? err.message : String(err),
+    stack: err && err.stack ? err.stack : null,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Counter compaction failed:', failure.error);
+    if (failure.stack) console.error(failure.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -26427,16 +26564,26 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/compact-workrooms.js — Workroom Hygiene CLI (Phase 55)
+// scripts/compact-workrooms.js — Workroom Hygiene CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/compact-workrooms.js [--jobId=job_x]
+//   node scripts/compact-workrooms.js --dry-run --json
+//   node scripts/compact-workrooms.js --confirm --json
+//   node scripts/compact-workrooms.js --jobId=job_x --dry-run --json
+//   node scripts/compact-workrooms.js --jobId=job_x --confirm --json
+//
+// Default is DRY-RUN. Mutation requires --confirm.
+// Workroom compaction mutates derived/sidecar workroom artifacts only.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -26445,45 +26592,125 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
-async function main() {
-  const jobId = getArg('jobId', '');
+function printHuman(result) {
+  console.log(`\n🧹 يوميّة Workroom Hygiene ${result.dryRun ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
+  if (result.jobId) console.log(`Job ID: ${result.jobId}`);
 
-  console.log('\n🧹 يوميّة Workroom Hygiene\n');
-
-  const { initDatabase } = await import('../server/services/database.js');
-  await initDatabase();
-
-  const { compactWorkroom, compactAllWorkrooms } = await import('../server/services/workroomHygiene.js');
-
-  const result = jobId
-    ? await compactWorkroom(jobId)
-    : await compactAllWorkrooms();
-
-  if (result.skipped) {
-    console.log(`⚠️ Skipped: ${result.reason}`);
-    process.exit(0);
-  }
-
-  console.log('✅ Workroom compaction complete');
-
-  if (jobId) {
-    console.log(`   jobId: ${jobId}`);
-    console.log(`   receipts removed: ${result.receipts?.removed || 0}`);
-    console.log(`   pins removed: ${result.pins?.removed || 0}`);
-    console.log(`   checklist removed: ${result.checklist?.removed || 0}`);
+  if (result.dryRun) {
+    console.log('\nNo files changed.');
+    console.log('Planned actions:');
+    for (const action of result.plannedActions || []) {
+      console.log(`  - ${action}`);
+    }
+    console.log('\nTo compact workroom sidecars after review:');
+    console.log(result.jobId
+      ? `  node scripts/compact-workrooms.js --jobId=${result.jobId} --confirm --json`
+      : '  node scripts/compact-workrooms.js --confirm --json'
+    );
+  } else if (result.skipped) {
+    console.log(`\n⚠️ Skipped: ${result.reason}`);
   } else {
-    console.log(`   scanned: ${result.scanned || 0}`);
-    console.log(`   compacted: ${result.compacted || 0}`);
-    console.log(`   failed: ${result.failed || 0}`);
-    console.log(`   duration: ${result.durationMs || 0}ms`);
+    console.log('\n✅ Workroom compaction complete');
+
+    if (result.jobId) {
+      console.log(`Receipts removed: ${result.receipts?.removed || 0}`);
+      console.log(`Pins removed: ${result.pins?.removed || 0}`);
+      console.log(`Checklist removed: ${result.checklist?.removed || 0}`);
+    } else {
+      console.log(`Scanned: ${result.scanned || 0}`);
+      console.log(`Compacted: ${result.compacted || 0}`);
+      console.log(`Failed: ${result.failed || 0}`);
+      console.log(`Duration: ${result.durationMs || 0}ms`);
+    }
   }
 
   console.log('');
 }
 
+async function main() {
+  const jobId = getArg('jobId', '');
+
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  if (DRY_RUN) {
+    const result = {
+      ok: true,
+      dryRun: true,
+      confirm: false,
+      mutationPerformed: false,
+      script: 'scripts/compact-workrooms.js',
+      scope: jobId ? 'single_workroom_sidecars' : 'all_workroom_sidecars',
+      jobId: jobId || null,
+      plannedActions: jobId ? [
+        `inspect workroom sidecars for ${jobId}`,
+        'compact receipts sidecar if above retention/size policy',
+        'compact pins/checklist/timeline sidecars when configured',
+        'rewrite derived workroom sidecars atomically',
+      ] : [
+        'scan workroom sidecar records',
+        'compact receipts/pins/checklist/timeline sidecars when configured',
+        'yield between batches',
+        'rewrite derived workroom sidecars atomically',
+      ],
+      warnings: [
+        'Dry-run intentionally does not call compaction service because current service mutates sidecars.',
+        'Run with --confirm only after reviewing workroom hygiene overview.',
+      ],
+      confirmCommand: jobId
+        ? `node scripts/compact-workrooms.js --jobId=${jobId} --confirm --json`
+        : 'node scripts/compact-workrooms.js --confirm --json',
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+    else printHuman(result);
+    return;
+  }
+
+  const { compactWorkroom, compactAllWorkrooms } = await import('../server/services/workroomHygiene.js');
+
+  const serviceResult = jobId
+    ? await compactWorkroom(jobId)
+    : await compactAllWorkrooms();
+
+  const result = {
+    ok: serviceResult.ok !== false,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    script: 'scripts/compact-workrooms.js',
+    scope: jobId ? 'single_workroom_sidecars' : 'all_workroom_sidecars',
+    jobId: jobId || null,
+    ...serviceResult,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+  else printHuman(result);
+
+  if (!result.ok) process.exit(1);
+}
+
 main().catch(err => {
-  console.error('\n❌ Workroom compaction failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    script: 'scripts/compact-workrooms.js',
+    error: err && err.message ? err.message : String(err),
+    stack: err && err.stack ? err.stack : null,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Workroom compaction failed:', failure.error);
+    if (failure.stack) console.error(failure.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -30197,10 +30424,14 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/rebuild-audit-index.js — Audit Index Rebuild CLI (Phase 50)
+// scripts/rebuild-audit-index.js — Audit Index Rebuild CLI
 // ═══════════════════════════════════════════════════════════════
-// Usage: node scripts/rebuild-audit-index.js
-// Rebuilds filesystem audit indexes from raw aud_*.json records.
+// Usage:
+//   node scripts/rebuild-audit-index.js --dry-run --json
+//   node scripts/rebuild-audit-index.js --confirm --json
+//
+// Default is DRY-RUN. Mutation requires --confirm.
+// Rebuilds derived audit search indexes from raw aud_*.json records.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -30208,37 +30439,109 @@ try {
   dotenv.config();
 } catch (_) {}
 
-async function main() {
-  console.log('\n🧭 يوميّة Audit Index Rebuild\n');
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
 
-  const { initDatabase } = await import('../server/services/database.js');
-  await initDatabase();
+function printHuman(result) {
+  console.log(`\n🧭 يوميّة Audit Index Rebuild ${result.dryRun ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
 
-  const { rebuildAuditIndex, verifyAuditIndex } = await import('../server/services/auditLogIndex.js');
+  if (result.before) {
+    console.log(`Current status: ${result.before.status || 'unknown'}`);
+    console.log(`Current records indexed: ${result.before.recordCount || 0}`);
+  }
 
-  const started = Date.now();
-  const result = await rebuildAuditIndex();
-
-  console.log(`✅ Rebuild complete`);
-  console.log(`   Records indexed: ${result.indexed || 0}`);
-  console.log(`   Duration: ${result.durationMs || (Date.now() - started)}ms`);
-
-  const verify = await verifyAuditIndex();
-  if (verify.warnings && verify.warnings.length > 0) {
-    console.log(`\n⚠️ Verify warnings: ${verify.warnings.length}`);
-    for (const w of verify.warnings.slice(0, 10)) {
-      console.log(`   - ${w}`);
-    }
+  if (result.dryRun) {
+    console.log('\nNo files changed.');
+    console.log('To rebuild derived audit index:');
+    console.log('  node scripts/rebuild-audit-index.js --confirm --json');
   } else {
-    console.log('\n✅ Verify passed');
+    console.log('\n✅ Rebuild complete');
+    console.log(`Records indexed: ${result.indexed || 0}`);
+    console.log(`Duration: ${result.durationMs || 0}ms`);
+    console.log(`Verify warnings: ${(result.verify?.warnings || []).length}`);
   }
 
   console.log('');
 }
 
+async function main() {
+  const { initDatabase } = await import('../server/services/database.js');
+  await initDatabase();
+
+  const auditIndex = await import('../server/services/auditLogIndex.js');
+  const before = await auditIndex.getAuditIndexStats();
+
+  if (DRY_RUN) {
+    const result = {
+      ok: true,
+      dryRun: true,
+      confirm: false,
+      mutationPerformed: false,
+      script: 'scripts/rebuild-audit-index.js',
+      scope: 'derived_audit_search_index',
+      before,
+      plannedActions: [
+        'scan raw aud_*.json records',
+        'rebuild audit index files by action/admin/target/date/token',
+        'write audit index meta.json',
+      ],
+      warnings: [
+        'This mutates derived audit search indexes, not source audit log records.',
+        'During production, prefer admin queue job audit_index_rebuild when possible.',
+      ],
+      confirmCommand: 'node scripts/rebuild-audit-index.js --confirm --json',
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+    else printHuman(result);
+    return;
+  }
+
+  const rebuild = await auditIndex.rebuildAuditIndex();
+  const verify = await auditIndex.verifyAuditIndex();
+  const after = await auditIndex.getAuditIndexStats();
+
+  const result = {
+    ok: verify.ok !== false,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    script: 'scripts/rebuild-audit-index.js',
+    scope: 'derived_audit_search_index',
+    before,
+    after,
+    verify,
+    ...rebuild,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+  else printHuman(result);
+
+  if (!result.ok) process.exit(1);
+}
+
 main().catch(err => {
-  console.error('\n❌ Audit index rebuild failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    script: 'scripts/rebuild-audit-index.js',
+    error: err && err.message ? err.message : String(err),
+    stack: err && err.stack ? err.stack : null,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Audit index rebuild failed:', failure.error);
+    if (failure.stack) console.error(failure.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -30250,57 +30553,134 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/rebuild-counters.js — يوميّة: Counter Rebuild CLI (Phase 45)
+// scripts/rebuild-counters.js — Direct Offer Counter Rebuild CLI
 // ═══════════════════════════════════════════════════════════════
-// Usage: node scripts/rebuild-counters.js
-// Disaster recovery — rebuild direct offer counter file from raw offers.
-// Locked via withLock — won't conflict with active applyEvent calls.
+// Usage:
+//   node scripts/rebuild-counters.js --dry-run --json
+//   node scripts/rebuild-counters.js --confirm --json
+//
+// Default is DRY-RUN. Mutation requires --confirm.
+// Rebuilds derived direct-offer counter file from raw direct_offers.
 // ═══════════════════════════════════════════════════════════════
 
-// Load env
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
-} catch (_) {
-  // dotenv not installed — use process.env directly
+} catch (_) {}
+
+const JSON_OUT = process.argv.includes('--json');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+
+function printHuman(result) {
+  console.log(`\n🔄 يوميّة Counter Rebuild ${result.dryRun ? '(DRY RUN)' : '(CONFIRMED)'}\n`);
+  console.log(`Mutation performed: ${result.mutationPerformed ? 'yes' : 'no'}`);
+  console.log(`Current counter file size: ${result.fileSizeMB || 0} MB`);
+
+  if (result.dryRun) {
+    console.log('\nNo files changed.');
+    console.log(`Current total offers in counter file: ${result.currentCounterTotals?.totalOffers || 0}`);
+    console.log('To rebuild derived counter file:');
+    console.log('  node scripts/rebuild-counters.js --confirm --json');
+  } else if (result.skipped) {
+    console.log('\n⚠️ Rebuild skipped — last rebuild was too recent.');
+    console.log(`Offers tracked: ${result.offerCount || 0}`);
+  } else {
+    console.log('\n✅ Rebuild complete');
+    console.log(`Offers tracked: ${result.offerCount || 0}`);
+    console.log(`Employers: ${result.employerCount || 0}`);
+    console.log(`Workers: ${result.workerCount || 0}`);
+    console.log(`Duration: ${result.durationMs || 0}ms`);
+  }
+
+  console.log('');
 }
 
 async function main() {
-  console.log('\n🔄 يوميّة Counter Rebuild\n');
-
-  // Initialize database directories first
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { rebuildCounters } = await import('../server/services/directOfferCounters.js');
+  const counters = await import('../server/services/directOfferCounters.js');
+  const current = await counters.readCounters();
+  const sizeBytes = await counters.getFileSize();
 
-  console.log('   Starting rebuild...');
-  const startTs = Date.now();
+  if (DRY_RUN) {
+    const result = {
+      ok: true,
+      dryRun: true,
+      confirm: false,
+      mutationPerformed: false,
+      script: 'scripts/rebuild-counters.js',
+      scope: 'derived_direct_offer_counter_file',
+      fileSizeBytes: sizeBytes,
+      fileSizeMB: +(sizeBytes / 1048576).toFixed(2),
+      currentCounterTotals: {
+        totalOffers: current.platform?.total || 0,
+        pending: current.platform?.pending || 0,
+        accepted: current.platform?.accepted || 0,
+        declined: current.platform?.declined || 0,
+        expired: current.platform?.expired || 0,
+        withdrawn: current.platform?.withdrawn || 0,
+        employers: Object.keys(current.byEmployer || {}).length,
+        workers: Object.keys(current.byWorker || {}).length,
+      },
+      plannedActions: [
+        'full scan raw direct_offers records',
+        'recompute platform/employer/worker counters',
+        'rewrite derived counter file atomically',
+      ],
+      warnings: [
+        'This mutates a derived analytics artifact, not source direct_offers records.',
+        'Prefer admin queue job counter_rebuild for production when server is running.',
+      ],
+      confirmCommand: 'node scripts/rebuild-counters.js --confirm --json',
+      generatedAt: new Date().toISOString(),
+    };
 
-  try {
-    const result = await rebuildCounters();
-    const durationMs = Date.now() - startTs;
-
-    if (result.skipped) {
-      console.log(`\n⚠️  Rebuild skipped — last rebuild was too recent.`);
-      console.log(`   Current state: ${result.offerCount} offers, ${result.employerCount} employers, ${result.workerCount} workers\n`);
-    } else {
-      console.log(`\n✅ Rebuild complete in ${durationMs}ms`);
-      console.log(`   Offers tracked: ${result.offerCount}`);
-      console.log(`   Employers: ${result.employerCount}`);
-      console.log(`   Workers: ${result.workerCount}\n`);
-    }
-
-    process.exit(0);
-  } catch (err) {
-    console.error(`\n❌ Rebuild failed: ${err.message}\n`);
-    if (err.stack) console.error(err.stack);
-    process.exit(1);
+    if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+    else printHuman(result);
+    return;
   }
+
+  const started = Date.now();
+  const rebuildResult = await counters.rebuildCounters();
+
+  const result = {
+    ok: true,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: !rebuildResult.skipped,
+    script: 'scripts/rebuild-counters.js',
+    scope: 'derived_direct_offer_counter_file',
+    fileSizeBytes: await counters.getFileSize(),
+    fileSizeMB: +((await counters.getFileSize()) / 1048576).toFixed(2),
+    durationMs: rebuildResult.durationMs || (Date.now() - started),
+    ...rebuildResult,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(result, null, 2));
+  else printHuman(result);
 }
 
 main().catch(err => {
-  console.error('❌', err.message);
+  const failure = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    script: 'scripts/rebuild-counters.js',
+    error: err && err.message ? err.message : String(err),
+    stack: err && err.stack ? err.stack : null,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) console.log(JSON.stringify(failure, null, 2));
+  else {
+    console.error('\n❌ Counter rebuild failed:', failure.error);
+    if (failure.stack) console.error(failure.stack);
+  }
+
   process.exit(1);
 });
 ```
