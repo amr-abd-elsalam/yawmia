@@ -204,12 +204,12 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/bundle-for-review.js` | Bundle/Review | Partial | CI/Bundle Only | Writes bundles | Overwrites bundles | No | Medium | Keep |
 | `scripts/capture-externalization-decision.js` | Migration Evidence | Yes | Manual | Optional metrics | No | No | Medium | Keep |
 | `scripts/capture-phase61-evidence.js` | Migration Evidence | Unknown | Manual | Metrics | No | No | Medium | Keep |
-| `scripts/cleanup-attachments.js` | Maintenance | Partial | Approval Required | Yes | Possible delete | No | High | Keep + confirm/json |
+| `scripts/cleanup-attachments.js` | Maintenance | Yes | Approval Required | Yes with `--confirm` | Possible delete with `--confirm` | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/cleanup-notification-flood.js` | Incident Recovery | Yes | Emergency Only | Yes | Moves quarantine | No | High | Keep + tests/docs |
-| `scripts/compact-counters.js` | Maintenance | No | Approval Required | Derived write | No | No | High | Add dry-run/confirm/json |
+| `scripts/compact-counters.js` | Maintenance | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-predictive-signals.js` | Maintenance | Partial | Approval Required | Archive | Possible | No | High | Add dry-run/json |
 | `scripts/compact-queue.js` | Queue Ops | Yes | Approval Required | Yes | Archive | Yes | High | Keep |
-| `scripts/compact-workrooms.js` | Maintenance | Unknown | Approval Required | Yes | Possible | No | High | Add dry-run/confirm/json |
+| `scripts/compact-workrooms.js` | Maintenance | Yes | Approval Required | Workroom sidecar mutation with `--confirm` | Possible derived cleanup | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional persist | No | No | Low/Medium | Keep |
 | `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Add json |
 | `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Artifact write | Can overwrite output | No | High | Keep |
@@ -227,8 +227,8 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/quarantine-corrupt-json.js` | Recovery | Unknown | Emergency Only | Yes | Moves quarantine | No | High | Direct review + tests |
 | `scripts/queue-drain.js` | Queue Ops / Destructive | Unknown | Emergency Only | Yes | Possible | Yes | Critical | Strict approval |
 | `scripts/queue-retry-dlq.js` | Queue Recovery | Unknown | Emergency Only | Yes | No | Yes | High | Direct review |
-| `scripts/rebuild-audit-index.js` | Rebuild Index | No | Approval Required | Derived write | No | No | High | Add dry-run/json |
-| `scripts/rebuild-counters.js` | Rebuild Counters | No | Approval Required | Derived write | No | No | High | Add dry-run/json |
+| `scripts/rebuild-audit-index.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
+| `scripts/rebuild-counters.js` | Rebuild Counters | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-predictive-archive-index.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
 | `scripts/rebuild-search-relevance.js` | Rebuild Index | Unknown | Approval Required | Derived write | No | No | High | Direct review |
 | `scripts/rebuild-workroom-search.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
@@ -323,6 +323,28 @@ Potential future archival candidates after direct review:
 | `scripts/cleanup-notification-flood.js` | After incident retention and if flood class permanently resolved |
 | `scripts/inspect-predictive-scan-queue.js` | After predictive scan flood risk stabilizes |
 | `scripts/benchmark.js` | If replaced by `benchmark-file-paths.js` + `postdeploy-smoke.js` |
+
+---
+
+## Patch 2 Hardening Status — Maintenance Scripts
+
+The following high-risk maintenance scripts were hardened after the initial catalog baseline:
+
+| Script | Dry Run Default | Confirm Required | JSON Output | Mutation Scope |
+|---|---:|---:|---:|---|
+| `scripts/compact-counters.js` | Yes | Yes | Yes | Derived direct-offer counter file |
+| `scripts/rebuild-counters.js` | Yes | Yes | Yes | Derived direct-offer counter file |
+| `scripts/rebuild-audit-index.js` | Yes | Yes | Yes | Derived audit search index |
+| `scripts/cleanup-attachments.js` | Yes | Yes | Yes | Orphan workroom attachments |
+| `scripts/compact-workrooms.js` | Yes | Yes | Yes | Derived workroom sidecars |
+
+Policy:
+
+- Default mode performs no mutation.
+- `--confirm` is required before any mutation.
+- `--json` emits parseable operational evidence.
+- Output includes `mutationPerformed`.
+- Output includes `confirmCommand`.
 
 ---
 
