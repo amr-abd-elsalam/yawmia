@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-01T12:57:28.879Z
+> Auto-generated: 2026-06-02T02:58:13.367Z
 > Files in this part: 92
 
 ## Files
@@ -30891,7 +30891,8 @@ import { readdir, readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 
 const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
-const DRY_RUN = process.argv.includes('--dry-run');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = !CONFIRM || process.argv.includes('--dry-run');
 
 async function readJSON(filePath) {
   try {
@@ -30905,7 +30906,7 @@ async function readJSON(filePath) {
 async function atomicWrite(filePath, data) {
   const dir = dirname(filePath);
   await mkdir(dir, { recursive: true });
-  const tmpPath = filePath + '.tmp';
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
   await writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
   await rename(tmpPath, filePath);
 }
@@ -30928,6 +30929,53 @@ async function listRecords(dir, prefix) {
     // ENOENT or similar — return empty
   }
   return results;
+}
+
+function freshnessMs(record = {}) {
+  const fields = [
+    record.updatedAt,
+    record.completedAt,
+    record.cancelledAt,
+    record.renewedAt,
+    record.startedAt,
+    record.expiredAt,
+    record.createdAt,
+    record.appliedAt,
+  ];
+
+  let max = 0;
+  for (const iso of fields) {
+    if (!iso) continue;
+    const ms = new Date(iso).getTime();
+    if (Number.isFinite(ms) && ms > max) max = ms;
+  }
+  return max;
+}
+
+function dedupeById(records, label) {
+  const byId = new Map();
+  let duplicatePhysicalRecords = 0;
+
+  for (const record of records || []) {
+    if (!record || !record.id) continue;
+
+    const existing = byId.get(record.id);
+    if (!existing) {
+      byId.set(record.id, record);
+      continue;
+    }
+
+    duplicatePhysicalRecords++;
+    if (freshnessMs(record) > freshnessMs(existing)) {
+      byId.set(record.id, record);
+    }
+  }
+
+  if (duplicatePhysicalRecords > 0) {
+    console.log(`   ⚠️  ${label}: detected ${duplicatePhysicalRecords} duplicate physical record(s); using newest logical record per id`);
+  }
+
+  return Array.from(byId.values());
 }
 
 async function repair() {
@@ -30955,7 +31003,7 @@ async function repair() {
 
   // 2. Jobs Index (jobs/index.json)
   console.log('2️⃣  Jobs Index...');
-  const jobs = await listRecords(join(DATA_DIR, 'jobs'), 'job_');
+  const jobs = dedupeById(await listRecords(join(DATA_DIR, 'jobs'), 'job_'), 'jobs');
   const jobsIndex = {};
   for (const job of jobs) {
     jobsIndex[job.id] = {
