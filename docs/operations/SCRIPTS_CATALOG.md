@@ -350,6 +350,45 @@ Policy:
 
 ---
 
+## Patch 4 Queue / Recovery Safety Status
+
+The following Queue / Recovery scripts were reviewed and synchronized after Patch 4.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/queue-drain.js` | Hardened | Yes | Yes + active-worker preflight | Yes | Confirmed mode calls `queueWorkers.processDueJobs()` and can claim/process due queue jobs | Critical | Keep as Emergency Only with strict runbook |
+| `scripts/queue-retry-dlq.js` | Hardened | Yes | Yes | Yes | Confirmed mode calls `opsQueue.retryJob()` for dead-letter jobs | High | Keep as Emergency Only |
+| `scripts/recover-stale-running-jobs.js` | Hardened read-only auditor | Yes | Confirm intentionally not implemented | Yes | No queue mutation; audits stale running jobs only | Low now / High future | Keep as diagnostic/recovery planning tool |
+| `scripts/quarantine-corrupt-json.js` | Hardened | Yes | Yes | Yes | Confirmed mode moves corrupt JSON files into `data/quarantine`; never deletes | High | Keep as JSON corruption incident tool |
+
+Policy:
+
+- `queue-drain` is not stale-running recovery.
+- `queue-drain --confirm` can process due pending jobs.
+- `queue-retry-dlq --confirm` mutates dead-letter queue state.
+- `recover-stale-running-jobs` is dry-run/audit only; confirm workflow is intentionally blocked.
+- `quarantine-corrupt-json --confirm` moves files to quarantine and writes a manifest; it must never delete files.
+- Queue/Recovery scripts must be tested whenever safety flags change.
+
+---
+
+## Queue / Recovery Dependency Map
+
+| Script | Imports Services | Reads | Writes / Mutates | Queue Touch | Runtime Impact |
+|---|---|---|---|---|---|
+| `scripts/queue-drain.js` | `server/services/database.js`, `server/services/opsQueue.js`, `server/services/queueWorkers.js` | Queue stats, due jobs through worker service, `/proc`, optional PM2 state | Confirmed mode can claim/process due jobs through `processDueJobs()` | Yes — pending/running/completed/failed/dead-letter through worker processing | Critical; never run confirmed while server/worker is active |
+| `scripts/queue-retry-dlq.js` | `server/services/database.js`, `server/services/opsQueue.js` | Dead-letter queue jobs via `listJobs()` | Confirmed mode retries DLQ jobs through `retryJob()` | Yes — dead-letter to pending/runnable queue state | High; emergency recovery only |
+| `scripts/recover-stale-running-jobs.js` | `config.js`, `server/services/database.js`, `server/services/queueStorageIndex.js` | Running queue records, `/proc`, optional PM2 state | None | Read-only queue audit | Diagnostic only; no mutation implemented |
+| `scripts/quarantine-corrupt-json.js` | `config.js`, `server/services/database.js` for `atomicWrite()` | JSON files under `data/` | Confirmed mode uses `rename()` to move corrupt JSON to `data/quarantine` and writes manifest | No direct queue service calls | High if confirmed; JSON corruption incident tool |
+
+Duplication note:
+
+- Some standalone filesystem scanning in `quarantine-corrupt-json.js` is acceptable because it is an incident recovery tool that may need to work even when higher-level services are partially affected.
+- Queue mutation scripts should call queue services rather than reimplementing queue lifecycle transitions.
+- `recover-stale-running-jobs.js` intentionally mirrors queue staleness classification but does not mutate records.
+
+---
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
