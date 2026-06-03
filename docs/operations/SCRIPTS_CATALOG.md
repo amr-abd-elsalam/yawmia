@@ -578,6 +578,41 @@ Policy:
 | `scripts/verify-repository-contracts.js` | `repositoryContractReport` | Repository contract docs/config/report | None | Low |
 | `scripts/scheduler-cadence-report.js` | `schedulerRegistry` | Scheduler registry/history | May register default scheduler records | Medium |
 
+## Patch 11 Repair / Cleanup Higher-Risk Scripts Reality Check
+
+The following repair and cleanup scripts were reviewed after Patch 11.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/repair-indexes.js` | Dry-run default repair utility | Yes | Yes | No | Confirmed mode rewrites many secondary index files from source records | High | Keep + harden next with `--json`, `mutationPerformed`, and `confirmCommand` |
+| `scripts/repair-queue.js` | Hardened queue repair utility | Yes | Yes + approval id + quiet-state preflight | Yes | Confirmed mode repairs queue summary/location index through service layer | High | Keep; later verify approval record existence/approved state |
+| `scripts/compact-queue.js` | Dry-run default queue compaction | Yes | Yes | Yes | Confirmed mode archives/compacts queue storage through service layer | High | Keep + document mutation evidence; later add `confirmCommand` if missing from service output |
+| `scripts/cleanup-notification-flood.js` | Dry-run default notification flood quarantine | Yes | Yes | Emits JSON-like preview but no explicit `--json` mode | Confirmed mode moves duplicate notifications to quarantine and updates `notifications/user-index.json`; never deletes | High | Keep + harden next with `--json`, explicit `--dry-run`, `mutationPerformed`, and `confirmCommand` |
+
+Policy:
+
+- `repair-indexes.js` and `cleanup-notification-flood.js` are safe by default but not yet fully aligned with the hardened JSON evidence convention.
+- `repair-queue.js` is the strongest current queue repair script because it includes active-process, PM2, stale-running, and approval-id preflight gates.
+- `compact-queue.js` is dry-run default and service-backed, but remains High risk because confirmed mode changes queue storage/archive state.
+- `cleanup-notification-flood.js` must remain quarantine-only and must never delete notification files.
+- No confirmed queue repair, queue compaction, index repair, or notification flood cleanup should run without preserved dry-run evidence and explicit incident approval.
+
+## Patch 11 Repair / Cleanup Dependency Map
+
+| Script | Imports / Calls | Reads | Writes / Mutates | Runtime Impact |
+|---|---|---|---|---|
+| `scripts/repair-indexes.js` | Standalone filesystem scanner and atomic writer | Users, jobs, applications, notifications, payments, reports, verifications, attendance, messages, push subscriptions, availability ads, direct offers | Confirmed mode rewrites many secondary index files | High; runtime indexes affected |
+| `scripts/repair-queue.js` | `queueHealthVerify.repairQueueStorage()`, child stale-running preflight, `/proc`, optional PM2 | Queue summary/location, running job state, process state | Confirmed mode repairs queue summary/location index only if preflight passes | High; queue operational indexes affected |
+| `scripts/compact-queue.js` | `queueCompaction.compactQueue()` | Queue records, idempotency, archives through service | Confirmed mode can archive/compact queue storage | High; queue storage lifecycle affected |
+| `scripts/cleanup-notification-flood.js` | Standalone filesystem scanner and atomic writer | Notification files and `notifications/user-index.json` | Confirmed mode moves duplicate notification files to quarantine and rewrites user notification index | High; notification source files and index affected |
+
+Known gaps to address in a later hardening patch:
+
+- `repair-indexes.js` should gain `--json`, structured result output, `mutationPerformed`, and `confirmCommand`.
+- `cleanup-notification-flood.js` should gain explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and cleaner machine-readable output.
+- `compact-queue.js` should expose or normalize `mutationPerformed` and `confirmCommand` in CLI output if the service result does not already include them.
+- `repair-queue.js` currently requires an approval id shape; a future hardening step can validate that the approval exists and is approved before confirmed mutation.
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
