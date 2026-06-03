@@ -60,7 +60,7 @@ These scripts are expected to remain long-term.
 | `scripts/predeploy-check.js` | Verify / Deploy | Yes | Safe Read-Only | No | Low | Deploy |
 | `scripts/postdeploy-smoke.js` | Verify / Smoke | Yes | Safe Read-Only | No | Low | Deploy |
 | `scripts/measure-storage-pressure.js` | Verify / Metrics | Partial | Manual With Caution | Writes metrics snapshot by default | Medium | Ops / Scale |
-| `scripts/ops-weekly-review.js` | Governance / Maintenance | Partial | Manual With Caution | Optional ops review record | Medium | Ops Review |
+| `scripts/ops-weekly-review.js` | Governance / Maintenance | Partial | Manual With Caution | Optional ops review record via `--persist`; optional markdown via `--out`; Add `--json` later | Medium | Ops Review |
 
 ---
 
@@ -75,7 +75,7 @@ These scripts are expected to remain long-term.
 | `scripts/scheduler-cadence-report.js` | Scheduler cadence visibility | Manual With Caution | Medium | Reviewed: `--json`; may register default scheduler records via `registerDefaultSchedulerJobs()` |
 | `scripts/verify-admin-rbac.js` | Verify admin RBAC model | Safe Read-Only | Low | Governance |
 | `scripts/verify-audit-index.js` | Verify audit index | Safe Read-Only | Low | Audit hygiene |
-| `scripts/verify-marketplace-intelligence.js` | Verify product/marketplace rollups | Manual With Caution | Medium | Reviewed: `--json`; may capture dashboard rollup if no persisted rollup exists |
+| `scripts/verify-marketplace-intelligence.js` | Verify product/marketplace rollups | Manual With Caution | Medium | Reviewed: `--json`; may capture dashboard rollup if missing |
 | `scripts/verify-privacy-governance.js` | Verify privacy/governance workflows | Safe Read-Only | Low | Governance |
 | `scripts/verify-repository-contracts.js` | Verify repository adapter contracts | Safe Read-Only | Low | Reviewed: `--json`; docs/contracts readiness only |
 | `scripts/verify-scale-thresholds.js` | Verify scale thresholds | Safe Read-Only by default; optional metrics persist | Low/Medium | Reviewed: latest-only by default; `--persist` writes scale-threshold artifact |
