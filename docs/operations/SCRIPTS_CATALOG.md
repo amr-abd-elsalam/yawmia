@@ -150,8 +150,8 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Purpose | Production | Risk | Controls |
 |---|---|---|---|---|
-| `scripts/export-user-data.js` | Export one user's data | Manual Only | Medium | Add explicit `--json` semantics |
-| `scripts/anonymize-user-data.js` | Irreversible user anonymization | Approval Required | Critical | Default dry-run, confirm required; add backup/approval guard |
+| `scripts/export-user-data.js` | Export one user's data | Manual Only | Medium | Hardened: explicit `--json`, sourceDataMutated=false, artifact-only writes |
+| `scripts/anonymize-user-data.js` | Irreversible user anonymization | Approval Required | Critical | Hardened: dry-run default + confirm + json + approvalId + backupRef |
 | `scripts/export-migration-snapshot.js` | Sanitized NDJSON migration export | Manual With Caution | High | Default dry-run, confirm required |
 
 ---
@@ -197,7 +197,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Category | Safe Default | Production | Mutation | Deletes/Moves | Queue Touch | Risk | Recommendation |
 |---|---|---:|---|---:|---:|---:|---|---|
-| `scripts/anonymize-user-data.js` | Privacy / Destructive | Yes | Approval Required | Yes | Possible | No | Critical | Keep + backup/approval/tests |
+| `scripts/anonymize-user-data.js` | Privacy / Destructive | Yes | Approval Required | Yes with `--confirm` + `--approvalId` + `--backupRef` | Possible verification image/session cleanup via service | No | Critical | Hardened: dry-run default + confirm + json + approval/backup guard |
 | `scripts/backup.js` | Backup | Yes | Manual With Caution | Backup only | No | No | Low/Medium | Keep |
 | `scripts/benchmark-file-paths.js` | Benchmark | Yes | Manual With Caution | Optional metrics | No | Read only | Low/Medium | Keep |
 | `scripts/benchmark.js` | Benchmark | Yes | Manual Only | No | No | No | Low | Keep + json |
@@ -213,7 +213,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional persist | No | No | Low/Medium | Keep |
 | `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Add json |
 | `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Artifact write | Can overwrite output | No | High | Keep |
-| `scripts/export-user-data.js` | Privacy Export | Partial | Manual | Output file only | No | No | Medium | Keep + json |
+| `scripts/export-user-data.js` | Privacy Export | Yes | Manual | Export artifact only with `--out` | No | No | Medium | Hardened: explicit json semantics + sourceDataMutated=false |
 | `scripts/find-null-json-files.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/generate-vapid-keys.js` | Setup | Yes | Manual Setup | No | No | No | Low | Keep |
 | `scripts/inspect-predictive-scan-queue.js` | Queue Diagnostic | Yes | Safe Read-Only | No | No | No | Low | Keep |
@@ -292,7 +292,7 @@ Never run without explicit incident approval:
 
 ```bash
 node scripts/queue-drain.js --confirm --json
-node scripts/anonymize-user-data.js --userId=usr_x --confirm
+node scripts/anonymize-user-data.js --userId=usr_x --confirm --approvalId=apr_x --backupRef=brd_or_backup_reference --json
 node scripts/reset-dev-data.js --confirm --json
 node scripts/quarantine-corrupt-json.js --confirm --json
 ```
@@ -389,6 +389,38 @@ Duplication note:
 
 ---
 
+## Patch 5 Privacy / Destructive Safety Status
+
+The following privacy/destructive scripts were reviewed after Patch 5.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/anonymize-user-data.js` | Hardened critical privacy mutation | Yes | Yes + `--approvalId` + `--backupRef` | Yes | Confirmed mode calls `userAnonymization.anonymizeUserData()` and consumes `privacy_anonymize` approval | Critical | Keep as Approval Required only |
+| `scripts/reset-dev-data.js` | Hardened dev-only destructive reset | Yes | Yes + production double-guard if overridden | Yes | Deletes dev/runtime artifact paths only when confirmed; production blocked by default | Critical | Keep Dev Only / Never Production |
+| `scripts/export-user-data.js` | Hardened privacy export | N/A read-only source data | No for stdout; `--out` writes artifact only | Yes | Optional export artifact write; sourceDataMutated=false | Medium | Keep |
+| `scripts/verify-privacy-governance.js` | Read-only verifier | Yes | No | Yes | No mutation | Low | Keep |
+
+Policy:
+
+- `anonymize-user-data --confirm` must not run without approval and backup evidence.
+- Prefer the admin privacy request workflow for production anonymization.
+- `export-user-data` may write a sensitive export artifact; protect its output path.
+- `reset-dev-data` is Dev Only / Never Production despite strong guards.
+- `verify-privacy-governance` must remain read-only.
+
+---
+
+## Privacy / Destructive Dependency Map
+
+| Script | Imports Services | Reads | Writes / Mutates | Privacy Impact | Runtime Impact |
+|---|---|---|---|---|---|
+| `scripts/anonymize-user-data.js` | `server/services/database.js`, `server/services/userAnonymization.js`, `server/services/adminApprovals.js` | User-related records through anonymization service; approval records | Confirmed mode mutates user-related records and consumes approval | Critical irreversible privacy mutation | High; approval + backup evidence required |
+| `scripts/reset-dev-data.js` | `server/services/database.js` only when `--reinit` | Target path metadata | Confirmed mode deletes dev/runtime artifact directories; production blocked by default | Critical if misused | Dev only; never normal production |
+| `scripts/export-user-data.js` | `server/services/database.js`, `server/services/userDataExport.js` | User-related records through export service | Optional `--out` writes export artifact only | Medium; export contains user data | Source data read-only |
+| `scripts/verify-privacy-governance.js` | `config.js`, `server/services/database.js` | Config, docs, governance directory existence | None | Low | Read-only verification |
+
+---
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
@@ -426,7 +458,7 @@ node scripts/compact-queue.js --confirm --json
 node scripts/queue-retry-dlq.js --confirm --json
 node scripts/queue-drain.js --confirm --json
 node scripts/cleanup-notification-flood.js --confirm
-node scripts/anonymize-user-data.js --confirm
+node scripts/anonymize-user-data.js --userId=usr_x --confirm --approvalId=apr_x --backupRef=brd_or_backup_reference --json
 ```
 
 Also forbidden:
