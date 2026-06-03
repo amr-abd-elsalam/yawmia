@@ -79,7 +79,7 @@ These scripts are expected to remain long-term.
 | `scripts/verify-privacy-governance.js` | Verify privacy/governance workflows | Safe Read-Only | Low | Governance |
 | `scripts/verify-repository-contracts.js` | Verify repository adapter contracts | Safe Read-Only | Low/Medium | Phase 61 readiness |
 | `scripts/verify-scale-thresholds.js` | Verify scale thresholds | Safe Read-Only or metrics persist | Low/Medium | Phase 59 |
-| `scripts/verify-workroom-indexes.js` | Verify workroom search indexes | Safe Read-Only unless repair mode exists | Low/High | Must document repair flags |
+| `scripts/verify-workroom-indexes.js` | Verify workroom search indexes | Safe Read-Only; repair requires `--confirm` | Low/High | Hardened: verify read-only + repair confirm + json |
 
 ---
 
@@ -162,9 +162,9 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 |---|---|---|---|---|
 | `scripts/rebuild-audit-index.js` | Audit search index | Approval Required | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-counters.js` | Direct offer counter file | Approval Required | High | Hardened: dry-run default + confirm + json |
-| `scripts/rebuild-predictive-archive-index.js` | Predictive archive index | Manual With Caution | Medium/High | Keep |
-| `scripts/rebuild-search-relevance.js` | Search/query indexes | Approval Required | High | Keep |
-| `scripts/rebuild-workroom-search.js` | Workroom search indexes | Manual With Caution | Medium/High | Keep |
+| `scripts/rebuild-predictive-archive-index.js` | Predictive archive index | Approval Required | Medium/High | Hardened: dry-run default + confirm + json |
+| `scripts/rebuild-search-relevance.js` | Process-local search/query indexes | Manual With Caution | Medium | Hardened: dry-run default + confirm + json; process-local only |
+| `scripts/rebuild-workroom-search.js` | Workroom search indexes | Approval Required | Medium/High | Hardened: dry-run default + confirm + json |
 | `scripts/repair-indexes.js` | Secondary indexes | Approval Required | High | Keep |
 
 ---
@@ -229,9 +229,9 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/queue-retry-dlq.js` | Queue Recovery | Yes | Emergency Only | Yes with `--confirm` | No | Yes | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-audit-index.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-counters.js` | Rebuild Counters | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
-| `scripts/rebuild-predictive-archive-index.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
-| `scripts/rebuild-search-relevance.js` | Rebuild Index | Unknown | Approval Required | Derived write | No | No | High | Direct review |
-| `scripts/rebuild-workroom-search.js` | Rebuild Index | Unknown | Manual | Derived write | No | No | Medium/High | Direct review |
+| `scripts/rebuild-predictive-archive-index.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | Medium/High | Hardened: dry-run default + confirm + json |
+| `scripts/rebuild-search-relevance.js` | Rebuild In-Memory Index | Yes | Manual With Caution | Process-local only with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json; does not update running server |
+| `scripts/rebuild-workroom-search.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | Medium/High | Hardened: dry-run default + confirm + json |
 | `scripts/recover-stale-running-jobs.js` | Queue Recovery / Auditor | Yes | Emergency Read-Only | No current mutation | No | Reads queue only | Low now / High future | Keep + document; confirm intentionally not implemented |
 | `scripts/repair-indexes.js` | Repair Index | Yes | Approval Required | Yes | No | No | High | Keep + json/tests |
 | `scripts/repair-queue.js` | Queue Repair | Yes | Approval Required | Yes | No | Yes | High | Keep + tests |
@@ -255,7 +255,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/verify-queue.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/verify-repository-contracts.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
 | `scripts/verify-scale-thresholds.js` | Verify | Unknown | Safe/Metric | Optional persist | No | No | Low/Medium | Direct review |
-| `scripts/verify-workroom-indexes.js` | Verify | Unknown | Safe unless repair | Unknown | No | No | Low/High | Direct review |
+| `scripts/verify-workroom-indexes.js` | Verify / Repair Derived Index | Yes | Safe Read-Only unless `--repair --confirm` | Repair writes derived index only | No | No | Low/High | Hardened: verify read-only + repair confirm + json |
 
 ---
 
@@ -283,6 +283,9 @@ node scripts/repair-queue.js --dry-run --json
 node scripts/compact-queue.js --dry-run --json
 node scripts/queue-retry-dlq.js --dry-run --json
 node scripts/queue-drain.js --dry-run --json
+node scripts/rebuild-predictive-archive-index.js --dry-run --json
+node scripts/rebuild-workroom-search.js --all --dry-run --json
+node scripts/verify-workroom-indexes.js --jobId=job_x --repair --dry-run --json
 node scripts/export-migration-snapshot.js --dry-run --json
 ```
 
@@ -421,6 +424,38 @@ Policy:
 
 ---
 
+## Patch 6 Rebuild / Derived Artifact Safety Status
+
+The following rebuild/derived artifact scripts were reviewed after Patch 6.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/rebuild-predictive-archive-index.js` | Hardened derived artifact rebuild | Yes | Yes | Yes | Confirmed mode rebuilds predictive archive index artifacts only | Medium/High | Keep as Approval Required |
+| `scripts/rebuild-search-relevance.js` | Hardened process-local rebuild | Yes | Yes | Yes | Confirmed mode rebuilds in-memory indexes inside CLI process only; no persistent artifact | Medium | Keep + document process-local limitation |
+| `scripts/rebuild-workroom-search.js` | Hardened derived artifact rebuild | Yes | Yes | Yes | Confirmed mode rebuilds workroom search index artifacts only | Medium/High | Keep as Approval Required |
+| `scripts/verify-workroom-indexes.js` | Hardened verifier/repair tool | Yes for repair mode | Repair requires `--confirm` | Yes | Verify is read-only; repair writes derived workroom search index only | Low/High | Keep |
+
+Policy:
+
+- Derived artifact rebuild scripts must default to dry-run.
+- Confirmed rebuilds must not mutate source data.
+- `rebuild-search-relevance.js` is process-local and does not update an already-running server.
+- Workroom search repair must require `--repair --confirm`.
+- Any confirmed `--all` workroom rebuild must be treated as Approval Required.
+
+---
+
+## Rebuild / Derived Artifact Dependency Map
+
+| Script | Imports Services | Reads | Writes / Mutates | Source of Truth | Runtime Impact |
+|---|---|---|---|---|---|
+| `scripts/rebuild-predictive-archive-index.js` | `server/services/database.js`, `server/services/predictiveArchiveIndex.js` | Predictive signal archive files through service | Confirmed mode writes predictive archive index artifacts | Predictive archive files | Medium/High; rebuildable derived index |
+| `scripts/rebuild-search-relevance.js` | `server/services/database.js`, `server/services/searchIndex.js`, `server/services/queryIndex.js` | Jobs/ads through process-local service rebuilds | No persistent artifact; confirmed mode mutates CLI process memory only | Jobs/ads JSON files | Medium; does not affect running server |
+| `scripts/rebuild-workroom-search.js` | `server/services/database.js`, `server/services/workroomSearch.js`, `server/services/jobs.js` | Jobs and workroom messages through services | Confirmed mode writes workroom search index artifacts | Messages JSON files | Medium/High when `--all` |
+| `scripts/verify-workroom-indexes.js` | `server/services/database.js`, `server/services/workroomIndexHealth.js` | Workroom messages and search indexes | Verify is read-only; confirmed repair writes workroom search index artifact | Messages JSON files | Low for verify, High for repair |
+
+---
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
@@ -457,6 +492,9 @@ node scripts/repair-queue.js --confirm --json
 node scripts/compact-queue.js --confirm --json
 node scripts/queue-retry-dlq.js --confirm --json
 node scripts/queue-drain.js --confirm --json
+node scripts/rebuild-predictive-archive-index.js --confirm --json
+node scripts/rebuild-workroom-search.js --all --confirm --json
+node scripts/verify-workroom-indexes.js --jobId=job_x --repair --confirm --json
 node scripts/cleanup-notification-flood.js --confirm
 node scripts/anonymize-user-data.js --userId=usr_x --confirm --approvalId=apr_x --backupRef=brd_or_backup_reference --json
 ```
