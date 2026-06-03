@@ -3,7 +3,7 @@
 > Version: 0.57.0  
 > Scope: `scripts/*.js` operational tooling  
 > Status: Governance baseline  
-> Last reviewed: 2026-06-02
+> Last reviewed: 2026-06-03
 
 ---
 
@@ -72,13 +72,13 @@ These scripts are expected to remain long-term.
 | `scripts/inspect-predictive-scan-queue.js` | Read-only predictive_scan queue flood diagnostics | Safe Read-Only / Emergency | Low | Must not mutate queue |
 | `scripts/list-benchmark-history.js` | List benchmark evidence artifacts | Safe Read-Only | Low | Phase 60 evidence |
 | `scripts/report-duplicate-records.js` | Report duplicate physical records | Safe Read-Only | Low | Incident diagnostic |
-| `scripts/scheduler-cadence-report.js` | Scheduler cadence visibility | Safe Read-Only | Low | Scheduler ops |
+| `scripts/scheduler-cadence-report.js` | Scheduler cadence visibility | Manual With Caution | Medium | Reviewed: `--json`; may register default scheduler records via `registerDefaultSchedulerJobs()` |
 | `scripts/verify-admin-rbac.js` | Verify admin RBAC model | Safe Read-Only | Low | Governance |
 | `scripts/verify-audit-index.js` | Verify audit index | Safe Read-Only | Low | Audit hygiene |
-| `scripts/verify-marketplace-intelligence.js` | Verify product/marketplace rollups | Safe Read-Only | Low | Product ops |
+| `scripts/verify-marketplace-intelligence.js` | Verify product/marketplace rollups | Manual With Caution | Medium | Reviewed: `--json`; may capture dashboard rollup if no persisted rollup exists |
 | `scripts/verify-privacy-governance.js` | Verify privacy/governance workflows | Safe Read-Only | Low | Governance |
-| `scripts/verify-repository-contracts.js` | Verify repository adapter contracts | Safe Read-Only | Low/Medium | Phase 61 readiness |
-| `scripts/verify-scale-thresholds.js` | Verify scale thresholds | Safe Read-Only or metrics persist | Low/Medium | Phase 59 |
+| `scripts/verify-repository-contracts.js` | Verify repository adapter contracts | Safe Read-Only | Low | Reviewed: `--json`; docs/contracts readiness only |
+| `scripts/verify-scale-thresholds.js` | Verify scale thresholds | Safe Read-Only by default; optional metrics persist | Low/Medium | Reviewed: latest-only by default; `--persist` writes scale-threshold artifact |
 | `scripts/verify-workroom-indexes.js` | Verify workroom search indexes | Safe Read-Only; repair requires `--confirm` | Low/High | Hardened: verify read-only + repair confirm + json |
 
 ---
@@ -120,10 +120,10 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/validate-migration-snapshot.js` | Validate snapshot manifest/NDJSON/checksums/redaction | Safe Read-Only | No | Low | Keep |
 | `scripts/run-migration-rehearsal.js` | Run safe migration rehearsal | Manual With Caution | Writes rehearsal report | Medium | Keep |
 | `scripts/run-rollback-rehearsal.js` | Run rollback rehearsal | Manual With Caution | Writes rehearsal report | Medium | Keep |
-| `scripts/capture-externalization-decision.js` | Capture advisory Phase 60 decision | Manual With Caution | Optional metrics snapshot | Medium | Keep |
-| `scripts/capture-phase61-evidence.js` | Capture Phase 61 evidence cadence | Manual With Caution | Metrics snapshot | Medium | Keep |
-| `scripts/evaluate-pilot-gate.js` | Evaluate Phase 61 pilot gate | Safe/Manual | Optional snapshot | Low/Medium | Keep |
-| `scripts/phase61-1-remediation-status.js` | Phase 61.1 remediation status | Unknown | Unknown | Unknown | Keep until direct review |
+| `scripts/capture-externalization-decision.js` | Capture advisory Phase 60 decision | Safe by default / Manual With Caution when `--persist` | Optional decision snapshot | Low/Medium | Reviewed: keep |
+| `scripts/capture-phase61-evidence.js` | Capture Phase 61 evidence cadence | Safe by default / Manual With Caution when `--persist` | Optional evidence snapshot | Low/Medium | Reviewed: keep |
+| `scripts/evaluate-pilot-gate.js` | Evaluate Phase 61 pilot gate | Safe by default / Manual With Caution when `--persist` | Optional pilot gate snapshot | Low/Medium | Reviewed: keep; default may exit non-zero when pilot is blocked |
+| `scripts/phase61-1-remediation-status.js` | Phase 61.1 remediation status aggregator | Safe Read-Only | No mutation; runs diagnostics and dry-runs only | Low/Medium | Reviewed: keep |
 
 ---
 
@@ -141,7 +141,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | Script | Purpose | Production | Risk | Notes |
 |---|---|---|---|---|
 | `scripts/benchmark.js` | HTTP API benchmark against running server | Manual Only | Low | Hardened: read-only + `--json` + mutationPerformed=false |
-| `scripts/benchmark-file-paths.js` | File/service path benchmark evidence | Manual With Caution | Low/Medium | Good `--json`, optional persist |
+| `scripts/benchmark-file-paths.js` | File/service path benchmark evidence | Manual With Caution | Medium | Reviewed: `--json`, optional `--persist`; beware service-layer lazy expiry through jobs service |
 | `scripts/list-benchmark-history.js` | List persisted benchmark artifacts | Safe Read-Only | Low | Keep |
 
 ---
@@ -199,18 +199,18 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 |---|---|---:|---|---:|---:|---:|---|---|
 | `scripts/anonymize-user-data.js` | Privacy / Destructive | Yes | Approval Required | Yes with `--confirm` + `--approvalId` + `--backupRef` | Possible verification image/session cleanup via service | No | Critical | Hardened: dry-run default + confirm + json + approval/backup guard |
 | `scripts/backup.js` | Backup | Yes | Manual With Caution | Backup only | No | No | Low/Medium | Keep |
-| `scripts/benchmark-file-paths.js` | Benchmark | Yes | Manual With Caution | Optional metrics | No | Read only | Low/Medium | Keep |
+| `scripts/benchmark-file-paths.js` | Benchmark | Partial | Manual With Caution | Optional benchmark artifact with `--persist`; possible lazy job expiry through jobs service | No | Reads queue only | Medium | Keep + Document service-layer side effects |
 | `scripts/benchmark.js` | Benchmark | Yes | Manual Only | No | No | No | Low | Hardened: read-only + json |
 | `scripts/bundle-for-review.js` | Bundle/Review | Partial | CI/Bundle Only | Writes bundles | Overwrites bundles | No | Medium | Keep |
-| `scripts/capture-externalization-decision.js` | Migration Evidence | Yes | Manual | Optional metrics | No | No | Medium | Keep |
-| `scripts/capture-phase61-evidence.js` | Migration Evidence | Unknown | Manual | Metrics | No | No | Medium | Keep |
+| `scripts/capture-externalization-decision.js` | Migration Evidence | Yes | Manual | Optional decision snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep |
+| `scripts/capture-phase61-evidence.js` | Migration Evidence | Yes | Manual | Optional evidence snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep |
 | `scripts/cleanup-attachments.js` | Maintenance | Yes | Approval Required | Yes with `--confirm` | Possible delete with `--confirm` | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/cleanup-notification-flood.js` | Incident Recovery | Yes | Emergency Only | Yes | Moves quarantine | No | High | Keep + tests/docs |
 | `scripts/compact-counters.js` | Maintenance | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-predictive-signals.js` | Maintenance / Retention | Yes | Approval Required | Archive with `--confirm` | Possible archive artifact changes | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-queue.js` | Queue Ops | Yes | Approval Required | Yes | Archive | Yes | High | Keep |
 | `scripts/compact-workrooms.js` | Maintenance | Yes | Approval Required | Workroom sidecar mutation with `--confirm` | Possible derived cleanup | No | High | Hardened: dry-run default + confirm + json |
-| `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional persist | No | No | Low/Medium | Keep |
+| `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional pilot decision snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep; default may exit non-zero when pilot is blocked |
 | `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Hardened: read-only + json |
 | `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Artifact write | Can overwrite output | No | High | Keep |
 | `scripts/export-user-data.js` | Privacy Export | Yes | Manual | Export artifact only with `--out` | No | No | Medium | Hardened: explicit json semantics + sourceDataMutated=false |
@@ -218,12 +218,12 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/generate-vapid-keys.js` | Setup | Yes | Manual Setup | No | No | No | Low | Keep |
 | `scripts/inspect-predictive-scan-queue.js` | Queue Diagnostic | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/list-benchmark-history.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
-| `scripts/measure-storage-pressure.js` | Verify / Metrics | Partial | Manual With Caution | Metrics write | No | No | Medium | Keep |
+| `scripts/measure-storage-pressure.js` | Verify / Metrics | Partial | Manual With Caution | Storage pressure metrics snapshot by default unless `--no-persist` | No | No | Medium | Reviewed: Keep |
 | `scripts/migrate.js` | Migration | Partial | Manual/Startup | Yes | No | No | High | Keep + json/docs |
-| `scripts/ops-weekly-review.js` | Governance | Partial | Manual | Optional review write | No | Read only | Medium | Keep |
-| `scripts/phase61-1-remediation-status.js` | Verify/Incident | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown | Direct review |
-| `scripts/postdeploy-smoke.js` | Smoke | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
-| `scripts/predeploy-check.js` | Deploy Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
+| `scripts/ops-weekly-review.js` | Governance | Partial | Manual With Caution | Optional markdown via `--out`; optional ops review record via `--persist` | No | Reads queue only | Medium | Keep + Add `--json` later |
+| `scripts/phase61-1-remediation-status.js` | Verify / Incident / Recovery Diagnostic | Yes | Safe Read-Only | No mutation; runs safe diagnostics and dry-runs only | No | Reads queue via child diagnostics | Low/Medium | Reviewed: Keep |
+| `scripts/postdeploy-smoke.js` | Smoke | Yes | Safe Read-Only | No source mutation; HTTP GET smoke only | No | No | Low | Reviewed: Keep |
+| `scripts/predeploy-check.js` | Deploy Verify / Governance Gate | Partial | Manual With Caution | No source mutation; child checks may write registry/evidence artifacts | No | Reads queue via child checks | Medium | Reviewed: Keep + Document side effects |
 | `scripts/quarantine-corrupt-json.js` | Recovery | Yes | Emergency Only | Yes with `--confirm` | Moves quarantine, never deletes | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/queue-drain.js` | Queue Ops / Due Job Processing | Yes | Emergency Only | Yes with `--confirm` | No direct deletion | Yes | Critical | Hardened: dry-run default + confirm + json + active-worker preflight |
 | `scripts/queue-retry-dlq.js` | Queue Recovery | Yes | Emergency Only | Yes with `--confirm` | No | Yes | High | Hardened: dry-run default + confirm + json |
@@ -243,18 +243,18 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/run-migration-rehearsal.js` | Migration Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
 | `scripts/run-rollback-rehearsal.js` | Rollback Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
 | `scripts/run-trust-calibration.js` | Trust Calibration | Yes | Manual/Scheduler Equivalent | Metrics artifacts with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json |
-| `scripts/scheduler-cadence-report.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
+| `scripts/scheduler-cadence-report.js` | Verify / Scheduler Ops | Partial | Manual With Caution | May register default scheduler records | No | No direct queue mutation | Medium | Reviewed: Keep + Document registry side effect |
 | `scripts/validate-migration-snapshot.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-admin-rbac.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-audit-index.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-data-json.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/verify-file-health.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
-| `scripts/verify-marketplace-intelligence.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
+| `scripts/verify-marketplace-intelligence.js` | Verify / Product Intelligence | Partial | Manual With Caution | May capture marketplace dashboard rollup if missing | No | No | Medium | Reviewed: Keep + Document rollup side effect |
 | `scripts/verify-privacy-governance.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
 | `scripts/verify-production-readiness.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/verify-queue.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
-| `scripts/verify-repository-contracts.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
-| `scripts/verify-scale-thresholds.js` | Verify | Unknown | Safe/Metric | Optional persist | No | No | Low/Medium | Direct review |
+| `scripts/verify-repository-contracts.js` | Verify / Governance | Yes | Safe Read-Only | No mutation | No | No | Low | Reviewed: Keep |
+| `scripts/verify-scale-thresholds.js` | Verify / Metrics | Yes | Safe Read-Only by default | Optional scale-threshold artifact with `--persist` | No | No | Low/Medium | Reviewed: Keep |
 | `scripts/verify-workroom-indexes.js` | Verify / Repair Derived Index | Yes | Safe Read-Only unless `--repair --confirm` | Repair writes derived index only | No | No | Low/High | Hardened: verify read-only + repair confirm + json |
 
 ---
@@ -329,7 +329,7 @@ Potential future archival candidates after direct review:
 
 | Script | Condition |
 |---|---|
-| `scripts/phase61-1-remediation-status.js` | If confirmed one-time and no docs/tests reference it |
+| `scripts/phase61-1-remediation-status.js` | Keep after Patch 10 review unless superseded by a newer remediation aggregator/runbook |
 | `scripts/cleanup-notification-flood.js` | After incident retention and if flood class permanently resolved |
 | `scripts/inspect-predictive-scan-queue.js` | After predictive scan flood risk stabilizes |
 | `scripts/benchmark.js` | If replaced by `benchmark-file-paths.js` + `postdeploy-smoke.js` |
@@ -529,6 +529,54 @@ Policy:
 | `scripts/report-duplicate-records.js` | None service-side; standalone fs scanner | Selected collection files | None | Low |
 
 ---
+
+## Patch 10 Remaining Low-Risk / Diagnostic Scripts Reality Check
+
+The following lower-risk, diagnostic, deployment, and governance scripts were reviewed after Patch 10.
+
+| Script | Safety Status | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---|---|---|
+| `scripts/postdeploy-smoke.js` | Read-only HTTP smoke | Yes | No source mutation; HTTP GET checks only | Low | Keep |
+| `scripts/predeploy-check.js` | Deployment gate with child diagnostics | Yes | No source mutation; may touch scheduler registry/evidence through child/service checks | Medium | Keep + document side effects |
+| `scripts/ops-weekly-review.js` | Governance review generator | No | Optional markdown via `--out`; optional ops review record via `--persist` | Medium | Keep + add `--json` later |
+| `scripts/capture-phase61-evidence.js` | Evidence cadence reporter | Yes | Default read-only; `--persist` writes evidence snapshot | Low/Medium | Keep |
+| `scripts/capture-externalization-decision.js` | Phase 60 advisory decision reporter | Yes | Default read-only; `--persist` writes decision snapshot | Low/Medium | Keep |
+| `scripts/evaluate-pilot-gate.js` | Phase 61 pilot gate evaluator | Yes | Default read-only; `--persist` writes pilot gate snapshot | Low/Medium | Keep |
+| `scripts/phase61-1-remediation-status.js` | Phase 61.1 safe remediation status aggregator | Yes | No mutation; runs diagnostics and dry-run scripts only | Low/Medium | Keep |
+| `scripts/benchmark-file-paths.js` | File/service path benchmark | Yes | Optional benchmark artifact with `--persist`; possible service-layer lazy expiry through jobs service | Medium | Keep + document side effects |
+| `scripts/measure-storage-pressure.js` | Storage pressure measurement | Yes | Persists storage pressure snapshot by default unless `--no-persist` | Medium | Keep |
+| `scripts/verify-scale-thresholds.js` | Scale threshold verifier | Yes | Default latest-only read; optional artifact with `--persist` | Low/Medium | Keep |
+| `scripts/verify-marketplace-intelligence.js` | Marketplace intelligence verifier | Yes | May capture dashboard rollup if missing | Medium | Keep + document side effects |
+| `scripts/verify-repository-contracts.js` | Repository contract verifier | Yes | No mutation | Low | Keep |
+| `scripts/scheduler-cadence-report.js` | Scheduler cadence reporter | Yes | May register default scheduler records | Medium | Keep + document side effects |
+
+Policy:
+
+- These scripts are not deletion candidates.
+- Default read-only claims must distinguish source data mutation from metrics/registry/report artifact writes.
+- Scripts that write metrics/reports without `--confirm` remain acceptable only when clearly documented as artifact writers.
+- `ops-weekly-review.js` should gain `--json` in a future low-risk polish patch.
+- `verify-marketplace-intelligence.js` should avoid on-demand dashboard capture in a future hardening patch or keep the side effect documented.
+- `scheduler-cadence-report.js` should keep its default registration side effect documented unless a future `--no-register` mode is added.
+- `benchmark-file-paths.js` should document that service-layer reads may trigger lazy expiry in the jobs service.
+
+## Patch 10 Low-Risk / Diagnostic Dependency Map
+
+| Script | Imports / Calls | Reads | Writes / Mutates | Runtime Impact |
+|---|---|---|---|---|
+| `scripts/postdeploy-smoke.js` | Native `fetch()` only | HTTP GET endpoints | None | Low; read-only smoke against running server |
+| `scripts/predeploy-check.js` | `productionReadiness`, `phase61EvidenceCadence`, `pilotDecisionGate`, `repositoryContractReport`, child scripts | Config, docs, JSON/file health, governance, scale/evidence artifacts | No source mutation; child/service checks may write scheduler registry/evidence artifacts | Medium deployment gate |
+| `scripts/ops-weekly-review.js` | `productionReadiness`, `opsQueue`, `metricsRollups`, `scaleHygiene`, `backupRestoreDrill`, marketplace/trust/payment services | Ops/product/trust/payment evidence | Optional markdown file via `--out`; optional ops review record via `--persist` | Medium governance artifact writer |
+| `scripts/capture-phase61-evidence.js` | `phase61EvidenceCadence` | Latest persisted evidence | Optional evidence cadence snapshot with `--persist` | Low/Medium |
+| `scripts/capture-externalization-decision.js` | `externalizationDecision` | Evidence snapshots and benchmark history through service | Optional externalization decision snapshot with `--persist` | Low/Medium |
+| `scripts/evaluate-pilot-gate.js` | `pilotDecisionGate` | Evidence, approvals, incidents, reviews through service | Optional pilot decision snapshot with `--persist` | Low/Medium |
+| `scripts/phase61-1-remediation-status.js` | Child diagnostic scripts through `spawnSync()` | JSON health, NUL scan, queue verify, dry-run queue repair, stale recovery dry-run, predictive queue inspect, scale latest, pilot gate | None; dry-run children only | Low/Medium remediation status aggregator |
+| `scripts/benchmark-file-paths.js` | `database`, `users`, `jobs`, `auditLogSearch`, `opsQueue`, `workroomSearch`, `benchmarkHistory` | File/service paths | Optional benchmark artifact; possible lazy job expiry through jobs service | Medium benchmark side effects |
+| `scripts/measure-storage-pressure.js` | `storagePressure` | Filesystem/storage pressure | Storage pressure snapshot by default unless `--no-persist` | Medium metrics artifact writer |
+| `scripts/verify-scale-thresholds.js` | `storagePressure`, `scaleThresholds` | Latest storage pressure by default | Optional scale-threshold artifact with `--persist` | Low/Medium |
+| `scripts/verify-marketplace-intelligence.js` | Marketplace/product intelligence services | Product/search/workroom/payment intelligence | May capture dashboard rollup if missing | Medium |
+| `scripts/verify-repository-contracts.js` | `repositoryContractReport` | Repository contract docs/config/report | None | Low |
+| `scripts/scheduler-cadence-report.js` | `schedulerRegistry` | Scheduler registry/history | May register default scheduler records | Medium |
 
 ## Maintenance Rules
 
