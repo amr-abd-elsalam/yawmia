@@ -13,6 +13,14 @@
 
 This directory organizes Yawmia operational, architecture, governance, design, and phase documentation.
 
+Current docs reality map:
+
+```text
+docs/operations/DOCS_REALITY_CHECK.md
+```
+
+Use it to distinguish canonical runbooks, phase design docs, and historical evidence artifacts before editing or archiving documentation.
+
 Phase 61.3 keeps generated review bundles in the repository root:
 
 ```text
