@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-03T06:34:39.728Z
+> Auto-generated: 2026-06-03T07:03:59.045Z
 > Files in this part: 94
 
 ## Files
@@ -31228,10 +31228,18 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/rebuild-predictive-archive-index.js — Predictive Archive Index CLI (Phase 55)
+// scripts/rebuild-predictive-archive-index.js — Predictive Archive Index CLI (Phase 55/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/rebuild-predictive-archive-index.js
+//   node scripts/rebuild-predictive-archive-index.js --dry-run --json
+//   node scripts/rebuild-predictive-archive-index.js --confirm --json
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode rebuilds a derived/rebuildable predictive archive index.
+//   - Source predictive archives remain the source of truth.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -31239,37 +31247,173 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
+
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand() {
+  return 'node scripts/rebuild-predictive-archive-index.js --confirm --json';
+}
+
 async function main() {
-  console.log('\n🧠 يوميّة Predictive Archive Index Rebuild\n');
+  const started = Date.now();
+
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { rebuildPredictiveArchiveIndex, getPredictiveArchiveIndexStats } =
-    await import('../server/services/predictiveArchiveIndex.js');
+  const {
+    rebuildPredictiveArchiveIndex,
+    getPredictiveArchiveIndexStats,
+  } = await import('../server/services/predictiveArchiveIndex.js');
 
-  const result = await rebuildPredictiveArchiveIndex();
+  const beforeStats = await getPredictiveArchiveIndexStats();
 
-  if (result.skipped) {
-    console.log(`⚠️ Skipped: ${result.reason}`);
-    process.exit(0);
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      derivedArtifact: 'predictive_archive_index',
+      beforeStats,
+      plannedAction: 'rebuild predictive archive indexes from archived predictive signal files',
+      confirmCommand: buildConfirmCommand(),
+      warnings: [
+        'dry-run does not rebuild or write predictive archive index files',
+        'confirmed mode writes only derived/rebuildable predictive archive index artifacts',
+        'predictive signal archive files remain the source of truth',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🧠 يوميّة Predictive Archive Index Rebuild — DRY RUN\n');
+      console.log('   mutationPerformed: false');
+      console.log(`   current status: ${beforeStats.status || 'unknown'}`);
+      console.log(`   archivedSignals: ${beforeStats.archivedSignals || 0}`);
+      console.log(`   scannedArchives: ${beforeStats.scannedArchives || 0}`);
+      console.log('\nTo rebuild derived index:');
+      console.log(`   ${output.confirmCommand}\n`);
+    }
+
+    return;
   }
 
-  const stats = await getPredictiveArchiveIndexStats();
+  if (!JSON_OUT) {
+    console.log('\n🧠 يوميّة Predictive Archive Index Rebuild — CONFIRMED\n');
+    console.log('   ⚠️ This writes derived/rebuildable predictive archive index artifacts.');
+    console.log('   Source archives remain the source of truth.\n');
+  }
+
+  let rebuildResult = null;
+  let afterStats = null;
+
+  rebuildResult = await rebuildPredictiveArchiveIndex();
+
+  if (rebuildResult.skipped) {
+    afterStats = await getPredictiveArchiveIndexStats();
+
+    const output = {
+      ok: true,
+      dryRun: false,
+      confirm: true,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      skipped: true,
+      reason: rebuildResult.reason,
+      beforeStats,
+      afterStats,
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log(`⚠️ Skipped: ${rebuildResult.reason}\n`);
+    }
+
+    return;
+  }
+
+  afterStats = await getPredictiveArchiveIndexStats();
+
+  const output = {
+    ok: true,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    sourceDataMutated: false,
+    derivedArtifact: 'predictive_archive_index',
+    beforeStats,
+    rebuildResult,
+    afterStats,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+    return;
+  }
 
   console.log('✅ Predictive archive index rebuilt');
-  console.log(`   archivedSignals: ${result.archivedSignals || 0}`);
-  console.log(`   scannedArchives: ${result.scannedArchives || 0}`);
-  console.log(`   riskTypes: ${result.riskTypeCount || 0}`);
-  console.log(`   statuses: ${result.statusCount || 0}`);
-  console.log(`   months: ${result.monthCount || 0}`);
-  console.log(`   duration: ${result.durationMs || 0}ms`);
-  console.log(`   status: ${stats.status}\n`);
+  console.log(`   archivedSignals: ${rebuildResult.archivedSignals || 0}`);
+  console.log(`   scannedArchives: ${rebuildResult.scannedArchives || 0}`);
+  console.log(`   riskTypes: ${rebuildResult.riskTypeCount || 0}`);
+  console.log(`   statuses: ${rebuildResult.statusCount || 0}`);
+  console.log(`   months: ${rebuildResult.monthCount || 0}`);
+  console.log(`   duration: ${rebuildResult.durationMs || 0}ms`);
+  console.log(`   status: ${afterStats.status}\n`);
 }
 
 main().catch(err => {
-  console.error('\n❌ Predictive archive index rebuild failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Predictive archive index rebuild failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -31284,16 +31428,18 @@ main().catch(err => {
 // scripts/rebuild-search-relevance.js — Phase 56 Search Relevance Rebuild CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/rebuild-search-relevance.js
+//   node scripts/rebuild-search-relevance.js --dry-run --json
+//   node scripts/rebuild-search-relevance.js --confirm --json
 //
-// Rebuilds existing search acceleration indexes used by search relevance:
+// Rebuilds existing in-memory search acceleration indexes used by search relevance:
 //   - searchIndex
 //   - queryIndex
 //
-// Note:
-//   Phase 56 search relevance is mostly stateless scoring.
-//   This script rebuilds candidate indexes only; it does not create an
-//   external search DB or new search backend.
+// Important:
+//   searchIndex and queryIndex are process-local in-memory indexes.
+//   Running this CLI rebuilds indexes inside this CLI process only.
+//   It does not update an already-running server process.
+//   The running server rebuilds these indexes at startup/periodic timers.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -31301,58 +31447,227 @@ try {
   dotenv.config();
 } catch (_) {}
 
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
+
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand() {
+  return 'node scripts/rebuild-search-relevance.js --confirm --json';
+}
+
 async function main() {
-  console.log('\n🔎 يوميّة Search Relevance Rebuild\n');
+  const started = Date.now();
+
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const started = Date.now();
+  const searchIndex = await import('../server/services/searchIndex.js');
+  const queryIndex = await import('../server/services/queryIndex.js');
+
+  const beforeStats = {
+    searchIndex: searchIndex.getStats ? searchIndex.getStats() : null,
+    queryIndex: queryIndex.getStats ? queryIndex.getStats() : null,
+  };
+
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      persistentArtifactMutated: false,
+      processLocalMutationPerformed: false,
+      beforeStats,
+      plannedAction: 'rebuild process-local searchIndex and queryIndex in this CLI process',
+      confirmCommand: buildConfirmCommand(),
+      warnings: [
+        'dry-run does not rebuild indexes',
+        'confirmed mode rebuilds process-local in-memory indexes only',
+        'this CLI does not update search indexes inside an already-running server process',
+        'running server search indexes are rebuilt at startup and by periodic server timers',
+        'run verify-data-json before confirmed rebuild if corruption is suspected',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🔎 يوميّة Search Relevance Rebuild — DRY RUN\n');
+      console.log('   mutationPerformed: false');
+      console.log('   persistentArtifactMutated: false');
+      console.log('   note: confirmed mode rebuilds process-local in-memory indexes only');
+      console.log('\nTo run process-local rebuild:');
+      console.log(`   ${output.confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🔎 يوميّة Search Relevance Rebuild — CONFIRMED\n');
+    console.log('   ⚠️ This rebuilds in-memory indexes in this CLI process only.');
+    console.log('   ⚠️ It does not update an already-running server process.\n');
+  }
 
   let searchIndexResult = null;
   let queryIndexResult = null;
 
   try {
-    const searchIndex = await import('../server/services/searchIndex.js');
     if (searchIndex.buildIndex) {
       searchIndexResult = await searchIndex.buildIndex();
     }
   } catch (err) {
-    console.error('❌ searchIndex rebuild failed:', err.message);
-    console.error('');
-    console.error('Run this first to detect corrupt or zero-byte JSON files:');
-    console.error('  node scripts/verify-data-json.js --strict');
-    console.error('');
-    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding search indexes.');
+    const output = {
+      ok: false,
+      dryRun: false,
+      confirm: true,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      persistentArtifactMutated: false,
+      processLocalMutationPerformed: false,
+      failedStep: 'searchIndex.buildIndex',
+      error: err.message,
+      recommendedCommand: 'node scripts/verify-data-json.js --strict --json',
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.error('❌ searchIndex rebuild failed:', err.message);
+      console.error('');
+      console.error('Run this first to detect corrupt or zero-byte JSON files:');
+      console.error('  node scripts/verify-data-json.js --strict --json');
+      console.error('');
+      console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding search indexes.');
+    }
+
     process.exit(1);
   }
 
   try {
-    const queryIndex = await import('../server/services/queryIndex.js');
     if (queryIndex.buildAllIndexes) {
       queryIndexResult = await queryIndex.buildAllIndexes();
     }
   } catch (err) {
-    console.error('❌ queryIndex rebuild failed:', err.message);
-    console.error('');
-    console.error('Run this first to detect corrupt or zero-byte JSON files:');
-    console.error('  node scripts/verify-data-json.js --strict');
-    console.error('');
-    console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding query indexes.');
+    const output = {
+      ok: false,
+      dryRun: false,
+      confirm: true,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      persistentArtifactMutated: false,
+      processLocalMutationPerformed: !!searchIndexResult,
+      failedStep: 'queryIndex.buildAllIndexes',
+      error: err.message,
+      recommendedCommand: 'node scripts/verify-data-json.js --strict --json',
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.error('❌ queryIndex rebuild failed:', err.message);
+      console.error('');
+      console.error('Run this first to detect corrupt or zero-byte JSON files:');
+      console.error('  node scripts/verify-data-json.js --strict --json');
+      console.error('');
+      console.error('If the scanner reports corruption, fix/restore the source JSON before rebuilding query indexes.');
+    }
+
     process.exit(1);
   }
 
-  const durationMs = Date.now() - started;
+  const afterStats = {
+    searchIndex: searchIndex.getStats ? searchIndex.getStats() : null,
+    queryIndex: queryIndex.getStats ? queryIndex.getStats() : null,
+  };
 
-  console.log('✅ Search relevance acceleration rebuilt');
+  const output = {
+    ok: true,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    persistentArtifactMutated: false,
+    processLocalMutationPerformed: true,
+    beforeStats,
+    afterStats,
+    searchIndexResult,
+    queryIndexResult,
+    warnings: [
+      'confirmed mode rebuilt process-local in-memory indexes only',
+      'this CLI does not update an already-running server process',
+    ],
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+    return;
+  }
+
+  console.log('✅ Search relevance acceleration rebuilt in this CLI process');
   console.log(`   searchIndex: ${searchIndexResult === undefined ? 'ok' : JSON.stringify(searchIndexResult)}`);
   console.log(`   queryIndex: ${queryIndexResult === undefined ? 'ok' : JSON.stringify(queryIndexResult)}`);
-  console.log(`   duration: ${durationMs}ms\n`);
+  console.log(`   duration: ${output.durationMs}ms`);
+  console.log('   note: running server process was not updated by this CLI\n');
 }
 
 main().catch(err => {
-  console.error('\n❌ Search relevance rebuild failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    persistentArtifactMutated: false,
+    processLocalMutationPerformed: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Search relevance rebuild failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -31364,18 +31679,30 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/rebuild-workroom-search.js — Workroom Search Rebuild CLI (Phase 53)
+// scripts/rebuild-workroom-search.js — Workroom Search Rebuild CLI (Phase 53/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/rebuild-workroom-search.js --jobId=job_x
-//   node scripts/rebuild-workroom-search.js --all
-// Rebuilds per-job Workroom message search indexes.
+//   node scripts/rebuild-workroom-search.js --jobId=job_x --dry-run --json
+//   node scripts/rebuild-workroom-search.js --jobId=job_x --confirm --json
+//   node scripts/rebuild-workroom-search.js --all --dry-run --json [--limit=1000]
+//   node scripts/rebuild-workroom-search.js --all --confirm --json [--limit=1000]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode rebuilds derived/rebuildable workroom search indexes.
+//   - Message records remain the source of truth.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -31384,45 +31711,174 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
+function toPositiveInt(value, fallback, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.min(Math.floor(n), max);
+}
+
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand({ jobId, all, limit }) {
+  const parts = ['node scripts/rebuild-workroom-search.js', '--confirm', '--json'];
+  if (jobId) parts.push(`--jobId=${jobId}`);
+  if (all) parts.push('--all');
+  if (all && limit) parts.push(`--limit=${limit}`);
+  return parts.join(' ');
+}
+
 async function main() {
+  const started = Date.now();
   const jobId = getArg('jobId', '');
   const all = process.argv.includes('--all');
+  const limit = toPositiveInt(getArg('limit', '1000'), 1000, 10000);
 
-  console.log('\n🔎 يوميّة Workroom Search Rebuild\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
+
+  if (!jobId && !all) {
+    const output = {
+      ok: false,
+      dryRun: DRY_RUN,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      code: 'MISSING_TARGET',
+      error: 'Missing --jobId=job_x or --all',
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.error('❌ Missing --jobId=job_x or --all');
+    }
+
+    process.exit(1);
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { rebuildWorkroomSearchIndex } = await import('../server/services/workroomSearch.js');
+  const { rebuildWorkroomSearchIndex, getWorkroomSearchStats } =
+    await import('../server/services/workroomSearch.js');
 
-  if (!jobId && !all) {
-    console.error('❌ Missing --jobId=job_x or --all');
-    process.exit(1);
-  }
+  let plannedJobIds = [];
+  let beforeStats = null;
 
   if (jobId) {
-    const result = await rebuildWorkroomSearchIndex(jobId);
-    console.log('✅ Rebuild complete');
-    console.log(`   jobId: ${jobId}`);
-    console.log(`   messages: ${result.messageCount || 0}`);
-    console.log(`   tokens: ${result.tokenCount || 0}\n`);
+    plannedJobIds = [jobId];
+    beforeStats = await getWorkroomSearchStats(jobId).catch(err => ({
+      enabled: true,
+      status: 'unknown',
+      error: err.message,
+    }));
+  } else {
+    const { listAll } = await import('../server/services/jobs.js');
+    const jobs = await listAll();
+    plannedJobIds = jobs
+      .filter(job => job && job.id)
+      .slice(0, limit)
+      .map(job => job.id);
+  }
+
+  const confirmCommand = buildConfirmCommand({ jobId, all, limit });
+
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      derivedArtifact: 'workroom_search_indexes',
+      jobId: jobId || null,
+      all,
+      limit: all ? limit : null,
+      plannedJobs: plannedJobIds.length,
+      plannedJobIds: plannedJobIds.slice(0, 50),
+      beforeStats,
+      confirmCommand,
+      warnings: [
+        'dry-run does not rebuild or write workroom search indexes',
+        'confirmed mode writes derived/rebuildable workroom search index files',
+        'messages remain the source of truth',
+        '--all can touch many derived index files; review plannedJobs first',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🔎 يوميّة Workroom Search Rebuild — DRY RUN\n');
+      console.log('   mutationPerformed: false');
+      console.log(`   plannedJobs: ${plannedJobIds.length}`);
+      if (jobId) console.log(`   jobId: ${jobId}`);
+      console.log('\nTo rebuild derived indexes:');
+      console.log(`   ${confirmCommand}\n`);
+    }
+
     return;
   }
 
-  const { listAll } = await import('../server/services/jobs.js');
-  const jobs = await listAll();
+  if (!JSON_OUT) {
+    console.log('\n🔎 يوميّة Workroom Search Rebuild — CONFIRMED\n');
+    console.log('   ⚠️ This writes derived/rebuildable workroom search index files.');
+    console.log('   Messages remain the source of truth.\n');
+  }
 
   let rebuilt = 0;
   let failed = 0;
+  const results = [];
+  const failures = [];
 
-  for (let i = 0; i < jobs.length; i++) {
-    const job = jobs[i];
+  for (let i = 0; i < plannedJobIds.length; i++) {
+    const id = plannedJobIds[i];
+
     try {
-      const result = await rebuildWorkroomSearchIndex(job.id);
+      const result = await rebuildWorkroomSearchIndex(id);
       if (result && result.rebuilt) rebuilt++;
+
+      results.push({
+        jobId: id,
+        rebuilt: !!(result && result.rebuilt),
+        messageCount: result?.messageCount || 0,
+        tokenCount: result?.tokenCount || 0,
+        skipped: !!(result && result.skipped),
+        error: result?.error || null,
+      });
+
+      if (!JSON_OUT && jobId) {
+        console.log('✅ Rebuild complete');
+        console.log(`   jobId: ${id}`);
+        console.log(`   messages: ${result?.messageCount || 0}`);
+        console.log(`   tokens: ${result?.tokenCount || 0}\n`);
+      }
     } catch (err) {
       failed++;
-      console.warn(`   ⚠️ Failed ${job.id}: ${err.message}`);
+      failures.push({ jobId: id, error: err.message });
+      if (!JSON_OUT) {
+        console.warn(`   ⚠️ Failed ${id}: ${err.message}`);
+      }
     }
 
     if ((i + 1) % 50 === 0) {
@@ -31430,15 +31886,59 @@ async function main() {
     }
   }
 
+  const output = {
+    ok: failed === 0,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: rebuilt > 0,
+    sourceDataMutated: false,
+    derivedArtifact: 'workroom_search_indexes',
+    jobId: jobId || null,
+    all,
+    plannedJobs: plannedJobIds.length,
+    rebuilt,
+    failed,
+    results: results.slice(0, 200),
+    failures,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+    return;
+  }
+
   console.log('✅ Rebuild complete');
-  console.log(`   jobs scanned: ${jobs.length}`);
+  console.log(`   jobs scanned: ${plannedJobIds.length}`);
   console.log(`   rebuilt: ${rebuilt}`);
-  console.log(`   failed: ${failed}\n`);
+  console.log(`   failed: ${failed}`);
+  console.log(`   duration: ${output.durationMs}ms\n`);
+
+  if (!output.ok) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Workroom search rebuild failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Workroom search rebuild failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -36160,16 +36660,30 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/verify-workroom-indexes.js — Workroom Search Verify CLI (Phase 55)
+// scripts/verify-workroom-indexes.js — Workroom Search Verify CLI (Phase 55/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/verify-workroom-indexes.js [--jobId=job_x] [--repair]
+//   node scripts/verify-workroom-indexes.js --json
+//   node scripts/verify-workroom-indexes.js --jobId=job_x --json
+//   node scripts/verify-workroom-indexes.js --jobId=job_x --repair --dry-run --json
+//   node scripts/verify-workroom-indexes.js --jobId=job_x --repair --confirm --json
+//
+// Safety:
+//   - Verification is read-only.
+//   - Repair is dry-run by default.
+//   - Repair mutation requires --confirm.
+//   - --json emits machine-readable output.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const REPAIR = process.argv.includes('--repair');
+const DRY_RUN = process.argv.includes('--dry-run') || (REPAIR && !CONFIRM);
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -36178,11 +36692,29 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
-async function main() {
-  const jobId = getArg('jobId', '');
-  const repair = process.argv.includes('--repair');
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
 
-  console.log('\n🔎 يوميّة Workroom Search Index Verify\n');
+function buildConfirmCommand(jobId) {
+  return `node scripts/verify-workroom-indexes.js --jobId=${jobId} --repair --confirm --json`;
+}
+
+async function main() {
+  const started = Date.now();
+  const jobId = getArg('jobId', '');
+
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -36193,44 +36725,192 @@ async function main() {
     repairWorkroomSearchIndex,
   } = await import('../server/services/workroomIndexHealth.js');
 
-  let result;
+  let result = null;
 
-  if (jobId && repair) {
+  if (REPAIR && !jobId) {
+    const output = {
+      ok: false,
+      dryRun: DRY_RUN,
+      confirm: CONFIRM,
+      repair: true,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      code: 'JOB_ID_REQUIRED_FOR_REPAIR',
+      error: '--repair requires --jobId=job_x',
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.error('❌ --repair requires --jobId=job_x');
+    }
+
+    process.exit(1);
+  }
+
+  if (jobId && REPAIR && DRY_RUN) {
+    const before = await verifyWorkroomSearchIndex(jobId);
+
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      repair: true,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      derivedArtifact: 'workroom_search_indexes',
+      jobId,
+      before,
+      plannedAction: 'repair/rebuild one derived workroom search index',
+      confirmCommand: buildConfirmCommand(jobId),
+      warnings: [
+        'dry-run repair does not rebuild or write workroom search index files',
+        'confirmed repair writes derived/rebuildable workroom search index artifacts',
+        'messages remain the source of truth',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🔎 يوميّة Workroom Search Index Repair — DRY RUN\n');
+      console.log(`   jobId: ${jobId}`);
+      console.log(`   before: ${before.status || 'unknown'}`);
+      console.log('   mutationPerformed: false');
+      console.log('\nTo repair derived index:');
+      console.log(`   ${output.confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (jobId && REPAIR && !DRY_RUN) {
     result = await repairWorkroomSearchIndex(jobId);
-    console.log(`Repair jobId: ${jobId}`);
-    console.log(`Before: ${result.before?.status || 'unknown'}`);
-    console.log(`After:  ${result.after?.status || 'unknown'}`);
+
+    const output = {
+      ok: !!result.ok,
+      dryRun: false,
+      confirm: true,
+      repair: true,
+      mutationPerformed: true,
+      sourceDataMutated: false,
+      derivedArtifact: 'workroom_search_indexes',
+      jobId,
+      result,
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🔎 يوميّة Workroom Search Index Repair — CONFIRMED\n');
+      console.log(`Repair jobId: ${jobId}`);
+      console.log(`Before: ${result.before?.status || 'unknown'}`);
+      console.log(`After:  ${result.after?.status || 'unknown'}`);
+      console.log('\n✅ Repair complete\n');
+    }
+
     if (!result.ok) process.exit(1);
-    console.log('\n✅ Repair complete\n');
     return;
   }
 
   if (jobId) {
     result = await verifyWorkroomSearchIndex(jobId);
-    console.log(`jobId: ${jobId}`);
-    console.log(`status: ${result.status}`);
-    console.log(`messages: ${result.messageCount || 0}`);
-    console.log(`tokens: ${result.tokenCount || 0}`);
-    console.log(`warnings: ${(result.warnings || []).length}`);
-    console.log(`errors: ${(result.errors || []).length}\n`);
 
-    if (result.errors && result.errors.length > 0) process.exit(1);
+    const output = {
+      ok: !(result.errors && result.errors.length > 0),
+      dryRun: true,
+      confirm: false,
+      repair: false,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      jobId,
+      result,
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🔎 يوميّة Workroom Search Index Verify\n');
+      console.log(`jobId: ${jobId}`);
+      console.log(`status: ${result.status}`);
+      console.log(`messages: ${result.messageCount || 0}`);
+      console.log(`tokens: ${result.tokenCount || 0}`);
+      console.log(`warnings: ${(result.warnings || []).length}`);
+      console.log(`errors: ${(result.errors || []).length}\n`);
+    }
+
+    if (!output.ok) process.exit(1);
     return;
   }
 
   result = await verifyAllWorkroomSearchIndexes();
 
-  console.log(`Total: ${result.total || 0}`);
-  console.log(`Healthy: ${result.healthy || 0}`);
-  console.log(`Warnings: ${result.warnings || 0}`);
-  console.log(`Failed: ${result.failed || 0}\n`);
+  const output = {
+    ok: !!result.ok,
+    dryRun: true,
+    confirm: false,
+    repair: false,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    result,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+  } else {
+    console.log('\n🔎 يوميّة Workroom Search Index Verify\n');
+    console.log(`Total: ${result.total || 0}`);
+    console.log(`Healthy: ${result.healthy || 0}`);
+    console.log(`Warnings: ${result.warnings || 0}`);
+    console.log(`Failed: ${result.failed || 0}\n`);
+  }
 
   if (!result.ok) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Workroom index verify failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    repair: REPAIR,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Workroom index verify failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
