@@ -132,7 +132,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | Script | Purpose | Production | Risk | Notes |
 |---|---|---|---|---|
 | `scripts/backup.js` | Copy data directory to timestamped backup | Manual With Caution | Low/Medium | Should add `--json` + manifest |
-| `scripts/run-backup-restore-drill.js` | Validate backup restore drill | Manual With Caution | Medium | Writes drill report/temp restore |
+| `scripts/run-backup-restore-drill.js` | Validate backup restore drill | Manual With Caution | Medium | Hardened: dry-run default + confirm + json; source data not mutated |
 
 ---
 
@@ -207,7 +207,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/cleanup-attachments.js` | Maintenance | Yes | Approval Required | Yes with `--confirm` | Possible delete with `--confirm` | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/cleanup-notification-flood.js` | Incident Recovery | Yes | Emergency Only | Yes | Moves quarantine | No | High | Keep + tests/docs |
 | `scripts/compact-counters.js` | Maintenance | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
-| `scripts/compact-predictive-signals.js` | Maintenance | Partial | Approval Required | Archive | Possible | No | High | Add dry-run/json |
+| `scripts/compact-predictive-signals.js` | Maintenance / Retention | Yes | Approval Required | Archive with `--confirm` | Possible archive artifact changes | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-queue.js` | Queue Ops | Yes | Approval Required | Yes | Archive | Yes | High | Keep |
 | `scripts/compact-workrooms.js` | Maintenance | Yes | Approval Required | Workroom sidecar mutation with `--confirm` | Possible derived cleanup | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional persist | No | No | Low/Medium | Keep |
@@ -237,12 +237,12 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/repair-queue.js` | Queue Repair | Yes | Approval Required | Yes | No | Yes | High | Keep + tests |
 | `scripts/report-duplicate-records.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
 | `scripts/reset-dev-data.js` | Dev Destructive | Yes | Dev Only / Never Production | Yes | Yes | No | Critical | Keep dev only |
-| `scripts/rollup-product-intelligence.js` | Rollup | Unknown | Manual/Scheduler Equivalent | Metrics write | No | No | Medium | Direct review |
-| `scripts/rollup-trust-snapshots.js` | Rollup | Unknown | Manual/Scheduler Equivalent | Metrics/archive | Possible | No | Medium/High | Direct review |
-| `scripts/run-backup-restore-drill.js` | Backup Verify | Unknown | Manual With Caution | Report/temp restore | Temp cleanup | No | Medium | Direct review |
+| `scripts/rollup-product-intelligence.js` | Rollup | Yes | Manual/Scheduler Equivalent | Metrics artifact with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json |
+| `scripts/rollup-trust-snapshots.js` | Rollup / Retention | Yes | Approval Required | Metrics/archive artifacts with `--confirm` | Possible derived cleanup | No | Medium/High | Hardened: dry-run default + confirm + json |
+| `scripts/run-backup-restore-drill.js` | Backup Verify | Yes | Manual With Caution | Drill report/temp restore with `--confirm` | Temp cleanup | No | Medium | Hardened: dry-run default + confirm + json |
 | `scripts/run-migration-rehearsal.js` | Migration Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
 | `scripts/run-rollback-rehearsal.js` | Rollback Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
-| `scripts/run-trust-calibration.js` | Trust Calibration | Unknown | Manual/Scheduler Equivalent | Metrics | No | No | Medium | Direct review |
+| `scripts/run-trust-calibration.js` | Trust Calibration | Yes | Manual/Scheduler Equivalent | Metrics artifacts with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json |
 | `scripts/scheduler-cadence-report.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Direct review |
 | `scripts/validate-migration-snapshot.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-admin-rbac.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
@@ -286,6 +286,11 @@ node scripts/queue-drain.js --dry-run --json
 node scripts/rebuild-predictive-archive-index.js --dry-run --json
 node scripts/rebuild-workroom-search.js --all --dry-run --json
 node scripts/verify-workroom-indexes.js --jobId=job_x --repair --dry-run --json
+node scripts/compact-predictive-signals.js --dry-run --json
+node scripts/rollup-product-intelligence.js --dry-run --json
+node scripts/rollup-trust-snapshots.js --dry-run --json
+node scripts/run-trust-calibration.js --snapshots --dry-run --json
+node scripts/run-backup-restore-drill.js --dry-run --json
 node scripts/export-migration-snapshot.js --dry-run --json
 ```
 
@@ -456,6 +461,40 @@ Policy:
 
 ---
 
+## Patch 7 Rollup / Retention / Restore Safety Status
+
+The following rollup, retention, calibration, and restore drill scripts were reviewed after Patch 7.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/compact-predictive-signals.js` | Hardened retention/archive tool | Yes | Yes | Yes | Confirmed mode archives old resolved predictive signals | High | Keep as Approval Required |
+| `scripts/rollup-product-intelligence.js` | Hardened metrics rollup | Yes | Yes | Yes | Confirmed mode writes marketplace/product intelligence rollup artifact | Medium | Keep |
+| `scripts/rollup-trust-snapshots.js` | Hardened rollup/retention tool | Yes | Yes | Yes | Confirmed mode writes trust rollup and may cleanup old derived trust/calibration artifacts | Medium/High | Keep as Approval Required |
+| `scripts/run-trust-calibration.js` | Hardened calibration artifact tool | Yes | Yes | Yes | Confirmed mode writes trust snapshots or calibration report artifacts | Medium | Keep |
+| `scripts/run-backup-restore-drill.js` | Hardened restore drill tool | Yes | Yes | Yes | Confirmed mode writes drill report and temporary restore target; source data not mutated | Medium | Keep |
+
+Policy:
+
+- Rollup and retention scripts must default to dry-run.
+- Confirmed rollups must not mutate source marketplace/user/job/payment data.
+- `run-backup-restore-drill` must be dry-run-first even though it does not mutate source data, because it copies backup data and writes drill reports.
+- Trust calibration snapshots/reports are derived evidence artifacts.
+- Predictive signal retention can archive old resolved signals and must remain Approval Required.
+
+---
+
+## Rollup / Retention / Restore Dependency Map
+
+| Script | Imports Services | Reads | Writes / Mutates | Source of Truth | Runtime Impact |
+|---|---|---|---|---|---|
+| `scripts/compact-predictive-signals.js` | `server/services/database.js`, `server/services/predictiveSignalRetention.js` | Predictive signal state and precision stats through service | Confirmed mode archives old resolved signals | Predictive signal records / archives | High; retention/archive operation |
+| `scripts/rollup-product-intelligence.js` | `server/services/database.js`, `server/services/marketplaceIntelligenceRollups.js` | Search/product/workroom/payment/direct-offer analytics through services | Confirmed mode writes product intelligence rollup artifact | Source analytics/event records | Medium |
+| `scripts/rollup-trust-snapshots.js` | `server/services/database.js`, `server/services/trustSnapshotRollups.js` | Trust snapshots/calibration reports through service | Confirmed mode writes rollup and may cleanup old derived artifacts | Trust snapshots/reports | Medium/High |
+| `scripts/run-trust-calibration.js` | `server/services/database.js`, `server/services/trustCalibration.js` | Users/outcomes/trust inputs through service | Confirmed mode writes trust snapshots or calibration report artifacts | User/job/payment/attendance/report data remains source | Medium |
+| `scripts/run-backup-restore-drill.js` | `server/services/database.js`, `server/services/backupRestoreDrill.js` | Backup directory and restored JSON copy | Confirmed mode writes drill report and temp restore copy | Backup directory | Medium; source data not mutated |
+
+---
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
@@ -495,6 +534,10 @@ node scripts/queue-drain.js --confirm --json
 node scripts/rebuild-predictive-archive-index.js --confirm --json
 node scripts/rebuild-workroom-search.js --all --confirm --json
 node scripts/verify-workroom-indexes.js --jobId=job_x --repair --confirm --json
+node scripts/compact-predictive-signals.js --confirm --json
+node scripts/rollup-trust-snapshots.js --confirm --json
+node scripts/run-trust-calibration.js --snapshots --confirm --json
+node scripts/run-backup-restore-drill.js --confirm --json
 node scripts/cleanup-notification-flood.js --confirm
 node scripts/anonymize-user-data.js --userId=usr_x --confirm --approvalId=apr_x --backupRef=brd_or_backup_reference --json
 ```
