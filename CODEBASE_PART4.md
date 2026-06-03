@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-03T07:03:59.045Z
+> Auto-generated: 2026-06-03T18:25:04.465Z
 > Files in this part: 94
 
 ## Files
@@ -26692,11 +26692,17 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/compact-predictive-signals.js — Predictive Signal Retention CLI (Phase 53)
+// scripts/compact-predictive-signals.js — Predictive Signal Retention CLI (Phase 53/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/compact-predictive-signals.js [--force]
-// Archives old resolved predictive signals.
+//   node scripts/compact-predictive-signals.js --dry-run --json [--force]
+//   node scripts/compact-predictive-signals.js --confirm --json [--force]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode archives old resolved predictive signals.
 // ═══════════════════════════════════════════════════════════════
 
 try {
@@ -26704,10 +26710,35 @@ try {
   dotenv.config();
 } catch (_) {}
 
-async function main() {
-  const force = process.argv.includes('--force');
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
+const FORCE = process.argv.includes('--force');
 
-  console.log(`\n🧹 يوميّة Predictive Signal Retention${force ? ' (FORCE)' : ''}\n`);
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand() {
+  const parts = ['node scripts/compact-predictive-signals.js', '--confirm', '--json'];
+  if (FORCE) parts.push('--force');
+  return parts.join(' ');
+}
+
+async function main() {
+  const started = Date.now();
+
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
@@ -26717,41 +26748,121 @@ async function main() {
 
   const before = await getPredictivePrecisionStats();
 
-  console.log('Before:');
-  console.log(`   total: ${before.total || 0}`);
-  console.log(`   active: ${before.byStatus?.active || 0}`);
-  console.log(`   confirmed: ${before.byStatus?.confirmed || 0}`);
-  console.log(`   false_positive: ${before.byStatus?.false_positive || 0}`);
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      force: FORCE,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      artifactMutated: false,
+      before,
+      plannedAction: 'archive old resolved predictive signals according to retention policy',
+      confirmCommand: buildConfirmCommand(),
+      warnings: [
+        'dry-run does not archive or mutate predictive signal files',
+        'confirmed mode calls runPredictiveSignalRetention()',
+        'review precision stats before confirmed retention',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log(`\n🧹 يوميّة Predictive Signal Retention — DRY RUN${FORCE ? ' (FORCE)' : ''}\n`);
+      console.log('Before:');
+      console.log(`   total: ${before.total || 0}`);
+      console.log(`   active: ${before.byStatus?.active || 0}`);
+      console.log(`   confirmed: ${before.byStatus?.confirmed || 0}`);
+      console.log(`   false_positive: ${before.byStatus?.false_positive || 0}`);
+      console.log('\nNo data was changed.');
+      console.log('\nTo apply retention:');
+      console.log(`  ${output.confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log(`\n🧹 يوميّة Predictive Signal Retention — CONFIRMED${FORCE ? ' (FORCE)' : ''}\n`);
+  }
 
   const result = await runPredictiveSignalRetention({
-    force,
+    force: FORCE,
     reason: 'cli',
   });
 
-  if (!result.ok) {
-    console.error('\n❌ Retention failed:', result.error || result.code);
-    process.exit(1);
-  }
-
-  console.log('\n✅ Retention complete');
-  console.log(`   scanned: ${result.scanned || 0}`);
-  console.log(`   archived: ${result.archived || 0}`);
-  console.log(`   skipped: ${result.skipped || 0}`);
-  console.log(`   failed: ${result.failed || 0}`);
-  console.log(`   duration: ${result.durationMs || 0}ms\n`);
-
   const after = await getPredictivePrecisionStats();
 
-  console.log('After:');
-  console.log(`   total: ${after.total || 0}`);
-  console.log(`   active: ${after.byStatus?.active || 0}`);
-  console.log(`   confirmed: ${after.byStatus?.confirmed || 0}`);
-  console.log(`   false_positive: ${after.byStatus?.false_positive || 0}\n`);
+  const output = {
+    ok: !!result.ok,
+    dryRun: false,
+    confirm: true,
+    force: FORCE,
+    mutationPerformed: (result.archived || 0) > 0,
+    sourceDataMutated: false,
+    artifactMutated: (result.archived || 0) > 0,
+    before,
+    result,
+    after,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+  } else {
+    if (!result.ok) {
+      console.error('\n❌ Retention failed:', result.error || result.code);
+      process.exit(1);
+    }
+
+    console.log('\n✅ Retention complete');
+    console.log(`   scanned: ${result.scanned || 0}`);
+    console.log(`   archived: ${result.archived || 0}`);
+    console.log(`   skipped: ${result.skipped || 0}`);
+    console.log(`   failed: ${result.failed || 0}`);
+    console.log(`   duration: ${result.durationMs || 0}ms\n`);
+
+    console.log('After:');
+    console.log(`   total: ${after.total || 0}`);
+    console.log(`   active: ${after.byStatus?.active || 0}`);
+    console.log(`   confirmed: ${after.byStatus?.confirmed || 0}`);
+    console.log(`   false_positive: ${after.byStatus?.false_positive || 0}\n`);
+  }
+
+  if (!output.ok) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Predictive signal retention failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    force: FORCE,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    artifactMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Predictive signal retention failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -34155,13 +34266,24 @@ main().catch(err => {
 // scripts/rollup-product-intelligence.js — Phase 56 Marketplace Intelligence Rollup CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/rollup-product-intelligence.js [--day=YYYY-MM-DD]
+//   node scripts/rollup-product-intelligence.js --dry-run --json [--day=YYYY-MM-DD]
+//   node scripts/rollup-product-intelligence.js --confirm --json [--day=YYYY-MM-DD]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode writes marketplace/product intelligence rollup artifacts.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -34170,41 +34292,151 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand(day) {
+  return `node scripts/rollup-product-intelligence.js --confirm --json --day=${day}`;
+}
+
 async function main() {
+  const started = Date.now();
   const day = getArg('day', '') || new Date().toISOString().slice(0, 10);
 
-  console.log('\n🧠 يوميّة Marketplace Intelligence Rollup\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { captureMarketplaceIntelligenceRollup } =
-    await import('../server/services/marketplaceIntelligenceRollups.js');
+  const {
+    captureMarketplaceIntelligenceRollup,
+    getMarketplaceIntelligenceDashboard,
+  } = await import('../server/services/marketplaceIntelligenceRollups.js');
+
+  if (DRY_RUN) {
+    const dashboard = await getMarketplaceIntelligenceDashboard({
+      day,
+      noCapture: true,
+    }).catch(err => ({
+      enabled: false,
+      degraded: true,
+      error: err.message,
+    }));
+
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      artifactMutated: false,
+      day,
+      dashboardSummary: dashboard.summary || null,
+      degraded: !!dashboard.degraded,
+      plannedAction: 'capture marketplace/product intelligence rollup artifact',
+      confirmCommand: buildConfirmCommand(day),
+      warnings: [
+        'dry-run does not write marketplace intelligence rollup artifacts',
+        'confirmed mode writes metrics/product-intelligence rollup artifacts',
+        'source marketplace data remains unchanged',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🧠 يوميّة Marketplace Intelligence Rollup — DRY RUN\n');
+      console.log(`   day: ${day}`);
+      console.log('   mutationPerformed: false');
+      console.log('\nTo capture rollup artifact:');
+      console.log(`   ${output.confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🧠 يوميّة Marketplace Intelligence Rollup — CONFIRMED\n');
+  }
 
   const rollup = await captureMarketplaceIntelligenceRollup({
     day,
     reason: 'cli',
   });
 
-  if (rollup.skipped) {
-    console.log(`⚠️ Skipped: ${rollup.reason}`);
-    process.exit(0);
+  const output = {
+    ok: !rollup.skipped,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: !rollup.skipped,
+    sourceDataMutated: false,
+    artifactMutated: !rollup.skipped,
+    day,
+    rollup,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+  } else {
+    if (rollup.skipped) {
+      console.log(`⚠️ Skipped: ${rollup.reason}`);
+      process.exit(0);
+    }
+
+    console.log('✅ Rollup complete');
+    console.log(`   id: ${rollup.id}`);
+    console.log(`   day: ${rollup.day}`);
+    console.log(`   duration: ${rollup.durationMs || 0}ms`);
+    console.log(`   warnings: ${rollup.health?.warningCount || 0}`);
+    console.log(`   searches: ${rollup.search?.totals?.searches || 0}`);
+    console.log(`   zeroResults: ${rollup.search?.totals?.zeroResults || 0}`);
+    console.log(`   paymentDisputes: ${rollup.paymentDisputes?.totals?.disputes || 0}`);
+    console.log('');
   }
 
-  console.log('✅ Rollup complete');
-  console.log(`   id: ${rollup.id}`);
-  console.log(`   day: ${rollup.day}`);
-  console.log(`   duration: ${rollup.durationMs || 0}ms`);
-  console.log(`   warnings: ${rollup.health?.warningCount || 0}`);
-  console.log(`   searches: ${rollup.search?.totals?.searches || 0}`);
-  console.log(`   zeroResults: ${rollup.search?.totals?.zeroResults || 0}`);
-  console.log(`   paymentDisputes: ${rollup.paymentDisputes?.totals?.disputes || 0}`);
-  console.log('');
+  if (!output.ok && !rollup.skipped) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Marketplace intelligence rollup failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    artifactMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Marketplace intelligence rollup failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -34216,16 +34448,27 @@ main().catch(err => {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/rollup-trust-snapshots.js — Trust Rollup CLI (Phase 55)
+// scripts/rollup-trust-snapshots.js — Trust Rollup CLI (Phase 55/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/rollup-trust-snapshots.js [--month=YYYY-MM]
+//   node scripts/rollup-trust-snapshots.js --dry-run --json [--month=YYYY-MM]
+//   node scripts/rollup-trust-snapshots.js --confirm --json [--month=YYYY-MM]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode writes trust rollup artifacts and may clean old trust/calibration artifacts.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -34234,37 +34477,150 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand(month) {
+  const parts = ['node scripts/rollup-trust-snapshots.js', '--confirm', '--json'];
+  if (month) parts.push(`--month=${month}`);
+  return parts.join(' ');
+}
+
 async function main() {
+  const started = Date.now();
   const month = getArg('month', '');
 
-  console.log('\n🎯 يوميّة Trust Snapshot Rollup\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
-  const { createTrustSnapshotRollup, cleanupOldTrustSnapshots, cleanupOldCalibrationReports } =
-    await import('../server/services/trustSnapshotRollups.js');
+  const {
+    createTrustSnapshotRollup,
+    cleanupOldTrustSnapshots,
+    cleanupOldCalibrationReports,
+    getTrustRetentionStats,
+  } = await import('../server/services/trustSnapshotRollups.js');
+
+  const beforeStats = await getTrustRetentionStats().catch(err => ({
+    error: err.message,
+  }));
+
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      artifactMutated: false,
+      month: month || null,
+      beforeStats,
+      plannedAction: 'create trust snapshot rollup and cleanup old trust/calibration artifacts',
+      confirmCommand: buildConfirmCommand(month),
+      warnings: [
+        'dry-run does not create trust rollups',
+        'dry-run does not cleanup old trust snapshots or calibration reports',
+        'confirmed mode writes metrics/trust-calibration rollup artifacts and may cleanup old derived artifacts',
+        'source marketplace/user data remains unchanged',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🎯 يوميّة Trust Snapshot Rollup — DRY RUN\n');
+      console.log('   mutationPerformed: false');
+      console.log(`   month: ${month || 'current'}`);
+      console.log('\nTo create rollup/cleanup artifacts:');
+      console.log(`   ${output.confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🎯 يوميّة Trust Snapshot Rollup — CONFIRMED\n');
+  }
 
   const rollup = await createTrustSnapshotRollup({ month: month || undefined });
   const snapshots = await cleanupOldTrustSnapshots();
   const reports = await cleanupOldCalibrationReports();
 
-  if (rollup.skipped) {
-    console.log(`⚠️ Skipped: ${rollup.reason}`);
-    process.exit(0);
+  const output = {
+    ok: !rollup.skipped,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: !rollup.skipped || (snapshots.cleaned || 0) > 0 || (reports.cleaned || 0) > 0,
+    sourceDataMutated: false,
+    artifactMutated: !rollup.skipped || (snapshots.cleaned || 0) > 0 || (reports.cleaned || 0) > 0,
+    month: month || null,
+    rollup,
+    cleanup: {
+      snapshots,
+      reports,
+    },
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+  } else {
+    if (rollup.skipped) {
+      console.log(`⚠️ Skipped: ${rollup.reason}`);
+      process.exit(0);
+    }
+
+    console.log('✅ Trust rollup complete');
+    console.log(`   month: ${rollup.rollup?.month || month || 'current'}`);
+    console.log(`   snapshots: ${rollup.rollup?.snapshotCount || 0}`);
+    console.log(`   avgScore: ${rollup.rollup?.avgScore || 0}`);
+    console.log(`   old snapshots cleaned: ${snapshots.cleaned || 0}`);
+    console.log(`   old reports cleaned: ${reports.cleaned || 0}\n`);
   }
 
-  console.log('✅ Trust rollup complete');
-  console.log(`   month: ${rollup.rollup?.month || month || 'current'}`);
-  console.log(`   snapshots: ${rollup.rollup?.snapshotCount || 0}`);
-  console.log(`   avgScore: ${rollup.rollup?.avgScore || 0}`);
-  console.log(`   old snapshots cleaned: ${snapshots.cleaned || 0}`);
-  console.log(`   old reports cleaned: ${reports.cleaned || 0}\n`);
+  if (!output.ok && !rollup.skipped) process.exit(1);
 }
 
 main().catch(err => {
-  console.error('\n❌ Trust rollup failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    artifactMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Trust rollup failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -34279,14 +34635,25 @@ main().catch(err => {
 // scripts/run-backup-restore-drill.js — Phase 54 Restore Drill CLI
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/run-backup-restore-drill.js [--backupPath=./backups/yawmia-backup-...]
-//   node scripts/run-backup-restore-drill.js [--keep]
+//   node scripts/run-backup-restore-drill.js --dry-run --json [--backupPath=./backups/yawmia-backup-...] [--keep]
+//   node scripts/run-backup-restore-drill.js --confirm --json [--backupPath=./backups/yawmia-backup-...] [--keep]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Restore drill execution requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode copies backup data into restore drill target and writes drill report.
+//   - Source production data is not mutated.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -34295,14 +34662,81 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand({ backupPath, keepRestoreTarget }) {
+  const parts = ['node scripts/run-backup-restore-drill.js', '--confirm', '--json'];
+  if (backupPath) parts.push(`--backupPath=${backupPath}`);
+  if (keepRestoreTarget) parts.push('--keep');
+  return parts.join(' ');
+}
+
 async function main() {
+  const started = Date.now();
   const backupPath = getArg('backupPath', '') || undefined;
   const keepRestoreTarget = process.argv.includes('--keep');
 
-  console.log('\n🧪 يوميّة Backup Restore Drill\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
+
+  const confirmCommand = buildConfirmCommand({ backupPath, keepRestoreTarget });
+
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      artifactMutated: false,
+      backupPath: backupPath || null,
+      keepRestoreTarget,
+      plannedAction: 'run backup restore drill, copy backup into temporary restore target, verify JSON/indexes/migration state, write drill report',
+      confirmCommand,
+      warnings: [
+        'dry-run does not copy backup files or write restore drill reports',
+        'confirmed mode writes drill report and may create/remove temporary restore target',
+        'source production data is not mutated',
+        'use --keep only when you need to inspect the restored copy manually',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🧪 يوميّة Backup Restore Drill — DRY RUN\n');
+      console.log('   mutationPerformed: false');
+      console.log(`   backupPath: ${backupPath || 'latest backup auto-detect'}`);
+      console.log(`   keepRestoreTarget: ${keepRestoreTarget ? 'yes' : 'no'}`);
+      console.log('\nTo run restore drill:');
+      console.log(`   ${confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🧪 يوميّة Backup Restore Drill — CONFIRMED\n');
+  }
 
   const { runBackupRestoreDrill } = await import('../server/services/backupRestoreDrill.js');
 
@@ -34314,26 +34748,48 @@ async function main() {
 
   const drill = result.drill || {};
 
-  console.log(`Status: ${drill.status || 'unknown'}`);
-  console.log(`Drill ID: ${drill.id || '-'}`);
-  console.log(`Backup: ${drill.backupPath || '-'}`);
-  console.log(`Duration: ${drill.durationMs || 0}ms`);
+  const output = {
+    ok: !!result.ok,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    sourceDataMutated: false,
+    artifactMutated: true,
+    backupPath: backupPath || null,
+    keepRestoreTarget,
+    result,
+    drill,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
 
-  if (drill.counts) {
-    console.log(`JSON parsed: ${drill.counts.jsonParsed || 0}/${drill.counts.jsonFiles || 0}`);
-    if (drill.counts.migrationState) {
-      console.log(`Migration version: ${drill.counts.migrationState.version || '-'}`);
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+  } else {
+    console.log(`Status: ${drill.status || 'unknown'}`);
+    console.log(`Drill ID: ${drill.id || '-'}`);
+    console.log(`Backup: ${drill.backupPath || '-'}`);
+    console.log(`Duration: ${drill.durationMs || 0}ms`);
+
+    if (drill.counts) {
+      console.log(`JSON parsed: ${drill.counts.jsonParsed || 0}/${drill.counts.jsonFiles || 0}`);
+      if (drill.counts.migrationState) {
+        console.log(`Migration version: ${drill.counts.migrationState.version || '-'}`);
+      }
     }
-  }
 
-  if (drill.errors && drill.errors.length > 0) {
-    console.log('\nErrors:');
-    for (const e of drill.errors.slice(0, 20)) {
-      console.log(`  - [${e.check}] ${e.filePath || ''} ${e.error || ''}`);
+    if (drill.errors && drill.errors.length > 0) {
+      console.log('\nErrors:');
+      for (const e of drill.errors.slice(0, 20)) {
+        console.log(`  - [${e.check}] ${e.filePath || ''} ${e.error || ''}`);
+      }
     }
-  }
 
-  console.log('');
+    console.log('');
+  }
 
   if (!result.ok) {
     process.exit(1);
@@ -34341,8 +34797,24 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Restore drill failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    artifactMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Restore drill failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
@@ -34618,17 +35090,29 @@ try {
 ```javascript
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
-// scripts/run-trust-calibration.js — Trust Calibration CLI (Phase 53)
+// scripts/run-trust-calibration.js — Trust Calibration CLI (Phase 53/61.4)
 // ═══════════════════════════════════════════════════════════════
 // Usage:
-//   node scripts/run-trust-calibration.js --snapshots [--role=worker] [--limit=100] [--force]
-//   node scripts/run-trust-calibration.js --report [--from=ISO] [--to=ISO] [--role=worker]
+//   node scripts/run-trust-calibration.js --snapshots --dry-run --json [--role=worker] [--limit=100] [--force]
+//   node scripts/run-trust-calibration.js --snapshots --confirm --json [--role=worker] [--limit=100] [--force]
+//   node scripts/run-trust-calibration.js --report --dry-run --json [--from=ISO] [--to=ISO] [--role=worker]
+//   node scripts/run-trust-calibration.js --report --confirm --json [--from=ISO] [--to=ISO] [--role=worker]
+//
+// Safety:
+//   - Default is dry-run.
+//   - Mutation/persist requires --confirm.
+//   - --json emits machine-readable output.
+//   - Confirmed mode writes trust calibration snapshot/report artifacts.
 // ═══════════════════════════════════════════════════════════════
 
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
 } catch (_) {}
+
+const CONFIRM = process.argv.includes('--confirm');
+const DRY_RUN = process.argv.includes('--dry-run') || !CONFIRM;
+const JSON_OUT = process.argv.includes('--json');
 
 function getArg(name, fallback = '') {
   const prefix = `--${name}=`;
@@ -34637,36 +35121,202 @@ function getArg(name, fallback = '') {
   return found.slice(prefix.length);
 }
 
+function printJson(payload) {
+  console.log(JSON.stringify(payload, null, 2));
+}
+
+function buildConfirmCommand({ runSnapshots, runReport, role, limit, force, from, to }) {
+  const parts = ['node scripts/run-trust-calibration.js', '--confirm', '--json'];
+  if (runSnapshots) parts.push('--snapshots');
+  if (runReport) parts.push('--report');
+  if (role) parts.push(`--role=${role}`);
+  if (limit) parts.push(`--limit=${limit}`);
+  if (force) parts.push('--force');
+  if (from) parts.push(`--from=${from}`);
+  if (to) parts.push(`--to=${to}`);
+  return parts.join(' ');
+}
+
 async function main() {
+  const started = Date.now();
   const runSnapshots = process.argv.includes('--snapshots');
   const runReport = process.argv.includes('--report');
   const force = process.argv.includes('--force');
+  const role = getArg('role', '') || undefined;
+  const limitRaw = getArg('limit', '');
+  const limit = limitRaw ? parseInt(limitRaw) : undefined;
+  const from = getArg('from', '') || undefined;
+  const to = getArg('to', '') || undefined;
 
-  console.log('\n🎯 يوميّة Trust Calibration CLI\n');
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  if (JSON_OUT) {
+    console.log = () => {};
+    console.warn = () => {};
+    console.error = () => {};
+  }
 
   if (!runSnapshots && !runReport) {
-    console.error('❌ Choose --snapshots or --report');
+    const output = {
+      ok: false,
+      dryRun: DRY_RUN,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      code: 'MODE_REQUIRED',
+      error: 'Choose --snapshots or --report',
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.error('❌ Choose --snapshots or --report');
+    }
+
     process.exit(1);
   }
+
+  const confirmCommand = buildConfirmCommand({
+    runSnapshots,
+    runReport,
+    role,
+    limit,
+    force,
+    from,
+    to,
+  });
 
   const { initDatabase } = await import('../server/services/database.js');
   await initDatabase();
 
+  if (DRY_RUN) {
+    const output = {
+      ok: true,
+      dryRun: true,
+      confirm: CONFIRM,
+      mutationPerformed: false,
+      sourceDataMutated: false,
+      artifactMutated: false,
+      mode: runSnapshots ? 'snapshots' : 'report',
+      options: {
+        role: role || null,
+        limit: limit || null,
+        force,
+        from: from || null,
+        to: to || null,
+      },
+      plannedAction: runSnapshots
+        ? 'create Trust Score V2 snapshots for active users'
+        : 'generate and persist trust calibration report',
+      confirmCommand,
+      warnings: [
+        'dry-run does not create trust snapshots or reports',
+        'confirmed mode writes trust calibration artifacts only',
+        'source user/job/payment/message data remains unchanged',
+      ],
+      durationMs: Date.now() - started,
+      completedAt: new Date().toISOString(),
+    };
+
+    if (JSON_OUT) {
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      printJson(output);
+    } else {
+      console.log('\n🎯 يوميّة Trust Calibration CLI — DRY RUN\n');
+      console.log(`   mode: ${output.mode}`);
+      console.log('   mutationPerformed: false');
+      console.log('\nTo run calibration:');
+      console.log(`   ${confirmCommand}\n`);
+    }
+
+    return;
+  }
+
+  if (!JSON_OUT) {
+    console.log('\n🎯 يوميّة Trust Calibration CLI — CONFIRMED\n');
+  }
+
   const trustCalibration = await import('../server/services/trustCalibration.js');
 
-  if (runSnapshots) {
-    const role = getArg('role', '');
-    const limitRaw = getArg('limit', '');
-    const limit = limitRaw ? parseInt(limitRaw) : undefined;
+  let result = null;
 
-    console.log('   Running snapshot batch...');
-    const result = await trustCalibration.createSnapshotsForActiveUsers({
-      role: role || undefined,
+  if (runSnapshots) {
+    result = await trustCalibration.createSnapshotsForActiveUsers({
+      role,
       limit,
       force,
       reason: 'cli',
     });
+  }
 
+  if (runReport) {
+    result = await trustCalibration.generateCalibrationReport({
+      from,
+      to,
+      role,
+      persist: true,
+    });
+
+    if (!result.ok) {
+      const output = {
+        ok: false,
+        dryRun: false,
+        confirm: true,
+        mutationPerformed: false,
+        sourceDataMutated: false,
+        artifactMutated: false,
+        mode: 'report',
+        error: result.error || result.code,
+        result,
+        durationMs: Date.now() - started,
+        completedAt: new Date().toISOString(),
+      };
+
+      if (JSON_OUT) {
+        console.log = originalConsole.log;
+        console.warn = originalConsole.warn;
+        console.error = originalConsole.error;
+        printJson(output);
+      } else {
+        console.error('❌ Report failed:', result.error || result.code);
+      }
+
+      process.exit(1);
+    }
+  }
+
+  const output = {
+    ok: true,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: true,
+    sourceDataMutated: false,
+    artifactMutated: true,
+    mode: runSnapshots ? 'snapshots' : 'report',
+    result,
+    durationMs: Date.now() - started,
+    completedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    printJson(output);
+    return;
+  }
+
+  if (runSnapshots) {
     console.log('\n✅ Snapshot batch complete');
     console.log(`   scanned: ${result.scanned || 0}`);
     console.log(`   created: ${result.created || 0}`);
@@ -34676,25 +35326,7 @@ async function main() {
   }
 
   if (runReport) {
-    const from = getArg('from', '') || undefined;
-    const to = getArg('to', '') || undefined;
-    const role = getArg('role', '') || undefined;
-
-    console.log('   Generating calibration report...');
-    const result = await trustCalibration.generateCalibrationReport({
-      from,
-      to,
-      role,
-      persist: true,
-    });
-
-    if (!result.ok) {
-      console.error('❌ Report failed:', result.error || result.code);
-      process.exit(1);
-    }
-
     const report = result.report;
-
     console.log('\n✅ Calibration report complete');
     console.log(`   reportId: ${report.id}`);
     console.log(`   samples: ${report.sampleCount}`);
@@ -34712,8 +35344,24 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('\n❌ Trust calibration CLI failed:', err.message);
-  if (err.stack) console.error(err.stack);
+  const payload = {
+    ok: false,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    artifactMutated: false,
+    error: err.message,
+    generatedAt: new Date().toISOString(),
+  };
+
+  if (JSON_OUT) {
+    printJson(payload);
+  } else {
+    console.error('\n❌ Trust calibration CLI failed:', err.message);
+    if (err.stack) console.error(err.stack);
+  }
+
   process.exit(1);
 });
 ```
