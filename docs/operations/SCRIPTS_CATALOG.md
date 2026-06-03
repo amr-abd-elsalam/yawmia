@@ -52,7 +52,7 @@ These scripts are expected to remain long-term.
 
 | Script | Category | Safe Default | Production | Mutation | Risk | Owner/Use |
 |---|---|---:|---|---|---|---|
-| `scripts/backup.js` | Backup | Yes | Manual With Caution | Writes backup copy only | Low/Medium | Ops |
+| `scripts/backup.js` | Backup | Yes | Manual With Caution | Writes backup copy only; no source mutation; lacks `--json`/manifest | Low/Medium | Ops |
 | `scripts/verify-data-json.js` | Verify | Yes | Safe Read-Only | No | Low | Ops / Deploy |
 | `scripts/verify-file-health.js` | Verify | Yes | Safe Read-Only | No | Low | Ops / Deploy |
 | `scripts/verify-production-readiness.js` | Verify | Yes | Safe Read-Only | No | Low | Deploy |
@@ -116,10 +116,10 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Purpose | Production | Mutation | Risk | Decision |
 |---|---|---|---|---|---|
-| `scripts/export-migration-snapshot.js` | Export sanitized NDJSON snapshot | Manual With Caution | Writes snapshot artifacts | High | Keep |
-| `scripts/validate-migration-snapshot.js` | Validate snapshot manifest/NDJSON/checksums/redaction | Safe Read-Only | No | Low | Keep |
-| `scripts/run-migration-rehearsal.js` | Run safe migration rehearsal | Manual With Caution | Writes rehearsal report | Medium | Keep |
-| `scripts/run-rollback-rehearsal.js` | Run rollback rehearsal | Manual With Caution | Writes rehearsal report | Medium | Keep |
+| `scripts/export-migration-snapshot.js` | Export sanitized NDJSON snapshot | Manual With Caution | Writes snapshot artifacts only after `--confirm`; `--overwrite` removes output dir only | High | Reviewed: keep; dry-run default + confirm + json |
+| `scripts/validate-migration-snapshot.js` | Validate snapshot manifest/NDJSON/checksums/redaction | Safe Read-Only | No source mutation | Low | Reviewed: keep |
+| `scripts/run-migration-rehearsal.js` | Run safe migration rehearsal | Manual With Caution | Validation-only by default; writes report only with `--confirm --out` | Medium | Reviewed: keep |
+| `scripts/run-rollback-rehearsal.js` | Run rollback rehearsal | Manual With Caution | Writes rollback rehearsal report with `--persist` or `--confirm`; no source mutation | Medium | Reviewed: keep |
 | `scripts/capture-externalization-decision.js` | Capture advisory Phase 60 decision | Safe by default / Manual With Caution when `--persist` | Optional decision snapshot | Low/Medium | Reviewed: keep |
 | `scripts/capture-phase61-evidence.js` | Capture Phase 61 evidence cadence | Safe by default / Manual With Caution when `--persist` | Optional evidence snapshot | Low/Medium | Reviewed: keep |
 | `scripts/evaluate-pilot-gate.js` | Evaluate Phase 61 pilot gate | Safe by default / Manual With Caution when `--persist` | Optional pilot gate snapshot | Low/Medium | Reviewed: keep; default may exit non-zero when pilot is blocked |
@@ -131,7 +131,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Purpose | Production | Risk | Notes |
 |---|---|---|---|---|
-| `scripts/backup.js` | Copy data directory to timestamped backup | Manual With Caution | Low/Medium | Should add `--json` + manifest |
+| `scripts/backup.js` | Copy data directory to timestamped backup | Manual With Caution | Low/Medium | Reviewed: copies source data to backup artifact; no deletion; should add `--json`, manifest, and optional checksum later |
 | `scripts/run-backup-restore-drill.js` | Validate backup restore drill | Manual With Caution | Medium | Hardened: dry-run default + confirm + json; source data not mutated |
 
 ---
@@ -198,7 +198,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | Script | Category | Safe Default | Production | Mutation | Deletes/Moves | Queue Touch | Risk | Recommendation |
 |---|---|---:|---|---:|---:|---:|---|---|
 | `scripts/anonymize-user-data.js` | Privacy / Destructive | Yes | Approval Required | Yes with `--confirm` + `--approvalId` + `--backupRef` | Possible verification image/session cleanup via service | No | Critical | Hardened: dry-run default + confirm + json + approval/backup guard |
-| `scripts/backup.js` | Backup | Yes | Manual With Caution | Backup only | No | No | Low/Medium | Keep |
+| `scripts/backup.js` | Backup | Yes | Manual With Caution | Writes timestamped backup copy only; no source mutation | No | No | Low/Medium | Reviewed: Keep + add `--json`/manifest later |
 | `scripts/benchmark-file-paths.js` | Benchmark | Partial | Manual With Caution | Optional benchmark artifact with `--persist`; possible lazy job expiry through jobs service | No | Reads queue only | Medium | Keep + Document service-layer side effects |
 | `scripts/benchmark.js` | Benchmark | Yes | Manual Only | No | No | No | Low | Hardened: read-only + json |
 | `scripts/bundle-for-review.js` | Bundle/Review | Partial | CI/Bundle Only | Writes bundles | Overwrites bundles | No | Medium | Keep |
@@ -212,14 +212,14 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/compact-workrooms.js` | Maintenance | Yes | Approval Required | Workroom sidecar mutation with `--confirm` | Possible derived cleanup | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional pilot decision snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep; default may exit non-zero when pilot is blocked |
 | `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Hardened: read-only + json |
-| `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Artifact write | Can overwrite output | No | High | Keep |
+| `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Snapshot artifact write only with `--confirm` | Can remove output directory only with `--overwrite --confirm` | No | High | Reviewed: Keep; dry-run default + confirm + json |
 | `scripts/export-user-data.js` | Privacy Export | Yes | Manual | Export artifact only with `--out` | No | No | Medium | Hardened: explicit json semantics + sourceDataMutated=false |
 | `scripts/find-null-json-files.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/generate-vapid-keys.js` | Setup | Yes | Manual Setup | No | No | No | Low | Keep |
 | `scripts/inspect-predictive-scan-queue.js` | Queue Diagnostic | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/list-benchmark-history.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/measure-storage-pressure.js` | Verify / Metrics | Partial | Manual With Caution | Storage pressure metrics snapshot by default unless `--no-persist` | No | No | Medium | Reviewed: Keep |
-| `scripts/migrate.js` | Migration | Partial | Manual/Startup | Yes | No | No | High | Keep + json/docs |
+| `scripts/migrate.js` | Migration | Partial | Manual/Startup | Runs pending schema migrations unless `--dry-run`; can mutate source data depending on pending migrations | No direct deletion | No | High | Reviewed: Keep + harden later with `--json` and explicit confirm/production guidance |
 | `scripts/ops-weekly-review.js` | Governance | Partial | Manual With Caution | Optional markdown via `--out`; optional ops review record via `--persist` | No | Reads queue only | Medium | Keep + Add `--json` later |
 | `scripts/phase61-1-remediation-status.js` | Verify / Incident / Recovery Diagnostic | Yes | Safe Read-Only | No mutation; runs safe diagnostics and dry-runs only | No | Reads queue via child diagnostics | Low/Medium | Reviewed: Keep |
 | `scripts/postdeploy-smoke.js` | Smoke | Yes | Safe Read-Only | No source mutation; HTTP GET smoke only | No | No | Low | Reviewed: Keep |
@@ -240,11 +240,11 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/rollup-product-intelligence.js` | Rollup | Yes | Manual/Scheduler Equivalent | Metrics artifact with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json |
 | `scripts/rollup-trust-snapshots.js` | Rollup / Retention | Yes | Approval Required | Metrics/archive artifacts with `--confirm` | Possible derived cleanup | No | Medium/High | Hardened: dry-run default + confirm + json |
 | `scripts/run-backup-restore-drill.js` | Backup Verify | Yes | Manual With Caution | Drill report/temp restore with `--confirm` | Temp cleanup | No | Medium | Hardened: dry-run default + confirm + json |
-| `scripts/run-migration-rehearsal.js` | Migration Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
-| `scripts/run-rollback-rehearsal.js` | Rollback Rehearsal | Unknown | Manual | Report | No source mutation expected | No | Medium | Direct review |
+| `scripts/run-migration-rehearsal.js` | Migration Rehearsal | Yes | Manual With Caution | Validation-only rehearsal; report written only with `--confirm --out` | No source mutation | No | Medium | Reviewed: Keep |
+| `scripts/run-rollback-rehearsal.js` | Rollback Rehearsal | Yes | Manual With Caution | Rehearsal report written with `--persist` or `--confirm` | No source mutation | No | Medium | Reviewed: Keep |
 | `scripts/run-trust-calibration.js` | Trust Calibration | Yes | Manual/Scheduler Equivalent | Metrics artifacts with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json |
 | `scripts/scheduler-cadence-report.js` | Verify / Scheduler Ops | Partial | Manual With Caution | May register default scheduler records | No | No direct queue mutation | Medium | Reviewed: Keep + Document registry side effect |
-| `scripts/validate-migration-snapshot.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
+| `scripts/validate-migration-snapshot.js` | Verify / Migration Snapshot | Yes | Safe Read-Only | No mutation | No | No | Low | Reviewed: Keep |
 | `scripts/verify-admin-rbac.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-audit-index.js` | Verify | Unknown | Safe Read-Only | No | No | No | Low | Direct review |
 | `scripts/verify-data-json.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
@@ -612,6 +612,47 @@ Known gaps to address in a later hardening patch:
 - `cleanup-notification-flood.js` should gain explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and cleaner machine-readable output.
 - `compact-queue.js` should expose or normalize `mutationPerformed` and `confirmCommand` in CLI output if the service result does not already include them.
 - `repair-queue.js` currently requires an approval id shape; a future hardening step can validate that the approval exists and is approved before confirmed mutation.
+
+## Patch 12 Migration / Backup / Rehearsal Scripts Reality Check
+
+The following migration, backup, rehearsal, and snapshot validation scripts were reviewed after Patch 12.
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/backup.js` | Backup artifact writer | N/A | No | No | Copies `data/` to timestamped backup directory; no source mutation or deletion | Low/Medium | Keep + add `--json`, manifest, and optional checksum later |
+| `scripts/migrate.js` | Schema migration CLI | Only with `--dry-run` | No | No | Runs pending migrations by default; migrations may mutate source data depending on pending version | High | Keep + harden later with `--json`, clearer confirm/production guidance |
+| `scripts/export-migration-snapshot.js` | Hardened snapshot export | Yes | Yes | Yes | Writes sanitized NDJSON snapshot artifacts only after `--confirm`; `--overwrite` can remove output dir only | High | Keep |
+| `scripts/run-migration-rehearsal.js` | Validation-only migration rehearsal | Yes when `--dry-run`; no source mutation either way | Report write requires `--confirm --out` | Yes | Validates migration snapshot; writes report only when explicitly confirmed with output path | Medium | Keep |
+| `scripts/run-rollback-rehearsal.js` | Non-destructive rollback rehearsal | Yes with `--dry-run` | `--confirm` or `--persist` writes report | Yes | Writes rehearsal report only; does not restore production or mutate source data | Medium | Keep |
+| `scripts/validate-migration-snapshot.js` | Read-only snapshot validator | N/A | No | Yes | Validates existing snapshot files only; no source mutation | Low | Keep |
+
+Policy:
+
+- `backup.js` is source-data read-only but artifact-writing by design.
+- `migrate.js` remains High risk because CLI default runs pending migrations without `--confirm`; this is acceptable only as a known legacy/manual/startup tool until a future hardening patch.
+- `export-migration-snapshot.js` is safe-by-default and does not implement external DB/search/queue.
+- `run-migration-rehearsal.js` and `run-rollback-rehearsal.js` are rehearsal/report tools, not migration execution tools.
+- `validate-migration-snapshot.js` must remain read-only.
+- None of these scripts implements PostgreSQL, Redis, external queue, external search, or runtime repository switching.
+
+## Patch 12 Migration / Backup / Rehearsal Dependency Map
+
+| Script | Imports / Calls | Reads | Writes / Mutates | Runtime Impact |
+|---|---|---|---|---|
+| `scripts/backup.js` | Native `cp`, `mkdir`, `readdir`, `stat` | `data/` directory | Backup copy under target dir | Low/Medium; backup artifact only |
+| `scripts/migrate.js` | `database.initDatabase()`, `migration.getCurrentVersion()`, `migration.runMigrations()` | Migration state and source data through migration services | Pending migrations may mutate source files, shard records, or extract images depending on version | High; schema/data migration |
+| `scripts/export-migration-snapshot.js` | `database.getCollectionPath()`, `database.listJSON()`, native file writers | Configured collections and index files | Confirmed mode writes NDJSON/index snapshot artifacts; `--overwrite` removes output dir only | High; migration evidence artifact |
+| `scripts/run-migration-rehearsal.js` | `migrationSnapshotValidation.validateMigrationSnapshot()` | Migration snapshot files | Optional `rehearsal-report.json` with `--confirm --out` | Medium; validation-only rehearsal |
+| `scripts/run-rollback-rehearsal.js` | `rollbackRehearsal.runRollbackRehearsal()` | Backup/snapshot/rehearsal evidence through service | Optional rollback rehearsal report with `--persist` or `--confirm` | Medium; no production restore |
+| `scripts/validate-migration-snapshot.js` | `migrationSnapshotValidation.validateMigrationSnapshot()` | Migration snapshot files | None | Low; read-only validation |
+
+Known gaps to address in a later hardening patch:
+
+- `backup.js` should gain `--json`, manifest output, and optional checksum verification.
+- `migrate.js` should gain `--json` and clearer production confirm/runbook semantics for manual CLI use.
+- `export-migration-snapshot.js` should keep `--confirm` mandatory and should later guard `--overwrite` output paths more strictly.
+- `run-migration-rehearsal.js` should keep sourceDataMutated=false and externalDbConnected=false visible in JSON evidence.
+- `run-rollback-rehearsal.js` should remain non-destructive and never perform an actual production restore.
 
 ## Maintenance Rules
 
