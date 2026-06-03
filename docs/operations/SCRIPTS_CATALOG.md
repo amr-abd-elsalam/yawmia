@@ -106,7 +106,7 @@ These scripts are expected to remain long-term.
 | `scripts/report-duplicate-records.js` | Duplicate physical record diagnosis | Safe Read-Only | Low | Keep |
 | `scripts/inspect-predictive-scan-queue.js` | predictive_scan flood diagnosis | Safe Read-Only | Low | Keep |
 | `scripts/recover-stale-running-jobs.js` | Queue stale running dry-run audit | Emergency Read-Only | Low now / High future | Keep + document; confirm not implemented |
-| `scripts/export-incident-timeline.js` | Incident timeline export | Safe Read-Only | Low | Keep |
+| `scripts/export-incident-timeline.js` | Incident timeline export | Safe Read-Only | Low | Hardened: read-only + `--json` + mutationPerformed=false |
 
 ---
 
@@ -140,7 +140,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Purpose | Production | Risk | Notes |
 |---|---|---|---|---|
-| `scripts/benchmark.js` | HTTP API benchmark against running server | Manual Only | Low | Add `--json` |
+| `scripts/benchmark.js` | HTTP API benchmark against running server | Manual Only | Low | Hardened: read-only + `--json` + mutationPerformed=false |
 | `scripts/benchmark-file-paths.js` | File/service path benchmark evidence | Manual With Caution | Low/Medium | Good `--json`, optional persist |
 | `scripts/list-benchmark-history.js` | List persisted benchmark artifacts | Safe Read-Only | Low | Keep |
 
@@ -200,7 +200,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/anonymize-user-data.js` | Privacy / Destructive | Yes | Approval Required | Yes with `--confirm` + `--approvalId` + `--backupRef` | Possible verification image/session cleanup via service | No | Critical | Hardened: dry-run default + confirm + json + approval/backup guard |
 | `scripts/backup.js` | Backup | Yes | Manual With Caution | Backup only | No | No | Low/Medium | Keep |
 | `scripts/benchmark-file-paths.js` | Benchmark | Yes | Manual With Caution | Optional metrics | No | Read only | Low/Medium | Keep |
-| `scripts/benchmark.js` | Benchmark | Yes | Manual Only | No | No | No | Low | Keep + json |
+| `scripts/benchmark.js` | Benchmark | Yes | Manual Only | No | No | No | Low | Hardened: read-only + json |
 | `scripts/bundle-for-review.js` | Bundle/Review | Partial | CI/Bundle Only | Writes bundles | Overwrites bundles | No | Medium | Keep |
 | `scripts/capture-externalization-decision.js` | Migration Evidence | Yes | Manual | Optional metrics | No | No | Medium | Keep |
 | `scripts/capture-phase61-evidence.js` | Migration Evidence | Unknown | Manual | Metrics | No | No | Medium | Keep |
@@ -211,7 +211,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/compact-queue.js` | Queue Ops | Yes | Approval Required | Yes | Archive | Yes | High | Keep |
 | `scripts/compact-workrooms.js` | Maintenance | Yes | Approval Required | Workroom sidecar mutation with `--confirm` | Possible derived cleanup | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/evaluate-pilot-gate.js` | Governance | Yes | Manual | Optional persist | No | No | Low/Medium | Keep |
-| `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Add json |
+| `scripts/export-incident-timeline.js` | Incident Export | Yes | Safe Read-Only | No | No | No | Low | Hardened: read-only + json |
 | `scripts/export-migration-snapshot.js` | Migration Export | Yes | Manual With Caution | Artifact write | Can overwrite output | No | High | Keep |
 | `scripts/export-user-data.js` | Privacy Export | Yes | Manual | Export artifact only with `--out` | No | No | Medium | Hardened: explicit json semantics + sourceDataMutated=false |
 | `scripts/find-null-json-files.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
@@ -492,6 +492,41 @@ Policy:
 | `scripts/rollup-trust-snapshots.js` | `server/services/database.js`, `server/services/trustSnapshotRollups.js` | Trust snapshots/calibration reports through service | Confirmed mode writes rollup and may cleanup old derived artifacts | Trust snapshots/reports | Medium/High |
 | `scripts/run-trust-calibration.js` | `server/services/database.js`, `server/services/trustCalibration.js` | Users/outcomes/trust inputs through service | Confirmed mode writes trust snapshots or calibration report artifacts | User/job/payment/attendance/report data remains source | Medium |
 | `scripts/run-backup-restore-drill.js` | `server/services/database.js`, `server/services/backupRestoreDrill.js` | Backup directory and restored JSON copy | Confirmed mode writes drill report and temp restore copy | Backup directory | Medium; source data not mutated |
+
+---
+
+## Patch 9 Read-Only Diagnostics / Export Safety Status
+
+The following lower-risk diagnostic/export scripts were reviewed after Patch 9.
+
+| Script | Safety Status | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---|---|---|
+| `scripts/benchmark.js` | Hardened read-only HTTP benchmark | Yes | No mutation; HTTP GET benchmark only | Low | Keep |
+| `scripts/export-incident-timeline.js` | Hardened read-only incident export | Yes | No mutation; reads incident records only | Low | Keep |
+| `scripts/list-benchmark-history.js` | Read-only benchmark history list | Yes | No mutation | Low | Keep |
+| `scripts/validate-migration-snapshot.js` | Read-only snapshot validation | Yes | No source data mutation | Low | Keep |
+| `scripts/find-null-json-files.js` | Read-only JSON corruption diagnostic | Yes | No mutation | Low | Keep |
+| `scripts/report-duplicate-records.js` | Read-only duplicate physical record inspector | Emits JSON | No mutation | Low | Keep |
+
+Policy:
+
+- Read-only scripts must not call destructive filesystem operations.
+- Read-only scripts should expose `--json` or emit JSON by default.
+- Incident export scripts should include `mutationPerformed:false`.
+- Benchmark scripts should be treated as diagnostics and must not mutate server or data state.
+
+---
+
+## Read-Only Diagnostics Dependency Map
+
+| Script | Imports Services | Reads | Writes / Mutates | Runtime Impact |
+|---|---|---|---|---|
+| `scripts/benchmark.js` | None server-side; uses HTTP `fetch()` | Running server HTTP endpoints | None | Low; external read-only load on running server |
+| `scripts/export-incident-timeline.js` | `server/services/database.js`, `server/services/incidentTimeline.js` | Incident records | None | Low |
+| `scripts/list-benchmark-history.js` | `server/services/benchmarkHistory.js` | Benchmark artifacts | None | Low |
+| `scripts/validate-migration-snapshot.js` | `server/services/migrationSnapshotValidation.js` | Migration snapshot files | None | Low |
+| `scripts/find-null-json-files.js` | `config.js` | JSON files under data path | None | Low/Medium depending scan size |
+| `scripts/report-duplicate-records.js` | None service-side; standalone fs scanner | Selected collection files | None | Low |
 
 ---
 
