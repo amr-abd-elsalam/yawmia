@@ -34,10 +34,11 @@ They remain at root intentionally for review workflows.
 
 ---
 
-## Architecture / System Maps
+## Architecture / System & Data Maps
 
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
+docs/architecture/DATA_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` is the canonical architecture systems inventory baseline.
@@ -55,14 +56,36 @@ source vs derived data boundaries
 risks
 ```
 
-It is documentation-only.
+`DATA_CATALOG.md` is the canonical collection-level data architecture inventory baseline.
 
-It does not authorize:
+It maps current data architecture across:
+
+```text
+collections
+paths
+record prefixes
+source vs derived boundaries
+sharding
+secondary indexes
+filesystem indexes
+queue storage
+metrics/evidence artifacts
+governance artifacts
+repair/rebuild ownership
+privacy sensitivity
+operational risks
+```
+
+Both architecture catalogs are documentation-only.
+
+They do not authorize:
 
 ```text
 runtime changes
+data mutation
 queue remediation
 notification quarantine execution
+index repair execution
 migration execution
 externalization
 PostgreSQL

@@ -31,6 +31,19 @@ notes
 
 This document is not a remediation approval, not a migration approval, and not runtime authority.
 
+Companion collection-level data catalog:
+
+```text
+docs/architecture/DATA_CATALOG.md
+```
+
+SYSTEMS_CATALOG.md maps systems.
+
+DATA_CATALOG.md maps collections, indexes, source/derived boundaries, queue storage, evidence artifacts, privacy sensitivity, and repair/rebuild ownership.
+
+
+Together they form the current architecture inventory baseline.
+
 ---
 
 ## Architecture Posture

@@ -101,3 +101,35 @@ test('architecture systems catalog is linked from docs index and reality check',
     'DOCS_REALITY_CHECK.md must classify SYSTEMS_CATALOG.md as canonical architecture reference'
   );
 });
+
+test('architecture data catalog is linked from docs index and reality check', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/DATA_CATALOG.md'),
+    'docs/README.md must link to docs/architecture/DATA_CATALOG.md'
+  );
+
+  assert.ok(
+    readme.includes('DATA_CATALOG.md'),
+    'docs/README.md must mention DATA_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/DATA_CATALOG.md`'),
+    'DOCS_REALITY_CHECK.md must catalog docs/architecture/DATA_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('Collection-level data architecture inventory'),
+    'DOCS_REALITY_CHECK.md must describe DATA_CATALOG.md as collection-level data architecture inventory'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical data architecture reference'),
+    'DOCS_REALITY_CHECK.md must classify DATA_CATALOG.md as Canonical Reference'
+  );
+});

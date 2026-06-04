@@ -222,3 +222,22 @@ test('SYSTEMS_CATALOG.md is documentation-only and does not authorize runtime wo
     );
   }
 });
+
+test('SYSTEMS_CATALOG.md links DATA_CATALOG.md as companion collection-level catalog', async () => {
+  const catalog = await readFile(CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/DATA_CATALOG.md',
+    'Companion collection-level data catalog',
+    'SYSTEMS_CATALOG.md maps systems.',
+    'DATA_CATALOG.md maps collections, indexes, source/derived boundaries',
+    'Together they form the current architecture inventory baseline.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SYSTEMS_CATALOG.md must link companion data catalog phrase: ${phrase}`
+    );
+  }
+});
