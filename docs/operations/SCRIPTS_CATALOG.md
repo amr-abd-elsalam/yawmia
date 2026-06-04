@@ -654,6 +654,122 @@ Known gaps to address in a later hardening patch:
 - `run-migration-rehearsal.js` should keep sourceDataMutated=false and externalDbConnected=false visible in JSON evidence.
 - `run-rollback-rehearsal.js` should remain non-destructive and never perform an actual production restore.
 
+## Final Scripts Governance Summary — Patch 13
+
+The project does **not** have a script-count problem by itself.
+
+The real operational risk is:
+
+```text
+dead or unsafe operational scripts
+without ownership
+without documentation
+without dry-run behavior
+without confirm gates
+without JSON evidence
+without tests
+without clear production-use classification
+```
+
+Current governance baseline after Patch 1 through Patch 12:
+
+| Area | Status |
+|---|---|
+| Catalog coverage | Every `scripts/*.js` is cataloged |
+| Docs reality map | `docs/operations/DOCS_REALITY_CHECK.md` exists and is tested |
+| Patch 2 maintenance scripts | Hardened and tested |
+| Patch 4 queue/recovery scripts | Documented and tested |
+| Patch 5 privacy/destructive scripts | Documented and tested |
+| Patch 6 derived artifact rebuild scripts | Documented and tested |
+| Patch 7 rollup/retention/restore scripts | Documented and tested |
+| Patch 9 read-only diagnostics | Documented and tested |
+| Patch 10 low-risk diagnostics | Documented and tested |
+| Patch 11 repair/cleanup higher-risk scripts | Documented and tested |
+| Patch 12 migration/backup/rehearsal scripts | Documented and tested |
+| Confirmed mutation commands | Not required for governance review |
+| External infrastructure | Not introduced |
+
+## Script Retention Policy
+
+A script should be kept if:
+
+```text
+- it is core operational
+- it is referenced by production runbooks
+- it is used by CI/deploy/smoke workflows
+- it provides read-only diagnostics
+- it is an incident tool with documented retention value
+- it creates evidence artifacts used by governance, readiness, or migration decisions
+- it rebuilds derived artifacts in a controlled and documented way
+```
+
+A script should be archived or merged later only if:
+
+```text
+- it duplicates another script without added incident value
+- it was one-time and no longer referenced
+- it has unclear ownership
+- it mutates production data without dry-run/confirm controls
+- it lacks docs and tests despite being high risk
+- it has been superseded by a safer service-backed tool
+```
+
+No script is approved for deletion in the current governance pass.
+
+## Current High-Priority Hardening Backlog
+
+These are known follow-up improvements, not blockers for the current green governance baseline.
+
+| Script | Current State | Future Hardening |
+|---|---|---|
+| `scripts/repair-indexes.js` | Dry-run default, confirm required, no `--json` | Add `--json`, `mutationPerformed`, `confirmCommand`, and structured affected-index summary |
+| `scripts/cleanup-notification-flood.js` | Dry-run default, quarantine-only, no explicit `--json` | Add explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and machine-readable-only JSON mode |
+| `scripts/compact-queue.js` | Dry-run default, `--json`, confirm required | Normalize CLI output to always expose `mutationPerformed` and `confirmCommand` if service output does not |
+| `scripts/repair-queue.js` | Strong quiet-state preflight and approval-id shape check | Optionally validate approval record exists and is approved |
+| `scripts/migrate.js` | Supports `--dry-run`; runs migrations by default | Add `--json` and explicit manual production guidance; consider confirm for manual CLI path |
+| `scripts/backup.js` | Copies backup artifact only | Add `--json`, manifest, checksums, and machine-readable backup evidence |
+| `scripts/ops-weekly-review.js` | Markdown/report generator, optional `--persist` | Add `--json` summary mode |
+| `scripts/verify-marketplace-intelligence.js` | May capture dashboard rollup if missing | Add no-capture verify mode or keep side effect explicitly documented |
+| `scripts/scheduler-cadence-report.js` | May register default scheduler records | Add `--no-register` or keep registry side effect documented |
+| `scripts/benchmark-file-paths.js` | Benchmarks service paths; possible lazy job expiry through jobs service | Avoid mutation-prone service paths or keep side effect documented |
+
+## Current No-Action Decisions
+
+```text
+No deletion now.
+No archival now.
+No reset.
+No confirmed mutation required.
+No production queue mutation required.
+No index repair execution required.
+No notification quarantine execution required.
+No migration execution required.
+No snapshot export execution required.
+No externalization.
+No PostgreSQL.
+No Redis.
+No external queue.
+No external search.
+No new dependencies.
+```
+
+## Recommended Governance Workflow Going Forward
+
+For future script changes:
+
+```text
+1. Read script source first.
+2. Classify production use and mutation risk.
+3. Update this catalog in the same PR.
+4. Add or update static safety tests for High/Critical scripts.
+5. Keep default behavior safe.
+6. Require --confirm for mutation.
+7. Prefer --json for automation evidence.
+8. Preserve dry-run output for incident review.
+9. Never run confirmed mutation during catalog review.
+10. Commit docs/tests before any future runtime hardening.
+```
+
 ## Maintenance Rules
 
 1. Any new `scripts/*.js` must be added here in the same PR.
