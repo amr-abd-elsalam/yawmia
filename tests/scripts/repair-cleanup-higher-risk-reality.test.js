@@ -101,12 +101,12 @@ test('cleanup-notification-flood is dry-run by default, quarantine-only, and nev
   assert.doesNotMatch(source, /\bdeleteJSON\(/, 'cleanup-notification-flood.js must not call deleteJSON()');
 });
 
-test('catalog documents Patch 11 known hardening gaps', async () => {
+test('catalog documents Patch 11 known hardening gaps and Patch 15 cleanup completion', async () => {
   const catalog = await readFile(CATALOG_PATH, 'utf-8');
 
   const expected = [
     'repair-indexes.js` was hardened in Patch 14',
-    'cleanup-notification-flood.js` should gain explicit `--json`',
+    'cleanup-notification-flood.js` was hardened in Patch 15',
     'compact-queue.js` should expose or normalize `mutationPerformed`',
     'repair-queue.js` currently requires an approval id shape',
   ];
@@ -114,7 +114,13 @@ test('catalog documents Patch 11 known hardening gaps', async () => {
   for (const phrase of expected) {
     assert.ok(
       catalog.includes(phrase),
-      `catalog must document Patch 11 hardening gap: ${phrase}`
+      `catalog must document Patch 11/15 hardening status: ${phrase}`
     );
   }
+
+  assert.doesNotMatch(
+    catalog,
+    /cleanup-notification-flood\.js` should gain explicit `--json`/,
+    'catalog must no longer list cleanup-notification-flood.js as lacking --json'
+  );
 });

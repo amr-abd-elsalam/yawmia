@@ -17,8 +17,12 @@ import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 
+const SCRIPT_NAME = 'scripts/cleanup-notification-flood.js';
 const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
-const CONFIRM = process.argv.includes('--confirm');
+const JSON_OUTPUT = process.argv.includes('--json');
+// Explicit --dry-run wins over --confirm. Default remains dry-run.
+const CONFIRM = process.argv.includes('--confirm') && !process.argv.includes('--dry-run');
+const DRY_RUN = !CONFIRM;
 const TYPE = getArg('--type') || 'job_expiry_warning';
 const JOB_ID = getArg('--job-id') || null;
 const USER_ID = getArg('--user-id') || null;
@@ -39,6 +43,32 @@ function getArg(name) {
   const idx = process.argv.indexOf(name);
   if (idx === -1) return null;
   return process.argv[idx + 1] || null;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function humanLog(...args) {
+  if (!JSON_OUTPUT) console.log(...args);
+}
+
+function emitJson(result) {
+  console.log(JSON.stringify(result, null, 2));
+}
+
+function confirmCommand() {
+  const args = ['--confirm', '--json'];
+  if (TYPE && TYPE !== 'job_expiry_warning') args.push('--type', TYPE);
+  if (JOB_ID) args.push('--job-id', JOB_ID);
+  if (USER_ID) args.push('--user-id', USER_ID);
+  if (KEEP && KEEP !== 'latest') args.push('--keep', KEEP);
+  if (LIMIT_GROUPS !== 100000) args.push('--limit-groups', String(LIMIT_GROUPS));
+  return `node ${SCRIPT_NAME} ${args.join(' ')}`;
+}
+
+function buildWarning(code, message, details = {}) {
+  return { code, message, ...details };
 }
 
 async function readJSON(filePath, fallback = null) {
@@ -165,14 +195,23 @@ function removeIdsFromUserIndex(index, removedByUser) {
 }
 
 async function main() {
-  console.log('🧹 Yawmia Notification Flood Cleanup');
-  console.log(`   Data: ${DATA_DIR}`);
-  console.log(`   Mode: ${CONFIRM ? 'CONFIRM' : 'DRY-RUN'}`);
-  console.log(`   Type: ${TYPE || 'all'}`);
-  console.log(`   Job ID: ${JOB_ID || 'all'}`);
-  console.log(`   User ID: ${USER_ID || 'all'}`);
-  console.log(`   Keep: ${KEEP}`);
-  console.log('');
+  humanLog('🧹 Yawmia Notification Flood Cleanup');
+  humanLog(`   Data: ${DATA_DIR}`);
+  humanLog(`   Mode: ${CONFIRM ? 'CONFIRM' : 'DRY-RUN'}`);
+  humanLog(`   Type: ${TYPE || 'all'}`);
+  humanLog(`   Job ID: ${JOB_ID || 'all'}`);
+  humanLog(`   User ID: ${USER_ID || 'all'}`);
+  humanLog(`   Keep: ${KEEP}`);
+  humanLog('');
+
+  const warnings = [];
+
+  if (process.argv.includes('--dry-run') && process.argv.includes('--confirm')) {
+    warnings.push(buildWarning(
+      'DRY_RUN_OVERRIDES_CONFIRM',
+      'Both --dry-run and --confirm were provided; dry-run mode wins and no mutation will be performed.'
+    ));
+  }
 
   const files = await walk(NOTIFICATIONS_DIR);
   const groups = new Map();
@@ -197,9 +236,29 @@ async function main() {
     groups.get(key).push({ filePath, notification });
   }
 
-  const duplicateGroups = Array.from(groups.entries())
-    .filter(([, rows]) => rows.length > 1)
-    .slice(0, LIMIT_GROUPS);
+  if (parseErrors > 0) {
+    warnings.push(buildWarning(
+      'PARSE_ERRORS_SKIPPED',
+      'Some notification JSON files could not be parsed and were skipped.',
+      { parseErrors }
+    ));
+  }
+
+  const allDuplicateGroups = Array.from(groups.entries())
+    .filter(([, rows]) => rows.length > 1);
+
+  const duplicateGroups = allDuplicateGroups.slice(0, LIMIT_GROUPS);
+
+  if (allDuplicateGroups.length > duplicateGroups.length) {
+    warnings.push(buildWarning(
+      'LIMIT_GROUPS_APPLIED',
+      'Duplicate groups were truncated by --limit-groups.',
+      {
+        totalDuplicateGroups: allDuplicateGroups.length,
+        limitGroups: LIMIT_GROUPS,
+      }
+    ));
+  }
 
   const plan = [];
   let duplicateFiles = 0;
@@ -225,38 +284,104 @@ async function main() {
     });
   }
 
-  console.log(JSON.stringify({
+  const plannedActions = [];
+  for (const item of plan) {
+    for (const row of item.toQuarantine) {
+      plannedActions.push({
+        action: 'quarantine_duplicate_notification',
+        notificationId: row.notification.id,
+        userId: row.notification.userId || null,
+        type: row.notification.type || null,
+        jobId: row.notification.meta && row.notification.meta.jobId ? row.notification.meta.jobId : null,
+        from: row.filePath,
+        quarantineRoot: QUARANTINE_ROOT,
+        keptNotificationId: item.keepNotificationId,
+      });
+    }
+  }
+
+  const preview = plan.map(p => ({
+    userId: p.userId,
+    type: p.type,
+    jobId: p.jobId,
+    total: p.total,
+    keepNotificationId: p.keepNotificationId,
+    keepCreatedAt: p.keepCreatedAt,
+    quarantineCount: p.quarantineCount,
+    firstCreatedAt: p.firstCreatedAt,
+    lastCreatedAt: p.lastCreatedAt,
+    message: p.message,
+  })).slice(0, 30);
+
+  const baseResult = {
     ok: true,
-    dryRun: !CONFIRM,
+    script: SCRIPT_NAME,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    derivedArtifactsMutated: false,
+    quarantineOnly: true,
+    dataDir: DATA_DIR,
+    type: TYPE || null,
+    jobId: JOB_ID,
+    userId: USER_ID,
+    keep: KEEP,
     scannedNotificationFiles: scanned,
     matchedNotificationFiles: matched,
     parseErrors,
-    duplicateGroups: duplicateGroups.length,
+    duplicateGroupsDetected: duplicateGroups.length,
+    duplicatesDetected: duplicateFiles,
     duplicateFilesToQuarantine: duplicateFiles,
-    preview: plan.map(p => ({
-      userId: p.userId,
-      type: p.type,
-      jobId: p.jobId,
-      total: p.total,
-      keepNotificationId: p.keepNotificationId,
-      keepCreatedAt: p.keepCreatedAt,
-      quarantineCount: p.quarantineCount,
-      firstCreatedAt: p.firstCreatedAt,
-      lastCreatedAt: p.lastCreatedAt,
-      message: p.message,
-    })).slice(0, 30),
-  }, null, 2));
+    plannedActions,
+    quarantinedFiles: [],
+    updatedIndexes: [],
+    warnings,
+    preview,
+    confirmCommand: confirmCommand(),
+    generatedAt: nowIso(),
+  };
 
-  if (!CONFIRM) {
-    console.log('');
-    console.log('DRY RUN ONLY. No files changed.');
-    console.log('Run with --confirm after backup if the plan is correct.');
+  if (JSON_OUTPUT && DRY_RUN) {
+    emitJson(baseResult);
+    return;
+  }
+
+  if (!JSON_OUTPUT) {
+    console.log(JSON.stringify({
+      ok: baseResult.ok,
+      dryRun: baseResult.dryRun,
+      scannedNotificationFiles: baseResult.scannedNotificationFiles,
+      matchedNotificationFiles: baseResult.matchedNotificationFiles,
+      parseErrors: baseResult.parseErrors,
+      duplicateGroups: baseResult.duplicateGroupsDetected,
+      duplicateFilesToQuarantine: baseResult.duplicateFilesToQuarantine,
+      preview: baseResult.preview,
+    }, null, 2));
+  }
+
+  if (DRY_RUN) {
+    humanLog('');
+    humanLog('DRY RUN ONLY. No files changed.');
+    humanLog('Run with --confirm after backup if the plan is correct.');
+    humanLog(`Confirm command: ${baseResult.confirmCommand}`);
     return;
   }
 
   if (duplicateFiles === 0) {
-    console.log('');
-    console.log('Nothing to quarantine.');
+    const result = {
+      ...baseResult,
+      dryRun: false,
+      confirm: true,
+      generatedAt: nowIso(),
+    };
+
+    if (JSON_OUTPUT) {
+      emitJson(result);
+    } else {
+      humanLog('');
+      humanLog('Nothing to quarantine.');
+    }
     return;
   }
 
@@ -290,27 +415,61 @@ async function main() {
     `notification-flood-cleanup-report-${Date.now()}.json`
   );
 
-  await writeJSONAtomic(reportPath, {
-    kind: 'notification_flood_cleanup_report',
-    type: TYPE,
-    jobId: JOB_ID,
-    userId: USER_ID,
-    keep: KEEP,
+  const result = {
+    ...baseResult,
+    dryRun: false,
+    confirm: true,
+    mutationPerformed: moved.length > 0,
+    sourceDataMutated: moved.length > 0,
+    derivedArtifactsMutated: moved.length > 0,
+    quarantinedFiles: moved.map(m => m.to),
+    updatedIndexes: moved.length > 0 ? ['notifications/user-index.json'] : [],
     movedCount: moved.length,
     moved,
-    generatedAt: new Date().toISOString(),
+    reportPath,
+    quarantineRoot: QUARANTINE_ROOT,
+    generatedAt: nowIso(),
+  };
+
+  await writeJSONAtomic(reportPath, {
+    kind: 'notification_flood_cleanup_report',
+    ...result,
   });
 
-  console.log('');
-  console.log(`DONE: quarantined ${moved.length} duplicate notification file(s).`);
-  console.log(`Report: ${reportPath}`);
-  console.log(`Quarantine: ${QUARANTINE_ROOT}`);
+  if (JSON_OUTPUT) {
+    emitJson(result);
+    return;
+  }
+
+  humanLog('');
+  humanLog(`DONE: quarantined ${moved.length} duplicate notification file(s).`);
+  humanLog(`Report: ${reportPath}`);
+  humanLog(`Quarantine: ${QUARANTINE_ROOT}`);
 }
 
 main().catch(err => {
-  console.error(JSON.stringify({
+  const payload = {
     ok: false,
+    script: SCRIPT_NAME,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed: false,
+    sourceDataMutated: false,
+    derivedArtifactsMutated: false,
+    quarantineOnly: true,
+    dataDir: DATA_DIR,
     error: err && err.message ? err.message : String(err),
-  }, null, 2));
+    warnings: [],
+    confirmCommand: confirmCommand(),
+    generatedAt: nowIso(),
+  };
+
+  if (JSON_OUTPUT) {
+    console.error(JSON.stringify(payload, null, 2));
+  } else {
+    console.error('cleanup-notification-flood failed:', payload.error);
+    console.error(JSON.stringify(payload, null, 2));
+  }
+
   process.exit(1);
 });

@@ -42,7 +42,7 @@ test('final governance summary preserves script retention policy', async () => {
   }
 });
 
-test('final governance summary documents current hardening backlog', async () => {
+test('final governance summary documents current hardening backlog and completed Patch 15 status', async () => {
   const catalog = await readFile(CATALOG_PATH, 'utf-8');
 
   const backlogScripts = [
@@ -60,7 +60,7 @@ test('final governance summary documents current hardening backlog', async () =>
 
   for (const scriptPath of backlogScripts) {
     const idx = catalog.indexOf(`\`${scriptPath}\``);
-    assert.notEqual(idx, -1, `${scriptPath} must be present in final hardening backlog`);
+    assert.notEqual(idx, -1, `${scriptPath} must be present in final governance summary/backlog status`);
   }
 
   const requiredHardeningTerms = [
@@ -79,6 +79,17 @@ test('final governance summary documents current hardening backlog', async () =>
       `final hardening backlog must mention ${term}`
     );
   }
+
+  assert.ok(
+    catalog.includes('cleanup-notification-flood.js` | Hardened in Patch 15'),
+    'final backlog/status must mark cleanup-notification-flood.js as hardened in Patch 15'
+  );
+
+  assert.doesNotMatch(
+    catalog,
+    /cleanup-notification-flood\.js` \| Dry-run default, quarantine-only, no explicit `--json`/,
+    'final backlog must no longer describe cleanup-notification-flood.js as lacking --json'
+  );
 });
 
 test('final governance summary preserves no-action safety decisions', async () => {

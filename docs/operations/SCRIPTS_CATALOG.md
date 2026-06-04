@@ -100,7 +100,7 @@ These scripts are expected to remain long-term.
 
 | Script | Incident Class | Production | Risk | Decision |
 |---|---|---|---|---|
-| `scripts/cleanup-notification-flood.js` | Notification flood quarantine | Emergency Only | High | Keep + document |
+| `scripts/cleanup-notification-flood.js` | Notification flood quarantine | Emergency Only | High | Hardened after Patch 15: dry-run default, explicit `--dry-run`, `--confirm`, `--json`, `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`; quarantine-only and never deletes |
 | `scripts/quarantine-corrupt-json.js` | JSON corruption quarantine | Emergency Only | High | Hardened: dry-run default + confirm + json; moves, never deletes |
 | `scripts/find-null-json-files.js` | JSON corruption diagnosis | Safe Read-Only | Low | Keep |
 | `scripts/report-duplicate-records.js` | Duplicate physical record diagnosis | Safe Read-Only | Low | Keep |
@@ -205,7 +205,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/capture-externalization-decision.js` | Migration Evidence | Yes | Manual | Optional decision snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep |
 | `scripts/capture-phase61-evidence.js` | Migration Evidence | Yes | Manual | Optional evidence snapshot with `--persist` | No | No | Low/Medium | Reviewed: Keep |
 | `scripts/cleanup-attachments.js` | Maintenance | Yes | Approval Required | Yes with `--confirm` | Possible delete with `--confirm` | No | High | Hardened: dry-run default + confirm + json |
-| `scripts/cleanup-notification-flood.js` | Incident Recovery | Yes | Emergency Only | Yes | Moves quarantine | No | High | Keep + tests/docs |
+| `scripts/cleanup-notification-flood.js` | Incident Recovery | Yes | Emergency Only | Yes with `--confirm` | Moves duplicate notifications to quarantine only; never deletes | No | High | Hardened after Patch 15: dry-run default + explicit `--dry-run` + confirm + json + mutationPerformed + sourceDataMutated/derivedArtifactsMutated semantics + quarantineOnly:true + confirmCommand |
 | `scripts/compact-counters.js` | Maintenance | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-predictive-signals.js` | Maintenance / Retention | Yes | Approval Required | Archive with `--confirm` | Possible archive artifact changes | No | High | Hardened: dry-run default + confirm + json |
 | `scripts/compact-queue.js` | Queue Ops | Yes | Approval Required | Yes | Archive | Yes | High | Keep |
@@ -283,6 +283,7 @@ node scripts/repair-queue.js --dry-run --json
 node scripts/compact-queue.js --dry-run --json
 node scripts/queue-retry-dlq.js --dry-run --json
 node scripts/queue-drain.js --dry-run --json
+node scripts/cleanup-notification-flood.js --dry-run --json
 node scripts/rebuild-predictive-archive-index.js --dry-run --json
 node scripts/rebuild-workroom-search.js --all --dry-run --json
 node scripts/verify-workroom-indexes.js --jobId=job_x --repair --dry-run --json
@@ -587,12 +588,12 @@ The following repair and cleanup scripts were reviewed after Patch 11.
 | `scripts/repair-indexes.js` | Hardened secondary index repair utility | Yes | Yes | Yes | Confirmed mode rewrites derived secondary index files only; sourceDataMutated=false | High | Keep as Approval Required; emits mutationPerformed, derivedArtifactsMutated, plannedActions, repairedIndexes, and confirmCommand |
 | `scripts/repair-queue.js` | Hardened queue repair utility | Yes | Yes + approval id + quiet-state preflight | Yes | Confirmed mode repairs queue summary/location index through service layer | High | Keep; later verify approval record existence/approved state |
 | `scripts/compact-queue.js` | Dry-run default queue compaction | Yes | Yes | Yes | Confirmed mode archives/compacts queue storage through service layer | High | Keep + document mutation evidence; later add `confirmCommand` if missing from service output |
-| `scripts/cleanup-notification-flood.js` | Dry-run default notification flood quarantine | Yes | Yes | Emits JSON-like preview but no explicit `--json` mode | Confirmed mode moves duplicate notifications to quarantine and updates `notifications/user-index.json`; never deletes | High | Keep + harden next with `--json`, explicit `--dry-run`, `mutationPerformed`, and `confirmCommand` |
+| `scripts/cleanup-notification-flood.js` | Hardened notification flood quarantine tool | Yes | Yes | Yes | Confirmed mode moves duplicate notifications to quarantine and updates `notifications/user-index.json`; emits `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`, `plannedActions`, `quarantinedFiles`, and `updatedIndexes`; never deletes | High | Hardened after Patch 15; keep as Emergency Only |
 
 Policy:
 
 - `repair-indexes.js` is now aligned with the hardened JSON evidence convention: dry-run default, `--confirm`, `--json`, `mutationPerformed`, `sourceDataMutated:false`, derived artifact mutation semantics, and `confirmCommand`.
-- `cleanup-notification-flood.js` is safe by default but not yet fully aligned with the hardened JSON evidence convention.
+- `cleanup-notification-flood.js` is aligned with the hardened JSON evidence convention after Patch 15: dry-run default, explicit `--dry-run`, `--confirm`, `--json`, `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`, `plannedActions`, `quarantinedFiles`, and `updatedIndexes`.
 - `repair-queue.js` is the strongest current queue repair script because it includes active-process, PM2, stale-running, and approval-id preflight gates.
 - `compact-queue.js` is dry-run default and service-backed, but remains High risk because confirmed mode changes queue storage/archive state.
 - `cleanup-notification-flood.js` must remain quarantine-only and must never delete notification files.
@@ -610,9 +611,27 @@ Policy:
 Known gaps to address in a later hardening patch:
 
 - `repair-indexes.js` was hardened in Patch 14 with `--json`, structured result output, `mutationPerformed`, `sourceDataMutated:false`, `derivedArtifactsMutated`, `plannedActions`, `repairedIndexes`, and `confirmCommand`.
-- `cleanup-notification-flood.js` should gain explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and cleaner machine-readable output.
+- `cleanup-notification-flood.js` was hardened in Patch 15 with explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`, `plannedActions`, `quarantinedFiles`, `updatedIndexes`, and machine-readable-only JSON mode.
 - `compact-queue.js` should expose or normalize `mutationPerformed` and `confirmCommand` in CLI output if the service result does not already include them.
 - `repair-queue.js` currently requires an approval id shape; a future hardening step can validate that the approval exists and is approved before confirmed mutation.
+
+## Patch 15 Notification Flood Cleanup Hardening Status
+
+| Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
+|---|---|---:|---:|---:|---|---|---|
+| `scripts/cleanup-notification-flood.js` | Hardened notification flood quarantine tool | Yes | Yes | Yes | Confirmed mode moves duplicate notification source files to quarantine and updates `notifications/user-index.json`; emits `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`, `plannedActions`, `quarantinedFiles`, and `updatedIndexes`; never deletes | High | Keep as Emergency Only with incident approval |
+
+Policy:
+
+- Default mode is dry-run and performs no mutation.
+- `--dry-run` is explicit and overrides `--confirm` if both are supplied.
+- `--json` emits parseable machine-readable evidence without human output.
+- `--confirm` is required before moving duplicate notification files to quarantine.
+- `sourceDataMutated:true` only when confirmed mode moves notification source files to quarantine.
+- `derivedArtifactsMutated:true` only when confirmed mode updates `notifications/user-index.json`.
+- `quarantineOnly:true` is always emitted.
+- The script must never call `rm`, `unlink`, or `deleteJSON`.
+- Hardening does not authorize confirmed execution; it only makes the incident workflow evidence-safe.
 
 ## Patch 12 Migration / Backup / Rehearsal Scripts Reality Check
 
@@ -724,7 +743,7 @@ These are known follow-up improvements, not blockers for the current green gover
 | Script | Current State | Future Hardening |
 |---|---|---|
 | `scripts/repair-indexes.js` | Hardened in Patch 14: dry-run default, confirm required, `--json`, `mutationPerformed`, `sourceDataMutated:false`, `derivedArtifactsMutated`, `confirmCommand` | Keep regression tests and preserve repair semantics |
-| `scripts/cleanup-notification-flood.js` | Dry-run default, quarantine-only, no explicit `--json` | Add explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and machine-readable-only JSON mode |
+| `scripts/cleanup-notification-flood.js` | Hardened in Patch 15: dry-run default, explicit `--dry-run`, confirm required, `--json`, `mutationPerformed`, `sourceDataMutated`, `derivedArtifactsMutated`, `quarantineOnly:true`, `confirmCommand`, machine-readable-only JSON mode | Keep regression tests and preserve quarantine-only / never-delete semantics |
 | `scripts/compact-queue.js` | Dry-run default, `--json`, confirm required | Normalize CLI output to always expose `mutationPerformed` and `confirmCommand` if service output does not |
 | `scripts/repair-queue.js` | Strong quiet-state preflight and approval-id shape check | Optionally validate approval record exists and is approved |
 | `scripts/migrate.js` | Supports `--dry-run`; runs migrations by default | Add `--json` and explicit manual production guidance; consider confirm for manual CLI path |
@@ -814,7 +833,7 @@ node scripts/compact-predictive-signals.js --confirm --json
 node scripts/rollup-trust-snapshots.js --confirm --json
 node scripts/run-trust-calibration.js --snapshots --confirm --json
 node scripts/run-backup-restore-drill.js --confirm --json
-node scripts/cleanup-notification-flood.js --confirm
+node scripts/cleanup-notification-flood.js --confirm --json
 node scripts/anonymize-user-data.js --userId=usr_x --confirm --approvalId=apr_x --backupRef=brd_or_backup_reference --json
 ```
 
