@@ -105,7 +105,7 @@ test('catalog documents Patch 11 known hardening gaps', async () => {
   const catalog = await readFile(CATALOG_PATH, 'utf-8');
 
   const expected = [
-    'repair-indexes.js` should gain `--json`',
+    'repair-indexes.js` was hardened in Patch 14',
     'cleanup-notification-flood.js` should gain explicit `--json`',
     'compact-queue.js` should expose or normalize `mutationPerformed`',
     'repair-queue.js` currently requires an approval id shape',

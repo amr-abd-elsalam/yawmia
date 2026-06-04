@@ -87,7 +87,7 @@ These scripts are expected to remain long-term.
 
 | Script | Purpose | Safe Default | Confirm Required | Production | Risk | Decision |
 |---|---|---:|---:|---|---|---|
-| `scripts/repair-indexes.js` | Rebuild secondary indexes from source records | Yes | Yes | Approval Required | High | Keep |
+| `scripts/repair-indexes.js` | Rebuild secondary indexes from source records | Yes dry-run default | Yes + `--confirm` | Approval Required | High | Hardened: dry-run default + confirm + json + mutationPerformed + sourceDataMutated:false + derivedArtifactsMutated semantics + confirmCommand |
 | `scripts/repair-queue.js` | Repair queue summary/location index | Yes | Yes + approval id | Approval Required | High | Keep |
 | `scripts/quarantine-corrupt-json.js` | Move corrupt JSON into quarantine | Yes — dry-run default | Yes | Emergency Only | High | Hardened: dry-run default + confirm + json; moves, never deletes |
 | `scripts/recover-stale-running-jobs.js` | Audit stale running queue jobs | Yes — dry-run auditor only | Confirm intentionally blocked | Emergency Read-Only | Low now / High future | Keep + document; no mutation implemented |
@@ -165,7 +165,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/rebuild-predictive-archive-index.js` | Predictive archive index | Approval Required | Medium/High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-search-relevance.js` | Process-local search/query indexes | Manual With Caution | Medium | Hardened: dry-run default + confirm + json; process-local only |
 | `scripts/rebuild-workroom-search.js` | Workroom search indexes | Approval Required | Medium/High | Hardened: dry-run default + confirm + json |
-| `scripts/repair-indexes.js` | Secondary indexes | Approval Required | High | Keep |
+| `scripts/repair-indexes.js` | Secondary indexes | Approval Required | High | Hardened: dry-run default + confirm + json + mutationPerformed + confirmCommand |
 
 ---
 
@@ -233,7 +233,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/rebuild-search-relevance.js` | Rebuild In-Memory Index | Yes | Manual With Caution | Process-local only with `--confirm` | No | No | Medium | Hardened: dry-run default + confirm + json; does not update running server |
 | `scripts/rebuild-workroom-search.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | Medium/High | Hardened: dry-run default + confirm + json |
 | `scripts/recover-stale-running-jobs.js` | Queue Recovery / Auditor | Yes | Emergency Read-Only | No current mutation | No | Reads queue only | Low now / High future | Keep + document; confirm intentionally not implemented |
-| `scripts/repair-indexes.js` | Repair Index | Yes | Approval Required | Yes | No | No | High | Keep + json/tests |
+| `scripts/repair-indexes.js` | Repair Index | Yes | Approval Required | Derived indexes only with `--confirm`; sourceDataMutated=false | No | No | High | Hardened: dry-run default + confirm + json + mutationPerformed + confirmCommand |
 | `scripts/repair-queue.js` | Queue Repair | Yes | Approval Required | Yes | No | Yes | High | Keep + tests |
 | `scripts/report-duplicate-records.js` | Verify | Unknown | Safe Read-Only | No expected | No | No | Low | Keep |
 | `scripts/reset-dev-data.js` | Dev Destructive | Yes | Dev Only / Never Production | Yes | Yes | No | Critical | Keep dev only |
@@ -278,7 +278,7 @@ node scripts/find-null-json-files.js --json
 Must run dry-run first and preserve output:
 
 ```bash
-node scripts/repair-indexes.js --dry-run
+node scripts/repair-indexes.js --dry-run --json
 node scripts/repair-queue.js --dry-run --json
 node scripts/compact-queue.js --dry-run --json
 node scripts/queue-retry-dlq.js --dry-run --json
@@ -584,14 +584,15 @@ The following repair and cleanup scripts were reviewed after Patch 11.
 
 | Script | Safety Status | Dry Run Default | Confirm Required | JSON Output | Mutation Scope | Risk | Recommendation |
 |---|---|---:|---:|---:|---|---|---|
-| `scripts/repair-indexes.js` | Dry-run default repair utility | Yes | Yes | No | Confirmed mode rewrites many secondary index files from source records | High | Keep + harden next with `--json`, `mutationPerformed`, and `confirmCommand` |
+| `scripts/repair-indexes.js` | Hardened secondary index repair utility | Yes | Yes | Yes | Confirmed mode rewrites derived secondary index files only; sourceDataMutated=false | High | Keep as Approval Required; emits mutationPerformed, derivedArtifactsMutated, plannedActions, repairedIndexes, and confirmCommand |
 | `scripts/repair-queue.js` | Hardened queue repair utility | Yes | Yes + approval id + quiet-state preflight | Yes | Confirmed mode repairs queue summary/location index through service layer | High | Keep; later verify approval record existence/approved state |
 | `scripts/compact-queue.js` | Dry-run default queue compaction | Yes | Yes | Yes | Confirmed mode archives/compacts queue storage through service layer | High | Keep + document mutation evidence; later add `confirmCommand` if missing from service output |
 | `scripts/cleanup-notification-flood.js` | Dry-run default notification flood quarantine | Yes | Yes | Emits JSON-like preview but no explicit `--json` mode | Confirmed mode moves duplicate notifications to quarantine and updates `notifications/user-index.json`; never deletes | High | Keep + harden next with `--json`, explicit `--dry-run`, `mutationPerformed`, and `confirmCommand` |
 
 Policy:
 
-- `repair-indexes.js` and `cleanup-notification-flood.js` are safe by default but not yet fully aligned with the hardened JSON evidence convention.
+- `repair-indexes.js` is now aligned with the hardened JSON evidence convention: dry-run default, `--confirm`, `--json`, `mutationPerformed`, `sourceDataMutated:false`, derived artifact mutation semantics, and `confirmCommand`.
+- `cleanup-notification-flood.js` is safe by default but not yet fully aligned with the hardened JSON evidence convention.
 - `repair-queue.js` is the strongest current queue repair script because it includes active-process, PM2, stale-running, and approval-id preflight gates.
 - `compact-queue.js` is dry-run default and service-backed, but remains High risk because confirmed mode changes queue storage/archive state.
 - `cleanup-notification-flood.js` must remain quarantine-only and must never delete notification files.
@@ -608,7 +609,7 @@ Policy:
 
 Known gaps to address in a later hardening patch:
 
-- `repair-indexes.js` should gain `--json`, structured result output, `mutationPerformed`, and `confirmCommand`.
+- `repair-indexes.js` was hardened in Patch 14 with `--json`, structured result output, `mutationPerformed`, `sourceDataMutated:false`, `derivedArtifactsMutated`, `plannedActions`, `repairedIndexes`, and `confirmCommand`.
 - `cleanup-notification-flood.js` should gain explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and cleaner machine-readable output.
 - `compact-queue.js` should expose or normalize `mutationPerformed` and `confirmCommand` in CLI output if the service result does not already include them.
 - `repair-queue.js` currently requires an approval id shape; a future hardening step can validate that the approval exists and is approved before confirmed mutation.
@@ -722,7 +723,7 @@ These are known follow-up improvements, not blockers for the current green gover
 
 | Script | Current State | Future Hardening |
 |---|---|---|
-| `scripts/repair-indexes.js` | Dry-run default, confirm required, no `--json` | Add `--json`, `mutationPerformed`, `confirmCommand`, and structured affected-index summary |
+| `scripts/repair-indexes.js` | Hardened in Patch 14: dry-run default, confirm required, `--json`, `mutationPerformed`, `sourceDataMutated:false`, `derivedArtifactsMutated`, `confirmCommand` | Keep regression tests and preserve repair semantics |
 | `scripts/cleanup-notification-flood.js` | Dry-run default, quarantine-only, no explicit `--json` | Add explicit `--json`, explicit `--dry-run`, `mutationPerformed`, `confirmCommand`, and machine-readable-only JSON mode |
 | `scripts/compact-queue.js` | Dry-run default, `--json`, confirm required | Normalize CLI output to always expose `mutationPerformed` and `confirmCommand` if service output does not |
 | `scripts/repair-queue.js` | Strong quiet-state preflight and approval-id shape check | Optionally validate approval record exists and is approved |
