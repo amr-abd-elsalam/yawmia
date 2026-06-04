@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-04T00:00:51.896Z
+> Auto-generated: 2026-06-04T07:26:27.767Z
 > Files in this part: 94
 
 ## Files
@@ -32935,8 +32935,9 @@ main().catch(err => {
 // ═══════════════════════════════════════════════════════════════
 // scripts/repair-indexes.js — يوميّة: Index Repair Utility
 // ═══════════════════════════════════════════════════════════════
-// Usage: node scripts/repair-indexes.js [--dry-run]
-// Rebuilds all secondary indexes from source record files
+// Usage: node scripts/repair-indexes.js [--dry-run] [--confirm] [--json]
+// Rebuilds all secondary indexes from source record files.
+// Default is dry-run. Confirmed writes mutate derived index artifacts only.
 // ═══════════════════════════════════════════════════════════════
 
 import { readdir, readFile, writeFile, rename, mkdir } from 'node:fs/promises';
@@ -32945,6 +32946,136 @@ import { join, dirname } from 'node:path';
 const DATA_DIR = process.env.YAWMIA_DATA_PATH || './data';
 const CONFIRM = process.argv.includes('--confirm');
 const DRY_RUN = !CONFIRM || process.argv.includes('--dry-run');
+const JSON_OUTPUT = process.argv.includes('--json');
+
+const SCRIPT_NAME = 'scripts/repair-indexes.js';
+const EXPECTED_INDEX_COUNT = 18;
+const CONFIRM_COMMAND = 'node scripts/repair-indexes.js --confirm --json';
+
+/** Human log buffer used to derive structured JSON evidence without changing repair semantics. */
+const humanLogs = [];
+
+const INDEX_PATHS = {
+  'Phone Index': 'users/phone-index.json',
+  'Jobs Index': 'jobs/index.json',
+  'Employer-Jobs Index': 'jobs/employer-index.json',
+  'Worker-Apps Index': 'applications/worker-index.json',
+  'Job-Apps Index': 'applications/job-index.json',
+  'User-Notifications Index': 'notifications/user-index.json',
+  'Job-Payments Index': 'payments/job-index.json',
+  'Target-Reports Index': 'reports/target-index.json',
+  'Reporter-Reports Index': 'reports/reporter-index.json',
+  'User-Verifications Index': 'verifications/user-index.json',
+  'Job-Attendance Index': 'attendance/job-index.json',
+  'Worker-Attendance Index': 'attendance/worker-index.json',
+  'Message-Job Index': 'messages/job-index.json',
+  'Message-User Index': 'messages/user-index.json',
+  'Push-User Index': 'push_subscriptions/user-index.json',
+  'Worker-Ads Index': 'availability_ads/worker-index.json',
+  'Employer-Offers Index': 'direct_offers/employer-index.json',
+  'Worker-Offers Index': 'direct_offers/worker-index.json',
+};
+
+function log(message = '') {
+  const line = String(message);
+  humanLogs.push(line);
+
+  if (!JSON_OUTPUT) {
+    process.stdout.write(line + '\n');
+  }
+}
+
+function normalizeIndexHeading(line) {
+  return String(line || '')
+    .replace(/\.\.\.$/, '')
+    .replace(/^[^A-Za-z]+/, '')
+    .trim();
+}
+
+function collectIndexEvidence() {
+  const checked = [];
+  const changed = [];
+  const warnings = [];
+  let currentIndexName = null;
+
+  for (const line of humanLogs) {
+    const trimmed = String(line || '').trim();
+
+    if (trimmed.endsWith('Index...')) {
+      currentIndexName = normalizeIndexHeading(trimmed);
+      checked.push(currentIndexName);
+      continue;
+    }
+
+    if (trimmed.includes('needs repair')) {
+      const name = currentIndexName || 'unknown';
+      changed.push({
+        name,
+        path: INDEX_PATHS[name] || null,
+      });
+    }
+
+    if (trimmed.includes('duplicate physical record')) {
+      warnings.push({
+        type: 'duplicate_physical_records_detected',
+        message: trimmed,
+      });
+    }
+  }
+
+  return {
+    checked,
+    changed,
+    warnings,
+  };
+}
+
+function buildEvidence(totalFixed, error = null) {
+  const evidence = collectIndexEvidence();
+  const totalIndexesChecked = evidence.checked.length || EXPECTED_INDEX_COUNT;
+  const changedIndexes = evidence.changed.length || Math.max(0, totalFixed || 0);
+  const mutationPerformed = !DRY_RUN && changedIndexes > 0;
+
+  const plannedActions = DRY_RUN
+    ? evidence.changed.map(item => ({
+        action: 'repair_index',
+        indexName: item.name,
+        path: item.path,
+      }))
+    : [];
+
+  const repairedIndexes = !DRY_RUN
+    ? evidence.changed.map(item => ({
+        indexName: item.name,
+        path: item.path,
+      }))
+    : [];
+
+  return {
+    ok: !error,
+    script: SCRIPT_NAME,
+    dryRun: DRY_RUN,
+    confirm: CONFIRM,
+    mutationPerformed,
+    sourceDataMutated: false,
+    derivedArtifactsMutated: mutationPerformed,
+    dataDir: DATA_DIR,
+    totalIndexesChecked,
+    changedIndexes,
+    unchangedIndexes: Math.max(0, totalIndexesChecked - changedIndexes),
+    plannedActions,
+    repairedIndexes,
+    warnings: evidence.warnings,
+    confirmCommand: CONFIRM_COMMAND,
+    generatedAt: new Date().toISOString(),
+    ...(error ? { error: error.message || String(error) } : {}),
+  };
+}
+
+function emitJsonEvidence(totalFixed, error = null) {
+  if (!JSON_OUTPUT) return;
+  process.stdout.write(JSON.stringify(buildEvidence(totalFixed, error), null, 2) + '\n');
+}
 
 async function readJSON(filePath) {
   try {
@@ -33024,20 +33155,20 @@ function dedupeById(records, label) {
   }
 
   if (duplicatePhysicalRecords > 0) {
-    console.log(`   ⚠️  ${label}: detected ${duplicatePhysicalRecords} duplicate physical record(s); using newest logical record per id`);
+    log(`   ⚠️  ${label}: detected ${duplicatePhysicalRecords} duplicate physical record(s); using newest logical record per id`);
   }
 
   return Array.from(byId.values());
 }
 
 async function repair() {
-  console.log(`🔧 يوميّة Index Repair${DRY_RUN ? ' (DRY RUN)' : ''}`);
-  console.log(`   Data: ${DATA_DIR}\n`);
+  log(`🔧 يوميّة Index Repair${DRY_RUN ? ' (DRY RUN)' : ''}`);
+  log(`   Data: ${DATA_DIR}\n`);
 
   let totalFixed = 0;
 
   // 1. Phone Index (users/phone-index.json)
-  console.log('1️⃣  Phone Index...');
+  log('1️⃣  Phone Index...');
   const users = await listRecords(join(DATA_DIR, 'users'), 'usr_');
   const phoneIndex = {};
   for (const user of users) {
@@ -33046,15 +33177,15 @@ async function repair() {
   const existingPhoneIndex = await readJSON(join(DATA_DIR, 'users/phone-index.json')) || {};
   const phoneIndexChanged = JSON.stringify(phoneIndex) !== JSON.stringify(existingPhoneIndex);
   if (phoneIndexChanged) {
-    console.log(`   ⚠️  Phone index needs repair (${Object.keys(phoneIndex).length} entries)`);
+    log(`   ⚠️  Phone index needs repair (${Object.keys(phoneIndex).length} entries)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'users/phone-index.json'), phoneIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Phone index OK (${Object.keys(phoneIndex).length} entries)`);
+    log(`   ✅ Phone index OK (${Object.keys(phoneIndex).length} entries)`);
   }
 
   // 2. Jobs Index (jobs/index.json)
-  console.log('2️⃣  Jobs Index...');
+  log('2️⃣  Jobs Index...');
   const jobs = dedupeById(await listRecords(join(DATA_DIR, 'jobs'), 'job_'), 'jobs');
   const jobsIndex = {};
   for (const job of jobs) {
@@ -33071,15 +33202,15 @@ async function repair() {
   const existingJobsIndex = await readJSON(join(DATA_DIR, 'jobs/index.json')) || {};
   const jobsIndexChanged = JSON.stringify(jobsIndex) !== JSON.stringify(existingJobsIndex);
   if (jobsIndexChanged) {
-    console.log(`   ⚠️  Jobs index needs repair (${Object.keys(jobsIndex).length} entries)`);
+    log(`   ⚠️  Jobs index needs repair (${Object.keys(jobsIndex).length} entries)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'jobs/index.json'), jobsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Jobs index OK (${Object.keys(jobsIndex).length} entries)`);
+    log(`   ✅ Jobs index OK (${Object.keys(jobsIndex).length} entries)`);
   }
 
   // 3. Employer-Jobs Index (jobs/employer-index.json)
-  console.log('3️⃣  Employer-Jobs Index...');
+  log('3️⃣  Employer-Jobs Index...');
   const employerJobsIndex = {};
   for (const job of jobs) {
     if (!employerJobsIndex[job.employerId]) employerJobsIndex[job.employerId] = [];
@@ -33088,15 +33219,15 @@ async function repair() {
   const existingEmpIndex = await readJSON(join(DATA_DIR, 'jobs/employer-index.json')) || {};
   const empIndexChanged = JSON.stringify(employerJobsIndex) !== JSON.stringify(existingEmpIndex);
   if (empIndexChanged) {
-    console.log(`   ⚠️  Employer-Jobs index needs repair (${Object.keys(employerJobsIndex).length} employers)`);
+    log(`   ⚠️  Employer-Jobs index needs repair (${Object.keys(employerJobsIndex).length} employers)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'jobs/employer-index.json'), employerJobsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Employer-Jobs index OK (${Object.keys(employerJobsIndex).length} employers)`);
+    log(`   ✅ Employer-Jobs index OK (${Object.keys(employerJobsIndex).length} employers)`);
   }
 
   // 4. Worker-Apps Index (applications/worker-index.json)
-  console.log('4️⃣  Worker-Apps Index...');
+  log('4️⃣  Worker-Apps Index...');
   const apps = await listRecords(join(DATA_DIR, 'applications'), 'app_');
   const workerAppsIndex = {};
   for (const app of apps) {
@@ -33106,15 +33237,15 @@ async function repair() {
   const existingWorkerIndex = await readJSON(join(DATA_DIR, 'applications/worker-index.json')) || {};
   const workerIndexChanged = JSON.stringify(workerAppsIndex) !== JSON.stringify(existingWorkerIndex);
   if (workerIndexChanged) {
-    console.log(`   ⚠️  Worker-Apps index needs repair (${Object.keys(workerAppsIndex).length} workers)`);
+    log(`   ⚠️  Worker-Apps index needs repair (${Object.keys(workerAppsIndex).length} workers)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'applications/worker-index.json'), workerAppsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Worker-Apps index OK (${Object.keys(workerAppsIndex).length} workers)`);
+    log(`   ✅ Worker-Apps index OK (${Object.keys(workerAppsIndex).length} workers)`);
   }
 
   // 5. Job-Apps Index (applications/job-index.json)
-  console.log('5️⃣  Job-Apps Index...');
+  log('5️⃣  Job-Apps Index...');
   const jobAppsIndex = {};
   for (const app of apps) {
     if (!jobAppsIndex[app.jobId]) jobAppsIndex[app.jobId] = [];
@@ -33123,15 +33254,15 @@ async function repair() {
   const existingJobAppsIndex = await readJSON(join(DATA_DIR, 'applications/job-index.json')) || {};
   const jobAppsIndexChanged = JSON.stringify(jobAppsIndex) !== JSON.stringify(existingJobAppsIndex);
   if (jobAppsIndexChanged) {
-    console.log(`   ⚠️  Job-Apps index needs repair (${Object.keys(jobAppsIndex).length} jobs)`);
+    log(`   ⚠️  Job-Apps index needs repair (${Object.keys(jobAppsIndex).length} jobs)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'applications/job-index.json'), jobAppsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Job-Apps index OK (${Object.keys(jobAppsIndex).length} jobs)`);
+    log(`   ✅ Job-Apps index OK (${Object.keys(jobAppsIndex).length} jobs)`);
   }
 
   // 6. User-Notifications Index (notifications/user-index.json)
-  console.log('6️⃣  User-Notifications Index...');
+  log('6️⃣  User-Notifications Index...');
   const notifs = await listRecords(join(DATA_DIR, 'notifications'), 'ntf_');
   const userNtfIndex = {};
   for (const ntf of notifs) {
@@ -33141,15 +33272,15 @@ async function repair() {
   const existingNtfIndex = await readJSON(join(DATA_DIR, 'notifications/user-index.json')) || {};
   const ntfIndexChanged = JSON.stringify(userNtfIndex) !== JSON.stringify(existingNtfIndex);
   if (ntfIndexChanged) {
-    console.log(`   ⚠️  User-Notifications index needs repair (${Object.keys(userNtfIndex).length} users)`);
+    log(`   ⚠️  User-Notifications index needs repair (${Object.keys(userNtfIndex).length} users)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'notifications/user-index.json'), userNtfIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ User-Notifications index OK (${Object.keys(userNtfIndex).length} users)`);
+    log(`   ✅ User-Notifications index OK (${Object.keys(userNtfIndex).length} users)`);
   }
 
   // 7. Job-Payments Index (payments/job-index.json)
-  console.log('7️⃣  Job-Payments Index...');
+  log('7️⃣  Job-Payments Index...');
   const payments = await listRecords(join(DATA_DIR, 'payments'), 'pay_');
   const jobPaymentsIndex = {};
   for (const pay of payments) {
@@ -33159,15 +33290,15 @@ async function repair() {
   const existingPaymentsIndex = await readJSON(join(DATA_DIR, 'payments/job-index.json')) || {};
   const paymentsIndexChanged = JSON.stringify(jobPaymentsIndex) !== JSON.stringify(existingPaymentsIndex);
   if (paymentsIndexChanged) {
-    console.log(`   ⚠️  Job-Payments index needs repair (${Object.keys(jobPaymentsIndex).length} jobs)`);
+    log(`   ⚠️  Job-Payments index needs repair (${Object.keys(jobPaymentsIndex).length} jobs)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'payments/job-index.json'), jobPaymentsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Job-Payments index OK (${Object.keys(jobPaymentsIndex).length} jobs)`);
+    log(`   ✅ Job-Payments index OK (${Object.keys(jobPaymentsIndex).length} jobs)`);
   }
 
   // 8. Target-Reports Index (reports/target-index.json)
-  console.log('8️⃣  Target-Reports Index...');
+  log('8️⃣  Target-Reports Index...');
   const reports = await listRecords(join(DATA_DIR, 'reports'), 'rpt_');
   const targetReportsIndex = {};
   for (const rpt of reports) {
@@ -33177,15 +33308,15 @@ async function repair() {
   const existingTargetIndex = await readJSON(join(DATA_DIR, 'reports/target-index.json')) || {};
   const targetIndexChanged = JSON.stringify(targetReportsIndex) !== JSON.stringify(existingTargetIndex);
   if (targetIndexChanged) {
-    console.log(`   ⚠️  Target-Reports index needs repair (${Object.keys(targetReportsIndex).length} targets)`);
+    log(`   ⚠️  Target-Reports index needs repair (${Object.keys(targetReportsIndex).length} targets)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/target-index.json'), targetReportsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Target-Reports index OK (${Object.keys(targetReportsIndex).length} targets)`);
+    log(`   ✅ Target-Reports index OK (${Object.keys(targetReportsIndex).length} targets)`);
   }
 
   // 9. Reporter-Reports Index (reports/reporter-index.json)
-  console.log('9️⃣  Reporter-Reports Index...');
+  log('9️⃣  Reporter-Reports Index...');
   const reporterReportsIndex = {};
   for (const rpt of reports) {
     if (!reporterReportsIndex[rpt.reporterId]) reporterReportsIndex[rpt.reporterId] = [];
@@ -33194,15 +33325,15 @@ async function repair() {
   const existingReporterIndex = await readJSON(join(DATA_DIR, 'reports/reporter-index.json')) || {};
   const reporterIndexChanged = JSON.stringify(reporterReportsIndex) !== JSON.stringify(existingReporterIndex);
   if (reporterIndexChanged) {
-    console.log(`   ⚠️  Reporter-Reports index needs repair (${Object.keys(reporterReportsIndex).length} reporters)`);
+    log(`   ⚠️  Reporter-Reports index needs repair (${Object.keys(reporterReportsIndex).length} reporters)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'reports/reporter-index.json'), reporterReportsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Reporter-Reports index OK (${Object.keys(reporterReportsIndex).length} reporters)`);
+    log(`   ✅ Reporter-Reports index OK (${Object.keys(reporterReportsIndex).length} reporters)`);
   }
 
   // 10. User-Verifications Index (verifications/user-index.json)
-  console.log('🔟 User-Verifications Index...');
+  log('🔟 User-Verifications Index...');
   const verifications = await listRecords(join(DATA_DIR, 'verifications'), 'vrf_');
   const userVerificationsIndex = {};
   for (const vrf of verifications) {
@@ -33212,15 +33343,15 @@ async function repair() {
   const existingVrfIndex = await readJSON(join(DATA_DIR, 'verifications/user-index.json')) || {};
   const vrfIndexChanged = JSON.stringify(userVerificationsIndex) !== JSON.stringify(existingVrfIndex);
   if (vrfIndexChanged) {
-    console.log(`   ⚠️  User-Verifications index needs repair (${Object.keys(userVerificationsIndex).length} users)`);
+    log(`   ⚠️  User-Verifications index needs repair (${Object.keys(userVerificationsIndex).length} users)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'verifications/user-index.json'), userVerificationsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ User-Verifications index OK (${Object.keys(userVerificationsIndex).length} users)`);
+    log(`   ✅ User-Verifications index OK (${Object.keys(userVerificationsIndex).length} users)`);
   }
 
   // 11. Job-Attendance Index (attendance/job-index.json)
-  console.log('1️⃣1️⃣ Job-Attendance Index...');
+  log('1️⃣1️⃣ Job-Attendance Index...');
   const attendanceRecords = await listRecords(join(DATA_DIR, 'attendance'), 'att_');
   const jobAttendanceIndex = {};
   for (const att of attendanceRecords) {
@@ -33230,15 +33361,15 @@ async function repair() {
   const existingJobAttIndex = await readJSON(join(DATA_DIR, 'attendance/job-index.json')) || {};
   const jobAttIndexChanged = JSON.stringify(jobAttendanceIndex) !== JSON.stringify(existingJobAttIndex);
   if (jobAttIndexChanged) {
-    console.log(`   ⚠️  Job-Attendance index needs repair (${Object.keys(jobAttendanceIndex).length} jobs)`);
+    log(`   ⚠️  Job-Attendance index needs repair (${Object.keys(jobAttendanceIndex).length} jobs)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/job-index.json'), jobAttendanceIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Job-Attendance index OK (${Object.keys(jobAttendanceIndex).length} jobs)`);
+    log(`   ✅ Job-Attendance index OK (${Object.keys(jobAttendanceIndex).length} jobs)`);
   }
 
   // 12. Worker-Attendance Index (attendance/worker-index.json)
-  console.log('1️⃣2️⃣ Worker-Attendance Index...');
+  log('1️⃣2️⃣ Worker-Attendance Index...');
   const workerAttendanceIndex = {};
   for (const att of attendanceRecords) {
     if (!workerAttendanceIndex[att.workerId]) workerAttendanceIndex[att.workerId] = [];
@@ -33247,15 +33378,15 @@ async function repair() {
   const existingWorkerAttIndex = await readJSON(join(DATA_DIR, 'attendance/worker-index.json')) || {};
   const workerAttIndexChanged = JSON.stringify(workerAttendanceIndex) !== JSON.stringify(existingWorkerAttIndex);
   if (workerAttIndexChanged) {
-    console.log(`   ⚠️  Worker-Attendance index needs repair (${Object.keys(workerAttendanceIndex).length} workers)`);
+    log(`   ⚠️  Worker-Attendance index needs repair (${Object.keys(workerAttendanceIndex).length} workers)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'attendance/worker-index.json'), workerAttendanceIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
+    log(`   ✅ Worker-Attendance index OK (${Object.keys(workerAttendanceIndex).length} workers)`);
   }
 
   // 13. Message-Job Index (messages/job-index.json)
-  console.log('1️⃣3️⃣ Message-Job Index...');
+  log('1️⃣3️⃣ Message-Job Index...');
   const messages = await listRecords(join(DATA_DIR, 'messages'), 'msg_');
   const messageJobIndex = {};
   for (const msg of messages) {
@@ -33265,15 +33396,15 @@ async function repair() {
   const existingMsgJobIndex = await readJSON(join(DATA_DIR, 'messages/job-index.json')) || {};
   const msgJobIndexChanged = JSON.stringify(messageJobIndex) !== JSON.stringify(existingMsgJobIndex);
   if (msgJobIndexChanged) {
-    console.log(`   ⚠️  Message-Job index needs repair (${Object.keys(messageJobIndex).length} jobs)`);
+    log(`   ⚠️  Message-Job index needs repair (${Object.keys(messageJobIndex).length} jobs)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/job-index.json'), messageJobIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Message-Job index OK (${Object.keys(messageJobIndex).length} jobs)`);
+    log(`   ✅ Message-Job index OK (${Object.keys(messageJobIndex).length} jobs)`);
   }
 
   // 14. Message-User Index (messages/user-index.json)
-  console.log('1️⃣4️⃣ Message-User Index...');
+  log('1️⃣4️⃣ Message-User Index...');
   const messageUserIndex = {};
   for (const msg of messages) {
     if (msg.recipientId) {
@@ -33285,15 +33416,15 @@ async function repair() {
   const existingMsgUserIndex = await readJSON(join(DATA_DIR, 'messages/user-index.json')) || {};
   const msgUserIndexChanged = JSON.stringify(messageUserIndex) !== JSON.stringify(existingMsgUserIndex);
   if (msgUserIndexChanged) {
-    console.log(`   ⚠️  Message-User index needs repair (${Object.keys(messageUserIndex).length} users)`);
+    log(`   ⚠️  Message-User index needs repair (${Object.keys(messageUserIndex).length} users)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'messages/user-index.json'), messageUserIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Message-User index OK (${Object.keys(messageUserIndex).length} users)`);
+    log(`   ✅ Message-User index OK (${Object.keys(messageUserIndex).length} users)`);
   }
 
   // 15. Push-User Index (push_subscriptions/user-index.json)
-  console.log('1️⃣5️⃣ Push-User Index...');
+  log('1️⃣5️⃣ Push-User Index...');
   const pushSubs = await listRecords(join(DATA_DIR, 'push_subscriptions'), 'psub_');
   const pushUserIndex = {};
   for (const sub of pushSubs) {
@@ -33303,15 +33434,15 @@ async function repair() {
   const existingPushIndex = await readJSON(join(DATA_DIR, 'push_subscriptions/user-index.json')) || {};
   const pushIndexChanged = JSON.stringify(pushUserIndex) !== JSON.stringify(existingPushIndex);
   if (pushIndexChanged) {
-    console.log(`   ⚠️  Push-User index needs repair (${Object.keys(pushUserIndex).length} users)`);
+    log(`   ⚠️  Push-User index needs repair (${Object.keys(pushUserIndex).length} users)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'push_subscriptions/user-index.json'), pushUserIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
+    log(`   ✅ Push-User index OK (${Object.keys(pushUserIndex).length} users)`);
   }
 
   // 16. Worker-Ads Index (availability_ads/worker-index.json) — Phase 41
-  console.log('1️⃣6️⃣ Worker-Ads Index...');
+  log('1️⃣6️⃣ Worker-Ads Index...');
   const ads = await listRecords(join(DATA_DIR, 'availability_ads'), 'aad_');
   const workerAdsIndex = {};
   for (const ad of ads) {
@@ -33321,15 +33452,15 @@ async function repair() {
   const existingWorkerAdsIndex = await readJSON(join(DATA_DIR, 'availability_ads/worker-index.json')) || {};
   const workerAdsIndexChanged = JSON.stringify(workerAdsIndex) !== JSON.stringify(existingWorkerAdsIndex);
   if (workerAdsIndexChanged) {
-    console.log(`   ⚠️  Worker-Ads index needs repair (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+    log(`   ⚠️  Worker-Ads index needs repair (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'availability_ads/worker-index.json'), workerAdsIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
+    log(`   ✅ Worker-Ads index OK (${Object.keys(workerAdsIndex).length} workers, ${ads.length} ads total)`);
   }
 
   // 17. Employer-Offers Index (direct_offers/employer-index.json) — Phase 42
-  console.log('1️⃣7️⃣ Employer-Offers Index...');
+  log('1️⃣7️⃣ Employer-Offers Index...');
   const offers = await listRecords(join(DATA_DIR, 'direct_offers'), 'dof_');
   const employerOffersIndex = {};
   for (const offer of offers) {
@@ -33339,15 +33470,15 @@ async function repair() {
   const existingEmpOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/employer-index.json')) || {};
   const empOffersIndexChanged = JSON.stringify(employerOffersIndex) !== JSON.stringify(existingEmpOffersIndex);
   if (empOffersIndexChanged) {
-    console.log(`   ⚠️  Employer-Offers index needs repair (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+    log(`   ⚠️  Employer-Offers index needs repair (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/employer-index.json'), employerOffersIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Employer-Offers index OK (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
+    log(`   ✅ Employer-Offers index OK (${Object.keys(employerOffersIndex).length} employers, ${offers.length} offers total)`);
   }
 
   // 18. Worker-Offers Index (direct_offers/worker-index.json) — Phase 42
-  console.log('1️⃣8️⃣ Worker-Offers Index...');
+  log('1️⃣8️⃣ Worker-Offers Index...');
   const workerOffersIndex = {};
   for (const offer of offers) {
     if (!workerOffersIndex[offer.workerId]) workerOffersIndex[offer.workerId] = [];
@@ -33356,26 +33487,31 @@ async function repair() {
   const existingWorkerOffersIndex = await readJSON(join(DATA_DIR, 'direct_offers/worker-index.json')) || {};
   const workerOffersIndexChanged = JSON.stringify(workerOffersIndex) !== JSON.stringify(existingWorkerOffersIndex);
   if (workerOffersIndexChanged) {
-    console.log(`   ⚠️  Worker-Offers index needs repair (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
+    log(`   ⚠️  Worker-Offers index needs repair (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
     if (!DRY_RUN) await atomicWrite(join(DATA_DIR, 'direct_offers/worker-index.json'), workerOffersIndex);
     totalFixed++;
   } else {
-    console.log(`   ✅ Worker-Offers index OK (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
+    log(`   ✅ Worker-Offers index OK (${Object.keys(workerOffersIndex).length} workers, ${offers.length} offers total)`);
   }
 
   // Phase 40+41 note: instant_matches is sharded but has no secondary index files —
   // queries are by-id or sweep recent only, so no repair is needed.
   // availability_windows is flat with no index files either.
-  console.log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
+  log(`\n📌 Note: instant_matches (sharded) and availability_windows (flat) require no index repair.`);
 
   // Phase 50: audit index is a directory tree and can be rebuilt separately.
-  console.log(`📌 Audit index: run "node scripts/rebuild-audit-index.js" to rebuild Phase 50 audit search indexes.`);
+  log(`📌 Audit index: run "node scripts/rebuild-audit-index.js" to rebuild Phase 50 audit search indexes.`);
 
-  console.log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
+  log(`\n${DRY_RUN ? '📋' : '✅'} Done! ${totalFixed} indexes ${DRY_RUN ? 'would be ' : ''}repaired/rebuilt.`);
+  emitJsonEvidence(totalFixed);
 }
 
 repair().catch(err => {
-  console.error('❌ Repair failed:', err.message);
+  if (JSON_OUTPUT) {
+    emitJsonEvidence(0, err);
+  } else {
+    console.error('❌ Repair failed:', err.message);
+  }
   process.exit(1);
 });
 ```
