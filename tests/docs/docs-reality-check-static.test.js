@@ -74,3 +74,30 @@ test('docs/README.md links to DOCS_REALITY_CHECK.md', async () => {
     'docs/README.md must link to DOCS_REALITY_CHECK.md'
   );
 });
+
+test('architecture systems catalog is linked from docs index and reality check', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/SYSTEMS_CATALOG.md'),
+    'docs/README.md must link to docs/architecture/SYSTEMS_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/SYSTEMS_CATALOG.md`'),
+    'DOCS_REALITY_CHECK.md must catalog docs/architecture/SYSTEMS_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('Architecture / system inventory baseline'),
+    'DOCS_REALITY_CHECK.md must describe SYSTEMS_CATALOG.md as architecture/system inventory baseline'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical architecture reference'),
+    'DOCS_REALITY_CHECK.md must classify SYSTEMS_CATALOG.md as canonical architecture reference'
+  );
+});

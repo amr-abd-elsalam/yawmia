@@ -34,6 +34,45 @@ They remain at root intentionally for review workflows.
 
 ---
 
+## Architecture / System Maps
+
+```text
+docs/architecture/SYSTEMS_CATALOG.md
+```
+
+`SYSTEMS_CATALOG.md` is the canonical architecture systems inventory baseline.
+
+It maps current runtime systems across:
+
+```text
+routes
+handlers
+services
+data collections
+events
+operational scripts
+source vs derived data boundaries
+risks
+```
+
+It is documentation-only.
+
+It does not authorize:
+
+```text
+runtime changes
+queue remediation
+notification quarantine execution
+migration execution
+externalization
+PostgreSQL
+Redis
+external queue
+external search
+```
+
+---
+
 ## Design
 
 ```text
