@@ -19,9 +19,16 @@ It complements:
 
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
+docs/architecture/SERVER_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` maps systems.
+
+`DATA_CATALOG.md` maps collections and data artifacts.
+
+`SERVER_CATALOG.md` maps runtime phases that initialize, read, write, index, schedule, and shut down those data flows.
+
+`SERVER_CATALOG.md` is the runtime/server lifecycle companion catalog to this collection-level data catalog.
 
 `DATA_CATALOG.md` maps:
 

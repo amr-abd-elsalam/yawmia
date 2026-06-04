@@ -133,3 +133,35 @@ test('architecture data catalog is linked from docs index and reality check', as
     'DOCS_REALITY_CHECK.md must classify DATA_CATALOG.md as Canonical Reference'
   );
 });
+
+test('architecture server catalog is linked from docs index and reality check', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/SERVER_CATALOG.md'),
+    'docs/README.md must link to docs/architecture/SERVER_CATALOG.md'
+  );
+
+  assert.ok(
+    readme.includes('SERVER_CATALOG.md'),
+    'docs/README.md must mention SERVER_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/SERVER_CATALOG.md`'),
+    'DOCS_REALITY_CHECK.md must catalog docs/architecture/SERVER_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('Server/runtime lifecycle architecture inventory'),
+    'DOCS_REALITY_CHECK.md must describe SERVER_CATALOG.md as server/runtime lifecycle architecture inventory'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical server/runtime lifecycle architecture reference'),
+    'DOCS_REALITY_CHECK.md must classify SERVER_CATALOG.md as Canonical Reference'
+  );
+});

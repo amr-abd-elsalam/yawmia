@@ -94,6 +94,7 @@ Documentation must reflect that posture.
 | `docs/README.md` | Index | Human navigation index for docs | Canonical docs index | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 | `docs/architecture/DATA_CATALOG.md` | Canonical Reference | Collection-level data architecture inventory | Canonical data architecture reference | Keep |
+| `docs/architecture/SERVER_CATALOG.md` | Canonical Reference | Server/runtime lifecycle architecture inventory | Canonical server/runtime lifecycle architecture reference | Keep |
 | `docs/design/DESIGN_RESEARCH.md` | Canonical Reference | Product/design research and UX principles | Canonical design input | Keep |
 
 | `docs/privacy/PRIVACY_DATA_MAP.md` | Canonical Reference | Privacy data mapping | Canonical privacy reference | Keep |
@@ -248,6 +249,7 @@ These should be linked from `docs/README.md` as primary docs:
 docs/operations/DOCS_REALITY_CHECK.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
+docs/architecture/SERVER_CATALOG.md
 docs/operations/SCRIPTS_CATALOG.md
 docs/operations/OPERATIONS_RUNBOOK.md
 docs/operations/STORAGE_PRESSURE_RUNBOOK.md

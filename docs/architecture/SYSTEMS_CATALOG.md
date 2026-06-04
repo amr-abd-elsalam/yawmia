@@ -31,16 +31,20 @@ notes
 
 This document is not a remediation approval, not a migration approval, and not runtime authority.
 
-Companion collection-level data catalog:
+Companion architecture catalogs:
 
 ```text
 docs/architecture/DATA_CATALOG.md
+docs/architecture/SERVER_CATALOG.md
 ```
 
 SYSTEMS_CATALOG.md maps systems.
 
 DATA_CATALOG.md maps collections, indexes, source/derived boundaries, queue storage, evidence artifacts, privacy sensitivity, and repair/rebuild ownership.
 
+SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
+
+SERVER_CATALOG.md is the server/runtime lifecycle catalog companion to this system-level catalog.
 
 Together they form the current architecture inventory baseline.
 

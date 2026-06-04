@@ -34,14 +34,15 @@ They remain at root intentionally for review workflows.
 
 ---
 
-## Architecture / System & Data Maps
+## Architecture / System, Data & Server Maps
 
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
+docs/architecture/SERVER_CATALOG.md
 ```
 
-`SYSTEMS_CATALOG.md` is the canonical architecture systems inventory baseline.
+`SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
 
 It maps current runtime systems across:
 
@@ -76,7 +77,28 @@ privacy sensitivity
 operational risks
 ```
 
-Both architecture catalogs are documentation-only.
+`SERVER_CATALOG.md` is the canonical server/runtime lifecycle architecture inventory baseline.
+
+It maps current server runtime behavior across:
+
+```text
+server.js startup lifecycle
+middleware ordering
+static-before-API serving
+router registry
+route-specific middleware
+handler ownership
+EventBus bootstrap
+timers and intervals
+queue worker lifecycle
+scheduler registry lifecycle
+process lock lifecycle
+SSE/Admin SSE lifecycle
+maintenance and read-only replica guards
+graceful shutdown
+```
+
+All architecture catalogs are documentation-only.
 
 They do not authorize:
 

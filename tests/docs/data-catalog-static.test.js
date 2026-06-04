@@ -350,3 +350,20 @@ test('DATA_CATALOG.md includes repair/rebuild tooling matrix and final safety po
     );
   }
 });
+
+test('DATA_CATALOG.md links SERVER_CATALOG.md as runtime/server lifecycle companion catalog', async () => {
+  const catalog = await readFile(DATA_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/SERVER_CATALOG.md',
+    'SERVER_CATALOG.md maps runtime phases that initialize, read, write, index, schedule, and shut down those data flows.',
+    'SERVER_CATALOG.md is the runtime/server lifecycle companion catalog to this collection-level data catalog.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `DATA_CATALOG.md must link companion server catalog phrase: ${phrase}`
+    );
+  }
+});

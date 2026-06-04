@@ -228,7 +228,6 @@ test('SYSTEMS_CATALOG.md links DATA_CATALOG.md as companion collection-level cat
 
   const requiredPhrases = [
     'docs/architecture/DATA_CATALOG.md',
-    'Companion collection-level data catalog',
     'SYSTEMS_CATALOG.md maps systems.',
     'DATA_CATALOG.md maps collections, indexes, source/derived boundaries',
     'Together they form the current architecture inventory baseline.',
@@ -238,6 +237,23 @@ test('SYSTEMS_CATALOG.md links DATA_CATALOG.md as companion collection-level cat
     assert.ok(
       catalog.includes(phrase),
       `SYSTEMS_CATALOG.md must link companion data catalog phrase: ${phrase}`
+    );
+  }
+});
+
+test('SYSTEMS_CATALOG.md links SERVER_CATALOG.md as server/runtime lifecycle catalog', async () => {
+  const catalog = await readFile(CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/SERVER_CATALOG.md',
+    'SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.',
+    'SERVER_CATALOG.md is the server/runtime lifecycle catalog companion to this system-level catalog.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SYSTEMS_CATALOG.md must link companion server catalog phrase: ${phrase}`
     );
   }
 });
