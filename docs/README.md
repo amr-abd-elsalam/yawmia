@@ -13,6 +13,19 @@
 
 This directory organizes Yawmia operational, architecture, governance, design, and phase documentation.
 
+Start with `docs/architecture/PROJECT_MAP.md` for repository orientation, onboarding, and safe source-tree navigation.
+
+`PROJECT_MAP.md` is the start-here map for:
+
+```text
+repo layout
+backend/frontend/scripts/tests/docs orientation
+canonical catalog selection
+safe review workflow
+source files vs generated CODEBASE_PART bundles
+documentation update scope
+```
+
 Current docs reality map:
 
 ```text

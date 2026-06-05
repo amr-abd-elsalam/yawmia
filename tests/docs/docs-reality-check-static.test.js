@@ -66,12 +66,22 @@ test('DOCS_REALITY_CHECK.md includes docs governance sections', async () => {
   }
 });
 
-test('docs/README.md links to DOCS_REALITY_CHECK.md', async () => {
+test('docs/README.md links to DOCS_REALITY_CHECK.md and starts with PROJECT_MAP.md', async () => {
   const readme = await readFile(DOCS_README_PATH, 'utf-8');
 
   assert.ok(
     readme.includes('docs/operations/DOCS_REALITY_CHECK.md'),
     'docs/README.md must link to DOCS_REALITY_CHECK.md'
+  );
+
+  assert.ok(
+    readme.includes('Start with `docs/architecture/PROJECT_MAP.md`'),
+    'docs/README.md must direct readers to PROJECT_MAP.md as the start-here map'
+  );
+
+  assert.ok(
+    readme.includes('start-here map'),
+    'docs/README.md must describe PROJECT_MAP.md as the start-here map'
   );
 });
 
@@ -232,6 +242,11 @@ test('project map is linked from docs index and reality check as Canonical Refer
   );
 
   assert.ok(
+    readme.includes('Start with `docs/architecture/PROJECT_MAP.md`'),
+    'docs/README.md must link PROJECT_MAP.md as start-here map'
+  );
+
+  assert.ok(
     realityCheck.includes('`docs/architecture/PROJECT_MAP.md`'),
     'DOCS_REALITY_CHECK.md must mention docs/architecture/PROJECT_MAP.md'
   );
@@ -244,5 +259,20 @@ test('project map is linked from docs index and reality check as Canonical Refer
   assert.ok(
     realityCheck.includes('Canonical Reference'),
     'PROJECT_MAP.md must be classified as Canonical Reference'
+  );
+
+  assert.ok(
+    realityCheck.includes('runtime authority'),
+    'DOCS_REALITY_CHECK.md must state PROJECT_MAP.md is not runtime authority'
+  );
+
+  assert.ok(
+    realityCheck.includes('mutation approval'),
+    'DOCS_REALITY_CHECK.md must state PROJECT_MAP.md is not mutation approval'
+  );
+
+  assert.ok(
+    realityCheck.includes('externalization approval'),
+    'DOCS_REALITY_CHECK.md must state PROJECT_MAP.md is not externalization approval'
   );
 });

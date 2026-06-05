@@ -92,7 +92,7 @@ Documentation must reflect that posture.
 | Doc | Class | Purpose | Reality Status | Action |
 |---|---|---|---|---|
 | `docs/README.md` | Index | Human navigation index for docs | Canonical docs index | Keep |
-| `docs/architecture/PROJECT_MAP.md` | Canonical Reference | Project-wide repository / onboarding / architecture map | Canonical project-wide repository and onboarding reference | Keep |
+| `docs/architecture/PROJECT_MAP.md` | Canonical Reference | Project-wide repository / onboarding / architecture map | Canonical project-wide repository and onboarding reference; start-here map | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 | `docs/architecture/DATA_CATALOG.md` | Canonical Reference | Collection-level data architecture inventory | Canonical data architecture reference | Keep |
 | `docs/architecture/SERVER_CATALOG.md` | Canonical Reference | Server/runtime lifecycle architecture inventory | Canonical server/runtime lifecycle architecture reference | Keep |
@@ -101,6 +101,36 @@ Documentation must reflect that posture.
 | `docs/design/DESIGN_RESEARCH.md` | Canonical Reference | Product/design research and UX principles | Canonical design input | Keep |
 | `docs/privacy/PRIVACY_DATA_MAP.md` | Canonical Reference | Privacy data mapping | Canonical privacy reference | Keep |
 
+
+### PROJECT_MAP.md Authority Boundary
+
+`docs/architecture/PROJECT_MAP.md` is the canonical project-wide repository / onboarding / architecture map.
+
+It is:
+
+```text
+Canonical Reference
+Project-wide repository / onboarding / architecture map
+Start-here map for repository orientation
+Keep
+```
+
+It is not:
+
+```text
+runtime authority
+remediation approval
+mutation approval
+queue remediation approval
+PM2 approval
+migration approval
+pilot approval
+externalization approval
+```
+
+Runtime source files remain the source of truth.
+
+Generated review bundles remain review artifacts only.
 
 ---
 

@@ -21,6 +21,13 @@ test('PROJECT_MAP.md documents required architecture posture and maps', async ()
     'zero-framework',
     'file-backed JSON source of truth',
     'documentation-only',
+    'not runtime authority',
+    'How To Use This Documentation Set',
+    'Documentation Update Scope Rules',
+    'Do not update every catalog for every small change',
+    'Start with',
+    'Update the narrowest relevant doc',
+    'source files are the source of truth',
     'Source of Truth vs Generated Review Bundles',
     'Repository Top-Level Map',
     'Backend Runtime Map',
@@ -56,6 +63,8 @@ test('PROJECT_MAP.md documents required architecture posture and maps', async ()
     'SERVER_CATALOG.md',
     'EVENTS_CATALOG.md',
     'ROUTES_CATALOG.md',
+    'SCRIPTS_CATALOG.md',
+    'DOCS_REALITY_CHECK.md',
     'no PostgreSQL',
     'no Redis',
     'no external queue',
@@ -101,6 +110,7 @@ test('PROJECT_MAP.md preserves documentation-only safety posture', async () => {
     'No new dependencies.',
     'No version/cache change.',
     'PROJECT_MAP.md is documentation-only.',
+    'PROJECT_MAP.md is not runtime authority.',
   ];
 
   for (const line of requiredSafetyLines) {

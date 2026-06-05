@@ -44,15 +44,111 @@ docs/architecture/EVENTS_CATALOG.md
 docs/architecture/ROUTES_CATALOG.md
 ```
 
-Catalog roles:
+## How To Use This Documentation Set
+
+Start with `PROJECT_MAP.md` for repository orientation, onboarding, source tree navigation, and safe review workflow.
+
+Use the narrowest relevant doc:
 
 ```text
-SYSTEMS_CATALOG.md maps systems.
-DATA_CATALOG.md maps collections and source/derived data boundaries.
-SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
-EVENTS_CATALOG.md maps EventBus events, emitters, listeners, fanout, side effects, and durability classes.
-ROUTES_CATALOG.md maps route registry, route-specific middleware, handler ownership, service ownership, and route risk classifications.
-PROJECT_MAP.md maps repository structure, onboarding paths, source tree, docs/tests/scripts maps, and safe review workflows.
+Repository layout / onboarding / safe navigation:
+  docs/architecture/PROJECT_MAP.md
+
+Product/runtime system ownership:
+  docs/architecture/SYSTEMS_CATALOG.md
+
+Data collections / source-vs-derived / sharding / indexes:
+  docs/architecture/DATA_CATALOG.md
+
+Server startup / middleware / timers / workers / schedulers / shutdown:
+  docs/architecture/SERVER_CATALOG.md
+
+EventBus / SSE / Admin SSE / Live Feed / Web Push / fanout:
+  docs/architecture/EVENTS_CATALOG.md
+
+Route registry / handler / service ownership / route risk:
+  docs/architecture/ROUTES_CATALOG.md
+
+Operational script safety / dry-run / --confirm governance:
+  docs/operations/SCRIPTS_CATALOG.md
+
+Docs inventory / classification / canonical-vs-evidence status:
+  docs/operations/DOCS_REALITY_CHECK.md
+```
+
+Source files are the source of truth.
+
+Generated review bundles are not source of truth:
+
+```text
+CODEBASE_PART1.md
+CODEBASE_PART2.md
+CODEBASE_PART3.md
+CODEBASE_PART4.md
+```
+
+Do not update every catalog for every small change.
+
+Update the narrowest relevant doc.
+
+Prefer source truth over bundles.
+
+`PROJECT_MAP.md` is not runtime authority.
+
+It is not remediation approval, mutation approval, queue remediation approval, PM2 approval, migration approval, pilot approval, or externalization approval.
+
+## Documentation Update Scope Rules
+
+Use these rules before editing docs:
+
+```text
+Runtime source change:
+  update only docs that directly describe the changed behavior.
+
+Route registry change:
+  update ROUTES_CATALOG.md only if route ownership, middleware, access control, source collection, derived artifact, or risk classification changed.
+
+Data collection / source-vs-derived / sharding / index change:
+  update DATA_CATALOG.md.
+
+Event / listener / fanout / SSE / Web Push change:
+  update EVENTS_CATALOG.md.
+
+Server startup / middleware / timer / queue worker / scheduler / shutdown lifecycle change:
+  update SERVER_CATALOG.md.
+
+Product/system responsibility change:
+  update SYSTEMS_CATALOG.md.
+
+Repository layout / onboarding / safe review workflow change:
+  update PROJECT_MAP.md.
+
+Script governance / dry-run / --confirm / operational safety change:
+  update SCRIPTS_CATALOG.md.
+
+Docs inventory / canonical-vs-evidence classification change:
+  update DOCS_REALITY_CHECK.md.
+
+Small implementation fix with no architecture ownership or risk change:
+  do not touch every catalog.
+```
+
+Do not touch all catalogs for one narrow change.
+
+Do not create a new architecture catalog unless:
+
+```text
+a practical risk exists,
+the risk cannot be covered by PROJECT_MAP.md,
+the risk cannot be covered by an existing catalog,
+tests or operational evidence justify it,
+and maintenance cost is lower than the benefit.
+```
+
+Default decision:
+
+```text
+No new architecture catalog.
 ```
 
 This document is documentation-only.
@@ -1485,6 +1581,8 @@ No new dependencies.
 No version/cache change.
 
 PROJECT_MAP.md is documentation-only.
+
+PROJECT_MAP.md is not runtime authority.
 
 PROJECT_MAP.md does not authorize runtime changes.
 
