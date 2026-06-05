@@ -37,6 +37,16 @@ query-token download exceptions
 route risks and invariants
 ```
 
+Companion project map:
+
+```text
+docs/architecture/PROJECT_MAP.md
+```
+
+PROJECT_MAP.md maps where route registry, handlers, services, tests, and docs live in the repository.
+
+PROJECT_MAP.md is the repository-level route/handler/service source tree companion map.
+
 This document is documentation-only.
 
 It does not authorize:

@@ -182,3 +182,20 @@ test('EVENTS_CATALOG.md links ROUTES_CATALOG.md as route entrypoint / event-trig
     );
   }
 });
+
+test('EVENTS_CATALOG.md links PROJECT_MAP.md as repository-level EventBus/fanout source tree companion map', async () => {
+  const catalog = await readFile(EVENTS_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/PROJECT_MAP.md',
+    'PROJECT_MAP.md maps where EventBus/fanout-related files live and how to inspect them safely.',
+    'PROJECT_MAP.md is the repository-level EventBus/fanout source tree companion map.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `EVENTS_CATALOG.md must link project map phrase: ${phrase}`
+    );
+  }
+});

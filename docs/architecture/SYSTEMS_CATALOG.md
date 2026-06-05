@@ -34,6 +34,7 @@ This document is not a remediation approval, not a migration approval, and not r
 Companion architecture catalogs:
 
 ```text
+docs/architecture/PROJECT_MAP.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
@@ -41,6 +42,10 @@ docs/architecture/ROUTES_CATALOG.md
 ```
 
 SYSTEMS_CATALOG.md maps systems.
+
+PROJECT_MAP.md maps repository structure, onboarding paths, source tree, docs/tests/scripts maps, and safe review workflows.
+
+PROJECT_MAP.md is the repository structure / onboarding / safe review workflow map.
 
 DATA_CATALOG.md maps collections, indexes, source/derived boundaries, queue storage, evidence artifacts, privacy sensitivity, and repair/rebuild ownership.
 

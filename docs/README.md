@@ -34,15 +34,18 @@ They remain at root intentionally for review workflows.
 
 ---
 
-## Architecture / System, Data, Server, Events & Routes Maps
+## Architecture / Project, System, Data, Server, Events & Routes Maps
 
 ```text
+docs/architecture/PROJECT_MAP.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
 docs/architecture/ROUTES_CATALOG.md
 ```
+
+`PROJECT_MAP.md` is the canonical project-wide repository/onboarding map.
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
 
@@ -140,6 +143,8 @@ event risks and invariants
 ```
 
 `ROUTES_CATALOG.md` is the canonical route registry / handler / service ownership architecture inventory baseline.
+
+`PROJECT_MAP.md` maps repository structure, onboarding paths, source tree, backend/frontend/scripts/tests/docs maps, and safe review workflows.
 
 It maps current routing architecture across:
 

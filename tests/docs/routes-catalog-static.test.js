@@ -162,3 +162,20 @@ test('ROUTES_CATALOG.md preserves final safety position', async () => {
     );
   }
 });
+
+test('ROUTES_CATALOG.md links PROJECT_MAP.md as repository-level route/handler/service source tree companion map', async () => {
+  const catalog = await readFile(ROUTES_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/PROJECT_MAP.md',
+    'PROJECT_MAP.md maps where route registry, handlers, services, tests, and docs live in the repository.',
+    'PROJECT_MAP.md is the repository-level route/handler/service source tree companion map.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `ROUTES_CATALOG.md must link project map phrase: ${phrase}`
+    );
+  }
+});

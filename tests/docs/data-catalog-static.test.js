@@ -401,3 +401,20 @@ test('DATA_CATALOG.md links ROUTES_CATALOG.md as route-to-source-collection comp
     );
   }
 });
+
+test('DATA_CATALOG.md links PROJECT_MAP.md as repository-level data/storage/source tree companion map', async () => {
+  const catalog = await readFile(DATA_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/PROJECT_MAP.md',
+    'PROJECT_MAP.md maps where data/storage source files, scripts, tests, and docs live in the repository.',
+    'PROJECT_MAP.md is the repository-level data/storage/source tree companion map.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `DATA_CATALOG.md must link project map phrase: ${phrase}`
+    );
+  }
+});

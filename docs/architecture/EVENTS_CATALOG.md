@@ -1682,6 +1682,7 @@ node --test --test-concurrency=1 \
 Canonical architecture docs:
 
 ```text
+docs/architecture/PROJECT_MAP.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
@@ -1697,6 +1698,10 @@ DATA_CATALOG.md maps collections and source/derived data boundaries.
 SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
 EVENTS_CATALOG.md maps EventBus events, emitters, listeners, fanout, side effects, and durability classes.
 ROUTES_CATALOG.md maps route entrypoints that trigger source mutations, derived artifact updates, and EventBus emissions through handlers/services.
+
+PROJECT_MAP.md maps where EventBus/fanout-related files live and how to inspect them safely.
+
+PROJECT_MAP.md is the repository-level EventBus/fanout source tree companion map.
 ```
 
 Canonical operations docs:

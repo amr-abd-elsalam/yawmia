@@ -18,6 +18,7 @@ This catalog is the canonical collection-level data architecture reference for Y
 It complements:
 
 ```text
+docs/architecture/PROJECT_MAP.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
@@ -25,6 +26,10 @@ docs/architecture/ROUTES_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` maps systems.
+
+`PROJECT_MAP.md` maps where data/storage source files, scripts, tests, and docs live in the repository.
+
+PROJECT_MAP.md is the repository-level data/storage/source tree companion map.
 
 `DATA_CATALOG.md` maps collections and data artifacts.
 

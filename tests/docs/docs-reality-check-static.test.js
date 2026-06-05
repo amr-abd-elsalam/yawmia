@@ -219,3 +219,30 @@ test('routes catalog is linked from docs index and reality check', async () => {
     'DOCS_REALITY_CHECK.md must classify ROUTES_CATALOG.md as Canonical Reference'
   );
 });
+
+test('project map is linked from docs index and reality check as Canonical Reference', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/PROJECT_MAP.md'),
+    'docs/README.md must link PROJECT_MAP.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/PROJECT_MAP.md`'),
+    'DOCS_REALITY_CHECK.md must mention docs/architecture/PROJECT_MAP.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('Project-wide repository / onboarding / architecture map'),
+    'DOCS_REALITY_CHECK.md must describe PROJECT_MAP.md as project-wide repository / onboarding / architecture map'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical Reference'),
+    'PROJECT_MAP.md must be classified as Canonical Reference'
+  );
+});

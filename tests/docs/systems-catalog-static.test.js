@@ -291,3 +291,20 @@ test('SYSTEMS_CATALOG.md links ROUTES_CATALOG.md as route/handler/service owners
     );
   }
 });
+
+test('SYSTEMS_CATALOG.md links PROJECT_MAP.md as repository structure / onboarding / safe review workflow map', async () => {
+  const catalog = await readFile(CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/PROJECT_MAP.md',
+    'PROJECT_MAP.md maps repository structure, onboarding paths, source tree, docs/tests/scripts maps, and safe review workflows.',
+    'PROJECT_MAP.md is the repository structure / onboarding / safe review workflow map.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SYSTEMS_CATALOG.md must link project map phrase: ${phrase}`
+    );
+  }
+});

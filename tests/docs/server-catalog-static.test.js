@@ -249,3 +249,20 @@ test('SERVER_CATALOG.md links ROUTES_CATALOG.md as route registry / route-specif
     );
   }
 });
+
+test('SERVER_CATALOG.md links PROJECT_MAP.md as repository-level server/runtime source tree companion map', async () => {
+  const catalog = await readFile(SERVER_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/PROJECT_MAP.md',
+    'PROJECT_MAP.md is the repository-level companion map for server/runtime entrypoints and source tree orientation.',
+    'PROJECT_MAP.md is the repository-level server/runtime source tree companion map.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SERVER_CATALOG.md must link project map phrase: ${phrase}`
+    );
+  }
+});
