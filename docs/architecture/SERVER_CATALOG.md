@@ -29,7 +29,7 @@ docs/architecture/ROUTES_CATALOG.md
 
 `SYSTEMS_CATALOG.md` maps systems.
 
-`PROJECT_MAP.md` is the repository-level companion map for server/runtime entrypoints and source tree orientation.
+PROJECT_MAP.md is the repository-level companion map for server/runtime entrypoints and source tree orientation.
 
 PROJECT_MAP.md is the repository-level server/runtime source tree companion map.
 
