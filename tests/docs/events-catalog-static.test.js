@@ -166,3 +166,19 @@ test('EVENTS_CATALOG.md documents fanout and safety sections', async () => {
     );
   }
 });
+
+test('EVENTS_CATALOG.md links ROUTES_CATALOG.md as route entrypoint / event-trigger companion catalog', async () => {
+  const catalog = await readFile(EVENTS_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/ROUTES_CATALOG.md',
+    'ROUTES_CATALOG.md maps route entrypoints that trigger source mutations, derived artifact updates, and EventBus emissions through handlers/services.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `EVENTS_CATALOG.md must link routes catalog phrase: ${phrase}`
+    );
+  }
+});

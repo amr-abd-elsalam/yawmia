@@ -37,6 +37,7 @@ Companion architecture catalogs:
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
+docs/architecture/ROUTES_CATALOG.md
 ```
 
 SYSTEMS_CATALOG.md maps systems.
@@ -47,9 +48,13 @@ SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers
 
 EVENTS_CATALOG.md maps EventBus/events/fanout catalog coverage: EventBus events, emitters, listeners, fanout, side effects, and durability classes.
 
+ROUTES_CATALOG.md maps route registry, route-specific middleware, handler ownership, service ownership, and route risk classifications.
+
 SERVER_CATALOG.md is the server/runtime lifecycle catalog companion to this system-level catalog.
 
 EVENTS_CATALOG.md is the EventBus/events/fanout catalog companion to this system-level catalog.
+
+ROUTES_CATALOG.md is the route/handler/service ownership catalog companion to this system-level catalog.
 
 Together they form the current architecture inventory baseline.
 

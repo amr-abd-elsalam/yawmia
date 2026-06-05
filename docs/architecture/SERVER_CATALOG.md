@@ -23,6 +23,7 @@ This document complements:
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
+docs/architecture/ROUTES_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` maps systems.
@@ -33,6 +34,7 @@ docs/architecture/EVENTS_CATALOG.md
 
 EVENTS_CATALOG.md maps the EventBus event graph companion catalog bootstrapped by server/router.js and services.
 
+ROUTES_CATALOG.md maps the server/router.js route registry, route-specific middleware, handlers, and services.
 This document is documentation-only.
 
 It does not authorize:
@@ -1171,6 +1173,7 @@ docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
+docs/architecture/ROUTES_CATALOG.md
 ```
 
 Canonical operations docs:

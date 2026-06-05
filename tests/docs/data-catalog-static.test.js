@@ -384,3 +384,20 @@ test('DATA_CATALOG.md links EVENTS_CATALOG.md as event/source-record lifecycle c
     );
   }
 });
+
+test('DATA_CATALOG.md links ROUTES_CATALOG.md as route-to-source-collection companion catalog', async () => {
+  const catalog = await readFile(DATA_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/ROUTES_CATALOG.md',
+    'ROUTES_CATALOG.md maps which route groups read/write source collections and derived artifacts.',
+    'ROUTES_CATALOG.md is the route-to-source-collection companion catalog to this collection-level data catalog.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `DATA_CATALOG.md must link routes catalog phrase: ${phrase}`
+    );
+  }
+});

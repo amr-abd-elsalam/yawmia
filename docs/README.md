@@ -34,13 +34,14 @@ They remain at root intentionally for review workflows.
 
 ---
 
-## Architecture / System, Data, Server & Events Maps
+## Architecture / System, Data, Server, Events & Routes Maps
 
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
+docs/architecture/ROUTES_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
@@ -136,6 +137,26 @@ direct offer counters
 analytics cache invalidation
 queue/scheduler/governance visibility events
 event risks and invariants
+```
+
+`ROUTES_CATALOG.md` is the canonical route registry / handler / service ownership architecture inventory baseline.
+
+It maps current routing architecture across:
+
+```text
+server/router.js routes[] registry
+route definition format
+global middleware vs route-specific middleware
+route auth/role/admin/capability protection
+handler ownership
+service ownership
+read/write/SSE/download classification
+source collections touched by route group
+derived artifacts touched by route group
+read-only replica route posture
+maintenance mode route posture
+query-token download exceptions
+route risks and invariants
 ```
 ---
 

@@ -233,3 +233,19 @@ test('SERVER_CATALOG.md links EVENTS_CATALOG.md as EventBus event graph companio
     );
   }
 });
+
+test('SERVER_CATALOG.md links ROUTES_CATALOG.md as route registry / route-specific middleware companion catalog', async () => {
+  const catalog = await readFile(SERVER_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/ROUTES_CATALOG.md',
+    'ROUTES_CATALOG.md maps the server/router.js route registry, route-specific middleware, handlers, and services.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SERVER_CATALOG.md must link routes catalog phrase: ${phrase}`
+    );
+  }
+});

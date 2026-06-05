@@ -274,3 +274,20 @@ test('SYSTEMS_CATALOG.md links EVENTS_CATALOG.md as EventBus/events/fanout catal
     );
   }
 });
+
+test('SYSTEMS_CATALOG.md links ROUTES_CATALOG.md as route/handler/service ownership catalog', async () => {
+  const catalog = await readFile(CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/ROUTES_CATALOG.md',
+    'ROUTES_CATALOG.md maps route registry, route-specific middleware, handler ownership, service ownership, and route risk classifications.',
+    'ROUTES_CATALOG.md is the route/handler/service ownership catalog companion to this system-level catalog.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SYSTEMS_CATALOG.md must link routes catalog phrase: ${phrase}`
+    );
+  }
+});

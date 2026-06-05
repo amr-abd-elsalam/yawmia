@@ -1686,6 +1686,7 @@ docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
 docs/architecture/EVENTS_CATALOG.md
+docs/architecture/ROUTES_CATALOG.md
 ```
 
 Catalog roles:
@@ -1695,6 +1696,7 @@ SYSTEMS_CATALOG.md maps systems.
 DATA_CATALOG.md maps collections and source/derived data boundaries.
 SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
 EVENTS_CATALOG.md maps EventBus events, emitters, listeners, fanout, side effects, and durability classes.
+ROUTES_CATALOG.md maps route entrypoints that trigger source mutations, derived artifact updates, and EventBus emissions through handlers/services.
 ```
 
 Canonical operations docs:

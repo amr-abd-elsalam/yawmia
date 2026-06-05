@@ -192,3 +192,30 @@ test('events catalog is linked from docs index and reality check', async () => {
     'DOCS_REALITY_CHECK.md must classify EVENTS_CATALOG.md as Canonical Reference'
   );
 });
+
+test('routes catalog is linked from docs index and reality check', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/ROUTES_CATALOG.md'),
+    'docs/README.md must link to docs/architecture/ROUTES_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/ROUTES_CATALOG.md`'),
+    'DOCS_REALITY_CHECK.md must catalog docs/architecture/ROUTES_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('Route registry / handler / service ownership architecture inventory'),
+    'DOCS_REALITY_CHECK.md must describe ROUTES_CATALOG.md as route registry / handler / service ownership architecture inventory'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical route registry / handler / service ownership architecture reference'),
+    'DOCS_REALITY_CHECK.md must classify ROUTES_CATALOG.md as Canonical Reference'
+  );
+});
