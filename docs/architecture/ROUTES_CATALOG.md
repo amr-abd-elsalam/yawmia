@@ -399,7 +399,7 @@ GET routes -> source reads and derived metrics/index reads only
 Routes:
 
 ```text
-GET    /api/auth/me
+GET  /api/auth/me
 PUT    /api/auth/profile
 GET    /api/profile/tasks
 POST   /api/profile/tasks/:id/click
@@ -825,7 +825,7 @@ POST /api/jobs/:id/messages
 Workroom routes:
 
 ```text
-GET    /api/workrooms
+GET  /api/workrooms
 GET    /api/workrooms/:id/search
 GET    /api/workrooms/:id/read-receipts
 POST   /api/workrooms/:id/messages/:messageId/read
