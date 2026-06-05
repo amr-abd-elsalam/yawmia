@@ -1600,7 +1600,7 @@ EventBus does not cross instance boundaries.
 SSE/Admin SSE/Live Feed fanout is single-instance.
 Read-only replicas do not receive EventBus events from the writer.
 No external pub/sub is implemented.
-No event bridge is implemented.
+No EventBus bridge is implemented.
 No SSE fanout service is implemented.
 No external queue is implemented.
 No runtime repository switching is implemented.

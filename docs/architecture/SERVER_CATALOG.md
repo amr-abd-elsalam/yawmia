@@ -31,7 +31,7 @@ docs/architecture/EVENTS_CATALOG.md
 
 `SERVER_CATALOG.md` maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
 
-`EVENTS_CATALOG.md` maps the EventBus event graph companion catalog bootstrapped by server/router.js and services.
+EVENTS_CATALOG.md maps the EventBus event graph companion catalog bootstrapped by server/router.js and services.
 
 This document is documentation-only.
 
