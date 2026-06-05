@@ -165,3 +165,30 @@ test('architecture server catalog is linked from docs index and reality check', 
     'DOCS_REALITY_CHECK.md must classify SERVER_CATALOG.md as Canonical Reference'
   );
 });
+
+test('events catalog is linked from docs index and reality check', async () => {
+  const [readme, realityCheck] = await Promise.all([
+    readFile(DOCS_README_PATH, 'utf-8'),
+    readFile(REALITY_CHECK_PATH, 'utf-8'),
+  ]);
+
+  assert.ok(
+    readme.includes('docs/architecture/EVENTS_CATALOG.md'),
+    'docs/README.md must link to docs/architecture/EVENTS_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('`docs/architecture/EVENTS_CATALOG.md`'),
+    'DOCS_REALITY_CHECK.md must catalog docs/architecture/EVENTS_CATALOG.md'
+  );
+
+  assert.ok(
+    realityCheck.includes('EventBus/events/fanout architecture inventory'),
+    'DOCS_REALITY_CHECK.md must describe EVENTS_CATALOG.md as EventBus/events/fanout architecture inventory'
+  );
+
+  assert.ok(
+    realityCheck.includes('Canonical EventBus/events/fanout architecture reference'),
+    'DOCS_REALITY_CHECK.md must classify EVENTS_CATALOG.md as Canonical Reference'
+  );
+});

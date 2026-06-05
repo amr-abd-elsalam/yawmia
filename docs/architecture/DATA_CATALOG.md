@@ -20,6 +20,7 @@ It complements:
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
+docs/architecture/EVENTS_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` maps systems.
@@ -28,7 +29,11 @@ docs/architecture/SERVER_CATALOG.md
 
 SERVER_CATALOG.md maps runtime phases that initialize, read, write, index, schedule, and shut down those data flows.
 
+EVENTS_CATALOG.md maps events that are emitted from source-record lifecycle changes and derived artifact workflows.
+
 SERVER_CATALOG.md is the runtime/server lifecycle companion catalog to this collection-level data catalog.
+
+EVENTS_CATALOG.md is the event/source-record lifecycle companion catalog to this collection-level data catalog.
 
 `DATA_CATALOG.md` maps:
 

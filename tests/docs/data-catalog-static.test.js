@@ -367,3 +367,20 @@ test('DATA_CATALOG.md links SERVER_CATALOG.md as runtime/server lifecycle compan
     );
   }
 });
+
+test('DATA_CATALOG.md links EVENTS_CATALOG.md as event/source-record lifecycle companion catalog', async () => {
+  const catalog = await readFile(DATA_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/EVENTS_CATALOG.md',
+    'EVENTS_CATALOG.md maps events that are emitted from source-record lifecycle changes and derived artifact workflows.',
+    'EVENTS_CATALOG.md is the event/source-record lifecycle companion catalog to this collection-level data catalog.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `DATA_CATALOG.md must link companion events catalog phrase: ${phrase}`
+    );
+  }
+});

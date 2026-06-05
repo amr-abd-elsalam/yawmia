@@ -22,6 +22,7 @@ This document complements:
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
+docs/architecture/EVENTS_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` maps systems.
@@ -29,6 +30,8 @@ docs/architecture/DATA_CATALOG.md
 `DATA_CATALOG.md` maps collections and data artifacts.
 
 `SERVER_CATALOG.md` maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
+
+`EVENTS_CATALOG.md` maps the EventBus event graph companion catalog bootstrapped by server/router.js and services.
 
 This document is documentation-only.
 
@@ -1167,6 +1170,7 @@ Canonical architecture docs:
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
+docs/architecture/EVENTS_CATALOG.md
 ```
 
 Canonical operations docs:

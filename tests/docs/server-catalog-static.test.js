@@ -217,3 +217,19 @@ test('SERVER_CATALOG.md preserves final safety position', async () => {
     );
   }
 });
+
+test('SERVER_CATALOG.md links EVENTS_CATALOG.md as EventBus event graph companion catalog', async () => {
+  const catalog = await readFile(SERVER_CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/EVENTS_CATALOG.md',
+    'EVENTS_CATALOG.md maps the EventBus event graph companion catalog bootstrapped by server/router.js and services.',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SERVER_CATALOG.md must link companion events catalog phrase: ${phrase}`
+    );
+  }
+});

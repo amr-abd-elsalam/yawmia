@@ -34,12 +34,13 @@ They remain at root intentionally for review workflows.
 
 ---
 
-## Architecture / System, Data & Server Maps
+## Architecture / System, Data, Server & Events Maps
 
 ```text
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
+docs/architecture/EVENTS_CATALOG.md
 ```
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
@@ -116,6 +117,26 @@ external queue
 external search
 ```
 
+`EVENTS_CATALOG.md` is the canonical EventBus/events/fanout architecture inventory baseline.
+
+It maps current event architecture across:
+
+```text
+EventBus model
+event emitters
+event listeners
+listener bootstrap order
+event durability classes
+notifications
+SSE/Admin SSE/Live Feed fanout
+Web Push
+admin alerts
+incident triggers
+direct offer counters
+analytics cache invalidation
+queue/scheduler/governance visibility events
+event risks and invariants
+```
 ---
 
 ## Design

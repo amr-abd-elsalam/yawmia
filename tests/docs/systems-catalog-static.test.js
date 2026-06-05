@@ -257,3 +257,20 @@ test('SYSTEMS_CATALOG.md links SERVER_CATALOG.md as server/runtime lifecycle cat
     );
   }
 });
+
+test('SYSTEMS_CATALOG.md links EVENTS_CATALOG.md as EventBus/events/fanout catalog', async () => {
+  const catalog = await readFile(CATALOG_PATH, 'utf-8');
+
+  const requiredPhrases = [
+    'docs/architecture/EVENTS_CATALOG.md',
+    'EVENTS_CATALOG.md maps EventBus/events/fanout catalog',
+    'EVENTS_CATALOG.md is the EventBus/events/fanout catalog companion to this system-level catalog',
+  ];
+
+  for (const phrase of requiredPhrases) {
+    assert.ok(
+      catalog.includes(phrase),
+      `SYSTEMS_CATALOG.md must link companion events catalog phrase: ${phrase}`
+    );
+  }
+});

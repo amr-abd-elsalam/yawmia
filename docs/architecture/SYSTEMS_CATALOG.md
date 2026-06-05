@@ -36,6 +36,7 @@ Companion architecture catalogs:
 ```text
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
+docs/architecture/EVENTS_CATALOG.md
 ```
 
 SYSTEMS_CATALOG.md maps systems.
@@ -44,7 +45,11 @@ DATA_CATALOG.md maps collections, indexes, source/derived boundaries, queue stor
 
 SERVER_CATALOG.md maps server startup, middleware, router, timers, queue workers, schedulers, SSE, and shutdown lifecycle.
 
+EVENTS_CATALOG.md maps EventBus/events/fanout catalog coverage: EventBus events, emitters, listeners, fanout, side effects, and durability classes.
+
 SERVER_CATALOG.md is the server/runtime lifecycle catalog companion to this system-level catalog.
+
+EVENTS_CATALOG.md is the EventBus/events/fanout catalog companion to this system-level catalog.
 
 Together they form the current architecture inventory baseline.
 
