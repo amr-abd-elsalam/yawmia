@@ -102,7 +102,7 @@ var YawmiaWorkroom = (function () {
     if (opts.pending) {
       statusHtml = ' · <span class="message-send-status message-send-status--pending">جاري الإرسال...</span>';
     } else if (opts.failed) {
-      statusHtml = ' · <span class="message-send-status message-send-status--failed">تعذّر إرسال الرسالة</span>';
+      statusHtml = ' · <span class="message-send-status message-send-status--failed">الرسالة ما اتبعتتش</span>';
     } else if (isMine) {
       statusHtml = ' · <span class="message-send-status message-send-status--sent">تم الإرسال</span>';
     }
@@ -179,7 +179,7 @@ var YawmiaWorkroom = (function () {
     var status = bubble.querySelector('.message-send-status');
     if (status) {
       status.className = 'message-send-status message-send-status--failed';
-      status.textContent = 'تعذّر إرسال الرسالة';
+      status.textContent = 'الرسالة ما اتبعتتش';
     }
 
     if (!bubble.querySelector('.message-retry-btn')) {
@@ -189,8 +189,8 @@ var YawmiaWorkroom = (function () {
       var retryBtn = document.createElement('button');
       retryBtn.type = 'button';
       retryBtn.className = 'message-retry-btn';
-      retryBtn.textContent = 'أعد المحاولة';
-      retryBtn.setAttribute('aria-label', 'أعد محاولة إرسال الرسالة');
+      retryBtn.textContent = 'إعادة الإرسال';
+      retryBtn.setAttribute('aria-label', 'إعادة إرسال الرسالة التي فشلت');
 
       retryBtn.addEventListener('click', function () {
         if (!originalText || !currentWorkroom) return;
@@ -269,8 +269,8 @@ var YawmiaWorkroom = (function () {
   function renderWorkroomList(workrooms) {
     var user = getUser();
     var title = user && user.role === 'employer'
-      ? '💬 المحادثات النشطة'
-      : '💬 المحادثات';
+    ? '💬 محادثات فرصك النشطة'
+    : '💬 محادثات الشغل';
 
     var html = '<section class="card workroom-list-section">' +
       '<div class="section-header">' +
@@ -415,7 +415,7 @@ var YawmiaWorkroom = (function () {
       '<div class="workroom-header">' +
         '<div>' +
           '<h2 class="card__title">💬 مساحة العمل</h2>' +
-          '<p class="card__desc">' + escapeHtml(currentWorkroom.title || '') + ' — ' + escapeHtml(statusLabel(currentWorkroom.status)) + '</p>' +
+          '<p class="card__desc">' + escapeHtml(currentWorkroom.title || '') + ' — ' + escapeHtml(statusLabel(currentWorkroom.status)) + '<br><small>استخدم مساحة العمل لتأكيد المعاد، المكان، التعليمات، وإثبات الاتفاق قبل الشغل.</small></p>' +
         '</div>' +
         '<span class="risk-score-pill">' + escapeHtml(currentWorkroom.userRoleInWorkroom === 'employer' ? 'صاحب العمل' : 'عامل') + '</span>' +
       '</div>' +
@@ -526,15 +526,15 @@ var YawmiaWorkroom = (function () {
       var cards = [
         {
           value: (s.messages && s.messages.unread) || 0,
-          label: 'رسائل غير مقروءة'
+          label: 'رسائل تحتاج متابعة'
         },
         {
           value: (s.pins && s.pins.total) || 0,
-          label: 'رسائل مثبتة'
+          label: 'تعليمات مثبتة'
         },
         {
           value: ((s.checklist && s.checklist.completed) || 0) + '/' + ((s.checklist && s.checklist.total) || 0),
-          label: 'مهام مكتملة'
+          label: 'تقدم المهام'
         },
         {
           value: ((s.attendance && s.attendance.attendanceRate) || 0) + '%',
@@ -542,7 +542,7 @@ var YawmiaWorkroom = (function () {
         },
         {
           value: (s.payment && s.payment.exists) ? statusLabel(s.payment.status) : 'لا يوجد',
-          label: 'حالة الدفع'
+          label: 'حالة الدفع/الإيصال'
         }
       ];
 
@@ -582,7 +582,7 @@ var YawmiaWorkroom = (function () {
       if (!listEl) return;
 
       if (!res.data || !res.data.ok || !res.data.items || res.data.items.length === 0) {
-        listEl.innerHTML = '<div class="empty-state"><span class="empty-state__icon">💬</span><p class="empty-state__text">لا توجد رسائل بعد</p><p class="empty-state__hint">ابدأ برسالة سريعة أو اكتب أول رسالة</p></div>';
+        listEl.innerHTML = '<div class="empty-state"><span class="empty-state__icon">💬</span><p class="empty-state__text">لا توجد رسائل بعد</p><p class="empty-state__hint">ابدأ برسالة بسيطة لتأكيد المعاد أو المكان.</p></div>';
       } else {
         renderMessages(res.data.items);
       }
@@ -636,10 +636,10 @@ var YawmiaWorkroom = (function () {
     return templateHtml +
       '<div class="workroom-attachment-row">' +
         '<input type="file" id="workroomAttachmentInput" accept="image/*" class="form-input form-input--sm">' +
-        '<small class="form-hint">اختياري: صورة واحدة لكل رسالة حالياً</small>' +
+        '<small class="form-hint">اختياري: ارفق صورة للمكان أو التعليمات. لا تشارك بيانات حساسة.</small>' +
       '</div>' +
       '<div class="message-send-form workroom-composer">' +
-        '<input type="text" class="message-input" id="workroomMessageInput" placeholder="اكتب رسالة..." maxlength="500">' +
+        '<input type="text" class="message-input" id="workroomMessageInput" placeholder="اكتب رسالة واضحة عن المعاد أو المكان..." maxlength="500">' +
         '<button class="btn btn--primary btn--sm" id="btnSendWorkroomMessage">إرسال</button>' +
       '</div>' +
       '<div class="message" id="workroomMessageError"></div>';
@@ -857,7 +857,7 @@ var YawmiaWorkroom = (function () {
       var pins = (res.data && res.data.pins) || [];
 
       if (pins.length === 0) {
-        panel.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📌</span><p class="empty-state__text">لا توجد رسائل مثبتة بعد</p><p class="empty-state__hint">ثبّت أهم رسالة لتظهر هنا بسرعة</p></div>';
+        panel.innerHTML = '<div class="empty-state"><span class="empty-state__icon">📌</span><p class="empty-state__text">لا توجد رسائل مثبتة بعد</p><p class="empty-state__hint">ثبّت العنوان أو التعليمات المهمة عشان ترجع لها بسرعة.</p></div>';
         return;
       }
 
@@ -928,13 +928,13 @@ var YawmiaWorkroom = (function () {
 
     if (currentWorkroom.userRoleInWorkroom === 'employer') {
       html += '<div class="workroom-checklist-create">' +
-        '<input type="text" id="workroomChecklistText" class="form-input form-input--sm" placeholder="أضف مهمة..." maxlength="300">' +
+        '<input type="text" id="workroomChecklistText" class="form-input form-input--sm" placeholder="مثال: تأكيد العنوان أو تجهيز الأدوات" maxlength="300">' +
         '<button class="btn btn--primary btn--sm" id="btnCreateChecklistItem">إضافة</button>' +
       '</div>';
     }
 
     if (items.length === 0) {
-      html += '<div class="empty-state"><span class="empty-state__icon">✅</span><p class="empty-state__text">لا توجد مهام بعد</p><p class="empty-state__hint">استخدم المهام لتوضيح المطلوب قبل وأثناء الشغل</p></div>';
+      html += '<div class="empty-state"><span class="empty-state__icon">✅</span><p class="empty-state__text">لا توجد مهام بعد</p><p class="empty-state__hint">استخدم المهام لتقسيم المطلوب قبل الشغل وأثناء التنفيذ.</p></div>';
     } else {
       html += '<div class="workroom-checklist-items">';
       items.forEach(function (item) {
@@ -1046,7 +1046,7 @@ var YawmiaWorkroom = (function () {
       if (!resultsEl) return;
 
       if (q.length < 2) {
-        resultsEl.innerHTML = '<p class="empty-state">كلمة البحث لازم تكون حرفين على الأقل</p>';
+        resultsEl.innerHTML = '<p class="empty-state">اكتب كلمتين أو أكثر للبحث داخل المحادثة</p>';
         return;
       }
 

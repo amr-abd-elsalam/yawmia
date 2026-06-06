@@ -5816,6 +5816,68 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Patch 29 — Workroom UX Polish ═══ */
+.workroom-message-list .empty-state {
+  padding-block: 2.25rem;
+}
+
+.workroom-message-list .empty-state__hint {
+  max-width: 320px;
+  line-height: 1.7;
+}
+
+.message-bubble__text {
+  line-height: 1.75;
+}
+
+.message-bubble--failed {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.message-retry-btn {
+  min-height: 40px;
+}
+
+.workroom-tab {
+  min-height: 44px;
+}
+
+.workroom-pin-card,
+.workroom-checklist-item {
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .workroom-message-list {
+    padding: 0.6rem;
+  }
+
+  .message-bubble {
+    max-width: 94%;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.88rem;
+  }
+
+  .message-bubble__time {
+    font-size: 0.68rem;
+    margin-block-start: 0.25rem;
+  }
+
+  .workroom-template-buttons .btn,
+  .workroom-checklist-create .btn,
+  .message-retry-btn {
+    min-height: 44px;
+  }
+
+  .workroom-tabs {
+    padding-block-end: 0.15rem;
+  }
+
+  .workroom-tab {
+    padding-inline: 0.85rem;
+  }
+}
+
 /* ═══ Phase 61.4 — Workroom Inbox Polish + Messaging Reliability ═══ */
 .workroom-card__title-row {
   display: flex;
