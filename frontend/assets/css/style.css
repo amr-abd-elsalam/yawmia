@@ -3780,6 +3780,43 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Patch 28 — Direct Offer UX Polish ═══ */
+.direct-offer-modal__hint {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-block: 0.5rem 0.75rem;
+}
+
+.do-reveal-modal__phone {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .direct-offer-modal__info-row {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .direct-offer-modal__info-label,
+  .direct-offer-modal__info-value {
+    font-size: 0.9rem;
+  }
+
+  .do-reveal-card .ym-modal-actions {
+    flex-direction: column;
+  }
+
+  .do-reveal-card .ym-modal-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
 /* ═══ Phase 47 — Admin Operations ═══ */
 .bulk-flag-check {
   width: 18px;

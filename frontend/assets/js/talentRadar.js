@@ -466,6 +466,7 @@ var YawmiaTalentRadar = (function () {
       '<div class="offer-compose__worker-summary">' +
         '<div>' + escapeHtml(card.displayName) + (card.verificationStatus === 'verified' ? ' ✓' : '') + '</div>' +
         '<div style="font-size:0.8rem;color:var(--color-text-muted);">📍 ' + escapeHtml(card.governorate || '') + '</div>' +
+        '<div style="font-size:0.8rem;color:var(--color-text-muted);margin-block-start:0.35rem;">رقم العامل لا يظهر إلا بعد قبوله العرض. العامل عنده حوالي 120 ثانية للرد.</div>' +
       '</div>' +
       '<div class="form-group" style="margin-block-start:1rem;">' +
         '<label class="form-label" for="ocCategory">التخصص</label>' +
@@ -481,11 +482,12 @@ var YawmiaTalentRadar = (function () {
       '</div>' +
       '<div class="form-group">' +
         '<label class="form-label" for="ocMessage">رسالة (اختياري — أقصى 200 حرف)</label>' +
-        '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '<small class="form-hint">بعد الإرسال، العامل سيظهر له عرض مؤقت. إذا قبل، يظهر رقم الهاتف للطرفين وتُفتح مساحة العمل.</small>' +
       '</div>' +
       '<div class="ym-modal-error" id="ocError"></div>' +
       '<div class="ym-modal-actions">' +
-        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال العرض</button>' +
+        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال عرض مباشر</button>' +
         '<button class="btn btn--ghost btn--sm" id="ocCancel">إلغاء</button>' +
       '</div>';
 

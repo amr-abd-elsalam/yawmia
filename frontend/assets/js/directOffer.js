@@ -99,6 +99,7 @@ var YawmiaDirectOffer = (function () {
       '</div>' +
       '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(offer.employerDisplayName || 'صاحب عمل') + ' ' + verifiedBadge + '</h3>' +
       '<div class="direct-offer-modal__sub">' + escapeHtml(ratingHtml) + '</div>' +
+      '<div class="direct-offer-modal__hint">عرض مباشر ومؤقت. لو قبلت، هيفتح التواصل ورقم صاحب العمل.</div>' +
       '<div class="direct-offer-modal__info">' +
         '<div class="direct-offer-modal__info-row">' +
           '<span class="direct-offer-modal__info-label">💰 الأجر</span>' +
@@ -119,8 +120,8 @@ var YawmiaDirectOffer = (function () {
       '</div>' +
       messageHtml +
       '<div class="direct-offer-modal__actions">' +
-        '<button class="btn btn--success btn--full direct-offer-modal__accept" id="btnAcceptOffer">✓ اقبل العرض</button>' +
-        '<button class="btn btn--ghost btn--sm direct-offer-modal__decline" id="btnDeclineOffer">✗ ارفض</button>' +
+        '<button class="btn btn--success btn--full direct-offer-modal__accept" id="btnAcceptOffer">✓ اقبل وابدأ التواصل</button>' +
+        '<button class="btn btn--ghost btn--sm direct-offer-modal__decline" id="btnDeclineOffer">✗ رفض العرض</button>' +
       '</div>' +
       '<div class="direct-offer-modal__error" id="doError"></div>';
 
@@ -147,7 +148,7 @@ var YawmiaDirectOffer = (function () {
       if (remaining <= 0) {
         clearInterval(countdownTimer);
         countdownTimer = null;
-        showError('انتهت مهلة العرض ⌛');
+        showError('انتهت مهلة العرض — العرض لم يعد متاحًا ⌛');
         setTimeout(closeModal, 1500);
       }
     }
@@ -245,11 +246,11 @@ var YawmiaDirectOffer = (function () {
       card.setAttribute('aria-modal', 'true');
 
       var reasons = [
-        { value: 'busy', label: 'مشغول دلوقتي' },
-        { value: 'wage_low', label: 'الأجر قليل' },
-        { value: 'distance', label: 'بعيد عني' },
-        { value: 'category_mismatch', label: 'مش تخصصي' },
-        { value: 'other', label: 'سبب آخر' },
+      { value: 'busy', label: 'مشغول / غير متاح في الوقت ده' },
+      { value: 'wage_low', label: 'الأجر أقل من المناسب' },
+      { value: 'distance', label: 'المكان بعيد عني' },
+      { value: 'category_mismatch', label: 'الشغل مش مناسب لتخصصي' },
+      { value: 'other', label: 'سبب آخر' },
       ];
 
       var btnsHtml = reasons.map(function (r) {
@@ -311,11 +312,11 @@ var YawmiaDirectOffer = (function () {
       '<div class="do-reveal-modal__identity">' +
         '<div class="do-reveal-modal__name">' + escapeHtml(r.employerName) + ' ' + verifiedBadge + '</div>' +
         (ratingHtml ? '<div class="do-reveal-modal__rating">' + escapeHtml(ratingHtml) + '</div>' : '') +
-        '<a class="do-reveal-modal__phone" href="tel:' + escapeHtml(r.employerPhone) + '" dir="ltr">📞 ' + escapeHtml(r.employerPhone) + '</a>' +
+        '<a class="do-reveal-modal__phone" href="tel:' + escapeHtml(r.employerPhone) + '" dir="ltr">📞 اتصل بصاحب العمل — ' + escapeHtml(r.employerPhone) + '</a>' +
       '</div>' +
-      '<p class="ym-modal-message" style="margin-block-start:1rem;">يمكنك الآن التواصل مع صاحب العمل والاتفاق على التفاصيل.</p>' +
+      '<p class="ym-modal-message" style="margin-block-start:1rem;">اتفتح التواصل بعد قبول العرض. افتح مساحة العمل للاتفاق على التفاصيل قبل التحرك.</p>' +
       '<div class="ym-modal-actions">' +
-        '<a href="/dashboard.html" class="btn btn--primary btn--sm">ابدأ المحادثة</a>' +
+        '<a href="/job.html?id=' + encodeURIComponent(jobId || '') + '#workroom-messages" class="btn btn--primary btn--sm">افتح مساحة العمل</a>' +
         '<button class="btn btn--ghost btn--sm" id="doRevealClose">إغلاق</button>' +
       '</div>';
 
