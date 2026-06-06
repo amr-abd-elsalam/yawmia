@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-06T13:01:15.346Z
+> Auto-generated: 2026-06-06T14:56:13.843Z
 > Files in this part: 94
 
 ## Files
@@ -25437,6 +25437,7 @@ async function main() {
   const firstUser = await getFirstRecord('users', 'usr_');
   const firstJob = await getFirstRecord('jobs', 'job_');
   const firstWorkroom = await getFirstRecord('workrooms', null);
+  const firstDirectOffer = await getFirstRecord('direct_offers', 'dof_');
 
   results.push(await bench('read user by id', async () => {
     if (!firstUser) return { skipped: true, reason: 'no users' };
@@ -25504,6 +25505,27 @@ async function main() {
   results.push(await bench('search relevance query', async () => {
     const { list } = await import('../server/services/jobs.js');
     await list({ status: 'open', search: 'عامل' });
+  }, Math.max(1, Math.min(SAMPLE, 10))));
+
+  results.push(await bench('direct offer list by employer', async () => {
+    if (!firstDirectOffer || !firstDirectOffer.employerId) {
+      return { skipped: true, reason: 'no direct offers' };
+    }
+    const { listByEmployer } = await import('../server/services/directOffer.js');
+    await listByEmployer(firstDirectOffer.employerId, { limit: 20, offset: 0 });
+  }, Math.max(1, Math.min(SAMPLE, 10))));
+
+  results.push(await bench('direct offer employer stats', async () => {
+    if (!firstDirectOffer || !firstDirectOffer.employerId) {
+      return { skipped: true, reason: 'no direct offers' };
+    }
+    const { getEmployerOfferStats } = await import('../server/services/directOffer.js');
+    await getEmployerOfferStats(firstDirectOffer.employerId);
+  }, Math.max(1, Math.min(SAMPLE, 10))));
+
+  results.push(await bench('direct offer platform funnel', async () => {
+    const { getPlatformOfferFunnel } = await import('../server/services/directOfferAnalytics.js');
+    await getPlatformOfferFunnel();
   }, Math.max(1, Math.min(SAMPLE, 10))));
 
   results.push(await bench('export registry list', async () => {
