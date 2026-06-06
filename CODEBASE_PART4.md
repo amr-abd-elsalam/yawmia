@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-06T14:56:13.843Z
+> Auto-generated: 2026-06-06T19:47:26.551Z
 > Files in this part: 94
 
 ## Files
@@ -4999,6 +4999,43 @@ textarea:focus:not(:focus-visible) {
   .direct-offer-modal__accept {
     min-height: 60px;
     font-size: 1.2rem;
+  }
+}
+
+/* ═══ Patch 28 — Direct Offer UX Polish ═══ */
+.direct-offer-modal__hint {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-block: 0.5rem 0.75rem;
+}
+
+.do-reveal-modal__phone {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .direct-offer-modal__info-row {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .direct-offer-modal__info-label,
+  .direct-offer-modal__info-value {
+    font-size: 0.9rem;
+  }
+
+  .do-reveal-card .ym-modal-actions {
+    flex-direction: column;
+  }
+
+  .do-reveal-card .ym-modal-actions .btn {
+    width: 100%;
+    min-height: 44px;
   }
 }
 
@@ -15267,6 +15304,7 @@ var YawmiaDirectOffer = (function () {
       '</div>' +
       '<h3 class="ym-modal-title" id="' + titleId + '">' + escapeHtml(offer.employerDisplayName || 'صاحب عمل') + ' ' + verifiedBadge + '</h3>' +
       '<div class="direct-offer-modal__sub">' + escapeHtml(ratingHtml) + '</div>' +
+      '<div class="direct-offer-modal__hint">عرض مباشر ومؤقت. لو قبلت، هيفتح التواصل ورقم صاحب العمل.</div>' +
       '<div class="direct-offer-modal__info">' +
         '<div class="direct-offer-modal__info-row">' +
           '<span class="direct-offer-modal__info-label">💰 الأجر</span>' +
@@ -15287,8 +15325,8 @@ var YawmiaDirectOffer = (function () {
       '</div>' +
       messageHtml +
       '<div class="direct-offer-modal__actions">' +
-        '<button class="btn btn--success btn--full direct-offer-modal__accept" id="btnAcceptOffer">✓ اقبل العرض</button>' +
-        '<button class="btn btn--ghost btn--sm direct-offer-modal__decline" id="btnDeclineOffer">✗ ارفض</button>' +
+        '<button class="btn btn--success btn--full direct-offer-modal__accept" id="btnAcceptOffer">✓ اقبل وابدأ التواصل</button>' +
+        '<button class="btn btn--ghost btn--sm direct-offer-modal__decline" id="btnDeclineOffer">✗ رفض العرض</button>' +
       '</div>' +
       '<div class="direct-offer-modal__error" id="doError"></div>';
 
@@ -15315,7 +15353,7 @@ var YawmiaDirectOffer = (function () {
       if (remaining <= 0) {
         clearInterval(countdownTimer);
         countdownTimer = null;
-        showError('انتهت مهلة العرض ⌛');
+        showError('انتهت مهلة العرض — العرض لم يعد متاحًا ⌛');
         setTimeout(closeModal, 1500);
       }
     }
@@ -15413,11 +15451,11 @@ var YawmiaDirectOffer = (function () {
       card.setAttribute('aria-modal', 'true');
 
       var reasons = [
-        { value: 'busy', label: 'مشغول دلوقتي' },
-        { value: 'wage_low', label: 'الأجر قليل' },
-        { value: 'distance', label: 'بعيد عني' },
-        { value: 'category_mismatch', label: 'مش تخصصي' },
-        { value: 'other', label: 'سبب آخر' },
+      { value: 'busy', label: 'مشغول / غير متاح في الوقت ده' },
+      { value: 'wage_low', label: 'الأجر أقل من المناسب' },
+      { value: 'distance', label: 'المكان بعيد عني' },
+      { value: 'category_mismatch', label: 'الشغل مش مناسب لتخصصي' },
+      { value: 'other', label: 'سبب آخر' },
       ];
 
       var btnsHtml = reasons.map(function (r) {
@@ -15479,11 +15517,11 @@ var YawmiaDirectOffer = (function () {
       '<div class="do-reveal-modal__identity">' +
         '<div class="do-reveal-modal__name">' + escapeHtml(r.employerName) + ' ' + verifiedBadge + '</div>' +
         (ratingHtml ? '<div class="do-reveal-modal__rating">' + escapeHtml(ratingHtml) + '</div>' : '') +
-        '<a class="do-reveal-modal__phone" href="tel:' + escapeHtml(r.employerPhone) + '" dir="ltr">📞 ' + escapeHtml(r.employerPhone) + '</a>' +
+        '<a class="do-reveal-modal__phone" href="tel:' + escapeHtml(r.employerPhone) + '" dir="ltr">📞 اتصل بصاحب العمل — ' + escapeHtml(r.employerPhone) + '</a>' +
       '</div>' +
-      '<p class="ym-modal-message" style="margin-block-start:1rem;">يمكنك الآن التواصل مع صاحب العمل والاتفاق على التفاصيل.</p>' +
+      '<p class="ym-modal-message" style="margin-block-start:1rem;">اتفتح التواصل بعد قبول العرض. افتح مساحة العمل للاتفاق على التفاصيل قبل التحرك.</p>' +
       '<div class="ym-modal-actions">' +
-        '<a href="/dashboard.html" class="btn btn--primary btn--sm">ابدأ المحادثة</a>' +
+        '<a href="/job.html?id=' + encodeURIComponent(jobId || '') + '#workroom-messages" class="btn btn--primary btn--sm">افتح مساحة العمل</a>' +
         '<button class="btn btn--ghost btn--sm" id="doRevealClose">إغلاق</button>' +
       '</div>';
 
@@ -21325,6 +21363,7 @@ var YawmiaTalentRadar = (function () {
       '<div class="offer-compose__worker-summary">' +
         '<div>' + escapeHtml(card.displayName) + (card.verificationStatus === 'verified' ? ' ✓' : '') + '</div>' +
         '<div style="font-size:0.8rem;color:var(--color-text-muted);">📍 ' + escapeHtml(card.governorate || '') + '</div>' +
+        '<div style="font-size:0.8rem;color:var(--color-text-muted);margin-block-start:0.35rem;">رقم العامل لا يظهر إلا بعد قبوله العرض. العامل عنده حوالي 120 ثانية للرد.</div>' +
       '</div>' +
       '<div class="form-group" style="margin-block-start:1rem;">' +
         '<label class="form-label" for="ocCategory">التخصص</label>' +
@@ -21340,11 +21379,12 @@ var YawmiaTalentRadar = (function () {
       '</div>' +
       '<div class="form-group">' +
         '<label class="form-label" for="ocMessage">رسالة (اختياري — أقصى 200 حرف)</label>' +
-        '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '<textarea id="ocMessage" class="form-input form-textarea" rows="2" maxlength="200" placeholder="مثال: محتاج عامل بكره الصبح 8 ص..."></textarea>' +
+      '<small class="form-hint">بعد الإرسال، العامل سيظهر له عرض مؤقت. إذا قبل، يظهر رقم الهاتف للطرفين وتُفتح مساحة العمل.</small>' +
       '</div>' +
       '<div class="ym-modal-error" id="ocError"></div>' +
       '<div class="ym-modal-actions">' +
-        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال العرض</button>' +
+        '<button class="btn btn--primary btn--sm" id="ocSubmit">📩 إرسال عرض مباشر</button>' +
         '<button class="btn btn--ghost btn--sm" id="ocCancel">إلغاء</button>' +
       '</div>';
 
