@@ -100,7 +100,7 @@ var AdminApp = (function () {
         '<div class="recommended-actions recommended-actions--empty">' +
           '<div class="recommended-action-card recommended-action-card--ok">' +
             '<strong>✅ لا توجد إجراءات عاجلة</strong>' +
-            '<p>كل المؤشرات الأساسية في هذا القسم تبدو مستقرة حالياً.</p>' +
+            '<p>كل المؤشرات الأساسية في هذا القسم مستقرة حاليًا. استمر في المراقبة الدورية.</p>' +
           '</div>' +
         '</div>';
       return;
@@ -117,15 +117,18 @@ var AdminApp = (function () {
         : (sev === 'info' ? 'recommended-action-card--info' : 'recommended-action-card--warning');
 
       var icon = sev === 'critical' || sev === 'error' ? '🚨' : (sev === 'info' ? 'ℹ️' : '⚠️');
+      var severityLabel = sev === 'critical' || sev === 'error'
+        ? 'عاجل'
+        : (sev === 'info' ? 'معلومة' : 'يحتاج متابعة');
 
       html += '<div class="recommended-action-card ' + cls + '">' +
         '<div class="recommended-action-card__header">' +
           '<strong>' + icon + ' ' + escapeHtml(a.label || 'راجع الحالة') + '</strong>' +
-          '<span class="recommended-action-card__severity">' + escapeHtml(sev) + '</span>' +
+          '<span class="recommended-action-card__severity">' + escapeHtml(severityLabel) + '</span>' +
         '</div>' +
         (a.reason ? '<p>' + escapeHtml(a.reason) + '</p>' : '') +
-        (a.command ? '<code class="ops-command-chip">' + escapeHtml(a.command) + '</code>' : '') +
-        (a.adminRoute ? '<small class="runbook-link">Admin route: ' + escapeHtml(a.adminRoute) + '</small>' : '') +
+        (a.command ? '<code class="ops-command-chip">' + escapeHtml(a.command) + '</code><small class="recommended-action-card__hint">راجع الأمر قبل التشغيل. لا تستخدم --confirm بدون موافقة واضحة.</small>' : '') +
+        (a.adminRoute ? '<small class="runbook-link">يمكن متابعته من لوحة الأدمن: ' + escapeHtml(a.adminRoute) + '</small>' : '') +
       '</div>';
     });
 
@@ -4222,9 +4225,9 @@ var AdminApp = (function () {
     var labels = {
       no_action: 'لا يوجد إجراء',
       monitor: 'راقب الأدلة',
-      mitigate_file_based: 'خفّف بالملفات أولاً',
-      rehearsal_required: 'تدريب مطلوب',
-      pilot_candidate: 'مرشح Pilot — يحتاج موافقة',
+      mitigate_file_based: 'ابدأ بالضغط/الإصلاح الملفي',
+      rehearsal_required: 'تدريب مطلوب قبل أي قرار',
+      pilot_candidate: 'مرشح Pilot — يحتاج موافقات',
       deferred: 'مؤجل',
     };
     return labels[status] || status || 'غير معروف';
@@ -4556,7 +4559,11 @@ var AdminApp = (function () {
 
     if (rows.length === 0) {
       detailsEl.innerHTML =
-        '<p style="color:var(--color-text-muted);text-align:center;">لا توجد Benchmark artifacts بعد. شغّل: <code>node scripts/benchmark-file-paths.js --json --persist</code></p>';
+        '<div class="admin-helper-callout">' +
+          '<strong>لا توجد Benchmark artifacts بعد.</strong><br>' +
+          'شغّل benchmark آمن لتجميع دليل أداء، لكن لا تعتبر نتيجة واحدة قرار externalization.' +
+          '<br><code class="ops-command-chip">node scripts/benchmark-file-paths.js --json --persist</code>' +
+        '</div>';
       return;
     }
 
@@ -4592,14 +4599,14 @@ var AdminApp = (function () {
   function phase61StatusLabel(status) {
     var labels = {
       fresh: 'محدثة',
-      stale: 'قديمة',
+      stale: 'قديمة — تحتاج تحديث',
       missing: 'ناقصة',
       critical: 'حرجة',
       passed: 'ناجح',
-      warning: 'تحذير',
+      warning: 'يحتاج متابعة',
       failed: 'فشل',
       ok: 'مستقر',
-      blocked: 'ممنوع',
+      blocked: 'ممنوع حاليًا',
       approval_required: 'يحتاج موافقة',
     };
     return labels[status] || status || 'غير معروف';
@@ -5970,7 +5977,11 @@ var AdminApp = (function () {
       var rows = data.approvals || [];
 
       if (rows.length === 0) {
-        el.innerHTML = '<p style="color:var(--color-success);text-align:center;padding:1rem;">✓ لا توجد موافقات بهذه الحالة</p>';
+        el.innerHTML =
+          '<div class="admin-helper-callout">' +
+            '<strong>✓ لا توجد موافقات معلّقة بهذه الحالة.</strong><br>' +
+            'الإجراءات الحساسة مثل privacy anonymize أو queue repair ستظهر هنا قبل التنفيذ.' +
+          '</div>';
         return;
       }
 
@@ -6089,7 +6100,11 @@ var AdminApp = (function () {
       var rows = data.requests || [];
 
       if (rows.length === 0) {
-        el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">لا توجد طلبات خصوصية بعد</p>';
+        el.innerHTML =
+          '<div class="admin-helper-callout">' +
+            '<strong>لا توجد طلبات خصوصية حاليًا.</strong><br>' +
+            'استخدم هذا القسم لتصدير بيانات مستخدم أو طلب إخفاء بياناته عند الحاجة. الإخفاء يحتاج Approval قبل التنفيذ.' +
+          '</div>';
         return;
       }
 

@@ -5878,6 +5878,74 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* ═══ Patch 30 — Admin Dashboard Practical Clarity ═══ */
+.admin-helper-callout {
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.75;
+  margin-block: 0.75rem 1rem;
+}
+
+.admin-helper-callout strong {
+  color: var(--color-text);
+}
+
+.admin-helper-callout--warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.admin-helper-callout--critical {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.recommended-action-card p {
+  line-height: 1.75;
+}
+
+.recommended-action-card__hint {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.6;
+  margin-block-start: 0.25rem;
+}
+
+.admin-table small {
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .admin-helper-callout {
+    font-size: 0.84rem;
+    padding: 0.8rem;
+  }
+
+  .recommended-actions {
+    gap: 0.65rem;
+  }
+
+  .recommended-action-card {
+    padding: 0.85rem;
+  }
+
+  .admin-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    vertical-align: top;
+  }
+}
+
 /* ═══ Phase 61.4 — Workroom Inbox Polish + Messaging Reliability ═══ */
 .workroom-card__title-row {
   display: flex;
