@@ -93,6 +93,7 @@ Documentation must reflect that posture.
 |---|---|---|---|---|
 | `docs/README.md` | Index | Human navigation index for docs | Canonical docs index | Keep |
 | `docs/architecture/PROJECT_MAP.md` | Canonical Reference | Project-wide repository / onboarding / architecture map | Canonical project-wide repository and onboarding reference; start-here map | Keep |
+| `docs/architecture/PRODUCTION_FOUNDATION_RESET.md` | Canonical Reference / ADR | Production foundation reset and refactor-first architecture decision | Canonical production reset decision; explicitly not production approval or runtime migration approval | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 | `docs/architecture/DATA_CATALOG.md` | Canonical Reference | Collection-level data architecture inventory | Canonical data architecture reference | Keep |
 | `docs/architecture/SERVER_CATALOG.md` | Canonical Reference | Server/runtime lifecycle architecture inventory | Canonical server/runtime lifecycle architecture reference | Keep |
@@ -280,6 +281,7 @@ These should be linked from `docs/README.md` as primary docs:
 ```text
 docs/operations/DOCS_REALITY_CHECK.md
 docs/architecture/PROJECT_MAP.md
+docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
