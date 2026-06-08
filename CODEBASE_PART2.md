@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 2: Backend Services (21 services + 2 adapters)
-> Auto-generated: 2026-06-08T02:19:38.692Z
+> Auto-generated: 2026-06-08T11:50:25.216Z
 > Files in this part: 132
 
 ## Files
@@ -3133,6 +3133,27 @@ function sendJSON(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
+function envFlag(name) {
+  return process.env[name] === 'true' || process.env[name] === '1';
+}
+
+function isAdminQueryTokenAllowed(req) {
+  if (!req || !req.query) return false;
+
+  // Umbrella legacy override. Keep false by default.
+  if (envFlag('ADMIN_QUERY_TOKEN_ENABLED')) return true;
+
+  const isDownloadRoute =
+    req.method === 'GET' &&
+    (
+      req.pathname === '/api/admin/audit-log/export' ||
+      req.pathname.startsWith('/api/admin/export/') ||
+      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
+    );
+
+  return isDownloadRoute && envFlag('ADMIN_DOWNLOAD_QUERY_TOKEN_ENABLED');
+}
+
 function cfg() {
   return config.ADMIN_RBAC || {};
 }
@@ -3291,20 +3312,30 @@ async function authenticateAdmin(req) {
     return { ok: true, role: req.adminRole };
   }
 
-  // Query token stays intentionally limited to direct-download endpoints.
+  // Patch 38: query-string admin tokens are disabled by default.
+  // They can leak via logs, browser history, referrers, reverse proxies, analytics,
+  // screenshots, and browser extensions.
+  //
+  // Temporary legacy override:
+  //   ADMIN_QUERY_TOKEN_ENABLED=true              => allow all legacy query-token admin paths
+  //   ADMIN_DOWNLOAD_QUERY_TOKEN_ENABLED=true     => allow only direct-download query-token paths
+  //
+  // Preferred temporary path: X-Admin-Token header.
+  // Future path: real admin sessions + short-lived signed download tokens.
   const queryToken = req.query && (req.query.token || req.query._token);
-  const queryTokenAllowed =
-    req.method === 'GET' &&
-    (
-      req.pathname === '/api/admin/audit-log/export' ||
-      req.pathname.startsWith('/api/admin/export/') ||
-      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
-    );
-
-  if (queryToken && queryToken === process.env.ADMIN_TOKEN && queryTokenAllowed) {
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && isAdminQueryTokenAllowed(req)) {
     req.isAdmin = true;
     req.adminRole = cfg().tokenRole || 'super_admin';
     return { ok: true, role: req.adminRole };
+  }
+
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && !isAdminQueryTokenAllowed(req)) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Admin query-token authentication is disabled',
+      code: 'ADMIN_QUERY_TOKEN_DISABLED',
+    };
   }
 
   // Session admin path.
@@ -3392,6 +3423,8 @@ export const _testHelpers = {
   isEnabled,
   authenticateAdmin,
   validRoles,
+  envFlag,
+  isAdminQueryTokenAllowed,
 };
 ```
 

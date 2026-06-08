@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-06-08T02:19:38.686Z
+> Auto-generated: 2026-06-08T11:50:25.210Z
 > Files in this part: 6
 
 ## Files
@@ -21,6 +21,13 @@ NODE_ENV=development
 
 # Admin
 ADMIN_TOKEN=change-me-in-production
+
+# Admin legacy query-token compatibility
+# Default must remain false. Query-string tokens can leak via logs/history/referrers.
+# Prefer X-Admin-Token header temporarily, then replace with real admin sessions.
+ADMIN_QUERY_TOKEN_ENABLED=false
+ADMIN_DOWNLOAD_QUERY_TOKEN_ENABLED=false
+ADMIN_SSE_QUERY_TOKEN_ENABLED=false
 
 # ── Messaging Channels ─────────────────────────────────
 # Set MESSAGING.enabled=true in config.js to activate
