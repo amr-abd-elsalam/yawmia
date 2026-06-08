@@ -51,6 +51,8 @@ They remain at root intentionally for review workflows.
 
 ```text
 docs/architecture/PROJECT_MAP.md
+docs/architecture/PRODUCTION_FOUNDATION_RESET.md
+docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
@@ -59,6 +61,10 @@ docs/architecture/ROUTES_CATALOG.md
 ```
 
 `PROJECT_MAP.md` is the canonical project-wide repository/onboarding map.
+
+`PRODUCTION_FOUNDATION_RESET.md` is the canonical production foundation reset ADR.
+
+`PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
 
