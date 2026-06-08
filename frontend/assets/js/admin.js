@@ -64,6 +64,34 @@ var AdminApp = (function () {
     return await res.json();
   }
 
+  async function downloadAdminFile(path, fallbackFilename) {
+    var headers = { 'X-Admin-Token': token };
+    var res = await fetch(API + path, { headers: headers });
+
+    if (!res.ok) {
+      var data = await res.json().catch(function () { return {}; });
+      throw new Error(data.error || 'فشل تحميل الملف');
+    }
+
+    var blob = await res.blob();
+    var disposition = res.headers.get('Content-Disposition') || '';
+    var filename = fallbackFilename || 'download.csv';
+    var match = disposition.match(/filename="([^"]+)"/i);
+    if (match && match[1]) filename = match[1];
+
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
   async function toggleBan(userId, newStatus) {
     try {
       var reason = '';
@@ -180,11 +208,36 @@ var AdminApp = (function () {
     if (adminSseSource) return;
     if (!token) return;
 
+    var statusEl = document.getElementById('adminSseStatus');
+
+    // Patch 38:
+    // EventSource cannot send X-Admin-Token headers, and putting ADMIN_TOKEN in
+    // a query string is unsafe. Keep Admin SSE disabled by default until the
+    // backend provides short-lived signed SSE tokens or real admin sessions.
+    //
+    // Temporary legacy opt-in for trusted local/admin environments only:
+    //   localStorage.setItem('yawmia_admin_sse_query_token_enabled', '1')
+    // plus server env:
+    //   ADMIN_SSE_QUERY_TOKEN_ENABLED=true
+    var allowUnsafeQuerySse = false;
+    try {
+      allowUnsafeQuerySse = localStorage.getItem('yawmia_admin_sse_query_token_enabled') === '1';
+    } catch (_) {
+      allowUnsafeQuerySse = false;
+    }
+
+    if (!allowUnsafeQuerySse) {
+      if (statusEl) {
+        statusEl.classList.remove('admin-sse-status--connected');
+        statusEl.classList.add('admin-sse-status--disconnected');
+        statusEl.title = 'Admin SSE disabled by default: query-token auth is unsafe';
+      }
+      return;
+    }
+
     try {
       var url = '/api/admin/events?token=' + encodeURIComponent(token);
       adminSseSource = new EventSource(url);
-
-      var statusEl = document.getElementById('adminSseStatus');
 
       adminSseSource.addEventListener('init', function (e) {
         if (statusEl) {
@@ -979,17 +1032,12 @@ var AdminApp = (function () {
     }
   }
 
-  function exportCSV(type) {
-    var url = API + '/api/admin/export/' + type;
-    // Open in new tab — browser handles download
-    var link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    // Add admin token as query param for auth (since it's a direct download, not fetch)
-    link.href = url + '?_token=' + encodeURIComponent(token);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  async function exportCSV(type) {
+    try {
+      await downloadAdminFile('/api/admin/export/' + type, 'yawmia-' + type + '.csv');
+    } catch (err) {
+      showError(err.message || 'خطأ في تحميل التصدير');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1567,7 +1615,7 @@ var AdminApp = (function () {
     }
   }
 
-  function exportAuditLog() {
+  async function exportAuditLog() {
     var fromEl = document.getElementById('auditFromDate');
     var toEl = document.getElementById('auditToDate');
     var actionEl = document.getElementById('auditActionFilter');
@@ -1576,17 +1624,16 @@ var AdminApp = (function () {
     var to = toEl ? toEl.value : '';
     var action = actionEl ? actionEl.value : '';
 
-    var url = API + '/api/admin/audit-log/export?_token=' + encodeURIComponent(token);
-    if (from) url += '&from=' + encodeURIComponent(from);
-    if (to) url += '&to=' + encodeURIComponent(to + 'T23:59:59');
-    if (action) url += '&action=' + encodeURIComponent(action);
+    var path = '/api/admin/audit-log/export?';
+    if (from) path += '&from=' + encodeURIComponent(from);
+    if (to) path += '&to=' + encodeURIComponent(to + 'T23:59:59');
+    if (action) path += '&action=' + encodeURIComponent(action);
 
-    var link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await downloadAdminFile(path, 'audit-log.csv');
+    } catch (err) {
+      showError(err.message || 'خطأ في تحميل سجل العمليات');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -2600,14 +2647,12 @@ var AdminApp = (function () {
     }
   }
 
-  function downloadExport(exportId) {
-    var url = API + '/api/admin/exports/' + encodeURIComponent(exportId) + '/download?_token=' + encodeURIComponent(token);
-    var link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  async function downloadExport(exportId) {
+    try {
+      await downloadAdminFile('/api/admin/exports/' + encodeURIComponent(exportId) + '/download', exportId + '.csv');
+    } catch (err) {
+      showError(err.message || 'خطأ في تحميل التصدير');
+    }
   }
 
   async function loadCounterHygiene() {

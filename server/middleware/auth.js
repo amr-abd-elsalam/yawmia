@@ -11,6 +11,27 @@ function sendJSON(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
+function envFlag(name) {
+  return process.env[name] === 'true' || process.env[name] === '1';
+}
+
+function isAdminQueryTokenAllowed(req) {
+  if (!req || !req.query) return false;
+
+  // Umbrella legacy override. Keep false by default.
+  if (envFlag('ADMIN_QUERY_TOKEN_ENABLED')) return true;
+
+  const isDownloadRoute =
+    req.method === 'GET' &&
+    (
+      req.pathname === '/api/admin/audit-log/export' ||
+      req.pathname.startsWith('/api/admin/export/') ||
+      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
+    );
+
+  return isDownloadRoute && envFlag('ADMIN_DOWNLOAD_QUERY_TOKEN_ENABLED');
+}
+
 /**
  * requireAuth middleware
  * Reads Authorization: Bearer <token>
@@ -84,21 +105,27 @@ export function requireAdmin(req, res, next) {
     return next();
   }
 
-  // Phase 50: allow admin token via query only for direct-download endpoints.
-  // Query tokens are risky because URLs can leak via logs/history/referrers.
-  // Keep backward compatibility for CSV downloads while avoiding broad admin API access.
+  // Patch 38: query-string admin tokens are disabled by default.
+  // They can leak via logs, browser history, referrers, reverse proxies, analytics,
+  // screenshots, and browser extensions.
+  //
+  // Temporary legacy override:
+  //   ADMIN_QUERY_TOKEN_ENABLED=true              => allow all legacy query-token admin paths
+  //   ADMIN_DOWNLOAD_QUERY_TOKEN_ENABLED=true     => allow only direct-download query-token paths
+  //
+  // Preferred temporary path: X-Admin-Token header.
+  // Future path: real admin sessions + short-lived signed download tokens.
   const queryToken = req.query && (req.query.token || req.query._token);
-  const queryTokenAllowed =
-    req.method === 'GET' &&
-    (
-      req.pathname === '/api/admin/audit-log/export' ||
-      req.pathname.startsWith('/api/admin/export/') ||
-      (req.pathname.startsWith('/api/admin/exports/') && req.pathname.endsWith('/download'))
-    );
-
-  if (queryToken && queryToken === process.env.ADMIN_TOKEN && queryTokenAllowed) {
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && isAdminQueryTokenAllowed(req)) {
     req.isAdmin = true;
     return next();
+  }
+
+  if (queryToken && queryToken === process.env.ADMIN_TOKEN && !isAdminQueryTokenAllowed(req)) {
+    return sendJSON(res, 401, {
+      error: 'Admin query-token authentication is disabled',
+      code: 'ADMIN_QUERY_TOKEN_DISABLED',
+    });
   }
 
   // Check via session (admin role)

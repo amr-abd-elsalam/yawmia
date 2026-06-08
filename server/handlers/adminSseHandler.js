@@ -160,6 +160,16 @@ function sendJSON(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
+function envFlag(name) {
+  return process.env[name] === 'true' || process.env[name] === '1';
+}
+
+function isAdminSseQueryTokenAllowed() {
+  // ADMIN_QUERY_TOKEN_ENABLED is an unsafe umbrella legacy override.
+  // ADMIN_SSE_QUERY_TOKEN_ENABLED is the narrower legacy override for EventSource.
+  return envFlag('ADMIN_QUERY_TOKEN_ENABLED') || envFlag('ADMIN_SSE_QUERY_TOKEN_ENABLED');
+}
+
 /**
  * GET /api/admin/events
  * Self-authenticated SSE endpoint for admin events.
@@ -167,10 +177,19 @@ function sendJSON(res, statusCode, data) {
  */
 export async function handleAdminEventStream(req, res) {
   // ── Auth ──
-  let adminToken = req.headers['x-admin-token'];
-  if (!adminToken && req.query) {
-    adminToken = req.query.token || req.query._token;
+  const headerAdminToken = req.headers['x-admin-token'];
+  const queryAdminToken = req.query ? (req.query.token || req.query._token) : null;
+
+  if (queryAdminToken && queryAdminToken === process.env.ADMIN_TOKEN && !isAdminSseQueryTokenAllowed()) {
+    return sendJSON(res, 401, {
+      error: 'Admin SSE query-token authentication is disabled',
+      code: 'ADMIN_SSE_QUERY_TOKEN_DISABLED',
+    });
   }
+
+  const adminToken = headerAdminToken || (
+    isAdminSseQueryTokenAllowed() ? queryAdminToken : null
+  );
 
   const isValidAdmin =
     (adminToken && adminToken === process.env.ADMIN_TOKEN) ||
@@ -253,6 +272,8 @@ export const _testHelpers = {
   adminConnections,
   SUBSCRIBED_EVENTS,
   broadcastToAdmins,
+  envFlag,
+  isAdminSseQueryTokenAllowed,
   resetState: () => {
     adminConnections.clear();
     listenersRegistered = false;
