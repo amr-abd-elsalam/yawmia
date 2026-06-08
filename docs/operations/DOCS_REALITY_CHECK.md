@@ -95,7 +95,9 @@ Documentation must reflect that posture.
 | `docs/architecture/PROJECT_MAP.md` | Canonical Reference | Project-wide repository / onboarding / architecture map | Canonical project-wide repository and onboarding reference; start-here map | Keep |
 | `docs/architecture/PRODUCTION_FOUNDATION_RESET.md` | Canonical Reference / ADR | Production foundation reset and refactor-first architecture decision | Canonical production reset decision; explicitly not production approval or runtime migration approval | Keep |
 | `docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md` | Canonical Reference / Phase Design | Minimum payment ledger and receipt persistence design | Design target only; ledger not implemented yet; required before production-grade financial correctness | Keep |
+| `docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` | Phase Design / Migration Preparation | PostgreSQL schema draft for payment ledger, receipts, disputes, and outbox | Draft only; no migration executed; prepares future transaction-backed payment implementation | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
+
 
 | `docs/architecture/DATA_CATALOG.md` | Canonical Reference | Collection-level data architecture inventory | Canonical data architecture reference | Keep |
 | `docs/architecture/SERVER_CATALOG.md` | Canonical Reference | Server/runtime lifecycle architecture inventory | Canonical server/runtime lifecycle architecture reference | Keep |
@@ -285,6 +287,7 @@ docs/operations/DOCS_REALITY_CHECK.md
 docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
+docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md

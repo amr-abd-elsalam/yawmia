@@ -53,6 +53,7 @@ They remain at root intentionally for review workflows.
 docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
+docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
@@ -65,6 +66,8 @@ docs/architecture/ROUTES_CATALOG.md
 `PRODUCTION_FOUNDATION_RESET.md` is the canonical production foundation reset ADR.
 
 `PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
+
+`POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` is the PostgreSQL schema draft for the future payment ledger implementation. It is migration preparation only and does not execute or approve a migration.
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
 
