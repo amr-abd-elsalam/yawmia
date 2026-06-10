@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 1: Config + Server Core + Router
-> Auto-generated: 2026-06-09T22:57:16.835Z
+> Auto-generated: 2026-06-10T09:18:46.130Z
 > Files in this part: 6
 
 ## Files
@@ -21,6 +21,11 @@ NODE_ENV=development
 
 # Admin
 ADMIN_TOKEN=change-me-in-production
+
+# Session token hashing at rest
+# Required in production. Use a strong random secret and keep it stable.
+# Example generation: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+SESSION_TOKEN_HASH_SECRET=
 
 # Admin legacy query-token compatibility
 # Default must remain false. Query-string tokens can leak via logs/history/referrers.
@@ -278,6 +283,12 @@ const config = {
     maxSessions: 50000,
     rotateOnAuth: true,                      // تدوير التوكن بعد التحقق
     trackMetadata: true,                     // تتبع IP و user-agent
+    hashTokensAtRest: true,                  // Patch 51 — store HMAC tokenHash, never raw bearer token
+    hashAlgorithm: 'sha256',
+    hashIdPrefix: 'sth_',
+    hashIdLength: 48,
+    requireHashSecretInProduction: true,
+    legacyPlaintextReadEnabled: true,        // temporary migration path for old ses_*.json records
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -1545,6 +1556,7 @@ const config = {
     requireBackupPlanInProduction: true,
     requireVapidIfWebPushEnabled: true,
     requireAlertWebhookIfAlertChannelsEnabled: false,
+    requireSessionTokenHashSecretInProduction: true,
   },
 
   // ═══════════════════════════════════════════════════════════════
