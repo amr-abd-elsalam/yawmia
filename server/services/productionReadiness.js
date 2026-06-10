@@ -1039,6 +1039,19 @@ export async function runReadinessChecks(options = {}) {
     checks.push(check('admin_token', 'pass', 'ADMIN_TOKEN is configured'));
   }
 
+  if (config.PRODUCTION_READINESS?.requireSessionTokenHashSecretInProduction) {
+    const hasSessionHashSecret = !!process.env.SESSION_TOKEN_HASH_SECRET;
+    checks.push(check(
+      'session_token_hash_secret',
+      hasSessionHashSecret ? 'pass' : (isProd ? 'fail' : 'warn'),
+      hasSessionHashSecret
+        ? 'SESSION_TOKEN_HASH_SECRET is configured'
+        : (isProd ? 'SESSION_TOKEN_HASH_SECRET is required in production' : 'SESSION_TOKEN_HASH_SECRET is missing; development fallback only'),
+      {},
+      'Set SESSION_TOKEN_HASH_SECRET to a stable strong random secret'
+    ));
+  }
+
   const origins = config.SECURITY?.allowedOrigins || [];
   if (isProd && config.PRODUCTION_READINESS?.requireRestrictedOriginsInProduction) {
     if (origins.includes('*')) {

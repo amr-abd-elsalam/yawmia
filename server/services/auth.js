@@ -163,7 +163,7 @@ export async function verifyOtp(phone, otp, metadata) {
   // Create session (with optional metadata for IP/userAgent tracking)
   const session = await createSession(user.id, user.role, metadata || undefined);
 
-  eventBus.emit('session:created', { userId: user.id, token: session.token });
+  eventBus.emit('session:created', { userId: user.id, sessionId: session.id || null });
 
   logger.info('OTP verified successfully', { phone, userId: user.id });
 

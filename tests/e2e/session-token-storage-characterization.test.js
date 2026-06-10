@@ -59,68 +59,86 @@ async function setupIsolatedDataPath(t) {
   return { dataPath, database };
 }
 
-test('createSession persists raw bearer token in session JSON and filename', async (t) => {
+test('createSession stores only tokenHash at rest while returning raw bearer token to client', async (t) => {
   const { database } = await setupIsolatedDataPath(t);
   const sessions = await importFresh('../../server/services/sessions.js');
 
-  const session = await sessions.createSession('usr_plaintext_session_owner', 'worker', {
+  const session = await sessions.createSession('usr_hashed_session_owner', 'worker', {
     ip: '127.0.0.1',
-    userAgent: 'session-token-storage-characterization-test',
+    userAgent: 'session-token-hashing-runtime-hardening-test',
   });
 
   assert.match(
     session.token,
     /^ses_[a-f0-9]{32}$/,
-    'session token is a raw bearer credential returned to the client'
+    'session token remains a raw bearer credential returned to the client'
   );
 
-  const sessionPath = database.getRecordPath('sessions', session.token);
+  assert.match(
+    session.id,
+    /^sth_[a-f0-9]{48}$/,
+    'session record id is derived from a token HMAC, not from the raw token'
+  );
+
+  const sessionPath = database.getRecordPath('sessions', session.id);
 
   assert.equal(
     basename(sessionPath),
+    `${session.id}.json`,
+    'session filename is hash-derived'
+  );
+
+  assert.notEqual(
+    basename(sessionPath),
     `${session.token}.json`,
-    'session filename is derived from the raw bearer token'
+    'session filename must not be derived from raw bearer token'
+  );
+
+  const raw = await readFile(sessionPath, 'utf-8');
+  assert.equal(
+    raw.includes(session.token),
+    false,
+    'persisted session JSON must not contain raw bearer token'
   );
 
   const stored = await database.readJSON(sessionPath);
 
   assert.ok(stored, 'session JSON should be persisted');
-  assert.equal(
-    stored.token,
-    session.token,
-    'session JSON stores the raw bearer token as plaintext'
-  );
-
-  assert.equal(stored.userId, 'usr_plaintext_session_owner');
+  assert.equal(stored.id, session.id);
+  assert.equal(stored.userId, 'usr_hashed_session_owner');
   assert.equal(stored.role, 'worker');
   assert.equal(stored.ip, '127.0.0.1');
-  assert.equal(stored.userAgent, 'session-token-storage-characterization-test');
+  assert.equal(stored.userAgent, 'session-token-hashing-runtime-hardening-test');
+  assert.equal(stored.token, undefined, 'session JSON must not store plaintext token');
+  assert.match(stored.tokenHash, /^[a-f0-9]{64}$/);
 
   const verified = await sessions.verifySession(session.token);
 
   assert.ok(verified, 'verifySession accepts the raw bearer token');
+  assert.equal(verified.userId, 'usr_hashed_session_owner');
+  assert.equal(verified.id, session.id);
   assert.equal(
     verified.token,
     session.token,
-    'verifySession returns a session object containing the raw bearer token'
+    'verifySession may attach runtime token for compatibility without persisting it'
   );
 
   const destroyed = await sessions.destroySession(session.token);
   assert.equal(
     destroyed,
     true,
-    'destroySession deletes by raw bearer token'
+    'destroySession deletes by hashing incoming raw bearer token'
   );
 
   const afterDestroy = await database.readJSON(sessionPath);
   assert.equal(afterDestroy, null);
 });
 
-test('destroyAllByUser relies on stored plaintext session.token values', async (t) => {
+test('destroyAllByUser deletes hashed sessions without relying on stored plaintext tokens', async (t) => {
   const { database } = await setupIsolatedDataPath(t);
   const sessions = await importFresh('../../server/services/sessions.js');
 
-  const userId = 'usr_destroy_all_plaintext_owner';
+  const userId = 'usr_destroy_all_hashed_owner';
 
   const sessionA = await sessions.createSession(userId, 'worker', {
     ip: '127.0.0.1',
@@ -133,20 +151,22 @@ test('destroyAllByUser relies on stored plaintext session.token values', async (
   });
 
   assert.notEqual(sessionA.token, sessionB.token);
+  assert.notEqual(sessionA.id, sessionB.id);
 
   const sessionsDir = database.getCollectionPath('sessions');
   const storedBefore = await database.listJSON(sessionsDir);
 
-  const storedTokens = storedBefore
+  const storedForUser = storedBefore
     .filter(s => s && s.userId === userId)
-    .map(s => s.token)
-    .sort();
+    .sort((a, b) => a.id.localeCompare(b.id));
 
-  assert.deepEqual(
-    storedTokens,
-    [sessionA.token, sessionB.token].sort(),
-    'listing session files exposes raw bearer tokens at rest'
-  );
+  assert.equal(storedForUser.length, 2);
+
+  for (const stored of storedForUser) {
+    assert.match(stored.id, /^sth_[a-f0-9]{48}$/);
+    assert.match(stored.tokenHash, /^[a-f0-9]{64}$/);
+    assert.equal(stored.token, undefined, 'stored session must not contain raw token');
+  }
 
   const destroyed = await sessions.destroyAllByUser(userId);
   assert.equal(destroyed, 2);
@@ -157,11 +177,11 @@ test('destroyAllByUser relies on stored plaintext session.token values', async (
   assert.equal(
     remainingForUser.length,
     0,
-    'destroyAllByUser deletes sessions by reading stored raw token values'
+    'destroyAllByUser deletes sessions by hashed session id'
   );
 });
 
-test('session service source uses raw token lookup and has no token hashing at rest', async () => {
+test('session service source hashes tokens at rest and keeps legacy read path temporary', async () => {
   const { default: config } = await importFresh('../../config.js');
 
   const sessionsSource = await readFile(
@@ -172,66 +192,54 @@ test('session service source uses raw token lookup and has no token hashing at r
   assert.match(
     sessionsSource,
     /const token = 'ses_' \+ crypto\.randomBytes\(16\)\.toString\('hex'\);/,
-    'createSession generates a raw ses_* bearer token'
+    'createSession still generates a raw ses_* bearer token for the client'
   );
 
   assert.match(
     sessionsSource,
-    /const session = \{\s*token,/s,
-    'session object persists token as a top-level field'
+    /crypto\s*\.\s*createHmac\(/,
+    'session service uses HMAC for session token hashing'
   );
 
   assert.match(
     sessionsSource,
-    /const sessionPath = getRecordPath\('sessions', token\);/,
-    'session path is derived from raw token'
+    /tokenHash/,
+    'session service persists tokenHash'
   );
 
   assert.match(
     sessionsSource,
-    /const session = await safeReadJSON\(sessionPath\);/,
-    'verifySession reads session JSON by raw token path'
+    /sessionRecordIdForToken/,
+    'session service derives record id from token hash'
   );
 
   assert.match(
     sessionsSource,
-    /return await deleteJSON\(sessionPath\);/,
-    'destroySession deletes session JSON by raw token path'
-  );
-
-  assert.match(
-    sessionsSource,
-    /f\.startsWith\('ses_'\)/,
-    'session cleanup scans raw-token-style filenames'
-  );
-
-  assert.match(
-    sessionsSource,
-    /getRecordPath\('sessions', session\.token\)/,
-    'cleanup/destroy-all paths rely on stored session.token'
+    /legacyPlaintextReadEnabled/,
+    'session service keeps explicit temporary legacy plaintext migration path'
   );
 
   assert.equal(
-    sessionsSource.includes('tokenHash'),
+    sessionsSource.includes('const sessionPath = getRecordPath(\'sessions\', token);'),
     false,
-    'current session service has no tokenHash field'
+    'session path must not be derived from raw token'
   );
 
   assert.equal(
-    sessionsSource.includes('createHash'),
+    sessionsSource.includes('const session = {\n    token,'),
     false,
-    'current session service does not hash session tokens at rest'
-  );
-
-  assert.equal(
-    sessionsSource.includes('createHmac'),
-    false,
-    'current session service does not use HMAC for session token lookup'
+    'session object must not persist token as a top-level stored field'
   );
 
   assert.equal(
     config.SESSIONS.hashTokensAtRest,
-    undefined,
-    'current config exposes no session-token-at-rest hashing switch'
+    true,
+    'config enables session-token-at-rest hashing'
+  );
+
+  assert.equal(
+    config.SESSIONS.requireHashSecretInProduction,
+    true,
+    'production requires SESSION_TOKEN_HASH_SECRET'
   );
 });

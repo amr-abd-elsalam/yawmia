@@ -190,6 +190,12 @@ const config = {
     maxSessions: 50000,
     rotateOnAuth: true,                      // تدوير التوكن بعد التحقق
     trackMetadata: true,                     // تتبع IP و user-agent
+    hashTokensAtRest: true,                  // Patch 51 — store HMAC tokenHash, never raw bearer token
+    hashAlgorithm: 'sha256',
+    hashIdPrefix: 'sth_',
+    hashIdLength: 48,
+    requireHashSecretInProduction: true,
+    legacyPlaintextReadEnabled: true,        // temporary migration path for old ses_*.json records
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -1457,6 +1463,7 @@ const config = {
     requireBackupPlanInProduction: true,
     requireVapidIfWebPushEnabled: true,
     requireAlertWebhookIfAlertChannelsEnabled: false,
+    requireSessionTokenHashSecretInProduction: true,
   },
 
   // ═══════════════════════════════════════════════════════════════
