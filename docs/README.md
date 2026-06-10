@@ -55,6 +55,7 @@ docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
+docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
@@ -71,6 +72,8 @@ docs/architecture/ROUTES_CATALOG.md
 `POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` is the PostgreSQL schema draft for the future payment ledger implementation. It is migration preparation only and does not execute or approve a migration.
 
 `PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` defines the repository and transaction boundaries needed before a future payment runtime migration. It is design-only and does not switch storage.
+
+`DURABLE_OUTBOX_MINIMUM_DESIGN.md` defines the minimum durable outbox event design required before production-grade event reliability. It is design-only and does not implement an outbox dispatcher or runtime storage switch.
 
 `SYSTEMS_CATALOG.md` is the canonical system-level architecture inventory baseline.
 

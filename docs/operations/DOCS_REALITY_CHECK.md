@@ -97,6 +97,7 @@ Documentation must reflect that posture.
 | `docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md` | Canonical Reference / Phase Design | Minimum payment ledger and receipt persistence design | Design target only; ledger not implemented yet; required before production-grade financial correctness | Keep |
 | `docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` | Phase Design / Migration Preparation | PostgreSQL schema draft for payment ledger, receipts, disputes, and outbox | Draft only; no migration executed; prepares future transaction-backed payment implementation | Keep |
 | `docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` | Phase Design / Migration Preparation | Payment repository and transaction boundary preparation | Design-only boundary plan; no runtime repository switch; prepares future contracts/adapters | Keep |
+| `docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Durable outbox event design | Design-only outbox plan; no runtime dispatcher or storage switch; required before production-grade event durability | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 
 
@@ -291,6 +292,7 @@ docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
+docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
 docs/architecture/SERVER_CATALOG.md
