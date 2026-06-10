@@ -32,11 +32,10 @@ No documentation file is approved for deletion in this pass.
 
 ## Strategic Posture
 
-Current project posture remains:
+Current runtime posture remains:
 
 ```text
 Native Node.js 20+ ESM
-zero-dependency operational tooling
 file-backed JSON persistence
 monthly sharding
 secondary indexes
@@ -46,14 +45,30 @@ file-backed scheduler registry
 file-backed process locks
 SSE / Admin SSE
 PWA
-no PostgreSQL
+no runtime PostgreSQL yet
 no Redis
 no external queue
 no external search
-no new dependencies
 ```
 
-Documentation must reflect that posture.
+Target production foundation posture is:
+
+```text
+Refactor first
+Modular monolith first
+PostgreSQL core target
+TransactionManager runtime target
+payment ledger target
+persisted receipt target
+durable outbox target
+DB-backed queue target
+DB-backed sessions target
+privacy_action_log target
+no microservices yet
+no AI data gateway
+```
+
+Documentation must distinguish current runtime from target production architecture.
 
 ---
 
@@ -83,7 +98,7 @@ Documentation must reflect that posture.
 7. Incident logs should be retained unless a retention policy explicitly says otherwise.
 8. Script governance docs must stay synchronized with `scripts/*.js` and tests.
 9. Docs that mention dangerous commands must prefer dry-run first.
-10. No docs should recommend PostgreSQL, Redis, or external queue implementation as current work.
+10. Docs may define PostgreSQL, DB-backed queue, and durable outbox as target architecture, but must not imply they are implemented runtime unless source code proves it.
 
 ---
 
@@ -94,6 +109,7 @@ Documentation must reflect that posture.
 | `docs/README.md` | Index | Human navigation index for docs | Canonical docs index | Keep |
 | `docs/architecture/PROJECT_MAP.md` | Canonical Reference | Project-wide repository / onboarding / architecture map | Canonical project-wide repository and onboarding reference; start-here map | Keep |
 | `docs/architecture/PRODUCTION_FOUNDATION_RESET.md` | Canonical Reference / ADR | Production foundation reset and refactor-first architecture decision | Canonical production reset decision; explicitly not production approval or runtime migration approval | Keep |
+| `docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md` | Canonical Reference / Migration Preparation | PostgreSQL core migration alignment plan | Migration spine only; no runtime PostgreSQL adapter, migration execution, or production approval | Keep |
 | `docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md` | Canonical Reference / Phase Design | Minimum payment ledger and receipt persistence design | Design target only; ledger not implemented yet; required before production-grade financial correctness | Keep |
 | `docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` | Phase Design / Migration Preparation | PostgreSQL schema draft for payment ledger, receipts, disputes, and outbox | Draft only; no migration executed; prepares future transaction-backed payment implementation | Keep |
 | `docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` | Phase Design / Migration Preparation | Payment repository and transaction boundary preparation | Design-only boundary plan; no runtime repository switch; prepares future contracts/adapters | Keep |
@@ -290,6 +306,7 @@ These should be linked from `docs/README.md` as primary docs:
 docs/operations/DOCS_REALITY_CHECK.md
 docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
+docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md

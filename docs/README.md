@@ -52,6 +52,7 @@ They remain at root intentionally for review workflows.
 ```text
 docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
+docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
@@ -67,6 +68,8 @@ docs/architecture/ROUTES_CATALOG.md
 `PROJECT_MAP.md` is the canonical project-wide repository/onboarding map.
 
 `PRODUCTION_FOUNDATION_RESET.md` is the canonical production foundation reset ADR.
+
+`POSTGRESQL_CORE_MIGRATION_PLAN.md` is the canonical PostgreSQL core migration alignment plan. It is migration preparation only and does not implement or approve a runtime DB migration.
 
 `PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
 
@@ -426,13 +429,16 @@ Production reset is blocked by default.
 
 ---
 
+```text
 ## Current Strategic Decision
 
 ```text
-Stay file-backed.
+Current runtime remains file-backed.
+Target production core is PostgreSQL-backed modular monolith.
 Continue evidence cadence.
 Continue remediation ownership.
 Do not start Phase 62.
-Do not externalize.
-Do not implement auth provider runtime.
+Do not externalize before approval.
+Do not implement auth provider runtime without a separate plan.
+Do not claim production readiness from docs, dashboards, or smoke tests.
 ```
