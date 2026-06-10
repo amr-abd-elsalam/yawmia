@@ -70,7 +70,7 @@ docs/architecture/ROUTES_CATALOG.md
 
 `PRODUCTION_FOUNDATION_RESET.md` is the canonical production foundation reset ADR.
 
-`POSTGRESQL_CORE_MIGRATION_PLAN.md` is the canonical PostgreSQL core migration alignment plan. It is migration preparation only and does not implement or approve a runtime DB migration.
+`POSTGRESQL_CORE_MIGRATION_PLAN.md` is the canonical PostgreSQL core migration alignment plan. It is migration preparation only and does not implement or approve a runtime DB migration. It is supported by runtime-neutral repository contracts, including the session repository contract for future DB-backed session persistence.
 
 `PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md` is the payment ledger runtime migration plan. It defines cutover phases, backfill policy, persisted receipt rollout, and rollback gates, but does not implement runtime ledger storage.
 

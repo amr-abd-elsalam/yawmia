@@ -31,6 +31,7 @@ server/repositories/paymentRepository.contract.js
 server/repositories/outboxRepository.contract.js
 server/repositories/privacyActionLogRepository.contract.js
 server/repositories/transactionManager.contract.js
+server/repositories/sessionRepository.contract.js
 ```
 
 This file is a migration plan.
@@ -270,6 +271,8 @@ Do not pretend a file-backed wrapper is production-grade transaction support.
 
 Existing contracts are seams only.
 
+Patch 59 adds a runtime-neutral `SessionRepository` contract skeleton to preserve Patch 51 token-hashing posture while preparing DB-backed session persistence.
+
 Recommended adapter sequence:
 
 ```text
@@ -288,6 +291,8 @@ Recommended adapter sequence:
 13. AuditRepository
 14. MessageRepository / WorkroomRepository
 ```
+
+> Note: `SessionRepository` is contract-defined as a migration seam. It does not switch runtime persistence by itself.
 
 Each repository should support:
 

@@ -63,6 +63,7 @@ persisted receipt target
 durable outbox target
 DB-backed queue target
 DB-backed sessions target
+SessionRepository contract target
 privacy_action_log target
 no microservices yet
 no AI data gateway
