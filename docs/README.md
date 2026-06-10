@@ -429,7 +429,6 @@ Production reset is blocked by default.
 
 ---
 
-```text
 ## Current Strategic Decision
 
 ```text
