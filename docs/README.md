@@ -2,7 +2,7 @@
 
 > Project: يوميّة — Yawmia  
 > Version posture: v0.57.0  
-> Architecture posture: file-backed JSON source of truth  
+> Architecture posture: current runtime file-backed JSON; target production core PostgreSQL-backed modular monolith  
 > Phase posture: Phase 61.3 cleanup and organization  
 > Externalization posture: advisory-only  
 > Pilot posture: blocked by default
@@ -53,6 +53,7 @@ They remain at root intentionally for review workflows.
 docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md
+docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
@@ -70,6 +71,8 @@ docs/architecture/ROUTES_CATALOG.md
 `PRODUCTION_FOUNDATION_RESET.md` is the canonical production foundation reset ADR.
 
 `POSTGRESQL_CORE_MIGRATION_PLAN.md` is the canonical PostgreSQL core migration alignment plan. It is migration preparation only and does not implement or approve a runtime DB migration.
+
+`PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md` is the payment ledger runtime migration plan. It defines cutover phases, backfill policy, persisted receipt rollout, and rollback gates, but does not implement runtime ledger storage.
 
 `PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
 
