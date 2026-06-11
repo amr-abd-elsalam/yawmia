@@ -59,6 +59,7 @@ docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
+docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
@@ -84,6 +85,8 @@ docs/architecture/ROUTES_CATALOG.md
 `DURABLE_OUTBOX_MINIMUM_DESIGN.md` defines the minimum durable outbox event design required before production-grade event reliability. It is design-only and does not implement an outbox dispatcher or runtime storage switch.
 
 `DB_BACKED_QUEUE_MINIMUM_DESIGN.md` defines the minimum PostgreSQL-backed operational queue design required before production-grade background jobs, durable outbox dispatch support, privacy jobs, payment backfills, and migration/reconciliation jobs. It is design-only and does not implement a queue adapter or runtime migration.
+
+`QUEUE_BACKFILL_DRY_RUN_DESIGN.md` defines the no-mutation dry-run design for scanning, classifying, and reporting legacy file-backed ops queue state before any future PostgreSQL queue adapter import/cutover. It is migration preparation only and does not implement queue import, queue repair, queue drain, worker execution, or DB writes.
 
 `PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` defines the minimum privacy action log design required before compliance-grade privacy/anonymization workflows. It is design-only and does not implement privacy action log runtime storage or a transaction-backed anonymization workflow.
 
@@ -442,7 +445,9 @@ Current runtime remains file-backed.
 Target production core is PostgreSQL-backed modular monolith.
 Continue evidence cadence.
 Continue remediation ownership.
-Do not start Phase 62.
+Patch 62 starts with queue backfill dry-run design only.
+Do not implement PgQueueRepository before dry-run/backfill policy is explicit.
+Do not run queue import, queue repair, queue drain, or queue worker execution as part of the design patch.
 Do not externalize before approval.
 Do not implement auth provider runtime without a separate plan.
 Do not claim production readiness from docs, dashboards, or smoke tests.
