@@ -58,6 +58,7 @@ docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
+docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
@@ -81,6 +82,8 @@ docs/architecture/ROUTES_CATALOG.md
 `PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` defines the repository and transaction boundaries needed before a future payment runtime migration. It is design-only and does not switch storage.
 
 `DURABLE_OUTBOX_MINIMUM_DESIGN.md` defines the minimum durable outbox event design required before production-grade event reliability. It is design-only and does not implement an outbox dispatcher or runtime storage switch.
+
+`DB_BACKED_QUEUE_MINIMUM_DESIGN.md` defines the minimum PostgreSQL-backed operational queue design required before production-grade background jobs, durable outbox dispatch support, privacy jobs, payment backfills, and migration/reconciliation jobs. It is design-only and does not implement a queue adapter or runtime migration.
 
 `PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` defines the minimum privacy action log design required before compliance-grade privacy/anonymization workflows. It is design-only and does not implement privacy action log runtime storage or a transaction-backed anonymization workflow.
 
