@@ -118,6 +118,7 @@ Documentation must distinguish current runtime from target production architectu
 | `docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Durable outbox event design | Design-only outbox plan; no runtime dispatcher or storage switch; required before production-grade event durability | Keep |
 | `docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | PostgreSQL-backed queue minimum design | Design-only queue migration preparation; no runtime DB-backed queue adapter, queue migration execution, Redis dependency, or production queue cutover | Keep |
 | `docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md` | Phase Design / Migration Preparation | Queue backfill dry-run design | Design-only no-mutation dry-run policy before any PgQueueRepository adapter import/cutover; no queue import, repair, drain, worker execution, or DB writes | Keep |
+| `docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md` | Phase Design / Migration Preparation | PostgreSQL queue adapter spike and test DB policy | Design-only adapter spike guardrail; no PgQueueRepository implementation, schema migration execution, queue import, runtime queue switch, worker replacement, or production data mutation | Keep |
 | `docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Privacy action log design | Design-only privacy action log plan; no runtime action log storage or transaction-backed anonymization implementation | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 
@@ -318,6 +319,7 @@ docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
 docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md
+docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
