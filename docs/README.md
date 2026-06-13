@@ -61,6 +61,7 @@ docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
 docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md
+docs/architecture/PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
@@ -90,6 +91,8 @@ docs/architecture/ROUTES_CATALOG.md
 `QUEUE_BACKFILL_DRY_RUN_DESIGN.md` defines the no-mutation dry-run design for scanning, classifying, and reporting legacy file-backed ops queue state before any future PostgreSQL queue adapter import/cutover. It is migration preparation only and does not implement queue import, queue repair, queue drain, worker execution, or DB writes.
 
 `POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md` defines the PostgreSQL queue adapter spike and test database policy required before implementing `PgQueueRepository`. It is migration preparation only and does not implement the adapter, execute migrations, import queue data, replace queue workers, or enable DB-backed queue runtime.
+
+`PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md` defines the required behavior test matrix for any future `PgQueueRepository` adapter, including enqueue idempotency, SKIP LOCKED-style concurrent claiming, lease recovery, attempts, dead-letter, retry/cancel, transaction-scoped enqueue, and stats. It is migration preparation only and does not add `pg`, connect to PostgreSQL, execute migrations, or implement the adapter.
 
 `PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` defines the minimum privacy action log design required before compliance-grade privacy/anonymization workflows. It is design-only and does not implement privacy action log runtime storage or a transaction-backed anonymization workflow.
 
