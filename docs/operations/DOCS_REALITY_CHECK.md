@@ -120,6 +120,7 @@ Documentation must distinguish current runtime from target production architectu
 | `docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md` | Phase Design / Migration Preparation | Queue backfill dry-run design | Design-only no-mutation dry-run policy before any PgQueueRepository adapter import/cutover; no queue import, repair, drain, worker execution, or DB writes | Keep |
 | `docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md` | Phase Design / Migration Preparation | PostgreSQL queue adapter spike and test DB policy | Design-only adapter spike guardrail; no PgQueueRepository implementation, schema migration execution, queue import, runtime queue switch, worker replacement, or production data mutation | Keep |
 | `docs/architecture/PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md` | Phase Design / Migration Preparation | PgQueueRepository behavior test matrix | Design-only behavior test matrix for future PgQueueRepository; no pg dependency, DB connection, schema migration execution, queue import, runtime adapter, worker replacement, or production data mutation | Keep |
+| `docs/architecture/POSTGRESQL_QUEUE_DEPENDENCY_MIGRATION_ADR.md` | Canonical Reference / ADR / Migration Preparation | PostgreSQL queue dependency and migration tool decision | ADR-only decision for future pg and node-pg-migrate usage; no dependency installation, DB connection, schema migration execution, queue import, PgQueueRepository implementation, runtime adapter activation, worker replacement, or production data mutation | Keep |
 | `docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Privacy action log design | Design-only privacy action log plan; no runtime action log storage or transaction-backed anonymization implementation | Keep |
 | `docs/architecture/SYSTEMS_CATALOG.md` | Canonical Reference | Architecture / system inventory baseline | Canonical architecture reference | Keep |
 
@@ -322,6 +323,7 @@ docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
 docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md
 docs/architecture/PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md
+docs/architecture/POSTGRESQL_QUEUE_DEPENDENCY_MIGRATION_ADR.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md

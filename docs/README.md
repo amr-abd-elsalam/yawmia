@@ -62,6 +62,7 @@ docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
 docs/architecture/QUEUE_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md
 docs/architecture/PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md
+docs/architecture/POSTGRESQL_QUEUE_DEPENDENCY_MIGRATION_ADR.md
 docs/architecture/PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md
 docs/architecture/SYSTEMS_CATALOG.md
 docs/architecture/DATA_CATALOG.md
@@ -93,6 +94,8 @@ docs/architecture/ROUTES_CATALOG.md
 `POSTGRESQL_QUEUE_ADAPTER_SPIKE_PLAN.md` defines the PostgreSQL queue adapter spike and test database policy required before implementing `PgQueueRepository`. It is migration preparation only and does not implement the adapter, execute migrations, import queue data, replace queue workers, or enable DB-backed queue runtime.
 
 `PG_QUEUE_REPOSITORY_BEHAVIOR_TEST_MATRIX.md` defines the required behavior test matrix for any future `PgQueueRepository` adapter, including enqueue idempotency, SKIP LOCKED-style concurrent claiming, lease recovery, attempts, dead-letter, retry/cancel, transaction-scoped enqueue, and stats. It is migration preparation only and does not add `pg`, connect to PostgreSQL, execute migrations, or implement the adapter.
+
+`POSTGRESQL_QUEUE_DEPENDENCY_MIGRATION_ADR.md` records the future PostgreSQL queue dependency and migration-tool decision: `pg` for a future queue adapter and `node-pg-migrate` for future queue-scoped migrations. It is an ADR only and does not install dependencies, execute migrations, implement `PgQueueRepository`, import queue data, or activate DB-backed queue runtime.
 
 `PRIVACY_ACTION_LOG_MINIMUM_DESIGN.md` defines the minimum privacy action log design required before compliance-grade privacy/anonymization workflows. It is design-only and does not implement privacy action log runtime storage or a transaction-backed anonymization workflow.
 
@@ -453,6 +456,7 @@ Continue evidence cadence.
 Continue remediation ownership.
 Patch 62 starts with queue backfill dry-run design only.
 Do not implement PgQueueRepository before dry-run/backfill policy is explicit.
+Do not implement PgQueueRepository before the PostgreSQL queue dependency/migration ADR is accepted.
 Do not run queue import, queue repair, queue drain, or queue worker execution as part of the design patch.
 Do not externalize before approval.
 Do not implement auth provider runtime without a separate plan.
