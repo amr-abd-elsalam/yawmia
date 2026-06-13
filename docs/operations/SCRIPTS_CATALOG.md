@@ -174,6 +174,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | Script | Purpose | Production | Risk | Policy |
 |---|---|---|---|---|
 | `scripts/verify-queue.js` | Verify queue health | Safe Read-Only | Low | Safe |
+| `scripts/queue-backfill-dry-run.js` | PostgreSQL queue migration preparation dry-run | Safe Read-Only | Low/Medium | No-mutation scanner; rejects confirm/import/repair/drain/retry/cancel/complete flags; required evidence before any future queue import |
 | `scripts/repair-queue.js` | Repair queue summary/index | Approval Required | High | Dry-run first, approval id for confirm |
 | `scripts/compact-queue.js` | Archive/compact queue | Approval Required | High | Dry-run first |
 | `scripts/queue-retry-dlq.js` | Retry DLQ | Emergency Only | High | Hardened: dry-run default + confirm + json |
@@ -225,6 +226,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/postdeploy-smoke.js` | Smoke | Yes | Safe Read-Only | No source mutation; HTTP GET smoke only | No | No | Low | Reviewed: Keep |
 | `scripts/predeploy-check.js` | Deploy Verify / Governance Gate | Partial | Manual With Caution | No source mutation; child checks may write registry/evidence artifacts | No | Reads queue via child checks | Medium | Reviewed: Keep + Document side effects |
 | `scripts/quarantine-corrupt-json.js` | Recovery | Yes | Emergency Only | Yes with `--confirm` | Moves quarantine, never deletes | No | High | Hardened: dry-run default + confirm + json |
+| `scripts/queue-backfill-dry-run.js` | Queue Migration Preparation | Yes | Safe Read-Only | No | No | Reads queue only | Low/Medium | Patch 63 dry-run evidence tool; no mutation, no confirm support, no import/cutover, no queue worker/scheduler/runtime imports |
 | `scripts/queue-drain.js` | Queue Ops / Due Job Processing | Yes | Emergency Only | Yes with `--confirm` | No direct deletion | Yes | Critical | Hardened: dry-run default + confirm + json + active-worker preflight |
 | `scripts/queue-retry-dlq.js` | Queue Recovery | Yes | Emergency Only | Yes with `--confirm` | No | Yes | High | Hardened: dry-run default + confirm + json |
 | `scripts/rebuild-audit-index.js` | Rebuild Index | Yes | Approval Required | Derived write with `--confirm` | No | No | High | Hardened: dry-run default + confirm + json |
@@ -385,8 +387,9 @@ Policy:
 
 | Script | Imports Services | Reads | Writes / Mutates | Queue Touch | Runtime Impact |
 |---|---|---|---|---|---|
-| `scripts/queue-drain.js` | `server/services/database.js`, `server/services/opsQueue.js`, `server/services/queueWorkers.js` | Queue stats, due jobs through worker service, `/proc`, optional PM2 state | Confirmed mode can claim/process due jobs through `processDueJobs()` | Yes — pending/running/completed/failed/dead-letter through worker processing | Critical; never run confirmed while server/worker is active |
-| `scripts/queue-retry-dlq.js` | `server/services/database.js`, `server/services/opsQueue.js` | Dead-letter queue jobs via `listJobs()` | Confirmed mode retries DLQ jobs through `retryJob()` | Yes — dead-letter to pending/runnable queue state | High; emergency recovery only |
+| `scripts/queue-backfill-dry-run.js` | Native `fs/promises` only; no server/runtime imports | Legacy and segmented queue files, idempotency records, queue summary | None; rejects mutation flags including `--confirm`, `--import`, `--repair`, `--drain`, `--retry`, `--cancel`, `--complete` | Read-only queue migration evidence | Low/Medium; required before any future queue import/cutover planning |
+| `scripts/queue-drain.js` | `server/services/database.js`, `server/services/opsQueue.js`, `server/services/queueWorkers.js` | Queue stats, due jobs through worker service, `/proc`, optional PM2 state | Confirmed mode can claim/process due jobs through `processDueJobs()` | Yes  pending/running/completed/failed/dead-letter through worker processing | Critical; never run confirmed while server/worker is active |
+| `scripts/queue-retry-dlq.js` | `server/services/database.js`, `server/services/opsQueue.js` | Dead-letter queue jobs via `listJobs()` | Confirmed mode retries DLQ jobs through `retryJob()` | Yes  dead-letter to pending/runnable queue state | High; emergency recovery only |
 | `scripts/recover-stale-running-jobs.js` | `config.js`, `server/services/database.js`, `server/services/queueStorageIndex.js` | Running queue records, `/proc`, optional PM2 state | None | Read-only queue audit | Diagnostic only; no mutation implemented |
 | `scripts/quarantine-corrupt-json.js` | `config.js`, `server/services/database.js` for `atomicWrite()` | JSON files under `data/` | Confirmed mode uses `rename()` to move corrupt JSON to `data/quarantine` and writes manifest | No direct queue service calls | High if confirmed; JSON corruption incident tool |
 
