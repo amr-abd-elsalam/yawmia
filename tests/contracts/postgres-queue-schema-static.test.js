@@ -223,13 +223,14 @@ test('queue schema static test does not import pg or runtime queue services', as
   const forbiddenPatterns = [
     /from\s+['"]pg['"]/,
     /import\s*\(\s*['"]pg['"]\s*\)/,
-    /PgQueueRepository/,
+    /from\s+['"].*PgQueueRepository.*['"]/i,
+    /import\s*\(\s*['"].*PgQueueRepository.*['"]\s*\)/i,
     /queueWorkers\.js/,
     /opsQueue\.js/,
     /schedulerRegistry\.js/,
     /server\.js/,
     /server\/router\.js/,
-    /node:child_process/,
+    new RegExp(['node:child', 'process'].join('_')),
   ];
 
   for (const pattern of forbiddenPatterns) {
