@@ -13,6 +13,8 @@ This directory contains static PostgreSQL queue schema scaffold files for future
 
 It is migration preparation only.
 
+These SQL files are not executed by this patch.
+
 It does not:
 
 ```text
