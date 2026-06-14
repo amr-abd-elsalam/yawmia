@@ -705,20 +705,36 @@ Minimum dry-run report:
 {
   ok,
   mode,
+  reportVersion,
+  severity,
+  mutationPerformed,
   generatedAt,
   basePath,
+  canonicalSelectionPolicyVersion,
+  importGate,
+  importBlockerCount,
   scannedFileCount,
   scannedJobFileCount,
   scannedIdempotencyFileCount,
   validJobCount,
   corruptJobCount,
   duplicateJobIdCount,
+  duplicateActiveJobIdCount,
   statusCounts,
   physicalStatusCounts,
+  sourceLayoutCounts,
   typeCounts,
   runningJobCount,
   activeRunningJobCount,
   staleRunningJobCount,
+  invalidRunningJobCount,
+  activeQueueRisk,
+  privacyJobFindings,
+  paymentJobFindings,
+  auditExportJobFindings,
+  adminAlertJobFindings,
+  predictiveAnalyticsJobFindings,
+  unknownJobFindings,
   deadLetterCount,
   idempotencyRecordCount,
   validIdempotencyRecordCount,
@@ -730,6 +746,9 @@ Minimum dry-run report:
   wouldInsertAttemptCount,
   wouldInsertIdempotencyCount,
   wouldSkipJobCount,
+  wouldInsertByStatus,
+  wouldSkipByReason,
+  skippedByReasonCounts,
   warnings,
   errors,
   recommendations
@@ -756,7 +775,118 @@ Previews should be bounded.
 
 ---
 
-## 23. Severity Model
+## 23. Import Gate Policy
+
+The dry-run report must include an explicit import gate:
+
+```text
+importGate: {
+  canProceedToImport: boolean,
+  blockers: [],
+  warnings: [],
+  requiredApprovals: []
+}
+```
+
+`importGate.canProceedToImport` must be `false` when blockers exist.
+
+Blockers include:
+
+```text
+corruptJobCount > 0
+duplicateActiveJobIdCount > 0
+activeRunningJobCount > 0
+invalidRunningJobCount > 0
+unknownActiveStatusCount > 0
+oversizedPayloadCount > 0
+missingRequiredFieldCount > 0
+```
+
+Warnings / approval-required findings include:
+
+```text
+historical dead-letter duplicates
+summary drift
+stale running jobs
+orphan idempotency records
+expired idempotency records
+unknown queue types
+privacy queue jobs
+payment/ledger/receipt queue jobs
+attempt reconstruction limitations
+legacy flat records
+```
+
+The report must not rely on `errors[]` alone as the migration gate.
+
+It must separate:
+
+```text
+blockers
+warnings
+requiredApprovals
+recommendations
+```
+
+This preserves operator review and prevents false confidence before any future queue import.
+
+## 24. Evidence Report Hardening
+
+The dry-run report should also include stable evidence fields:
+
+```text
+reportVersion
+canonicalSelectionPolicyVersion
+severity
+sourceLayoutCounts
+skippedByReasonCounts
+wouldInsertByStatus
+wouldSkipByReason
+activeQueueRisk
+privacyJobFindings
+paymentJobFindings
+```
+
+Source layout counts must distinguish:
+
+```text
+legacy_flat
+segmented_status_month
+legacy_dead_letter
+segmented_dead_letter_month
+idempotency
+summary
+```
+
+Privacy jobs must be classified separately:
+
+```text
+privacy_user_data_export
+privacy_user_anonymization
+```
+
+Payment or future ledger/receipt jobs must be classified separately by type or type hints:
+
+```text
+payment
+ledger
+receipt
+financial
+reconciliation
+```
+
+The script must not choose canonical records as an irreversible decision.
+
+Canonical selection is reporting-only and must include:
+
+```text
+canonicalSelectionPolicyVersion
+canonicalCandidate
+locations
+reason
+```
+
+## 25. Severity Model
 
 Suggested severity:
 

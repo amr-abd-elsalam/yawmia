@@ -150,19 +150,33 @@ test('queue backfill dry-run returns stable empty report shape', async () => {
   assert.equal(report.basePath, resolve(basePath));
 
   const requiredKeys = [
+    'reportVersion',
+    'severity',
+    'canonicalSelectionPolicyVersion',
+    'importGate',
+    'importBlockerCount',
     'scannedFileCount',
     'scannedJobFileCount',
     'scannedIdempotencyFileCount',
     'validJobCount',
     'corruptJobCount',
     'duplicateJobIdCount',
+    'duplicateActiveJobIdCount',
     'statusCounts',
     'physicalStatusCounts',
+    'sourceLayoutCounts',
     'typeCounts',
     'runningJobCount',
     'activeRunningJobCount',
     'staleRunningJobCount',
     'invalidRunningJobCount',
+    'activeQueueRisk',
+    'privacyJobFindings',
+    'paymentJobFindings',
+    'auditExportJobFindings',
+    'adminAlertJobFindings',
+    'predictiveAnalyticsJobFindings',
+    'unknownJobFindings',
     'deadLetterCount',
     'idempotencyRecordCount',
     'validIdempotencyRecordCount',
@@ -174,6 +188,9 @@ test('queue backfill dry-run returns stable empty report shape', async () => {
     'wouldInsertAttemptCount',
     'wouldInsertIdempotencyCount',
     'wouldSkipJobCount',
+    'wouldInsertByStatus',
+    'wouldSkipByReason',
+    'skippedByReasonCounts',
     'warnings',
     'errors',
     'recommendations',
@@ -185,6 +202,13 @@ test('queue backfill dry-run returns stable empty report shape', async () => {
 
   assert.equal(report.summary.summaryPresent, false);
   assert.equal(report.summary.summaryMismatchCount, 0);
+  assert.equal(report.reportVersion, 2);
+  assert.equal(report.severity, 'ok');
+  assert.equal(report.importGate.canProceedToImport, true);
+  assert.deepEqual(report.importGate.blockers, []);
+  assert.deepEqual(report.importGate.requiredApprovals, []);
+  assert.equal(report.importBlockerCount, 0);
+  assert.equal(report.canonicalSelectionPolicyVersion, 1);
 });
 
 test('queue backfill dry-run scans legacy, segmented, corrupt, running, idempotency, and summary drift without mutation', async () => {
@@ -397,10 +421,29 @@ test('queue backfill dry-run scans legacy, segmented, corrupt, running, idempote
   assert.equal(report.summary.summaryStale, true);
   assert.ok(report.summary.summaryMismatchCount >= 1);
 
+  assert.equal(report.reportVersion, 2);
+  assert.equal(report.severity, 'critical');
+  assert.equal(report.importGate.canProceedToImport, false);
+  assert.ok(report.importGate.blockers.length >= 1);
+  assert.ok(report.importBlockerCount >= 1);
+  assert.equal(report.activeQueueRisk.activeRunningJobCount, 1);
+  assert.equal(report.activeQueueRisk.canImportWithoutPausingWorkers, false);
+
+  assert.equal(report.sourceLayoutCounts.legacy_flat, 2);
+  assert.equal(report.sourceLayoutCounts.segmented_status_month, 9);
+  assert.equal(report.sourceLayoutCounts.legacy_dead_letter, 1);
+  assert.equal(report.sourceLayoutCounts.segmented_dead_letter_month, 1);
+  assert.equal(report.sourceLayoutCounts.idempotency, 5);
+  assert.equal(report.sourceLayoutCounts.summary, 1);
+
   assert.ok(report.wouldInsertJobCount >= 1);
   assert.ok(report.wouldSkipJobCount >= 1);
   assert.ok(report.wouldInsertAttemptCount >= 1);
   assert.ok(report.wouldInsertIdempotencyCount >= 1);
+  assert.ok(report.wouldInsertByStatus.pending >= 1);
+  assert.ok(report.wouldSkipByReason.active_running >= 1);
+  assert.ok(report.skippedByReasonCounts.active_running >= 1);
+  assert.ok(report.skippedByReasonCounts.oversized_payload >= 1);
 
   assert.ok(Array.isArray(report.errors));
   assert.ok(Array.isArray(report.warnings));
@@ -414,6 +457,96 @@ test('queue backfill dry-run scans legacy, segmented, corrupt, running, idempote
   assert.ok(report.previews.orphanIdempotencyRecords.length >= 1);
   assert.ok(report.previews.duplicateIdempotencyKeys.length >= 1);
   assert.ok(report.previews.summaryMismatches.length >= 1);
+});
+
+test('queue backfill dry-run reports warning severity without blockers for historical dead-letter duplicates', async () => {
+  const basePath = await createTempDataPath();
+
+  await writeJson(join(basePath, 'ops_queue', 'completed', '2026-06', 'q_history.json'), baseJob({
+    id: 'q_history',
+    status: 'completed',
+    type: 'audit_csv_export',
+    updatedAt: '2026-06-02T00:00:00.000Z',
+    completedAt: '2026-06-02T00:00:00.000Z',
+  }));
+
+  await writeJson(join(basePath, 'ops_queue', 'dead-letter', 'q_history.json'), baseJob({
+    id: 'q_history',
+    status: 'dead-letter',
+    type: 'audit_csv_export',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+    deadLetteredAt: '2026-06-01T00:00:00.000Z',
+  }));
+
+  const result = runScript([
+    '--json',
+    '--include-previews',
+    '--base-path',
+    basePath,
+  ]);
+
+  assert.equal(result.status, 0);
+  assert.ok(result.parsed);
+
+  const report = result.parsed;
+
+  assert.equal(report.ok, true);
+  assert.equal(report.severity, 'warning');
+  assert.equal(report.importGate.canProceedToImport, true);
+  assert.equal(report.importGate.blockers.length, 0);
+  assert.ok(report.importGate.warnings.some(w => w.code === 'HISTORICAL_DEAD_LETTER_DUPLICATES'));
+  assert.ok(report.importGate.requiredApprovals.some(a => a.code === 'HISTORICAL_DEAD_LETTER_DUPLICATES'));
+  assert.equal(report.deadLetterMirrorDuplicateCount, 1);
+});
+
+test('queue backfill dry-run classifies privacy and payment jobs separately', async () => {
+  const basePath = await createTempDataPath();
+
+  await writeJson(join(basePath, 'ops_queue', 'pending', '2026-06', 'q_privacy.json'), baseJob({
+    id: 'q_privacy',
+    status: 'pending',
+    type: 'privacy_user_anonymization',
+    payload: {
+      requestId: 'prv_test',
+      userId: 'usr_test',
+    },
+  }));
+
+  await writeJson(join(basePath, 'ops_queue', 'pending', '2026-06', 'q_payment.json'), baseJob({
+    id: 'q_payment',
+    status: 'pending',
+    type: 'payment_ledger_backfill',
+    payload: {
+      paymentId: 'pay_test',
+    },
+  }));
+
+  const result = runScript([
+    '--json',
+    '--include-previews',
+    '--base-path',
+    basePath,
+  ]);
+
+  assert.equal(result.status, 0);
+  assert.ok(result.parsed);
+
+  const report = result.parsed;
+
+  assert.equal(report.ok, true);
+  assert.equal(report.severity, 'warning');
+  assert.equal(report.importGate.canProceedToImport, true);
+  assert.equal(report.importGate.blockers.length, 0);
+
+  assert.equal(report.privacyJobFindings.total, 1);
+  assert.equal(report.privacyJobFindings.missingApprovalId, 1);
+  assert.equal(report.privacyJobFindings.missingRequestId, 0);
+  assert.equal(report.privacyJobFindings.missingUserId, 0);
+  assert.equal(report.paymentJobFindings.total, 1);
+  assert.ok(report.importGate.warnings.some(w => w.code === 'PRIVACY_QUEUE_JOBS_PRESENT'));
+  assert.ok(report.importGate.warnings.some(w => w.code === 'PAYMENT_QUEUE_JOBS_PRESENT'));
+  assert.ok(report.importGate.requiredApprovals.some(a => a.code === 'PRIVACY_QUEUE_JOBS_PRESENT'));
+  assert.ok(report.importGate.requiredApprovals.some(a => a.code === 'PAYMENT_QUEUE_JOBS_PRESENT'));
 });
 
 test('queue backfill dry-run source remains runtime-neutral and does not import queue workers or schedulers', async () => {
