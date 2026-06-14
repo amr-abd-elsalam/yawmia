@@ -116,6 +116,7 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 
 | Script | Purpose | Production | Mutation | Risk | Decision |
 |---|---|---|---|---|---|
+| `scripts/payment-backfill-dry-run.js` | Payment ledger migration preparation dry-run | Safe Read-Only | No mutation; no ledger writes; no receipt generation; no DB writes | Low/Medium | Patch 73 dry-run evidence tool; no confirm support, no runtime imports, required before any future payment ledger backfill |
 | `scripts/export-migration-snapshot.js` | Export sanitized NDJSON snapshot | Manual With Caution | Writes snapshot artifacts only after `--confirm`; `--overwrite` removes output dir only | High | Reviewed: keep; dry-run default + confirm + json |
 | `scripts/validate-migration-snapshot.js` | Validate snapshot manifest/NDJSON/checksums/redaction | Safe Read-Only | No source mutation | Low | Reviewed: keep |
 | `scripts/run-migration-rehearsal.js` | Run safe migration rehearsal | Manual With Caution | Validation-only by default; writes report only with `--confirm --out` | Medium | Reviewed: keep |
@@ -221,7 +222,8 @@ These are evidence and rehearsal tools only. They do **not** implement PostgreSQ
 | `scripts/list-benchmark-history.js` | Verify | Yes | Safe Read-Only | No | No | No | Low | Keep |
 | `scripts/measure-storage-pressure.js` | Verify / Metrics | Partial | Manual With Caution | Storage pressure metrics snapshot by default unless `--no-persist` | No | No | Medium | Reviewed: Keep |
 | `scripts/migrate.js` | Migration | Partial | Manual/Startup | Runs pending schema migrations unless `--dry-run`; can mutate source data depending on pending migrations | No direct deletion | No | High | Reviewed: Keep + harden later with `--json` and explicit confirm/production guidance |
-| `scripts/ops-weekly-review.js` | Governance | Partial | Manual With Caution | Optional markdown via `--out`; optional ops review record via `--persist` | No | Reads queue only | Medium | Keep + Add `--json` later |
+| `scripts/ops-weekly-review.js` | Governance / Maintenance | Partial | Manual With Caution | Optional ops review record via `--persist`; optional markdown via `--out`; Add `--json` later | Medium | Ops Review |
+| `scripts/payment-backfill-dry-run.js` | Payment Migration Preparation | Yes | Safe Read-Only | No mutation; no ledger writes; no receipt generation; no DB writes | No | No | Low/Medium | Patch 73 dry-run evidence tool; rejects confirm/write/import flags; required before future ledger backfill |
 | `scripts/phase61-1-remediation-status.js` | Verify / Incident / Recovery Diagnostic | Yes | Safe Read-Only | No mutation; runs safe diagnostics and dry-runs only | No | Reads queue via child diagnostics | Low/Medium | Reviewed: Keep |
 | `scripts/postdeploy-smoke.js` | Smoke | Yes | Safe Read-Only | No source mutation; HTTP GET smoke only | No | No | Low | Reviewed: Keep |
 | `scripts/predeploy-check.js` | Deploy Verify / Governance Gate | Partial | Manual With Caution | No source mutation; child checks may write registry/evidence artifacts | No | Reads queue via child checks | Medium | Reviewed: Keep + Document side effects |
@@ -273,6 +275,7 @@ node scripts/verify-file-health.js --strict --json
 node scripts/verify-production-readiness.js --json
 node scripts/verify-queue.js --json
 node scripts/find-null-json-files.js --json
+node scripts/payment-backfill-dry-run.js --json --include-previews
 ```
 
 ### Approval Required
@@ -398,6 +401,22 @@ Duplication note:
 - Some standalone filesystem scanning in `quarantine-corrupt-json.js` is acceptable because it is an incident recovery tool that may need to work even when higher-level services are partially affected.
 - Queue mutation scripts should call queue services rather than reimplementing queue lifecycle transitions.
 - `recover-stale-running-jobs.js` intentionally mirrors queue staleness classification but does not mutate records.
+
+---
+
+## Payment Backfill Dry-run Dependency Map
+
+| Script | Imports / Calls | Reads | Writes / Mutates | Runtime Impact |
+|---|---|---|---|---|
+| `scripts/payment-backfill-dry-run.js` | Native `fs/promises` and path helpers only; no server/runtime imports | Legacy file-backed payment and job JSON records | None; rejects mutation flags including `--confirm`, `--write-db`, `--ledger-write`, `--generate-receipts`, `--mutate-payments`, and `--import` | Low/Medium; required evidence before any future payment ledger backfill or persisted receipt migration |
+
+Policy:
+
+- Payment backfill dry-run is not a ledger import.
+- Payment backfill dry-run is not receipt issuance.
+- Payment backfill dry-run does not allocate receipt numbers.
+- Payment backfill dry-run must not import `payments.js`, `financialExport.js`, `EventBus`, queue workers, scheduler registry, or database write helpers.
+- Future payment ledger import remains blocked until dry-run evidence, finance review, receipt policy approval, reconciliation, TransactionManager runtime, and rollback plan are ready.
 
 ---
 
