@@ -54,6 +54,7 @@ docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md
+docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
@@ -79,6 +80,8 @@ docs/architecture/ROUTES_CATALOG.md
 `POSTGRESQL_CORE_MIGRATION_PLAN.md` is the canonical PostgreSQL core migration alignment plan. It is migration preparation only and does not implement or approve a runtime DB migration. It is supported by runtime-neutral repository contracts, including the session repository contract for future DB-backed session persistence.
 
 `PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md` is the payment ledger runtime migration plan. It defines cutover phases, backfill policy, persisted receipt rollout, and rollback gates, but does not implement runtime ledger storage.
+
+`PAYMENT_BACKFILL_DRY_RUN_DESIGN.md` defines the no-mutation payment backfill dry-run design required before any future ledger import, financial reconciliation, or persisted receipt rollout. It does not write ledger entries, does not generate receipts, does not allocate receipt numbers, does not mutate payments, and does not write to any database.
 
 `PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
 

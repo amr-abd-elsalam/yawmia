@@ -112,6 +112,7 @@ Documentation must distinguish current runtime from target production architectu
 | `docs/architecture/PRODUCTION_FOUNDATION_RESET.md` | Canonical Reference / ADR | Production foundation reset and refactor-first architecture decision | Canonical production reset decision; explicitly not production approval or runtime migration approval | Keep |
 | `docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md` | Canonical Reference / Migration Preparation | PostgreSQL core migration alignment plan | Migration spine only; no runtime PostgreSQL adapter, migration execution, or production approval | Keep |
 | `docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md` | Canonical Reference / Migration Preparation | Payment ledger runtime migration plan | Runtime migration plan only; no ledger runtime, backfill execution, receipt issuance, or cutover approval | Keep |
+| `docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md` | Phase Design / Migration Preparation | No-mutation payment backfill dry-run design | Payment migration evidence gate only; no ledger writes, no receipt generation, no payment mutation, no DB writes, and no runtime financial backfill | Keep |
 | `docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md` | Canonical Reference / Phase Design | Minimum payment ledger and receipt persistence design | Design target only; ledger not implemented yet; required before production-grade financial correctness | Keep |
 | `docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` | Phase Design / Migration Preparation | PostgreSQL schema draft for payment ledger, receipts, disputes, and outbox | Draft only; no migration executed; prepares future transaction-backed payment implementation | Keep |
 | `docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` | Phase Design / Migration Preparation | Payment repository and transaction boundary preparation | Design-only boundary plan; no runtime repository switch; prepares future contracts/adapters | Keep |
@@ -316,6 +317,7 @@ docs/architecture/PROJECT_MAP.md
 docs/architecture/PRODUCTION_FOUNDATION_RESET.md
 docs/architecture/POSTGRESQL_CORE_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md
+docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
