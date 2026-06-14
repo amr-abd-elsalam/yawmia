@@ -117,6 +117,26 @@ but it must remain inactive by default and must require the PostgreSQL test data
 
 Patch 68 does not add these migration files.
 
+Patch 71 may add static SQL scaffold files under this directory convention, but those files remain documentation/preparation artifacts only:
+
+```text
+migrations/postgres/queue/README.md
+migrations/postgres/queue/001_create_ops_queue_tables.sql
+```
+
+Static SQL scaffold files do not imply:
+
+```text
+pg dependency installation
+node-pg-migrate dependency installation
+database connection
+schema execution
+PgQueueRepository implementation
+queue import
+runtime adapter activation
+production readiness
+```
+
 ---
 
 ## 4. Schema Scope
