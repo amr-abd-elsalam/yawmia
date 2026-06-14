@@ -1,5 +1,5 @@
 # يوميّة (Yawmia) v0.57.0 — Part 4: Frontend + PWA + Scripts
-> Auto-generated: 2026-06-13T23:59:19.949Z
+> Auto-generated: 2026-06-14T08:41:41.881Z
 > Files in this part: 95
 
 ## Files
@@ -31046,6 +31046,49 @@ main().catch(err => {
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 
+const REPORT_VERSION = 2;
+const CANONICAL_SELECTION_POLICY_VERSION = 1;
+
+const PRIVACY_JOB_TYPES = new Set([
+  'privacy_user_data_export',
+  'privacy_user_anonymization',
+]);
+
+const PAYMENT_JOB_TYPE_HINTS = [
+  'payment',
+  'ledger',
+  'receipt',
+  'financial',
+  'reconciliation',
+];
+
+const AUDIT_EXPORT_JOB_TYPES = new Set([
+  'audit_csv_export',
+  'audit_index_rebuild',
+  'audit_token_compaction',
+]);
+
+const ADMIN_ALERT_JOB_TYPES = new Set([
+  'admin_alert_webhook',
+  'admin_alert_email',
+]);
+
+const PREDICTIVE_ANALYTICS_JOB_TYPES = new Set([
+  'predictive_scan',
+  'predictive_signal_retention',
+  'predictive_archive_index_rebuild',
+  'marketplace_intelligence_rollup',
+  'search_analytics_rollup',
+  'payment_dispute_analytics_rollup',
+  'workroom_adoption_rollup',
+  'notification_conversion_rollup',
+  'activation_funnel_rollup',
+  'search_relevance_rebuild',
+  'trust_snapshot_batch',
+  'trust_calibration_report',
+  'trust_snapshot_rollup',
+]);
+
 const FORBIDDEN_FLAGS = new Set([
   '--confirm',
   '--repair',
@@ -31208,9 +31251,12 @@ function emptyReport(basePath) {
   return {
     ok: true,
     mode: 'dry-run',
+    reportVersion: REPORT_VERSION,
+    severity: 'ok',
     mutationPerformed: false,
     generatedAt: nowIso(),
     basePath,
+    canonicalSelectionPolicyVersion: CANONICAL_SELECTION_POLICY_VERSION,
     scannedFileCount: 0,
     scannedJobFileCount: 0,
     scannedIdempotencyFileCount: 0,
@@ -31218,12 +31264,15 @@ function emptyReport(basePath) {
     corruptJobCount: 0,
     corruptIdempotencyRecordCount: 0,
     duplicateJobIdCount: 0,
+    duplicateActiveJobIdCount: 0,
     unknownStatusCount: 0,
+    unknownActiveStatusCount: 0,
     unknownTypeCount: 0,
     oversizedPayloadCount: 0,
     missingRequiredFieldCount: 0,
     statusCounts: {},
     physicalStatusCounts: {},
+    sourceLayoutCounts: {},
     typeCounts: {},
     runningJobCount: 0,
     activeRunningJobCount: 0,
@@ -31249,12 +31298,66 @@ function emptyReport(basePath) {
       summaryExtraFileCount: 0,
       summaryWrongStatusCount: 0,
     },
+    activeQueueRisk: {
+      runningJobCount: 0,
+      activeRunningJobCount: 0,
+      staleRunningJobCount: 0,
+      invalidRunningJobCount: 0,
+      canImportWithoutPausingWorkers: true,
+      requiresOperatorReview: false,
+    },
+    privacyJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+      missingApprovalId: 0,
+      missingRequestId: 0,
+      missingUserId: 0,
+      jobIdsPreview: [],
+    },
+    paymentJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+      jobIdsPreview: [],
+    },
+    auditExportJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+    },
+    adminAlertJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+    },
+    predictiveAnalyticsJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+    },
+    unknownJobFindings: {
+      total: 0,
+      byType: {},
+      byStatus: {},
+      jobIdsPreview: [],
+    },
     wouldInsertJobCount: 0,
     wouldInsertAttemptCount: 0,
     wouldInsertIdempotencyCount: 0,
     wouldSkipJobCount: 0,
     wouldSkipAttemptCount: 0,
     wouldSkipIdempotencyCount: 0,
+    wouldInsertByStatus: {},
+    wouldSkipByReason: {},
+    skippedByReasonCounts: {},
+    importBlockerCount: 0,
+    importGate: {
+      canProceedToImport: true,
+      blockers: [],
+      warnings: [],
+      requiredApprovals: [],
+    },
     warnings: [],
     errors: [],
     recommendations: [],
@@ -31561,6 +31664,7 @@ async function scanJobs(basePath, report, args, detail) {
   const byId = new Map();
 
   for (const file of files) {
+    inc(report.sourceLayoutCounts, file.sourceLayout);
     const read = await readMaybeJson(file.filePath);
 
     if (!read.ok) {
@@ -31626,6 +31730,7 @@ async function scanJobs(basePath, report, args, detail) {
       report.duplicateJobIdCount++;
 
       const canonical = chooseCanonical(entries);
+      const activeEntries = entries.filter(e => isActiveStatus(e.recordStatus) || isActiveStatus(e.physicalStatus));
       const duplicateItem = {
         jobId,
         locations: entries.map(e => ({
@@ -31636,14 +31741,30 @@ async function scanJobs(basePath, report, args, detail) {
           updatedAt: e.job.updatedAt || null,
         })),
         canonicalCandidate: canonical ? canonical.sourcePath : null,
+        canonicalSelectionPolicyVersion: CANONICAL_SELECTION_POLICY_VERSION,
+        activeDuplicateCount: activeEntries.length,
         reason: 'reporting_only_latest_freshness_then_segmented_precedence',
       };
 
       boundedPush(detail.duplicateJobIds, duplicateItem, args.maxPreview);
 
+      if (activeEntries.length > 1) {
+        report.duplicateActiveJobIdCount++;
+        addError(report, 'DUPLICATE_ACTIVE_QUEUE_JOB_ID', 'Duplicate active queue job IDs require operator review before import', {
+          jobId,
+          activeDuplicateCount: activeEntries.length,
+          canonicalCandidate: canonical ? canonical.sourcePath : null,
+        });
+      }
+
       const dlqCopies = entries.filter(e => e.physicalStatus === 'dead-letter' || e.recordStatus === 'dead-letter').length;
       if (dlqCopies > 0 && entries.length > dlqCopies) {
         report.deadLetterMirrorDuplicateCount++;
+        addWarning(report, 'HISTORICAL_DEAD_LETTER_DUPLICATE', 'Historical dead-letter duplicate detected', {
+          jobId,
+          deadLetterCopies: dlqCopies,
+          totalCopies: entries.length,
+        });
       }
     }
 
@@ -31665,9 +31786,14 @@ async function scanJobs(basePath, report, args, detail) {
 
     if (!KNOWN_STATUSES.has(status)) {
       report.unknownStatusCount++;
+      if (isActiveStatus(entry.physicalStatus)) {
+        report.unknownActiveStatusCount++;
+      }
       addError(report, 'UNKNOWN_QUEUE_STATUS', 'Queue job has unknown status', {
         jobId: job.id || null,
         status,
+        physicalStatus: entry.physicalStatus,
+        activePhysicalStatus: isActiveStatus(entry.physicalStatus),
         sourcePath: entry.sourcePath,
       });
       boundedPush(detail.unknownStatusJobs, {
@@ -31750,10 +31876,13 @@ async function scanJobs(basePath, report, args, detail) {
       }
     }
 
+    updateDomainFindings(report, entry, args.maxPreview);
+
     const eligibility = isImportEligible(entry, opts);
 
     if (eligibility.eligible) {
       report.wouldInsertJobCount++;
+      inc(report.wouldInsertByStatus, pgStatus(job.status));
       const attempts = Math.max(0, Number(job.attempts) || 0);
       report.wouldInsertAttemptCount += attempts;
 
@@ -31768,6 +31897,10 @@ async function scanJobs(basePath, report, args, detail) {
       }, args.maxPreview);
     } else {
       report.wouldSkipJobCount++;
+      for (const reason of eligibility.reasons) {
+        inc(report.wouldSkipByReason, reason);
+        inc(report.skippedByReasonCounts, reason);
+      }
       boundedPush(detail.wouldSkipJobs, {
         jobId: job.id || null,
         type: job.type || null,
@@ -31794,6 +31927,7 @@ async function scanIdempotency(basePath, report, args, detail) {
   report.scannedIdempotencyFileCount = files.length;
   report.scannedFileCount += files.length;
   report.idempotencyRecordCount = files.length;
+  if (files.length > 0) inc(report.sourceLayoutCounts, 'idempotency', files.length);
 
   const byKey = new Map();
   const nowMs = Date.now();
@@ -31852,6 +31986,9 @@ async function scanIdempotency(basePath, report, args, detail) {
       report.wouldInsertIdempotencyCount++;
     } else {
       report.wouldSkipIdempotencyCount++;
+      if (expired) inc(report.skippedByReasonCounts, 'expired_idempotency');
+      if (orphan) inc(report.skippedByReasonCounts, 'orphan_idempotency');
+      if (jobId && !detail.importableJobIds.has(jobId)) inc(report.skippedByReasonCounts, 'idempotency_job_not_importable');
     }
   }
 
@@ -31881,6 +32018,7 @@ async function scanSummary(basePath, report, args, detail) {
   }
 
   report.scannedFileCount++;
+  inc(report.sourceLayoutCounts, 'summary');
   report.summary.summaryPresent = true;
 
   const read = await readMaybeJson(summaryFile);
@@ -31955,7 +32093,269 @@ async function scanSummary(basePath, report, args, detail) {
   }
 }
 
+function isActiveStatus(status) {
+  const s = normalizeStatus(status);
+  return s === 'pending' || s === 'running';
+}
+
+function classifyJobDomain(job) {
+  const type = String(job?.type || '').toLowerCase();
+
+  if (PRIVACY_JOB_TYPES.has(type)) return 'privacy';
+  if (AUDIT_EXPORT_JOB_TYPES.has(type)) return 'audit_export';
+  if (ADMIN_ALERT_JOB_TYPES.has(type)) return 'admin_alert';
+  if (PREDICTIVE_ANALYTICS_JOB_TYPES.has(type)) return 'predictive_analytics';
+
+  if (PAYMENT_JOB_TYPE_HINTS.some(hint => type.includes(hint))) {
+    return 'payment';
+  }
+
+  if (!KNOWN_TYPES.has(type)) return 'unknown';
+
+  return 'general';
+}
+
+function updateDomainFindings(report, entry, maxPreview) {
+  const job = entry.job || {};
+  const domain = classifyJobDomain(job);
+  const status = normalizeStatus(job.status);
+  const type = job.type || 'unknown';
+
+  function updateBucket(bucket) {
+    bucket.total++;
+    inc(bucket.byType, type);
+    inc(bucket.byStatus, status);
+  }
+
+  if (domain === 'privacy') {
+    updateBucket(report.privacyJobFindings);
+
+    const payload = job.payload && typeof job.payload === 'object' ? job.payload : {};
+    if (!payload.approvalId) report.privacyJobFindings.missingApprovalId++;
+    if (!payload.requestId && !payload.privacyRequestId) report.privacyJobFindings.missingRequestId++;
+    if (!payload.userId) report.privacyJobFindings.missingUserId++;
+
+    boundedPush(report.privacyJobFindings.jobIdsPreview, {
+      jobId: job.id || null,
+      type,
+      status,
+      sourcePath: entry.sourcePath,
+      approvalIdPresent: !!payload.approvalId,
+      requestIdPresent: !!(payload.requestId || payload.privacyRequestId),
+      userIdPresent: !!payload.userId,
+    }, maxPreview);
+    return;
+  }
+
+  if (domain === 'payment') {
+    updateBucket(report.paymentJobFindings);
+    boundedPush(report.paymentJobFindings.jobIdsPreview, {
+      jobId: job.id || null,
+      type,
+      status,
+      sourcePath: entry.sourcePath,
+    }, maxPreview);
+    return;
+  }
+
+  if (domain === 'audit_export') {
+    updateBucket(report.auditExportJobFindings);
+    return;
+  }
+
+  if (domain === 'admin_alert') {
+    updateBucket(report.adminAlertJobFindings);
+    return;
+  }
+
+  if (domain === 'predictive_analytics') {
+    updateBucket(report.predictiveAnalyticsJobFindings);
+    return;
+  }
+
+  if (domain === 'unknown') {
+    updateBucket(report.unknownJobFindings);
+    boundedPush(report.unknownJobFindings.jobIdsPreview, {
+      jobId: job.id || null,
+      type,
+      status,
+      sourcePath: entry.sourcePath,
+    }, maxPreview);
+  }
+}
+
+function addImportBlocker(report, code, message, details) {
+  report.importGate.blockers.push({
+    code,
+    message,
+    details: details || null,
+  });
+}
+
+function addImportWarning(report, code, message, details, approvalReason) {
+  report.importGate.warnings.push({
+    code,
+    message,
+    details: details || null,
+  });
+
+  if (approvalReason) {
+    report.importGate.requiredApprovals.push({
+      code,
+      reason: approvalReason,
+    });
+  }
+}
+
+function buildImportGate(report) {
+  report.activeQueueRisk = {
+    runningJobCount: report.runningJobCount,
+    activeRunningJobCount: report.activeRunningJobCount,
+    staleRunningJobCount: report.staleRunningJobCount,
+    invalidRunningJobCount: report.invalidRunningJobCount,
+    canImportWithoutPausingWorkers: report.activeRunningJobCount === 0,
+    requiresOperatorReview: report.runningJobCount > 0,
+  };
+
+  if (report.corruptJobCount > 0) {
+    addImportBlocker(report, 'CORRUPT_QUEUE_JSON_BLOCKER', 'Corrupt queue JSON must be quarantined or repaired before import', {
+      corruptJobCount: report.corruptJobCount,
+    });
+  }
+
+  if (report.duplicateActiveJobIdCount > 0) {
+    addImportBlocker(report, 'DUPLICATE_ACTIVE_JOB_ID_BLOCKER', 'Duplicate active queue job IDs require operator canonical review before import', {
+      duplicateActiveJobIdCount: report.duplicateActiveJobIdCount,
+    });
+  }
+
+  if (report.activeRunningJobCount > 0) {
+    addImportBlocker(report, 'ACTIVE_RUNNING_JOBS_BLOCKER', 'Active running jobs require workers to be paused and queue state reviewed before import', {
+      activeRunningJobCount: report.activeRunningJobCount,
+    });
+  }
+
+  if (report.invalidRunningJobCount > 0) {
+    addImportBlocker(report, 'INVALID_RUNNING_JOBS_BLOCKER', 'Invalid running jobs are missing lease/lock metadata and cannot be imported safely', {
+      invalidRunningJobCount: report.invalidRunningJobCount,
+    });
+  }
+
+  if (report.unknownActiveStatusCount > 0) {
+    addImportBlocker(report, 'UNKNOWN_ACTIVE_STATUS_BLOCKER', 'Unknown statuses in active queue locations require explicit import policy', {
+      unknownActiveStatusCount: report.unknownActiveStatusCount,
+    });
+  }
+
+  if (report.oversizedPayloadCount > 0) {
+    addImportBlocker(report, 'OVERSIZED_PAYLOAD_BLOCKER', 'Oversized queue payloads exceed import-safe payload limits', {
+      oversizedPayloadCount: report.oversizedPayloadCount,
+    });
+  }
+
+  if (report.missingRequiredFieldCount > 0) {
+    addImportBlocker(report, 'MISSING_REQUIRED_FIELDS_BLOCKER', 'Queue jobs missing required fields cannot be imported safely', {
+      missingRequiredFieldCount: report.missingRequiredFieldCount,
+    });
+  }
+
+  if (report.deadLetterMirrorDuplicateCount > 0) {
+    addImportWarning(
+      report,
+      'HISTORICAL_DEAD_LETTER_DUPLICATES',
+      'Historical dead-letter mirror duplicates require operator review before import',
+      { deadLetterMirrorDuplicateCount: report.deadLetterMirrorDuplicateCount },
+      'Approve dead-letter historical import policy'
+    );
+  }
+
+  if (report.summary.summaryMismatchCount > 0) {
+    addImportWarning(
+      report,
+      'QUEUE_SUMMARY_DRIFT',
+      'Queue summary drift detected; summary.json must not be treated as source of truth',
+      { summaryMismatchCount: report.summary.summaryMismatchCount },
+      'Approve import based on physical queue files, not summary.json'
+    );
+  }
+
+  if (report.staleRunningJobCount > 0) {
+    addImportWarning(
+      report,
+      'STALE_RUNNING_JOBS',
+      'Stale running jobs require operator review before import',
+      { staleRunningJobCount: report.staleRunningJobCount },
+      'Approve stale running job handling policy'
+    );
+  }
+
+  if (report.orphanIdempotencyRecordCount > 0) {
+    addImportWarning(
+      report,
+      'ORPHAN_IDEMPOTENCY_RECORDS',
+      'Orphan idempotency records will be skipped unless a later import policy says otherwise',
+      { orphanIdempotencyRecordCount: report.orphanIdempotencyRecordCount },
+      'Approve idempotency orphan skip policy'
+    );
+  }
+
+  if (report.expiredIdempotencyRecordCount > 0) {
+    addImportWarning(report, 'EXPIRED_IDEMPOTENCY_RECORDS', 'Expired idempotency records will be skipped', {
+      expiredIdempotencyRecordCount: report.expiredIdempotencyRecordCount,
+    });
+  }
+
+  if (report.unknownTypeCount > 0) {
+    addImportWarning(
+      report,
+      'UNKNOWN_QUEUE_TYPES',
+      'Unknown queue job types require explicit import or skip policy',
+      { unknownTypeCount: report.unknownTypeCount },
+      'Approve unknown queue type handling policy'
+    );
+  }
+
+  if (report.privacyJobFindings.total > 0) {
+    addImportWarning(
+      report,
+      'PRIVACY_QUEUE_JOBS_PRESENT',
+      'Privacy queue jobs are high-risk and require privacy review before import',
+      report.privacyJobFindings,
+      'Privacy review required before importing privacy jobs'
+    );
+  }
+
+  if (report.paymentJobFindings.total > 0) {
+    addImportWarning(
+      report,
+      'PAYMENT_QUEUE_JOBS_PRESENT',
+      'Payment/ledger/receipt queue jobs require financial review before import',
+      report.paymentJobFindings,
+      'Finance review required before importing payment jobs'
+    );
+  }
+
+  report.importGate.canProceedToImport = report.importGate.blockers.length === 0;
+  report.importBlockerCount = report.importGate.blockers.length;
+
+  const seenApprovalCodes = new Set();
+  report.importGate.requiredApprovals = report.importGate.requiredApprovals.filter(item => {
+    if (!item || !item.code) return false;
+    if (seenApprovalCodes.has(item.code)) return false;
+    seenApprovalCodes.add(item.code);
+    return true;
+  });
+}
+
+function computeSeverity(report) {
+  if (report.importGate.blockers.length > 0 || report.errors.length > 0) return 'critical';
+  if (report.importGate.warnings.length > 0 || report.warnings.length > 0) return 'warning';
+  return 'ok';
+}
+
 function finalizeReport(report, args, detail) {
+  buildImportGate(report);
+
   if (report.corruptJobCount > 0) {
     report.recommendations.push({
       id: 'review_corrupt_queue_json',
@@ -31969,7 +32369,7 @@ function finalizeReport(report, args, detail) {
     report.recommendations.push({
       id: 'review_duplicate_queue_jobs',
       label: 'Review duplicate queue job IDs',
-      severity: 'warning',
+      severity: report.duplicateActiveJobIdCount > 0 ? 'critical' : 'warning',
       reason: 'Dry-run selected canonical candidates for reporting only; no files were repaired.',
     });
   }
@@ -31980,6 +32380,15 @@ function finalizeReport(report, args, detail) {
       label: 'Pause queue workers before real import',
       severity: 'critical',
       reason: 'Active running jobs must not be imported blindly.',
+    });
+  }
+
+  if (report.staleRunningJobCount > 0) {
+    report.recommendations.push({
+      id: 'review_stale_running_jobs',
+      label: 'Review stale running jobs',
+      severity: 'warning',
+      reason: 'Stale running jobs require explicit operator handling before import.',
     });
   }
 
@@ -32001,6 +32410,26 @@ function finalizeReport(report, args, detail) {
     });
   }
 
+  if (report.privacyJobFindings.total > 0) {
+    report.recommendations.push({
+      id: 'privacy_queue_job_review',
+      label: 'Review privacy queue jobs before import',
+      severity: 'warning',
+      reason: 'Privacy jobs must not be imported without privacy review and approval evidence.',
+    });
+  }
+
+  if (report.paymentJobFindings.total > 0) {
+    report.recommendations.push({
+      id: 'payment_queue_job_review',
+      label: 'Review payment queue jobs before import',
+      severity: 'warning',
+      reason: 'Payment/ledger/receipt jobs require finance review before import.',
+    });
+  }
+
+  report.severity = computeSeverity(report);
+
   if (args.includePreviews) {
     report.previews = {
       corruptFiles: detail.corruptFiles,
@@ -32019,7 +32448,10 @@ function finalizeReport(report, args, detail) {
     };
   }
 
-  report.ok = report.errors.length === 0 && (!args.strict || report.warnings.length === 0);
+  report.ok = report.importGate.canProceedToImport &&
+    report.errors.length === 0 &&
+    (!args.strict || (report.warnings.length === 0 && report.importGate.warnings.length === 0));
+
   report.generatedAt = nowIso();
 
   return report;
@@ -32056,6 +32488,10 @@ async function runDryRun(args) {
 function printHuman(report) {
   console.log('\n🧪 يوميّة Queue Backfill Dry-run\n');
   console.log(`Mode: ${report.mode}`);
+  console.log(`Report version: ${report.reportVersion}`);
+  console.log(`Severity: ${report.severity}`);
+  console.log(`Import gate: ${report.importGate.canProceedToImport ? 'can proceed' : 'blocked'}`);
+  console.log(`Import blockers: ${report.importBlockerCount}`);
   console.log(`Mutation performed: ${report.mutationPerformed ? 'yes' : 'no'}`);
   console.log(`Base path: ${report.basePath}`);
   console.log(`Scanned files: ${report.scannedFileCount}`);
