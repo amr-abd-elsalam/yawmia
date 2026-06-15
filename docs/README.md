@@ -58,6 +58,9 @@ docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md
+docs/architecture/PAYMENT_WORKFLOW_TRANSACTION_BOUNDARY_MATRIX.md
+docs/architecture/PAYMENT_OUTBOX_COUPLING_BEHAVIOR_MATRIX.md
+docs/architecture/OUTBOX_DISPATCHER_BEHAVIOR_MATRIX.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
@@ -89,6 +92,12 @@ docs/architecture/ROUTES_CATALOG.md
 `POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` is the PostgreSQL schema draft for the future payment ledger implementation. It is migration preparation only and does not execute or approve a migration.
 
 `PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md` defines the required behavior test matrix before any future PostgreSQL payment ledger adapter can be accepted. It is migration preparation only and does not implement PgPaymentRepository, PaymentLedgerRepository runtime, receipt persistence, payment import, DB connection, or runtime payment activation.
+
+`PAYMENT_WORKFLOW_TRANSACTION_BOUNDARY_MATRIX.md` defines the future payment workflow transaction boundary behavior matrix. It is migration preparation only and does not implement TransactionManager runtime, DB transactions, payment workflow rewrites, ledger writes, receipt persistence, outbox runtime, or finance activation.
+
+`PAYMENT_OUTBOX_COUPLING_BEHAVIOR_MATRIX.md` defines the future payment workflow durable outbox coupling behavior matrix. It is migration preparation only and does not implement OutboxRepository runtime, PgOutboxRepository, dispatcher runtime, DB connection, migration execution, outbox event insertion, EventBus replacement, or payment event durability.
+
+`OUTBOX_DISPATCHER_BEHAVIOR_MATRIX.md` defines the future durable outbox dispatcher behavior matrix, including claim leases, retries, dead-letter handling, crash recovery, replay, observability, security, EventBus boundaries, and queue coupling. It is migration preparation only and does not implement OutboxDispatcher runtime, PgOutboxRepository, DB polling, DB connection, migration execution, EventBus replacement, or durable event delivery runtime.
 
 `PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` defines the repository and transaction boundaries needed before a future payment runtime migration. It is design-only and does not switch storage.
 

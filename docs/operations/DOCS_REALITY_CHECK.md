@@ -118,6 +118,7 @@ Documentation must distinguish current runtime from target production architectu
 | `docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md` | Phase Design / Migration Preparation | Required behavior test matrix before future PostgreSQL payment ledger adapter acceptance | Behavior gate only; no PgPaymentRepository, no PaymentLedgerRepository runtime, no receipt persistence runtime, no DB connection, no migration execution, no payment import, and no ledger writes | Keep |
 | `docs/architecture/PAYMENT_WORKFLOW_TRANSACTION_BOUNDARY_MATRIX.md` | Phase Design / Migration Preparation | Payment workflow transaction boundary behavior matrix | Behavior matrix only; no TransactionManager runtime, no DB transaction execution, no payment workflow rewrite, no ledger writes, no receipt persistence, no outbox runtime, and no finance readiness claim | Keep |
 | `docs/architecture/PAYMENT_OUTBOX_COUPLING_BEHAVIOR_MATRIX.md` | Phase Design / Migration Preparation | Payment workflow durable outbox coupling behavior matrix | Behavior matrix only; no OutboxRepository runtime, no PgOutboxRepository, no dispatcher runtime, no DB connection, no migration execution, no outbox event insertion, no EventBus replacement, and no payment event durability claim | Keep |
+| `docs/architecture/OUTBOX_DISPATCHER_BEHAVIOR_MATRIX.md` | Phase Design / Migration Preparation | Durable outbox dispatcher behavior matrix | Behavior matrix only; no OutboxDispatcher runtime, no PgOutboxRepository, no DB polling, no DB connection, no migration execution, no EventBus replacement, no queue replacement, and no durable event delivery runtime claim | Keep |
 | `docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` | Phase Design / Migration Preparation | Payment repository and transaction boundary preparation | Design-only boundary plan; no runtime repository switch; prepares future contracts/adapters | Keep |
 | `docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Durable outbox event design | Design-only outbox plan; no runtime dispatcher or storage switch; required before production-grade event durability | Keep |
 | `docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | PostgreSQL-backed queue minimum design | Design-only queue migration preparation; no runtime DB-backed queue adapter, queue migration execution, Redis dependency, or production queue cutover | Keep |
@@ -324,6 +325,9 @@ docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
 docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md
+docs/architecture/PAYMENT_WORKFLOW_TRANSACTION_BOUNDARY_MATRIX.md
+docs/architecture/PAYMENT_OUTBOX_COUPLING_BEHAVIOR_MATRIX.md
+docs/architecture/OUTBOX_DISPATCHER_BEHAVIOR_MATRIX.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
