@@ -115,6 +115,7 @@ Documentation must distinguish current runtime from target production architectu
 | `docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md` | Phase Design / Migration Preparation | No-mutation payment backfill dry-run design | Payment migration evidence gate only; no ledger writes, no receipt generation, no payment mutation, no DB writes, and no runtime financial backfill | Keep |
 | `docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md` | Canonical Reference / Phase Design | Minimum payment ledger and receipt persistence design | Design target only; ledger not implemented yet; required before production-grade financial correctness | Keep |
 | `docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` | Phase Design / Migration Preparation | PostgreSQL schema draft for payment ledger, receipts, disputes, and outbox | Draft only; no migration executed; prepares future transaction-backed payment implementation | Keep |
+| `docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md` | Phase Design / Migration Preparation | Required behavior test matrix before future PostgreSQL payment ledger adapter acceptance | Behavior gate only; no PgPaymentRepository, no PaymentLedgerRepository runtime, no receipt persistence runtime, no DB connection, no migration execution, no payment import, and no ledger writes | Keep |
 | `docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` | Phase Design / Migration Preparation | Payment repository and transaction boundary preparation | Design-only boundary plan; no runtime repository switch; prepares future contracts/adapters | Keep |
 | `docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | Durable outbox event design | Design-only outbox plan; no runtime dispatcher or storage switch; required before production-grade event durability | Keep |
 | `docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md` | Phase Design / Migration Preparation | PostgreSQL-backed queue minimum design | Design-only queue migration preparation; no runtime DB-backed queue adapter, queue migration execution, Redis dependency, or production queue cutover | Keep |
@@ -320,6 +321,7 @@ docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
+docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md

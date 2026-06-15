@@ -57,6 +57,7 @@ docs/architecture/PAYMENT_LEDGER_RUNTIME_MIGRATION_PLAN.md
 docs/architecture/PAYMENT_BACKFILL_DRY_RUN_DESIGN.md
 docs/architecture/PAYMENT_LEDGER_MINIMUM_DESIGN.md
 docs/architecture/POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md
+docs/architecture/PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md
 docs/architecture/PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md
 docs/architecture/DURABLE_OUTBOX_MINIMUM_DESIGN.md
 docs/architecture/DB_BACKED_QUEUE_MINIMUM_DESIGN.md
@@ -86,6 +87,8 @@ docs/architecture/ROUTES_CATALOG.md
 `PAYMENT_LEDGER_MINIMUM_DESIGN.md` is the minimum payment ledger and persisted receipt design target. It is not implemented yet and does not approve production readiness.
 
 `POSTGRESQL_PAYMENT_LEDGER_SCHEMA_DRAFT.md` is the PostgreSQL schema draft for the future payment ledger implementation. It is migration preparation only and does not execute or approve a migration.
+
+`PAYMENT_LEDGER_ADAPTER_BEHAVIOR_TEST_MATRIX.md` defines the required behavior test matrix before any future PostgreSQL payment ledger adapter can be accepted. It is migration preparation only and does not implement PgPaymentRepository, PaymentLedgerRepository runtime, receipt persistence, payment import, DB connection, or runtime payment activation.
 
 `PAYMENT_REPOSITORY_BOUNDARY_PREPARATION.md` defines the repository and transaction boundaries needed before a future payment runtime migration. It is design-only and does not switch storage.
 
@@ -464,7 +467,8 @@ Patch 62 starts with queue backfill dry-run design only.
 Do not implement PgQueueRepository before dry-run/backfill policy is explicit.
 Do not implement PgQueueRepository before the PostgreSQL queue dependency/migration ADR is accepted.
 Do not implement PgQueueRepository before the PostgreSQL queue migration scaffold and static policy tests are accepted.
-Do not run queue import, queue repair, queue drain, or queue worker execution as part of the design patch.
+Do not implement PgPaymentRepository, PaymentLedgerRepository, or ReceiptRepository runtime before the payment ledger adapter behavior matrix, DB-test guard, backfill dry-run evidence review, reconciliation, and receipt policy approval are accepted.
+Do not run queue import, queue repair, queue drain, payment import, ledger import, receipt generation, or queue worker execution as part of the design patch.
 Do not externalize before approval.
 Do not implement auth provider runtime without a separate plan.
 Do not claim production readiness from docs, dashboards, or smoke tests.
